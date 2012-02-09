@@ -1,36 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758418Ab2BITbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 14:31:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42856 "EHLO
+	id S1758527Ab2BITqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 14:46:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58823 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758377Ab2BITbJ (ORCPT
+	with ESMTP id S1758458Ab2BITqu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 14:31:09 -0500
-Message-ID: <4F341F40.3020806@linaro.org>
-Date: Thu, 09 Feb 2012 11:32:16 -0800
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Thu, 9 Feb 2012 14:46:50 -0500
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Subject: Re: clock_getres() and real resolution
-References: <4F32A347.4090703@linaro.org> <20120209051218.GC2211@netboy.at.omicron.at> <4F33910D.2030409@linaro.org> <20120209184019.GA2217@netboy.at.omicron.at>
-In-Reply-To: <20120209184019.GA2217@netboy.at.omicron.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
+References: <1328751082.5611.6.camel@lappy> <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 9 Feb 2012 14:46:29 -0500
+Message-ID: <CA+1xoqfYPYi2godgsgmnX7z7GQL+spNmMZhpdGU4UqfYGTB06g@mail.gmail.com>
+Subject: Re: WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 10:40 AM, Richard Cochran wrote:
+On Wed, Feb 8, 2012 at 7:59 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Wed, Feb 8, 2012 at 8:31 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> Hi all,
+>>
+>> I got the following warning when shutting down a KVM guest with a whole bunch of cores (254 in this case).
+>>
+>> It's actually pretty easy to reproduce it, it happens every once in 2-3 shutdowns.
+>>
+>> [   32.448626] ------------[ cut here ]------------
+>> [   32.449160] WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
+>> [   32.449621] Pid: 1, comm: init_stage2 Not tainted 3.2.0+ #14
+>> [   32.449621] Call Trace:
+>> [   32.449621]  <IRQ>  [<ffffffff81041a44>] ? native_smp_send_reschedule+0x25/0x43
+>> [   32.449621]  [<ffffffff810735b2>] warn_slowpath_common+0x7b/0x93
+>> [   32.449621]  [<ffffffff810962cc>] ? tick_nohz_handler+0xc9/0xc9
+>> [   32.449621]  [<ffffffff81073675>] warn_slowpath_null+0x15/0x18
+>> [   32.449621]  [<ffffffff81041a44>] native_smp_send_reschedule+0x25/0x43
+>> [   32.449621]  [<ffffffff81067a00>] smp_send_reschedule+0xa/0xc
+>> [   32.449621]  [<ffffffff8106f25e>] scheduler_tick+0x21a/0x242
+>> [   32.449621]  [<ffffffff8107da10>] update_process_times+0x62/0x73
+>> [   32.449621]  [<ffffffff81096336>] tick_sched_timer+0x6a/0x8a
+>> [   32.449621]  [<ffffffff8108c5eb>] __run_hrtimer.clone.26+0x55/0xcb
+>> [   32.449621]  [<ffffffff8108cd77>] hrtimer_interrupt+0xcb/0x19b
+>> [   32.449621]  [<ffffffff810428a8>] smp_apic_timer_interrupt+0x72/0x85
+>> [   32.449621]  [<ffffffff8165a8de>] apic_timer_interrupt+0x6e/0x80
+>> [   32.449621]  <EOI>  [<ffffffff8165928e>] ? _raw_spin_unlock_irqrestore+0x3a/0x3e
+>> [   32.449621]  [<ffffffff81042f4e>] ? arch_local_irq_restore+0x6/0xd
+>> [   32.449621]  [<ffffffff810430c4>] default_send_IPI_mask_allbutself_phys+0x78/0x88
+>> [   32.449621]  [<ffffffff8106c3c4>] ? __migrate_task+0xf1/0xf1
+>> [   32.449621]  [<ffffffff81045445>] physflat_send_IPI_allbutself+0x12/0x14
+>> [   32.449621]  [<ffffffff81041aaf>] native_stop_other_cpus+0x4d/0xa8
+>> [   32.449621]  [<ffffffff810411c6>] native_machine_shutdown+0x56/0x6d
+>> [   32.449621]  [<ffffffff81048499>] kvm_shutdown+0x1a/0x1c
+>> [   32.449621]  [<ffffffff810411f9>] machine_shutdown+0xa/0xc
+>> [   32.449621]  [<ffffffff81041265>] native_machine_restart+0x20/0x32
+>> [   32.449621]  [<ffffffff81041297>] machine_restart+0xa/0xc
+>> [   32.449621]  [<ffffffff81081d53>] kernel_restart+0x49/0x4d
+>> [   32.449621]  [<ffffffff81081f26>] sys_reboot+0x14b/0x18a
+>> [   32.449621]  [<ffffffff81089937>] ? remove_wait_queue+0x4c/0x51
+>> [   32.449621]  [<ffffffff8107637f>] ? do_wait+0x1a4/0x1e7
+>> [   32.449621]  [<ffffffff8107735a>] ? sys_wait4+0xa8/0xbc
+>> [   32.449621]  [<ffffffff8107522b>] ? clear_tsk_thread_flag+0xf/0xf
+>> [   32.449621]  [<ffffffff81659a25>] ? async_page_fault+0x25/0x30
+>> [   32.449621]  [<ffffffff81659e92>] system_call_fastpath+0x16/0x1b
+>> [   32.449621] ---[ end trace d0f03651493fd3d6 ]--
+>
+> You don't really point out exactly which kernel this is, but we saw this in
+> 3.3 git and it was fixed by commit 71325960d16cd68ea0e22a8da15b2495b0f363f7.
+> Or at least something very like it was.
 
-> I thought this list was about Linux kernel development, but now it
-> seems to be about Sun's old bugs.
+The kernel there was vanilla 3.2 (as stated in the warning header).
 
-This Sun (probably) has ~100000x more accurate hrtimers than it's said,
-and it's a bug. My panda board (with 32K timer enabled) has ~30000x
-less accurate hrtimers than it's said, and it's not a bug. Great.
-
-Dmitry
+I've tried it again with linux-next from today which includes the
+commit you mentioned, and still get the same error.
