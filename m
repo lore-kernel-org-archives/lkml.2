@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab2BISdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:33:10 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60483 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab2BISdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:33:08 -0500
-Date: Thu, 9 Feb 2012 19:32:59 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-Message-ID: <20120209183257.GI22552@somewhere.redhat.com>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
- <1327591185.2446.102.camel@twins>
- <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
- <20120201170443.GE6731@somewhere.redhat.com>
- <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
- <20120202162420.GE9071@somewhere.redhat.com>
- <alpine.DEB.2.00.1202021028120.6221@router.home>
- <20120209155246.GD22552@somewhere.redhat.com>
- <alpine.DEB.2.00.1202091024340.32064@router.home>
+	id S1758237Ab2BISfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:35:25 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:52522
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754136Ab2BISfX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:35:23 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz9371I542M1432Nzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hbe9k)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Liam Girdwood <lrg@ti.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
+Thread-Topic: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
+Thread-Index: AQHM5oUgmXaGhY0fWUK7l1I9qEJRH5Y05LBQ
+Date: Thu, 9 Feb 2012 18:35:17 +0000
+Message-ID: <7FE21149F4667147B645348EC60578850C1864@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1328721262-20993-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1328721262-20993-1-git-send-email-Julia.Lawall@lip6.fr>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [108.60.121.130]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202091024340.32064@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 10:26:02AM -0600, Christoph Lameter wrote:
-> On Thu, 9 Feb 2012, Frederic Weisbecker wrote:
+> -----Original Message-----
+> From: Julia Lawall [mailto:Julia.Lawall@lip6.fr]
+> Sent: Wednesday, February 08, 2012 9:14 AM
+> To: Liam Girdwood
+> Cc: kernel-janitors@vger.kernel.org; Mark Brown; Jaroslav Kysela; Takashi Iwai;
+> alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org; Dong Aisheng-B29396
+> Subject: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
+> Importance: High
 > 
-> > > The vmstat timer only makes sense when the OS is doing something on the
-> > > processor. Otherwise if no counters are incremented and the page and slab
-> > > allocator caches are empty then there is no need to run the vmstat timer.
-> >
-> > So this is a typical example of a timer we want to shutdown when the CPU is idle
-> > but we want to keep it running when we run in adaptive tickless mode (ie: shutdown
-> > the tick while the CPU is busy).
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> You can also shut it down when the cpu is busy and not doing any system
-> calls. If the percpu differentials are all zero (because you just ran the
-> timer f.e.) and there are no system activities that would change the
-> counters then there is no point in running the vmstat timer.
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in the
+> probe function of a platform device and is only freed in the remove function.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> patch against git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+> 
+I still failed to apply against for-3.4 branch.
+Can you switch to for-3.4 branch and then re-generate the patch based on it?
 
-Yep. I believe we can probably find that timer pattern elsewhere as well.
-A class of userspace/idle defferable timers.
+Regards
+Dong Aisheng
+
+
