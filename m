@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab2BIKKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:10:37 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:51095 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752268Ab2BIKKg (ORCPT
+	id S1757739Ab2BIKMv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:12:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34786 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab2BIKMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:10:36 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/4VuxXwUP4hpPd4fanXRhRBQ2sWkBzt3Uqi5793U
-	CdPzROCqc35Za4
-Message-ID: <1328782223.9303.3.camel@marge.simpson.net>
-Subject: Re: [PATCH] perf annotate: Numeric assembly labels cause incorrect
- annotation
-From: Mike Galbraith <efault@gmx.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Anton Blanchard <anton@samba.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, emunson@mgebm.net,
-        imunsie@au1.ibm.com, eranian@google.com, linux-kernel@vger.kernel.org
-Date: Thu, 09 Feb 2012 11:10:23 +0100
-In-Reply-To: <20120207144033.GB2172@infradead.org>
-References: <20120207145535.71b9f22d@kryten>
-	 <20120207144033.GB2172@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Thu, 9 Feb 2012 05:12:50 -0500
+Date: Thu, 9 Feb 2012 11:12:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: clock_getres() and real resolution
+In-Reply-To: <4F32A347.4090703@linaro.org>
+Message-ID: <alpine.LFD.2.02.1202091051310.2794@ionos>
+References: <4F32A347.4090703@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-07 at 12:40 -0200, Arnaldo Carvalho de Melo wrote: 
-> Em Tue, Feb 07, 2012 at 02:55:35PM +1100, Anton Blanchard escreveu:
-> > 
-> > A perf annotate of a kernel function written in assembly shows
-> > very strange percentages:
+On Wed, 8 Feb 2012, Dmitry Antipov wrote:
+
+> IIUC, an idea behind clock_getres() is to give a hint about the resolution of
+> specified clock. This hint may be used by an application programmer to check
+> whether
+> this clock is suitable for a some purpose. So why clock_getres() always
+> returns
+> something like {0, 1} (if hrtimers are enabled) regardless of the underlying
+> platform's
+> real numbers?
 > 
-> Thanks! I think this is the same problem Mike Galbraith noticed and
-> reported me (I guess that was in a private message), Mike, can you
-> please test it so that I can add more Foo-by stamps to this one?
+> For example, OMAP4's real resolution of CLOCK_REALTIME is 30.5us for 32K timer
+> and 26ns
+> for MPU timer. Such a difference definitely makes sense - but
+> clock_getres(CLOCK_REALTIME,..)
+> always returns {0, KTIME_HIGH_RES}. Since this behavior causes a confusion
+> like
+> http://lists.linaro.org/pipermail/linaro-dev/2012-February/010112.html, I'm
+> considering
+> this as a stupid misfeature.
 
-Sorry for the slow response (bz bz).
+We had this discussion before. The point is that the accuracy of the
+internal kernel timer handling is 1nsec in case of high resolution
+timers. The fact that the underlying clock event device has a coarser
+resolution does not change that. 
 
-I don't see that problem, but perf top annotation isn't working properly
-in tip at least.  It seems to have forgotten how to average, seems to be
-clearing hit counts at every screen refresh or something.
+It would be possible to return the real resolution of the clock event
+device, but we have systems, where the clockevent device is
+dynamically changing. So which resolution do we expose to an
+application? The one of the current active device or some magic number
+of a device which might not even be initialized? That's more confusing
+than telling user space that high resolution timers are active and the
+kernel is trying to achieve the 1ns accuracy.
 
--Mike
+Thanks,
 
+	tglx
