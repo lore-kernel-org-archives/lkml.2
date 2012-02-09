@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab2BIKAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:00:06 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:34366 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757654Ab2BIKAD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:00:03 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 08/50] bnx2x: use dev_hw_addr_random() instead of random_ether_addr()
-Date: Thu, 9 Feb 2012 09:59:35 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E5F@saturn3.aculab.com>
-In-Reply-To: <1328735457-29986-9-git-send-email-danny.kukawka@bisect.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 08/50] bnx2x: use dev_hw_addr_random() instead of random_ether_addr()
-Thread-Index: Aczmpi+KNzrRmdTQT6GaBLOTEZcMKAAaxgFQ
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Danny Kukawka" <danny.kukawka@bisect.de>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: "Danny Kukawka" <dkukawka@suse.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-X-OriginalArrivalTime: 09 Feb 2012 09:59:36.0449 (UTC) FILETIME=[87BA3710:01CCE711]
+	id S1757660Ab2BIKBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:01:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab2BIKBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 05:01:42 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <22934.1328745230@turing-police.cc.vt.edu>
+References: <22934.1328745230@turing-police.cc.vt.edu> <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+To: Valdis.Kletnieks@vt.edu
+Cc: dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-api@vger.kernel.org, libc-alpha@sourceware.org
+Subject: Re: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication service unavailable"
+Date: Thu, 09 Feb 2012 10:01:13 +0000
+Message-ID: <17357.1328781673@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> +	if (dev->addr_assign_type & NET_ADDR_RANDOM)
-> +		dev->addr_assign_type ^= NET_ADDR_RANDOM;
+Valdis.Kletnieks@vt.edu wrote:
 
-Why not just:
-	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
-the cache is probably dirty and it won't be a critical path.
+> Was this an intentional overload of 139 (and so on for other archs)?  Just
+> checking - I'm sure if it goes in like this, we'll see a patch to "fix" the
+> collision for 3.16.0 or so... ;)
 
-	David
+Ummm...  Odd...  I'm surprised StGIT managed to reapply my patches with no
+warning.  I'll fix the numbering in them.
 
-
+David
