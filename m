@@ -1,202 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab2BIOlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:41:10 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60303 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab2BIOlG (ORCPT
+	id S1757724Ab2BIOn0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:43:26 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52399 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab2BIOnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:41:06 -0500
-Message-ID: <4F33DAFC.1000502@canonical.com>
-Date: Thu, 09 Feb 2012 07:41:00 -0700
-From: Tim Gardner <rtg.canonical@gmail.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120203 Thunderbird/11.0
+	Thu, 9 Feb 2012 09:43:25 -0500
+Message-ID: <4F33DB88.2080209@gmail.com>
+Date: Thu, 09 Feb 2012 07:43:20 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Ben Hutchings <bhutchings@solarflare.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net>
-In-Reply-To: <4F332FC3.7000808@lwfinger.net>
-Content-Type: multipart/mixed;
- boundary="------------070605040103040009080109"
+To: Ingo Molnar <mingo@elte.hu>, Joerg Roedel <joerg.roedel@amd.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jason Wang <jasowang@redhat.com>
+Subject: Re: perf: record segfaults for cycles event when collecting data
+ on a VM
+References: <4F32A907.6030505@gmail.com> <20120208174434.GI22598@amd.com> <4F32B680.3090502@gmail.com> <20120208175709.GK22598@amd.com> <20120209073024.GA18010@elte.hu> <20120209111451.GM22598@amd.com> <20120209133446.GD8830@elte.hu>
+In-Reply-To: <20120209133446.GD8830@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070605040103040009080109
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-
-On 02/08/2012 07:30 PM, Larry Finger wrote:
-> On 02/08/2012 03:45 PM, Ben Hutchings wrote:
->> On Wed, 2012-02-08 at 14:08 -0700, Tim Gardner wrote:
->>> The firmware file size check does not use the
->>> correct limit.
+On 02/09/2012 06:34 AM, Ingo Molnar wrote:
+> 
+> * Joerg Roedel <joerg.roedel@amd.com> wrote:
+> 
+>> On Thu, Feb 09, 2012 at 08:30:24AM +0100, Ingo Molnar wrote:
 >>>
->>> Cc: Larry Finger<Larry.Finger@lwfinger.net>
->>> Cc: Chaoming Li<chaoming_li@realsil.com.cn>
->>> Cc: John W. Linville<linville@tuxdriver.com>
->>> Cc: linux-wireless@vger.kernel.org
->>> Cc: netdev@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
->>> ---
->>> drivers/net/wireless/rtlwifi/rtl8192se/fw.h | 3 ++-
->>> drivers/net/wireless/rtlwifi/rtl8192se/sw.c | 2 +-
->>> 2 files changed, 3 insertions(+), 2 deletions(-)
+>>> * Joerg Roedel <joerg.roedel@amd.com> wrote:
 >>>
->>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->>> b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->>> index babe85d..5c377fc 100644
->>> --- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->>> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->>> @@ -30,6 +30,7 @@
->>> #define __REALTEK_FIRMWARE92S_H__
+>>>>> which makes sense. It forces 
+>>>>> perf_session__find_machine_for_cpumode() to return the host 
+>>>>> machine always.
+>>>>
+>>>> Great, thanks. I will send two patches tomorrow to fix Jason's 
+>>>> problem and change the default for perf_guest.
 >>>
->>> #define RTL8190_MAX_FIRMWARE_CODE_SIZE 64000
->>> +#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE 164000
->
-> The current size of the firmware is 88,856, thus the value of
-> RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE should be set to 90,000 to allow for
-> some growth in the size of the firmware. Using 164,000 wastes a lot of
-> space.
->
->>> #define RTL8190_CPU_START_OFFSET 0x80
->>> /* Firmware Local buffer size. 64k */
->>> #define MAX_FIRMWARE_CODE_SIZE 0xFF00
->>> @@ -217,7 +218,7 @@ struct rt_firmware {
->>> u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
->>> u32 fw_imem_len;
->>> u32 fw_emem_len;
->>> - u8 sz_fw_tmpbuffer[164000];
->>> + u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
->>> u32 sz_fw_tmpbufferlen;
->>> u16 cmdpacket_fragthresold;
->>> };
->>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->>> b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->>> index ca38dd9..155da0a 100644
->>> --- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->>> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->>> @@ -105,7 +105,7 @@ static void rtl92se_fw_cb(const struct firmware
->>> *firmware, void *context)
->>> rtlpriv->max_fw_size = 0;
->>> return;
->>> }
->>> - if (firmware->size> rtlpriv->max_fw_size) {
->>> + if (firmware->size>= RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE) {
->
-> Do not change this one. rtlpriv->max_fw_size has been set to
-> sizeof(struct rt_firmware), which is correct.
->
+>>> Well, if the crash is fixed then the the default can stay, 
+>>> right?
 >>
->> This appears to reject a firmware blob which is exactly the maximum
->> size, which looks wrong. Also doesn't this make the max_fw_size field
->> redundant?
->
-> I commented on this one earlier, but to reiterate - max_fw_size is not
-> redundant.
->
-> Larry
+>> David's crash is fixed by changing the default back to its 
+>> original value :)
+> 
+> Then that's the wrong fix really.
 
-I agree with you about the semantics of rtlpriv->max_fw_size, but I 
-don't agree that the size check is correct. While rtlpriv->max_fw_size 
-has been set to sizeof(struct rt_firmware), that value is _way_ bigger 
-then the size of the target buffer.
+You can't enable perf_guest unless guest info has been configured as
+done with perf-kvm.
 
-sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
+The problem is triggered in perf_session__find_machine_for_cpumode(). If
+perf_session__find_machine() is changed to
+perf_session__findnew_machine() you get into machines__findnew() which
+shows the root cause: the event is for a VM but symbol_conf.guestmount
+is not set.
 
-The target buffer size is only 164000 bytes.
+So, really perf_guest cannot be enabled unless guest info has been given.
 
-I've attached v2 of the patch that is simpler and may serve to better 
-illustrate my point. By the way, Ben Hutchings was right about the 
-original patch having an off by one error. This version also clears 
-rtlpriv->max_fw_size if the size check fails. Probably should have 
-mentioned that in the commit log.
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
-
---------------070605040103040009080109
-Content-Type: text/x-patch;
- name="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.pa";
- filename*1="tch"
-
->From 1312472fb7b9526c3a3197572c7ba482d6c196a0 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Wed, 8 Feb 2012 13:11:47 -0700
-Subject: [PATCH v2] rtlwifi: rtl8192se firmware load can overflow target buffer
-
-The firmware file size check does not use the
-correct limit.
-
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
- drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-index babe85d..5c377fc 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-@@ -30,6 +30,7 @@
- #define __REALTEK_FIRMWARE92S_H__
- 
- #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
-+#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	164000
- #define RTL8190_CPU_START_OFFSET		0x80
- /* Firmware Local buffer size. 64k */
- #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
-@@ -217,7 +218,7 @@ struct rt_firmware {
- 	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
- 	u32 fw_imem_len;
- 	u32 fw_emem_len;
--	u8 sz_fw_tmpbuffer[164000];
-+	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
- 	u32 sz_fw_tmpbufferlen;
- 	u16 cmdpacket_fragthresold;
- };
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-index ca38dd9..345d752 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-@@ -108,6 +108,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
- 	if (firmware->size > rtlpriv->max_fw_size) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
- 			 "Firmware is too big!\n");
-+		rtlpriv->max_fw_size = 0;
- 		release_firmware(firmware);
- 		return;
- 	}
-@@ -232,7 +233,7 @@ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
- 		return 1;
- 	}
- 
--	rtlpriv->max_fw_size = sizeof(struct rt_firmware);
-+	rtlpriv->max_fw_size = RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE;
- 
- 	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
- 		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
--- 
-1.7.9
-
-
---------------070605040103040009080109--
+David
