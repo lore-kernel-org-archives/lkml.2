@@ -1,165 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab2BIQhY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:37:24 -0500
-Received: from sandeen.net ([63.231.237.45]:37279 "EHLO mail.sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753621Ab2BIQhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:37:22 -0500
-Message-ID: <4F33F640.7040508@sandeen.net>
-Date: Thu, 09 Feb 2012 10:37:20 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Dave Chinner <david@fromorbit.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        mpatocka@redhat.com
-Subject: Re: [PATCH 1/2] vfs: Provide function to get superblock and wait
- for it to thaw
-References: <1328654267-18855-1-git-send-email-jack@suse.cz> <1328654267-18855-2-git-send-email-jack@suse.cz> <20120208232049.GC7479@dastard> <20120208232705.GF1696@quack.suse.cz> <20120208234703.GG1696@quack.suse.cz>
-In-Reply-To: <20120208234703.GG1696@quack.suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758063Ab2BIQmI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:42:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36537 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab2BIQmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 11:42:06 -0500
+Message-ID: <1328805722.6099.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] Reduce the number of expensive division instructions
+ done by _parse_integer()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: adobriyan@gmail.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Feb 2012 17:42:02 +0100
+In-Reply-To: <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
+	 <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/8/12 5:47 PM, Jan Kara wrote:
-> On Thu 09-02-12 00:27:05, Jan Kara wrote:
->> On Thu 09-02-12 10:20:49, Dave Chinner wrote:
+Le jeudi 09 février 2012 à 17:28 +0100, Eric Dumazet a écrit :
 
-...
-
->>> The thawed parameter appears to be unused and the waiting for frozen
->>> filesystems appears to happen for all callers. Is this intentional?
->>   Ah, sorry. Obviously that's a bug. Thanks for spotting it. I'll fix it
->> up.
->   Attached is a fixed version.
+> You could avoid the divide and have cleaner code I think.
 > 
-> 								Honza
-
-> From 5dce7adb0c281612a14fa3dd8c8d5ef3f5eb3666 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Tue, 7 Feb 2012 22:59:06 +0100
-> Subject: [PATCH 1/2] vfs: Provide function to get superblock and wait for it to thaw
+> 	unsigned long long next = *res * base + val;
 > 
-> In quota code we need to find a superblock corresponding to a device and wait
-> for superblock to be unfrozen. However this waiting has to happen without
-> s_umount semaphore because that is required for superblock to thaw. So provide
-> a function in VFS for this to keep dances with s_umount where they belong.
+> 	if (next < *res)
+> 		overflow = 1;
+> 	*res = next;
 > 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/super.c         |   47 +++++++++++++++++++++++++++++++++++------------
->  include/linux/fs.h |    1 +
->  2 files changed, 36 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/super.c b/fs/super.c
-> index 6015c02..e15aaa9 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -593,15 +593,7 @@ void iterate_supers_type(struct file_system_type *type,
->  
->  EXPORT_SYMBOL(iterate_supers_type);
->  
-> -/**
-> - *	get_super - get the superblock of a device
-> - *	@bdev: device to get the superblock for
-> - *	
-> - *	Scans the superblock list and finds the superblock of the file system
-> - *	mounted on the device given. %NULL is returned if no match is found.
-> - */
 
-> -
-> -struct super_block *get_super(struct block_device *bdev)
-> +static struct super_block *__get_super(struct block_device *bdev, bool thawed)
->  {
->  	struct super_block *sb;
->  
-> @@ -618,9 +610,13 @@ rescan:
->  			spin_unlock(&sb_lock);
->  			down_read(&sb->s_umount);
->  			/* still alive? */
-> -			if (sb->s_root && (sb->s_flags & MS_BORN))
-> -				return sb;
-> -			up_read(&sb->s_umount);
-> +			if (sb->s_root && (sb->s_flags & MS_BORN)) {
-> +				if (!thawed || sb->s_frozen == SB_UNFROZEN)
+Oh well, this one is better.
 
-I guess this has the same race we are worried about elsewhere (sb gets
-frozen immediately after we check) but probably can't fix that yet.
+        unsigned long long next = *res * base;
 
-would "wait_for_thaw" vs. "thaw" be any clearer?  Nitpicky I guess but the
-meaning of "thawed" isn't immediately clear here.  If it's already thawed?  If
-we want to wait for it it to be thawed?  You can figure it out from the callers
-but maybe a comment or a different name might help.  No big deal.
- 
-> +					return sb;
-> +				up_read(&sb->s_umount);
-> +				vfs_check_frozen(sb, SB_FREEZE_WRITE);
-> +			} else
-> +				up_read(&sb->s_umount);
->  			/* nope, got unmounted */
->  			spin_lock(&sb_lock);
->  			__put_super(sb);
-> @@ -631,9 +627,36 @@ rescan:
->  	return NULL;
->  }
->  
-> +/**
-> + *	get_super - get the superblock of a device
-> + *	@bdev: device to get the superblock for
-> + *
-> + *	Scans the superblock list and finds the superblock of the file system
-> + *	mounted on the device given. %NULL is returned if no match is found.
-> + */
+        if (next < *res)
+                overflow = 1;
+        *res = next + val;
 
-I think it'd be nice to explicitly say in the comment that this may
-return a frozen superblock.
 
-> +struct super_block *get_super(struct block_device *bdev)
-> +{
-> +	return __get_super(bdev, false);
-> +}
->  EXPORT_SYMBOL(get_super);
->  
->  /**
-> + *	get_super_thawed - get thawed superblock of a device
-> + *	@bdev: device to get the superblock for
-> + *
-> + *	Scans the superblock list and finds the superblock of the file system
-> + *	mounted on the device given once the superblock is thawed. %NULL is
-> + *	returned if no match is found.
-> + */
 
-And to explicitly say that this one will not return until the sb is unfrozen?
-
-Otherwise, this seems fine to me, thanks.
-
--Eric
-
-> +struct super_block *get_super_thawed(struct block_device *bdev)
-> +{
-> +	return __get_super(bdev, true);
-> +}
-> +EXPORT_SYMBOL(get_super_thawed);
-> +
-> +/**
->   * get_active_super - get an active reference to the superblock of a device
->   * @bdev: device to get the superblock for
->   *
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 386da09..69cd5bb 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2496,6 +2496,7 @@ extern void get_filesystem(struct file_system_type *fs);
->  extern void put_filesystem(struct file_system_type *fs);
->  extern struct file_system_type *get_fs_type(const char *name);
->  extern struct super_block *get_super(struct block_device *);
-> +extern struct super_block *get_super_thawed(struct block_device *);
->  extern struct super_block *get_active_super(struct block_device *bdev);
->  extern void drop_super(struct super_block *sb);
->  extern void iterate_supers(void (*)(struct super_block *, void *), void *);
 
