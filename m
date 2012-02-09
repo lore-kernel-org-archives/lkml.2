@@ -1,253 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab2BIRY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 12:24:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33301 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2BIRY0 (ORCPT
+	id S1758182Ab2BIRZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 12:25:57 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32770 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab2BIRZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 12:24:26 -0500
+	Thu, 9 Feb 2012 12:25:55 -0500
+Message-ID: <4F34019E.60007@canonical.com>
+Date: Thu, 09 Feb 2012 10:25:50 -0700
+From: Tim Gardner <rtg.canonical@gmail.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120203 Thunderbird/11.0
 MIME-Version: 1.0
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, Venki Pallipadi <venki@google.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-Date: Thu,  9 Feb 2012 09:25:29 -0800
-Message-Id: <1328808329-27427-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: Tim Gardner <rtg.canonical@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target
+ buffer
+References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net> <4F33DAFC.1000502@canonical.com> <4F33F7C8.2090105@lwfinger.net>
+In-Reply-To: <4F33F7C8.2090105@lwfinger.net>
+Content-Type: multipart/mixed;
+ boundary="------------020302060405040907050708"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-ARM, move "noirqtime=" option to common debugging code.
-For a bit of backward compatibility, X86-specific option
-"tsc=noirqtime" is preserved, but issues a warning.
+This is a multi-part message in MIME format.
+--------------020302060405040907050708
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Suggested-by: Yong Zhang <yong.zhang0@gmail.com>
-Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Suggested-by: Venki Pallipadi <venki@google.com>
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
----
- Documentation/kernel-parameters.txt |    9 +++++----
- arch/arm/kernel/sched_clock.c       |    2 ++
- arch/x86/Kconfig                    |   11 -----------
- arch/x86/kernel/tsc.c               |   12 ++++++------
- include/linux/sched.h               |   17 ++++++++++-------
- kernel/sched/core.c                 |   20 +++++++++++---------
- lib/Kconfig.debug                   |   12 ++++++++++++
- 7 files changed, 46 insertions(+), 37 deletions(-)
+On 02/09/2012 09:43 AM, Larry Finger wrote:
+> On 02/09/2012 08:41 AM, Tim Gardner wrote:
+>>
+>> I agree with you about the semantics of rtlpriv->max_fw_size, but I
+>> don't agree
+>> that the size check is correct. While rtlpriv->max_fw_size has been
+>> set to
+>> sizeof(struct rt_firmware), that value is _way_ bigger then the size
+>> of the
+>> target buffer.
+>>
+>> sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
+>>
+>> The target buffer size is only 164000 bytes.
+>>
+>> I've attached v2 of the patch that is simpler and may serve to better
+>> illustrate
+>> my point. By the way, Ben Hutchings was right about the original patch
+>> having an
+>> off by one error. This version also clears rtlpriv->max_fw_size if the
+>> size
+>> check fails. Probably should have mentioned that in the commit log.
+>
+> I agree that Ben is right.
+>
+> This thread forced me to go back to square one in analyzing the
+> situation. For the other drivers in the rtlwifi family, the firmware
+> file contains an image that is directly stuffed into the device. For the
+> RTL8192SE devices, it is more complicated. The structure is described in
+> struct rt_firmware. At the moment, the arrays there are grossly
+> oversized. They could be as follows:
+>
+> struct rt_firmware {
+> struct fw_hdr *pfwheader;
+> enum fw_status fwstatus;
+> u16 firmwareversion;
+> u8 fw_imem[RTL8190_MAX_IMEM_CODE_SIZE];
+> u8 fw_emem[RTL8190_MAX_DMEM_CODE_SIZE];
+> u32 fw_imem_len;
+> u32 fw_emem_len;
+> u8 sz_fw_tmpbuffer[RTL8190_MAX_FIRMWARE_SIZE];
+> u32 sz_fw_tmpbufferlen;
+> u16 cmdpacket_fragthresold;
+> };
+>
+> with
+>
+> RTL8190_MAX_IMEM_CODE_SIZE = 54000 (current fw is 51,208),
+> RTL8190_MAX_DMEM_CODE_SIZE = 40000 (current fw is 37,520), and
+> RTL8190_MAX_FIRMWARE_SIZE = 90000 (it holds the raw firmware image,
+> which is currently 88,856).
+>
+> Ultimately, all three arrays should be eliminated. Now that we are using
+> asynchronous loading, the kernel should keep its cached data and not
+> copy it into the driver's private storage when a pointer will suffice.
+> All the drivers need this change, but that can wait for now.
+>
+> I will ACK the patch if you resumit it with
+> #define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE 90000
+>
+> Larry
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 033d4e6..666d20e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1790,6 +1790,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	noirqdebug	[X86-32] Disables the code which attempts to detect and
- 			disable unhandled interrupt sources.
- 
-+	noirqtime	[X86,ARM] Used to run time disable IRQ_TIME_ACCOUNTING,
-+			should give a negligible performance improvement.			
-+
- 	no_timer_check	[X86,APIC] Disables the code which tests for
- 			broken timer IRQ sources.
- 
-@@ -2636,10 +2639,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			as the stability checks done at bootup.	Used to enable
- 			high-resolution timer mode on older hardware, and in
- 			virtualized environment.
--			[x86] noirqtime: Do not use TSC to do irq accounting.
--			Used to run time disable IRQ_TIME_ACCOUNTING on any
--			platforms where RDTSC is slow and this accounting
--			can add overhead.
-+			[x86] noirqtime: obsoleted by "noirqtime" generic option,
-+			see it's documentation for details.
- 
- 	turbografx.map[2|3]=	[HW,JOY]
- 			TurboGraFX parallel port interface
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 5416c7c..30b5f89 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -144,6 +144,8 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- 	 */
- 	cd.epoch_ns = 0;
- 
-+	enable_sched_clock_irqtime();
-+
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4759676 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -805,17 +805,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
--
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index a62c201..f1b2b63 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
- 
- __setup("notsc", notsc_setup);
- 
--static int no_sched_irq_time;
--
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
--	if (!strncmp(str, "noirqtime", 9))
--		no_sched_irq_time = 1;
-+	if (!strncmp(str, "noirqtime", 9)) {
-+		printk(KERN_WARNING "tsc: tsc=noirqtime is "
-+		       "obsolete, use noirqtime instead\n");
-+		disable_sched_clock_irqtime();
-+	}
- 	return 1;
- }
- 
-@@ -978,8 +979,7 @@ void __init tsc_init(void)
- 	/* now allow native_sched_clock() to use rdtsc */
- 	tsc_disabled = 0;
- 
--	if (!no_sched_irq_time)
--		enable_sched_clock_irqtime();
-+	enable_sched_clock_irqtime();
- 
- 	lpj = ((u64)tsc_khz * 1000);
- 	do_div(lpj, HZ);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..9b13f79 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1961,13 +1961,16 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
- #endif
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
--/*
-- * An i/f to runtime opt-in for irq time accounting based off of sched_clock.
-- * The reason for this explicit opt-in is not to have perf penalty with
-- * slow sched_clocks.
-- */
--extern void enable_sched_clock_irqtime(void);
--extern void disable_sched_clock_irqtime(void);
-+extern int sched_clock_irqtime;
-+static inline void enable_sched_clock_irqtime(void)
-+{
-+	if (sched_clock_irqtime == -1)
-+		sched_clock_irqtime = 1;
-+}
-+static inline void disable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 0;
-+}
- #else
- static inline void enable_sched_clock_irqtime(void) {}
- static inline void disable_sched_clock_irqtime(void) {}
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..a7ec043 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -757,18 +757,20 @@ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
- 
- static DEFINE_PER_CPU(u64, irq_start_time);
--static int sched_clock_irqtime;
- 
--void enable_sched_clock_irqtime(void)
--{
--	sched_clock_irqtime = 1;
--}
-+/* -1 if not initialized, 0 if disabled with "noirqtime" kernel option
-+ * or after unstable clock was detected, 1 if enabled and active.
-+ */
-+int sched_clock_irqtime = -1;
- 
--void disable_sched_clock_irqtime(void)
-+static int __init irqtime_setup(char *str)
- {
- 	sched_clock_irqtime = 0;
-+	return 1;
- }
- 
-+__setup("noirqtime", irqtime_setup);
-+
- #ifndef CONFIG_64BIT
- static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
- 
-@@ -822,7 +824,7 @@ void account_system_vtime(struct task_struct *curr)
- 	s64 delta;
- 	int cpu;
- 
--	if (!sched_clock_irqtime)
-+	if (sched_clock_irqtime < 1)
- 		return;
- 
- 	local_irq_save(flags);
-@@ -2853,7 +2855,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
- 	struct rq *rq = this_rq();
- 
--	if (sched_clock_irqtime) {
-+	if (sched_clock_irqtime > 0) {
- 		irqtime_account_process_tick(p, user_tick, rq);
- 		return;
- 	}
-@@ -2887,7 +2889,7 @@ void account_steal_ticks(unsigned long ticks)
- void account_idle_ticks(unsigned long ticks)
- {
- 
--	if (sched_clock_irqtime) {
-+	if (sched_clock_irqtime > 0) {
- 		irqtime_account_idle_ticks(ticks);
- 		return;
- 	}
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..236e814 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -299,6 +299,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on X86 || ARM
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
+v3 expands the commit log a bit. It doesn't apply to stable 3.2.y, but 
+could easily be backported. If I remember I'll do it when its merged in 
+Linus' tree.
+
+rtg
 -- 
-1.7.7.6
+Tim Gardner tim.gardner@canonical.com
 
+--------------020302060405040907050708
+Content-Type: text/x-patch;
+ name="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.pa";
+ filename*1="tch"
+
+>From 1c26d8e099c2720aebf106daeb7814114051a596 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Wed, 8 Feb 2012 13:11:47 -0700
+Subject: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target buffer
+
+Define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE which represents the
+maximimum possible firmware file size. Use it in the definition
+of the buffer which receives the firmware file data.
+
+Set RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE closer to the actual size of
+the firmware file, e.g., 90000 (down from hard coded 164000). The current
+size of rtlwifi/rtl8192sefw.bin is 88856.
+
+Set max_fw_size to RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE for the size limit
+check. Fix the error case where max_fw_size is not cleared if the size
+limit check fails.
+
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+index babe85d..b4afff6 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+@@ -30,6 +30,7 @@
+ #define __REALTEK_FIRMWARE92S_H__
+ 
+ #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
++#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	90000
+ #define RTL8190_CPU_START_OFFSET		0x80
+ /* Firmware Local buffer size. 64k */
+ #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
+@@ -217,7 +218,7 @@ struct rt_firmware {
+ 	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
+ 	u32 fw_imem_len;
+ 	u32 fw_emem_len;
+-	u8 sz_fw_tmpbuffer[164000];
++	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
+ 	u32 sz_fw_tmpbufferlen;
+ 	u16 cmdpacket_fragthresold;
+ };
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+index ca38dd9..345d752 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -108,6 +108,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
+ 	if (firmware->size > rtlpriv->max_fw_size) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Firmware is too big!\n");
++		rtlpriv->max_fw_size = 0;
+ 		release_firmware(firmware);
+ 		return;
+ 	}
+@@ -232,7 +233,7 @@ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
+ 		return 1;
+ 	}
+ 
+-	rtlpriv->max_fw_size = sizeof(struct rt_firmware);
++	rtlpriv->max_fw_size = RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE;
+ 
+ 	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
+ 		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
+-- 
+1.7.9
+
+
+--------------020302060405040907050708--
