@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab2BIDsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 22:48:18 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43476 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab2BIDsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 22:48:17 -0500
-Date: Thu, 9 Feb 2012 14:48:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the kmap_atomic tree with the
- staging.current tree
-Message-Id: <20120209144807.78f2807f594959f3836cf2eb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1"
+	id S932176Ab2BIEFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 23:05:16 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:41953 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757839Ab2BIEFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 23:05:14 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Subject: Re: [PATCH 04/50] adi/blackfin: set addr_assign_type correctly if random
+Date: Wed, 8 Feb 2012 23:05:13 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bob Liu <lliubbo@gmail.com>, Sonic Zhang <sonic.zhang@analog.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        Scott Jiang <scott.jiang@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-5-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1328735457-29986-5-git-send-email-danny.kukawka@bisect.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2532916.jiUJtrOzss";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202082305.17415.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--nextPart2532916.jiUJtrOzss
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Cong,
+On Wednesday 08 February 2012 16:10:11 Danny Kukawka wrote:
+> --- a/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+> +++ b/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+>=20
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>  	random_ether_addr(addr);
+>  	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n",
+> 		__FILE__, __func__);
+> +	return 1;
+>  }
 
-Today's linux-next merge of the kmap_atomic tree got a conflict in
-drivers/staging/zcache/zcache-main.c between commit 2a4830110b90
-("staging: zcache: fix serialization bug in zv stats") from the
-staging.current tree and commit a3a2486aeadb ("zcache: remove the second
-argument of k [un]map_atomic()") from the kmap_atomic tree.
+these boards that just call random_ether_addr() should be changed to only=20
+return 1 ...
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> --- a/drivers/net/ethernet/adi/bfin_mac.c
+> +++ b/drivers/net/ethernet/adi/bfin_mac.c
+> @@ -621,6 +621,8 @@
+>
+>  	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
+> +	if (dev->addr_assign_type & NET_ADDR_RANDOM)
+> +		dev->addr_assign_type ^=3D NET_ADDR_RANDOM;
+>  	setup_mac_addr(dev->dev_addr);
+>  	return 0;
+>  }
+> @@ -1496,12 +1498,14 @@
+>
+> -	if (!is_valid_ether_addr(ndev->dev_addr))
+> -		bfin_get_ether_addr(ndev->dev_addr);
+> +	if (!is_valid_ether_addr(ndev->dev_addr)) {
+> +		if (bfin_get_ether_addr(ndev->dev_addr))
+> +			ndev->addr_assign_type |=3D NET_ADDR_RANDOM;
+> +	}
 
-diff --cc drivers/staging/zcache/zcache-main.c
-index 875acd8,57550ae..0000000
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@@ -674,9 -675,9 +674,9 @@@ static struct zv_hdr *zv_create(struct=20
-  			&page, &offset, ZCACHE_GFP_MASK);
-  	if (unlikely(ret))
-  		goto out;
- -	zv_curr_dist_counts[chunks]++;
- -	zv_cumul_dist_counts[chunks]++;
- +	atomic_inc(&zv_curr_dist_counts[chunks]);
- +	atomic_inc(&zv_cumul_dist_counts[chunks]);
-- 	zv =3D kmap_atomic(page, KM_USER0) + offset;
-+ 	zv =3D kmap_atomic(page) + offset;
-  	zv->index =3D index;
-  	zv->oid =3D *oid;
-  	zv->pool_id =3D pool_id;
+if it returned non-zero, then the mac addr is still invalid, so down below =
+=2E..
 
---Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1
-Content-Type: application/pgp-signature
+>  	/* If still not valid, get a random one */
+>  	if (!is_valid_ether_addr(ndev->dev_addr))
+> -		random_ether_addr(ndev->dev_addr);
+> +		dev_hw_addr_random(ndev, ndev->dev_addr);
+
+=2E.. we call dev_hw_addr_random(), so explicitly setting NET_ADDR_RANDOM=20
+ourselves is unnecessary
+
+i think the logic should read:
+	if (!is_valid_ether_addr(ndev->dev_addr)) {
+		if (bfin_get_ether_addr(ndev->dev_addr))
+			goto random_mac;
+
+	if (!is_valid_ether_addr(ndev->dev_addr))
+ random_mac:
+		dev_hw_addr_random(ndev, ndev->dev_addr);
+=2Dmike
+
+--nextPart2532916.jiUJtrOzss
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPM0H3AAoJEECxmPOUX5FE6JEP/j8UvJ0i2cILob20mdEVE4k4
-grLz13sH9y8kx86vSga3zSfODW6srAV0bQ7vqfVhAxpxm2B6IgiR/KSKGMXORb4a
-Bfo28tKM3wx6j8qsitnIufY/vA3NxkxfLb6vv9NC45Pw9AV5eH8DdZbJYtSLQUPF
-mSDO8rH5/Ze9nSL+EIk8odI6d9+pTVLhoPcuvtfqHJmNl+LCrh9eh2+LrCtIwq1H
-NZ1ObwFcpreTGQNd3OF+Ewq1Q+hUxyzzUnzEEr5GyPWWaHzPDHHVw0pBkGU9rtZC
-4kKeYYuVUPn6Zw6nxKyUuqHigMx4fa/H/xIiy7J1ze50UZYfvqNxGLjHHc2+mQgN
-lntoQurYPIJ0m1OBTSMPGKSXW9t6kK0re7mYyv2lhjTNteksM1SQdimZN1QOZZUQ
-fqB7ffvnuv9bIysmWvfQ9tNLBojc5HM1JhT9MwAdXHbFcj6vik92f/EJWoIefPV5
-7hnND9TUJQQnZQr3kwllCkhXEeuhSJ21Msmb57cMHBLAQaz9ADq/TkmzWHfu3Qnv
-nKFn9sCst22wFsOh3Np6wpCqivKx8bN3WZPYQgiJMMQi3dB3ezuz0sIK25vuw3fq
-oqlQcBUvuJ0zFl+mv5/up2ub17BvVOQopPIjyGNB/f75oXpiY8BPCenzbhT5401h
-InSxpJb3PxUuCp8vvEJL
-=mOw5
+iQIcBAABAgAGBQJPM0X9AAoJEEFjO5/oN/WBAhoP/3CYcTypNIBrwxNmxe2O75Tv
+ulbnK/GQ4lOLtzguXPtpkJhs1TVFvc+yEMpPnxbn2aEQVWTi+kpEbQnRk50fsRT/
+1ynE3VzYAFNYx1PUBwN4p42ib3ILIJpPgZp9EmrQuLS6n4ARiGT712LtJ2z2bt/g
+mqQmZxnzvzzTdpOTJ4hgHoGhHtxGRevmQJWYcl23rhj5tR0TqvLeyKWgDt8O6ClT
+QPk2kN0JGLzsfpvVS5xyFDYL2fxMWxIM2wuK5do64EL77Dhav43zYj8TTcYhwei9
+Bn+Ixh0ik1i//x5tjp47yHDpIwZtFoL+z/owet4Cs2AKPM6Y31QUt1cg++Sy5bSm
+x1vHsBpMRDquIwpnPG5OEtGrfqskg7jQBuNfCcBm+z59c/NsnG3BG8PROWZ+GZCU
+AjXPclWY2nclFfz6yHLowdie7E4tpCspQR9KGt+dkDL9X1vIVJSOFcYuiNcDwB3O
+xBUBwFmOQOSuXFju4eLheIe0a9NqmeI6p/y+e2RDMb7euqiFkYTV+tITE4RFSlJB
+PivscXgmt53MuLvlev2P9FDIE6mSs0LEcbjSebp9gIHlN3HEZwMcy/YtoaX/6l9n
++ITt5bIt8QGc/phspTLzksx8itZbIM17cejO+5fdRchznjJQxMmkKxkBBLGitwz9
+2j83/DGkLcQQkyReOGzJ
+=phjj
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1--
+--nextPart2532916.jiUJtrOzss--
