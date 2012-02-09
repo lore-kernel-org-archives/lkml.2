@@ -1,153 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab2BIVPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 16:15:38 -0500
-Received: from 2605ds1-ynoe.0.fullrate.dk ([90.184.12.24]:44501 "EHLO
-	shrek.krogh.cc" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757902Ab2BIVPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 16:15:37 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Feb 2012 16:15:36 EST
-Message-ID: <4F343582.7080007@krogh.cc>
-Date: Thu, 09 Feb 2012 22:07:14 +0100
-From: Jesper Krogh <jesper@krogh.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: linux-kernel@vger.kernel.org, jk@novozymes.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        yinghai@kernel.org, herrmann.der.user@googlemail.com
-Subject: Re: Memory issues with Opteron 6220
-References: <20120208143741.GB28486@otto.nzcorp.net> <20120209083315.GA19380@elte.hu>
-In-Reply-To: <20120209083315.GA19380@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758220Ab2BIVWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 16:22:03 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:47614 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758124Ab2BIVWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 16:22:01 -0500
+Date: Thu, 9 Feb 2012 17:21:47 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Pasi K?rkk?inen <pasik@iki.fi>, jbarnes@virtuousgeek.org, mjg@redhat.com,
+        linux-kernel@vger.kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com
+Subject: Re: [Xen-devel] Stop the continuous flood of (XEN) traps.c:2432:d0 Domain	attempted WRMSR ..
+Message-ID: <20120209212147.GE14007@andromeda.dapyr.net>
+References: <20120203180952.GP12984@reaktio.net> <20120203185527.GA9290@phenom.dumpdata.com> <20120205194413.GR12984@reaktio.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120205194413.GR12984@reaktio.net>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-09 09:33, Ingo Molnar wrote:
-> * Anders Ossowicki<aowi@novozymes.com>  wrote:
->> Hey,
->>
->> We're seeing unexpected slowdowns and other memory issues with a new system.
->> Enough to render it unusable. For example:
->>
->> Error: open3: fork failed: Cannot allocate memory
->>
->> at times where there's no real memory pressure:
->>                     total       used       free     shared    buffers     cached
->>        Mem:     132270720  131942388     328332          0     299768  103334420
->>        -/+ buffers/cache:   28308200  103962520
->>        Swap:      7811068      13760    7797308
->>
->> [...]
-Anders' co-worker here..  below C-code (Summary: for -t processes that 
-repeatedly
-allocates and dallocates 2GB of memory) can excersize the bug
-pretty frequently using -t 32 on this machine. On the other 128GB
-machine it can run without issues.
+On Sun, Feb 05, 2012 at 09:44:13PM +0200, Pasi K?rkk?inen wrote:
+> On Fri, Feb 03, 2012 at 01:55:27PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Feb 03, 2012 at 08:09:52PM +0200, Pasi K?rkk?inen wrote:
+> > > Hello,
+> > > 
+> > > IIRC there was some discussion earlier about these messages in Xen's dmesg:
+> > > 
+> > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
+> > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
+> > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
+> > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
+> > > 
+> > > At least on my systems there's continuous flood of those messages, so they will fill up the
+> > > Xen dmesg log buffer and "xm dmesg" or "xl dmesg" won't show any valuable information, just those messages.
+> > 
+> > Is it always that MSR? That looks to be TURBO_POWER_CURRENT_LIMIT
+> > which is the intel_ips driver doing.
+> > 
+> 
+> Yeah, it's always the same..
+> 
+> > > 
+> > > I seem to be getting those messages even when there's only dom0 running.
+> > > Is the plan to drop those messages? What's causing them? 
+> > 
+> > Looks to be the intel-ips. If you rename it does the issue disappear?
+> 
+> I just did "rmmod intel_ips" and the flood stopped.. 
+> 
+> 
+> Btw on baremetal I get this in dmesg:
+> 
+> [  745.033645] CPU1: Core temperature above threshold, cpu clock throttled (total events = 1)
+> [  745.033652] CPU3: Core temperature above threshold, cpu clock throttled (total events = 1)
+> [  745.034676] CPU1: Core temperature/speed normal
+> [  745.034678] CPU3: Core temperature/speed normal
+> [  849.678508] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9682, limit 9000
+> [  899.614074] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9896, limit 9000
+> [  899.722881] [Hardware Error]: Machine check events logged
+> [ 1172.675987] CPU3: Core temperature above threshold, cpu clock throttled (total events = 78)
+> [ 1172.675990] CPU1: Core temperature above threshold, cpu clock throttled (total events = 78)
+> [ 1172.677038] CPU1: Core temperature/speed normal
+> [ 1172.677042] CPU3: Core temperature/speed normal
+> [ 1174.260050] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9676, limit 9000
+> [ 1199.339634] [Hardware Error]: Machine check events logged
 
-It actually ended up toasting the machine:
-jk@nysvin:~$ ./foo -t 32
--bash: fork: Cannot allocate memory
-jk@nysvin:~$ w
--bash: fork: Cannot allocate memory
-jk@nysvin:~$ top
--bash: fork: Cannot allocate memory
-jk@nysvin:~$ ls
--bash: fork: Cannot allocate memory
+Jesse, and Matthew,
 
-I dont know what to conclude.
+Is there a way to make the intel_ips.c driver be in a "low-power" state?
 
-jk@nysvin:~$ ./foo -t 32
-Upper bound: 1953 MB
-malloc(1953) MB failed. iterations: 6
-malloc(1953) MB failed. iterations: 2
-malloc(1953) MB failed. iterations: 8
+My first thought about fixing this was that we could allow the
+hypervisor to allow those RDMSR but the Linux kernel has no power to
+actually influence the power management (as the hypervisor is in charge
+of that) - so would the driver be capable of just sitting back and
+not influencing the CPU?
 
-foo.c
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/wait.h>
-
-void worker(void)
-{
-     long long i;
-     char *p;
-     int action;
-     int mult = 500000;
-     int size = mult * 4096;
-     fprintf(stderr,"Upper bound: %lu MB\n",(long int) (size/1024/1024));
-     for (i=0; ; i++) {
-         action = i%2;
-         switch(action) {
-         case 0:
-             p = malloc(size);
-             if (!p){
-                 fprintf(stderr,"malloc(%lu) MB failed. iterations: 
-%lli\n", (long int)size/1024/1024,i);
-                 exit(1);
-             }
-             break;
-         case 1:
-             free(p);
-             break;
-         }
-     }
-}
-
-void usage(const char *cmd)
-{
-     fprintf(stderr,"Usage: %s [-t numthreads]\n", cmd);
-     exit(1);
-}
-
-int main(int argc, char **argv)
-{
-     int c, i;
-     int nproc = sysconf(_SC_NPROCESSORS_ONLN);
-
-
-     while ((c = getopt(argc, argv, "t:")) != EOF) {
-         switch (c) {
-         case 't':
-             nproc = strtol(optarg, 0, 0);
-             break;
-         default:
-             usage(argv[0]);
-         }
-     }
-
-     //printf("forking %d children\n", nproc);
-     for (i=0; i < nproc; i++) {
-         switch(fork()) {
-         case -1:
-             fprintf(stderr,"fork: %s\n", strerror(errno));
-             exit(1);
-         case 0: /* child */
-             worker();
-             exit(0);
-         default: /* parent */
-             /* nothing */
-             break;
-         }
-     }
-
-     for (i=0; i < nproc; i++) {
-         int x, p;
-         p = wait(&x);
-     }
-
-     return 0;
-}
-
-Can also be found here: http://shrek.krogh.cc/~jesper/foo.c
-
--- 
-Jesper Krogh
+> 
+> 
+> -- Pasi
+> 
+> 
+> > > 
+> > > hmm, according to this bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=470035,
+> > > they're related to dom0 kernel acpi-cpufreq ?
+> > > 
+> > > Also it seems there was discussion about the subject on 2011/08:
+> > > http://old-list-archives.xen.org/archives/html/xen-devel/2011-08/msg00561.html
+> > > 
+> > > 
+> > > Xen hypervisor 4.1.2.
+> > > dom0 Linux kernel 3.2.2.
+> > > 
+> > > 
+> > > Thanks,
+> > > 
+> > > -- Pasi
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
