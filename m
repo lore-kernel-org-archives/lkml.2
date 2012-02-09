@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2BIWDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:03:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42502 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab2BIWDX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:03:23 -0500
-Message-ID: <4F34429E.8070605@gmail.com>
-Date: Thu, 09 Feb 2012 16:03:10 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH v4 4/4] gpio: pl061: enable interrupts with DT style binding
-References: <1328308512-22594-1-git-send-email-robherring2@gmail.com> <1328308512-22594-5-git-send-email-robherring2@gmail.com> <20120209200435.GB2493@r65073-Latitude-D630>
-In-Reply-To: <20120209200435.GB2493@r65073-Latitude-D630>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758392Ab2BIWJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:09:21 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:34437 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753588Ab2BIWJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 17:09:20 -0500
+Message-ID: <1328825357.29329.16.camel@joe2Laptop>
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
+ 80 to 100 colums
+From: Joe Perches <joe@perches.com>
+To: Jan Engelhardt <jengelh@medozas.de>, Andy Whitcroft <apw@shadowen.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 09 Feb 2012 14:09:17 -0800
+In-Reply-To: <alpine.LNX.2.01.1202092206040.11004@frira.zrqbmnf.qr>
+References: <20120130140905.441199885@openvz.org>
+	 <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu>
+	 <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu>
+	 <20120203012241.bcd3d0c8.akpm@linux-foundation.org>
+	 <20120203095227.GA13162@elte.hu <20120203100743.GA3334@elte.hu>
+	 <alpine.LNX.2.01.1202092206040.11004@frira.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 02/09/2012 02:04 PM, Shawn Guo wrote:
-> On Fri, Feb 03, 2012 at 04:35:12PM -0600, Rob Herring wrote:
-> ...
->> @@ -126,18 +127,16 @@ static void pl061_set_value(struct gpio_chip *gc, unsigned offset, int value)
->>  static int pl061_to_irq(struct gpio_chip *gc, unsigned offset)
->>  {
->>  	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
->> -
->> -	if (chip->irq_base <= 0)
->> -		return -EINVAL;
->> -
->> -	return chip->irq_base + offset;
->> +	if (!chip->irq_gc)
->> +		return -ENXIO;
->> +	return irq_find_mapping(chip->irq_gc->domain, offset);
+On Thu, 2012-02-09 at 22:55 +0100, Jan Engelhardt wrote:
+> I am throwing in the suggestion to augment checkpatch 
+> such that it does not look at whether single lines are over $limit, but 
+> whether a certain percentage of lines of a file is over $limit. That, 
+> together with a badness value that is e.g. following some power law to 
+> the amount of chars too much, but not when the line cannot be broken
+> in the first place. Maybe along the lines of
 > 
-> If I understand the driver correctly, it will add a linear domain for
-> dt case.  Do you have code somewhere creating the mapping before this
-> irq_find_mapping gets called here?  The reason I'm asking this is I
-> have to call irq_create_mapping rather than irq_find_mapping here to
-> get imx gpio driver working with linear domain, otherwise the
-> irq_find_mapping call will fail.
-> 
+>  #perlish#
+>  foreach (<>) {
+>      /^\s+\S+/;
+>      if (length($_) > length($&)) {
+>          push @candidate, $_;
+>          $badness += (length($_) - length($&)) ** 1.5;
+>      }
+>  }
+>  if ($badness > $threshold) {
+>      warn about @candidate_lines;
+>  }
 
-Right, the user has to call irq_of_parse_and_map (which calls
-irq_create_mapping ultimately). Interrupts are allocated on demand. The
-dts needs to declare the gpio controller as an interrupt-controller and
-the node using the gpio line needs to set its interrupt parent and
-interrupt connection
+I'd be OK with something like this while making the
+current line length check a --strict only option.
 
-Rob
 
-> Regards,
-> Shawn
-> 
->>  }
