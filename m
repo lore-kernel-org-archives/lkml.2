@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab2BIWXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:23:14 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61044 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab2BIWXK (ORCPT
+	id S932329Ab2BIWXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:23:23 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36357 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab2BIWXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:23:10 -0500
+	Thu, 9 Feb 2012 17:23:19 -0500
 MIME-Version: 1.0
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 13/18] perf: add support for taken branch sampling to perf report
-Date: Thu,  9 Feb 2012 23:21:03 +0100
-Message-Id: <1328826068-11713-14-git-send-email-eranian@google.com>
+Subject: [PATCH v6 16/18] perf: enable reading of perf.data files from different ABI rev
+Date: Thu,  9 Feb 2012 23:21:06 +0100
+Message-Id: <1328826068-11713-17-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
 References: <1328826068-11713-1-git-send-email-eranian@google.com>
@@ -24,256 +24,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+This patch allows perf to process perf.data files generated
+using an ABI that has a different perf_event_attr struct size, i.e.,
+a different ABI version.
 
-This patch adds support for taken branch sampling, i.e, the
-PERF_SAMPLE_BRANCH_STACK feature to perf report. In other
-words, to display histograms based on taken branches rather
-than executed instructions addresses.
+The perf_event_attr can be extended, yet perf needs to cope with
+older perf.data files. Similarly, perf must be able to cope with
+a perf.data file which is using a newer version of the ABI than
+what it knows about.
 
-The new option is called -b and it takes no argument. To
-generate meaningful output, the perf.data must have been
-obtained using perf record -b xxx ... where xxx is a branch
-filter option.
+This patch adds read_attr(), a routine that reads a perf_event_attr
+struct from a file incrementally based on its advertised size. If
+the on-file struct is smaller than what perf knows, then the extra
+fields are zeroed. If the on-file struct is bigger, then perf only
+uses what it knows about, the rest is skipped.
 
-The output shows symbols, modules, sorted by 'who branches
-where' the most often. The percentages reported in the first
-column refer to the total number of branches captured and
-not the usual number of samples.
-
-Here is a quick example.
-Here branchy is simple test program which looks as follows:
-
-void f2(void)
-{}
-void f3(void)
-{}
-void f1(unsigned long n)
-{
-  if (n & 1UL)
-    f2();
-  else
-    f3();
-}
-int main(void)
-{
-  unsigned long i;
-
-  for (i=0; i < N; i++)
-   f1(i);
-  return 0;
-}
-
-Here is the output captured on Nehalem, if we are
-only interested in user level function calls.
-
-$ perf record -b any_call,u -e cycles:u branchy
-
-$ perf report -b --sort=symbol
-    52.34%  [.] main                   [.] f1
-    24.04%  [.] f1                     [.] f3
-    23.60%  [.] f1                     [.] f2
-     0.01%  [k] _IO_new_file_xsputn    [k] _IO_file_overflow
-     0.01%  [k] _IO_vfprintf_internal  [k] _IO_new_file_xsputn
-     0.01%  [k] _IO_vfprintf_internal  [k] strchrnul
-     0.01%  [k] __printf               [k] _IO_vfprintf_internal
-     0.01%  [k] main                   [k] __printf
-
-About half (52%) of the call branches captured are from main() -> f1().
-The second half (24%+23%) is split in two equal shares between
-f1() -> f2(), f1() ->f3(). The output is as expected given the code.
-
-It should be noted, that using -b in perf record does not eliminate
-information in the perf.data file. Consequently, a typical profile
-can also be obtained by perf report by simply not using its -b option.
-
-It is possible to sort on branch related columns:
-   - dso_from, symbol_from
-   - dso_to, symbol_to
-   - mispredict
-
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Documentation/perf-report.txt |    7 ++
- tools/perf/builtin-report.c              |  107 +++++++++++++++++++++++++++---
- 2 files changed, 105 insertions(+), 9 deletions(-)
+ tools/perf/util/header.c  |   53 ++++++++++++++++++++++++++++++++++++++++----
+ tools/perf/util/session.c |    4 +-
+ 2 files changed, 50 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 9b430e9..19b9092 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -153,6 +153,13 @@ OPTIONS
- 	information which may be very large and thus may clutter the display.
- 	It currently includes: cpu and numa topology of the host system.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6f4187d..c2a3410 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
+ 	return 0;
+ }
  
-+-b::
-+--branch-stack::
-+	Use the addresses of sampled taken branches instead of the instruction
-+	address to build the histograms. To generate meaningful output, the
-+	perf.data file must have been obtained using perf record -b xxx where
-+	xxx is a branch filter option.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-annotate[1]
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25d34d4..528789f 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -53,6 +53,50 @@ struct perf_report {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-+static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
-+					struct addr_location *al,
-+					struct perf_sample *sample,
-+					struct perf_evsel *evsel,
-+				      struct machine *machine)
++static int read_attr(int fd, struct perf_header *ph,
++		     struct perf_file_attr *f_attr)
 +{
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
-+	struct symbol *parent = NULL;
-+	int err = 0;
-+	unsigned i;
-+	struct hist_entry *he;
-+	struct branch_info *bi;
++	struct perf_event_attr *attr = &f_attr->attr;
++	size_t sz, left;
++	size_t our_sz = sizeof(f_attr->attr);
++	int ret;
 +
-+	if ((sort__has_parent || symbol_conf.use_callchain)
-+	    && sample->callchain) {
-+		err = machine__resolve_callchain(machine, evsel, al->thread,
-+						 sample->callchain, &parent);
-+		if (err)
-+			return err;
++	memset(f_attr, 0, sizeof(*f_attr));
++
++	/* read minimal guaranteed structure */
++	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
++	if (ret <= 0) {
++		pr_debug("cannot read %d bytes of header attr\n",
++			 PERF_ATTR_SIZE_VER0);
++		return -1;
 +	}
 +
-+	bi = machine__resolve_bstack(machine, al->thread,
-+				     sample->branch_stack);
-+	if (!bi)
-+		return -ENOMEM;
++	/* on file perf_event_attr size */
++	sz = attr->size;
++	if (ph->needs_swap)
++		sz = bswap_32(sz);
 +
-+	for (i = 0; i < sample->branch_stack->nr; i++) {
-+		if (rep->hide_unresolved && !(bi[i].from.sym && bi[i].to.sym))
-+			continue;
-+		/*
-+		 * The report shows the percentage of total branches captured
-+		 * and not events sampled. Thus we use a pseudo period of 1.
-+		 */
-+		he = __hists__add_branch_entry(&evsel->hists, al, parent,
-+					       &bi[i], 1);
-+		if (he) {
-+			evsel->hists.stats.total_period += 1;
-+			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+		} else
-+			return -ENOMEM;
++	if (sz == 0) {
++		/* assume ABI0 */
++		sz =  PERF_ATTR_SIZE_VER0;
++	} else if (sz > our_sz) {
++		pr_debug("file uses a more recent and unsupported ABI"
++			 " (%zu bytes extra)\n", sz - our_sz);
++		return -1;
 +	}
-+	return err;
++	/* what we have not yet read and that we know about */
++	left = sz - PERF_ATTR_SIZE_VER0;
++	if (left) {
++		void *ptr = attr;
++		ptr += PERF_ATTR_SIZE_VER0;
++
++		ret = readn(fd, ptr, left);
++	}
++	/* read perf_file_section, ids are read in caller */
++	ret = readn(fd, &f_attr->ids, sizeof(f_attr->ids));
++
++	return ret <= 0 ? -1 : 0;
 +}
 +
- static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
-@@ -126,14 +170,21 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+ int perf_session__read_header(struct perf_session *session, int fd)
+ {
+ 	struct perf_header *header = &session->header;
+@@ -1974,19 +2019,17 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 	if (session->fd_pipe)
+ 		return perf_header__read_pipe(session, fd);
+ 
+-	if (perf_file_header__read(&f_header, header, fd) < 0) {
+-		pr_debug("incompatible file format\n");
++	if (perf_file_header__read(&f_header, header, fd) < 0)
+ 		return -EINVAL;
+-	}
+ 
+-	nr_attrs = f_header.attrs.size / sizeof(f_attr);
++	nr_attrs = f_header.attrs.size / f_header.attr_size;
+ 	lseek(fd, f_header.attrs.offset, SEEK_SET);
+ 
+ 	for (i = 0; i < nr_attrs; i++) {
+ 		struct perf_evsel *evsel;
+ 		off_t tmp;
+ 
+-		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
++		if (read_attr(fd, header, &f_attr) < 0)
+ 			goto out_errno;
+ 
+ 		if (header->needs_swap)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 3f3afed..5476320 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -24,7 +24,7 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		self->fd = STDIN_FILENO;
+ 
+ 		if (perf_session__read_header(self, self->fd) < 0)
+-			pr_err("incompatible file format");
++			pr_err("incompatible file format (rerun with -v to learn more)");
+ 
  		return 0;
- 
--	if (al.map != NULL)
--		al.map->dso->hit = 1;
-+	if (sort__branch_mode) {
-+		if (perf_report__add_branch_hist_entry(tool, &al, sample,
-+						       evsel, machine)) {
-+			pr_debug("problem adding lbr entry, skipping event\n");
-+			return -1;
-+		}
-+	} else {
-+		if (al.map != NULL)
-+			al.map->dso->hit = 1;
- 
--	if (perf_evsel__add_hist_entry(evsel, &al, sample, machine)) {
--		pr_debug("problem incrementing symbol period, skipping event\n");
--		return -1;
-+		if (perf_evsel__add_hist_entry(evsel, &al, sample, machine)) {
-+			pr_debug("problem incrementing symbol period, skipping event\n");
-+			return -1;
-+		}
  	}
--
- 	return 0;
- }
- 
-@@ -188,6 +239,15 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
- 			}
+@@ -56,7 +56,7 @@ static int perf_session__open(struct perf_session *self, bool force)
  	}
  
-+	if (sort__branch_mode) {
-+		if (!(self->sample_type & PERF_SAMPLE_BRANCH_STACK)) {
-+			fprintf(stderr, "selected -b but no branch data."
-+					" Did you call perf record without"
-+					" -b?\n");
-+			return -1;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -477,7 +537,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
- 		    "Use the stdio interface"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
-+		   " dso_from, symbol_to, symbol_from, mispredict"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-@@ -517,6 +578,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
- 		    "Show a column with the sum of periods"),
-+	OPT_BOOLEAN('b', "branch-stack", &sort__branch_mode,
-+		    "use branch records for histogram filling"),
- 	OPT_END()
- 	};
- 
-@@ -537,10 +600,36 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 			report.input_name = "perf.data";
+ 	if (perf_session__read_header(self, self->fd) < 0) {
+-		pr_err("incompatible file format");
++		pr_err("incompatible file format (rerun with -v to learn more)");
+ 		goto out_close;
  	}
  
--	if (strcmp(report.input_name, "-") != 0)
-+	if (sort__branch_mode) {
-+		if (use_browser)
-+			fprintf(stderr, "Warning: TUI interface not supported"
-+					" in branch mode\n");
-+		if (symbol_conf.dso_list_str != NULL)
-+			fprintf(stderr, "Warning: dso filtering not supported"
-+					" in branch mode\n");
-+		if (symbol_conf.sym_list_str != NULL)
-+			fprintf(stderr, "Warning: symbol filtering not"
-+					" supported in branch mode\n");
-+
-+		report.use_stdio = true;
-+		use_browser = 0;
- 		setup_browser(true);
--	else
-+		symbol_conf.dso_list_str = NULL;
-+		symbol_conf.sym_list_str = NULL;
-+
-+		/*
-+		 * if no sort_order is provided, then specify branch-mode
-+		 * specific order
-+		 */
-+		if (sort_order == default_sort_order)
-+			sort_order = "comm,dso_from,symbol_from,"
-+				     "dso_to,symbol_to";
-+
-+	} else if (strcmp(report.input_name, "-") != 0) {
-+		setup_browser(true);
-+	} else {
- 		use_browser = 0;
-+	}
- 
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
 -- 
 1.7.4.1
 
