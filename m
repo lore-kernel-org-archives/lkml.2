@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab2BIQnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:43:22 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65013 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758089Ab2BIQnU convert rfc822-to-8bit (ORCPT
+	id S1758118Ab2BIQn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:43:58 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47632 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab2BIQn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:43:20 -0500
+	Thu, 9 Feb 2012 11:43:57 -0500
+Message-ID: <4F33F7C8.2090105@lwfinger.net>
+Date: Thu, 09 Feb 2012 10:43:52 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120209163641.26858.59399.stgit@amt.stowe>
-References: <20120209163641.26858.59399.stgit@amt.stowe>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 9 Feb 2012 08:42:59 -0800
-Message-ID: <CAErSpo47+kHmS6477Bne84rPiy+sHGjgtK3mpk6VJc+hM4hhbg@mail.gmail.com>
-Subject: Re: [PATCH] ACPI: Fix logic for removing mappings in 'acpi_unmap'
-To: Myron Stowe <myron.stowe@redhat.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, ying.huang@intel.com,
-        tony.luck@intel.com, trenn@suse.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: tim.gardner@canonical.com
+CC: Tim Gardner <rtg.canonical@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtlwifi: rtl8192se firmware load can overflow target
+ buffer
+References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net> <4F33DAFC.1000502@canonical.com>
+In-Reply-To: <4F33DAFC.1000502@canonical.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 8:36 AM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> From: Myron Stowe <mstowe@redhat.com>
+On 02/09/2012 08:41 AM, Tim Gardner wrote:
 >
-> Make sure the removal of mappings uses the same logic that put the
-> mappings in place.
+> I agree with you about the semantics of rtlpriv->max_fw_size, but I don't agree
+> that the size check is correct. While rtlpriv->max_fw_size has been set to
+> sizeof(struct rt_firmware), that value is _way_ bigger then the size of the
+> target buffer.
 >
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> ---
+> sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
 >
->  drivers/acpi/osl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> The target buffer size is only 164000 bytes.
 >
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 412a1e0..5aef087 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -347,7 +347,7 @@ static void acpi_unmap(acpi_physical_address pg_off, void __iomem *vaddr)
->        unsigned long pfn;
->
->        pfn = pg_off >> PAGE_SHIFT;
-> -       if (page_is_ram(pfn))
-> +       if (should_use_kmap(pfn))
->                kunmap(pfn_to_page(pfn));
->        else
->                iounmap(vaddr);
->
+> I've attached v2 of the patch that is simpler and may serve to better illustrate
+> my point. By the way, Ben Hutchings was right about the original patch having an
+> off by one error. This version also clears rtlpriv->max_fw_size if the size
+> check fails. Probably should have mentioned that in the commit log.
 
-Whatever happened to the question of why we have arch-specific
-ioremap() behavior?  It's good to make map/unmap symmetric, but it'd
-be better to get rid of the ioremap/kmap hack.
+I agree that Ben is right.
 
-Bjorn
+This thread forced me to go back to square one in analyzing the situation. For 
+the other drivers in the rtlwifi family, the firmware file contains an image 
+that is directly stuffed into the device. For the RTL8192SE devices, it is more 
+complicated. The structure is described in struct rt_firmware. At the moment, 
+the arrays there are grossly oversized. They could be as follows:
+
+struct rt_firmware {
+         struct fw_hdr *pfwheader;
+         enum fw_status fwstatus;
+         u16 firmwareversion;
+         u8 fw_imem[RTL8190_MAX_IMEM_CODE_SIZE];
+         u8 fw_emem[RTL8190_MAX_DMEM_CODE_SIZE];
+         u32 fw_imem_len;
+         u32 fw_emem_len;
+         u8 sz_fw_tmpbuffer[RTL8190_MAX_FIRMWARE_SIZE];
+         u32 sz_fw_tmpbufferlen;
+         u16 cmdpacket_fragthresold;
+};
+
+with
+
+RTL8190_MAX_IMEM_CODE_SIZE = 54000 (current fw is 51,208), 
+RTL8190_MAX_DMEM_CODE_SIZE = 40000 (current fw is 37,520), and 
+RTL8190_MAX_FIRMWARE_SIZE = 90000 (it holds the raw firmware image, which is 
+currently 88,856).
+
+Ultimately, all three arrays should be eliminated. Now that we are using 
+asynchronous loading, the kernel should keep its cached data and not copy it 
+into the driver's private storage when a pointer will suffice. All the drivers 
+need this change, but that can wait for now.
+
+I will ACK the patch if you resumit it with
+#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	90000
+
+Larry
