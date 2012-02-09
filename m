@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2BITtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 14:49:32 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43855 "EHLO
+	id S932185Ab2BITtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 14:49:31 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43851 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758496Ab2BITt3 (ORCPT
+	by vger.kernel.org with ESMTP id S1758377Ab2BITt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 14:49:29 -0500
+	Thu, 9 Feb 2012 14:49:28 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        e1000-devel@lists.sourceforge.net, Neil Horman <nhorman@tuxdriver.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [PATCH v2 0/2] Part 1: handle addr_assign_type for random addresses
-Date: Thu,  9 Feb 2012 20:48:52 +0100
-Message-Id: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v2 1/2] eth: reset addr_assign_type if eth_mac_addr() called
+Date: Thu,  9 Feb 2012 20:48:53 +0100
+Message-Id: <1328816934-11508-2-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
+References: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
 X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328816968;53a409b9;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an updated and split up version of my patch series to
-fix the handling of addr_assign_type for random MAC addresses.
+If eth_mac_addr() get called, usually if SIOCSIFHWADDR was
+used to change the MAC of a ethernet device, reset the
+addr_assign_type to NET_ADDR_PERM if the state was
+NET_ADDR_RANDOM before. Reset the state since the MAC is
+no longer random at least not from the kernel side.
 
-The first part contains the basic changes in etherdevice.h
-and eth.c incl. needed adaptations in the existing code
+v2: changed to bitops, removed if()
 
-Danny Kukawka (2):
-  eth: reset addr_assign_type if eth_mac_addr() called
-  rename dev_hw_addr_random and remove redundant second
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ net/ethernet/eth.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- drivers/net/ethernet/intel/igbvf/netdev.c         |   11 +++++---
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   28 ++++++++++++--------
- include/linux/etherdevice.h                       |   13 +++++----
- net/ethernet/eth.c                                |    2 +
- 4 files changed, 33 insertions(+), 21 deletions(-)
-
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index a246836..a93af86 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -288,6 +288,8 @@ int eth_mac_addr(struct net_device *dev, void *p)
+ 	if (!is_valid_ether_addr(addr->sa_data))
+ 		return -EADDRNOTAVAIL;
+ 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
++	/* if device marked as NET_ADDR_RANDOM, reset it */
++	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(eth_mac_addr);
 -- 
 1.7.7.3
 
