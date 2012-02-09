@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab2BIOe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:34:58 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43472 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab2BIOe5 (ORCPT
+	id S1757520Ab2BIOhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:37:11 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:59736 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab2BIOhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:34:57 -0500
-Date: Thu, 9 Feb 2012 12:34:49 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf tools: Allow multiple threads or processes in
- record, stat, top
-Message-ID: <20120209143449.GA2526@infradead.org>
-References: <1328718772-16688-1-git-send-email-dsahern@gmail.com>
- <4F331F14.5070100@gmail.com>
- <4F3334F7.70809@gmail.com>
- <20120209073727.GA18152@elte.hu>
+	Thu, 9 Feb 2012 09:37:09 -0500
+Message-ID: <4F33D9EC.9050900@linux.vnet.ibm.com>
+Date: Thu, 09 Feb 2012 08:36:28 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120209073727.GA18152@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 3/5] staging: zcache: replace xvmalloc with zsmalloc
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com> <20120209011326.GA2225@kroah.com>
+In-Reply-To: <20120209011326.GA2225@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020914-3270-0000-0000-000003DD7588
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 09, 2012 at 08:37:27AM +0100, Ingo Molnar escreveu:
+On 02/08/2012 07:13 PM, Greg KH wrote:
+> On Mon, Jan 09, 2012 at 04:51:58PM -0600, Seth Jennings wrote:
+>> Replaces xvmalloc with zsmalloc as the persistent memory allocator
+>> for zcache
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 > 
-> * David Ahern <dsahern@gmail.com> wrote:
-> 
-> > > I was trying to remove ctype.h, you might use util.h here.
-> > 
-> > Right, knew that. But, in this case I am adding a call to 
-> > isdigit which means a direct dependency on ctype.h. I would 
-> > prefer a direct relationship versus an indirect via util.h
-> 
-> Please just remove ctype.h *altogether* from perf, it's just an 
-> insane header.
-> 
-> Have a look at how Git solves these types of problems, it 
-> defines sane string functions in git-compat-util.h:
+> This patch no longer applies :(
 
-Yeah, these are in util.h, that doesn't includes ctype.h
+Let me check it out, I'll get back to you shortly.
 
-I'm fixing this up and also that s/UUID/UID/g Kim pointed out,
-then testing if the python binding still is ok with these changes.
- 
-> /* Sane ctype - no locale, and works with signed chars */
-> #undef isascii
-> #undef isspace
-> #undef isdigit
-> #undef isalpha
-> #undef isalnum
-> #undef tolower
-> #undef toupper
-> extern unsigned char sane_ctype[256];
-> #define GIT_SPACE 0x01
-> #define GIT_DIGIT 0x02
-> #define GIT_ALPHA 0x04
-> #define GIT_GLOB_SPECIAL 0x08
-> #define GIT_REGEX_SPECIAL 0x10
-> 
-> Thanks,
-> 
-> 	Ingo
+Thanks for merging everything else!
+
+--
+Seth
+
