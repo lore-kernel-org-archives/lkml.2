@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab2BIWWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:22:50 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47813 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758274Ab2BIWWs (ORCPT
+	id S932182Ab2BIWW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:22:56 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53325 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758274Ab2BIWWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:22:48 -0500
+	Thu, 9 Feb 2012 17:22:53 -0500
 MIME-Version: 1.0
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 05/18] perf: add Intel X86 LBR mappings for PERF_SAMPLE_BRANCH filters
-Date: Thu,  9 Feb 2012 23:20:55 +0100
-Message-Id: <1328826068-11713-6-git-send-email-eranian@google.com>
+Subject: [PATCH v6 07/18] perf: implement PERF_SAMPLE_BRANCH for Intel X86
+Date: Thu,  9 Feb 2012 23:20:57 +0100
+Message-Id: <1328826068-11713-8-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
 References: <1328826068-11713-1-git-send-email-eranian@google.com>
@@ -24,190 +24,282 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mappings from the generic PERF_SAMPLE_BRANCH_*
-filters to the actual Intel X86 LBR filters, whenever they exist.
+This patch implements PERF_SAMPLE_BRANCH support for Intel
+X86 processors. It connects PERF_SAMPLE_BRANCH to the actual LBR.
+
+The patch adds the hooks in the PMU irq handler to save the LBR
+on counter overflow for both regular and PEBS modes.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
  arch/x86/kernel/cpu/perf_event.h           |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c     |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  103 +++++++++++++++++++++++++++-
- 3 files changed, 104 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c     |   35 +++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |   10 +--
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   86 +++++++++++++++++++++++++++-
+ 4 files changed, 125 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 4535ada..776fb5a 100644
+index 776fb5a..adbe80a 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -535,6 +535,8 @@ void intel_pmu_lbr_init_nhm(void);
+@@ -537,6 +537,8 @@ void intel_pmu_lbr_init_atom(void);
  
- void intel_pmu_lbr_init_atom(void);
+ void intel_pmu_lbr_init_snb(void);
  
-+void intel_pmu_lbr_init_snb(void);
++int intel_pmu_setup_lbr_filter(struct perf_event *event);
 +
  int p4_pmu_init(void);
  
  int p6_pmu_init(void);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 97f7bb5..b0db016 100644
+index b0db016..7cc1e2d 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1757,7 +1757,7 @@ __init int intel_pmu_init(void)
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
- 
--		intel_pmu_lbr_init_nhm();
-+		intel_pmu_lbr_init_snb();
- 
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 6710a51..e54a063 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -14,6 +14,49 @@ enum {
+@@ -727,6 +727,19 @@ static __initconst const u64 atom_hw_cache_event_ids
+  },
  };
  
- /*
-+ * Intel LBR_SELECT bits
-+ * Intel Vol3a, April 2011, Section 16.7 Table 16-10
-+ *
-+ * Hardware branch filter (not available on all CPUs)
-+ */
-+#define LBR_KERNEL_BIT		0 /* do not capture at ring0 */
-+#define LBR_USER_BIT		1 /* do not capture at ring > 0 */
-+#define LBR_JCC_BIT		2 /* do not capture conditional branches */
-+#define LBR_REL_CALL_BIT	3 /* do not capture relative calls */
-+#define LBR_IND_CALL_BIT	4 /* do not capture indirect calls */
-+#define LBR_RETURN_BIT		5 /* do not capture near returns */
-+#define LBR_IND_JMP_BIT		6 /* do not capture indirect jumps */
-+#define LBR_REL_JMP_BIT		7 /* do not capture relative jumps */
-+#define LBR_FAR_BIT		8 /* do not capture far branches */
-+
-+#define LBR_KERNEL	(1 << LBR_KERNEL_BIT)
-+#define LBR_USER	(1 << LBR_USER_BIT)
-+#define LBR_JCC		(1 << LBR_JCC_BIT)
-+#define LBR_REL_CALL	(1 << LBR_REL_CALL_BIT)
-+#define LBR_IND_CALL	(1 << LBR_IND_CALL_BIT)
-+#define LBR_RETURN	(1 << LBR_RETURN_BIT)
-+#define LBR_REL_JMP	(1 << LBR_REL_JMP_BIT)
-+#define LBR_IND_JMP	(1 << LBR_IND_JMP_BIT)
-+#define LBR_FAR		(1 << LBR_FAR_BIT)
-+
-+#define LBR_PLM (LBR_KERNEL | LBR_USER)
-+
-+#define LBR_SEL_MASK	0x1ff	/* valid bits in LBR_SELECT */
-+#define LBR_NOT_SUPP	-1	/* LBR filter not supported */
-+#define LBR_IGN		0	/* ignored */
-+
-+#define LBR_ANY		 \
-+	(LBR_JCC	|\
-+	 LBR_REL_CALL	|\
-+	 LBR_IND_CALL	|\
-+	 LBR_RETURN	|\
-+	 LBR_REL_JMP	|\
-+	 LBR_IND_JMP	|\
-+	 LBR_FAR)
-+
-+#define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+
-+/*
-  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
-  * otherwise it becomes near impossible to get a reliable stack.
-  */
-@@ -151,8 +194,6 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
- 	cpuc->lbr_stack.nr = i;
- }
- 
--#define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
--
- /*
-  * Due to lack of segmentation in Linux the effective address (offset)
-  * is the same as the linear address, allowing us to merge the LIP and EIP
-@@ -200,26 +241,84 @@ void intel_pmu_lbr_read(void)
- 		intel_pmu_lbr_read_64(cpuc);
- }
- 
-+/*
-+ * Map interface branch filters onto LBR filters
-+ */
-+static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
-+	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
-+	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
-+	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
-+	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
-+	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_REL_JMP
-+					| LBR_IND_JMP | LBR_FAR,
-+	/*
-+	 * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
-+	 */
-+	[PERF_SAMPLE_BRANCH_ANY_CALL] =
-+	 LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
-+	/*
-+	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
-+	 */
-+	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
-+};
-+
-+static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
-+	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
-+	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
-+	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
-+	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
-+	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_FAR,
-+	[PERF_SAMPLE_BRANCH_ANY_CALL]	= LBR_REL_CALL | LBR_IND_CALL
-+					| LBR_FAR,
-+	[PERF_SAMPLE_BRANCH_IND_CALL]	= LBR_IND_CALL,
-+};
-+
-+/* core */
- void intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
-+
-+	pr_cont("4-deep LBR, ");
- }
- 
-+/* nehalem/westmere */
- void intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
-+
-+	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
-+	x86_pmu.lbr_sel_map  = nhm_lbr_sel_map;
-+
-+	pr_cont("16-deep LBR, ");
- }
- 
-+/* sandy bridge */
-+void intel_pmu_lbr_init_snb(void)
++static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
 +{
-+	x86_pmu.lbr_nr	 = 16;
-+	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
-+	x86_pmu.lbr_from = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to   = MSR_LBR_NHM_TO;
++	/* user explicitly requested branch sampling */
++	if (has_branch_stack(event))
++		return true;
 +
-+	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
-+	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
++	/* implicit branch sampling to correct PEBS skid */
++	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
++		return true;
 +
-+	pr_cont("16-deep LBR, ");
++	return false;
 +}
 +
-+/* atom */
- void intel_pmu_lbr_init_atom(void)
+ static void intel_pmu_disable_all(void)
  {
- 	x86_pmu.lbr_nr	   = 8;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -881,6 +894,13 @@ static void intel_pmu_disable_event(struct perf_event *event)
+ 	cpuc->intel_ctrl_guest_mask &= ~(1ull << hwc->idx);
+ 	cpuc->intel_ctrl_host_mask &= ~(1ull << hwc->idx);
+ 
++	/*
++	 * must disable before any actual event
++	 * because any event may be combined with LBR
++	 */
++	if (intel_pmu_needs_lbr_smpl(event))
++		intel_pmu_lbr_disable(event);
 +
-+	pr_cont("8-deep LBR, ");
+ 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+ 		intel_pmu_disable_fixed(hwc);
+ 		return;
+@@ -935,6 +955,12 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 		intel_pmu_enable_bts(hwc->config);
+ 		return;
+ 	}
++	/*
++	 * must enabled before any actual event
++	 * because any event may be combined with LBR
++	 */
++	if (intel_pmu_needs_lbr_smpl(event))
++		intel_pmu_lbr_enable(event);
+ 
+ 	if (event->attr.exclude_host)
+ 		cpuc->intel_ctrl_guest_mask |= (1ull << hwc->idx);
+@@ -1057,6 +1083,9 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 		data.period = event->hw.last_period;
+ 
++		if (has_branch_stack(event))
++			data.br_stack = &cpuc->lbr_stack;
++
+ 		if (perf_event_overflow(event, &data, regs))
+ 			x86_pmu_stop(event, 0);
+ 	}
+@@ -1305,6 +1334,12 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 		event->hw.config = alt_config;
+ 	}
+ 
++	if (intel_pmu_needs_lbr_smpl(event)) {
++		ret = intel_pmu_setup_lbr_filter(event);
++		if (ret)
++			return ret;
++	}
++
+ 	if (event->attr.type != PERF_TYPE_RAW)
+ 		return 0;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index d6bd49f..ee7e3c8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -439,9 +439,6 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
+-
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+-		intel_pmu_lbr_enable(event);
  }
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -454,9 +451,6 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+ 
+ 	hwc->config |= ARCH_PERFMON_EVENTSEL_INT;
+-
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+-		intel_pmu_lbr_disable(event);
+ }
+ 
+ void intel_pmu_pebs_enable_all(void)
+@@ -572,6 +566,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	 * both formats and we don't use the other fields in this
+ 	 * routine.
+ 	 */
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct pebs_record_core *pebs = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+@@ -602,6 +597,9 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
+ 
++	if (has_branch_stack(event))
++		data.br_stack = &cpuc->lbr_stack;
++
+ 	if (perf_event_overflow(event, &data, &regs))
+ 		x86_pmu_stop(event, 0);
+ }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 07f0ff8..0310075 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -56,6 +56,10 @@ enum {
+ 
+ #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
+ 
++#define for_each_branch_sample_type(x) \
++	for ((x) = PERF_SAMPLE_BRANCH_USER; \
++	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
++
+ /*
+  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
+  * otherwise it becomes near impossible to get a reliable stack.
+@@ -64,6 +68,10 @@ enum {
+ static void __intel_pmu_lbr_enable(void)
+ {
+ 	u64 debugctl;
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++
++	if (cpuc->lbr_sel)
++		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
+ 
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ 	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
+@@ -119,7 +127,6 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 	 * Reset the LBR stack if we changed task context to
+ 	 * avoid data leaks.
+ 	 */
+-
+ 	if (event->ctx->task && cpuc->lbr_context != event->ctx) {
+ 		intel_pmu_lbr_reset();
+ 		cpuc->lbr_context = event->ctx;
+@@ -138,8 +145,11 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ 	cpuc->lbr_users--;
+ 	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+-	if (cpuc->enabled && !cpuc->lbr_users)
++	if (cpuc->enabled && !cpuc->lbr_users) {
+ 		__intel_pmu_lbr_disable();
++		/* avoid stale pointer */
++		cpuc->lbr_context = NULL;
++	}
+ }
+ 
+ void intel_pmu_lbr_enable_all(void)
+@@ -158,6 +168,9 @@ void intel_pmu_lbr_disable_all(void)
+ 		__intel_pmu_lbr_disable();
+ }
+ 
++/*
++ * TOS = most recently recorded branch
++ */
+ static inline u64 intel_pmu_lbr_tos(void)
+ {
+ 	u64 tos;
+@@ -242,6 +255,75 @@ void intel_pmu_lbr_read(void)
+ }
+ 
+ /*
++ * setup the HW LBR filter
++ * Used only when available, may not be enough to disambiguate
++ * all branches, may need the help of the SW filter
++ */
++static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
++{
++	struct hw_perf_event_extra *reg;
++	u64 br_type = event->attr.branch_sample_type;
++	u64 mask = 0, m;
++	u64 v;
++
++	for_each_branch_sample_type(m) {
++		if (!(br_type & m))
++			continue;
++
++		v = x86_pmu.lbr_sel_map[m];
++		if (v == LBR_NOT_SUPP)
++			return -EOPNOTSUPP;
++		mask |= v;
++
++		if (m == PERF_SAMPLE_BRANCH_ANY)
++			break;
++	}
++	reg = &event->hw.branch_reg;
++	reg->idx = EXTRA_REG_LBR;
++
++	/* LBR_SELECT operates in suppress mode so invert mask */
++	reg->config = ~mask & x86_pmu.lbr_sel_mask;
++
++	return 0;
++}
++
++/*
++ * all the bits supported on some flavor of X86 LBR
++ * we ignore BRANCH_HV because it is not supported
++ */
++#define PERF_SAMPLE_BRANCH_X86_ALL	\
++	(PERF_SAMPLE_BRANCH_ANY		|\
++	 PERF_SAMPLE_BRANCH_USER	|\
++	 PERF_SAMPLE_BRANCH_KERNEL)
++
++int intel_pmu_setup_lbr_filter(struct perf_event *event)
++{
++	u64 br_type = event->attr.branch_sample_type;
++
++	/*
++	 * no LBR on this PMU
++	 */
++	if (!x86_pmu.lbr_nr)
++		return -EOPNOTSUPP;
++
++	/*
++	 * if no LBR HW filter, users can only
++	 * capture all branches
++	 */
++	if (!x86_pmu.lbr_sel_map) {
++		if (br_type != PERF_SAMPLE_BRANCH_X86_ALL)
++			return -EOPNOTSUPP;
++		return 0;
++	}
++	/*
++	 * we ignore branch priv levels we do not
++	 * know about: BRANCH_HV
++	 */
++
++	return intel_pmu_setup_hw_lbr_filter(event);
++}
++
++/*
+  * Map interface branch filters onto LBR filters
+  */
+ static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
 -- 
 1.7.4.1
 
