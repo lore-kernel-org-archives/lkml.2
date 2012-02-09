@@ -1,151 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2BIWXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:23:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36357 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2BIWXT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:23:19 -0500
-MIME-Version: 1.0
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 16/18] perf: enable reading of perf.data files from different ABI rev
-Date: Thu,  9 Feb 2012 23:21:06 +0100
-Message-Id: <1328826068-11713-17-git-send-email-eranian@google.com>
+	id S932360Ab2BIWXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:23:40 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:51315
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932347Ab2BIWXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 17:23:38 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the staging area
+Date: Thu,  9 Feb 2012 14:14:48 -0800
+Message-Id: <1328825688-4337-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
-References: <1328826068-11713-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows perf to process perf.data files generated
-using an ABI that has a different perf_event_attr struct size, i.e.,
-a different ABI version.
+The storage driver (storvsc_drv.c) handles all block storage devices
+assigned to Linux guests hosted on Hyper-V. This driver has been in the
+staging tree for a while and this patch moves it out of the staging area.
 
-The perf_event_attr can be extended, yet perf needs to cope with
-older perf.data files. Similarly, perf must be able to cope with
-a perf.data file which is using a newer version of the ABI than
-what it knows about.
+James was willing to apply this patch during the 3.3-rc phase and a decision
+was taken to defer this to 3.4 since Greg had queued up a bunch of storvsc
+patches for 3.4. Now that Greg has applied all of the pending storvsc patches,
+I am sending this patch to move this driver out of staging. Based on James'
+recommendation, this patch gets rid of the unneeded files in the staging/hv
+directory.
 
-This patch adds read_attr(), a routine that reads a perf_event_attr
-struct from a file incrementally based on its advertised size. If
-the on-file struct is smaller than what perf knows, then the extra
-fields are zeroed. If the on-file struct is bigger, then perf only
-uses what it knows about, the rest is skipped.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- tools/perf/util/header.c  |   53 ++++++++++++++++++++++++++++++++++++++++----
- tools/perf/util/session.c |    4 +-
- 2 files changed, 50 insertions(+), 7 deletions(-)
+ drivers/scsi/Kconfig                       |    7 +++++++
+ drivers/scsi/Makefile                      |    3 +++
+ drivers/{staging/hv => scsi}/storvsc_drv.c |    0
+ drivers/staging/Kconfig                    |    2 --
+ drivers/staging/Makefile                   |    1 -
+ drivers/staging/hv/Kconfig                 |    5 -----
+ drivers/staging/hv/Makefile                |    3 ---
+ drivers/staging/hv/TODO                    |    5 -----
+ 8 files changed, 10 insertions(+), 16 deletions(-)
+ rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
+ delete mode 100644 drivers/staging/hv/Kconfig
+ delete mode 100644 drivers/staging/hv/Makefile
+ delete mode 100644 drivers/staging/hv/TODO
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6f4187d..c2a3410 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1959,6 +1959,51 @@ static int perf_header__read_pipe(struct perf_session *session, int fd)
- 	return 0;
- }
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 16570aa..d3d18e8 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -662,6 +662,13 @@ config VMWARE_PVSCSI
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called vmw_pvscsi.
  
-+static int read_attr(int fd, struct perf_header *ph,
-+		     struct perf_file_attr *f_attr)
-+{
-+	struct perf_event_attr *attr = &f_attr->attr;
-+	size_t sz, left;
-+	size_t our_sz = sizeof(f_attr->attr);
-+	int ret;
++config HYPERV_STORAGE
++	tristate "Microsoft Hyper-V virtual storage driver"
++	depends on SCSI && HYPERV
++	default HYPERV
++	help
++	  Select this option to enable the Hyper-V virtual storage driver.
 +
-+	memset(f_attr, 0, sizeof(*f_attr));
+ config LIBFC
+ 	tristate "LibFC module"
+ 	select SCSI_FC_ATTRS
+diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
+index 2b88749..e4c1a69 100644
+--- a/drivers/scsi/Makefile
++++ b/drivers/scsi/Makefile
+@@ -142,6 +142,7 @@ obj-$(CONFIG_SCSI_BNX2_ISCSI)	+= libiscsi.o bnx2i/
+ obj-$(CONFIG_BE2ISCSI)		+= libiscsi.o be2iscsi/
+ obj-$(CONFIG_SCSI_PMCRAID)	+= pmcraid.o
+ obj-$(CONFIG_VMWARE_PVSCSI)	+= vmw_pvscsi.o
++obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+ 
+ obj-$(CONFIG_ARM)		+= arm/
+ 
+@@ -170,6 +171,8 @@ scsi_mod-$(CONFIG_SCSI_PROC_FS)	+= scsi_proc.o
+ scsi_mod-y			+= scsi_trace.o
+ scsi_mod-$(CONFIG_PM)		+= scsi_pm.o
+ 
++hv_storvsc-y			:= storvsc_drv.o
 +
-+	/* read minimal guaranteed structure */
-+	ret = readn(fd, attr, PERF_ATTR_SIZE_VER0);
-+	if (ret <= 0) {
-+		pr_debug("cannot read %d bytes of header attr\n",
-+			 PERF_ATTR_SIZE_VER0);
-+		return -1;
-+	}
-+
-+	/* on file perf_event_attr size */
-+	sz = attr->size;
-+	if (ph->needs_swap)
-+		sz = bswap_32(sz);
-+
-+	if (sz == 0) {
-+		/* assume ABI0 */
-+		sz =  PERF_ATTR_SIZE_VER0;
-+	} else if (sz > our_sz) {
-+		pr_debug("file uses a more recent and unsupported ABI"
-+			 " (%zu bytes extra)\n", sz - our_sz);
-+		return -1;
-+	}
-+	/* what we have not yet read and that we know about */
-+	left = sz - PERF_ATTR_SIZE_VER0;
-+	if (left) {
-+		void *ptr = attr;
-+		ptr += PERF_ATTR_SIZE_VER0;
-+
-+		ret = readn(fd, ptr, left);
-+	}
-+	/* read perf_file_section, ids are read in caller */
-+	ret = readn(fd, &f_attr->ids, sizeof(f_attr->ids));
-+
-+	return ret <= 0 ? -1 : 0;
-+}
-+
- int perf_session__read_header(struct perf_session *session, int fd)
- {
- 	struct perf_header *header = &session->header;
-@@ -1974,19 +2019,17 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 	if (session->fd_pipe)
- 		return perf_header__read_pipe(session, fd);
+ scsi_tgt-y			+= scsi_tgt_lib.o scsi_tgt_if.o
  
--	if (perf_file_header__read(&f_header, header, fd) < 0) {
--		pr_debug("incompatible file format\n");
-+	if (perf_file_header__read(&f_header, header, fd) < 0)
- 		return -EINVAL;
--	}
+ sd_mod-objs	:= sd.o
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+similarity index 100%
+rename from drivers/staging/hv/storvsc_drv.c
+rename to drivers/scsi/storvsc_drv.c
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 783bc0a..eb914ce 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -78,8 +78,6 @@ source "drivers/staging/vt6655/Kconfig"
  
--	nr_attrs = f_header.attrs.size / sizeof(f_attr);
-+	nr_attrs = f_header.attrs.size / f_header.attr_size;
- 	lseek(fd, f_header.attrs.offset, SEEK_SET);
+ source "drivers/staging/vt6656/Kconfig"
  
- 	for (i = 0; i < nr_attrs; i++) {
- 		struct perf_evsel *evsel;
- 		off_t tmp;
+-source "drivers/staging/hv/Kconfig"
+-
+ source "drivers/staging/vme/Kconfig"
  
--		if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
-+		if (read_attr(fd, header, &f_attr) < 0)
- 			goto out_errno;
- 
- 		if (header->needs_swap)
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 3f3afed..5476320 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -24,7 +24,7 @@ static int perf_session__open(struct perf_session *self, bool force)
- 		self->fd = STDIN_FILENO;
- 
- 		if (perf_session__read_header(self, self->fd) < 0)
--			pr_err("incompatible file format");
-+			pr_err("incompatible file format (rerun with -v to learn more)");
- 
- 		return 0;
- 	}
-@@ -56,7 +56,7 @@ static int perf_session__open(struct perf_session *self, bool force)
- 	}
- 
- 	if (perf_session__read_header(self, self->fd) < 0) {
--		pr_err("incompatible file format");
-+		pr_err("incompatible file format (rerun with -v to learn more)");
- 		goto out_close;
- 	}
- 
+ source "drivers/staging/sep/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 077a3f3..e6f14f5 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -30,7 +30,6 @@ obj-$(CONFIG_USB_SERIAL_QUATECH_USB2)	+= quatech_usb2/
+ obj-$(CONFIG_OCTEON_ETHERNET)	+= octeon/
+ obj-$(CONFIG_VT6655)		+= vt6655/
+ obj-$(CONFIG_VT6656)		+= vt6656/
+-obj-$(CONFIG_HYPERV)		+= hv/
+ obj-$(CONFIG_VME_BUS)		+= vme/
+ obj-$(CONFIG_DX_SEP)            += sep/
+ obj-$(CONFIG_IIO)		+= iio/
+diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+deleted file mode 100644
+index 60ac479..0000000
+--- a/drivers/staging/hv/Kconfig
++++ /dev/null
+@@ -1,5 +0,0 @@
+-config HYPERV_STORAGE
+-	tristate "Microsoft Hyper-V virtual storage driver"
+-	depends on HYPERV && SCSI
+-	help
+-	 Select this option to enable the Hyper-V virtual storage driver.
+diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
+deleted file mode 100644
+index af95a6b..0000000
+--- a/drivers/staging/hv/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+-
+-hv_storvsc-y := storvsc_drv.o
+diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
+deleted file mode 100644
+index dea7d92..0000000
+--- a/drivers/staging/hv/TODO
++++ /dev/null
+@@ -1,5 +0,0 @@
+-TODO:
+-	- audit the scsi driver
+-
+-Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
+-Haiyang Zhang <haiyangz@microsoft.com>, and K. Y. Srinivasan <kys@microsoft.com>
 -- 
 1.7.4.1
 
