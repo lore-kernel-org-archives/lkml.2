@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab2BIP7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 10:59:49 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:31076 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab2BIP7r (ORCPT
+	id S1758036Ab2BIQA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:00:57 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:42094 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab2BIQAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 10:59:47 -0500
-Message-ID: <4F33ED71.2090304@tilera.com>
-Date: Thu, 9 Feb 2012 10:59:45 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Thu, 9 Feb 2012 11:00:54 -0500
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, Gilad Ben-Yossef <gilad@benyossef.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <20120201170443.GE6731@somewhere.redhat.com> <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com> <20120202162420.GE9071@somewhere.redhat.com> <alpine.DEB.2.00.1202021028120.6221@router.home> <20120209155246.GD22552@somewhere.redhat.com>
-In-Reply-To: <20120209155246.GD22552@somewhere.redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F334B8C.2050005@zytor.com>
+References: <20120116183730.GB21112@redhat.com>
+	<49017bd7edab7010cd9ac767e39d99e4.squirrel@webmail.greenhost.nl>
+	<20120118015013.GR11715@one.firstfloor.org>
+	<20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+	<20120118022217.GS11715@one.firstfloor.org>
+	<fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+	<CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+	<CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+	<fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+	<CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+	<CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+	<dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>
+	<4F3007AD.50307@zytor.com>
+	<c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>
+	<4F33110D.3050904@zytor.com>
+	<13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>
+	<4F334B8C.2050005@zytor.com>
+Date: Thu, 9 Feb 2012 08:00:53 -0800
+Message-ID: <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Indan Zupancic <indan@nul.nu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/9/2012 10:52 AM, Frederic Weisbecker wrote:
-> On Thu, Feb 02, 2012 at 10:29:57AM -0600, Christoph Lameter wrote:
->> On Thu, 2 Feb 2012, Frederic Weisbecker wrote:
+On Wed, Feb 8, 2012 at 8:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/08/2012 08:20 PM, Indan Zupancic wrote:
 >>
->>>> Some pinned timers might be able to get special treatment as well - take for
->>>> example the vmstat work being schedule every second, what should we do with
->>>> it for CPU isolation?
->>> Right, I remember I saw these vmstat timers on my way when I tried to get 0
->>> interrupts on a CPU.
->>>
->>> I think all these timers need to be carefully reviewed before doing anything.
->>> But we certainly shouldn't adopt the behaviour of migrating timers by default.
->>>
->>> Some timers really needs to stay on the expected CPU. Note that some
->>> timers may be shutdown by CPU hotplug callbacks. Those wouldn't be migrated
->>> in case of CPU offlining. We need to keep them.
->>>
->>>> It makes sense to me to have that stop scheduling itself when we have the tick
->>>> disabled for both idle and a nohz task.
->> The vmstat timer only makes sense when the OS is doing something on the
->> processor. Otherwise if no counters are incremented and the page and slab
->> allocator caches are empty then there is no need to run the vmstat timer.
-> So this is a typical example of a timer we want to shutdown when the CPU is idle
-> but we want to keep it running when we run in adaptive tickless mode (ie: shutdown
-> the tick while the CPU is busy).
+>> CS is already available to user space, but any other value than 0x23 or 0x33
+>> will confuse user space, as that is all they know about. Apparently Xen uses
+>> different values, but if those are static then user space can check for them
+>> separately. But if the values change dynamically then some other way may be
+>> needed.
+>>
+>> But does it make much sense to pass the CPU mode of user space if that mode
+>> can be changed at any moment? I don't think it really does. Can you give an
+>> example of how that info can be used by a ptracer?
+>>
+>
+> Uh... you could make THAT argument about ANY register state!
+>
+> I believe H.J. can fill you in about the usage.
+>
 
-We would want to stop the timer as long as the processor is running
-exclusively userspace code.  Christoph's point is that in either the idle
-case or the userspace-only case, the vmstats won't be incrementing anyway. 
-Presumably you'd restart the timer when you enter the kernel, then when it
-fires and does its work, you might notice that when you return to userspace
-no further information will be collected, so stop the timer at that point. 
-Or, perhaps you could just proactively call refresh_cpu_vm_stats() just
-before stopping the tick and returning "permanently" to userspace, to make
-sure the stats are all properly updated.
+GDB uses CS value to tell ia32 process from x86-64 process.
+At minimum, we need a bit in CS for GDB.  But any changes
+will break old GDB.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+H.J.
