@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab2BIQp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:45:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab2BIQp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:45:27 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] Use NUMA node cpu mask in irq affinity [v2]
-Date: Thu,  9 Feb 2012 11:44:57 -0500
-Message-Id: <1328805897-16359-1-git-send-email-prarit@redhat.com>
+	id S1758125Ab2BIQpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:45:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36815 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab2BIQpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 11:45:24 -0500
+Date: Thu, 9 Feb 2012 20:45:19 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH] sched: Turn lock_task_sighand() into a static inline
+Message-ID: <20120209164519.GA10266@oksana.dev.rtsoft.ru>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162930.GA5117@oksana.dev.rtsoft.ru>
+ <20120206163542.GA10104@kroah.com>
+ <20120206185909.GB7741@oksana.dev.rtsoft.ru>
+ <20120206191854.GA16702@kroah.com>
+ <CAHGf_=r+nReQSfdvU7+FAhMRBkZPzQ2Jg6Puw9SmvW7WijpN7A@mail.gmail.com>
+ <20120207044816.GA31271@oksana.dev.rtsoft.ru>
+ <20120208152750.GA15782@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120208152750.GA15782@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq affinity files (/proc/irq/.../smp_affinity) contain a mask that is u
-to "pin" an irq to a set of cpus.  On boot this set is currently all cpus.
-This can be incorrect as ACPI SRAT may tell us that a specific device or
-bus is attached to a particular node and it's cpus.
+It appears that sparse tool understands static inline functions for
+context balance checking, so let's turn the macros into an inline func.
 
-When setting up the irq affinity we should take into account the NUMA node
-cpu mask by and'ing it into the irq's affinity mask.
+This makes the code a little bit more robust.
 
-[v2]: Thomas and Yinghai pointed out that it is possible that the mask is
-empty after and'ing in the NUMA node's cpumask.  The code now checks to see
-if the mask will be empty before applying the NUMA node's cpumask.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- kernel/irq/manage.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a9a9dbe..3064f2f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -301,6 +301,13 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- 	}
+On Wed, Feb 08, 2012 at 04:27:50PM +0100, Oleg Nesterov wrote:
+> On 02/07, Anton Vorontsov wrote:
+> >
+> > On Mon, Feb 06, 2012 at 04:27:32PM -0500, KOSAKI Motohiro wrote:
+> > >
+> > > Some __cond_lock() caller are inline functions. Is this bad?
+> >
+> > No, that's great, actually. :-) Not obvious, but seems like
+> > sparse understands __cond_lock in inline functions, so I'd
+> > better use it.
+> 
+> Hmm, great...
+> 
+> may be you can update lock_task_sighand() too ? (in a separate
+> patch of course).
+
+Sure thing. Here it goes...
+
+ include/linux/sched.h |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e82f721..22ae10e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2394,12 +2394,15 @@ static inline void task_unlock(struct task_struct *p)
+ extern struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+ 							unsigned long *flags);
  
- 	cpumask_and(mask, cpu_online_mask, set);
-+	if (desc->irq_data.node != -1) {
-+		const struct cpumask *nodemask =
-+					   cpumask_of_node(desc->irq_data.node);
-+		/* make sure at least one of the cpus in nodemask is online */
-+		if (cpumask_intersects(mask, nodemask))
-+			cpumask_and(mask, mask, nodemask);
-+	}
- 	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
- 	switch (ret) {
- 	case IRQ_SET_MASK_OK:
+-#define lock_task_sighand(tsk, flags)					\
+-({	struct sighand_struct *__ss;					\
+-	__cond_lock(&(tsk)->sighand->siglock,				\
+-		    (__ss = __lock_task_sighand(tsk, flags)));		\
+-	__ss;								\
+-})									\
++static inline struct sighand_struct *lock_task_sighand(struct task_struct *tsk,
++						       unsigned long *flags)
++{
++	struct sighand_struct *ret;
++
++	ret = __lock_task_sighand(tsk, flags);
++	(void)__cond_lock(&tsk->sighand->siglock, ret);
++	return ret;
++}
+ 
+ static inline void unlock_task_sighand(struct task_struct *tsk,
+ 						unsigned long *flags)
 -- 
-1.7.1
+1.7.8.3
 
