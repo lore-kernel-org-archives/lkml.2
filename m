@@ -1,166 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab2BIISJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:18:09 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50446 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab2BIISH (ORCPT
+	id S1756838Ab2BIIZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:25:23 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:65505 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2BIIZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:18:07 -0500
-X-AuditID: b753bd60-a1c87ba000000655-ac-4f33813a2395
-X-AuditID: b753bd60-a1c87ba000000655-ac-4f33813a2395
-Message-ID: <4F338135.5090407@hitachi.com>
-Date: Thu, 09 Feb 2012 17:17:57 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Thu, 9 Feb 2012 03:25:21 -0500
+Message-ID: <4F3382CF.8090302@atmel.com>
+Date: Thu, 09 Feb 2012 09:24:47 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove breakpoints.
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com> <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com> <20120207171707.GA24443@linux.vnet.ibm.com> <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com> <4F3320E5.1050707@hitachi.com> <20120209063745.GB16600@linux.vnet.ibm.com>
-In-Reply-To: <20120209063745.GB16600@linux.vnet.ibm.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Jamie Iles <jamie@jamieiles.com>
+Subject: Re: [PATCH 09/50] Cadence MACB: use dev_hw_addr_random() instead
+ of random_ether_addr()
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-10-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1328735457-29986-10-git-send-email-danny.kukawka@bisect.de>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/02/09 15:37), Srikar Dronamraju wrote:
->>
->> No, that is a meaningless operation.
->> As I originally said,
->>
->>> insn_get_length(insn);
->>> if (insn->rex_prefix.nbytes) {
->>> 	cursor = uprobe->insn + insn_offset_rex_prefix(insn);
->>> 	*cursor &= 0xfe;	/* Clearing REX.B bit */
->>> }
->>
+On 02/08/2012 10:10 PM, Danny Kukawka :
+> Use dev_hw_addr_random() instead of calling random_ether_addr()
+> to set addr_assign_type correctly to NET_ADDR_RANDOM.
 > 
-> I am confused by why we need to call insn_get_length(insn) before
-> checking insn->rex_prefix.nbytes? Is it needed.
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-Ah, certainly, no, if the insn is already decoded.
+Danny,
 
-> Denys and Masami, can you please confirm if below is fine.
-> 
-> 
-> #ifdef CONFIG_X86_64
-> /*
->  * If uprobe->insn doesn't use rip-relative addressing, return
->  * immediately.  Otherwise, rewrite the instruction so that it accesses
->  * its memory operand indirectly through a scratch register.  Set
->  * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
->  * accordingly.  (The contents of the scratch register will be saved
->  * before we single-step the modified instruction, and restored
->  * afterward.)
->  *
->  * We do this because a rip-relative instruction can access only a
->  * relatively small area (+/- 2 GB from the instruction), and the XOL
->  * area typically lies beyond that area.  At least for instructions
->  * that store to memory, we can't execute the original instruction
->  * and "fix things up" later, because the misdirected store could be
->  * disastrous.
->  *
->  * Some useful facts about rip-relative instructions:
->  * - There's always a modrm byte.
->  * - There's never a SIB byte.
->  * - The displacement is always 4 bytes.
->  */
-> static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
-> 							struct insn *insn)
-> {
+You can add my "Acked-by" even if you rework this series...
 
-> 	u8 *cursor;
-> 	u8 reg;
-> 
-> 	if (mm->context.ia32_compat)
-> 		return;
-> 
-> 	uprobe->arch_info.rip_rela_target_address = 0x0;
-> 	if (!insn_rip_relative(insn))
-> 		return;
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Here, I think it is better to add a comment that
-insn_rip_relative() decodes until modrm. :)
+Thanks, best regards,
 
+> ---
+>  drivers/net/ethernet/cadence/macb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> 	/* Clear REX.b bit (extension of MODRM.rm field):
-> 	 * we want to encode rax/rcx, not r8/r9.
-> 	 */
-> 	if (insn->rex_prefix.nbytes) {
-> 		cursor = uprobe->insn + insn_offset_rex_prefix(insn);
-> 		*cursor &= 0xfe;
-> 	}
-> 
-> 	/*
-> 	 * Point cursor at the modrm byte.  The next 4 bytes are the
-> 	 * displacement.  Beyond the displacement, for some instructions,
-> 	 * is the immediate operand.
-> 	 */
-> 	cursor = uprobe->insn + insn_offset_modrm(insn);
-> 	insn_get_length(insn);
-> 
-> 	/*
-> 	 * Convert from rip-relative addressing to indirect addressing
-> 	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
-> 	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
-> 	 */
-> 	reg = MODRM_REG(insn);
-> 	if (reg == 0) {
-> 		/*
-> 		 * The register operand (if any) is either the A register
-> 		 * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
-> 		 * REX prefix) %r8.  In any case, we know the C register
-> 		 * is NOT the register operand, so we use %rcx (register
-> 		 * #1) for the scratch register.
-> 		 */
-> 		uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
-> 		/* Change modrm from 00 000 101 to 00 000 001. */
-> 		*cursor = 0x1;
-> 	} else {
-> 		/* Use %rax (register #0) for the scratch register. */
-> 		uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
-> 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
-> 		*cursor = (reg << 3);
-> 	}
-> 
-> 	/* Target address = address of next instruction + (signed) offset */
-> 	uprobe->arch_info.rip_rela_target_address = (long)insn->length
-> 					+ insn->displacement.value;
-> 	/* Displacement field is gone; slide immediate field (if any) over. */
-> 	if (insn->immediate.nbytes) {
-> 		cursor++;
-> 		memmove(cursor, cursor + insn->displacement.nbytes,
-> 						insn->immediate.nbytes);
-> 	}
-> 	return;
-> }
-
-Confirmed, this looks good to me ;)
-
-Thanks!
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 2320068..3ee8d79 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -87,7 +87,7 @@ static void __init macb_get_hwaddr(struct macb *bp)
+>  		memcpy(bp->dev->dev_addr, addr, sizeof(addr));
+>  	} else {
+>  		netdev_info(bp->dev, "invalid hw address, using random\n");
+> -		random_ether_addr(bp->dev->dev_addr);
+> +		dev_hw_addr_random(bp->dev, bp->dev->dev_addr);
+>  	}
+>  }
+>  
 
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Nicolas Ferre
