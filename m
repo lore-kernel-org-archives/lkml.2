@@ -1,114 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758347Ab2BITM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 14:12:27 -0500
-Received: from joshcartwright.net ([69.164.192.171]:50723 "EHLO
-	li107-171.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758364Ab2BITMY (ORCPT
+	id S1758352Ab2BITPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 14:15:17 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62009 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758274Ab2BITPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 14:12:24 -0500
-X-Greylist: delayed 1284 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Feb 2012 14:12:24 EST
-Date: Thu, 9 Feb 2012 13:50:43 -0500
-From: Josh Cartwright <joshc@linux.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] jffs2: Fix lock acquisition order bug in gc path
-Message-ID: <20120209185043.GA12089@joshcartwright.net>
+	Thu, 9 Feb 2012 14:15:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <21276.1328813456@redhat.com>
+References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
+ <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com>
+ <CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com>
+ <7095.1328809567@redhat.com> <CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com>
+ <8689.1328810841@redhat.com> <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
+ <21276.1328813456@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 9 Feb 2012 11:14:55 -0800
+X-Google-Sender-Auth: BLV4qN3cs_MH3FesWptuAgtXklM
+Message-ID: <CA+55aFzePmV8st-PaQeO_eS05CUWQePDoQsXdd=HaiLffz+wxw@mail.gmail.com>
+Subject: Re: [PATCH] Reduce the number of expensive division instructions done
+ by _parse_integer()
+To: David Howells <dhowells@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, adobriyan@gmail.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The locking policy is such that the erase_complete_block spinlock is
-nested within the alloc_sem mutex.  This fixes a case in which the
-acquisition order was erroneously reversed.  This issue was caught by
-the following lockdep splat:
+Btw, what was the load that you noticed this on?
 
-   =======================================================
-   [ INFO: possible circular locking dependency detected ]
-   3.0.5 #1
-   -------------------------------------------------------
-   jffs2_gcd_mtd6/299 is trying to acquire lock:
-    (&c->alloc_sem){+.+.+.}, at: [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
+Because quite frankly, I think we only support bases 8/10/16 in the
+kernel, and if you really have some case where this all is expensive,
+it might be better to simply have three different functions for the
+three bases. That would turn the multiplies into constants too, and
+also simplify the character tests.
 
-   but task is already holding lock:
-    (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
+That said, I can't really see how this could ever be all that hot a
+function. Did you ever see it in a profile, or was this all just from
+looking at the code?
 
-   which lock already depends on the new lock.
-
-   the existing dependency chain (in reverse order) is:
-
-   -> #1 (&(&c->erase_completion_lock)->rlock){+.+...}:
-          [<c008bec4>] validate_chain+0xe6c/0x10bc
-          [<c008c660>] __lock_acquire+0x54c/0xba4
-          [<c008d240>] lock_acquire+0xa4/0x114
-          [<c046780c>] _raw_spin_lock+0x3c/0x4c
-          [<c01f744c>] jffs2_garbage_collect_pass+0x4c/0x890
-          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
-          [<c0071a68>] kthread+0x98/0xa0
-          [<c000f264>] kernel_thread_exit+0x0/0x8
-
-   -> #0 (&c->alloc_sem){+.+.+.}:
-          [<c008ad2c>] print_circular_bug+0x70/0x2c4
-          [<c008c08c>] validate_chain+0x1034/0x10bc
-          [<c008c660>] __lock_acquire+0x54c/0xba4
-          [<c008d240>] lock_acquire+0xa4/0x114
-          [<c0466628>] mutex_lock_nested+0x74/0x33c
-          [<c01f7714>] jffs2_garbage_collect_pass+0x314/0x890
-          [<c01f937c>] jffs2_garbage_collect_thread+0x1b4/0x1cc
-          [<c0071a68>] kthread+0x98/0xa0
-          [<c000f264>] kernel_thread_exit+0x0/0x8
-
-   other info that might help us debug this:
-
-    Possible unsafe locking scenario:
-
-          CPU0                    CPU1
-          ----                    ----
-     lock(&(&c->erase_completion_lock)->rlock);
-                                  lock(&c->alloc_sem);
-                                  lock(&(&c->erase_completion_lock)->rlock);
-     lock(&c->alloc_sem);
-
-    *** DEADLOCK ***
-
-   1 lock held by jffs2_gcd_mtd6/299:
-    #0:  (&(&c->erase_completion_lock)->rlock){+.+...}, at: [<c01f7708>] jffs2_garbage_collect_pass+0x308/0x890
-
-   stack backtrace:
-   [<c00155dc>] (unwind_backtrace+0x0/0x100) from [<c0463dc0>] (dump_stack+0x20/0x24)
-   [<c0463dc0>] (dump_stack+0x20/0x24) from [<c008ae84>] (print_circular_bug+0x1c8/0x2c4)
-   [<c008ae84>] (print_circular_bug+0x1c8/0x2c4) from [<c008c08c>] (validate_chain+0x1034/0x10bc)
-   [<c008c08c>] (validate_chain+0x1034/0x10bc) from [<c008c660>] (__lock_acquire+0x54c/0xba4)
-   [<c008c660>] (__lock_acquire+0x54c/0xba4) from [<c008d240>] (lock_acquire+0xa4/0x114)
-   [<c008d240>] (lock_acquire+0xa4/0x114) from [<c0466628>] (mutex_lock_nested+0x74/0x33c)
-   [<c0466628>] (mutex_lock_nested+0x74/0x33c) from [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890)
-   [<c01f7714>] (jffs2_garbage_collect_pass+0x314/0x890) from [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc)
-   [<c01f937c>] (jffs2_garbage_collect_thread+0x1b4/0x1cc) from [<c0071a68>] (kthread+0x98/0xa0)
-   [<c0071a68>] (kthread+0x98/0xa0) from [<c000f264>] (kernel_thread_exit+0x0/0x8)
-
-Signed-off-by: Josh Cartwright <joshc@linux.com>
----
- fs/jffs2/gc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/jffs2/gc.c b/fs/jffs2/gc.c
-index 31dce61..4bbd521 100644
---- a/fs/jffs2/gc.c
-+++ b/fs/jffs2/gc.c
-@@ -225,8 +225,8 @@ int jffs2_garbage_collect_pass(struct jffs2_sb_info *c)
- 			return 0;
- 
- 		D1(printk(KERN_DEBUG "No progress from erasing blocks; doing GC anyway\n"));
--		spin_lock(&c->erase_completion_lock);
- 		mutex_lock(&c->alloc_sem);
-+		spin_lock(&c->erase_completion_lock);
- 	}
- 
- 	/* First, work out which block we're garbage-collecting */
--- 
-1.7.2.5
-
+                         Linus
