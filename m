@@ -1,47 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab2BINE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:04:29 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:57691 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756464Ab2BINE1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:04:27 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/CpqRngRPCijYS1faBp65D2jzj8UPAMIB4N9WJHh
-	tX/0+wIuZezKK/
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: Johannes Stezenbach <js@sig21.net>
-Subject: Re: swap storm since kernel 3.2.x
-Date: Thu, 9 Feb 2012 14:04:21 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.20; KDE/4.8.0; i686; ; )
-Cc: Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org
-References: <201202041109.53003.toralf.foerster@gmx.de> <CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com> <20120209113606.GA8054@sig21.net>
-In-Reply-To: <20120209113606.GA8054@sig21.net>
+	id S1757243Ab2BINFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:05:36 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:37744 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753372Ab2BINFf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:05:35 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <4F33BF05.208@gmail.com>
+References: <20120207141155.GA16184@elgon.mountain>
+	<4F323388.7040902@kernel.dk>
+	<20120208142513.4db2493a.akpm@linux-foundation.org>
+	<4F33BF05.208@gmail.com>
+Date: Thu, 9 Feb 2012 15:05:34 +0200
+X-Google-Sender-Auth: aaf07Buy3ARbHB9wszecHvqK_7s
+Message-ID: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
+Subject: Re: [PATCH RFC] slab: introduce knalloc/kxnalloc
+From: Pekka Enberg <penberg@kernel.org>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201202091404.22470.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 9, 2012 at 2:41 PM, Xi Wang <xi.wang@gmail.com> wrote:
+> This patch introduces knalloc/kxnalloc wrappers that perform integer
+> overflow checks without zeroing the memory.
+>
+> knalloc(n, size, flags) is the non-zeroing version of kcalloc(),
+> which allocates n * size bytes.
+>
+> kxnalloc(xsize, n, size, flags) allocates xsize + n * size bytes.
+> It is useful to allocate a structure ending with a zero-length array,
+> which is a commonly used pattern.  For example, in posix_acl_alloc()
+> to allocate a posix_acl object one could call
+>
+>    kxnalloc(sizeof(struct posix_acl),
+>             count, sizeof(struct posix_acl_entry), flags);
+>
+> to avoid overflowing the allocation size.
+>
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
 
-Johannes Stezenbach wrote at 12:36:06
-> On Wed, Feb 08, 2012 at 08:34:14PM +0800, Hillf Danton wrote:
-> > And I want to ask kswapd to do less work, the attached diff is
-> > based on 3.2.5, mind to test it with CONFIG_DEBUG_OBJECTS enabled?
-> 
-> Sorry, for slow reply.  The patch does not apply to 3.2.4
-> (3.2.5 only has the ASPM change which I don't want to
-> try atm).  Is the patch below correct?
-> 
-confirmed - doesn't apply here too :-(
+Are there really enough potential users to justify adding both?
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+> ---
+> I coined the name knalloc() for Andrew's wtf_do_i_call_this() in the
+> previous email.  A better name is welcome.
+>
+> I additionally added kxnalloc() since it's a common idiom.
+> ---
+>  include/linux/slab.h |   31 +++++++++++++++++++++++++++----
+>  1 files changed, 27 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 573c809..e3a1e81 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -190,7 +190,8 @@ size_t ksize(const void *);
+>  #endif
+>
+>  /**
+> - * kcalloc - allocate memory for an array. The memory is set to zero.
+> + * kxnalloc - allocate memory for an array with an extra header.
+> + * @xsize: extra header size.
+>  * @n: number of elements.
+>  * @size: element size.
+>  * @flags: the type of memory to allocate.
+> @@ -240,11 +241,33 @@ size_t ksize(const void *);
+>  * for general use, and so are not documented here. For a full list of
+>  * potential flags, always refer to linux/gfp.h.
+>  */
+> -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+> +static inline void *kxnalloc(size_t xsize, size_t n, size_t size, gfp_t flags)
+>  {
+> -       if (size != 0 && n > ULONG_MAX / size)
+> +       if (size != 0 && n > (ULONG_MAX - xsize) / size)
+>                return NULL;
+> -       return __kmalloc(n * size, flags | __GFP_ZERO);
+> +       return __kmalloc(xsize + n * size, flags);
+> +}
+> +
+> +/**
+> + * knalloc - allocate memory for an array.
+> + * @n: number of elements.
+> + * @size: element size.
+> + * @flags: the type of memory to allocate (see kmalloc).
+> + */
+> +static inline void *knalloc(size_t n, size_t size, gfp_t flags)
+> +{
+> +       return kxnalloc(0, n, size, flags);
+> +}
+
+> +/**
+> + * kcalloc - allocate memory for an array. The memory is set to zero.
+> + * @n: number of elements.
+> + * @size: element size.
+> + * @flags: the type of memory to allocate (see kmalloc).
+> + */
+> +static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+> +{
+> +       return knalloc(n, size, flags | __GFP_ZERO);
+>  }
+>
+>  #if !defined(CONFIG_NUMA) && !defined(CONFIG_SLOB)
