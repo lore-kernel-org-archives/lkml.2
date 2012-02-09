@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab2BIHTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 02:19:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42125 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755095Ab2BIHTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 02:19:41 -0500
+	id S1756013Ab2BIHad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 02:30:33 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38545 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab2BIHac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 02:30:32 -0500
+Date: Thu, 9 Feb 2012 08:30:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Jason Wang <jasowang@redhat.com>
+Subject: Re: perf: record segfaults for cycles event when collecting data on
+ a VM
+Message-ID: <20120209073024.GA18010@elte.hu>
+References: <4F32A907.6030505@gmail.com>
+ <20120208174434.GI22598@amd.com>
+ <4F32B680.3090502@gmail.com>
+ <20120208175709.GK22598@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CALSq=BaDkVraE5hRQr4gs1RT2CHEXcn35EPzcnkN78OZcoCQfg@mail.gmail.com>
-References: <20120208172320.GA30819@redhat.com>
-	<CALSq=BaDkVraE5hRQr4gs1RT2CHEXcn35EPzcnkN78OZcoCQfg@mail.gmail.com>
-Date: Thu, 9 Feb 2012 09:19:39 +0200
-Message-ID: <CANUX_P01gBqCX1XNydm=pZQMmSgUsg1D4uUx9ngeFdY8YoALDA@mail.gmail.com>
-Subject: Re: iwlagn: wrong command queue backtrace.
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-To: Daniel Halperin <dhalperi@cs.washington.edu>
-Cc: Dave Jones <davej@redhat.com>, "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        linux-kernel@vger.kernel.org, ipw3945-devel@lists.sourceforge.net,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208175709.GK22598@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> I just hit this with the iwlagn driver currently in Linus' tree.
->>
->
-> AFAICT this could be a side effect of some bad QoS packet processing.
-> The patch (http://www.spinics.net/lists/linux-wireless/msg84213.html)
-> hasn't yet made it to Linus' tree, but you could cherry-pick it...
->
 
-Although I would like to believe it is related, I don't think it is.
-The question is how reproducible this bug is.
+* Joerg Roedel <joerg.roedel@amd.com> wrote:
 
-This badly looks like your report from around 3 months:
+> > which makes sense. It forces 
+> > perf_session__find_machine_for_cpumode() to return the host 
+> > machine always.
+> 
+> Great, thanks. I will send two patches tomorrow to fix Jason's 
+> problem and change the default for perf_guest.
 
-https://lkml.org/lkml/2011/11/25/60
+Well, if the crash is fixed then the the default can stay, 
+right?
+
+Generally we should treat all input data in a perf.data or even 
+the bits we get in the ring-buffer as external data that has to 
+be checked carefully, with no assumptions made about data.
+
+Thanks,
+
+	Ingo
