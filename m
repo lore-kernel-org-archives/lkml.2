@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2BIKw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:52:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51266 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2BIKw6 (ORCPT
+	id S1752458Ab2BIK6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:58:24 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62463 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab2BIK6X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:52:58 -0500
-Message-ID: <4F33A540.7020906@mvista.com>
-Date: Thu, 09 Feb 2012 14:51:44 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Thu, 9 Feb 2012 05:58:23 -0500
 MIME-Version: 1.0
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: netdev@vger.kernel.org, Danny Kukawka <dkukawka@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steve Glendinning <steve.glendinning@smsc.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 02/50] smsc95xx: use dev_hw_addr_random() instead of random_ether_addr()
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-3-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1328735457-29986-3-git-send-email-danny.kukawka@bisect.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFx9iopC+jibPrdFqcff-h==8JVXipjeVt9_=0qAZzgYLA@mail.gmail.com>
+References: <CA+55aFwc+VvFyv3TJgZ+wZVz738sWA+csi3_u5AeZG4AiXn82g@mail.gmail.com>
+	<CAMO-S2i8Z7q2NQN4WDwvwjrNAoe2uFKhFcfpLb4gRHoZtiynzQ@mail.gmail.com>
+	<CA+55aFx9iopC+jibPrdFqcff-h==8JVXipjeVt9_=0qAZzgYLA@mail.gmail.com>
+Date: Thu, 9 Feb 2012 11:58:21 +0100
+X-Google-Sender-Auth: SodidXQEvUORc8ZUBpFMHbSuKUc
+Message-ID: <CAMuHMdWFmTP5anMb36z-OQLXeRQ4=LfsmpiM9FKnMiH=GVcdDA@mail.gmail.com>
+Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
+ 32bit environment
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hitoshi Mitake <h.mitake@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Roland Dreier <roland@purestorage.com>,
+        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Len Brown <lenb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        Kashyap Desai <Kashyap.Desai@lsi.com>, linux-kernel@vger.kernel.org,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 09-02-2012 1:10, Danny Kukawka wrote:
-
-> Use dev_hw_addr_random() instead of calling random_ether_addr()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
-
-> Signed-off-by: Danny Kukawka<danny.kukawka@bisect.de>
-> ---
->   drivers/net/usb/smsc95xx.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
-
-> diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-> index d45520e..3a28e95 100644
-> --- a/drivers/net/usb/smsc95xx.c
-> +++ b/drivers/net/usb/smsc95xx.c
-> @@ -614,7 +614,7 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
->   	}
+On Wed, Feb 8, 2012 at 17:28, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Feb 8, 2012 at 8:14 AM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>> On Tue, Feb 7, 2012 at 12:56, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>>
+>>> On Feb 6, 2012 6:47 PM, "Hitoshi Mitake" <h.mitake@gmail.com> wrote:
+>>>>
+>>>>  All of them are endian aware
+>>>
+>>> I think that part is wrong.
+>>>
+>>> Pci is little-endian, so readl and writel are always already little-endian.
+>>> Trying to make readq be endian-aware is wrong.
+>>
+>> Is every memory area which can be read/written by read[wl]/write[wl]
+>> always little-endian?
+>>
+>> If so, of course I have to eliminate the big-endian version.
+>> But I'm not sure about this point because the new readq/writeq is
+>> in asm-generic which is used by every archs, so I'd like to ask you about it.
 >
->   	/* no eeprom, or eeprom values are invalid. generate random MAC */
-> -	random_ether_addr(dev->net->dev_addr);
-> +	dev_hw_addr_random(dev->net , dev->net->dev_addr);
+> Yes, PCI is always little-endian everywhere.
+>
+> Now, some architectures may have some unified IO space where parts of
+> it is PCI, and other parts are programmed the same way but is for some
+> other bus, but the PCI part will always be little-endian because
+> otherwise no common driver would ever work. But those non-PCI things
+> would never be relevant for an emulated readq/writeq anyway, and would
+> need some bus-specific accessor functions.
 
-    Should be no space before comma.
+IIRC, some crazy hardware manufacturers did swizzle PCI busses in hardware.
+So doing a PCI "little endian" 32-bit read must be performed using a native
+(big endian) 32-bit read. And it causes more headaches for 16-bit accesses.
 
-WBR, Sergei
+Of course this must all be hidden in your readX() implementations, to make the
+common drivers work.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
