@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab2BIXyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:54:32 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:28080 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758483Ab2BIXyb (ORCPT
+	id S1758671Ab2BIX6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:58:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40366 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab2BIX6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:54:31 -0500
-Date: Fri, 10 Feb 2012 00:55:07 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Curtis McEnroe <programble@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tm6000: Don't use pointer after freeing it in
- tm6000_ir_fini()
-In-Reply-To: <20120206070939.GA19754@avionic-0098.mockup.avionic-design.de>
-Message-ID: <alpine.LNX.2.00.1202100054540.32491@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201290239460.20079@swampdragon.chaosbits.net> <20120206070939.GA19754@avionic-0098.mockup.avionic-design.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 9 Feb 2012 18:58:11 -0500
+Date: Thu, 9 Feb 2012 15:58:05 -0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com,
+        Linus Walleij <linus.ml.walleij@gmail.com>
+Subject: Re: [PATCH v4 4/4] gpio: pl061: enable interrupts with DT style
+ binding
+Message-ID: <20120209235805.GB3135@r65073-Latitude-D630>
+References: <1328308512-22594-1-git-send-email-robherring2@gmail.com>
+ <1328308512-22594-5-git-send-email-robherring2@gmail.com>
+ <20120209200435.GB2493@r65073-Latitude-D630>
+ <4F34429E.8070605@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F34429E.8070605@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Feb 2012, Thierry Reding wrote:
+On Thu, Feb 09, 2012 at 04:03:10PM -0600, Rob Herring wrote:
+> 
+> On 02/09/2012 02:04 PM, Shawn Guo wrote:
+> > On Fri, Feb 03, 2012 at 04:35:12PM -0600, Rob Herring wrote:
+> > ...
+> >> @@ -126,18 +127,16 @@ static void pl061_set_value(struct gpio_chip *gc, unsigned offset, int value)
+> >>  static int pl061_to_irq(struct gpio_chip *gc, unsigned offset)
+> >>  {
+> >>  	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+> >> -
+> >> -	if (chip->irq_base <= 0)
+> >> -		return -EINVAL;
+> >> -
+> >> -	return chip->irq_base + offset;
+> >> +	if (!chip->irq_gc)
+> >> +		return -ENXIO;
+> >> +	return irq_find_mapping(chip->irq_gc->domain, offset);
+> > 
+> > If I understand the driver correctly, it will add a linear domain for
+> > dt case.  Do you have code somewhere creating the mapping before this
+> > irq_find_mapping gets called here?  The reason I'm asking this is I
+> > have to call irq_create_mapping rather than irq_find_mapping here to
+> > get imx gpio driver working with linear domain, otherwise the
+> > irq_find_mapping call will fail.
+> > 
+> 
+> Right, the user has to call irq_of_parse_and_map (which calls
+> irq_create_mapping ultimately). Interrupts are allocated on demand. The
+> dts needs to declare the gpio controller as an interrupt-controller and
+> the node using the gpio line needs to set its interrupt parent and
+> interrupt connection
+> 
+Yes, that's how dt users use irq.  But since I'm trying to make the
+imx gpio irq_domain as linear for both non-dt and dt users.  Calling
+irq_create_mapping here may make sense for me, since it will not
+require all these non-dt users change the way they use gpio irq.
 
-> * Jesper Juhl wrote:
-> > In tm6000_ir_fini() there seems to be a problem. 
-> > rc_unregister_device(ir->rc); calls rc_free_device() on the pointer it is 
-> > given, which frees it.
-> > 
-> > Subsequently the function does:
-> > 
-> >   if (!ir->polling)
-> >     __tm6000_ir_int_stop(ir->rc);
-> > 
-> > and __tm6000_ir_int_stop() dereferences the pointer it is given, which
-> > has already been freed.
-> > 
-> > and it also does:
-> > 
-> >   tm6000_ir_stop(ir->rc);
-> > 
-> > which also dereferences the (already freed) pointer.
-> > 
-> > So, it seems that the call to rc_unregister_device() should be move
-> > below the calls to __tm6000_ir_int_stop() and tm6000_ir_stop(), so
-> > those don't operate on a already freed pointer.
-> > 
-> > But, I must admit that I don't know this code *at all*, so someone who
-> > knows the code should take a careful look before applying this
-> > patch. It is based purely on inspection of facts of what is beeing
-> > freed where and not at all on understanding what the code does or why.
-> > I don't even have a means to test it, so beyond testing that the
-> > change compiles it has seen no testing what-so-ever.
-> > 
-> > Anyway, here's a proposed patch.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  drivers/media/video/tm6000/tm6000-input.c |    3 +--
-> >  1 files changed, 1 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/media/video/tm6000/tm6000-input.c b/drivers/media/video/tm6000/tm6000-input.c
-> > index 7844607..859eb90 100644
-> > --- a/drivers/media/video/tm6000/tm6000-input.c
-> > +++ b/drivers/media/video/tm6000/tm6000-input.c
-> > @@ -481,8 +481,6 @@ int tm6000_ir_fini(struct tm6000_core *dev)
-> >  
-> >  	dprintk(2, "%s\n",__func__);
-> >  
-> > -	rc_unregister_device(ir->rc);
-> > -
-> >  	if (!ir->polling)
-> >  		__tm6000_ir_int_stop(ir->rc);
-> >  
-> > @@ -492,6 +490,7 @@ int tm6000_ir_fini(struct tm6000_core *dev)
-> >  	tm6000_flash_led(dev, 0);
-> >  	ir->pwled = 0;
-> >  
-> > +	rc_unregister_device(ir->rc);
-> >  
-> >  	kfree(ir);
-> >  	dev->ir = NULL;
-> > -- 
-> > 1.7.8.4
-> 
-> Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
-> 
-Thanks :-)
+Even for dt users, there may have some case that can not work in the
+way we expect.
+
+	soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "simple-bus";
+		interrupt-parent = <&tzic>;
+		ranges;
+
+		esdhc@70008000 { /* ESDHC2 */
+			compatible = "fsl,imx51-esdhc";
+			reg = <0x70008000 0x4000>;
+			interrupts = <2>;
+			cd-gpios = <&gpio1 6 0>;
+			wp-gpios = <&gpio1 5 0>;
+		};
+	};
+
+In above SD example, irq_of_parse_and_map will just work out the SD
+controller internal irq to tzic.  How can we work out the card-detection
+irq to gpio controller in the same way?
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Regards,
+Shawn
