@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab2BILob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 06:44:31 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:50161 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756700Ab2BILoa (ORCPT
+	id S1756983Ab2BILzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 06:55:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39866 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753291Ab2BILzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 06:44:30 -0500
-Subject: OMAP4 HDMI PHY bug work-around for stable
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: stable@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-vWDozE+asA7fLExxzMhi"
-Date: Thu, 09 Feb 2012 13:44:25 +0200
-Message-ID: <1328787865.1909.64.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
+	Thu, 9 Feb 2012 06:55:05 -0500
+Date: Thu, 9 Feb 2012 11:55:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1 1/2] mfd: tps65910: use regmap for device register
+ access.
+Message-ID: <20120209115502.GD3058@opensource.wolfsonmicro.com>
+References: <1328697985-22504-1-git-send-email-ldewangan@nvidia.com>
+ <20120208114120.GF3120@opensource.wolfsonmicro.com>
+ <4F32676F.1010305@nvidia.com>
+ <20120208130726.GB5943@opensource.wolfsonmicro.com>
+ <4F3279D6.4000009@nvidia.com>
+ <20120208135816.GE5943@opensource.wolfsonmicro.com>
+ <4F335385.5040400@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W5WqUoFLvi1M7tJE"
+Content-Disposition: inline
+In-Reply-To: <4F335385.5040400@nvidia.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-vWDozE+asA7fLExxzMhi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--W5WqUoFLvi1M7tJE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hi,
+On Thu, Feb 09, 2012 at 10:33:01AM +0530, Laxman Dewangan wrote:
+> On Wednesday 08 February 2012 07:28 PM, Mark Brown wrote:
 
-There is a hardware bug on OMAP4, which may cause the HDMI output to
-break irreversibly. A work-around for the bug has been merged into
-mainline, but is missing from stable.
+> >But that's just raw_write(), there's no benefit to the additional API
+> >call.
 
-I've backported the necessary patches on top of 3.0, 3.1 and 3.2 stable
-trees, and pushed the following branches to:
+> raw_write supported for the volatile register only.
 
-git://gitorious.org/linux-omap-dss2/linux.git
+That's an implementation detail since there's little if any use case for
+such use, the main use of raw_write() is dumping blocks of data like
+firmwares and coefficients which are rarely cached.
 
-fixes/for-3.0-stable
-fixes/for-3.1-stable
-fixes/for-3.2-stable
+> I require an api which can work for volatile as well as non-volatile
+> registers.
+> Either extend raw_write to support both cases (remove warning and
+> handle properly) or add bulk_write.
 
-3.0 and 3.1 branches additionally contain a patch "OMAP: DSS2: HDMI: use
-default dividers", which fixes a problem with the HDMI clock divider.
-Without that the HDMI output won't start at all on those versions.
+> I think as bulk_read is there and so having bulk_write on same line
+> should be OK.
 
-The branches contain the following backported patches:
+Note that there's a very important difference between the bulk and raw
+versions of the API which you're not taking into account: the bulk
+version takes care of endianness differences between the device and the
+host.  This would mean that for send we'd need to rewrite the input
+array which means we have to take a copy of the data as we probably
+shouldn't be changing the input data.
 
-      OMAP: DSS2: HDMI: use default dividers
-      OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
-      OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
-      OMAPDSS: remove wrong HDMI HPD muxing
-      OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
-      OMAP: 4430SDP/Panda: add HDMI HPD gpio
-      OMAPDSS: HDMI: PHY burnout fix
+Indeed, looking at the drivers in mainline I can't actually see any of
+them which do block writes.
 
-Of those, the actual fix is in the last one, but as the GPIOs for HDMI
-were a mess, they needed some cleanup patches before the fix could be
-made.
-
-I'm not familiar with the process with stable kernels, so are the
-branches above fine to get them merged? Or should I send the patches
-with git-send-email?
-
- Tomi
-
-
---=-vWDozE+asA7fLExxzMhi
+--W5WqUoFLvi1M7tJE
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPM7GZAAoJEPo9qoy8lh719ooQAJ3DlH97yecbChhZY/O2bqAc
-R5iRhMP7UWp+DwS/h40WBdBEFoVI+iuVNdRzcqp64lt/+LAI+f+ExXTtaGaVfKGv
-oev+v6OrUOOYJIoMUIH4KJBvpsOERetueAQKXMvKlResJpdzk9wBcuM8P51+l3kE
-f/GOxbfuGpwVmAlXw9rcbMaTj9IUp+MWL2EyN4gZWIfT5O2DlH3LgB/Li6MExWxA
-XyefZ4Xzr9WeHm+8xn4pv2ndEPhLpQWN3pPBGa2uOdg0DY4tTDzJBPOAs9ItASQF
-lXoKbwpOwxHFBJnpWJDYg9yNVjBtplFg68SGbzkEK5gzjQrFErcl4/19EQryVvUW
-57u012W3uXTBGcckkTw5vobJeOm8B2CTtks7U/FdZyYdx1l9chSv9/Rk5PviPZqT
-I2YxmcmsKlcK89JEBO8yf+KueJhQ0weDClgYm51/FX46qs7Bce7bIJ0pMiA10cpP
-Ghw1kfxDGfQwVSF8Q/pqHQELoopydguirxFaDKqPq7WGjIaIghDTPCK/jjBhfQol
-BlpCjLrlGQqJwlj9v7/5yZ9l2h2gggIKQ0/pTPDz/g1DI0Wi6YSELOgLDQAEfWl1
-KCxrPPmBYaydsXdtuHqIyFnYwrt+Qoh4visfB0Bj7Uv9wLe4k9F/glxIGjOf1awf
-UdyB0ToVbaM/Zm/6gU73
-=dg9R
+iQIcBAEBAgAGBQJPM7QQAAoJEBus8iNuMP3dLRkP/iuVLtpni03P5BSvWFmus4PX
+yuseBnRJftR7+P8NCkJwhlCJwG2WGPPKXA3yjKjiCiy/6+9k86KYBCKMsKV6s+5P
+ezRAVASqvBHJeUHJdmDh/xBwwr24gX65QVU3OuR74hCrsE0YnyFzAyQuTkrp+VIi
+iP8uWQRWs/LnDBdKdHAOffnonA7iYIa69RGF3MX0fmX9RmPtKhMCM0C2oKVKaaTR
+FajJozIP1huPHyc6kUuwtZiDZKOwY9LfaJXe/Pd3f+DUkAizxOuF/E0SHNBafy2v
+yhdeB6ejWcGbodOwYtC9fDhZjmlUubSjKJNry2CKcmXd4kWofbadTv8LEoKTDorv
+jhFjfHSKBhSadstLUpHMX7cCEzr9vtRTup1i+c5Rd32uNsnfx6JIPRR78MVRC8c3
+jNVGB3CQYW5/0z4z5P6EQbtThTDG3qyF3DdZCerUE7IK+dQLGzwG2WiUjWOMDTIs
+ONEI0xIeGMZm+OaUx9HxR1Aepvda+bRKHkJCklh0LuTet1FEuNYhwEE3ECrZnllk
+uk17d/IRmhSyKdsu6y/E4aB7hWF198NI4wNo6qqfTbi4czS5bBc6B2vcHzqq+GSr
+bXAUsEUaQG1Je/i/K4qltIoUC0jT81vC/3psMPZudwZjybuRXzmi+LBGQEdsDCRB
+yWaMUZRfNFIXzdDR0i1w
+=IO5P
 -----END PGP SIGNATURE-----
 
---=-vWDozE+asA7fLExxzMhi--
-
+--W5WqUoFLvi1M7tJE--
