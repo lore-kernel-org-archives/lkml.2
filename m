@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab2BISI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:08:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61040 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab2BISI5 (ORCPT
+	id S1758098Ab2BISLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:11:38 -0500
+Received: from mail-vx0-f206.google.com ([209.85.220.206]:48639 "EHLO
+	mail-vx0-f206.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab2BISLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:08:57 -0500
+	Thu, 9 Feb 2012 13:11:37 -0500
+X-Greylist: delayed 2275 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Feb 2012 13:11:37 EST
 MIME-Version: 1.0
-In-Reply-To: <8689.1328810841@redhat.com>
-References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
- <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com>
- <CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com>
- <7095.1328809567@redhat.com> <CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com>
- <8689.1328810841@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 9 Feb 2012 10:08:36 -0800
-X-Google-Sender-Auth: BOuQRT75Qt8uD_0XegfbOnSx-k8
-Message-ID: <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
-Subject: Re: [PATCH] Reduce the number of expensive division instructions done
- by _parse_integer()
-To: David Howells <dhowells@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, adobriyan@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <20cf307ac46bcf87dc04b88b69c0@google.com>
+Date: Thu, 09 Feb 2012 17:33:42 +0000
+Subject: Permission Request for 'FoundBug - Linux Kernel N...'
+From: Deborah Markovski <markovski.deb@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; delsp=yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 10:07 AM, David Howells <dhowells@redhat.com> wrote:
->
-> Do you want me to attach my patch description to your patch, or do you want to
-> do that?
+Hello,
 
-I'll commit it as yours and with your commentary, my changes were
-purely cosmetic and just made the x86-64 inner loop look better.
+I've known you website for ages, strictly speaking from year 2009. I found  
+interesting your publication FoundBug - Linux Kernel Newbies which I  
+googled on http://kernelnewbies.org/FoundBug ! I'd love to use it in a  
+project I'm involved with called "FCW Science", so I'm seeking your  
+permission. "FCW Science" is a freemium-model non-English language  
+orientated startup with collection of scientific articles, personal notes  
+etc. in several languages that is collaboratively edited by volunteers from  
+around the world since 1999. Young and old, students and professors - even  
+your neighbor could be a volunteer member.
+If you agree, we will credit you for your work in the resulting  
+translation's references by stating that it was based on your work and is  
+used with your permission, and by mentioning the name of my project "FCW  
+Science" back to:
+http://kernelnewbies.org/FoundBug
 
-                 Linus
+Thank you for your time and patience.
+I look forward to your response next week.
+
+---
+Best wishes,
+Deborah Markovski
+Skopje, Macedonia
+  09.02.2012
+Translation for Education FAQ - http://goo.gl/q9Oq9
