@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758549Ab2BIVzO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 16:55:14 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
+	id S1758572Ab2BIVzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 16:55:49 -0500
+Received: from seven.medozas.de ([188.40.89.202]:47875 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758319Ab2BIVzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 16:55:09 -0500
-From: Richard Weinberger <richard@nod.at>
-To: netfilter-devel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, jengelh@medozas.de, rostedt@goodmis.org,
-        pablo@netfilter.org
-Subject: [PATCH v4] Merge ipt_LOG and ip6t_LOG, add ring bufffer support
-Date: Thu,  9 Feb 2012 22:54:47 +0100
-Message-Id: <1328824493-4136-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
+	id S1758294Ab2BIVzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 16:55:46 -0500
+Date: Thu, 9 Feb 2012 22:55:45 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] SubmittingPatches: Increase the line length limit from
+ 80 to 100 colums
+In-Reply-To: <20120203100743.GA3334@elte.hu>
+Message-ID: <alpine.LNX.2.01.1202092206040.11004@frira.zrqbmnf.qr>
+References: <20120130140905.441199885@openvz.org> <20120130141852.309402052@openvz.org> <20120203074656.GC30543@elte.hu> <20120203083530.GD1968@moon> <20120203090929.GA23996@elte.hu> <20120203012241.bcd3d0c8.akpm@linux-foundation.org> <20120203095227.GA13162@elte.hu
+ <20120203100743.GA3334@elte.hu>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set merges ipt_LOG and ip6t_LOG and adds ring buffer support
-to xt_LOG.
+On Friday 2012-02-03 11:07, Ingo Molnar wrote:
 
-Using "--ring" a user can create LOG rules which log messages into
-one or more ring buffers.
-Each ring buffer is represented as pipe-like file in
-/proc/net/netfilter/xt_LOG_ring/.
+>[PATCH] SubmittingPatches: Increase the line length limit from 80 to 100 colums
+>
+>As far as I'm aware I was the last regular kernel contributor who
+>still used a standard VGA text console, but both text (100 cols is
+>also arguably closer to various brain limits such as vision of field
+>and resolution restrictions
 
-Ring buffer support can be enabled/disabled using
-CONFIG_NETFILTER_XT_TARGET_LOG_RING.
+Please, no.
 
-Changes since v1:
- - Merged ipt_LOG and ip6t_LOG
- - Implemented ring buffer support as part of xt_LOG.
+(Corollary 1) The older you get, the larger you like your glyphs to
+be (...and the FOV is likely to lower as well).
 
-Changes since v2:
- - Fixed struct xt_log_info_v1's data layout
- - Removed the sizeof(void *) hack
- - Replaced BUG() by WARN_ON_ONCE()
+14pt and up usually. And there is not a whole lot that fit on
+10.1-inch netbook screens that way.
 
-Changes since v3:
- - Merged xt_LOG_core.c and xt_LOG_ring.c into xt_LOG.c
- - Made checkpatch.pl happy
+(Corollary 2) Travelers desire minimizing size and weight.
 
-All patches can also be found at:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git xt_LOG
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/iptables.git xt_LOG
+-----
 
-[PATCH 1/2] iptables: Merge libip6t_LOG and libipt_LOG into
-[PATCH 2/2] iptables: xt_LOG: Add ring buffer support
+As for checkpatch, I am throwing in the suggestion to augment checkpatch 
+such that it does not look at whether single lines are over $limit, but 
+whether a certain percentage of lines of a file is over $limit. That, 
+together with a badness value that is e.g. following some power law to 
+the amount of chars too much, but not when the line cannot be broken
+in the first place. Maybe along the lines of
 
-[PATCH 1/4] Netfilter: Merge ipt_LOG and ip6_LOG into xt_LOG
-[PATCH 2/4] ring_buffer: Export for_each_buffer_cpu()
-[PATCH 3/4] xt_log: Make printk() in sb_close() optional
-[PATCH 4/4] Netfilter: xt_LOG: Implement ring buffer support
+ #perlish#
+ foreach (<>) {
+     /^\s+\S+/;
+     if (length($_) > length($&)) {
+         push @candidate, $_;
+         $badness += (length($_) - length($&)) ** 1.5;
+     }
+ }
+ if ($badness > $threshold) {
+     warn about @candidate_lines;
+ }
