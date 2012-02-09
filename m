@@ -1,96 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2BINfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:35:07 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47747 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228Ab2BINfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:35:04 -0500
-Date: Thu, 9 Feb 2012 14:34:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Jason Wang <jasowang@redhat.com>
-Subject: Re: perf: record segfaults for cycles event when collecting data on
- a VM
-Message-ID: <20120209133446.GD8830@elte.hu>
-References: <4F32A907.6030505@gmail.com>
- <20120208174434.GI22598@amd.com>
- <4F32B680.3090502@gmail.com>
- <20120208175709.GK22598@amd.com>
- <20120209073024.GA18010@elte.hu>
- <20120209111451.GM22598@amd.com>
+	id S1757548Ab2BINhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:37:04 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59068 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753701Ab2BINhB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:37:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120209111451.GM22598@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
+References: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
+	<2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
+Date: Thu, 9 Feb 2012 22:37:00 +0900
+Message-ID: <CAMO-S2h-maRLhkX255XX=TPrMH5d5F_3w-aJr7g=GRHcQ+LAXg@mail.gmail.com>
+Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
+ 32bit environment
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: "hpanvin@gmail.com" <hpa@zytor.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 7, 2012 at 12:47, hpanvin@gmail.com <hpa@zytor.com> wrote:
+> Should be volatile u64 * not volatile void *...
 
-* Joerg Roedel <joerg.roedel@amd.com> wrote:
+Is this the type of parameters?
+The parameters of atomic readq/writeq defined in arch/x86/include/asm/io.h
+are defined as void *. I think that atomic readq/writeq and non-atomic
+readq/writeq
+should have same typed parameters and return values.
 
-> On Thu, Feb 09, 2012 at 08:30:24AM +0100, Ingo Molnar wrote:
-> > 
-> > * Joerg Roedel <joerg.roedel@amd.com> wrote:
-> > 
-> > > > which makes sense. It forces 
-> > > > perf_session__find_machine_for_cpumode() to return the host 
-> > > > machine always.
-> > > 
-> > > Great, thanks. I will send two patches tomorrow to fix Jason's 
-> > > problem and change the default for perf_guest.
-> > 
-> > Well, if the crash is fixed then the the default can stay, 
-> > right?
-> 
-> David's crash is fixed by changing the default back to its 
-> original value :)
+>
+>
+>
+> Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>
+>>From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+>>
+>>This patch removes some readq()s in drivers (added in
+>>dbee8a0affd5e6eaa5d7c816)
+>>and provides unified readq()/writeq() for the drivers.
+>>
+>>For some people, readq/writeq without atomicity is harmful, and order
+>>of io
+>>access has to be specified explicitly. So in this patch, new two header
+>>files
+>>which contain non-atomic readq/writeq are added.
+>>io-64-nonatomic-lo-hi.h
+>>provides non-atomic readq/writeq with the order of lower address ->
+>>higher
+>>address. io-64-nonatomic-hi-lo.h provides non-atomic readq/writeq with
+>>reversed
+>>order. All of them are endian awared.
+>>
+>>If this patch is applied, the drivers which need readq/writeq must add
+>>the line:
+>>#include <asm-generic/io-64-nonatomic-lo-hi.h> /* or hi-lo.h */
+>>
+>>But this will be nop in 64-bit environments, and no other #ifdefs are
+>>required.
+>>So I believe that this patch can solve the problem of
+>>1. driver-specific readq/writeq
+>>2. atomicity and order of io access
+>>
+>>This patch is tested with building allyesconfig and allmodconfig as
+>>ARCH=x86 and
+>>ARCH=i386 on top of tip/master.
+>>
+>>Cc: Kashyap Desai <Kashyap.Desai@lsi.com>
+>>Cc: Len Brown <lenb@kernel.org>
+>>Cc: Ravi Anand <ravi.anand@qlogic.com>
+>>Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+>>Cc: Matthew Garrett <mjg@redhat.com>
+>>Cc: Jason Uhlenkott <juhlenko@akamai.com>
+>>Cc: James Bottomley <James.Bottomley@parallels.com>
+>>Cc: Thomas Gleixner <tglx@linutronix.de>
+>>Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>Cc: Roland Dreier <roland@purestorage.com>
+>>Cc: James Bottomley <jbottomley@parallels.com>
+>>Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>>Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+>>Cc: Andrew Morton <akpm@linux-foundation.org>
+>>Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>>Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
+>>
+>>---
+>> drivers/edac/i3200_edac.c                   |   15 +------
+>> drivers/platform/x86/ibm_rtl.c              |   15 +------
+>> drivers/platform/x86/intel_ips.c            |   15 +------
+>> drivers/scsi/qla4xxx/ql4_nx.c               |   23 +---------
+>>include/asm-generic/io-64-nonatomic-hi-lo.h |   63
+>>+++++++++++++++++++++++++++
+>>include/asm-generic/io-64-nonatomic-lo-hi.h |   63
+>>+++++++++++++++++++++++++++
+>> 6 files changed, 134 insertions(+), 60 deletions(-)
+>> create mode 100644 include/asm-generic/io-64-nonatomic-hi-lo.h
+>> create mode 100644 include/asm-generic/io-64-nonatomic-lo-hi.h
+>>
+>>diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
+>>index aa08497..73f55e200 100644
+>>--- a/drivers/edac/i3200_edac.c
+>>+++ b/drivers/edac/i3200_edac.c
+>>@@ -15,6 +15,8 @@
+>> #include <linux/io.h>
+>> #include "edac_core.h"
+>>
+>>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>>+
+>> #define I3200_REVISION        "1.1"
+>>
+>> #define EDAC_MOD_STR        "i3200_edac"
+>>@@ -101,19 +103,6 @@ struct i3200_priv {
+>>
+>> static int nr_channels;
+>>
+>>-#ifndef readq
+>>-static inline __u64 readq(const volatile void __iomem *addr)
+>>-{
+>>-      const volatile u32 __iomem *p = addr;
+>>-      u32 low, high;
+>>-
+>>-      low = readl(p);
+>>-      high = readl(p + 1);
+>>-
+>>-      return low + ((u64)high << 32);
+>>-}
+>>-#endif
+>>-
+>> static int how_many_channels(struct pci_dev *pdev)
+>> {
+>>       unsigned char capid0_8b; /* 8th byte of CAPID0 */
+>>diff --git a/drivers/platform/x86/ibm_rtl.c
+>>b/drivers/platform/x86/ibm_rtl.c
+>>index 42a7d60..7481146 100644
+>>--- a/drivers/platform/x86/ibm_rtl.c
+>>+++ b/drivers/platform/x86/ibm_rtl.c
+>>@@ -33,6 +33,8 @@
+>> #include <linux/mutex.h>
+>> #include <asm/bios_ebda.h>
+>>
+>>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>>+
+>> static bool force;
+>> module_param(force, bool, 0);
+>> MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
+>>@@ -83,19 +85,6 @@ static void __iomem *rtl_cmd_addr;
+>> static u8 rtl_cmd_type;
+>> static u8 rtl_cmd_width;
+>>
+>>-#ifndef readq
+>>-static inline __u64 readq(const volatile void __iomem *addr)
+>>-{
+>>-      const volatile u32 __iomem *p = addr;
+>>-      u32 low, high;
+>>-
+>>-      low = readl(p);
+>>-      high = readl(p + 1);
+>>-
+>>-      return low + ((u64)high << 32);
+>>-}
+>>-#endif
+>>-
+>> static void __iomem *rtl_port_map(phys_addr_t addr, unsigned long len)
+>> {
+>>       if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
+>>diff --git a/drivers/platform/x86/intel_ips.c
+>>b/drivers/platform/x86/intel_ips.c
+>>index 809a3ae..88a98cf 100644
+>>--- a/drivers/platform/x86/intel_ips.c
+>>+++ b/drivers/platform/x86/intel_ips.c
+>>@@ -77,6 +77,8 @@
+>> #include <asm/processor.h>
+>> #include "intel_ips.h"
+>>
+>>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>>+
+>> #define PCI_DEVICE_ID_INTEL_THERMAL_SENSOR 0x3b32
+>>
+>> /*
+>>@@ -344,19 +346,6 @@ struct ips_driver {
+>> static bool
+>> ips_gpu_turbo_enabled(struct ips_driver *ips);
+>>
+>>-#ifndef readq
+>>-static inline __u64 readq(const volatile void __iomem *addr)
+>>-{
+>>-      const volatile u32 __iomem *p = addr;
+>>-      u32 low, high;
+>>-
+>>-      low = readl(p);
+>>-      high = readl(p + 1);
+>>-
+>>-      return low + ((u64)high << 32);
+>>-}
+>>-#endif
+>>-
+>> /**
+>>  * ips_cpu_busy - is CPU busy?
+>>  * @ips: IPS driver struct
+>>diff --git a/drivers/scsi/qla4xxx/ql4_nx.c
+>>b/drivers/scsi/qla4xxx/ql4_nx.c
+>>index 78f1111..65253df 100644
+>>--- a/drivers/scsi/qla4xxx/ql4_nx.c
+>>+++ b/drivers/scsi/qla4xxx/ql4_nx.c
+>>@@ -10,6 +10,8 @@
+>> #include "ql4_def.h"
+>> #include "ql4_glbl.h"
+>>
+>>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
+>>+
+>> #define MASK(n)               DMA_BIT_MASK(n)
+>>#define MN_WIN(addr)   (((addr & 0x1fc0000) >> 1) | ((addr >> 25) &
+>>0x3ff))
+>>#define OCM_WIN(addr)  (((addr & 0x1ff0000) >> 1) | ((addr >> 25) &
+>>0x3ff))
+>>@@ -655,27 +657,6 @@ static int qla4_8xxx_pci_is_same_window(struct
+>>scsi_qla_host *ha,
+>>       return 0;
+>> }
+>>
+>>-#ifndef readq
+>>-static inline __u64 readq(const volatile void __iomem *addr)
+>>-{
+>>-      const volatile u32 __iomem *p = addr;
+>>-      u32 low, high;
+>>-
+>>-      low = readl(p);
+>>-      high = readl(p + 1);
+>>-
+>>-      return low + ((u64)high << 32);
+>>-}
+>>-#endif
+>>-
+>>-#ifndef writeq
+>>-static inline void writeq(__u64 val, volatile void __iomem *addr)
+>>-{
+>>-      writel(val, addr);
+>>-      writel(val >> 32, addr+4);
+>>-}
+>>-#endif
+>>-
+>> static int qla4_8xxx_pci_mem_read_direct(struct scsi_qla_host *ha,
+>>               u64 off, void *data, int size)
+>> {
+>>diff --git a/include/asm-generic/io-64-nonatomic-hi-lo.h
+>>b/include/asm-generic/io-64-nonatomic-hi-lo.h
+>>new file mode 100644
+>>index 0000000..34e61cc
+>>--- /dev/null
+>>+++ b/include/asm-generic/io-64-nonatomic-hi-lo.h
+>>@@ -0,0 +1,63 @@
+>>+#ifndef _ASM_IO_64_NONATOMIC_HI_LO_H_
+>>+#define _ASM_IO_64_NONATOMIC_HI_LO_H_
+>>+
+>>+#include <linux/io.h>
+>>+#include <asm-generic/int-ll64.h>
+>>+
+>>+#ifdef CPU_LITTLE_ENDIAN
+>>+
+>>+#ifndef readq
+>>+
+>>+static inline __u64 readq(const volatile void __iomem *addr)
+>>+{
+>>+      const volatile u32 __iomem *p = addr;
+>>+      u32 low, high;
+>>+
+>>+      high = readl(p + 1);
+>>+      low = readl(p);
+>>+
+>>+      return low + ((u64)high << 32);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#ifndef writeq
+>>+
+>>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>>+{
+>>+      writel(val >> 32, addr + 4);
+>>+      writel(val, addr);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#else  /* big endian */
+>>+
+>>+#ifndef readq
+>>+
+>>+static inline __u64 readq(const volatile void __iomem *addr)
+>>+{
+>>+      const volatile u32 __iomem *p = addr;
+>>+      u32 low, high;
+>>+
+>>+      low = readl(p + 1);
+>>+      high = readl(p);
+>>+
+>>+      return low + ((u64)high << 32);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#ifndef writeq
+>>+
+>>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>>+{
+>>+      writel(val >> 32, addr);
+>>+      writel(val, addr + 4);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#endif
+>>+
+>>+#endif        /* _ASM_IO_64_NONATOMIC_HI_LO_H_ */
+>>diff --git a/include/asm-generic/io-64-nonatomic-lo-hi.h
+>>b/include/asm-generic/io-64-nonatomic-lo-hi.h
+>>new file mode 100644
+>>index 0000000..bf2fe0f
+>>--- /dev/null
+>>+++ b/include/asm-generic/io-64-nonatomic-lo-hi.h
+>>@@ -0,0 +1,63 @@
+>>+#ifndef _ASM_IO_64_NONATOMIC_LO_HI_H_
+>>+#define _ASM_IO_64_NONATOMIC_LO_HI_H_
+>>+
+>>+#include <linux/io.h>
+>>+#include <asm-generic/int-ll64.h>
+>>+
+>>+#ifdef CPU_LITTLE_ENDIAN
+>>+
+>>+#ifndef readq
+>>+
+>>+static inline __u64 readq(const volatile void __iomem *addr)
+>>+{
+>>+      const volatile u32 __iomem *p = addr;
+>>+      u32 low, high;
+>>+
+>>+      low = readl(p);
+>>+      high = readl(p + 1);
+>>+
+>>+      return low + ((u64)high << 32);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#ifndef writeq
+>>+
+>>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>>+{
+>>+      writel(val, addr);
+>>+      writel(val >> 32, addr + 4);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#else  /* big endian */
+>>+
+>>+#ifndef readq
+>>+
+>>+static inline __u64 readq(const volatile void __iomem *addr)
+>>+{
+>>+      const volatile u32 __iomem *p = addr;
+>>+      u32 low, high;
+>>+
+>>+      high = readl(p);
+>>+      low = readl(p + 1);
+>>+
+>>+      return low + ((u64)high << 32);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#ifndef writeq
+>>+
+>>+static inline void writeq(__u64 val, volatile void __iomem *addr)
+>>+{
+>>+      writel(val, addr + 4);
+>>+      writel(val >> 32, addr);
+>>+}
+>>+
+>>+#endif
+>>+
+>>+#endif
+>>+
+>>+#endif        /* _ASM_IO_64_NONATOMIC_LO_HI_H_ */
+>>--
+>>1.7.5.1
+>
+> --
+> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+>
 
-Then that's the wrong fix really.
 
-> > Generally we should treat all input data in a perf.data or even 
-> > the bits we get in the ring-buffer as external data that has to 
-> > be checked carefully, with no assumptions made about data.
-> 
-> Well, there are two options:
-> 
-> 	1) Make sure machine == NULL does not happen. Changing the
-> 	   default of perf_guest back to false does exactly this for
-> 	   David's problem.
 
-So what if it's turned on by the user? Do we still crash 
-occasionally?
-
-> 	2) Make sure that a machine == NULL pointer is never
-> 	   dereferenced
-> 
-> I was going to fix it with option 1. Do you suggest option 2 is better?
-
-Looks like the better fix. You said:
-
-> Bottom line is that the perf-tool may receive samples tagged 
-> as GUEST_KERNEL even when guest-sampling is disabled (probably 
-> a race-condition). The perf-tool can not find a valid machine 
-> pointer for such a sample and passes NULL down to the other 
-> functions. And some functions don't seem to handle this.
-
-tooling should never be surprised by getting some unexpected 
-sample via the perf.data or the ring-buffer - regardless of 
-whether that functionality is default enabled or manually 
-enabled.
-
-Thanks,
-
-	Ingo
+-- 
+Hitoshi Mitake
+h.mitake@gmail.com
