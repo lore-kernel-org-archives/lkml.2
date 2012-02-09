@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758468Ab2BIXDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:03:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49602 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758351Ab2BIXDD (ORCPT
+	id S1758660Ab2BIXDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:03:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56697 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758506Ab2BIXDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:03:03 -0500
-Date: Thu, 9 Feb 2012 23:03:00 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Miller <davem@davemloft.net>
-Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix mc13xxx regulator build on sparc64
-Message-ID: <20120209230300.GP3058@opensource.wolfsonmicro.com>
-References: <20120209.164301.1049075777681222673.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="51uid+Ur/3ko9cBW"
-Content-Disposition: inline
-In-Reply-To: <20120209.164301.1049075777681222673.davem@davemloft.net>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Feb 2012 18:03:17 -0500
+Date: Thu, 9 Feb 2012 15:03:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, xiyou.wangcong@gmail.com,
+        penberg@kernel.org, fengguang.wu@intel.com, cl@linux.com,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 3/3 v2] move hugepage test examples to
+ tools/testing/selftests/vm
+Message-Id: <20120209150316.15be9361.akpm@linux-foundation.org>
+In-Reply-To: <20120209014622.GA5143@darkstar.nay.redhat.com>
+References: <20120205081555.GA2249@darkstar.redhat.com>
+	<20120206155340.b9075240.akpm@linux-foundation.org>
+	<20120209014622.GA5143@darkstar.nay.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 9 Feb 2012 09:46:22 +0800
+Dave Young <dyoung@redhat.com> wrote:
 
---51uid+Ur/3ko9cBW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Andrew, updated the patch as below, is it ok to you?
+> ---
+> 
+> hugepage-mmap.c, hugepage-shm.c and map_hugetlb.c in Documentation/vm are
+> simple pass/fail tests, It's better to promote them to tools/testing/selftests
+> 
+> Thanks suggestion of Andrew Morton about this. They all need firstly setting up
+> proper nr_hugepages and hugepage-mmap need to mount hugetlbfs. So I add a shell
+> script run_vmtests to do such work which will call the three test programs and
+> check the return value of them.
+> 
+> Changes to original code including below:
+> a. add run_vmtests script
+> b. return error when read_bytes mismatch with writed bytes.
+> c. coding style fixes: do not use assignment in if condition
+> 
+> [v1 -> v2]:
+> 1. [akpm:] rebased on runing make run_tests from Makefile
+> 2. [akpm:] rename test script from run_test ro run_vmtests
+> 2. fix a bug about shell exit code checking 
+> 
 
-On Thu, Feb 09, 2012 at 04:43:01PM -0500, David Miller wrote:
+So I tried to run this, from tools/testing/selftests.
 
-> Since mc13xxx-regulator-core.c and the actual drivers can get built
-> into seperate modules, you have to export the DT support symbols
-> "mc13xxx_get_num_regulators_dt" and "mc13xxx_parse_regulators_dt"
-> otherwise the allmodconfig build fails on sparc64.
+a) The testing failed because ./vm's run_test target requires root. 
 
-Applied with a little changelog fettling, thanks.
+   We need to make a policy decision here.  Do we require that
+   selftests run as root?  If not then the root-requiring selftests
+   should warn and bail out without declaring a failure, so that those
+   tests which can be run without root permissions can be successfully
+   used.
 
---51uid+Ur/3ko9cBW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+b) When I ran the vm test, my machine went paralytically comatose
+   for half a minute.  That's a bit rude - if all the selftests do this
+   then the selftests become kinda useless.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+c) I can run "make run_tests" in the top-lvel directory and all is
+   well: the tools in ./vm get compiled first.  But when I do "make
+   clean ; cd vm ; make run-tests" it fails, because vm/Makefile
+   doesn't build the targets before trying to run them.
 
-iQIcBAEBAgAGBQJPNFA5AAoJEBus8iNuMP3d3QcQAIomvPfrWArsOCcm11FJuGQp
-qTjCboA+a7XrcN1Z1HOcST6yMLWyeFFqtcSyZQK3gZzZCLh6JfosZWwE03UtRabk
-8gw1Kupzqzo5gO3usguKo3Gcmo5/bIM8Xk+ElUENL3qJuS6w2T9T//xfiNu3YMvJ
-B5tsqRvALo5eCFUnzaaZgO1/QT3i+IxDaoLVRD67ZInXZZzG1D2qLYboOuUjGpNX
-4aNCyk/0hi0+L/63b3W25yLxX9dhzB3e/RfRtt5myBPvOdA4aYwNDMj+Qp7W98pi
-6JwJawxkU8wH3Y0BbIzMR0giyEBLaXzeURfSqIIBV9aGqW/kZayU/Xp7Ff83CCAo
-lHYa4OIMwBnmjeJX1FoDJ/jKosK27/AsVeeLYvEeuvto1RHE2n3EzYbiUb1jJmrA
-oRCuPaujtVECrVyyTh+LUvG7ATkqHkLeXNc6P3IcEPY2xJLm0js0CJ1pjbVNXoIm
-Xyk1Eu8j6d0g8H+cTcLvi4VtWy/lq4ICIwOXV4S/gpzLUqBp9ryPNvuIHJdSikzI
-t+3HIhMkpxSjsMTz8jVVAQ8dPBQh1UabyVT0GqNQ/1Gc1KoP/9QiTFIiQ+V1EiVC
-ek7PmOOHc8Y0eQcRVX5eDTeXizl6t0tYAlCQF/7vPwAJTEh5+kAh16Qh+e2h8Q3z
-4qvRIC4MFKJyX25YH0WE
-=v91B
------END PGP SIGNATURE-----
+   This can be fixed with
 
---51uid+Ur/3ko9cBW--
+--- a/tools/testing/selftests/vm/Makefile~a
++++ a/tools/testing/selftests/vm/Makefile
+@@ -7,7 +7,7 @@ all: hugepage-mmap hugepage-shm  map_hug
+ %: %.c
+ 	$(CC) $(CFLAGS) -o $@ $^
+ 
+-run_tests:
++run_tests: all
+ 	/bin/sh ./run_vmtests
+ 
+ clean:
+
+   But this is unpleasing: a top-level "make run_tests" will end up
+   trying to compile the targets twice.
+
+   We could change the top-level Makefile to a single-pass thing
+   which just descends into the subdirectories and runs "make
+   run_tests".  But that gives us no way of compiling everything
+   without also running everything.  That's a huge PITA if running
+   everything sends your machine comatose for half a minute!
+
+   So I think I'll go with the above patch.
+
