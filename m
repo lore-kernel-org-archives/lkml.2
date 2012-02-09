@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab2BIMCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:02:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62729 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2BIMCV convert rfc822-to-8bit (ORCPT
+	id S1757314Ab2BIMDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 07:03:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50570 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752030Ab2BIMDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:02:21 -0500
+	Thu, 9 Feb 2012 07:03:14 -0500
+Date: Thu, 9 Feb 2012 12:03:12 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
+        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1 1/2] mfd: tps65910: use regmap for device register
+ access.
+Message-ID: <20120209120312.GE3058@opensource.wolfsonmicro.com>
+References: <1328697985-22504-1-git-send-email-ldewangan@nvidia.com>
+ <20120208114120.GF3120@opensource.wolfsonmicro.com>
+ <4F32676F.1010305@nvidia.com>
+ <20120208130726.GB5943@opensource.wolfsonmicro.com>
+ <4F3279D6.4000009@nvidia.com>
+ <20120208135816.GE5943@opensource.wolfsonmicro.com>
+ <4F335385.5040400@nvidia.com>
+ <20120209115502.GD3058@opensource.wolfsonmicro.com>
+ <4F33B52A.5020900@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120209113606.GA8054@sig21.net>
-References: <201202041109.53003.toralf.foerster@gmx.de>
-	<201202051107.26634.toralf.foerster@gmx.de>
-	<CAJd=RBCvvVgWqfSkoEaWVG=2mwKhyXarDOthHt9uwOb2fuDE9g@mail.gmail.com>
-	<201202080956.18727.toralf.foerster@gmx.de>
-	<20120208115244.GA24959@sig21.net>
-	<CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com>
-	<20120209113606.GA8054@sig21.net>
-Date: Thu, 9 Feb 2012 20:02:20 +0800
-Message-ID: <CAJd=RBDzUpUgZLVU+WSfb8grzMAbi3fcyyZkpX8qpaxu6zYe1g@mail.gmail.com>
-Subject: Re: swap storm since kernel 3.2.x
-From: Hillf Danton <dhillf@gmail.com>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lkTb+7nhmha7W+c3"
+Content-Disposition: inline
+In-Reply-To: <4F33B52A.5020900@nvidia.com>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 7:36 PM, Johannes Stezenbach <js@sig21.net> wrote:
-> On Wed, Feb 08, 2012 at 08:34:14PM +0800, Hillf Danton wrote:
->> And I want to ask kswapd to do less work, the attached diff is
->> based on 3.2.5, mind to test it with CONFIG_DEBUG_OBJECTS enabled?
->
-> Sorry, for slow reply.  The patch does not apply to 3.2.4
-> (3.2.5 only has the ASPM change which I don't want to
-> try atm).  Is the patch below correct?
->
 
-It is fine;)
+--lkTb+7nhmha7W+c3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks
-Hillf
+On Thu, Feb 09, 2012 at 05:29:38PM +0530, Laxman Dewangan wrote:
 
-> I'll let this run for a while and will report back.
->
-> Thanks
-> Johannes
->
->
-> --- mm/vmscan.c.orig    2012-02-03 21:39:51.000000000 +0100
-> +++ mm/vmscan.c 2012-02-09 12:30:42.000000000 +0100
-> @@ -2067,8 +2067,11 @@ restart:
->                 * with multiple processes reclaiming pages, the total
->                 * freeing target can get unreasonably large.
->                 */
-> -               if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
-> +               if (nr_reclaimed >= nr_to_reclaim) {
-> +                       nr_to_reclaim = 0;
->                        break;
-> +               }
-> +               nr_to_reclaim -= nr_reclaimed;
->        }
->        blk_finish_plug(&plug);
->        sc->nr_reclaimed += nr_reclaimed;
-> @@ -2535,12 +2538,12 @@ static unsigned long balance_pgdat(pg_da
->                 * we want to put equal scanning pressure on each zone.
->                 */
->                .nr_to_reclaim = ULONG_MAX,
-> -               .order = order,
->                .mem_cgroup = NULL,
->        };
->        struct shrink_control shrink = {
->                .gfp_mask = sc.gfp_mask,
->        };
-> +       sc.order = order = 0;
->  loop_again:
->        total_scanned = 0;
->        sc.nr_reclaimed = 0;
+> I am working on mfd/tps65910.c and function is:
+> static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
+>                                    int bytes, void *src)
+
+> All your feedback will help me to improve my next two mfd/pmic
+> drivers which I am planning to upstream...
+
+Yeah, I know that's the i2c_write() function but all the callers I
+noticed were calling it with bytes set to 1.
+
+--lkTb+7nhmha7W+c3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPM7XRAAoJEBus8iNuMP3dHPUP/2t09FlmWBG2+7cIHMDnnyS7
+lSi+NuCeJrGaO3boRROsSxnNyQ6AMwDTKDRLchDLWqx6CsZLq/Bo2IWGVTNFoFLG
+pvBBKIPh2YFvtjtkRQnB2BR934HOI0Nrnd9lJbB5lHtHGSQ3+0uLrxHrGknlVZdv
+GdtFTfk+nKw+ivf4w2DLqyik9+qBlxaTReK4rIawlJ9KMkZUYOvT4rNoL7ay0Kyf
+xOksx7nu+2dsH3KIY/FEHY8MIEy3m6qs6ZzQRnpqOxRx/esTlHI5rEGf/fefCYzJ
+0lswBilrv3QvtogvHF6i15tRMQAGBJNayONm2hc9sHv54fBT+YHPbLGptf5A8uTl
+uxpn7z9ALw3kBiD6Kn9Vb8ssh73y092V+IHXHRypeRu4KT2EPWIlVeC79Sd1zJfx
+VSiKYiNt5Rsfj1Xnvgo1+X6IONMfoeZ5QbULi6W1ssYgB4pQdr8uSjaWCBAn70O2
+MtHUWOmGY2oRIEs8ooaTgPJYAitwXwKUSelNKXs6Uz/UTLwXrjDSBi11NTgwKbRe
+uzD7XK2TUepukB0P1YT9d2ag3xWCLatPq2736TXJLvErdnXzZ/LdKzNz3Pa4ZeQt
+czlRP/NNXZNQM1g7sgo7HYROS07po/j7ucDOckWFyxiRk/iG36GYnpcjFv+RqULz
+Ol7AvdWq+5QMfQMqom//
+=dBHB
+-----END PGP SIGNATURE-----
+
+--lkTb+7nhmha7W+c3--
