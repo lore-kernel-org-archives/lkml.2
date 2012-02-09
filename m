@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab2BIQ2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:28:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35314 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab2BIQ2w (ORCPT
+	id S1758009Ab2BIQbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:31:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57168 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab2BIQbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:28:52 -0500
-Message-ID: <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH] Reduce the number of expensive division instructions
- done by _parse_integer()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: adobriyan@gmail.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 09 Feb 2012 17:28:40 +0100
-In-Reply-To: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
-References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 9 Feb 2012 11:31:16 -0500
+Date: Thu, 9 Feb 2012 08:29:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Greg KH <gregkh@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/2] Staging: hv: Applied all the patches already in the
+ staging queue
+Message-ID: <20120209162940.GA16395@kroah.com>
+References: <1327599460-12593-1-git-send-email-kys@microsoft.com>
+ <1327599515-12679-1-git-send-email-kys@microsoft.com>
+ <20120126173751.GA14400@suse.de>
+ <1327600244.6151.5.camel@dabdike.int.hansenpartnership.com>
+ <6E21E5352C11B742B20C142EB499E0481B70C8A1@TK5EX14MBXC128.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B70C8A1@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 09 février 2012 à 15:48 +0000, David Howells a écrit :
-> _parse_integer() does one or two division instructions (which are slow) per
-> digit parsed to perform the overflow check.
+On Thu, Feb 09, 2012 at 03:31:50PM +0000, KY Srinivasan wrote:
 > 
-> Furthermore, these are particularly expensive examples of division instruction
-> as the number of clock cycles required to complete them may go up with the
-> position of the most significant set bit in the dividend:
 > 
-> 	if (*res > div_u64(ULLONG_MAX - val, base))
+> > -----Original Message-----
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > Sent: Thursday, January 26, 2012 12:51 PM
+> > To: Greg KH
+> > Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> > scsi@vger.kernel.org
+> > Subject: Re: [PATCH 1/2] Staging: hv: Applied all the patches already in the staging
+> > queue
+> > 
+> > > Yes, I have pending patches for this driver in my "to-apply" queue, but
+> > > that is for 3.4, not now.
+> > >
+> > > So, how about I just apply those patches, and then apply a patch that
+> > > moves it out of staging into drivers/scsi/, and queue all of those up
+> > > for 3.4.
+> > >
+> > > James, any objection to that?
+> > 
+> > Well, we were going to try to stage this driver for 3.3-rc.  If everyone
+> > agrees to push it back to 3.4, then this works for me.
 > 
-> which is as maximal as possible.
+> Greg,
 > 
-> Worse, on 32-bit arches, more than one of these division instructions may be
-> required per digit.
-> 
-> So, assuming we don't support a base of more than 16, skip the check if the
-> top nibble of the result is not set at this point.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  lib/kstrtox.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/kstrtox.c b/lib/kstrtox.c
-> index 7a94c8f..f80c896 100644
-> --- a/lib/kstrtox.c
-> +++ b/lib/kstrtox.c
-> @@ -64,7 +64,7 @@ unsigned int _parse_integer(const char *s, unsigned int base, unsigned long long
->  
->  		if (val >= base)
->  			break;
-> -		if (*res > div_u64(ULLONG_MAX - val, base))
-> +		if (unlikely(*res >> 60) && *res > div_u64(ULLONG_MAX - val, base))
->  			overflow = 1;
->  		*res = *res * base + val;
->  		rv++;
-> 
-> -
+> Now that you have applied all the pending patches for the Hyper-V storage
+> driver; do you want me to resend the patch that moved this driver out of staging?
 
-You could avoid the divide and have cleaner code I think.
+Please do, I need James's ACK on it as well.
 
-	unsigned long long next = *res * base + val;
+thanks,
 
-	if (next < *res)
-		overflow = 1;
-	*res = next;
-
-
+greg k-h
