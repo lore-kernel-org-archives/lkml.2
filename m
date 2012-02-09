@@ -1,223 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab2BIBBf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 20:01:35 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:35806 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab2BIBBd (ORCPT
+	id S932213Ab2BIBNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 20:13:43 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43729 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab2BIBNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 20:01:33 -0500
-Message-ID: <4F331AE7.40708@oss.ntt.co.jp>
-Date: Thu, 09 Feb 2012 10:01:27 +0900
-From: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
-	<fernando@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Wed, 8 Feb 2012 20:13:40 -0500
+Date: Wed, 8 Feb 2012 17:11:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] xvmalloc: total_pages can be ulong
+Message-ID: <20120209011128.GA1926@kroah.com>
+References: <CAB4K4y4UWXXb8Tm_arYG7=_MOyMxJnk3jRLGbaXTyFiNKM-TOw@mail.gmail.com>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] watchdog: update documentation
-References: <4F323B21.7080003@oss.ntt.co.jp> <20120208184337.GU5650@redhat.com>
-In-Reply-To: <20120208184337.GU5650@redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------090104090205000904030103"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB4K4y4UWXXb8Tm_arYG7=_MOyMxJnk3jRLGbaXTyFiNKM-TOw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090104090205000904030103
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+On Wed, Dec 28, 2011 at 11:20:51AM +0530, Ajeet Yadav wrote:
+> >From 4763266cb0077d1082d4a1ef941448e9b4eb55ca Mon Sep 17 00:00:00 2001
+> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+> Date: Wed, 28 Dec 2011 11:08:34 +0530
+> Subject: [PATCH] xvmalloc: total_pages can be ulong
+> 
+> total_pages is u64, its too large value considering
+> that its in page unit on both 32-bit and 64-bit system
+> , therefore make it ulong.
 
-On 02/09/2012 03:43 AM, Don Zickus wrote:
-> On Wed, Feb 08, 2012 at 06:06:41PM +0900, Fernando Luis Vázquez Cao wrote:
->> Subject: [PATCH] watchdog: update documentation
->>
->> From: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
->>
->> The soft and hard lockup detectors are now built on top of the hrtimer
->> and perf subsystems. Update the documentation accordingly.
-> I am fine with this (just  need to address Randy's little fixup).
->
-> Ingo, should I take this in and repost for you or just ack it and let
-> someone like Andrew take this in?
+Your patch is line-wrapped and can not be applied.
 
-Fixed version attached.
+Please use the git send-email command to send the patch, otherwise bad
+things like this can happen :(
 
-Thanks,
-Fernando
+Care to redo it?
 
---------------090104090205000904030103
-Content-Type: text/x-patch;
- name="lockup-watchdogs.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="lockup-watchdogs.patch"
+thanks,
 
-Subject: [PATCH] watchdog: update documentation
-
-From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-
-The soft and hard lockup detectors are now built on top of the hrtimer
-and perf subsystems. Update the documentation accordingly.
-
-Signed-off-by: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
----
-
-diff -urNp linux-3.2.5-orig/Documentation/lockup-watchdogs.txt linux-3.2.5/Documentation/lockup-watchdogs.txt
---- linux-3.2.5-orig/Documentation/lockup-watchdogs.txt	1970-01-01 09:00:00.000000000 +0900
-+++ linux-3.2.5/Documentation/lockup-watchdogs.txt	2012-02-09 09:53:24.922346977 +0900
-@@ -0,0 +1,63 @@
-+===============================================================
-+Softlockup detector and hardlockup detector (aka nmi_watchdog)
-+===============================================================
-+
-+The Linux kernel can act as a watchdog to detect both soft and hard
-+lockups.
-+
-+A 'softlockup' is defined as a bug that causes the kernel to loop in
-+kernel mode for more than 20 seconds (see "Implementation" below for
-+details), without giving other tasks a chance to run. The current
-+stack trace is displayed upon detection and, by default, the system
-+will stay locked up. Alternatively, the kernel can be configured to
-+panic; a sysctl, "kernel.softlockup_panic", a kernel parameter,
-+"softlockup_panic" (see "Documentation/kernel-parameters.txt" for
-+details), and a compile option, "BOOTPARAM_HARDLOCKUP_PANIC", are
-+provided for this.
-+
-+A 'hardlockup' is defined as a bug that causes the CPU to loop in
-+kernel mode for more than 10 seconds (see "Implementation" below for
-+details), without letting other interrupts have a chance to run.
-+Similarly to the softlockup case, the current stack trace is displayed
-+upon detection and the system will stay locked up unless the default
-+behavior is changed, which can be done through a compile time knob,
-+"BOOTPARAM_HARDLOCKUP_PANIC", and a kernel parameter, "nmi_watchdog"
-+(see "Documentation/kernel-parameters.txt" for details).
-+
-+The panic option can be used in combination with panic_timeout (this
-+timeout is set through the confusingly named "kernel.panic" sysctl),
-+to cause the system to reboot automatically after a specified amount
-+of time.
-+
-+=== Implementation ===
-+
-+The soft and hard lockup detectors are built on top of the hrtimer and
-+perf subsystems, respectively. A direct consequence of this is that,
-+in principle, they should work in any architecture where these
-+subsystems are present.
-+
-+A periodic hrtimer runs to generate interrupts and kick the watchdog
-+task. An NMI perf event is generated every "watchdog_thresh"
-+(compile-time initialized to 10 and configurable through sysctl of the
-+same name) seconds to check for hardlockups. If any CPU in the system
-+does not receive any hrtimer interrupt during that time the
-+'hardlockup detector' (the handler for the NMI perf event) will
-+generate a kernel warning or call panic, depending on the
-+configuration.
-+
-+The watchdog task is a high priority kernel thread that updates a
-+timestamp every time it is scheduled. If that timestamp is not updated
-+for 2*watchdog_thresh seconds (the softlockup threshold) the
-+'softlockup detector' (coded inside the hrtimer callback function)
-+will dump useful debug information to the system log, after which it
-+will call panic if it was instructed to do so or resume execution of
-+other kernel code.
-+
-+The period of the hrtimer is 2*watchdog_thresh/5, which means it has
-+two or three chances to generate an interrupt before the hardlockup
-+detector kicks in.
-+
-+As explained above, a kernel knob is provided that allows
-+administrators to configure the period of the hrtimer and the perf
-+event. The right value for a particular environment is a trade-off
-+between fast response to lockups and detection overhead.
-diff -urNp linux-3.2.5-orig/Documentation/nmi_watchdog.txt linux-3.2.5/Documentation/nmi_watchdog.txt
---- linux-3.2.5-orig/Documentation/nmi_watchdog.txt	2012-01-05 08:55:44.000000000 +0900
-+++ linux-3.2.5/Documentation/nmi_watchdog.txt	1970-01-01 09:00:00.000000000 +0900
-@@ -1,83 +0,0 @@
--
--[NMI watchdog is available for x86 and x86-64 architectures]
--
--Is your system locking up unpredictably? No keyboard activity, just
--a frustrating complete hard lockup? Do you want to help us debugging
--such lockups? If all yes then this document is definitely for you.
--
--On many x86/x86-64 type hardware there is a feature that enables
--us to generate 'watchdog NMI interrupts'.  (NMI: Non Maskable Interrupt
--which get executed even if the system is otherwise locked up hard).
--This can be used to debug hard kernel lockups.  By executing periodic
--NMI interrupts, the kernel can monitor whether any CPU has locked up,
--and print out debugging messages if so.
--
--In order to use the NMI watchdog, you need to have APIC support in your
--kernel. For SMP kernels, APIC support gets compiled in automatically. For
--UP, enable either CONFIG_X86_UP_APIC (Processor type and features -> Local
--APIC support on uniprocessors) or CONFIG_X86_UP_IOAPIC (Processor type and
--features -> IO-APIC support on uniprocessors) in your kernel config.
--CONFIG_X86_UP_APIC is for uniprocessor machines without an IO-APIC.
--CONFIG_X86_UP_IOAPIC is for uniprocessor with an IO-APIC. [Note: certain
--kernel debugging options, such as Kernel Stack Meter or Kernel Tracer,
--may implicitly disable the NMI watchdog.]
--
--For x86-64, the needed APIC is always compiled in.
--
--Using local APIC (nmi_watchdog=2) needs the first performance register, so
--you can't use it for other purposes (such as high precision performance
--profiling.) However, at least oprofile and the perfctr driver disable the
--local APIC NMI watchdog automatically.
--
--To actually enable the NMI watchdog, use the 'nmi_watchdog=N' boot
--parameter.  Eg. the relevant lilo.conf entry:
--
--        append="nmi_watchdog=1"
--
--For SMP machines and UP machines with an IO-APIC use nmi_watchdog=1.
--For UP machines without an IO-APIC use nmi_watchdog=2, this only works
--for some processor types.  If in doubt, boot with nmi_watchdog=1 and
--check the NMI count in /proc/interrupts; if the count is zero then
--reboot with nmi_watchdog=2 and check the NMI count.  If it is still
--zero then log a problem, you probably have a processor that needs to be
--added to the nmi code.
--
--A 'lockup' is the following scenario: if any CPU in the system does not
--execute the period local timer interrupt for more than 5 seconds, then
--the NMI handler generates an oops and kills the process. This
--'controlled crash' (and the resulting kernel messages) can be used to
--debug the lockup. Thus whenever the lockup happens, wait 5 seconds and
--the oops will show up automatically. If the kernel produces no messages
--then the system has crashed so hard (eg. hardware-wise) that either it
--cannot even accept NMI interrupts, or the crash has made the kernel
--unable to print messages.
--
--Be aware that when using local APIC, the frequency of NMI interrupts
--it generates, depends on the system load. The local APIC NMI watchdog,
--lacking a better source, uses the "cycles unhalted" event. As you may
--guess it doesn't tick when the CPU is in the halted state (which happens
--when the system is idle), but if your system locks up on anything but the
--"hlt" processor instruction, the watchdog will trigger very soon as the
--"cycles unhalted" event will happen every clock tick. If it locks up on
--"hlt", then you are out of luck -- the event will not happen at all and the
--watchdog won't trigger. This is a shortcoming of the local APIC watchdog
---- unfortunately there is no "clock ticks" event that would work all the
--time. The I/O APIC watchdog is driven externally and has no such shortcoming.
--But its NMI frequency is much higher, resulting in a more significant hit
--to the overall system performance.
--
--On x86 nmi_watchdog is disabled by default so you have to enable it with
--a boot time parameter.
--
--It's possible to disable the NMI watchdog in run-time by writing "0" to
--/proc/sys/kernel/nmi_watchdog. Writing "1" to the same file will re-enable
--the NMI watchdog. Notice that you still need to use "nmi_watchdog=" parameter
--at boot time.
--
--NOTE: In kernels prior to 2.4.2-ac18 the NMI-oopser is enabled unconditionally
--on x86 SMP boxes.
--
--[ feel free to send bug reports, suggestions and patches to
--  Ingo Molnar <mingo@redhat.com> or the Linux SMP mailing
--  list at <linux-smp@vger.kernel.org> ]
--
-
---------------090104090205000904030103--
+greg k-h
