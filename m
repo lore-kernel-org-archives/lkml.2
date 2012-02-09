@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab2BIOpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:45:00 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62799 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab2BIOo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:44:59 -0500
-Date: Thu, 9 Feb 2012 12:44:51 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf tools: Allow multiple threads or processes in
- record, stat, top
-Message-ID: <20120209144451.GB2526@infradead.org>
-References: <1328718772-16688-1-git-send-email-dsahern@gmail.com>
- <4F331F14.5070100@gmail.com>
- <4F3334F7.70809@gmail.com>
- <20120209073727.GA18152@elte.hu>
- <20120209143449.GA2526@infradead.org>
+	id S1757331Ab2BIOqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:46:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55634 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab2BIOqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 09:46:19 -0500
+Message-ID: <4F33DC0F.7090704@zytor.com>
+Date: Thu, 09 Feb 2012 06:45:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120209143449.GA2526@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hitoshi Mitake <h.mitake@gmail.com>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Jason Uhlenkott <juhlenko@akamai.com>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
+ 32bit environment
+References: <1328582733-31804-1-git-send-email-h.mitake@gmail.com> <2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com> <CAMO-S2h-maRLhkX255XX=TPrMH5d5F_3w-aJr7g=GRHcQ+LAXg@mail.gmail.com>
+In-Reply-To: <CAMO-S2h-maRLhkX255XX=TPrMH5d5F_3w-aJr7g=GRHcQ+LAXg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 09, 2012 at 12:34:49PM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Feb 09, 2012 at 08:37:27AM +0100, Ingo Molnar escreveu:
-> > 
-> > * David Ahern <dsahern@gmail.com> wrote:
-> > 
-> > > > I was trying to remove ctype.h, you might use util.h here.
-> > > 
-> > > Right, knew that. But, in this case I am adding a call to 
-> > > isdigit which means a direct dependency on ctype.h. I would 
-> > > prefer a direct relationship versus an indirect via util.h
-> > 
-> > Please just remove ctype.h *altogether* from perf, it's just an 
-> > insane header.
-> > 
-> > Have a look at how Git solves these types of problems, it 
-> > defines sane string functions in git-compat-util.h:
-> 
-> Yeah, these are in util.h, that doesn't includes ctype.h
-> 
-> I'm fixing this up and also that s/UUID/UID/g Kim pointed out,
-> then testing if the python binding still is ok with these changes.
+On 02/09/2012 05:37 AM, Hitoshi Mitake wrote:
+> On Tue, Feb 7, 2012 at 12:47, hpanvin@gmail.com<hpa@zytor.com>  wrote:
+>> Should be volatile u64 * not volatile void *...
+>
+> Is this the type of parameters?
+> The parameters of atomic readq/writeq defined in arch/x86/include/asm/io.h
+> are defined as void *. I think that atomic readq/writeq and non-atomic
+> readq/writeq
+> should have same typed parameters and return values.
+>
 
-[root@aninha linux]# tools/perf/python/twatch.py 
-Traceback (most recent call last):
-  File "tools/perf/python/twatch.py", line 16, in <module>
-    import perf
-ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol:
-ui__error
-[root@aninha linux]#
+That sounds like a bug.
 
-it breaks, I'll check an alternative way to report problems without
-calling ui__ methods from thread_map.
+	-hpa
 
-- Arnaldo
