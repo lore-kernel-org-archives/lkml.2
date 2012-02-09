@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab2BIIZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:25:23 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:65505 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2BIIZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:25:21 -0500
-Message-ID: <4F3382CF.8090302@atmel.com>
-Date: Thu, 09 Feb 2012 09:24:47 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1756907Ab2BII1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:27:08 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39397 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744Ab2BII1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:27:06 -0500
+Date: Thu, 9 Feb 2012 13:44:51 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove
+ breakpoints.
+Message-ID: <20120209081451.GC16600@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
+ <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com>
+ <20120207171707.GA24443@linux.vnet.ibm.com>
+ <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
+ <4F3320E5.1050707@hitachi.com>
+ <20120209063745.GB16600@linux.vnet.ibm.com>
+ <20120209075357.GD18387@elte.hu>
 MIME-Version: 1.0
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Jamie Iles <jamie@jamieiles.com>
-Subject: Re: [PATCH 09/50] Cadence MACB: use dev_hw_addr_random() instead
- of random_ether_addr()
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-10-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1328735457-29986-10-git-send-email-danny.kukawka@bisect.de>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120209075357.GD18387@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020908-5930-0000-0000-000004EDF6AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 10:10 PM, Danny Kukawka :
-> Use dev_hw_addr_random() instead of calling random_ether_addr()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
+* Ingo Molnar <mingo@elte.hu> [2012-02-09 08:53:57]:
+
 > 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-
-Danny,
-
-You can add my "Acked-by" even if you rework this series...
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Thanks, best regards,
-
-> ---
->  drivers/net/ethernet/cadence/macb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 > 
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index 2320068..3ee8d79 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -87,7 +87,7 @@ static void __init macb_get_hwaddr(struct macb *bp)
->  		memcpy(bp->dev->dev_addr, addr, sizeof(addr));
->  	} else {
->  		netdev_info(bp->dev, "invalid hw address, using random\n");
-> -		random_ether_addr(bp->dev->dev_addr);
-> +		dev_hw_addr_random(bp->dev, bp->dev->dev_addr);
->  	}
->  }
->  
+> > 	/* Clear REX.b bit (extension of MODRM.rm field):
+> > 	 * we want to encode rax/rcx, not r8/r9.
+> > 	 */
+> 
+> Small stylistic nit, just saw this chunk fly by - the proper 
+> comment style is like this one:
 
+Okay, Will correct that in the patch that I send.
 
--- 
-Nicolas Ferre
