@@ -1,158 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab2BIGuB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:50:01 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:44075 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2BIGuA (ORCPT
+	id S1756869Ab2BIG6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:58:12 -0500
+Received: from canardo.mork.no ([148.122.252.1]:53070 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560Ab2BIG6B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:50:00 -0500
-Date: Thu, 9 Feb 2012 12:07:45 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove
- breakpoints.
-Message-ID: <20120209063745.GB16600@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
- <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com>
- <20120207171707.GA24443@linux.vnet.ibm.com>
- <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
- <4F3320E5.1050707@hitachi.com>
+	Thu, 9 Feb 2012 01:58:01 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Danny Kukawka <danny.kukawka@bisect.de>, Danny Kukawka <dkukawka@suse.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 37/50] usbnet: set addr_assign_type if random_ether_addr() used
+Organization: m
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+	<1328735457-29986-38-git-send-email-danny.kukawka@bisect.de>
+	<201202082230.19936.oliver@neukum.org>
+Date: Thu, 09 Feb 2012 07:57:42 +0100
+In-Reply-To: <201202082230.19936.oliver@neukum.org> (Oliver Neukum's message
+	of "Wed, 8 Feb 2012 22:30:19 +0100")
+Message-ID: <874nv07au1.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4F3320E5.1050707@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12020906-1780-0000-0000-000002FF1CF3
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000246; HX=3.00000182; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00112197; UDB=6.00027739; UTC=2012-02-09
- 06:49:58
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> No, that is a meaningless operation.
-> As I originally said,
-> 
-> > insn_get_length(insn);
-> > if (insn->rex_prefix.nbytes) {
-> > 	cursor = uprobe->insn + insn_offset_rex_prefix(insn);
-> > 	*cursor &= 0xfe;	/* Clearing REX.B bit */
-> > }
-> 
+Oliver Neukum <oliver@neukum.org> writes:
 
-I am confused by why we need to call insn_get_length(insn) before
-checking insn->rex_prefix.nbytes? Is it needed.
+> Am Mittwoch, 8. Februar 2012, 22:10:44 schrieb Danny Kukawka:
+>> Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+>> a random MAC address was generated and assigned to the netdevice.
+>> 
+>> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+>> ---
+>>  drivers/net/usb/usbnet.c |    1 +
+>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+>> index fae0fbd..7bd07d7 100644
+>> --- a/drivers/net/usb/usbnet.c
+>> +++ b/drivers/net/usb/usbnet.c
+>> @@ -1365,6 +1365,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+>>  	dev->net = net;
+>>  	strcpy (net->name, "usb%d");
+>>  	memcpy (net->dev_addr, node_id, sizeof node_id);
+>> +	net->addr_assign_type |= NET_ADDR_RANDOM;
+>>  
+>>  	/* rx and tx sides can use different message sizes;
+>>  	 * bind() should set rx_urb_size in that case.
+>
+> Don't you set the flag too early here? By that time we don't know
+> whether the device provides a real MAC, do we?
+
+Maybe it makes sense to set it here anyway since usbnet provides this
+default random address, and let the minidrivers which set a real mac
+also clear the flag?  But in that case the patch need to clear the flag
+everywhere a minidriver currently updates the address.
 
 
-
-Denys and Masami, can you please confirm if below is fine.
-
-
-#ifdef CONFIG_X86_64
-/*
- * If uprobe->insn doesn't use rip-relative addressing, return
- * immediately.  Otherwise, rewrite the instruction so that it accesses
- * its memory operand indirectly through a scratch register.  Set
- * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
- * accordingly.  (The contents of the scratch register will be saved
- * before we single-step the modified instruction, and restored
- * afterward.)
- *
- * We do this because a rip-relative instruction can access only a
- * relatively small area (+/- 2 GB from the instruction), and the XOL
- * area typically lies beyond that area.  At least for instructions
- * that store to memory, we can't execute the original instruction
- * and "fix things up" later, because the misdirected store could be
- * disastrous.
- *
- * Some useful facts about rip-relative instructions:
- * - There's always a modrm byte.
- * - There's never a SIB byte.
- * - The displacement is always 4 bytes.
- */
-static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
-							struct insn *insn)
-{
-	u8 *cursor;
-	u8 reg;
-
-	if (mm->context.ia32_compat)
-		return;
-
-	uprobe->arch_info.rip_rela_target_address = 0x0;
-	if (!insn_rip_relative(insn))
-		return;
-
-	/* Clear REX.b bit (extension of MODRM.rm field):
-	 * we want to encode rax/rcx, not r8/r9.
-	 */
-	if (insn->rex_prefix.nbytes) {
-		cursor = uprobe->insn + insn_offset_rex_prefix(insn);
-		*cursor &= 0xfe;
-	}
-
-	/*
-	 * Point cursor at the modrm byte.  The next 4 bytes are the
-	 * displacement.  Beyond the displacement, for some instructions,
-	 * is the immediate operand.
-	 */
-	cursor = uprobe->insn + insn_offset_modrm(insn);
-	insn_get_length(insn);
-
-	/*
-	 * Convert from rip-relative addressing to indirect addressing
-	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
-	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
-	 */
-	reg = MODRM_REG(insn);
-	if (reg == 0) {
-		/*
-		 * The register operand (if any) is either the A register
-		 * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
-		 * REX prefix) %r8.  In any case, we know the C register
-		 * is NOT the register operand, so we use %rcx (register
-		 * #1) for the scratch register.
-		 */
-		uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
-		/* Change modrm from 00 000 101 to 00 000 001. */
-		*cursor = 0x1;
-	} else {
-		/* Use %rax (register #0) for the scratch register. */
-		uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
-		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
-		*cursor = (reg << 3);
-	}
-
-	/* Target address = address of next instruction + (signed) offset */
-	uprobe->arch_info.rip_rela_target_address = (long)insn->length
-					+ insn->displacement.value;
-	/* Displacement field is gone; slide immediate field (if any) over. */
-	if (insn->immediate.nbytes) {
-		cursor++;
-		memmove(cursor, cursor + insn->displacement.nbytes,
-						insn->immediate.nbytes);
-	}
-	return;
-}
-
+Bjørn
