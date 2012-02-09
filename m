@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2BIQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:08:28 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:18733 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753776Ab2BIQI1 (ORCPT
+	id S1757992Ab2BIQLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:11:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35229 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222Ab2BIQLG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:08:27 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZ4VH2-02-AAQ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 0/2] Fix perf-tool crashes when kvm guest is running
-Date: Thu, 9 Feb 2012 17:07:37 +0100
-Message-ID: <1328803659-30449-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 9 Feb 2012 11:11:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120209134920.GA25934@otto.nzcorp.net>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+	<20120208205628.GA18909@alberich.amd.com>
+	<20120209124355.GA20902@otto.nzcorp.net>
+	<20120209132825.GB8830@elte.hu>
+	<20120209134920.GA25934@otto.nzcorp.net>
+Date: Thu, 9 Feb 2012 08:11:04 -0800
+X-Google-Sender-Auth: 3v7hO6TM0HGG6R9O9y1PRaFvwyI
+Message-ID: <CAE9FiQUiMBUh9xSKoLj_1ZPXY3wTehB6i1V_mPmx7rs5XqMZTw@mail.gmail.com>
+Subject: Re: Memory issues with Opteron 6220
+From: Yinghai Lu <yinghai@kernel.org>
+To: aowi@novozymes.com, Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "JK (Jesper Agerbo Krogh)" <JK@novozymes.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Feb 9, 2012 at 5:49 AM, Anders Ossowicki <aowi@novozymes.com> wrote:
+> On Thu, Feb 09, 2012 at 02:28:25PM +0100, Ingo Molnar wrote:
+>> Your bootlog says:
+>>
+>> [    0.330000] Performance Events: Broken BIOS detected, complain to your hardware vendor.
+>> [    0.330000] [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR c0010200 is 1430076)
+>>
+>> Do you get that message if DBPM is enabled?
+>
+> It's there with System DBPM, OS DBPM and with power management disabled (i.e.
+> set to maximum performance).
 
-here are the fixes I promised. These patches should fix the crashes
-David and Jason have seen by making sure no sample is processed when
-ther is no valid machine object for it. The second patch also changes
-the perf_guest default back to false.
+mtrr setting has some problem too.
 
-Regards,
+[    3.098277] mtrr: your CPUs had inconsistent fixed MTRR settings
+[    3.100001] mtrr: probably your BIOS does not setup all CPUs.
+[    3.110000] mtrr: corrected configuration.
 
-	Joerg
+can you boot with "debug ignore_loglevel show_msr=16" ?
 
-
+Yinghai
