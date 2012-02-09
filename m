@@ -1,90 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2BIGlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:41:21 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51429 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136Ab2BIGlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:41:19 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: <linux-fbdev@vger.kernel.org>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: [PATCH v2] video:da8xx-fb: calculate pixel clock period for the panel
-Date: Thu, 9 Feb 2012 11:54:06 +0530
-Message-ID: <1328768646-25169-1-git-send-email-prakash.pm@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756553Ab2BIGuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:50:01 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44075 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab2BIGuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 01:50:00 -0500
+Date: Thu, 9 Feb 2012 12:07:45 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove
+ breakpoints.
+Message-ID: <20120209063745.GB16600@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
+ <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com>
+ <20120207171707.GA24443@linux.vnet.ibm.com>
+ <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
+ <4F3320E5.1050707@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4F3320E5.1050707@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020906-1780-0000-0000-000002FF1CF3
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000246; HX=3.00000182; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00112197; UDB=6.00027739; UTC=2012-02-09
+ 06:49:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch calculates pixel clock period in pico seconds and updates
-the same in variable screen information structure. fbset utility
-uses this information.
+> 
+> No, that is a meaningless operation.
+> As I originally said,
+> 
+> > insn_get_length(insn);
+> > if (insn->rex_prefix.nbytes) {
+> > 	cursor = uprobe->insn + insn_offset_rex_prefix(insn);
+> > 	*cursor &= 0xfe;	/* Clearing REX.B bit */
+> > }
+> 
 
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
----
-Since v1:
-Fixed the spelling mistake.
+I am confused by why we need to call insn_get_length(insn) before
+checking insn->rex_prefix.nbytes? Is it needed.
 
- drivers/video/da8xx-fb.c |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index f360d62..882dd67 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -32,6 +32,7 @@
- #include <linux/console.h>
- #include <linux/slab.h>
- #include <video/da8xx-fb.h>
-+#include <asm/div64.h>
- 
- #define DRIVER_NAME "da8xx_lcdc"
- 
-@@ -174,7 +175,6 @@ static struct fb_var_screeninfo da8xx_fb_var __devinitdata = {
- 	.activate = 0,
- 	.height = -1,
- 	.width = -1,
--	.pixclock = 46666,	/* 46us - AUO display */
- 	.accel_flags = 0,
- 	.left_margin = LEFT_MARGIN,
- 	.right_margin = RIGHT_MARGIN,
-@@ -1048,6 +1048,22 @@ static struct fb_ops da8xx_fb_ops = {
- 	.fb_blank = cfb_blank,
- };
- 
-+/* Calculate and return pixel clock period in pico seconds */
-+static unsigned int da8xxfb_pixel_clk_period(struct da8xx_fb_par *par)
-+{
-+	unsigned int lcd_clk, div;
-+	unsigned int configured_pix_clk;
-+	unsigned long long pix_clk_period_picosec = 1000000000000ULL;
-+
-+	lcd_clk = clk_get_rate(par->lcdc_clk);
-+	div = lcd_clk / par->pxl_clk;
-+	configured_pix_clk = (lcd_clk / div);
-+
-+	do_div(pix_clk_period_picosec, configured_pix_clk);
-+
-+	return pix_clk_period_picosec;
-+}
-+
- static int __devinit fb_probe(struct platform_device *device)
- {
- 	struct da8xx_lcdc_platform_data *fb_pdata =
-@@ -1209,6 +1225,7 @@ static int __devinit fb_probe(struct platform_device *device)
- 
- 	da8xx_fb_var.hsync_len = lcdc_info->hsw;
- 	da8xx_fb_var.vsync_len = lcdc_info->vsw;
-+	da8xx_fb_var.pixclock = da8xxfb_pixel_clk_period(par);
- 
- 	/* Initialize fbinfo */
- 	da8xx_fb_info->flags = FBINFO_FLAG_DEFAULT;
--- 
-1.7.1
+
+Denys and Masami, can you please confirm if below is fine.
+
+
+#ifdef CONFIG_X86_64
+/*
+ * If uprobe->insn doesn't use rip-relative addressing, return
+ * immediately.  Otherwise, rewrite the instruction so that it accesses
+ * its memory operand indirectly through a scratch register.  Set
+ * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
+ * accordingly.  (The contents of the scratch register will be saved
+ * before we single-step the modified instruction, and restored
+ * afterward.)
+ *
+ * We do this because a rip-relative instruction can access only a
+ * relatively small area (+/- 2 GB from the instruction), and the XOL
+ * area typically lies beyond that area.  At least for instructions
+ * that store to memory, we can't execute the original instruction
+ * and "fix things up" later, because the misdirected store could be
+ * disastrous.
+ *
+ * Some useful facts about rip-relative instructions:
+ * - There's always a modrm byte.
+ * - There's never a SIB byte.
+ * - The displacement is always 4 bytes.
+ */
+static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
+							struct insn *insn)
+{
+	u8 *cursor;
+	u8 reg;
+
+	if (mm->context.ia32_compat)
+		return;
+
+	uprobe->arch_info.rip_rela_target_address = 0x0;
+	if (!insn_rip_relative(insn))
+		return;
+
+	/* Clear REX.b bit (extension of MODRM.rm field):
+	 * we want to encode rax/rcx, not r8/r9.
+	 */
+	if (insn->rex_prefix.nbytes) {
+		cursor = uprobe->insn + insn_offset_rex_prefix(insn);
+		*cursor &= 0xfe;
+	}
+
+	/*
+	 * Point cursor at the modrm byte.  The next 4 bytes are the
+	 * displacement.  Beyond the displacement, for some instructions,
+	 * is the immediate operand.
+	 */
+	cursor = uprobe->insn + insn_offset_modrm(insn);
+	insn_get_length(insn);
+
+	/*
+	 * Convert from rip-relative addressing to indirect addressing
+	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
+	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+	 */
+	reg = MODRM_REG(insn);
+	if (reg == 0) {
+		/*
+		 * The register operand (if any) is either the A register
+		 * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+		 * REX prefix) %r8.  In any case, we know the C register
+		 * is NOT the register operand, so we use %rcx (register
+		 * #1) for the scratch register.
+		 */
+		uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+		/* Change modrm from 00 000 101 to 00 000 001. */
+		*cursor = 0x1;
+	} else {
+		/* Use %rax (register #0) for the scratch register. */
+		uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
+		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
+		*cursor = (reg << 3);
+	}
+
+	/* Target address = address of next instruction + (signed) offset */
+	uprobe->arch_info.rip_rela_target_address = (long)insn->length
+					+ insn->displacement.value;
+	/* Displacement field is gone; slide immediate field (if any) over. */
+	if (insn->immediate.nbytes) {
+		cursor++;
+		memmove(cursor, cursor + insn->displacement.nbytes,
+						insn->immediate.nbytes);
+	}
+	return;
+}
 
