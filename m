@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab2BIWYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:24:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47813 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282Ab2BIWXN (ORCPT
+	id S932306Ab2BIWYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:24:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53325 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2BIWXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:23:13 -0500
+	Thu, 9 Feb 2012 17:23:06 -0500
 MIME-Version: 1.0
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 14/18] perf: fix endianness detection in perf.data
-Date: Thu,  9 Feb 2012 23:21:04 +0100
-Message-Id: <1328826068-11713-15-git-send-email-eranian@google.com>
+Subject: [PATCH v6 12/18] perf: add support for sampling taken branch to perf record
+Date: Thu,  9 Feb 2012 23:21:02 +0100
+Message-Id: <1328826068-11713-13-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
 References: <1328826068-11713-1-git-send-email-eranian@google.com>
@@ -24,152 +24,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current version of perf detects whether or not
-the perf.data file is written in a different endianness
-using the attr_size field in the header of the file. This
-field represents sizeof(struct perf_event_attr) as known
-to perf record. If the sizes do not match, then perf tries
-the byte-swapped version. If they match, then the tool assumes
-a different endianness.
+From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 
-The issue with the approach is that it assumes the size of
-perf_event_attr always has to match between perf record and
-perf report. However, the kernel perf_event ABI is extensible.
-New fields can be added to struct perf_event_attr. Consequently,
-it is not possible to use attr_size to detect endianness.
+This patch adds a new option to enable taken branch stack
+sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
+of perf_events.
 
-This patch takes another approach by using the magic number
-written at the beginning of the perf.data file to detect
-endianness. The magic number is an eight-byte signature.
-It's primary purpose is to identify (signature) a perf.data
-file. But it could also be used to encode the endianness.
+There is a new option to active this mode: -b.
+It is possible to pass a set of filters to select the type of
+branches to sample.
 
-The patch introduces a new value for this signature. The key
-difference is that the signature is written differently in
-the file depending on the endianness. Thus, by comparing the
-signature from the file with the tool's own signature it is
-possible to detect endianness. The new signature is "PERFILE2".
+The following filters are available:
+- any : any type of branches
+- any_call : any function call or system call
+- any_ret : any function return or system call return
+- any_ind : any indirect branch
+- u:  only when the branch target is at the user level
+- k: only when the branch target is in the kernel
+- hv: only when the branch target is in the hypervisor
 
-Backward compatiblity with existing perf.data file is
-ensured.
+Filters can be combined by passing a comma separated list
+to the option:
 
+$ perf record -b any_call,u -e cycles:u branchy
+
+Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/header.c |   77 ++++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 64 insertions(+), 13 deletions(-)
+ tools/perf/Documentation/perf-record.txt |   25 ++++++++++
+ tools/perf/builtin-record.c              |   74 ++++++++++++++++++++++++++++++
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/evsel.c                  |    4 ++
+ 4 files changed, 104 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index ecd7f4d..6f4187d 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -63,9 +63,20 @@ char *perf_header__find_event(u64 id)
- 	return NULL;
- }
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index ff9a66e..288d429 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -152,6 +152,31 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
+ corresponding events, i.e., they always refer to events defined earlier on the command
+ line.
  
--static const char *__perf_magic = "PERFFILE";
-+/*
-+ * magic2 = "PERFILE2"
-+ * must be a numerical value to let the endianness
-+ * determine the memory layout. That way we are able
-+ * to detect endianness when reading the perf.data file
-+ * back.
-+ *
-+ * we check for legacy (PERFFILE) format.
-+ */
-+static const char *__perf_magic1 = "PERFFILE";
-+static const u64 __perf_magic2    = 0x32454c4946524550ULL;
-+static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
- 
--#define PERF_MAGIC	(*(u64 *)__perf_magic)
-+#define PERF_MAGIC	__perf_magic2
- 
- struct perf_file_attr {
- 	struct perf_event_attr	attr;
-@@ -1620,24 +1631,59 @@ int perf_header__process_sections(struct perf_header *header, int fd,
++-b::
++--branch-stack::
++Enable taken branch stack sampling. Each sample captures a series of consecutive
++taken branches. The number of branches captured with each sample depends on the
++underlying hardware, the type of branches of interest, and the executed code.
++It is possible to select the types of branches captured by enabling filters. The
++following filters are defined:
++
++        -  any :  any type of branches
++        - any_call: any function call or system call
++        - any_ret: any function return or system call return
++        - any_ind: any indirect branch
++        - u:  only when the branch target is at the user level
++        - k: only when the branch target is in the kernel
++        - hv: only when the target is at the hypervisor level
++
+++
++At least one of any, any_call, any_ret, any_ind must be provided. The privilege levels may
++be ommitted, in which case, the privilege levels of the associated event are applied to the
++branch filter. Both kernel (k) and hypervisor (hv) privilege levels are subject to
++permissions.  When sampling on multiple events, branch stack sampling is enabled for all
++the sampling events. The sampled branch type is the same for all events.
++Note that taken branch sampling may not be available on all processors.
++The various filters must be specified as a comma separated list: -b any_ret,u,k
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f8d9a54..9f07418 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -627,6 +627,77 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
  	return err;
  }
  
-+static int check_magic_endian(u64 *magic, struct perf_file_header *header,
-+			      struct perf_header *ph)
++#define BRANCH_OPT(n, m) \
++	{ .name = n, .mode = (m) }
++
++#define BRANCH_END { .name = NULL }
++
++struct branch_mode {
++	const char *name;
++	int mode;
++};
++
++static const struct branch_mode branch_modes[] = {
++	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
++	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
++	BRANCH_OPT("hv", PERF_SAMPLE_BRANCH_HV),
++	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
++	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
++	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
++	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_END
++};
++
++static int
++parse_branch_stack(const struct option *opt, const char *str, int unset __used)
 +{
-+	int ret;
++#define ONLY_PLM \
++	(PERF_SAMPLE_BRANCH_USER	|\
++	 PERF_SAMPLE_BRANCH_KERNEL	|\
++	 PERF_SAMPLE_BRANCH_HV)
 +
-+	/* check for legacy format */
-+	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
-+	if (ret == 0) {
-+		pr_debug("legacy perf.data format\n");
-+		if (!header)
-+			return -1;
++	uint64_t *mode = (uint64_t *)opt->value;
++	const struct branch_mode *br;
++	char *s, *os, *p;
++	int ret = -1;
 +
-+		if (header->attr_size != sizeof(struct perf_file_attr)) {
-+			u64 attr_size = bswap_64(header->attr_size);
++	*mode = 0;
 +
-+			if (attr_size != sizeof(struct perf_file_attr))
-+				return -1;
-+
-+			ph->needs_swap = true;
-+		}
-+		return 0;
-+	}
-+
-+	/* check magic number with same endianness */
-+	if (*magic == __perf_magic2)
-+		return 0;
-+
-+	/* check magic number but opposite endianness */
-+	if (*magic != __perf_magic2_sw)
++	/* because str is read-only */
++	s = os = strdup(str);
++	if (!s)
 +		return -1;
 +
-+	ph->needs_swap = true;
++	for (;;) {
++		p = strchr(s, ',');
++		if (p)
++			*p = '\0';
 +
-+	return 0;
++		for (br = branch_modes; br->name; br++) {
++			if (!strcasecmp(s, br->name))
++				break;
++		}
++		if (!br->name)
++			goto error;
++
++		*mode |= br->mode;
++
++		if (!p)
++			break;
++
++		s = p + 1;
++	}
++	ret = 0;
++
++	if ((*mode & ~ONLY_PLM) == 0) {
++		error("need at least one branch type with -b\n");
++		ret = -1;
++	}
++error:
++	free(os);
++	return ret;
 +}
 +
- int perf_file_header__read(struct perf_file_header *header,
- 			   struct perf_header *ph, int fd)
- {
-+	int ret;
-+
- 	lseek(fd, 0, SEEK_SET);
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -719,6 +790,9 @@ const struct option record_options[] = {
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
+ 	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
++	OPT_CALLBACK('b', "branch-stack", &record.opts.branch_stack,
++		     "branch mode mask", "branch stack sampling modes",
++		     parse_branch_stack),
+ 	OPT_END()
+ };
  
--	if (readn(fd, header, sizeof(*header)) <= 0 ||
--	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
-+	ret = readn(fd, header, sizeof(*header));
-+	if (ret <= 0)
- 		return -1;
- 
--	if (header->attr_size != sizeof(struct perf_file_attr)) {
--		u64 attr_size = bswap_64(header->attr_size);
--
--		if (attr_size != sizeof(struct perf_file_attr))
--			return -1;
-+	if (check_magic_endian(&header->magic, header, ph) < 0)
-+		return -1;
- 
-+	if (ph->needs_swap) {
- 		mem_bswap_64(header, offsetof(struct perf_file_header,
--					    adds_features));
--		ph->needs_swap = true;
-+			     adds_features));
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 8b4d25d..7f8fbab 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -222,6 +222,7 @@ struct perf_record_opts {
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
++	int	     branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	const char   *cpu_list;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f310aa5..9f66df6 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -126,6 +126,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 		attr->watermark = 0;
+ 		attr->wakeup_events = 1;
  	}
++	if (opts->branch_stack) {
++		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
++		attr->branch_sample_type = opts->branch_stack;
++	}
  
- 	if (header->size != sizeof(*header)) {
-@@ -1873,8 +1919,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
- 				       struct perf_header *ph, int fd,
- 				       bool repipe)
- {
--	if (readn(fd, header, sizeof(*header)) <= 0 ||
--	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
-+	int ret;
-+
-+	ret = readn(fd, header, sizeof(*header));
-+	if (ret <= 0)
-+		return -1;
-+
-+	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
- 		return -1;
- 
- 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
+ 	attr->mmap = track;
+ 	attr->comm = track;
 -- 
 1.7.4.1
 
