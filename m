@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab2BIDa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 22:30:28 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37538 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757671Ab2BIDa0 (ORCPT
+	id S1757943Ab2BIDac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 22:30:32 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:34585 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757671Ab2BIDa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 22:30:26 -0500
-X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=NKm62CkMpMoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=JDjsHSkAAAAA:8 a=68eEZQRoAAAA:8 a=meVymXHHAAAA:8 a=_KvmP6zrONTWFvhUm4wA:9 a=PUjeQqilurYA:10 a=Hf6muOzgCGQA:10 a=7YLhZ6jOsBkA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328758224.2200.134.camel@gandalf.stny.rr.com>
-Subject: Re: linux-next: Tree for Feb 2 (trace/events/sunrpc.h)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 08 Feb 2012 22:30:24 -0500
-In-Reply-To: <1328757287.3234.76.camel@lade.trondhjem.org>
-References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au>
-	 <4F2AD18D.9030904@xenotime.net>
-	 <1328755030.2200.133.camel@gandalf.stny.rr.com>
-	 <1328757287.3234.76.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 8 Feb 2012 22:30:28 -0500
+From: Tang Liang <liang.tang@oracle.com>
+To: mjg59@srcf.ucam.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        konrad.wilk@oracle.com
+Cc: liang.tang@oracle.com
+Subject: [PATCH 0/5] xen: patches for supporting efi
+Date: Thu,  9 Feb 2012 11:30:50 +0800
+Message-Id: <1328758250-23989-1-git-send-email-liang.tang@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F333DCF.0117,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-09 at 03:14 +0000, Myklebust, Trond wrote:
+Hi
 
-> Hmm.... How about if we rather take that out of the RPC_DEBUG condition?
-> I'm assuming that if someone compiles in the tracepoint code, then they
-> want to be able to do a full trace independently of whether or not they
-> set CONFIG_SYSCTL.
+The following patches introduce and implement efi support in dom0.
+The efi memory is owned by Xen and efi run-time service can not be called 
+directly in dom0, so a new efi driver is needed by Xen efi. 
+These patches are based on v3.3.0-rc2+. 
 
-Works for me.
+Descriptions for these patches:
 
-> 
-> 8<---------------------------------------------------------------------
-> From d051b60dcc3032b71cf8d9b96ac4bf24f12b6dcb Mon Sep 17 00:00:00 2001
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Date: Wed, 8 Feb 2012 22:01:15 -0500
-> Subject: [PATCH] SUNRPC: Ensure that we can trace waitqueues when
->  !defined(CONFIG_SYSCTL)
-> 
-> The tracepoint code relies on the queue->name being defined in order to
-> be able to display the name of the waitqueue on which an RPC task is
-> sleeping.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+The efi public functions are changed to function pointers in efi_init_funcs 
+struct. They act as efi generic functions as default. 
+As a benefit from this change, we can register xen efi init func. 
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+In order to add xen efi video support, it is required to add xen-efi's 
+new video type(XEN_VGATYPE_EFI_LFB) case handler in the function xen_init_vga 
+and set the video type to VIDEO_TYPE_EFI to enable efi video mode. 
 
--- Steve
+I have tested this patch on Dell Opti 790.
 
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
->  include/linux/sunrpc/debug.h |    3 +++
->  include/linux/sunrpc/sched.h |   15 +++++++++++++--
->  net/sunrpc/sched.c           |    4 +---
->  3 files changed, 17 insertions(+), 5 deletions(-)
-> 
+Xen efi boot support is added by Jan Beulich, more detail information can be 
+gotten from the url: 
+http://wiki.xen.org/xenwiki/XenParavirtOps, search "efi" in the page.
+
+The example of config file for efi boot:
+kernel=vmlinuz-3.3.0-rc2+ root=xx ro console=tty0
+ramdisk=initramfs-3.3.0-rc2+.img
+video=gfx-x.0 
+
+The detailed test which i have done: 
+First, Check efifb driver work well or not and check the kernel messesge ro
+see the follow info:
+[    0.576705] efifb: probing for efifb
+[    0.577357] efifb: framebuffer at 0xd0000000, mapped to 0xffffc90005800000, using 3752k, total 65472k
+[    0.577360] efifb: mode is 800x600x32, linelength=3200, pages=1
+[    0.577362] efifb: scrolling: redraw
+[    0.577364] efifb: Truecolor: size=8:8:8:8, shift=24:16:8:0 
+
+Second, Check efi systab and variable is work well or not. 
+cat the information in /sys/firmware/efi to check the efi systab and variable 
+is right or not. 
+ 
+Third, Run Linux firmware testing tools which is downloaded from this Url.
+http://linuxfirmwarekit.org/download.php 
+
+Tang Liang (4):
+      EFI: Provide registration for efi_init.. etc efi public function
+      EFI:  add efi driver for Xen efi
+      Xen efi: Add xen efi enabled detect
+      Xen vga: add the xen efi video mode support
 
 
+ arch/x86/platform/efi/Makefile   |    2 +-
+ arch/x86/platform/efi/efi-xen.c  |  460 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi.c      |   63 +++++-
+ arch/x86/xen/enlighten.c         |    3 +
+ arch/x86/xen/vga.c               |    7 +
+ include/linux/efi.h              |   14 +-
+ include/xen/interface/platform.h |  122 ++++++++++
+ include/xen/interface/xen.h      |    1 +
+ 8 files changed, 665 insertions(+), 7 deletions(-)
+
+Thanks
+Liang.
+-- 
+1.7.7.5
