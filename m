@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab2BIQpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:45:25 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36815 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2BIQpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:45:24 -0500
-Date: Thu, 9 Feb 2012 20:45:19 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kernel-team@android.com,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH] sched: Turn lock_task_sighand() into a static inline
-Message-ID: <20120209164519.GA10266@oksana.dev.rtsoft.ru>
-References: <20120203163056.GA4190@redhat.com>
- <20120206162930.GA5117@oksana.dev.rtsoft.ru>
- <20120206163542.GA10104@kroah.com>
- <20120206185909.GB7741@oksana.dev.rtsoft.ru>
- <20120206191854.GA16702@kroah.com>
- <CAHGf_=r+nReQSfdvU7+FAhMRBkZPzQ2Jg6Puw9SmvW7WijpN7A@mail.gmail.com>
- <20120207044816.GA31271@oksana.dev.rtsoft.ru>
- <20120208152750.GA15782@redhat.com>
+	id S1758122Ab2BIQqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:46:19 -0500
+Received: from sandeen.net ([63.231.237.45]:37505 "EHLO mail.sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab2BIQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 11:46:18 -0500
+Message-ID: <4F33F859.4040209@sandeen.net>
+Date: Thu, 09 Feb 2012 10:46:17 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120208152750.GA15782@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, mpatocka@redhat.com
+Subject: Re: [PATCH 2/2] quota: Fix deadlock with suspend and quotas
+References: <1328654267-18855-1-git-send-email-jack@suse.cz> <1328654267-18855-3-git-send-email-jack@suse.cz>
+In-Reply-To: <1328654267-18855-3-git-send-email-jack@suse.cz>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It appears that sparse tool understands static inline functions for
-context balance checking, so let's turn the macros into an inline func.
-
-This makes the code a little bit more robust.
-
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
-
-On Wed, Feb 08, 2012 at 04:27:50PM +0100, Oleg Nesterov wrote:
-> On 02/07, Anton Vorontsov wrote:
-> >
-> > On Mon, Feb 06, 2012 at 04:27:32PM -0500, KOSAKI Motohiro wrote:
-> > >
-> > > Some __cond_lock() caller are inline functions. Is this bad?
-> >
-> > No, that's great, actually. :-) Not obvious, but seems like
-> > sparse understands __cond_lock in inline functions, so I'd
-> > better use it.
+On 2/7/12 4:37 PM, Jan Kara wrote:
+> This script causes a kernel deadlock:
+> set -e
+> DEVICE=/dev/vg1/linear
+> lvchange -ay $DEVICE
+> mkfs.ext3 $DEVICE
+> mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
+> quotacheck -gu /mnt/test
+> umount /mnt/test
+> mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
+> quotaon /mnt/test
+> dmsetup suspend $DEVICE
+> setquota -u root 1 2 3 4 /mnt/test &
+> sleep 1
+> dmsetup resume $DEVICE
 > 
-> Hmm, great...
+> setquota acquired semaphore s_umount for read and then tried to perform a
+> transaction (and waits because the device is suspended).  dmsetup resume tries
+> to acquire s_umount for write before resuming the device (and waits for
+> setquota).
 > 
-> may be you can update lock_task_sighand() too ? (in a separate
-> patch of course).
+> Fix the deadlock by grabbing a thawed superblock for quota commands which need
+> it.
+> 
+> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-Sure thing. Here it goes...
+Makes sense to me, thanks.
 
- include/linux/sched.h |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e82f721..22ae10e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2394,12 +2394,15 @@ static inline void task_unlock(struct task_struct *p)
- extern struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
- 							unsigned long *flags);
- 
--#define lock_task_sighand(tsk, flags)					\
--({	struct sighand_struct *__ss;					\
--	__cond_lock(&(tsk)->sighand->siglock,				\
--		    (__ss = __lock_task_sighand(tsk, flags)));		\
--	__ss;								\
--})									\
-+static inline struct sighand_struct *lock_task_sighand(struct task_struct *tsk,
-+						       unsigned long *flags)
-+{
-+	struct sighand_struct *ret;
-+
-+	ret = __lock_task_sighand(tsk, flags);
-+	(void)__cond_lock(&tsk->sighand->siglock, ret);
-+	return ret;
-+}
- 
- static inline void unlock_task_sighand(struct task_struct *tsk,
- 						unsigned long *flags)
--- 
-1.7.8.3
+> ---
+>  fs/quota/quota.c |   24 +++++++++++++++++++++---
+>  1 files changed, 21 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+> index 7898cd6..fc2c438 100644
+> --- a/fs/quota/quota.c
+> +++ b/fs/quota/quota.c
+> @@ -292,11 +292,26 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
+>  	}
+>  }
+>  
+> +/* Return 1 if 'cmd' will block on frozen filesystem */
+> +static int quotactl_cmd_write(int cmd)
+> +{
+> +	switch (cmd) {
+> +	case Q_GETFMT:
+> +	case Q_GETINFO:
+> +	case Q_SYNC:
+> +	case Q_XGETQSTAT:
+> +	case Q_XGETQUOTA:
+> +	case Q_XQUOTASYNC:
+> +		return 0;
+> +	}
+> +	return 1;
+> +}
+> +
+>  /*
+>   * look up a superblock on which quota ops will be performed
+>   * - use the name of a block device to find the superblock thereon
+>   */
+> -static struct super_block *quotactl_block(const char __user *special)
+> +static struct super_block *quotactl_block(const char __user *special, int cmd)
+>  {
+>  #ifdef CONFIG_BLOCK
+>  	struct block_device *bdev;
+> @@ -309,7 +324,10 @@ static struct super_block *quotactl_block(const char __user *special)
+>  	putname(tmp);
+>  	if (IS_ERR(bdev))
+>  		return ERR_CAST(bdev);
+> -	sb = get_super(bdev);
+> +	if (quotactl_cmd_write(cmd))
+> +		sb = get_super_thawed(bdev);
+> +	else
+> +		sb = get_super(bdev);
+>  	bdput(bdev);
+>  	if (!sb)
+>  		return ERR_PTR(-ENODEV);
+> @@ -361,7 +379,7 @@ SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
+>  			pathp = &path;
+>  	}
+>  
+> -	sb = quotactl_block(special);
+> +	sb = quotactl_block(special, cmds);
+>  	if (IS_ERR(sb)) {
+>  		ret = PTR_ERR(sb);
+>  		goto out;
 
