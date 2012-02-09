@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab2BINWF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:22:05 -0500
-Received: from bar.sig21.net ([80.81.252.164]:51305 "EHLO bar.sig21.net"
+	id S1754311Ab2BINYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:24:25 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53744 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab2BINWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:22:03 -0500
-Date: Thu, 9 Feb 2012 14:21:55 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org
-Subject: Re: swap storm since kernel 3.2.x
-Message-ID: <20120209132155.GA15147@sig21.net>
-References: <201202041109.53003.toralf.foerster@gmx.de>
- <201202051107.26634.toralf.foerster@gmx.de>
- <CAJd=RBCvvVgWqfSkoEaWVG=2mwKhyXarDOthHt9uwOb2fuDE9g@mail.gmail.com>
- <201202080956.18727.toralf.foerster@gmx.de>
- <20120208115244.GA24959@sig21.net>
- <CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com>
- <20120209113606.GA8054@sig21.net>
- <CAJd=RBDzUpUgZLVU+WSfb8grzMAbi3fcyyZkpX8qpaxu6zYe1g@mail.gmail.com>
+	id S1753643Ab2BINYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:24:24 -0500
+Date: Thu, 9 Feb 2012 14:23:59 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jk@novozymes.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: Memory issues with Opteron 6220
+Message-ID: <20120209132359.GA8830@elte.hu>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+ <20120209083315.GA19380@elte.hu>
+ <1328778529.2374.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBDzUpUgZLVU+WSfb8grzMAbi3fcyyZkpX8qpaxu6zYe1g@mail.gmail.com>
+In-Reply-To: <1328778529.2374.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 08:02:20PM +0800, Hillf Danton wrote:
-> On Thu, Feb 9, 2012 at 7:36 PM, Johannes Stezenbach <js@sig21.net> wrote:
-> > On Wed, Feb 08, 2012 at 08:34:14PM +0800, Hillf Danton wrote:
-> >> And I want to ask kswapd to do less work, the attached diff is
-> >> based on 3.2.5, mind to test it with CONFIG_DEBUG_OBJECTS enabled?
-> >
-> > Sorry, for slow reply.  The patch does not apply to 3.2.4
-> > (3.2.5 only has the ASPM change which I don't want to
-> > try atm).  Is the patch below correct?
-> >
+
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> Le jeudi 09 février 2012 à 09:33 +0100, Ingo Molnar a écrit :
+> > * Anders Ossowicki <aowi@novozymes.com> wrote:
+> > 
+> > > Hey,
+> > > 
+> > > We're seeing unexpected slowdowns and other memory issues with a new system.
+> > > Enough to render it unusable. For example:
+> > > 
+> > > Error: open3: fork failed: Cannot allocate memory
+> > > 
+> > > at times where there's no real memory pressure:
+> > >                    total       used       free     shared    buffers     cached
+> > >       Mem:     132270720  131942388     328332          0     299768  103334420
+> > >       -/+ buffers/cache:   28308200  103962520
+> > >       Swap:      7811068      13760    7797308
+> > >
+> > > [...]
+> > 
+> > > The system is a Dell Poweredge R715, with two eight-core 
+> > > Opteron 6220 processors and 128G of memory. We have several 
+> > > similar systems, such as the one this should replace: R715, 
+> > > 2x8 core Opteron 6140, 128G memory, and they do not exhibit 
+> > > any similar symptoms.
+> > 
+> > 130 MB of RAM visible to Linux isn't the expected bootup default 
+> > indeed. Around 130 *GB* would be expected ...
 > 
-> It is fine;)
+> Not sure what you mean, I see 128GB in the "free" output, as 
+> expected.
 
-Hm, with 3.2.4 + patch +
+Erm, yes. I plead temporary blindness!
 
-CONFIG_DEBUG_OBJECTS=y
-# CONFIG_DEBUG_OBJECTS_SELFTEST is not set
-# CONFIG_DEBUG_OBJECTS_FREE is not set
-CONFIG_DEBUG_OBJECTS_TIMERS=y
-CONFIG_DEBUG_OBJECTS_WORK=y
-CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
-CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER=y
-CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+So all RAM is visible properly. This error:
 
-it looks good.  Neither do I get the huge debug_objects_cache
-nor does it swap, after running a crosstool-ng toolchain build.
-Well, last time I also had one kvm -m 1G instance running.  I'll
-try if that triggers the issue.  So far:
+> > > Error: open3: fork failed: Cannot allocate memory
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-  689249 689235  99%    0.36K  31334       22    250672K debug_objects_cache
-  625185 609295  97%    0.42K  34735       18    277880K buffer_head
-  103834 103393  99%    1.74K   7245       18    231840K ext3_inode_cache
-   84348  82351  97%    0.58K   3124       27     49984K dentry
-
-MemTotal:        3938800 kB
-MemFree:           77136 kB
-Buffers:           68892 kB
-Cached:          2686376 kB
-SwapCached:            8 kB
-Active:          1343464 kB
-Inactive:        1584476 kB
-Active(anon):      78712 kB
-Inactive(anon):   145220 kB
-Active(file):    1264752 kB
-Inactive(file):  1439256 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-SwapTotal:       3903484 kB
-SwapFree:        3903248 kB
-Dirty:                64 kB
-Writeback:             0 kB
-AnonPages:        172676 kB
-Mapped:            41868 kB
-Shmem:             51260 kB
-Slab:             872400 kB
-SReclaimable:     549904 kB
-SUnreclaim:       322496 kB
-KernelStack:        1432 kB
-PageTables:         3172 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:     5872884 kB
-Committed_AS:     474604 kB
-VmallocTotal:   34359738367 kB
-VmallocUsed:      345800 kB
-VmallocChunk:   34359386531 kB
-DirectMap4k:       12288 kB
-DirectMap2M:     4098048 kB
-
+suggests allocation failure. How is that possible with so much 
+RAM?
 
 Thanks,
-Johannes
+
+	Ingo
