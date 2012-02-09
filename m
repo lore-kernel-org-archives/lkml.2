@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab2BINol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:44:41 -0500
-Received: from smtp.mail.umich.edu ([141.211.14.82]:55546 "EHLO
-	hellskitchen.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754350Ab2BINoj (ORCPT
+	id S1757651Ab2BINrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:47:24 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33073 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2BINrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:44:39 -0500
-Date: Thu, 9 Feb 2012 08:44:29 -0500
-From: Jim Rees <rees@umich.edu>
-To: David Howells <dhowells@redhat.com>
-Cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
-        libc-alpha@sourceware.org
-Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate
- name service errors
-Message-ID: <20120209134429.GC6663@umich.edu>
-References: <20120208141552.GA3273@umich.edu>
- <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
- <20120208122917.8902.78395.stgit@warthog.procyon.org.uk>
- <17614.1328781889@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17614.1328781889@redhat.com>
+	Thu, 9 Feb 2012 08:47:23 -0500
+Message-ID: <1328795289.25876.5.camel@blackout-netbook>
+Subject: [PATCH] [trivial] Correcting typos in rtlwifi/base.c
+From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+To: Larry.Finger@lwfinger.net, chaoming_li@realsil.com.cn
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Feb 2012 14:48:09 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells wrote:
+This patch correct some typos in a comment.
 
-  Jim Rees <rees@umich.edu> wrote:
-  
-  >   Define ENAMEUNKNOWN to indicate "Network name unknown".  This can be used to
-  >   indicate, for example, that an attempt was made by dns_query() to make a query,
-  >   but the name server (e.g. a DNS server) replied indicating that it had no
-  >   matching records.
-  > 
-  > Would this be the same as NXDOMAIN?  That is, does it mean the name server
-  > couldn't find a record, or does it mean that the record doesn't exist?
-  
-  Is there a way to tell the difference?  Can you store a negative record in the
-  DNS?  Or is it that the DNS has records for the name, just not records of the
-  type you're looking for (eg. NO_ADDRESS/NO_DATA from gethostbyname())?
 
-It's an important distinction to the resolver if you want to avoid dns
-hijacking.  See rfc2308.  There doesn't seem to be a way to tell the
-difference from the gethostbyname call, which was designed before this was a
-problem.  The on-the-wire dns query protocol does make the distinction.
+>From 79bce2d3fb5c2e3c78ff39f3c9a0f10c20be9221 Mon Sep 17 00:00:00 2001
+From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+Date: Thu, 9 Feb 2012 14:45:28 +0100
+Subject: [PATCH] Correcting typos in rtlwifi/base.c
 
-I suspect kernel dns clients won't need to know the difference, but I think
-it's useful if we decide on and document the meaning of the error codes.
-Maybe the answer is that ENAMEUNKNOWN means the same as a HOST_NOT_FOUND
-from gethostbyname().
+
+Signed-off-by: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+---
+ drivers/net/wireless/rtlwifi/base.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/base.c
+b/drivers/net/wireless/rtlwifi/base.c
+index 8d6eb0f..08e4b28 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -40,10 +40,10 @@
+ #include "regd.h"
+ 
+ /*
+- *NOTICE!!!: This file will be very big, we hsould
+- *keep it clear under follwing roles:
++ *NOTICE!!!: This file will be very big, we should
++ *keep it clear under following roles:
+  *
+- *This file include follwing part, so, if you add new
++ *This file include following parts, so, if you add new
+  *functions into this file, please check which part it
+  *should includes. or check if you should add new part
+  *for this file:
+-- 
+1.7.9
+
+
+
+
+
