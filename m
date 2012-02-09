@@ -1,35 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2BIN0c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:26:32 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:55186 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab2BIN0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:26:31 -0500
-Subject: Re: [PATCH RFC] slab: introduce knalloc/kxnalloc
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Xi Wang <xi.wang@gmail.com>
-In-Reply-To: <4F33C7D7.1060801@kernel.dk>
-Date: Thu, 9 Feb 2012 08:26:26 -0500
-Cc: Pekka Enberg <penberg@kernel.org>,
+	id S1757531Ab2BIN2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:28:53 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48415 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165Ab2BIN2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:28:52 -0500
+Date: Thu, 9 Feb 2012 14:28:25 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>, jk@novozymes.com,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
-        David Rientjes <rientjes@google.com>
-Content-Transfer-Encoding: 7bit
-Message-Id: <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
-References: <20120207141155.GA16184@elgon.mountain> <4F323388.7040902@kernel.dk> <20120208142513.4db2493a.akpm@linux-foundation.org> <4F33BF05.208@gmail.com> <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk>
-To: Jens Axboe <axboe@kernel.dk>
-X-Mailer: Apple Mail (2.1084)
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: Memory issues with Opteron 6220
+Message-ID: <20120209132825.GB8830@elte.hu>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+ <20120208205628.GA18909@alberich.amd.com>
+ <20120209124355.GA20902@otto.nzcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120209124355.GA20902@otto.nzcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 9, 2012, at 8:19 AM, Jens Axboe wrote:
-> Agree, lets not overdesign. kmalloc_array() sounds good to me, fwiw.
 
-I like kmalloc_array.  "knalloc" can be easily confused with kmalloc.
+* Anders Ossowicki <aowi@novozymes.com> wrote:
 
-- xi
+> I went digging through the power management options of the 
+> bios and found that CPU performance was set to System DBPM[1] 
+> by default. After switching it to OS DBPM, powernow-k8 seemed 
+> a lot happier:
+
+Your bootlog says:
+
+[    0.330000] Performance Events: Broken BIOS detected, complain to your hardware vendor.
+[    0.330000] [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR c0010200 is 1430076)
+
+Do you get that message if DBPM is enabled?
+
+If the message disappeared then I'd suggest to do what that 
+kernel message suggests and ask the vendor to disable that BIOS 
+option by default, it breaks stuff.
+
+Thanks,
+
+	Ingo
