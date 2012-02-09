@@ -1,191 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab2BIRZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 12:25:57 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:32770 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2BIRZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 12:25:55 -0500
-Message-ID: <4F34019E.60007@canonical.com>
-Date: Thu, 09 Feb 2012 10:25:50 -0700
-From: Tim Gardner <rtg.canonical@gmail.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120203 Thunderbird/11.0
+	id S1754692Ab2BIRgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 12:36:18 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50763 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752059Ab2BIRgR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 12:36:17 -0500
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Tim Gardner <rtg.canonical@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+In-Reply-To: <1328784311-27272-2-git-send-email-Julia.Lawall@lip6.fr>
+References: <1328784311-27272-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1328784311-27272-2-git-send-email-Julia.Lawall@lip6.fr>
+Date: Fri, 10 Feb 2012 02:36:16 +0900
+X-Google-Sender-Auth: vzdhhs7kkwRC_hId1qaCfEpruL8
+Message-ID: <CAH9JG2Ws0OjO9yToUmTkpYXY9J9nuaThV1OGrxGAMJrfjRVmXQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/media/video/s5p-tv/*_drv.c: use devm_ functions
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net> <4F33DAFC.1000502@canonical.com> <4F33F7C8.2090105@lwfinger.net>
-In-Reply-To: <4F33F7C8.2090105@lwfinger.net>
-Content-Type: multipart/mixed;
- boundary="------------020302060405040907050708"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020302060405040907050708
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-On 02/09/2012 09:43 AM, Larry Finger wrote:
-> On 02/09/2012 08:41 AM, Tim Gardner wrote:
->>
->> I agree with you about the semantics of rtlpriv->max_fw_size, but I
->> don't agree
->> that the size check is correct. While rtlpriv->max_fw_size has been
->> set to
->> sizeof(struct rt_firmware), that value is _way_ bigger then the size
->> of the
->> target buffer.
->>
->> sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
->>
->> The target buffer size is only 164000 bytes.
->>
->> I've attached v2 of the patch that is simpler and may serve to better
->> illustrate
->> my point. By the way, Ben Hutchings was right about the original patch
->> having an
->> off by one error. This version also clears rtlpriv->max_fw_size if the
->> size
->> check fails. Probably should have mentioned that in the commit log.
+To Marek,
+Please include this patch at next git pull request.
+
+On Thu, Feb 9, 2012 at 7:45 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> I agree that Ben is right.
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in
+> the probe function of a platform device and is only freed in the remove
+> function.
 >
-> This thread forced me to go back to square one in analyzing the
-> situation. For the other drivers in the rtlwifi family, the firmware
-> file contains an image that is directly stuffed into the device. For the
-> RTL8192SE devices, it is more complicated. The structure is described in
-> struct rt_firmware. At the moment, the arrays there are grossly
-> oversized. They could be as follows:
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> struct rt_firmware {
-> struct fw_hdr *pfwheader;
-> enum fw_status fwstatus;
-> u16 firmwareversion;
-> u8 fw_imem[RTL8190_MAX_IMEM_CODE_SIZE];
-> u8 fw_emem[RTL8190_MAX_DMEM_CODE_SIZE];
-> u32 fw_imem_len;
-> u32 fw_emem_len;
-> u8 sz_fw_tmpbuffer[RTL8190_MAX_FIRMWARE_SIZE];
-> u32 sz_fw_tmpbufferlen;
-> u16 cmdpacket_fragthresold;
-> };
+> ---
+>  drivers/media/video/s5p-tv/hdmi_drv.c |   30 ++++++++++--------------------
+>  drivers/media/video/s5p-tv/sdo_drv.c  |   26 +++++++++-----------------
+>  2 files changed, 19 insertions(+), 37 deletions(-)
 >
-> with
+> diff --git a/drivers/media/video/s5p-tv/hdmi_drv.c b/drivers/media/video/s5p-tv/hdmi_drv.c
+> index 3e0dd09..6c21dc6 100644
+> --- a/drivers/media/video/s5p-tv/hdmi_drv.c
+> +++ b/drivers/media/video/s5p-tv/hdmi_drv.c
+> @@ -875,7 +875,7 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
 >
-> RTL8190_MAX_IMEM_CODE_SIZE = 54000 (current fw is 51,208),
-> RTL8190_MAX_DMEM_CODE_SIZE = 40000 (current fw is 37,520), and
-> RTL8190_MAX_FIRMWARE_SIZE = 90000 (it holds the raw firmware image,
-> which is currently 88,856).
+>        dev_dbg(dev, "probe start\n");
 >
-> Ultimately, all three arrays should be eliminated. Now that we are using
-> asynchronous loading, the kernel should keep its cached data and not
-> copy it into the driver's private storage when a pointer will suffice.
-> All the drivers need this change, but that can wait for now.
+> -       hdmi_dev = kzalloc(sizeof(*hdmi_dev), GFP_KERNEL);
+> +       hdmi_dev = devm_kzalloc(&pdev->dev, sizeof(*hdmi_dev), GFP_KERNEL);
+>        if (!hdmi_dev) {
+>                dev_err(dev, "out of memory\n");
+>                ret = -ENOMEM;
+> @@ -886,7 +886,7 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
 >
-> I will ACK the patch if you resumit it with
-> #define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE 90000
+>        ret = hdmi_resources_init(hdmi_dev);
+>        if (ret)
+> -               goto fail_hdev;
+> +               goto fail;
 >
-> Larry
-
-v3 expands the commit log a bit. It doesn't apply to stable 3.2.y, but 
-could easily be backported. If I remember I'll do it when its merged in 
-Linus' tree.
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
-
---------------020302060405040907050708
-Content-Type: text/x-patch;
- name="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-rtlwifi-rtl8192se-firmware-load-can-overflow-target-.pa";
- filename*1="tch"
-
->From 1c26d8e099c2720aebf106daeb7814114051a596 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Wed, 8 Feb 2012 13:11:47 -0700
-Subject: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target buffer
-
-Define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE which represents the
-maximimum possible firmware file size. Use it in the definition
-of the buffer which receives the firmware file data.
-
-Set RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE closer to the actual size of
-the firmware file, e.g., 90000 (down from hard coded 164000). The current
-size of rtlwifi/rtl8192sefw.bin is 88856.
-
-Set max_fw_size to RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE for the size limit
-check. Fix the error case where max_fw_size is not cleared if the size
-limit check fails.
-
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: John W. Linville <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
- drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-index babe85d..b4afff6 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
-@@ -30,6 +30,7 @@
- #define __REALTEK_FIRMWARE92S_H__
- 
- #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
-+#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	90000
- #define RTL8190_CPU_START_OFFSET		0x80
- /* Firmware Local buffer size. 64k */
- #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
-@@ -217,7 +218,7 @@ struct rt_firmware {
- 	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
- 	u32 fw_imem_len;
- 	u32 fw_emem_len;
--	u8 sz_fw_tmpbuffer[164000];
-+	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
- 	u32 sz_fw_tmpbufferlen;
- 	u16 cmdpacket_fragthresold;
- };
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-index ca38dd9..345d752 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-@@ -108,6 +108,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
- 	if (firmware->size > rtlpriv->max_fw_size) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
- 			 "Firmware is too big!\n");
-+		rtlpriv->max_fw_size = 0;
- 		release_firmware(firmware);
- 		return;
- 	}
-@@ -232,7 +233,7 @@ static int rtl92s_init_sw_vars(struct ieee80211_hw *hw)
- 		return 1;
- 	}
- 
--	rtlpriv->max_fw_size = sizeof(struct rt_firmware);
-+	rtlpriv->max_fw_size = RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE;
- 
- 	pr_info("Driver for Realtek RTL8192SE/RTL8191SE\n"
- 		"Loading firmware %s\n", rtlpriv->cfg->fw_name);
--- 
-1.7.9
-
-
---------------020302060405040907050708--
+>        /* mapping HDMI registers */
+>        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> @@ -896,24 +896,26 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+>                goto fail_init;
+>        }
+>
+> -       hdmi_dev->regs = ioremap(res->start, resource_size(res));
+> +       hdmi_dev->regs = devm_ioremap(&pdev->dev, res->start,
+> +                                     resource_size(res));
+>        if (hdmi_dev->regs == NULL) {
+>                dev_err(dev, "register mapping failed.\n");
+>                ret = -ENXIO;
+> -               goto fail_hdev;
+> +               goto fail;
+>        }
+>
+>        res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>        if (res == NULL) {
+>                dev_err(dev, "get interrupt resource failed.\n");
+>                ret = -ENXIO;
+> -               goto fail_regs;
+> +               goto fail_init;
+>        }
+>
+> -       ret = request_irq(res->start, hdmi_irq_handler, 0, "hdmi", hdmi_dev);
+> +       ret = devm_request_irq(&pdev->dev, res->start, hdmi_irq_handler, 0,
+> +                              "hdmi", hdmi_dev);
+>        if (ret) {
+>                dev_err(dev, "request interrupt failed.\n");
+> -               goto fail_regs;
+> +               goto fail_init;
+>        }
+>        hdmi_dev->irq = res->start;
+>
+> @@ -924,7 +926,7 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+>        ret = v4l2_device_register(NULL, &hdmi_dev->v4l2_dev);
+>        if (ret) {
+>                dev_err(dev, "could not register v4l2 device.\n");
+> -               goto fail_irq;
+> +               goto fail_init;
+>        }
+>
+>        drv_data = (struct hdmi_driver_data *)
+> @@ -969,18 +971,9 @@ static int __devinit hdmi_probe(struct platform_device *pdev)
+>  fail_vdev:
+>        v4l2_device_unregister(&hdmi_dev->v4l2_dev);
+>
+> -fail_irq:
+> -       free_irq(hdmi_dev->irq, hdmi_dev);
+> -
+> -fail_regs:
+> -       iounmap(hdmi_dev->regs);
+> -
+>  fail_init:
+>        hdmi_resources_cleanup(hdmi_dev);
+>
+> -fail_hdev:
+> -       kfree(hdmi_dev);
+> -
+>  fail:
+>        dev_err(dev, "probe failed\n");
+>        return ret;
+> @@ -996,10 +989,7 @@ static int __devexit hdmi_remove(struct platform_device *pdev)
+>        clk_disable(hdmi_dev->res.hdmi);
+>        v4l2_device_unregister(&hdmi_dev->v4l2_dev);
+>        disable_irq(hdmi_dev->irq);
+> -       free_irq(hdmi_dev->irq, hdmi_dev);
+> -       iounmap(hdmi_dev->regs);
+>        hdmi_resources_cleanup(hdmi_dev);
+> -       kfree(hdmi_dev);
+>        dev_info(dev, "remove successful\n");
+>
+>        return 0;
+> diff --git a/drivers/media/video/s5p-tv/sdo_drv.c b/drivers/media/video/s5p-tv/sdo_drv.c
+> index 059e774..f6bca2c 100644
+> --- a/drivers/media/video/s5p-tv/sdo_drv.c
+> +++ b/drivers/media/video/s5p-tv/sdo_drv.c
+> @@ -301,7 +301,7 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>        struct clk *sclk_vpll;
+>
+>        dev_info(dev, "probe start\n");
+> -       sdev = kzalloc(sizeof *sdev, GFP_KERNEL);
+> +       sdev = devm_kzalloc(&pdev->dev, sizeof *sdev, GFP_KERNEL);
+>        if (!sdev) {
+>                dev_err(dev, "not enough memory.\n");
+>                ret = -ENOMEM;
+> @@ -314,14 +314,14 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>        if (res == NULL) {
+>                dev_err(dev, "get memory resource failed.\n");
+>                ret = -ENXIO;
+> -               goto fail_sdev;
+> +               goto fail;
+>        }
+>
+> -       sdev->regs = ioremap(res->start, resource_size(res));
+> +       sdev->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+>        if (sdev->regs == NULL) {
+>                dev_err(dev, "register mapping failed.\n");
+>                ret = -ENXIO;
+> -               goto fail_sdev;
+> +               goto fail;
+>        }
+>
+>        /* acquiring interrupt */
+> @@ -329,12 +329,13 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>        if (res == NULL) {
+>                dev_err(dev, "get interrupt resource failed.\n");
+>                ret = -ENXIO;
+> -               goto fail_regs;
+> +               goto fail;
+>        }
+> -       ret = request_irq(res->start, sdo_irq_handler, 0, "s5p-sdo", sdev);
+> +       ret = devm_request_irq(&pdev->dev, res->start, sdo_irq_handler, 0,
+> +                              "s5p-sdo", sdev);
+>        if (ret) {
+>                dev_err(dev, "request interrupt failed.\n");
+> -               goto fail_regs;
+> +               goto fail;
+>        }
+>        sdev->irq = res->start;
+>
+> @@ -343,7 +344,7 @@ static int __devinit sdo_probe(struct platform_device *pdev)
+>        if (IS_ERR_OR_NULL(sdev->sclk_dac)) {
+>                dev_err(dev, "failed to get clock 'sclk_dac'\n");
+>                ret = -ENXIO;
+> -               goto fail_irq;
+> +               goto fail;
+>        }
+>        sdev->dac = clk_get(dev, "dac");
+>        if (IS_ERR_OR_NULL(sdev->dac)) {
+> @@ -415,12 +416,6 @@ fail_dac:
+>        clk_put(sdev->dac);
+>  fail_sclk_dac:
+>        clk_put(sdev->sclk_dac);
+> -fail_irq:
+> -       free_irq(sdev->irq, sdev);
+> -fail_regs:
+> -       iounmap(sdev->regs);
+> -fail_sdev:
+> -       kfree(sdev);
+>  fail:
+>        dev_info(dev, "probe failed\n");
+>        return ret;
+> @@ -439,9 +434,6 @@ static int __devexit sdo_remove(struct platform_device *pdev)
+>        clk_put(sdev->dacphy);
+>        clk_put(sdev->dac);
+>        clk_put(sdev->sclk_dac);
+> -       free_irq(sdev->irq, sdev);
+> -       iounmap(sdev->regs);
+> -       kfree(sdev);
+>
+>        dev_info(&pdev->dev, "remove successful\n");
+>        return 0;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
