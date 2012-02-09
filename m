@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2BIRUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 12:20:52 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60422 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758157Ab2BIRUt (ORCPT
+	id S1758161Ab2BIRWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 12:22:47 -0500
+Received: from nat.nue.novell.com ([195.135.221.2]:6296 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758014Ab2BIRWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 12:20:49 -0500
-Date: Thu, 9 Feb 2012 09:12:47 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: r8712u: Remove configuration parameter
- CONFIG_R8712_AP
-Message-ID: <20120209171247.GA31663@kroah.com>
-References: <4f2da2e6.fVTqWGXhdTGpLskE%Larry.Finger@lwfinger.net>
+	Thu, 9 Feb 2012 12:22:46 -0500
+Message-ID: <4F3400DF.9080603@suse.com>
+Date: Thu, 09 Feb 2012 09:22:39 -0800
+From: Lee Duncan <lduncan@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4f2da2e6.fVTqWGXhdTGpLskE%Larry.Finger@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SCSI, st: modify tape driver to allow writing immediate
+ filemarks
+References: <4F31CAC0.3010905@suse.com> <1328663723.27428.2.camel@joe2Laptop>
+In-Reply-To: <1328663723.27428.2.camel@joe2Laptop>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 04, 2012 at 03:28:06PM -0600, Larry Finger wrote:
-> The configuration parameter R8712_AP is misleading as the driver cannot
-> function as an AP without a heavily hacked version of hostapd. Thus, it
-> makes sense to remove the parameter; however the code and data configured
-> for the option is left in.
+Hi Joe:
+
+Thanks for the quick review.
+
+On 02/07/2012 05:15 PM, Joe Perches wrote:
+> On Tue, 2012-02-07 at 17:07 -0800, Lee Duncan wrote:
+>> Add an st module option st_nowait_eof which defaults to 0. Setting this
+>> option to 1 tells the st driver not to wait when writing a filemark, which
+>> can result in much faster times on streaming tape drives.
 > 
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> trivial comments:
+> 
+>> diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+> []
+>> @@ -81,6 +81,7 @@ static int max_sg_segs;
+>>  static int try_direct_io = TRY_DIRECT_IO;
+>>  static int try_rdio = 1;
+>>  static int try_wdio = 1;
+>> +static int st_nowait_eof = 0;
+> 
+> Could be bool.
 
-This doesn't apply for some odd reason:
+In both this case and the one you site below, the existing variables are
+not bool. I'd rather see new variables match existing variables, in
+naming, type, and usage. Next major update of the driver, I'd like to
+see all of these bools-in-use fixed.
 
-patching file drivers/staging/rtl8712/Kconfig
-patching file drivers/staging/rtl8712/rtl871x_sta_mgt.c
-Hunk #1 FAILED at 42.
-Hunk #2 succeeded at 71 (offset -1 lines).
-1 out of 2 hunks FAILED -- saving rejects to file drivers/staging/rtl8712/rtl871x_sta_mgt.c.rej
-patching file drivers/staging/rtl8712/sta_info.h
+> 
+>> @@ -1106,6 +1109,11 @@ static int check_tape(struct scsi_tape *STp, struct file *filp)
+>>                                      STp->drv_buffer));
+>>  		}
+>>  		STp->drv_write_prot = ((STp->buffer)->b_data[2] & 0x80) != 0;
+>> +		if (!STp->drv_buffer && STp->immediate_filemark) {
+>> +			printk(KERN_WARNING "%s: non-buffered tape: "
+>> +			    "disabling writing immediate filemarks", name);
+> 
+> Needs terminating "\n" and it's better to coalesce the
+> format and ignore 80 char lines to make arbitrary greps
+> a bit easier.
 
-I did this against my staging-next branch, can you redo it and resend
-it?
+Good catch. Thanks.
 
-thanks,
-
-greg k-h
+-- 
+Lee Duncan
