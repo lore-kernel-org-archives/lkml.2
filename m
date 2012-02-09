@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab2BIQo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:44:59 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37456 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2BIQo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:44:57 -0500
-Date: Thu, 9 Feb 2012 17:43:57 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paul@paulmenage.org,
-        mingo@elte.hu, rjw@sisk.pl, tj@kernel.org, frank.rowand@am.sony.com,
-        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
-        prashanth@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
- related to cpusets
-Message-ID: <20120209164357.GA5218@dyad.programming.kicks-ass.net>
-References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
- <1328671335.2482.72.camel@laptop>
- <4F32174E.2050207@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F32174E.2050207@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758140Ab2BIQp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:45:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab2BIQp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 11:45:27 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] Use NUMA node cpu mask in irq affinity [v2]
+Date: Thu,  9 Feb 2012 11:44:57 -0500
+Message-Id: <1328805897-16359-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 12:03:50PM +0530, Srivatsa S. Bhat wrote:
-> On 02/08/2012 08:52 AM, Peter Zijlstra wrote:
-> 
-> > On Wed, 2012-02-08 at 00:25 +0530, Srivatsa S. Bhat wrote:
-> >> There is a very long standing issue related to how cpusets handle CPU
-> >> hotplug events. The problem is that when a CPU goes offline, it is removed
-> >> from all cpusets. However, when that CPU comes back online, it is added
-> >> *only* to the root cpuset. Which means, any task attached to a cpuset lower
-> >> in the hierarchy will have one CPU less in its cpuset, though it had this
-> >> CPU in its cpuset before the CPU went offline.
-> > 
-> > Yeah so? That's known behaviour..
-> 
-> 
-> This might be a known behaviour, but this is surely not the behaviour we
-> want right? I understand that if you take a CPU offline, we have no other
-> choice but to remove it from all cpusets. But if the same CPU comes back
-> online and the userspace did not request any change to cpusets in between
-> those events (offline-online), then is it not wrong to silently keep that
-> CPU out of the cpuset even when it comes online?
+The irq affinity files (/proc/irq/.../smp_affinity) contain a mask that is u
+to "pin" an irq to a set of cpus.  On boot this set is currently all cpus.
+This can be incorrect as ACPI SRAT may tell us that a specific device or
+bus is attached to a particular node and it's cpus.
 
-no, it is what we want because unplug is destructive, it cannot be undone in generic. consider the case where you unplug allcpus of a set. 
+When setting up the irq affinity we should take into account the NUMA node
+cpu mask by and'ing it into the irq's affinity mask.
+
+[v2]: Thomas and Yinghai pointed out that it is possible that the mask is
+empty after and'ing in the NUMA node's cpumask.  The code now checks to see
+if the mask will be empty before applying the NUMA node's cpumask.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index a9a9dbe..3064f2f 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -301,6 +301,13 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+ 	}
+ 
+ 	cpumask_and(mask, cpu_online_mask, set);
++	if (desc->irq_data.node != -1) {
++		const struct cpumask *nodemask =
++					   cpumask_of_node(desc->irq_data.node);
++		/* make sure at least one of the cpus in nodemask is online */
++		if (cpumask_intersects(mask, nodemask))
++			cpumask_and(mask, mask, nodemask);
++	}
+ 	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
+ 	switch (ret) {
+ 	case IRQ_SET_MASK_OK:
+-- 
+1.7.1
+
