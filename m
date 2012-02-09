@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab2BIUDd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 15:03:33 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60592 "EHLO
+	id S1757824Ab2BIUEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 15:04:12 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58242 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2BIUDb (ORCPT
+	with ESMTP id S1755400Ab2BIUEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 15:03:31 -0500
+	Thu, 9 Feb 2012 15:04:10 -0500
+Date: Thu, 9 Feb 2012 12:04:04 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+ the staging area
+Message-ID: <20120209200404.GA8816@kroah.com>
+References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-From: Benson Leung <bleung@chromium.org>
-To: keithp@keithp.com, airlied@linux.ie, chris@chris-wilson.co.uk
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        bleung@chromium.org, djkurtz@chromium.org
-Subject: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
-Date: Thu,  9 Feb 2012 12:03:17 -0800
-Message-Id: <1328817797-4026-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.7.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328817851-13435-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gmbus_xfer with a single message (particularly a single message write) would
-set Bus Cycle Select to 100b, the Gen Stop cycle, instead of 101b,
-No Index, Stop cycle. This would not start single message i2c transactions.
+On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
+> The storage driver (storvsc_drv.c) handles all block storage devices
+> assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> staging tree for a while and this patch moves it out of the staging area.
+> As per Greg's recommendation, this patch makes no changes to the staging/hv
+> directory. Once the driver moves out of staging, we will cleanup the
+> staging/hv directory.
+> 
+> James was willing to apply this patch during the 3.3-rc phase and a decision
+> was taken to defer this to 3.4 since Greg had queued up a bunch of storvsc
+> patches for 3.4. Now that Greg has applied all of the pending storvsc patches,
+> I am re-sending this patch to move this driver out of staging.
+> 
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/scsi/Kconfig       |    7 +
+>  drivers/scsi/Makefile      |    3 +
+>  drivers/scsi/storvsc_drv.c | 1548 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 1558 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/scsi/storvsc_drv.c
 
-Also, gmbus_xfer done: will disable the interface without checking if
-it is idle. In the case of writes, there will be no wait on status or delay
-to ensure the write starts and completes before the interface is turned off.
+James, any objection to me applying this to the staging-next tree, and
+at the same time, deleting this version of the driver from the
+drivers/staging/hv/ directory?
 
-Fixed the former issue by using the same cycle selection as used in the
-I2C_M_RD for the write case.
-GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0)
-Fixed the latter by waiting on GMBUS_ACTIVE to deassert before disable.
+thanks,
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/gpu/drm/i915/intel_i2c.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index d30cccc..64bb9cd 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -249,7 +249,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 
- 		if (msgs[i].flags & I2C_M_RD) {
- 			I915_WRITE(GMBUS1 + reg_offset,
--				   GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
-+				   GMBUS_CYCLE_WAIT |
-+				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
- 				   (len << GMBUS_BYTE_COUNT_SHIFT) |
- 				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
- 				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
-@@ -278,7 +279,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 
- 			I915_WRITE(GMBUS3 + reg_offset, val);
- 			I915_WRITE(GMBUS1 + reg_offset,
--				   (i + 1 == num ? GMBUS_CYCLE_STOP : GMBUS_CYCLE_WAIT) |
-+				   GMBUS_CYCLE_WAIT |
-+				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
- 				   (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
- 				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
- 				   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
-@@ -317,9 +319,12 @@ clear_err:
- 	I915_WRITE(GMBUS1 + reg_offset, 0);
- 
- done:
--	/* Mark the GMBUS interface as disabled. We will re-enable it at the
--	 * start of the next xfer, till then let it sleep.
-+	/* Mark the GMBUS interface as disabled after waiting for idle.
-+	 * We will re-enable it at the start of the next xfer,
-+	 * till then let it sleep.
- 	 */
-+	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
-+		DRM_INFO("GMBUS timed out waiting for idle\n");
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
- 	return i;
- 
--- 
-1.7.1
-
+greg k-h
