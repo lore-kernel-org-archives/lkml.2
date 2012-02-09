@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab2BIQqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:46:19 -0500
-Received: from sandeen.net ([63.231.237.45]:37505 "EHLO mail.sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab2BIQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:46:18 -0500
-Message-ID: <4F33F859.4040209@sandeen.net>
-Date: Thu, 09 Feb 2012 10:46:17 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1758101Ab2BIQ66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:58:58 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49387 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927Ab2BIQ65 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 11:58:57 -0500
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, mpatocka@redhat.com
-Subject: Re: [PATCH 2/2] quota: Fix deadlock with suspend and quotas
-References: <1328654267-18855-1-git-send-email-jack@suse.cz> <1328654267-18855-3-git-send-email-jack@suse.cz>
-In-Reply-To: <1328654267-18855-3-git-send-email-jack@suse.cz>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk> <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 9 Feb 2012 08:58:37 -0800
+X-Google-Sender-Auth: 7wL-nmlnNSkHn63FPwUMuLutVpQ
+Message-ID: <CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com>
+Subject: Re: [PATCH] Reduce the number of expensive division instructions done
+ by _parse_integer()
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, adobriyan@gmail.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/7/12 4:37 PM, Jan Kara wrote:
-> This script causes a kernel deadlock:
-> set -e
-> DEVICE=/dev/vg1/linear
-> lvchange -ay $DEVICE
-> mkfs.ext3 $DEVICE
-> mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
-> quotacheck -gu /mnt/test
-> umount /mnt/test
-> mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
-> quotaon /mnt/test
-> dmsetup suspend $DEVICE
-> setquota -u root 1 2 3 4 /mnt/test &
-> sleep 1
-> dmsetup resume $DEVICE
-> 
-> setquota acquired semaphore s_umount for read and then tried to perform a
-> transaction (and waits because the device is suspended).  dmsetup resume tries
-> to acquire s_umount for write before resuming the device (and waits for
-> setquota).
-> 
-> Fix the deadlock by grabbing a thawed superblock for quota commands which need
-> it.
-> 
-> Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-> Signed-off-by: Jan Kara <jack@suse.cz>
+On Thu, Feb 9, 2012 at 8:28 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> You could avoid the divide and have cleaner code I think.
+>
+>        unsigned long long next = *res * base + val;
+>
+>        if (next < *res)
+>                overflow = 1;
+>        *res = next;
 
-Makes sense to me, thanks.
+No. That pattern only works for a single addition.
 
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+For multiplication, you can overflow *and* still be bigger than the
+starting value.
 
-> ---
->  fs/quota/quota.c |   24 +++++++++++++++++++++---
->  1 files changed, 21 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/quota/quota.c b/fs/quota/quota.c
-> index 7898cd6..fc2c438 100644
-> --- a/fs/quota/quota.c
-> +++ b/fs/quota/quota.c
-> @@ -292,11 +292,26 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
->  	}
->  }
->  
-> +/* Return 1 if 'cmd' will block on frozen filesystem */
-> +static int quotactl_cmd_write(int cmd)
-> +{
-> +	switch (cmd) {
-> +	case Q_GETFMT:
-> +	case Q_GETINFO:
-> +	case Q_SYNC:
-> +	case Q_XGETQSTAT:
-> +	case Q_XGETQUOTA:
-> +	case Q_XQUOTASYNC:
-> +		return 0;
-> +	}
-> +	return 1;
-> +}
-> +
->  /*
->   * look up a superblock on which quota ops will be performed
->   * - use the name of a block device to find the superblock thereon
->   */
-> -static struct super_block *quotactl_block(const char __user *special)
-> +static struct super_block *quotactl_block(const char __user *special, int cmd)
->  {
->  #ifdef CONFIG_BLOCK
->  	struct block_device *bdev;
-> @@ -309,7 +324,10 @@ static struct super_block *quotactl_block(const char __user *special)
->  	putname(tmp);
->  	if (IS_ERR(bdev))
->  		return ERR_CAST(bdev);
-> -	sb = get_super(bdev);
-> +	if (quotactl_cmd_write(cmd))
-> +		sb = get_super_thawed(bdev);
-> +	else
-> +		sb = get_super(bdev);
->  	bdput(bdev);
->  	if (!sb)
->  		return ERR_PTR(-ENODEV);
-> @@ -361,7 +379,7 @@ SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
->  			pathp = &path;
->  	}
->  
-> -	sb = quotactl_block(special);
-> +	sb = quotactl_block(special, cmds);
->  	if (IS_ERR(sb)) {
->  		ret = PTR_ERR(sb);
->  		goto out;
+You either need to do the multiplication in a wider type (which would
+be the natural way to do it on many 64-bit architectures, since they
+often support 64x64->128 bit multiplies, and then doing a carry-add is
+trivial), or you need to check the value before the multiplication. Or
+you need to have a multiply that gives you overflow information, which
+most don't.
 
+So David's patch looks ok, although if this really is
+performance-critical (and I could imagine some crazy /proc or /sys
+access loads where the divide really does show up very clearly) I do
+think it could be even done more efficiently. But probably only if we
+start doing some arch-specific stuff.
+
+                  Linus
