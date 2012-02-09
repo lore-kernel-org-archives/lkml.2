@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab2BIIcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:32:55 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:33586 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751429Ab2BIIcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:32:54 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce wait time
-Date: Thu,  9 Feb 2012 09:32:46 +0100
-Message-Id: <1328776366-6881-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1757004Ab2BIIdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:33:37 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41214 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751701Ab2BIIdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:33:36 -0500
+Date: Thu, 9 Feb 2012 09:33:15 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: linux-kernel@vger.kernel.org, jk@novozymes.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: Memory issues with Opteron 6220
+Message-ID: <20120209083315.GA19380@elte.hu>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208143741.GB28486@otto.nzcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you insert several i2c transfers, the driver might start the next one
-while the STOP bit of the previous transfer is still on the bus, marking
-the bus as busy.
-pch_i2c_wait_for_bus_idle does an msleep(20) delaying the next transfer
-by >=20ms. Reduce wait time by actively waiting 5 us once, then using
-usleep_range.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- drivers/i2c/busses/i2c-eg20t.c |   35 ++++++++++++++++++++++-------------
- 1 files changed, 22 insertions(+), 13 deletions(-)
+* Anders Ossowicki <aowi@novozymes.com> wrote:
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index ca88776..6987e73 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -271,30 +271,39 @@ static inline bool ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
- /**
-  * pch_i2c_wait_for_bus_idle() - check the status of bus.
-  * @adap:	Pointer to struct i2c_algo_pch_data.
-- * @timeout:	waiting time counter (us).
-+ * @timeout:	waiting time counter (ms).
-  */
- static s32 pch_i2c_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
- 				     s32 timeout)
- {
- 	void __iomem *p = adap->pch_base_address;
--	ktime_t ns_val;
-+	int schedule = 0;
-+	unsigned long end = jiffies + msecs_to_jiffies(timeout);
- 
- 	if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
- 		return 0;
- 
--	/* MAX timeout value is timeout*1000*1000nsec */
--	ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
--	do {
--		msleep(20);
--		if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
--			return 0;
--	} while (ktime_lt(ktime_get(), ns_val));
-+	while (ioread32(p + PCH_I2CSR) & I2CMBB_BIT) {
-+		if (time_after(jiffies, end)) {
-+			pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
-+			pch_err(adap, "%s: Timeout Error.return%d\n",
-+					__func__, -ETIME);
-+			pch_i2c_init(adap);
-+
-+			return -ETIME;
-+		}
- 
--	pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
--	pch_err(adap, "%s: Timeout Error.return%d\n", __func__, -ETIME);
--	pch_i2c_init(adap);
-+		if (!schedule)
-+			/* Retry after some usecs */
-+			udelay(5);
-+		else
-+			/* Wait a bit more without consuming CPU */
-+			usleep_range(20, 1000);
-+
-+		schedule = 1;
-+	}
- 
--	return -ETIME;
-+	return 0;
- }
- 
- /**
--- 
-1.7.3.4
+> Hey,
+> 
+> We're seeing unexpected slowdowns and other memory issues with a new system.
+> Enough to render it unusable. For example:
+> 
+> Error: open3: fork failed: Cannot allocate memory
+> 
+> at times where there's no real memory pressure:
+>                    total       used       free     shared    buffers     cached
+>       Mem:     132270720  131942388     328332          0     299768  103334420
+>       -/+ buffers/cache:   28308200  103962520
+>       Swap:      7811068      13760    7797308
+>
+> [...]
 
+> The system is a Dell Poweredge R715, with two eight-core 
+> Opteron 6220 processors and 128G of memory. We have several 
+> similar systems, such as the one this should replace: R715, 
+> 2x8 core Opteron 6140, 128G memory, and they do not exhibit 
+> any similar symptoms.
+
+130 MB of RAM visible to Linux isn't the expected bootup default 
+indeed. Around 130 *GB* would be expected ...
+
+> We have tried with 2.6.37, 2.6.38, 3.2.5 and 3.3-rc1 with no luck. The
+> microcode updates from AMD have not helped either.
+
+Nasty.
+
+No smoking gun in the dmesg:
+
+> dmesg is available at http://dev.exherbo.org/~arkanoid/atlas-dmesg-3.2.5.txt
+
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000]  BIOS-e820: 0000000000000000 - 00000000000a0000 (usable)
+[    0.000000]  BIOS-e820: 0000000000100000 - 00000000df679000 (usable)
+[    0.000000]  BIOS-e820: 00000000df679000 - 00000000df68f000 (reserved)
+[    0.000000]  BIOS-e820: 00000000df68f000 - 00000000df6ce000 (ACPI data)
+[    0.000000]  BIOS-e820: 00000000df6ce000 - 00000000e0000000 (reserved)
+[    0.000000]  BIOS-e820: 00000000f0000000 - 00000000f4000000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fe000000 - 00000000fec90000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fec94000 - 00000000fecd0000 (reserved)
+[    0.000000]  BIOS-e820: 00000000fecd4000 - 0000000100000000 (reserved)
+[    0.000000]  BIOS-e820: 0000000100000000 - 000000201f000000 (usable)
+
+that 0x201f000000 is slightly above 128 GB.
+
+The lowlevel x86 RAM init code seems to be fine:
+
+[    0.000000] last_pfn = 0x201f000 max_arch_pfn = 0x400000000
+
+that 0x201f000 correctly points to slighly above 128 GB 
+physical.
+
+[    0.000000] init_memory_mapping: 0000000100000000-000000201f000000
+
+that too shows that the lowlevel x86 platform memory init code 
+still sees 128 GB.
+
+it's spread out amongst 4 nodes, 32 GB each:
+
+[    0.000000] Initmem setup node 0 0000000000000000-0000000820000000
+[    0.000000]   NODE_DATA [000000081fffb000 - 000000081fffffff]
+[    0.000000] Initmem setup node 1 0000000820000000-0000001020000000
+[    0.000000]   NODE_DATA [000000101fffb000 - 000000101fffffff]
+[    0.000000] Initmem setup node 2 0000001020000000-0000001820000000
+[    0.000000]   NODE_DATA [000000181fffb000 - 000000181fffffff]
+[    0.000000] Initmem setup node 3 0000001820000000-000000201f000000
+[    0.000000]   NODE_DATA [000000201effa000 - 000000201effefff]
+
+the NORMAL zone gets set up properly:
+
+[    0.000000]   Normal   0x00100000 -> 0x0201f000
+
+and each node zone got 32 GB of RAM:
+
+[    0.000000]   Normal zone: 7354368 pages, LIFO batch:31
+[    0.000000]   Normal zone: 8257536 pages, LIFO batch:31
+[    0.000000]   Normal zone: 8257536 pages, LIFO batch:31
+[    0.000000]   Normal zone: 8253504 pages, LIFO batch:31
+
+
+and it's all visible in the end to the MM:
+
+[    0.000000] Built 4 zonelists in Zone order, mobility grouping on.  Total pages: 33021506
+
+that's still 125 GB. (cgroup_page appears to pick up 1GB of RAM 
+btw.)
+
+So where is the rest of RAM gone? How does /proc/meminfo look 
+like?
+
+Thanks,
+
+	Ingo
