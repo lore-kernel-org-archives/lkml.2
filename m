@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab2BIWrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:47:00 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43821 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab2BIWq7 (ORCPT
+	id S1758638Ab2BIWrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:47:08 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27180 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758570Ab2BIWrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:46:59 -0500
-Message-ID: <4F344CDF.8060206@gmail.com>
-Date: Thu, 09 Feb 2012 15:46:55 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Thu, 9 Feb 2012 17:47:06 -0500
+Date: Thu, 9 Feb 2012 23:47:42 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Xi Wang <xi.wang@gmail.com>
+cc: Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+In-Reply-To: <4F33CEAE.60400@gmail.com>
+Message-ID: <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
+References: <20120207141155.GA16184@elgon.mountain> <4F323388.7040902@kernel.dk> <20120208142513.4db2493a.akpm@linux-foundation.org> <4F33BF05.208@gmail.com> <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk>
+ <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, asharma@fb.com, ravitillo@lbl.gov,
-        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com
-Subject: Re: [PATCH v6 16/18] perf: enable reading of perf.data files from
- different ABI rev
-References: <1328826068-11713-1-git-send-email-eranian@google.com> <1328826068-11713-17-git-send-email-eranian@google.com> <4F344B0C.8060203@gmail.com> <CABPqkBQZFT=GHNg8nNagrAtf+dy4vFzCzp1t1nmpv6HWBEEoLg@mail.gmail.com>
-In-Reply-To: <CABPqkBQZFT=GHNg8nNagrAtf+dy4vFzCzp1t1nmpv6HWBEEoLg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 9 Feb 2012, Xi Wang wrote:
 
-
-On 02/09/2012 03:41 PM, Stephane Eranian wrote:
->>> +     /* read perf_file_section, ids are read in caller */
->>> +     ret = readn(fd, &f_attr->ids, sizeof(f_attr->ids));
->>
->> I thought the above 2 lines were to be removed.
->>
+> This patch introduces a kmalloc_array() wrapper that performs integer
+> overflow checking without zeroing the memory.
 > 
-> No, They are needed to get the offsets of the ids[] table.
-> The field name are confusing. This is not reading the ids[],
-> but just the offset of where the table is. Without that you
-> get bogus offsets. I ran into that bug during testing...
-
-Hmm.... ok, so the perf_file_attr is now read in back to back reads --
-attr then ids -- versus today where it gets both in one readn.
-
-
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Suggested-by: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> ---
+> Let's take "kxnalloc" off for now and keep the patch simple.
+> ---
+>  include/linux/slab.h |   17 ++++++++++++++---
+>  1 files changed, 14 insertions(+), 3 deletions(-)
 > 
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 573c809..a595dce 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -190,7 +190,7 @@ size_t ksize(const void *);
+>  #endif
+>  
+>  /**
+> - * kcalloc - allocate memory for an array. The memory is set to zero.
+> + * kmalloc_array - allocate memory for an array.
+>   * @n: number of elements.
+>   * @size: element size.
+>   * @flags: the type of memory to allocate.
+> @@ -240,11 +240,22 @@ size_t ksize(const void *);
+>   * for general use, and so are not documented here. For a full list of
+>   * potential flags, always refer to linux/gfp.h.
+>   */
+> -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+> +static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
+>  {
+>  	if (size != 0 && n > ULONG_MAX / size)
+>  		return NULL;
+> -	return __kmalloc(n * size, flags | __GFP_ZERO);
+> +	return __kmalloc(n * size, flags);
+> +}
+> +
+> +/**
+> + * kcalloc - allocate memory for an array. The memory is set to zero.
+> + * @n: number of elements.
+> + * @size: element size.
+> + * @flags: the type of memory to allocate (see kmalloc).
+> + */
+> +static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+> +{
+> +	return kmalloc_array(n, size, flags | __GFP_ZERO);
+>  }
+>  
+>  #if !defined(CONFIG_NUMA) && !defined(CONFIG_SLOB)
 > 
->> David
->>
->>
->>> +
->>> +     return ret <= 0 ? -1 : 0;
->>> +}
->>> +
->>>  int perf_session__read_header(struct perf_session *session, int fd)
->>>  {
->>>       struct perf_header *header = &session->header;
->>> @@ -1974,19 +2019,17 @@ int perf_session__read_header(struct perf_session *session, int fd)
->>>       if (session->fd_pipe)
->>>               return perf_header__read_pipe(session, fd);
->>>
->>> -     if (perf_file_header__read(&f_header, header, fd) < 0) {
->>> -             pr_debug("incompatible file format\n");
->>> +     if (perf_file_header__read(&f_header, header, fd) < 0)
->>>               return -EINVAL;
->>> -     }
->>>
->>> -     nr_attrs = f_header.attrs.size / sizeof(f_attr);
->>> +     nr_attrs = f_header.attrs.size / f_header.attr_size;
->>>       lseek(fd, f_header.attrs.offset, SEEK_SET);
->>>
->>>       for (i = 0; i < nr_attrs; i++) {
->>>               struct perf_evsel *evsel;
->>>               off_t tmp;
->>>
->>> -             if (readn(fd, &f_attr, sizeof(f_attr)) <= 0)
->>> +             if (read_attr(fd, header, &f_attr) < 0)
->>>                       goto out_errno;
->>>
->>>               if (header->needs_swap)
->>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
->>> index 3f3afed..5476320 100644
->>> --- a/tools/perf/util/session.c
->>> +++ b/tools/perf/util/session.c
->>> @@ -24,7 +24,7 @@ static int perf_session__open(struct perf_session *self, bool force)
->>>               self->fd = STDIN_FILENO;
->>>
->>>               if (perf_session__read_header(self, self->fd) < 0)
->>> -                     pr_err("incompatible file format");
->>> +                     pr_err("incompatible file format (rerun with -v to learn more)");
->>>
->>>               return 0;
->>>       }
->>> @@ -56,7 +56,7 @@ static int perf_session__open(struct perf_session *self, bool force)
->>>       }
->>>
->>>       if (perf_session__read_header(self, self->fd) < 0) {
->>> -             pr_err("incompatible file format");
->>> +             pr_err("incompatible file format (rerun with -v to learn more)");
->>>               goto out_close;
->>>       }
->>>
+
+Does this want adding to Documentation/CodingStyle "Chapter 14: Allocating 
+memory" ?
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
