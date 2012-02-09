@@ -1,128 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab2BIW5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:57:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33424 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754154Ab2BIW51 (ORCPT
+	id S1758468Ab2BIXDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:03:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49602 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758351Ab2BIXDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:57:27 -0500
-Date: Thu, 9 Feb 2012 14:57:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Roland Dreier <roland@kernel.org>
-cc: linux-rdma@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC G-U-P experts] IB/umem: Modernize our get_user_pages()
- parameters
-In-Reply-To: <CAL1RGDWZ2LYO7ejPs9FvDzqze43cbfUEEdQVB=Ug2n3JpEe=AQ@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1202091425280.1263@eggly.anvils>
-References: <1327557574-6125-1-git-send-email-roland@kernel.org> <alpine.LSU.2.00.1201261133230.1369@eggly.anvils> <CAG4TOxNEV2VY9wOE86p9RnKGqpruB32ci9Wq3yBt8O2zc7f05w@mail.gmail.com> <alpine.LSU.2.00.1201271458130.3402@eggly.anvils>
- <CAL1RGDXqguZ2QKV=yjLXtk2n_Ag4Nf3CW+kF2BFQFR4ySTNaRA@mail.gmail.com> <alpine.LSU.2.00.1201301217530.4505@eggly.anvils> <CAL1RGDVSBb1DVsfvuz=ijRZX06crsqQfKoXWJ+6FO4xi3aYyTg@mail.gmail.com> <alpine.LSU.2.00.1202071225250.2024@eggly.anvils>
- <alpine.LSU.2.00.1202081446110.1320@eggly.anvils> <CAL1RGDWZ2LYO7ejPs9FvDzqze43cbfUEEdQVB=Ug2n3JpEe=AQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 9 Feb 2012 18:03:03 -0500
+Date: Thu, 9 Feb 2012 23:03:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Miller <davem@davemloft.net>
+Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix mc13xxx regulator build on sparc64
+Message-ID: <20120209230300.GP3058@opensource.wolfsonmicro.com>
+References: <20120209.164301.1049075777681222673.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="51uid+Ur/3ko9cBW"
+Content-Disposition: inline
+In-Reply-To: <20120209.164301.1049075777681222673.davem@davemloft.net>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Feb 2012, Roland Dreier wrote:
-> On Wed, Feb 8, 2012 at 3:10 PM, Hugh Dickins <hughd@google.com> wrote:
-> > A doubt assaulted me overnight: sorry, I'm back to not understanding.
-> >
-> > What are these access flags passed into ibv_reg_mr() that are enforced?
-> > What relation do they bear to what you will pass to __get_user_pages()?
-> 
-> The access flags are:
-> 
-> enum ibv_access_flags {
->         IBV_ACCESS_LOCAL_WRITE          = 1,
->         IBV_ACCESS_REMOTE_WRITE         = (1<<1),
->         IBV_ACCESS_REMOTE_READ          = (1<<2),
->         IBV_ACCESS_REMOTE_ATOMIC        = (1<<3),
->         IBV_ACCESS_MW_BIND              = (1<<4)
-> };
-> 
-> pretty much the only one of interest is IBV_ACCESS_REMOTE_READ --
-> all the others imply the possibility of RDMA HW writing to the page.
-> 
-> So basically if any flags other than IBV_ACCESS_REMOTE_READ are
-> set, we pass FOLL_WRITE to __get_user_pages(), otherwise we pass
-> the new FOLL_FOLLOW.  [does "Marcia, Marcia, Marcia" mean anything
-> to a Brit? ;)]
 
-[ Nothing whatsoever - I needed to avoid saying "Zilch" there, didn't I?
-- I had to look her up.  Not sure quite how she comes in here, if you're
-implying that someone is perfect, I rather doubt you're thinking of me!
-I was thrilled a year ago at last to discover who Virginia is,
-celebrated in mm/memory.c and mm/page-writeback.c. ]
+--51uid+Ur/3ko9cBW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> ie the change from the status quo would be:
-> 
-> [read-only]  write=1, force=1 --> FOLL_FOLLOW
-> [writeable]  wrote=1, force=0 --> FOLL_WRITE (equivalent)
-> 
-> > You are asking for a FOLL_FOLLOW ("follow permissions of the vma") flag,
-> > which automatically works for read-write access to a VM_READ|VM_WRITE vma,
-> > but read-only access to a VM_READ-only vma, without you having to know
-> > which permission applies to which range of memory in the area specified.
-> 
-> > But you don't need that new flag to set up read-only access, and if you
-> > use that new flag to set up read-write access to an area which happens to
-> > contain VM_READ-only ranges, you have set it up to write into ZERO_PAGEs.
-> 
-> First of all, I kind of like FOLL_FOLLOW as the name :)
+On Thu, Feb 09, 2012 at 04:43:01PM -0500, David Miller wrote:
 
-Yeah, it's not too bad; though below I'm now wondering if it is appropriate.
+> Since mc13xxx-regulator-core.c and the actual drivers can get built
+> into seperate modules, you have to export the DT support symbols
+> "mc13xxx_get_num_regulators_dt" and "mc13xxx_parse_regulators_dt"
+> otherwise the allmodconfig build fails on sparc64.
 
-> 
-> Now you're confusing me:
+Applied with a little changelog fettling, thanks.
 
-I'm very glad to hear it, I feel less alone.
+--51uid+Ur/3ko9cBW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> I think we do need FOLL_FOLLOW to
-> set up read-only access -- we want to trigger the COWs that userspace
-> might trigger by touching the memory up front.  This is to handle
-> a case like
-> 
->     [userspace]
->     int *buf = malloc(16 * 4096);
->     // buf now points to 16 anonymous zero_pages
->     mr = ibv_reg_mr(pd, buf, 16 * 4096, IBV_ACCESS_REMOTE_READ);
->     // RDMA HW will only ever read buf, but...
->     buf[0] = 2012;
->     // COW triggered, first page of buf changed, RDMA HW has wrong mapping!
-> 
-> For something the RDMA HW might write to, then I agree we don't want
-> FOLL_FOLLOW -- we just would use FOLL_WRITE as we currently do.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Ah, okay, something earlier in the thread had thrown me off that track,
-I thought we were expecting the ibv_reg_mr to give the remote the same
-permissions as the user had.  Or something, maybe I'm just making excuses
-for being dense.
+iQIcBAEBAgAGBQJPNFA5AAoJEBus8iNuMP3d3QcQAIomvPfrWArsOCcm11FJuGQp
+qTjCboA+a7XrcN1Z1HOcST6yMLWyeFFqtcSyZQK3gZzZCLh6JfosZWwE03UtRabk
+8gw1Kupzqzo5gO3usguKo3Gcmo5/bIM8Xk+ElUENL3qJuS6w2T9T//xfiNu3YMvJ
+B5tsqRvALo5eCFUnzaaZgO1/QT3i+IxDaoLVRD67ZInXZZzG1D2qLYboOuUjGpNX
+4aNCyk/0hi0+L/63b3W25yLxX9dhzB3e/RfRtt5myBPvOdA4aYwNDMj+Qp7W98pi
+6JwJawxkU8wH3Y0BbIzMR0giyEBLaXzeURfSqIIBV9aGqW/kZayU/Xp7Ff83CCAo
+lHYa4OIMwBnmjeJX1FoDJ/jKosK27/AsVeeLYvEeuvto1RHE2n3EzYbiUb1jJmrA
+oRCuPaujtVECrVyyTh+LUvG7ATkqHkLeXNc6P3IcEPY2xJLm0js0CJ1pjbVNXoIm
+Xyk1Eu8j6d0g8H+cTcLvi4VtWy/lq4ICIwOXV4S/gpzLUqBp9ryPNvuIHJdSikzI
+t+3HIhMkpxSjsMTz8jVVAQ8dPBQh1UabyVT0GqNQ/1Gc1KoP/9QiTFIiQ+V1EiVC
+ek7PmOOHc8Y0eQcRVX5eDTeXizl6t0tYAlCQF/7vPwAJTEh5+kAh16Qh+e2h8Q3z
+4qvRIC4MFKJyX25YH0WE
+=v91B
+-----END PGP SIGNATURE-----
 
-But then I wonder if FOLL_FOLLOW is actually the behaviour you need.
-
-Imagine a PROT_READ MAP_PRIVATE area (just as in your original mail):
-what if the user does mprotect PROT_READ|PROT_WRITE on that afterwards,
-and then proceeds to touch it.  The old write=1 force=1 GUP would have
-pre-COWed that and no problem, but FOLL_FOLLOW will not.
-
-Maybe you can answer "don't do that"; but you do then appear to be
-trading one kind of "don't do that" for another.  Maybe it depends on
-what libraries might get up to: aren't there (debug? garbage collection?)
-memalloc libraries which give out memory protected until you touch it?
-
-Maybe you need FOLL_PRECOW, which does write=1 force=1 on the private
-areas, but just faults in the shared areas (avoiding the bizarre forced
-COW on shared areas).
-
-> 
-> When I get around to coding this up, I think I'm going to spend a lot
-> of time on the comments and on the commit log :)
-
-I am sorry to be driving you to such effort, honestly.
-
-Hugh
+--51uid+Ur/3ko9cBW--
