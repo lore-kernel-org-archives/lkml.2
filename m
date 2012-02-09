@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab2BISCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:02:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:24985 "EHLO relay.sw.ru"
+	id S1758105Ab2BISBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:01:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:3894 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab2BISCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:02:06 -0500
-Subject: [PATCH 4/5] ipc: add new MSG_SET command for sys_msgctl() call
+	id S1751124Ab2BISBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:01:46 -0500
+Subject: [PATCH 1/5] ipc: "use key as id" functionality for resource get
+ system call introduced
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: jmorris@namei.org, linux-kernel@vger.kernel.org, criu@openvz.org,
         linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
         eparis@parisplace.org, sds@tycho.nsa.gov
-Date: Thu, 09 Feb 2012 22:01:49 +0400
-Message-ID: <20120209180149.24392.35347.stgit@localhost6.localdomain6>
+Date: Thu, 09 Feb 2012 22:01:26 +0400
+Message-ID: <20120209180126.24392.47525.stgit@localhost6.localdomain6>
 In-Reply-To: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
 References: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -24,123 +25,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New MSG_SET command will be interpreted exactly as IPC_SET, but also will
-update key, cuid and cgid values. IOW, it allows to change existent key value.
-The fact, that key is not used is checked before update. Otherwise -EEXIST is
+This patch introduces new IPC resource get request flag IPC_PRESET, which
+should be interpreted as a request to try to allocate IPC slot with number,
+starting from value resented by key. IOW, kernel will try
+allocate new segment in specified slot. If slot is not emply, them -EEXIST
 returned.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/msg.h        |    1 +
- ipc/compat.c               |    1 +
- ipc/msg.c                  |   13 +++++++++++--
- security/selinux/hooks.c   |    1 +
- security/smack/smack_lsm.c |    1 +
- 5 files changed, 15 insertions(+), 2 deletions(-)
+ include/linux/ipc.h |    1 +
+ ipc/msg.c           |    1 +
+ ipc/sem.c           |    1 +
+ ipc/shm.c           |    1 +
+ ipc/util.c          |    8 +++++++-
+ ipc/util.h          |    1 +
+ 6 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 56abf15..6689e73 100644
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -6,6 +6,7 @@
- /* ipcs ctl commands */
- #define MSG_STAT 11
- #define MSG_INFO 12
-+#define MSG_SET  13
+diff --git a/include/linux/ipc.h b/include/linux/ipc.h
+index 30e8161..d7e5632 100644
+--- a/include/linux/ipc.h
++++ b/include/linux/ipc.h
+@@ -24,6 +24,7 @@ struct ipc_perm
+ #define IPC_CREAT  00001000   /* create if key is nonexistent */
+ #define IPC_EXCL   00002000   /* fail if key exists */
+ #define IPC_NOWAIT 00004000   /* return error on wait */
++#define IPC_PRESET 00040000   /* use key as id */
  
- /* msgrcv options */
- #define MSG_NOERROR     010000  /* no error if message is too big */
-diff --git a/ipc/compat.c b/ipc/compat.c
-index fc378d9..20d639e 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -439,6 +439,7 @@ long compat_sys_msgctl(int first, int second, void __user *uptr)
- 		break;
- 
- 	case IPC_SET:
-+	case MSG_SET:
- 		if (version == IPC_64) {
- 			err = get_compat_msqid64(&m64, uptr);
- 		} else {
+ /* these fields are used by the DIPC package so the kernel as standard
+    should avoid using them if possible */
 diff --git a/ipc/msg.c b/ipc/msg.c
-index fc98723..303362b 100644
+index 7385de2..fc98723 100644
 --- a/ipc/msg.c
 +++ b/ipc/msg.c
-@@ -391,6 +391,9 @@ copy_msqid_from_user(struct msqid64_ds *out, void __user *buf, int version)
- 		out->msg_perm.uid      	= tbuf_old.msg_perm.uid;
- 		out->msg_perm.gid      	= tbuf_old.msg_perm.gid;
- 		out->msg_perm.mode     	= tbuf_old.msg_perm.mode;
-+		out->msg_perm.cuid	= tbuf_old.msg_perm.cuid;
-+		out->msg_perm.cgid	= tbuf_old.msg_perm.cgid;
-+		out->msg_perm.key	= tbuf_old.msg_perm.key;
+@@ -190,6 +190,7 @@ static int newque(struct ipc_namespace *ns, struct ipc_params *params)
  
- 		if (tbuf_old.msg_qbytes == 0)
- 			out->msg_qbytes	= tbuf_old.msg_lqbytes;
-@@ -417,12 +420,13 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 	struct msg_queue *msq;
- 	int err;
+ 	msq->q_perm.mode = msgflg & S_IRWXUGO;
+ 	msq->q_perm.key = key;
++	msq->q_perm.id = (msgflg & IPC_PRESET) ? key : 0;
  
--	if (cmd == IPC_SET) {
-+	if (cmd == IPC_SET || cmd == MSG_SET) {
- 		if (copy_msqid_from_user(&msqid64, buf, version))
- 			return -EFAULT;
- 	}
+ 	msq->q_perm.security = NULL;
+ 	retval = security_msg_queue_alloc(msq);
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 5215a81..845c912 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -306,6 +306,7 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
  
--	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
-+	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid,
-+			       (cmd != MSG_SET) ? : IPC_SET,
- 			       &msqid64.msg_perm, msqid64.msg_qbytes);
- 	if (IS_ERR(ipcp))
- 		return PTR_ERR(ipcp);
-@@ -438,6 +442,7 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 		freeque(ns, ipcp);
- 		goto out_up;
- 	case IPC_SET:
-+	case MSG_SET:
- 		if (msqid64.msg_qbytes > ns->msg_ctlmnb &&
- 		    !capable(CAP_SYS_RESOURCE)) {
- 			err = -EPERM;
-@@ -446,6 +451,9 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
+ 	sma->sem_perm.mode = (semflg & S_IRWXUGO);
+ 	sma->sem_perm.key = key;
++	sma->sem_perm.id = (semflg & IPC_PRESET) ? key : 0;
  
- 		msq->q_qbytes = msqid64.msg_qbytes;
+ 	sma->sem_perm.security = NULL;
+ 	retval = security_sem_alloc(sma);
+diff --git a/ipc/shm.c b/ipc/shm.c
+index b76be5b..67ed2e2 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -468,6 +468,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
  
-+		if (cmd == MSG_SET)
-+			ipc_update_key(&msg_ids(ns), &msqid64.msg_perm, ipcp);
+ 	shp->shm_perm.key = key;
+ 	shp->shm_perm.mode = (shmflg & S_IRWXUGO);
++	shp->shm_perm.id = (shmflg & IPC_PRESET) ? key : 0;
+ 	shp->mlock_user = NULL;
+ 
+ 	shp->shm_perm.security = NULL;
+diff --git a/ipc/util.c b/ipc/util.c
+index 75261a3..ac9c6a9 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -264,7 +264,8 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+ 	rcu_read_lock();
+ 	spin_lock(&new->lock);
+ 
+-	err = idr_get_new(&ids->ipcs_idr, new, &id);
++	err = idr_get_new_above(&ids->ipcs_idr, new,
++				ipcid_to_idx(new->id), &id);
+ 	if (err) {
+ 		spin_unlock(&new->lock);
+ 		rcu_read_unlock();
+@@ -277,6 +278,11 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+ 	new->cuid = new->uid = euid;
+ 	new->gid = new->cgid = egid;
+ 
++	if (new->id && ipcid_to_idx(new->id) == id) {
++		new->seq = ipcid_to_seq(new->id);
++		return id;
++	}
 +
- 		ipc_update_perm(&msqid64.msg_perm, ipcp);
- 		msq->q_ctime = get_seconds();
- 		/* sleeping receivers might be excluded by
-@@ -565,6 +573,7 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
- 	}
- 	case IPC_SET:
- 	case IPC_RMID:
-+	case MSG_SET:
- 		err = msgctl_down(ns, msqid, cmd, buf, version);
- 		return err;
- 	default:
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 1728a5e..1428f8d 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4849,6 +4849,7 @@ static int selinux_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		perms = MSGQ__GETATTR | MSGQ__ASSOCIATE;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 		perms = MSGQ__SETATTR;
- 		break;
- 	case IPC_RMID:
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 4765659..143c053 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2450,6 +2450,7 @@ static int smack_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		may = MAY_READ;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 	case IPC_RMID:
- 		may = MAY_READWRITE;
- 		break;
+ 	new->seq = ids->seq++;
+ 	if(ids->seq > ids->seq_max)
+ 		ids->seq = 0;
+diff --git a/ipc/util.h b/ipc/util.h
+index 6f5c20b..5f04b02 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -92,6 +92,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
+ #define IPC_SHM_IDS	2
+ 
+ #define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
++#define ipcid_to_seq(id) ((id) / SEQ_MULTIPLIER)
+ 
+ /* must be called with ids->rw_mutex acquired for writing */
+ int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int);
 
