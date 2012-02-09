@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab2BISaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:30:52 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:30248 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab2BISav (ORCPT
+	id S1758231Ab2BISdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:33:10 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60483 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab2BISdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:30:51 -0500
-Date: Thu, 9 Feb 2012 13:30:27 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Dave Chinner <david@fromorbit.com>,
+	Thu, 9 Feb 2012 13:33:08 -0500
+Date: Thu, 9 Feb 2012 19:32:59 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>
-Subject: Re: [PATCH] block: remove plugging at buffered write time
-Message-ID: <20120209183027.GT8384@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>
-References: <20120208110143.GA5550@localhost>
- <20120208232719.GD7479@dastard>
- <20120209080224.GA28465@localhost>
- <20120209180635.GA18902@infradead.org>
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120209183257.GI22552@somewhere.redhat.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+ <1327591185.2446.102.camel@twins>
+ <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+ <20120201170443.GE6731@somewhere.redhat.com>
+ <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+ <20120202162420.GE9071@somewhere.redhat.com>
+ <alpine.DEB.2.00.1202021028120.6221@router.home>
+ <20120209155246.GD22552@somewhere.redhat.com>
+ <alpine.DEB.2.00.1202091024340.32064@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120209180635.GA18902@infradead.org>
+In-Reply-To: <alpine.DEB.2.00.1202091024340.32064@router.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F3410CD.00AE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 01:06:35PM -0500, Christoph Hellwig wrote:
-> On Thu, Feb 09, 2012 at 04:02:24PM +0800, Wu Fengguang wrote:
-> > On Thu, Feb 09, 2012 at 10:27:19AM +1100, Dave Chinner wrote:
-> > > On Wed, Feb 08, 2012 at 07:01:44PM +0800, Wu Fengguang wrote:
-> > > > Buffered write(2) is not directly tied to IO, so it's not suitable to
-> > > > handle plug in generic_file_aio_write().
-> > > 
-> > > But generic_sync_write() does issue IO for O_SYNC writes, so unless
-> > > there is plugging at a lower layer in the writeback code then it
-> > > appears to me that plugging is still necessary (at least inside the
-> > > sync branch)....
-> > 
-> > Good catch! It looks that generic_write_sync() eventually calls into
-> > vfs_fsync_range() which further calls ->fsync(). We may add plugging
-> > around it:
+On Thu, Feb 09, 2012 at 10:26:02AM -0600, Christoph Lameter wrote:
+> On Thu, 9 Feb 2012, Frederic Weisbecker wrote:
 > 
+> > > The vmstat timer only makes sense when the OS is doing something on the
+> > > processor. Otherwise if no counters are incremented and the page and slab
+> > > allocator caches are empty then there is no need to run the vmstat timer.
+> >
+> > So this is a typical example of a timer we want to shutdown when the CPU is idle
+> > but we want to keep it running when we run in adaptive tickless mode (ie: shutdown
+> > the tick while the CPU is busy).
 > 
-> NAK, please keep the plugging down in the fs, or the libraries used but
-> not common VFS code.
+> You can also shut it down when the cpu is busy and not doing any system
+> calls. If the percpu differentials are all zero (because you just ran the
+> timer f.e.) and there are no system activities that would change the
+> counters then there is no point in running the vmstat timer.
 
-Please, what Christoph said.  At least for btrfs plugging here is wrong.
-
--chris
-
+Yep. I believe we can probably find that timer pattern elsewhere as well.
+A class of userspace/idle defferable timers.
