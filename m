@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab2BIAwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 19:52:37 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51478 "EHLO
+	id S932191Ab2BIAzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 19:55:10 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46654 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756671Ab2BIAwg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 19:52:36 -0500
+	by vger.kernel.org with ESMTP id S1756597Ab2BIAzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 19:55:08 -0500
+Message-ID: <4F331967.3070900@lwfinger.net>
+Date: Wed, 08 Feb 2012 18:55:03 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzbR2-_uAz-Rfc_OuK3NAj+PKyjKhDCMoHAwE7+jgmxQA@mail.gmail.com>
-References: <CACxGe6uf6BpnHUFF7Svx_-C+ZGFop3T=TGGRi8kFQCgH56E4yA@mail.gmail.com>
- <CA+55aFzbR2-_uAz-Rfc_OuK3NAj+PKyjKhDCMoHAwE7+jgmxQA@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 8 Feb 2012 16:52:16 -0800
-X-Google-Sender-Auth: 6eRVq5GAUZAoJIj963K0WtfL4Cw
-Message-ID: <CACxGe6sRHg3txoxcBLDUVLFfjXOCYAGOk+Cou=a7teJR0qtC1w@mail.gmail.com>
-Subject: Re: [git pull] SPI changes for v3.3-rc2
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        spi-devel-general@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: Tim Gardner <tim.gardner@canonical.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtlwifi: rtl8192se firmware load can overflow target
+ buffer
+References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop>
+In-Reply-To: <1328737514.2627.14.camel@bwh-desktop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 3:34 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Feb 5, 2012 at 10:28 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On 02/08/2012 03:45 PM, Ben Hutchings wrote:
+> On Wed, 2012-02-08 at 14:08 -0700, Tim Gardner wrote:
+>> The firmware file size check does not use the
+>> correct limit.
 >>
->> A couple of minor SPI fixes.  Description in signed tag.  Please pull.
+>> Cc: Larry Finger<Larry.Finger@lwfinger.net>
+>> Cc: Chaoming Li<chaoming_li@realsil.com.cn>
+>> Cc: John W. Linville<linville@tuxdriver.com>
+>> Cc: linux-wireless@vger.kernel.org
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
+>> ---
+>>   drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
+>>   drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    2 +-
+>>   2 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+>> index babe85d..5c377fc 100644
+>> --- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+>> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
+>> @@ -30,6 +30,7 @@
+>>   #define __REALTEK_FIRMWARE92S_H__
+>>
+>>   #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
+>> +#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	164000
+>>   #define RTL8190_CPU_START_OFFSET		0x80
+>>   /* Firmware Local buffer size. 64k */
+>>   #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
+>> @@ -217,7 +218,7 @@ struct rt_firmware {
+>>   	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
+>>   	u32 fw_imem_len;
+>>   	u32 fw_emem_len;
+>> -	u8 sz_fw_tmpbuffer[164000];
+>> +	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
+>>   	u32 sz_fw_tmpbufferlen;
+>>   	u16 cmdpacket_fragthresold;
+>>   };
+>> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+>> index ca38dd9..155da0a 100644
+>> --- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+>> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+>> @@ -105,7 +105,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
+>>   		rtlpriv->max_fw_size = 0;
+>>   		return;
+>>   	}
+>> -	if (firmware->size>  rtlpriv->max_fw_size) {
+>> +	if (firmware->size>= RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE) {
 >
-> No can do. I get "already up-to-date".
+> This appears to reject a firmware blob which is exactly the maximum
+> size, which looks wrong.  Also doesn't this make the max_fw_size field
+> redundant?
 >
-> It looks like the 'for-linus" tag is your *previous* one - you either
-> forgot to push, or you pushed without forcing an over-write and didn't
-> notice that git told you that it's not going to update a
-> non-fast-forward write or something.
+> Ben.
 >
-> Hmm?
+>>   		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+>>   			 "Firmware is too big!\n");
+>>   		release_firmware(firmware);
+>
 
-It looks like the branch got pushed, but not the tag.  Fixed now.
-Below is the updated pull request.
+For all the drivers under rtlwifi, max_fw_size is set to zero whenever the 
+required firmware file is not found. In the original version with synchronous 
+firmware loading, the existence of the required file and it's size were known 
+immediately, but with the asynch loading now used, that info is not known until 
+later. Thus a parameter is used. In addition, rtl8192ce, rtl8192cu, and 
+rtl8192de all share the same asynchronous loading callback routine, but each has 
+a different firmware size. The parameter max_fw_size contains that info as well.
 
-> Btw, exactly because problems sometimes happen, I do want to see the
-> description written out in the email too. The whole reason I want to
-> see diffstats and shortlogs is exactly because "it is correct in the
-> git tree" is not useful - the email should be a *confirmation* that
-> what I pulled from the git tree was really what you meant.
+The patch is NACKed.
 
-Okay.  Will do.
-
-g.
-
----
-
-SPI bug fixes for v3.3-rc2
-
-Minor SPI device driver changes.  A rename of the pch_spi_pcidev symbol
-that merely eliminates a modpost warning, and a Kconfig change to allow
-the Samsung spi driver to build on EXYNOS.
-
-The following changes since commit e862f2e4693f287669e84971c778bf071bd0526b:
-
-  Merge tag 'sound-fixes' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2012-02-08
-14:56:39 -0800)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 spi-for-linus
-
-Danny Kukawka (1):
-      spi-topcliff-pch: rename pch_spi_pcidev to pch_spi_pcidev_driver
-
-Sylwester Nawrocki (1):
-      spi: Add spi-s3c64xx driver dependency on ARCH_EXYNOS4
-
- drivers/spi/Kconfig            |    2 +-
- drivers/spi/spi-topcliff-pch.c |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Larry
