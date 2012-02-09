@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab2BINmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:42:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59940 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738Ab2BINmM (ORCPT
+	id S1757658Ab2BINol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:44:41 -0500
+Received: from smtp.mail.umich.edu ([141.211.14.82]:55546 "EHLO
+	hellskitchen.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754350Ab2BINoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:42:12 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regulator: Complain if a voltage range is specified but can't be used
-Date: Thu,  9 Feb 2012 13:42:06 +0000
-Message-Id: <1328794926-4892-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.9.rc1
-In-Reply-To: <1328794926-4892-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1328794926-4892-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 9 Feb 2012 08:44:39 -0500
+Date: Thu, 9 Feb 2012 08:44:29 -0500
+From: Jim Rees <rees@umich.edu>
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
+        libc-alpha@sourceware.org
+Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate
+ name service errors
+Message-ID: <20120209134429.GC6663@umich.edu>
+References: <20120208141552.GA3273@umich.edu>
+ <20120208122905.8902.65762.stgit@warthog.procyon.org.uk>
+ <20120208122917.8902.78395.stgit@warthog.procyon.org.uk>
+ <17614.1328781889@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <17614.1328781889@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't make much sense to specify a range of voltages consumers can
-use if they haven't been given permission to change the voltage. Log if
-this happens, probably the user forgot to specify CHANGE_VOLTAGE.
+David Howells wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+  Jim Rees <rees@umich.edu> wrote:
+  
+  >   Define ENAMEUNKNOWN to indicate "Network name unknown".  This can be used to
+  >   indicate, for example, that an attempt was made by dns_query() to make a query,
+  >   but the name server (e.g. a DNS server) replied indicating that it had no
+  >   matching records.
+  > 
+  > Would this be the same as NXDOMAIN?  That is, does it mean the name server
+  > couldn't find a record, or does it mean that the record doesn't exist?
+  
+  Is there a way to tell the difference?  Can you store a negative record in the
+  DNS?  Or is it that the DNS has records for the name, just not records of the
+  type you're looking for (eg. NO_ADDRESS/NO_DATA from gethostbyname())?
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 68acc2f..5ba25c0 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -805,6 +805,11 @@ static void print_constraints(struct regulator_dev *rdev)
- 		count += sprintf(buf + count, "standby");
- 
- 	rdev_info(rdev, "%s\n", buf);
-+
-+	if ((constraints->min_uV != constraints->max_uV) &&
-+	    !(constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE))
-+		rdev_warn(rdev,
-+			  "Voltage range but no REGULATOR_CHANGE_VOLTAGE\n");
- }
- 
- static int machine_constraints_voltage(struct regulator_dev *rdev,
--- 
-1.7.9.rc1
+It's an important distinction to the resolver if you want to avoid dns
+hijacking.  See rfc2308.  There doesn't seem to be a way to tell the
+difference from the gethostbyname call, which was designed before this was a
+problem.  The on-the-wire dns query protocol does make the distinction.
 
+I suspect kernel dns clients won't need to know the difference, but I think
+it's useful if we decide on and document the meaning of the error codes.
+Maybe the answer is that ENAMEUNKNOWN means the same as a HOST_NOT_FOUND
+from gethostbyname().
