@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab2BIX6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:58:12 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:40366 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab2BIX6L (ORCPT
+	id S1758685Ab2BIX7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:59:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33985 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757580Ab2BIX7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:58:11 -0500
-Date: Thu, 9 Feb 2012 15:58:05 -0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH v4 4/4] gpio: pl061: enable interrupts with DT style
- binding
-Message-ID: <20120209235805.GB3135@r65073-Latitude-D630>
-References: <1328308512-22594-1-git-send-email-robherring2@gmail.com>
- <1328308512-22594-5-git-send-email-robherring2@gmail.com>
- <20120209200435.GB2493@r65073-Latitude-D630>
- <4F34429E.8070605@gmail.com>
+	Thu, 9 Feb 2012 18:59:03 -0500
+Date: Thu, 9 Feb 2012 15:58:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
+        oleg@redhat.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
+ and fix blkcg percpu alloc deadlock
+Message-ID: <20120209235845.GH19392@google.com>
+References: <20111222220911.GK17084@google.com>
+ <20111222142058.41316ee0.akpm@linux-foundation.org>
+ <20111223014043.GC12738@redhat.com>
+ <20111222175834.66559c8b.akpm@linux-foundation.org>
+ <20111223025629.GE12738@redhat.com>
+ <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111227175249.GE17712@google.com>
+ <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111228004102.GK17712@google.com>
+ <20120105012842.GQ31746@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F34429E.8070605@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120105012842.GQ31746@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 04:03:10PM -0600, Rob Herring wrote:
-> 
-> On 02/09/2012 02:04 PM, Shawn Guo wrote:
-> > On Fri, Feb 03, 2012 at 04:35:12PM -0600, Rob Herring wrote:
-> > ...
-> >> @@ -126,18 +127,16 @@ static void pl061_set_value(struct gpio_chip *gc, unsigned offset, int value)
-> >>  static int pl061_to_irq(struct gpio_chip *gc, unsigned offset)
-> >>  {
-> >>  	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
-> >> -
-> >> -	if (chip->irq_base <= 0)
-> >> -		return -EINVAL;
-> >> -
-> >> -	return chip->irq_base + offset;
-> >> +	if (!chip->irq_gc)
-> >> +		return -ENXIO;
-> >> +	return irq_find_mapping(chip->irq_gc->domain, offset);
+Hello, guys.
+
+On Wed, Jan 04, 2012 at 05:28:42PM -0800, Tejun Heo wrote:
+> On Tue, Dec 27, 2011 at 04:41:02PM -0800, Tejun Heo wrote:
+> > Hello,
 > > 
-> > If I understand the driver correctly, it will add a linear domain for
-> > dt case.  Do you have code somewhere creating the mapping before this
-> > irq_find_mapping gets called here?  The reason I'm asking this is I
-> > have to call irq_create_mapping rather than irq_find_mapping here to
-> > get imx gpio driver working with linear domain, otherwise the
-> > irq_find_mapping call will fail.
+> > On Wed, Dec 28, 2011 at 09:14:02AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > This is essentially more specialized form of the mempool approach.  It
+> > > > doesn't seem any simpler to me while being less generic.  I don't see
+> > > > what the upside would be.
+> > > 
+> > > Hm, but this never causes -ENOMEM error, at all.
 > > 
+> > Ooh, I missed the part it falls back to the global counter if percpu
+> > counters aren't allocated yet.  Yeah, this is an interesting approach.
+> > I'll think more about it.
 > 
-> Right, the user has to call irq_of_parse_and_map (which calls
-> irq_create_mapping ultimately). Interrupts are allocated on demand. The
-> dts needs to declare the gpio controller as an interrupt-controller and
-> the node using the gpio line needs to set its interrupt parent and
-> interrupt connection
-> 
-Yes, that's how dt users use irq.  But since I'm trying to make the
-imx gpio irq_domain as linear for both non-dt and dt users.  Calling
-irq_create_mapping here may make sense for me, since it will not
-require all these non-dt users change the way they use gpio irq.
+> I've been staring at the blkcg stats code and commit logs and am
+> wondering whether we can just scrap percpu counters there.  It seems
+> the reason why it was introduced in the first place is to avoid
+> stats->lock, which BTW is extremely heavy handed for gathering stats,
+> overhead in fast paths and I think there can be easier ways to avoid
+> stats->lock.
 
-Even for dt users, there may have some case that can not work in the
-way we expect.
+I could remove stats_lock without much trouble but couldn't get
+blk-throtl fast path stat working. :(
 
-	soc {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "simple-bus";
-		interrupt-parent = <&tzic>;
-		ranges;
+I think I'll try to get KAMEZAWA's percpu counter working.  Any
+objections?
 
-		esdhc@70008000 { /* ESDHC2 */
-			compatible = "fsl,imx51-esdhc";
-			reg = <0x70008000 0x4000>;
-			interrupts = <2>;
-			cd-gpios = <&gpio1 6 0>;
-			wp-gpios = <&gpio1 5 0>;
-		};
-	};
-
-In above SD example, irq_of_parse_and_map will just work out the SD
-controller internal irq to tzic.  How can we work out the card-detection
-irq to gpio controller in the same way?
+Thanks.
 
 -- 
-Regards,
-Shawn
+tejun
