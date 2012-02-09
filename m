@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2BIWYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:24:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53325 "EHLO
+	id S932248Ab2BIWXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:23:03 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36357 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2BIWXG (ORCPT
+	with ESMTP id S932204Ab2BIWW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:23:06 -0500
+	Thu, 9 Feb 2012 17:22:58 -0500
 MIME-Version: 1.0
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
         khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 12/18] perf: add support for sampling taken branch to perf record
-Date: Thu,  9 Feb 2012 23:21:02 +0100
-Message-Id: <1328826068-11713-13-git-send-email-eranian@google.com>
+Subject: [PATCH v6 09/18] perf: disable PERF_SAMPLE_BRANCH_* when not supported
+Date: Thu,  9 Feb 2012 23:20:59 +0100
+Message-Id: <1328826068-11713-10-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
 References: <1328826068-11713-1-git-send-email-eranian@google.com>
@@ -24,194 +24,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+PERF_SAMPLE_BRANCH_* is disabled for:
+- SW events (sw counters, tracepoints)
+- HW breakpoints
+- ALL but Intel X86 architecture
+- AMD64 processors
 
-This patch adds a new option to enable taken branch stack
-sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
-of perf_events.
-
-There is a new option to active this mode: -b.
-It is possible to pass a set of filters to select the type of
-branches to sample.
-
-The following filters are available:
-- any : any type of branches
-- any_call : any function call or system call
-- any_ret : any function return or system call return
-- any_ind : any indirect branch
-- u:  only when the branch target is at the user level
-- k: only when the branch target is in the kernel
-- hv: only when the branch target is in the hypervisor
-
-Filters can be combined by passing a comma separated list
-to the option:
-
-$ perf record -b any_call,u -e cycles:u branchy
-
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Documentation/perf-record.txt |   25 ++++++++++
- tools/perf/builtin-record.c              |   74 ++++++++++++++++++++++++++++++
- tools/perf/perf.h                        |    1 +
- tools/perf/util/evsel.c                  |    4 ++
- 4 files changed, 104 insertions(+), 0 deletions(-)
+ arch/alpha/kernel/perf_event.c       |    4 ++++
+ arch/arm/kernel/perf_event.c         |    4 ++++
+ arch/mips/kernel/perf_event_mipsxx.c |    4 ++++
+ arch/powerpc/kernel/perf_event.c     |    4 ++++
+ arch/sh/kernel/perf_event.c          |    4 ++++
+ arch/sparc/kernel/perf_event.c       |    4 ++++
+ arch/x86/kernel/cpu/perf_event_amd.c |    3 +++
+ kernel/events/core.c                 |   24 ++++++++++++++++++++++++
+ kernel/events/hw_breakpoint.c        |    6 ++++++
+ 9 files changed, 57 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index ff9a66e..288d429 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -152,6 +152,31 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
- corresponding events, i.e., they always refer to events defined earlier on the command
- line.
+diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
+index 8143cd7..0dae252 100644
+--- a/arch/alpha/kernel/perf_event.c
++++ b/arch/alpha/kernel/perf_event.c
+@@ -685,6 +685,10 @@ static int alpha_pmu_event_init(struct perf_event *event)
+ {
+ 	int err;
  
-+-b::
-+--branch-stack::
-+Enable taken branch stack sampling. Each sample captures a series of consecutive
-+taken branches. The number of branches captured with each sample depends on the
-+underlying hardware, the type of branches of interest, and the executed code.
-+It is possible to select the types of branches captured by enabling filters. The
-+following filters are defined:
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
 +
-+        -  any :  any type of branches
-+        - any_call: any function call or system call
-+        - any_ret: any function return or system call return
-+        - any_ind: any indirect branch
-+        - u:  only when the branch target is at the user level
-+        - k: only when the branch target is in the kernel
-+        - hv: only when the target is at the hypervisor level
-+
-++
-+At least one of any, any_call, any_ret, any_ind must be provided. The privilege levels may
-+be ommitted, in which case, the privilege levels of the associated event are applied to the
-+branch filter. Both kernel (k) and hypervisor (hv) privilege levels are subject to
-+permissions.  When sampling on multiple events, branch stack sampling is enabled for all
-+the sampling events. The sampled branch type is the same for all events.
-+Note that taken branch sampling may not be available on all processors.
-+The various filters must be specified as a comma separated list: -b any_ret,u,k
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f8d9a54..9f07418 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -627,6 +627,77 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	return err;
- }
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_RAW:
+ 	case PERF_TYPE_HARDWARE:
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 5bb91bf..a23c42a 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -539,6 +539,10 @@ static int armpmu_event_init(struct perf_event *event)
+ 	int err = 0;
+ 	atomic_t *active_events = &armpmu->active_events;
  
-+#define BRANCH_OPT(n, m) \
-+	{ .name = n, .mode = (m) }
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
 +
-+#define BRANCH_END { .name = NULL }
-+
-+struct branch_mode {
-+	const char *name;
-+	int mode;
-+};
-+
-+static const struct branch_mode branch_modes[] = {
-+	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
-+	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
-+	BRANCH_OPT("hv", PERF_SAMPLE_BRANCH_HV),
-+	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
-+	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
-+	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
-+	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-+	BRANCH_END
-+};
-+
-+static int
-+parse_branch_stack(const struct option *opt, const char *str, int unset __used)
-+{
-+#define ONLY_PLM \
-+	(PERF_SAMPLE_BRANCH_USER	|\
-+	 PERF_SAMPLE_BRANCH_KERNEL	|\
-+	 PERF_SAMPLE_BRANCH_HV)
-+
-+	uint64_t *mode = (uint64_t *)opt->value;
-+	const struct branch_mode *br;
-+	char *s, *os, *p;
-+	int ret = -1;
-+
-+	*mode = 0;
-+
-+	/* because str is read-only */
-+	s = os = strdup(str);
-+	if (!s)
-+		return -1;
-+
-+	for (;;) {
-+		p = strchr(s, ',');
-+		if (p)
-+			*p = '\0';
-+
-+		for (br = branch_modes; br->name; br++) {
-+			if (!strcasecmp(s, br->name))
-+				break;
-+		}
-+		if (!br->name)
-+			goto error;
-+
-+		*mode |= br->mode;
-+
-+		if (!p)
-+			break;
-+
-+		s = p + 1;
-+	}
-+	ret = 0;
-+
-+	if ((*mode & ~ONLY_PLM) == 0) {
-+		error("need at least one branch type with -b\n");
-+		ret = -1;
-+	}
-+error:
-+	free(os);
-+	return ret;
-+}
-+
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -719,6 +790,9 @@ const struct option record_options[] = {
- 		     "monitor event in cgroup name only",
- 		     parse_cgroups),
- 	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
-+	OPT_CALLBACK('b', "branch-stack", &record.opts.branch_stack,
-+		     "branch mode mask", "branch stack sampling modes",
-+		     parse_branch_stack),
- 	OPT_END()
- };
+ 	if (armpmu->map_event(event) == -ENOENT)
+ 		return -ENOENT;
  
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 8b4d25d..7f8fbab 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -222,6 +222,7 @@ struct perf_record_opts {
- 	unsigned int freq;
- 	unsigned int mmap_pages;
- 	unsigned int user_freq;
-+	int	     branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
- 	const char   *cpu_list;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f310aa5..9f66df6 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -126,6 +126,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
- 		attr->watermark = 0;
- 		attr->wakeup_events = 1;
- 	}
-+	if (opts->branch_stack) {
-+		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
-+		attr->branch_sample_type = opts->branch_stack;
-+	}
+diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+index e3b897a..811084f 100644
+--- a/arch/mips/kernel/perf_event_mipsxx.c
++++ b/arch/mips/kernel/perf_event_mipsxx.c
+@@ -606,6 +606,10 @@ static int mipspmu_event_init(struct perf_event *event)
+ {
+ 	int err = 0;
  
- 	attr->mmap = track;
- 	attr->comm = track;
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_RAW:
+ 	case PERF_TYPE_HARDWARE:
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index d614ab5..4e0b265 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -1078,6 +1078,10 @@ static int power_pmu_event_init(struct perf_event *event)
+ 	if (!ppmu)
+ 		return -ENOENT;
+ 
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_HARDWARE:
+ 		ev = event->attr.config;
+diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+index 10b14e3..068b8a2 100644
+--- a/arch/sh/kernel/perf_event.c
++++ b/arch/sh/kernel/perf_event.c
+@@ -310,6 +310,10 @@ static int sh_pmu_event_init(struct perf_event *event)
+ {
+ 	int err;
+ 
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	switch (event->attr.type) {
+ 	case PERF_TYPE_RAW:
+ 	case PERF_TYPE_HW_CACHE:
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index 614da62..8e16a4a 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1105,6 +1105,10 @@ static int sparc_pmu_event_init(struct perf_event *event)
+ 	if (atomic_read(&nmi_active) < 0)
+ 		return -ENODEV;
+ 
++	/* does not support taken branch sampling */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	switch (attr->type) {
+ 	case PERF_TYPE_HARDWARE:
+ 		if (attr->config >= sparc_pmu->max_events)
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 0397b23..0d8da03 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -138,6 +138,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
+ 	if (ret)
+ 		return ret;
+ 
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	if (event->attr.exclude_host && event->attr.exclude_guest)
+ 		/*
+ 		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 48f61c0..e1f5941 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5044,6 +5044,12 @@ static int perf_swevent_init(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_SOFTWARE)
+ 		return -ENOENT;
+ 
++	/*
++	 * no branch sampling for software events
++	 */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	switch (event_id) {
+ 	case PERF_COUNT_SW_CPU_CLOCK:
+ 	case PERF_COUNT_SW_TASK_CLOCK:
+@@ -5154,6 +5160,12 @@ static int perf_tp_event_init(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_TRACEPOINT)
+ 		return -ENOENT;
+ 
++	/*
++	 * no branch sampling for tracepoint events
++	 */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	err = perf_trace_init(event);
+ 	if (err)
+ 		return err;
+@@ -5379,6 +5391,12 @@ static int cpu_clock_event_init(struct perf_event *event)
+ 	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
+ 		return -ENOENT;
+ 
++	/*
++	 * no branch sampling for software events
++	 */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	perf_swevent_init_hrtimer(event);
+ 
+ 	return 0;
+@@ -5453,6 +5471,12 @@ static int task_clock_event_init(struct perf_event *event)
+ 	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
+ 		return -ENOENT;
+ 
++	/*
++	 * no branch sampling for software events
++	 */
++	if (has_branch_stack(event))
++		return -EOPNOTSUPP;
++
+ 	perf_swevent_init_hrtimer(event);
+ 
+ 	return 0;
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index b0309f7..cee5423 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -581,6 +581,12 @@ static int hw_breakpoint_event_init(struct perf_event *bp)
+ 	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
+ 		return -ENOENT;
+ 
++	/*
++	 * no branch sampling for breakpoint events
++	 */
++	if (has_branch_stack(bp))
++		return -EOPNOTSUPP;
++
+ 	err = register_perf_hw_breakpoint(bp);
+ 	if (err)
+ 		return err;
 -- 
 1.7.4.1
 
