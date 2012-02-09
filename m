@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757870Ab2BIKXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:23:40 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64967 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757753Ab2BIKXi (ORCPT
+	id S1757891Ab2BIKaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:30:21 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42309 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757745Ab2BIKaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:23:38 -0500
-X-AuditID: cbfee61b-b7be3ae0000039aa-11-4f339ea9e59d
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Karol Lewandowski'" <k.lewandowsk@samsung.com>
-Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com
-References: <1328028434-30139-1-git-send-email-k.lewandowsk@samsung.com>
- <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
- <4F3390D0.7040209@samsung.com>
-In-reply-to: <4F3390D0.7040209@samsung.com>
-Subject: RE: [PATCH] ARM: Exynos4: Bring exynos4-dt up to date
-Date: Thu, 09 Feb 2012 19:23:40 +0900
-Message-id: <067e01cce714$e44dfc20$ace9f460$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcznDJOrPoNTXOejQ1G7Rp3KJch6+gABdfWQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 9 Feb 2012 05:30:20 -0500
+Date: Thu, 9 Feb 2012 11:30:16 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu
+Subject: [PATCH] perf: add sanity check on addr in symbol__inc_addr_samples()
+Message-ID: <20120209103016.GA1999@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karol Lewandowski wrote:
-> 
-> On 31.01.2012 17:47, Karol Lewandowski wrote:
-> 
-> > This commit brings exynos4-dt in line with recent changes to
-> > mach-exynos tree, specifically:
-> >
-> >  - Fixes build break related to replacing plat/exynos4.h with common.h
-> >    in commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
-> >    arch/arm/mach-exynos/common.[ch]")
-> 
-> 
-> 
-> >  - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
-> >    machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
-> >    CONFIG_MULTI_IRQ_HANDLER") converted all exynos boards but
-> >    exynos4-dt.c.
-> 
-> 
-> Minor correction - text from "converted all.." shall be deleted, like:
-> 
->    - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
->      machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
->      CONFIG_MULTI_IRQ_HANDLER")
-> 
-> (It's result of not proofreading it carefully enough after squashing all
-> the patches.)
-> 
-> I don't think such a change is worth sending patch again, but I would be
-> grateful if you could fix it while merging.
-> 
-OK, I did.
-Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Check the value of addr against the bounds of the symbol.
+This is needed given we compute an offset:
+    	offset = addr - sym->start
+    
+And we don't want the offset to become negative.
+    
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 011ed26..8248d80 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ 
+ 	pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
+ 
+-	if (addr >= sym->end)
++	if (addr >= sym->end || addr < sym->start)
+ 		return 0;
+ 
+ 	offset = addr - sym->start;
