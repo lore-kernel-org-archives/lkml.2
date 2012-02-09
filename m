@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab2BIBNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 20:13:43 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43729 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756855Ab2BIBNk (ORCPT
+	id S1757952Ab2BIBNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 20:13:50 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48541 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab2BIBNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 20:13:40 -0500
-Date: Wed, 8 Feb 2012 17:11:28 -0800
+	Wed, 8 Feb 2012 20:13:42 -0500
+Date: Wed, 8 Feb 2012 17:13:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Brian King <brking@linux.vnet.ibm.com>,
         Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] xvmalloc: total_pages can be ulong
-Message-ID: <20120209011128.GA1926@kroah.com>
-References: <CAB4K4y4UWXXb8Tm_arYG7=_MOyMxJnk3jRLGbaXTyFiNKM-TOw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] staging: zcache: replace xvmalloc with zsmalloc
+Message-ID: <20120209011326.GA2225@kroah.com>
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAB4K4y4UWXXb8Tm_arYG7=_MOyMxJnk3jRLGbaXTyFiNKM-TOw@mail.gmail.com>
+In-Reply-To: <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 28, 2011 at 11:20:51AM +0530, Ajeet Yadav wrote:
-> >From 4763266cb0077d1082d4a1ef941448e9b4eb55ca Mon Sep 17 00:00:00 2001
-> From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-> Date: Wed, 28 Dec 2011 11:08:34 +0530
-> Subject: [PATCH] xvmalloc: total_pages can be ulong
+On Mon, Jan 09, 2012 at 04:51:58PM -0600, Seth Jennings wrote:
+> Replaces xvmalloc with zsmalloc as the persistent memory allocator
+> for zcache
 > 
-> total_pages is u64, its too large value considering
-> that its in page unit on both 32-bit and 64-bit system
-> , therefore make it ulong.
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Your patch is line-wrapped and can not be applied.
+This patch no longer applies :(
 
-Please use the git send-email command to send the patch, otherwise bad
-things like this can happen :(
-
-Care to redo it?
-
-thanks,
-
-greg k-h
