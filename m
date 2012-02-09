@@ -1,319 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab2BIMu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:50:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab2BIMuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:50:23 -0500
-Date: Thu, 9 Feb 2012 12:50:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
- pages
-Message-ID: <20120209125018.GN5938@suse.de>
-References: <1328568978-17553-1-git-send-email-mgorman@suse.de>
- <1328568978-17553-3-git-send-email-mgorman@suse.de>
- <alpine.DEB.2.00.1202071025050.30652@router.home>
- <20120208144506.GI5938@suse.de>
- <alpine.DEB.2.00.1202080907320.30248@router.home>
- <20120208163421.GL5938@suse.de>
- <alpine.DEB.2.00.1202081338210.32060@router.home>
- <20120208212323.GM5938@suse.de>
- <alpine.DEB.2.00.1202081557540.5970@router.home>
+	id S1753969Ab2BIMzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 07:55:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53308 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751738Ab2BIMzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 07:55:08 -0500
+Date: Thu, 9 Feb 2012 12:55:06 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V1] regmap: add bulk_write() for non-volatile register set
+Message-ID: <20120209125505.GI3058@opensource.wolfsonmicro.com>
+References: <1328789531-10067-1-git-send-email-ldewangan@nvidia.com>
+ <20120209121704.GF3058@opensource.wolfsonmicro.com>
+ <4F33BFDE.7020006@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VaKJWhUROU/xPxjb"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202081557540.5970@router.home>
+In-Reply-To: <4F33BFDE.7020006@nvidia.com>
+X-Cookie: You now have Asian Flu.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 04:13:15PM -0600, Christoph Lameter wrote:
-> On Wed, 8 Feb 2012, Mel Gorman wrote:
-> 
-> > On Wed, Feb 08, 2012 at 01:49:05PM -0600, Christoph Lameter wrote:
-> > > On Wed, 8 Feb 2012, Mel Gorman wrote:
-> > >
-> > > > Ok, I looked into what is necessary to replace these with checking a page
-> > > > flag and the cost shifts quite a bit and ends up being more expensive.
-> > >
-> > > That is only true if you go the slab route.
+
+--VaKJWhUROU/xPxjb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Feb 09, 2012 at 06:15:18PM +0530, Laxman Dewangan wrote:
+> On Thursday 09 February 2012 05:47 PM, Mark Brown wrote:
+> >On Thu, Feb 09, 2012 at 05:42:11PM +0530, Laxman Dewangan wrote:
+
+> >>+	if (vol || map->cache_type =3D=3D REGCACHE_NONE) {
+> >>+		ret =3D _regmap_raw_write(map, reg, val, val_bytes * val_count);
+
+> >You still need to do the byte swap here.
+
+> I saw the regmap_raw_write() and it is using the same way without
+> byte swapping.
+
+That's the whole point with the difference between the bulk and raw APIs
+though, the raw API skips the byte swapping and the bulk does it.
+
+> Want to use the same function as it is.. I am not sure why do we
+> require byte-swapping in this case. Required things will be done by
+> _regmap_raw_write only.
+
+The byte swapping is important for any device which has more than 8 bit
+register values, it's only not an issue for you because you have 8 bit
+registers.
+
+> This api just break the transfer in register-wise if any of the
+> register is cached..
+
+Well, there's no fundamental reason why we can't support cache on raw
+operations too.  It's not implemented because there's no need for it
+with any current users rather than because it's impossible.
+
+
+>=20
+> >>+	} else {
+> >>+		for (i =3D 0; i<  val_count; i++) {
+> >>+			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
+> >>+			ival =3D map->format.parse_val(map->work_buf);
+> >They're currently symmetric but really this should use format_val().
 > >
-> > Well, yes but both slab and slub have to be supported. I see no reason
-> > why I would choose to make this a slab-only or slub-only feature. Slob is
-> > not supported because it's not expected that a platform using slob is also
-> > going to use network-based swap.
-> 
-> I think so far the patches in particular to slab.c are pretty significant
-> in impact.
-> 
+> The format_val is require integer argument and issue is that I dont
+> have this otherwise I need not to parse, can use directly.
+>=20
+> Am I missing something here?
+>=20
+>=20
+> >* Unknown Key
+> >* 0x6E30FDDD
+>=20
 
-Ok, I am working on a solution that does not affect any of the existing
-slab structures. Between that and the fact we check if there are any
-memalloc_socks after patch 12, the impact for normal systems is an additional
-branch in ac_get_obj() and ac_put_obj()
+--VaKJWhUROU/xPxjb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > > Slab suffers from not having
-> > > the page struct pointer readily available. The changes are likely already
-> > > impacting slab performance without the virt_to_page patch.
-> > >
-> >
-> > The performance impact only comes into play when swap is on a network
-> > device and pfmemalloc reserves are in use. The rest of the time the check
-> > on ac avoids all the cost and there is a micro-optimisation later to avoid
-> > calling a function (patch 12).
-> 
-> We have been down this road too many times. Logic is added to critical
-> paths and memory structures grow. This is not free. And for NBD swap
-> support? Pretty exotic use case.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-NFS support is the real target. NBD is the logical starting point and
-NFS needs the same support.
+iQIcBAEBAgAGBQJPM8IUAAoJEBus8iNuMP3dHu8P/3wctLcaFOeQ2iekw4gd2+Lg
+xn1IqQ0gL274HgnCLeN5HMgteeTgksvAonH7/jMWYZWJazCD7WrYuy3qWpqs0Y6N
+6lcnRjL3KdkojhBo7+axyEGdboSMtDIrEEEgAT0Te3BSr0pSMnmaW8wBltpZXLy8
+OR1P/Ld8PkpO2vEiDRSTjZJRylZemYMQCjGF1/4rdTSm1p4IHaRBYXRrV02aArkG
+Itarp/1vAA83H8yTOOoZvo+7PbLEBbpkZAAc+bOMxnTOVLa3jDCF15uaAUecEcP+
+2UurB7zD3bsNZMHoqe5bq460pqIeuVQYOpEvU299kh0TKi3KhVvsFU8E1HEvL9Qq
+f19rz7aaxnn5c/SZ8J3045cAe8m4aBPpv3eJKgJ/CzBP4/zQPOvjiCEv7/q9Nslo
+Rf8OdzY7gEbxgMzOgABm7ZMNIfWshqW/scOzMe+0scunnuPHSFsZDsjj+KE7wMwP
+TG3HDuM7ark0PRKIMZM27k+HI2i404USCDogr8GWTvvku5+gkrqHlY4ZbWWIYJTp
+ZYpVmrgqDindfFfOJHaq4OxIG/p0f/HggFfzb/lNue1K7CaSC9wXHU4GNBDOlQ6K
+/jE1UXK5GEvAcsk3U6fZFkEcGAw6uWXvc6U1TcXydp+5WbKgLzOzOZaXagh/UCfK
+pNirdr1wBSkrTKIQIQpk
+=a5ov
+-----END PGP SIGNATURE-----
 
-> > Ok, are you asking that I use the page flag for slub and leave kmem_cache_cpu
-> > alone in the slub case? I can certainly check it out if that's what you
-> > are asking for.
-> 
-> No I am not asking for something. Still thinking about the best way to
-> address the issues. I think we can easily come up with a minimally
-> invasive patch for slub. Not sure about slab at this point. I think we
-> could avoid most of the new fields but this requires some tinkering. I
-> have a day @ home tomorrow which hopefully gives me a chance to
-> put some focus on this issue.
->
-
-I think we can avoid adding any additional fields but array_cache needs
-a new read-mostly global. Also, when network storage is in use and under
-memory pressure, it might be slower as we will have lost granularity on
-what slabs are using pfmemalloc. That is an acceptable compromise as it
-moves the cost to users of network-based swap instead of normal usage.
- 
-> > I did come up with a way: the necessary information is in ac and slabp
-> > on slab :/ . There are not exactly many ways that the information can
-> > be recorded.
-> 
-> Wish we had something that would not involve increasing the number of
-> fields in these slab structures.
-> 
-
-This is what I currently have. It's untested but builds. It reverts the
-structures back to the way they were and uses page flags instead.
-
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index e90a673..f96fa87 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -432,6 +432,28 @@ static inline int PageTransCompound(struct page *page)
- }
- #endif
- 
-+/*
-+ * If network-based swap is enabled, sl*b must keep track of whether pages
-+ * were allocated from pfmemalloc reserves.
-+ */
-+static inline int PageSlabPfmemalloc(struct page *page)
-+{
-+	VM_BUG_ON(!PageSlab(page));
-+	return PageActive(page);
-+}
-+
-+static inline void SetPageSlabPfmemalloc(struct page *page)
-+{
-+	VM_BUG_ON(!PageSlab(page));
-+	SetPageActive(page);
-+}
-+
-+static inline void ClearPageSlabPfmemalloc(struct page *page)
-+{
-+	VM_BUG_ON(!PageSlab(page));
-+	ClearPageActive(page);
-+}
-+
- #ifdef CONFIG_MMU
- #define __PG_MLOCKED		(1 << PG_mlocked)
- #else
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index 1d9ae40..a32bcfd 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -46,7 +46,6 @@ struct kmem_cache_cpu {
- 	struct page *page;	/* The slab from which we are allocating */
- 	struct page *partial;	/* Partially allocated frozen slabs */
- 	int node;		/* The node of the page (or -1 for debug) */
--	bool pfmemalloc;	/* Slab page had pfmemalloc set */
- #ifdef CONFIG_SLUB_STATS
- 	unsigned stat[NR_SLUB_STAT_ITEMS];
- #endif
-diff --git a/mm/slab.c b/mm/slab.c
-index 268cd96..783a92e 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -155,6 +155,12 @@
- #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
- #endif
- 
-+/*
-+ * true if a page was allocated from pfmemalloc reserves for network-based
-+ * swap
-+ */
-+static bool pfmemalloc_active;
-+
- /* Legal flag mask for kmem_cache_create(). */
- #if DEBUG
- # define CREATE_MASK	(SLAB_RED_ZONE | \
-@@ -233,7 +239,6 @@ struct slab {
- 			unsigned int inuse;	/* num of objs active in slab */
- 			kmem_bufctl_t free;
- 			unsigned short nodeid;
--			bool pfmemalloc;	/* Slab had pfmemalloc set */
- 		};
- 		struct slab_rcu __slab_cover_slab_rcu;
- 	};
-@@ -255,8 +260,7 @@ struct array_cache {
- 	unsigned int avail;
- 	unsigned int limit;
- 	unsigned int batchcount;
--	bool touched;
--	bool pfmemalloc;
-+	unsigned int touched;
- 	spinlock_t lock;
- 	void *entry[];	/*
- 			 * Must have this definition in here for the proper
-@@ -978,6 +982,13 @@ static struct array_cache *alloc_arraycache(int node, int entries,
- 	return nc;
- }
- 
-+static inline bool is_slab_pfmemalloc(struct slab *slabp)
-+{
-+	struct page *page = virt_to_page(slabp->s_mem);
-+
-+	return PageSlabPfmemalloc(page);
-+}
-+
- /* Clears ac->pfmemalloc if no slabs have pfmalloc set */
- static void check_ac_pfmemalloc(struct kmem_cache *cachep,
- 						struct array_cache *ac)
-@@ -985,22 +996,22 @@ static void check_ac_pfmemalloc(struct kmem_cache *cachep,
- 	struct kmem_list3 *l3 = cachep->nodelists[numa_mem_id()];
- 	struct slab *slabp;
- 
--	if (!ac->pfmemalloc)
-+	if (!pfmemalloc_active)
- 		return;
- 
- 	list_for_each_entry(slabp, &l3->slabs_full, list)
--		if (slabp->pfmemalloc)
-+		if (is_slab_pfmemalloc(slabp))
- 			return;
- 
- 	list_for_each_entry(slabp, &l3->slabs_partial, list)
--		if (slabp->pfmemalloc)
-+		if (is_slab_pfmemalloc(slabp))
- 			return;
- 
- 	list_for_each_entry(slabp, &l3->slabs_free, list)
--		if (slabp->pfmemalloc)
-+		if (is_slab_pfmemalloc(slabp))
- 			return;
- 
--	ac->pfmemalloc = false;
-+	pfmemalloc_active = false;
- }
- 
- static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
-@@ -1036,7 +1047,7 @@ static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 		l3 = cachep->nodelists[numa_mem_id()];
- 		if (!list_empty(&l3->slabs_free) && force_refill) {
- 			struct slab *slabp = virt_to_slab(objp);
--			slabp->pfmemalloc = false;
-+			ClearPageSlabPfmemalloc(virt_to_page(slabp->s_mem));
- 			clear_obj_pfmemalloc(&objp);
- 			check_ac_pfmemalloc(cachep, ac);
- 			return objp;
-@@ -1066,13 +1077,10 @@ static inline void *ac_get_obj(struct kmem_cache *cachep,
- static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 								void *objp)
- {
--	struct slab *slabp;
--
--	/* If there are pfmemalloc slabs, check if the object is part of one */
--	if (unlikely(ac->pfmemalloc)) {
--		slabp = virt_to_slab(objp);
--
--		if (slabp->pfmemalloc)
-+	if (unlikely(pfmemalloc_active)) {
-+		/* Some pfmemalloc slabs exist, check if this is one */
-+		struct page *page = virt_to_page(objp);
-+		if (PageSlabPfmemalloc(page))
- 			set_obj_pfmemalloc(&objp);
- 	}
- 
-@@ -1906,9 +1914,13 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid,
- 	else
- 		add_zone_page_state(page_zone(page),
- 			NR_SLAB_UNRECLAIMABLE, nr_pages);
--	for (i = 0; i < nr_pages; i++)
-+	for (i = 0; i < nr_pages; i++) {
- 		__SetPageSlab(page + i);
- 
-+		if (*pfmemalloc)
-+			SetPageSlabPfmemalloc(page);
-+	}
-+
- 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
- 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
- 
-@@ -2888,7 +2900,6 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep, void *objp,
- 	slabp->s_mem = objp + colour_off;
- 	slabp->nodeid = nodeid;
- 	slabp->free = 0;
--	slabp->pfmemalloc = false;
- 	return slabp;
- }
- 
-@@ -3075,11 +3086,8 @@ static int cache_grow(struct kmem_cache *cachep,
- 		goto opps1;
- 
- 	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
--	if (pfmemalloc) {
--		struct array_cache *ac = cpu_cache_get(cachep);
--		slabp->pfmemalloc = true;
--		ac->pfmemalloc = true;
--	}
-+	if (unlikely(pfmemalloc))
-+		pfmemalloc_active = pfmemalloc;
- 
- 	slab_map_pages(cachep, slabp, objp);
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index ea04994..f9b0f35 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2126,7 +2126,8 @@ static inline void *new_slab_objects(struct kmem_cache *s, gfp_t flags,
- 		stat(s, ALLOC_SLAB);
- 		c->node = page_to_nid(page);
- 		c->page = page;
--		c->pfmemalloc = pfmemalloc;
-+		if (pfmemalloc)
-+			SetPageSlabPfmemalloc(page);
- 		*pc = c;
- 	} else
- 		object = NULL;
-@@ -2136,7 +2137,7 @@ static inline void *new_slab_objects(struct kmem_cache *s, gfp_t flags,
- 
- static inline bool pfmemalloc_match(struct kmem_cache_cpu *c, gfp_t gfpflags)
- {
--	if (unlikely(c->pfmemalloc))
-+	if (unlikely(PageSlabPfmemalloc(c->page)))
- 		return gfp_pfmemalloc_allowed(gfpflags);
- 
- 	return true;
+--VaKJWhUROU/xPxjb--
