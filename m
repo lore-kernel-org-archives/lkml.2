@@ -1,155 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2BIIRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:17:32 -0500
-Received: from mga03.intel.com ([143.182.124.21]:28585 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab2BIIRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:17:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104821415"
-Date: Thu, 9 Feb 2012 16:07:26 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] block: remove plugging at buffered write time
-Message-ID: <20120209080726.GB28465@localhost>
-References: <20120208110143.GA5550@localhost>
- <1328750089.5949.1.camel@sli10-conroe>
+	id S1757158Ab2BIISJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:18:09 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50446 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab2BIISH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:18:07 -0500
+X-AuditID: b753bd60-a1c87ba000000655-ac-4f33813a2395
+X-AuditID: b753bd60-a1c87ba000000655-ac-4f33813a2395
+Message-ID: <4F338135.5090407@hitachi.com>
+Date: Thu, 09 Feb 2012 17:17:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328750089.5949.1.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove breakpoints.
+References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com> <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com> <20120207171707.GA24443@linux.vnet.ibm.com> <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com> <4F3320E5.1050707@hitachi.com> <20120209063745.GB16600@linux.vnet.ibm.com>
+In-Reply-To: <20120209063745.GB16600@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
-> >  				PAGE_SIZE - user_addr / PAGE_SIZE);
-> >  	}
-> >  
-> > +	blk_start_plug(&plug);
-> > +
-> >  	for (seg = 0; seg < nr_segs; seg++) {
-> >  		user_addr = (unsigned long)iov[seg].iov_base;
-> >  		sdio.size += bytes = iov[seg].iov_len;
-> > @@ -1314,6 +1317,7 @@ do_blockdev_direct_IO(int rw, struct kio
-> >  	} else
-> >  		BUG_ON(retval != -EIOCBQUEUED);
-> >  
-> > +	blk_finish_plug(&plug);
-> This one can be moved up a little bit (before dio_cleanup)
+(2012/02/09 15:37), Srikar Dronamraju wrote:
+>>
+>> No, that is a meaningless operation.
+>> As I originally said,
+>>
+>>> insn_get_length(insn);
+>>> if (insn->rex_prefix.nbytes) {
+>>> 	cursor = uprobe->insn + insn_offset_rex_prefix(insn);
+>>> 	*cursor &= 0xfe;	/* Clearing REX.B bit */
+>>> }
+>>
+> 
+> I am confused by why we need to call insn_get_length(insn) before
+> checking insn->rex_prefix.nbytes? Is it needed.
 
-Done, thanks! Here is the updated patch with O_SYNC write fix.
+Ah, certainly, no, if the insn is already decoded.
 
-Thanks,
-Fengguang
----
-Subject: block: remove plugging at buffered write time 
-Date: Tue Jan 31 18:25:48 CST 2012
+> Denys and Masami, can you please confirm if below is fine.
+> 
+> 
+> #ifdef CONFIG_X86_64
+> /*
+>  * If uprobe->insn doesn't use rip-relative addressing, return
+>  * immediately.  Otherwise, rewrite the instruction so that it accesses
+>  * its memory operand indirectly through a scratch register.  Set
+>  * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
+>  * accordingly.  (The contents of the scratch register will be saved
+>  * before we single-step the modified instruction, and restored
+>  * afterward.)
+>  *
+>  * We do this because a rip-relative instruction can access only a
+>  * relatively small area (+/- 2 GB from the instruction), and the XOL
+>  * area typically lies beyond that area.  At least for instructions
+>  * that store to memory, we can't execute the original instruction
+>  * and "fix things up" later, because the misdirected store could be
+>  * disastrous.
+>  *
+>  * Some useful facts about rip-relative instructions:
+>  * - There's always a modrm byte.
+>  * - There's never a SIB byte.
+>  * - The displacement is always 4 bytes.
+>  */
+> static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
+> 							struct insn *insn)
+> {
 
-Buffered write(2) is not directly tied to IO, so it's not suitable to
-handle plug in generic_file_aio_write().
+> 	u8 *cursor;
+> 	u8 reg;
+> 
+> 	if (mm->context.ia32_compat)
+> 		return;
+> 
+> 	uprobe->arch_info.rip_rela_target_address = 0x0;
+> 	if (!insn_rip_relative(insn))
+> 		return;
 
-Also moves unplugging to lower layers:
-- for direct I/O, from around ->direct_IO() to do_blockdev_direct_IO()
-- for O_SYNC writes, to around ->fsync()
+Here, I think it is better to add a comment that
+insn_rip_relative() decodes until modrm. :)
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Li Shaohua <shaohua.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/direct-io.c |    5 +++++
- fs/sync.c      |   10 +++++++++-
- mm/filemap.c   |    7 -------
- 3 files changed, 14 insertions(+), 8 deletions(-)
+> 
+> 	/* Clear REX.b bit (extension of MODRM.rm field):
+> 	 * we want to encode rax/rcx, not r8/r9.
+> 	 */
+> 	if (insn->rex_prefix.nbytes) {
+> 		cursor = uprobe->insn + insn_offset_rex_prefix(insn);
+> 		*cursor &= 0xfe;
+> 	}
+> 
+> 	/*
+> 	 * Point cursor at the modrm byte.  The next 4 bytes are the
+> 	 * displacement.  Beyond the displacement, for some instructions,
+> 	 * is the immediate operand.
+> 	 */
+> 	cursor = uprobe->insn + insn_offset_modrm(insn);
+> 	insn_get_length(insn);
+> 
+> 	/*
+> 	 * Convert from rip-relative addressing to indirect addressing
+> 	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
+> 	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
+> 	 */
+> 	reg = MODRM_REG(insn);
+> 	if (reg == 0) {
+> 		/*
+> 		 * The register operand (if any) is either the A register
+> 		 * (%rax, %eax, etc.) or (if the 0x4 bit is set in the
+> 		 * REX prefix) %r8.  In any case, we know the C register
+> 		 * is NOT the register operand, so we use %rcx (register
+> 		 * #1) for the scratch register.
+> 		 */
+> 		uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
+> 		/* Change modrm from 00 000 101 to 00 000 001. */
+> 		*cursor = 0x1;
+> 	} else {
+> 		/* Use %rax (register #0) for the scratch register. */
+> 		uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
+> 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
+> 		*cursor = (reg << 3);
+> 	}
+> 
+> 	/* Target address = address of next instruction + (signed) offset */
+> 	uprobe->arch_info.rip_rela_target_address = (long)insn->length
+> 					+ insn->displacement.value;
+> 	/* Displacement field is gone; slide immediate field (if any) over. */
+> 	if (insn->immediate.nbytes) {
+> 		cursor++;
+> 		memmove(cursor, cursor + insn->displacement.nbytes,
+> 						insn->immediate.nbytes);
+> 	}
+> 	return;
+> }
 
---- linux-next.orig/mm/filemap.c	2012-02-08 19:33:29.000000000 +0800
-+++ linux-next/mm/filemap.c	2012-02-09 15:59:47.000000000 +0800
-@@ -1421,12 +1421,8 @@ generic_file_aio_read(struct kiocb *iocb
- 			retval = filemap_write_and_wait_range(mapping, pos,
- 					pos + iov_length(iov, nr_segs) - 1);
- 			if (!retval) {
--				struct blk_plug plug;
--
--				blk_start_plug(&plug);
- 				retval = mapping->a_ops->direct_IO(READ, iocb,
- 							iov, pos, nr_segs);
--				blk_finish_plug(&plug);
- 			}
- 			if (retval > 0) {
- 				*ppos = pos + retval;
-@@ -2610,13 +2606,11 @@ ssize_t generic_file_aio_write(struct ki
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
--	struct blk_plug plug;
- 	ssize_t ret;
- 
- 	BUG_ON(iocb->ki_pos != pos);
- 
- 	mutex_lock(&inode->i_mutex);
--	blk_start_plug(&plug);
- 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
-@@ -2627,7 +2621,6 @@ ssize_t generic_file_aio_write(struct ki
- 		if (err < 0 && ret > 0)
- 			ret = err;
- 	}
--	blk_finish_plug(&plug);
- 	return ret;
- }
- EXPORT_SYMBOL(generic_file_aio_write);
---- linux-next.orig/fs/direct-io.c	2012-02-08 19:33:29.000000000 +0800
-+++ linux-next/fs/direct-io.c	2012-02-09 16:03:04.000000000 +0800
-@@ -1106,6 +1106,7 @@ do_blockdev_direct_IO(int rw, struct kio
- 	unsigned long user_addr;
- 	size_t bytes;
- 	struct buffer_head map_bh = { 0, };
-+	struct blk_plug plug;
- 
- 	if (rw & WRITE)
- 		rw = WRITE_ODIRECT;
-@@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
- 				PAGE_SIZE - user_addr / PAGE_SIZE);
- 	}
- 
-+	blk_start_plug(&plug);
-+
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		user_addr = (unsigned long)iov[seg].iov_base;
- 		sdio.size += bytes = iov[seg].iov_len;
-@@ -1279,6 +1282,8 @@ do_blockdev_direct_IO(int rw, struct kio
- 	if (sdio.bio)
- 		dio_bio_submit(dio, &sdio);
- 
-+	blk_finish_plug(&plug);
-+
- 	/*
- 	 * It is possible that, we return short IO due to end of file.
- 	 * In that case, we need to release all the pages we got hold on.
---- linux-next.orig/fs/sync.c	2012-02-09 15:59:52.000000000 +0800
-+++ linux-next/fs/sync.c	2012-02-09 16:01:02.000000000 +0800
-@@ -164,9 +164,17 @@ SYSCALL_DEFINE1(syncfs, int, fd)
-  */
- int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
- {
-+	struct blk_plug plug;
-+	int ret;
-+
- 	if (!file->f_op || !file->f_op->fsync)
- 		return -EINVAL;
--	return file->f_op->fsync(file, start, end, datasync);
-+
-+	blk_start_plug(&plug);
-+	ret = file->f_op->fsync(file, start, end, datasync);
-+	blk_finish_plug(&plug);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(vfs_fsync_range);
- 
+Confirmed, this looks good to me ;)
+
+Thanks!
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
