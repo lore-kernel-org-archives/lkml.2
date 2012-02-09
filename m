@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab2BIPAD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 10:00:03 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:52716 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757809Ab2BIPAB (ORCPT
+	id S1757806Ab2BIPHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 10:07:21 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57507 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab2BIPHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 10:00:01 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [RFC][PATCH 00/50] set addr_assign_type to NET_ADDR_RANDOM if  a random mac address get assigned to a netdevice
-Date: Thu, 9 Feb 2012 15:59:05 +0100
-User-Agent: KMail/1.9.10
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <20120208145823.75f386c5@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120208145823.75f386c5@nehalam.linuxnetplumber.net>
+	Thu, 9 Feb 2012 10:07:20 -0500
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202091559.06480.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328799601;8780de48;
+In-Reply-To: <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
+References: <20120209103016.GA1999@quad> <20120209144844.GA4998@infradead.org> <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
+From: Sorin Dumitru <dumitru.sorin87@gmail.com>
+Date: Thu, 9 Feb 2012 17:06:57 +0200
+Message-ID: <CAB6DaTONEDguW5ivSfSD+vUsKw+6--Z9H2V_LTBYaf_Qf_Jajg@mail.gmail.com>
+Subject: Re: [PATCH] perf: add sanity check on addr in symbol__inc_addr_samples()
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mittwoch, 8. Februar 2012, Stephen Hemminger wrote:
-> On Wed,  8 Feb 2012 22:10:07 +0100
+On Thu, Feb 9, 2012 at 4:53 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Feb 9, 2012 at 3:48 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+>> Em Thu, Feb 09, 2012 at 11:30:16AM +0100, Stephane Eranian escreveu:
+>>>
+>>> Check the value of addr against the bounds of the symbol.
+>>> This is needed given we compute an offset:
+>>>       offset = addr - sym->start
+>>>
+>>> And we don't want the offset to become negative.
+>>
+>> I'll try and add a debug option to show the backtrace and values of
+>> addr, sym, etc, so that we can fix the real problem.
+>>
+>> I.e. this function shouldn't be receiving any such invalid addresses, as
+>> the symbol lookup was done, the symbol was found to be this one, then
+>> why it would be out of bounds at this point?!
+>>
+> I tend to agree with you on this. But then I don't see why the first test
+> was there.
 >
-> Danny Kukawka <danny.kukawka@bisect.de> wrote:
-> > The information if a device has a random MAC address is exported
-> > to the userspace via /sys/class/net/*/addr_assign_type, which
-> > export net_device->addr_assign_type.
-> >
-> > Currently only a few driver really use dev_hw_addr_random() to
-> > set addr_assign_type correctly to NET_ADDR_RANDOM.
-> >
-> > This patch change the drivers which set random addresses to
-> > change also addr_assign_type to NET_ADDR_RANDOM.
-> >
-> > To reflect if the MAC was changed from userspace via SIOCSIFHWADDR,
-> > which means it's no longer a random address set by the kernel,
-> > this patch remove NET_ADDR_RANDOM from addr_assign_type in this
-> > case.
-> >
-> > With this patch tools from userspace can now detect devices with
-> > random MAC addresses and change them to persistent addresses if
-> > needed (as e.g. in case of smsc95xx on PandaBoard).
-> >
-> > Maybe it makes sense to introduce a new state for addr_assign_type
-> > to reflect the fact, that the MAC address was changed via a ioctl
-> > from user space, e.g, with NET_ADDR_USERSPACE ?
->
-> This reminds me that passing dev->dev_addr to dev_hw_addr_rrandom is
-> redundant for all the instances you showed, so why is it ia parameter.
+>> - Arnaldo
+>>
+>>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>>
+>>> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+>>> index 011ed26..8248d80 100644
+>>> --- a/tools/perf/util/annotate.c
+>>> +++ b/tools/perf/util/annotate.c
+>>> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+>>>
+>>>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
+>>>
+>>> -     if (addr >= sym->end)
+>>> +     if (addr >= sym->end || addr < sym->start)
+>>>               return 0;
+>>>
+>>>       offset = addr - sym->start;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-There are two places in the existing code where it's used in a different way 
-in ixgbevf and igbvf, but thats changeable. I will take a look at it and 
-change dev_hw_addr_random to take simply a net_device ands set everything 
-directly.
+I reported the same problem a couple of weeks ago. From what i can
+tell the problem
+is in perf_event__process_sample. When calling
+perf_event__process_sample, we set
+al->sym based on al->address. The symbol in the hist_entry is set to
+the one from al
+but in the call to perf_top__record_precise_ip we pass in the address
+from the event
+struct which is sometimes different than the one in the al structure.
+When this situation
+occurs, when calculating the offset in symbol__inc_addr_samples,
+because addr is not
+in the symbol [start,end] range, we get a very big value which causes
+the segfault when
+we use it to index something. I've sent a patch that works for me, but
+i don't know if it's
+the right solution at [1].
 
-> Also it should BUG() if address length is not 6 (ETH_ALEN).
-
-Not needed if I change it to: 
-static inline void dev_hw_addr_random(struct net_device *dev) 
-
-Danny
+[1] https://lkml.org/lkml/2012/1/29/59
