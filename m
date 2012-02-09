@@ -1,133 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab2BIW06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:26:58 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47813 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758624Ab2BIWWn (ORCPT
+	id S932338Ab2BIW1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:27:14 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:43809 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758623Ab2BIWWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:22:43 -0500
+	Thu, 9 Feb 2012 17:22:42 -0500
 MIME-Version: 1.0
-From: Stephane Eranian <eranian@google.com>
+From: Yufeng Shen <miletus@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: [PATCH v6 04/18] perf: sync branch stack sampling with X86 precise_sampling
-Date: Thu,  9 Feb 2012 23:20:54 +0100
-Message-Id: <1328826068-11713-5-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
-References: <1328826068-11713-1-git-send-email-eranian@google.com>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, Yufeng Shen <miletus@chromium.org>
+Subject: [PATCH] drm/i915: Fix race condition in accessing GMBUS
+Date: Thu,  9 Feb 2012 17:14:57 -0500
+Message-Id: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If precise sampling is enabled on Intel X86, then perf_event uses PEBS.
-To correct for the off-by-one error of PEBS, perf_event uses LBR when
-precise_sample > 1.
+GMBUS has several ports and each has it's own corresponding
+I2C adpater. When multiple I2C adapters call gmbus_xfer() at
+the same time there is a race condition in using the underlying
+GMBUS controller. Fixing this by adding a mutex lock when calling
+gmbus_xfer().
 
-On Intel X86, PERF_SAMPLE_BRANCH_STACK is implemented using LBR,
-therefore both features must be coordinated as they may not
-configure LBR the same way.
-
-For PEBS, LBR needs to capture all branches at the priv level of
-the associated event.
-
-This patch checks that the branch type and priv level of BRANCH_STACK
-is compatible with that of the PEBS LBR requirement, thereby allowing:
-
-   $ perf record -b any,u -e instructions:upp ....
-
-But
-   $ perf record -b any_call,u -e instructions:upp
-
-Is not possible.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Yufeng Shen <miletus@chromium.org>
 ---
- arch/x86/kernel/cpu/perf_event.c |   60 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 60 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h  |    2 ++
+ drivers/gpu/drm/i915/intel_i2c.c |   21 ++++++++++++++++-----
+ 2 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 3779313..71e0264 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -353,6 +353,36 @@ int x86_setup_perfctr(struct perf_event *event)
- 	return 0;
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 9689ca3..d0f826e 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -733,6 +733,8 @@ typedef struct drm_i915_private {
+ 	u8 corr;
+ 	spinlock_t *mchdev_lock;
+ 
++	struct mutex gmbus_mutex;
++
+ 	enum no_fbc_reason no_fbc_reason;
+ 
+ 	struct drm_mm_node *compressed_fb;
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index d30cccc..24fafdc 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -233,11 +233,16 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 					       struct intel_gmbus,
+ 					       adapter);
+ 	struct drm_i915_private *dev_priv = adapter->algo_data;
+-	int i, reg_offset;
++	int i, reg_offset, ret;
+ 
+-	if (bus->force_bit)
+-		return intel_i2c_quirk_xfer(dev_priv,
++	mutex_lock(&dev_priv->gmbus_mutex);
++
++	if (bus->force_bit) {
++		ret = intel_i2c_quirk_xfer(dev_priv,
+ 					    bus->force_bit, msgs, num);
++		mutex_unlock(&dev_priv->gmbus_mutex);
++		return ret;
++	}
+ 
+ 	reg_offset = HAS_PCH_SPLIT(dev_priv->dev) ? PCH_GMBUS0 - GMBUS0 : 0;
+ 
+@@ -321,6 +326,7 @@ done:
+ 	 * start of the next xfer, till then let it sleep.
+ 	 */
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
++	mutex_unlock(&dev_priv->gmbus_mutex);
+ 	return i;
+ 
+ timeout:
+@@ -331,9 +337,12 @@ timeout:
+ 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
+ 	bus->force_bit = intel_gpio_create(dev_priv, bus->reg0 & 0xff);
+ 	if (!bus->force_bit)
+-		return -ENOMEM;
++		ret = -ENOMEM;
++	else
++		ret = intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
+ 
+-	return intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
++	mutex_unlock(&dev_priv->gmbus_mutex);
++	return ret;
  }
  
-+/*
-+ * check that branch_sample_type is compatible with
-+ * settings needed for precise_ip > 1 which implies
-+ * using the LBR to capture ALL taken branches at the
-+ * priv levels of the measurement
-+ */
-+static inline int precise_br_compat(struct perf_event *event)
-+{
-+	u64 m = event->attr.branch_sample_type;
-+	u64 b = 0;
-+
-+	/* must capture all branches */
-+	if (!(m & PERF_SAMPLE_BRANCH_ANY))
-+		return 0;
-+
-+	m &= PERF_SAMPLE_BRANCH_KERNEL | PERF_SAMPLE_BRANCH_USER;
-+
-+	if (!event->attr.exclude_user)
-+		b |= PERF_SAMPLE_BRANCH_USER;
-+
-+	if (!event->attr.exclude_kernel)
-+		b |= PERF_SAMPLE_BRANCH_KERNEL;
-+
-+	/*
-+	 * ignore PERF_SAMPLE_BRANCH_HV, not supported on X86
-+	 */
-+
-+	return m == b;
-+}
-+
- int x86_pmu_hw_config(struct perf_event *event)
- {
- 	if (event->attr.precise_ip) {
-@@ -369,6 +399,36 @@ int x86_pmu_hw_config(struct perf_event *event)
+ static u32 gmbus_func(struct i2c_adapter *adapter)
+@@ -380,6 +389,8 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 	if (dev_priv->gmbus == NULL)
+ 		return -ENOMEM;
  
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-+		/*
-+		 * check that PEBS LBR correction does not conflict with
-+		 * whatever the user is asking with attr->branch_sample_type
-+		 */
-+		if (event->attr.precise_ip > 1) {
-+			u64 *br_type = &event->attr.branch_sample_type;
++	mutex_init(&dev_priv->gmbus_mutex);
 +
-+			if (has_branch_stack(event)) {
-+				if (!precise_br_compat(event))
-+					return -EOPNOTSUPP;
-+
-+				/* branch_sample_type is compatible */
-+
-+			} else {
-+				/*
-+				 * user did not specify  branch_sample_type
-+				 *
-+				 * For PEBS fixups, we capture all
-+				 * the branches at the priv level of the
-+				 * event.
-+				 */
-+				*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+				if (!event->attr.exclude_user)
-+					*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+				if (!event->attr.exclude_kernel)
-+					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
-+			}
-+		}
- 	}
+ 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
+ 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
  
- 	/*
 -- 
-1.7.4.1
+1.7.3.1
 
