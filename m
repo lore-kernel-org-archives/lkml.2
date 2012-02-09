@@ -1,189 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2BIQPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:15:21 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:38681 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753539Ab2BIQPT (ORCPT
+	id S1758041Ab2BIQ0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:26:10 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:43837 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751124Ab2BIQ0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:15:19 -0500
-Message-ID: <4F33F100.7030706@xenotime.net>
-Date: Thu, 09 Feb 2012 08:14:56 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 9 Feb 2012 11:26:08 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: RWk8Y80VM1lo5mUUSPTI0x9AbFEE1GlhypbAJpAN0IFTSCc
+ GRFCUwZGTENQeskqvjXjEWL0y9gxs2nYDIaRQ7ZH0VIDvgVlKlzHFvEy5Jmp
+ zShHHfWmAXKBq2og0VByS220RD7Hzr9I686I5EVO4FBbcsQw69K7bshwsRad
+ pyguZiC6HEyLAnLhQEPHO_fNRHR8SbvrpiF.RO2Ih3tK.cfFiBmag5ZaukE4
+ mbjluTnSXFrM1v5dN7gqcTN3IE0AN1hVc_8muPSUwhr5ntPk09jEw6zOwIr0
+ j93ubjoVnIgkGZkgVpGEnMkNBfy6pfyFodF7J4rvPukjcFVuGeVP8VFczj7i
+ 1BEKdoomHPEw.C58yksy3zTHTFmg4L0pp35qZ8i.ZLrx5Uik6KMjkGaPN8Js
+ TzI.NhxiziDeGst8Z_sD9imZoU6XbszPQXh_0
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 9 Feb 2012 10:26:02 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+In-Reply-To: <20120209155246.GD22552@somewhere.redhat.com>
+Message-ID: <alpine.DEB.2.00.1202091024340.32064@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com> <1327591185.2446.102.camel@twins> <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com> <20120201170443.GE6731@somewhere.redhat.com> <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+ <20120202162420.GE9071@somewhere.redhat.com> <alpine.DEB.2.00.1202021028120.6221@router.home> <20120209155246.GD22552@somewhere.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: linux-next: Tree for Feb 2 (trace/events/sunrpc.h)
-References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au>	 <4F2AD18D.9030904@xenotime.net>	 <1328755030.2200.133.camel@gandalf.stny.rr.com> <1328757287.3234.76.camel@lade.trondhjem.org>
-In-Reply-To: <1328757287.3234.76.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 07:14 PM, Myklebust, Trond wrote:
-> On Wed, 2012-02-08 at 21:37 -0500, Steven Rostedt wrote:
->> [ Added the person responsible for this ]
->>
->> On Thu, 2012-02-02 at 10:10 -0800, Randy Dunlap wrote:
->>> On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20120201:
->>>
->>>
->>>
->>> include/trace/events/sunrpc.h:69:1: error: implicit declaration of function 'rpc_qname'
->>> include/trace/events/sunrpc.h:69:1: warning: format '%s' expects type 'char *', but argument 9 has type 'int'
->>
->> This has actually nothing to do with the tracepoint itself. The bug is
->> with the rpc_qname().
->>
->> The tracepoint references rpc_qname() and in
->> include/linux/sunrpc/sched.h:
->>
->>
->> #ifdef RPC_DEBUG
->> static inline const char * rpc_qname(const struct rpc_wait_queue *q)
->> {
->> 	return ((q && q->name) ? q->name : "unknown");
->> }
->> #endif
->>
->> Your config had RPC_DEBUG not set, thus the function was not defined.
->>
->>
->> The below patch fixes the problem with the side effect that the trace
->> data will contain "unknown" for all references to rcu_qname().
->>
->> -- Steve
->>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->>
->>
->> diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
->> index f7b2df5..c89ba95 100644
->> --- a/include/linux/sunrpc/sched.h
->> +++ b/include/linux/sunrpc/sched.h
->> @@ -275,6 +275,11 @@ static inline const char * rpc_qname(const struct rpc_wait_queue *q)
->>  {
->>  	return ((q && q->name) ? q->name : "unknown");
->>  }
->> +#else
->> +static inline const char * rpc_qname(const struct rpc_wait_queue *q)
->> +{
->> +	return "unknown";
->> +}
->>  #endif
->>  
->>  #endif /* _LINUX_SUNRPC_SCHED_H_ */
-> 
-> Hmm.... How about if we rather take that out of the RPC_DEBUG condition?
-> I'm assuming that if someone compiles in the tracepoint code, then they
-> want to be able to do a full trace independently of whether or not they
-> set CONFIG_SYSCTL.
-> 
-> 8<---------------------------------------------------------------------
-> From d051b60dcc3032b71cf8d9b96ac4bf24f12b6dcb Mon Sep 17 00:00:00 2001
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Date: Wed, 8 Feb 2012 22:01:15 -0500
-> Subject: [PATCH] SUNRPC: Ensure that we can trace waitqueues when
->  !defined(CONFIG_SYSCTL)
-> 
-> The tracepoint code relies on the queue->name being defined in order to
-> be able to display the name of the waitqueue on which an RPC task is
-> sleeping.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+On Thu, 9 Feb 2012, Frederic Weisbecker wrote:
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> > The vmstat timer only makes sense when the OS is doing something on the
+> > processor. Otherwise if no counters are incremented and the page and slab
+> > allocator caches are empty then there is no need to run the vmstat timer.
+>
+> So this is a typical example of a timer we want to shutdown when the CPU is idle
+> but we want to keep it running when we run in adaptive tickless mode (ie: shutdown
+> the tick while the CPU is busy).
 
-Thanks.
+You can also shut it down when the cpu is busy and not doing any system
+calls. If the percpu differentials are all zero (because you just ran the
+timer f.e.) and there are no system activities that would change the
+counters then there is no point in running the vmstat timer.
 
-> ---
->  include/linux/sunrpc/debug.h |    3 +++
->  include/linux/sunrpc/sched.h |   15 +++++++++++++--
->  net/sunrpc/sched.c           |    4 +---
->  3 files changed, 17 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/debug.h b/include/linux/sunrpc/debug.h
-> index c2786f2..2a11eb2 100644
-> --- a/include/linux/sunrpc/debug.h
-> +++ b/include/linux/sunrpc/debug.h
-> @@ -34,6 +34,9 @@
->  #ifdef CONFIG_SYSCTL
->  #define  RPC_DEBUG
->  #endif
-> +#ifdef CONFIG_TRACEPOINTS
-> +#define RPC_TRACEPOINTS
-> +#endif
->  /* #define  RPC_PROFILE */
->  
->  /*
-> diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
-> index f7b2df5..22dfc24 100644
-> --- a/include/linux/sunrpc/sched.h
-> +++ b/include/linux/sunrpc/sched.h
-> @@ -195,7 +195,7 @@ struct rpc_wait_queue {
->  	unsigned char		nr;			/* # tasks remaining for cookie */
->  	unsigned short		qlen;			/* total # tasks waiting in queue */
->  	struct rpc_timer	timer_list;
-> -#ifdef RPC_DEBUG
-> +#if defined(RPC_DEBUG) || defined(RPC_TRACEPOINTS)
->  	const char *		name;
->  #endif
->  };
-> @@ -270,11 +270,22 @@ static inline int rpc_task_has_priority(struct rpc_task *task, unsigned char pri
->  	return (task->tk_priority + RPC_PRIORITY_LOW == prio);
->  }
->  
-> -#ifdef RPC_DEBUG
-> +#if defined(RPC_DEBUG) || defined (RPC_TRACEPOINTS)
->  static inline const char * rpc_qname(const struct rpc_wait_queue *q)
->  {
->  	return ((q && q->name) ? q->name : "unknown");
->  }
-> +
-> +static inline void rpc_assign_waitqueue_name(struct rpc_wait_queue *q,
-> +		const char *name)
-> +{
-> +	q->name = name;
-> +}
-> +#else
-> +static inline void rpc_assign_waitqueue_name(struct rpc_wait_queue *q,
-> +		const char *name)
-> +{
-> +}
->  #endif
->  
->  #endif /* _LINUX_SUNRPC_SCHED_H_ */
-> diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-> index d79c63d..1c570a8 100644
-> --- a/net/sunrpc/sched.c
-> +++ b/net/sunrpc/sched.c
-> @@ -208,9 +208,7 @@ static void __rpc_init_priority_wait_queue(struct rpc_wait_queue *queue, const c
->  	queue->qlen = 0;
->  	setup_timer(&queue->timer_list.timer, __rpc_queue_timer_fn, (unsigned long)queue);
->  	INIT_LIST_HEAD(&queue->timer_list.list);
-> -#ifdef RPC_DEBUG
-> -	queue->name = qname;
-> -#endif
-> +	rpc_assign_waitqueue_name(queue, qname);
->  }
->  
->  void rpc_init_priority_wait_queue(struct rpc_wait_queue *queue, const char *qname)
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
