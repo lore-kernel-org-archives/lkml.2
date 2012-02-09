@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab2BIWcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:32:55 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58035 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758623Ab2BIWcx (ORCPT
+	id S1758562Ab2BIWg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:36:59 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:48112 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758378Ab2BIWg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:32:53 -0500
-Message-ID: <4F344990.7050303@gmail.com>
-Date: Thu, 09 Feb 2012 15:32:48 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Thu, 9 Feb 2012 17:36:58 -0500
+Message-ID: <4F344A85.4070005@windriver.com>
+Date: Thu, 9 Feb 2012 17:36:53 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, acme@redhat.com
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com
-Subject: Re: [PATCH v6 14/18] perf: fix endianness detection in perf.data
-References: <1328826068-11713-1-git-send-email-eranian@google.com> <1328826068-11713-15-git-send-email-eranian@google.com>
-In-Reply-To: <1328826068-11713-15-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: Re: 8250 move broke the build on sparc
+References: <20120209.163009.1594369939327153054.davem@davemloft.net>
+In-Reply-To: <20120209.163009.1594369939327153054.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12-02-09 04:30 PM, David Miller wrote:
+> 
+> Commit 9bef3d4197379a995fa80f81950bbbf8d32e9e8b ("serial: group all
+> the 8250 related code together") broke the build on sparc.
+> 
+> You really can't move 8250.c around without adjusting the "" includes
+> such as the one for "suncore.h".
 
+Understood.  As I mentioned earlier[1], I'd done sparc builds, but
+completely missed the fact that sparc didn't have 8250 enabled
+by default. Good intentions, but bad execution.  Sorry about
+the fallout.  
 
-On 02/09/2012 03:21 PM, Stephane Eranian wrote:
-> The current version of perf detects whether or not
-> the perf.data file is written in a different endianness
-> using the attr_size field in the header of the file. This
-> field represents sizeof(struct perf_event_attr) as known
-> to perf record. If the sizes do not match, then perf tries
-> the byte-swapped version. If they match, then the tool assumes
-> a different endianness.
 > 
-> The issue with the approach is that it assumes the size of
-> perf_event_attr always has to match between perf record and
-> perf report. However, the kernel perf_event ABI is extensible.
-> New fields can be added to struct perf_event_attr. Consequently,
-> it is not possible to use attr_size to detect endianness.
-> 
-> This patch takes another approach by using the magic number
-> written at the beginning of the perf.data file to detect
-> endianness. The magic number is an eight-byte signature.
-> It's primary purpose is to identify (signature) a perf.data
-> file. But it could also be used to encode the endianness.
-> 
-> The patch introduces a new value for this signature. The key
-> difference is that the signature is written differently in
-> the file depending on the endianness. Thus, by comparing the
-> signature from the file with the tool's own signature it is
-> possible to detect endianness. The new signature is "PERFILE2".
-> 
-> Backward compatiblity with existing perf.data file is
-> ensured.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+> Simply changing "suncore.h" to "../suncore.h" fixes things, but that's
+> pretty ugly if you ask me.
 
-Acked-by: David Ahern <dsahern@gmail.com>
+It only uses suncore.h for sunserial_register_minors (and unreg).
+Would you like it better if I killed all ifdefs and the include
+and used an incantation of weak instead?  Might be cleaner....
 
+P.
+
+[1] https://lkml.org/lkml/2012/2/3/355
