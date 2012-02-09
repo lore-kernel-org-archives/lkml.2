@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab2BIJYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 04:24:16 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:30037 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab2BIJYK (ORCPT
+	id S1757559Ab2BIJYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 04:24:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52164 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757453Ab2BIJY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 04:24:10 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=UTF-8
-Date: Thu, 09 Feb 2012 10:24:32 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH] ARM: Exynos4: Bring exynos4-dt up to date
-In-reply-to: <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
-To: kgene.kim@samsung.com
-Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com
-Message-id: <4F3390D0.7040209@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1328028434-30139-1-git-send-email-k.lewandowsk@samsung.com>
- <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
+	Thu, 9 Feb 2012 04:24:27 -0500
+Message-ID: <4F33910D.2030409@linaro.org>
+Date: Thu, 09 Feb 2012 01:25:33 -0800
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: Re: clock_getres() and real resolution
+References: <4F32A347.4090703@linaro.org> <20120209051218.GC2211@netboy.at.omicron.at>
+In-Reply-To: <20120209051218.GC2211@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.01.2012 17:47, Karol Lewandowski wrote:
+On 02/08/2012 09:12 PM, Richard Cochran wrote:
 
-> This commit brings exynos4-dt in line with recent changes to
-> mach-exynos tree, specifically:
-> 
->  - Fixes build break related to replacing plat/exynos4.h with common.h
->    in commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
->    arch/arm/mach-exynos/common.[ch]")
+> I think "resolution" does not mean tick duration, but rather the finest timer unit.
 
+#include <stdio.h>
+#include <time.h>
 
- 
->  - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
->    machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
->    CONFIG_MULTI_IRQ_HANDLER") converted all exynos boards but
->    exynos4-dt.c.
+int main (int argc, char *argv[])
+{
+   int i;
+   struct timespec rs, ts[10];
 
+   clock_getres (CLOCK_REALTIME, &rs);
+   printf ("res: %lus %luns\n", rs.tv_sec, rs.tv_nsec);
 
-Minor correction - text from "converted all.." shall be deleted, like:
+   for (i = 0; i < 10; i++)
+     clock_gettime (CLOCK_REALTIME, ts + i);
+   for (i = 0; i < 10; i++)
+     printf ("%d: %lus %luns\n", i, ts[i].tv_sec, ts[i].tv_nsec);
 
-   - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
-     machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
-     CONFIG_MULTI_IRQ_HANDLER")
+   return 0;
+}
 
-(It's result of not proofreading it carefully enough after squashing all
-the patches.)
+=>
 
-I don't think such a change is worth sending patch again, but I would be
-grateful if you could fix it while merging.
+res: 0s 10000000ns
+0: 1328779203s 975317500ns
+1: 1328779203s 975317900ns
+2: 1328779203s 975318200ns
+3: 1328779203s 975318400ns
+4: 1328779203s 975318600ns
+5: 1328779203s 975318800ns
+6: 1328779203s 975319000ns
+7: 1328779203s 975319300ns
+8: 1328779203s 975319500ns
+9: 1328779203s 975319600ns
 
-Thanks
+Old Sun Fire 880, SunOS 5.10 Generic_139555-08.
 
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+100ns precision with 10ms "finest timer unit"???
 
-
+Dmitry
