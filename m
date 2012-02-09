@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab2BIKMv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:12:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34786 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab2BIKMu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:12:50 -0500
-Date: Thu, 9 Feb 2012 11:12:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: clock_getres() and real resolution
-In-Reply-To: <4F32A347.4090703@linaro.org>
-Message-ID: <alpine.LFD.2.02.1202091051310.2794@ionos>
-References: <4F32A347.4090703@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757773Ab2BIKOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:14:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757580Ab2BIKON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 05:14:13 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] Define ENOAUTHSERVICE to indicate "Authentication service
+ unavailable" [ver #2]
+To: jmorris@namei.org, joseph@codesourcery.com, Valdis.Kletnieks@vt.edu
+Cc: keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-api@vger.kernel.org,
+        libc-alpha@sourceware.org
+Date: Thu, 09 Feb 2012 10:13:40 +0000
+Message-ID: <20120209101340.18365.97513.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Feb 2012, Dmitry Antipov wrote:
+As the kernel has or will have filesystems (and possibly other services) that
+want to obtain authentication tokens and/or encryption data on demand (via
+GSSAPI for example), it would seem useful to provide an additional error code
+to indicate a problem with the lookup, rather than overloading some other error
+code.
 
-> IIUC, an idea behind clock_getres() is to give a hint about the resolution of
-> specified clock. This hint may be used by an application programmer to check
-> whether
-> this clock is suitable for a some purpose. So why clock_getres() always
-> returns
-> something like {0, 1} (if hrtimers are enabled) regardless of the underlying
-> platform's
-> real numbers?
-> 
-> For example, OMAP4's real resolution of CLOCK_REALTIME is 30.5us for 32K timer
-> and 26ns
-> for MPU timer. Such a difference definitely makes sense - but
-> clock_getres(CLOCK_REALTIME,..)
-> always returns {0, KTIME_HIGH_RES}. Since this behavior causes a confusion
-> like
-> http://lists.linaro.org/pipermail/linaro-dev/2012-February/010112.html, I'm
-> considering
-> this as a stupid misfeature.
+We already have EKEYREJECTED, EKEYREVOKED and EKEYEXPIRED to indicate problems
+with a token that we already have, but what if the authentication server just
+isn't available?
 
-We had this discussion before. The point is that the accuracy of the
-internal kernel timer handling is 1nsec in case of high resolution
-timers. The fact that the underlying clock event device has a coarser
-resolution does not change that. 
+Define ENOAUTHSERVICE to indicate "Authentication service unavailable".  This
+can be used to indicate, for example, that an attempt was made by request_key()
+to retrieve a key, but the authentication server (e.g. a KDC) it is supposed to
+contact didn't answer or that it couldn't determine the location of a suitable
+server.
 
-It would be possible to return the real resolution of the clock event
-device, but we have systems, where the clockevent device is
-dynamically changing. So which resolution do we expose to an
-application? The one of the current active device or some magic number
-of a device which might not even be initialized? That's more confusing
-than telling user space that high resolution timers are active and the
-kernel is trying to achieve the 1ns accuracy.
+One way this can be used is that the user of a network filesystem can get a TGT
+from the KDC and stash it in their session keyring, then the filesystem can
+attempt to automatically get a ticket for accessing the filesystem - but if the
+server is uncontactable then the ticket can be negatively instantiated with
+KEYCTL_REJECT, giving the error to be handed to future requests as
+ENOAUTHSERVICE and a small timeout so that the key will expire from the cache
+and allow a retry after a short while to prevent thrashing.
 
-Thanks,
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-	tglx
+ arch/alpha/include/asm/errno.h  |    2 ++
+ arch/mips/include/asm/errno.h   |    1 +
+ arch/parisc/include/asm/errno.h |    1 +
+ arch/sparc/include/asm/errno.h  |    1 +
+ include/asm-generic/errno.h     |    1 +
+ 5 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
+index e5f29ca..dce5fc9 100644
+--- a/arch/alpha/include/asm/errno.h
++++ b/arch/alpha/include/asm/errno.h
+@@ -124,4 +124,6 @@
+ 
+ #define EHWPOISON	139	/* Memory page has hardware error */
+ 
++#define	ENOAUTHSERVICE	140	/* Authentication service not available */
++
+ #endif
+diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
+index 6dcd358..67c46bd 100644
+--- a/arch/mips/include/asm/errno.h
++++ b/arch/mips/include/asm/errno.h
+@@ -122,6 +122,7 @@
+ #define	ERFKILL		167	/* Operation not possible due to RF-kill */
+ 
+ #define EHWPOISON	168	/* Memory page has hardware error */
++#define	ENOAUTHSERVICE	169	/* Authentication service not available */
+ 
+ #define EDQUOT		1133	/* Quota exceeded */
+ 
+diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
+index 135ad60..3a6ffcd 100644
+--- a/arch/parisc/include/asm/errno.h
++++ b/arch/parisc/include/asm/errno.h
+@@ -123,5 +123,6 @@
+ #define	ERFKILL		256	/* Operation not possible due to RF-kill */
+ 
+ #define EHWPOISON	257	/* Memory page has hardware error */
++#define	ENOAUTHSERVICE	258	/* Authentication service not available */
+ 
+ #endif
+diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
+index c351aba..94a878f 100644
+--- a/arch/sparc/include/asm/errno.h
++++ b/arch/sparc/include/asm/errno.h
+@@ -113,5 +113,6 @@
+ #define	ERFKILL		134	/* Operation not possible due to RF-kill */
+ 
+ #define EHWPOISON	135	/* Memory page has hardware error */
++#define	ENOAUTHSERVICE	136	/* Authentication service not available */
+ 
+ #endif
+diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
+index a1331ce..5e2b296 100644
+--- a/include/asm-generic/errno.h
++++ b/include/asm-generic/errno.h
+@@ -109,5 +109,6 @@
+ #define ERFKILL		132	/* Operation not possible due to RF-kill */
+ 
+ #define EHWPOISON	133	/* Memory page has hardware error */
++#define	ENOAUTHSERVICE	134	/* Authentication service not available */
+ 
+ #endif
+
