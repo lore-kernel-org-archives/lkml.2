@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab2BIOwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:52:54 -0500
-Received: from smtp-out003.kontent.com ([81.88.40.217]:34462 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2BIOwx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:52:53 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: =?utf-8?q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Subject: Re: [PATCH 37/50] usbnet: set addr_assign_type if random_ether_addr() used
-Date: Thu, 9 Feb 2012 15:55:14 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Danny Kukawka <danny.kukawka@bisect.de>, Danny Kukawka <dkukawka@suse.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <201202082230.19936.oliver@neukum.org> <874nv07au1.fsf@nemi.mork.no>
-In-Reply-To: <874nv07au1.fsf@nemi.mork.no>
+	id S1757918Ab2BIOxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:53:18 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:61772 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757894Ab2BIOxQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 09:53:16 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <20120209144844.GA4998@infradead.org>
+References: <20120209103016.GA1999@quad>
+	<20120209144844.GA4998@infradead.org>
+Date: Thu, 9 Feb 2012 15:53:14 +0100
+Message-ID: <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
+Subject: Re: [PATCH] perf: add sanity check on addr in symbol__inc_addr_samples()
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201202091555.15071.oliver@neukum.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 9. Februar 2012, 07:57:42 schrieb Bjørn Mork:
-> > Don't you set the flag too early here? By that time we don't know
-> > whether the device provides a real MAC, do we?
-> 
-> Maybe it makes sense to set it here anyway since usbnet provides this
-> default random address, and let the minidrivers which set a real mac
-> also clear the flag?  But in that case the patch need to clear the flag
-> everywhere a minidriver currently updates the address.
-> 
+On Thu, Feb 9, 2012 at 3:48 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Thu, Feb 09, 2012 at 11:30:16AM +0100, Stephane Eranian escreveu:
+>>
+>> Check the value of addr against the bounds of the symbol.
+>> This is needed given we compute an offset:
+>>       offset = addr - sym->start
+>>
+>> And we don't want the offset to become negative.
+>
+> I'll try and add a debug option to show the backtrace and values of
+> addr, sym, etc, so that we can fix the real problem.
+>
+> I.e. this function shouldn't be receiving any such invalid addresses, as
+> the symbol lookup was done, the symbol was found to be this one, then
+> why it would be out of bounds at this point?!
+>
+I tend to agree with you on this. But then I don't see why the first test
+was there.
 
-Doable, but where is the benefit? It seems better to me to make an effort
-to guess as well as possible in the common code.
-
-	Regards
-		Oliver
+> - Arnaldo
+>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>
+>> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+>> index 011ed26..8248d80 100644
+>> --- a/tools/perf/util/annotate.c
+>> +++ b/tools/perf/util/annotate.c
+>> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+>>
+>>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
+>>
+>> -     if (addr >= sym->end)
+>> +     if (addr >= sym->end || addr < sym->start)
+>>               return 0;
+>>
+>>       offset = addr - sym->start;
