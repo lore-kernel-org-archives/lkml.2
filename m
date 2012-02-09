@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab2BIA6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 19:58:11 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41745 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab2BIA6J (ORCPT
+	id S932233Ab2BIA7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 19:59:43 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33692 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab2BIA7m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 19:58:09 -0500
-Date: Thu, 9 Feb 2012 00:57:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 04/21] arm: Use generic posix_types.h
-Message-ID: <20120209005750.GC15849@n2100.arm.linux.org.uk>
-References: <1328677745-20121-1-git-send-email-hpa@zytor.com> <1328677745-20121-5-git-send-email-hpa@zytor.com>
+	Wed, 8 Feb 2012 19:59:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328677745-20121-5-git-send-email-hpa@zytor.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1328751082.5611.6.camel@lappy>
+References: <1328751082.5611.6.camel@lappy>
+Date: Wed, 8 Feb 2012 19:59:40 -0500
+Message-ID: <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
+Subject: Re: WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
+From: Josh Boyer <jwboyer@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 09:08:48PM -0800, H. Peter Anvin wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> 
-> Change the arm architecture to use <asm-generic/posix_types.h>.
-> 
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
+On Wed, Feb 8, 2012 at 8:31 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> Hi all,
+>
+> I got the following warning when shutting down a KVM guest with a whole bunch of cores (254 in this case).
+>
+> It's actually pretty easy to reproduce it, it happens every once in 2-3 shutdowns.
+>
+> [   32.448626] ------------[ cut here ]------------
+> [   32.449160] WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
+> [   32.449621] Pid: 1, comm: init_stage2 Not tainted 3.2.0+ #14
+> [   32.449621] Call Trace:
+> [   32.449621]  <IRQ>  [<ffffffff81041a44>] ? native_smp_send_reschedule+0x25/0x43
+> [   32.449621]  [<ffffffff810735b2>] warn_slowpath_common+0x7b/0x93
+> [   32.449621]  [<ffffffff810962cc>] ? tick_nohz_handler+0xc9/0xc9
+> [   32.449621]  [<ffffffff81073675>] warn_slowpath_null+0x15/0x18
+> [   32.449621]  [<ffffffff81041a44>] native_smp_send_reschedule+0x25/0x43
+> [   32.449621]  [<ffffffff81067a00>] smp_send_reschedule+0xa/0xc
+> [   32.449621]  [<ffffffff8106f25e>] scheduler_tick+0x21a/0x242
+> [   32.449621]  [<ffffffff8107da10>] update_process_times+0x62/0x73
+> [   32.449621]  [<ffffffff81096336>] tick_sched_timer+0x6a/0x8a
+> [   32.449621]  [<ffffffff8108c5eb>] __run_hrtimer.clone.26+0x55/0xcb
+> [   32.449621]  [<ffffffff8108cd77>] hrtimer_interrupt+0xcb/0x19b
+> [   32.449621]  [<ffffffff810428a8>] smp_apic_timer_interrupt+0x72/0x85
+> [   32.449621]  [<ffffffff8165a8de>] apic_timer_interrupt+0x6e/0x80
+> [   32.449621]  <EOI>  [<ffffffff8165928e>] ? _raw_spin_unlock_irqrestore+0x3a/0x3e
+> [   32.449621]  [<ffffffff81042f4e>] ? arch_local_irq_restore+0x6/0xd
+> [   32.449621]  [<ffffffff810430c4>] default_send_IPI_mask_allbutself_phys+0x78/0x88
+> [   32.449621]  [<ffffffff8106c3c4>] ? __migrate_task+0xf1/0xf1
+> [   32.449621]  [<ffffffff81045445>] physflat_send_IPI_allbutself+0x12/0x14
+> [   32.449621]  [<ffffffff81041aaf>] native_stop_other_cpus+0x4d/0xa8
+> [   32.449621]  [<ffffffff810411c6>] native_machine_shutdown+0x56/0x6d
+> [   32.449621]  [<ffffffff81048499>] kvm_shutdown+0x1a/0x1c
+> [   32.449621]  [<ffffffff810411f9>] machine_shutdown+0xa/0xc
+> [   32.449621]  [<ffffffff81041265>] native_machine_restart+0x20/0x32
+> [   32.449621]  [<ffffffff81041297>] machine_restart+0xa/0xc
+> [   32.449621]  [<ffffffff81081d53>] kernel_restart+0x49/0x4d
+> [   32.449621]  [<ffffffff81081f26>] sys_reboot+0x14b/0x18a
+> [   32.449621]  [<ffffffff81089937>] ? remove_wait_queue+0x4c/0x51
+> [   32.449621]  [<ffffffff8107637f>] ? do_wait+0x1a4/0x1e7
+> [   32.449621]  [<ffffffff8107735a>] ? sys_wait4+0xa8/0xbc
+> [   32.449621]  [<ffffffff8107522b>] ? clear_tsk_thread_flag+0xf/0xf
+> [   32.449621]  [<ffffffff81659a25>] ? async_page_fault+0x25/0x30
+> [   32.449621]  [<ffffffff81659e92>] system_call_fastpath+0x16/0x1b
+> [   32.449621] ---[ end trace d0f03651493fd3d6 ]--
 
-This looks sane to me, given your description in the covering email.
+You don't really point out exactly which kernel this is, but we saw this in
+3.3 git and it was fixed by commit 71325960d16cd68ea0e22a8da15b2495b0f363f7.
+Or at least something very like it was.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
-Thanks.
-
-> ---
->  arch/arm/include/asm/posix_types.h |   55 ++++++------------------------------
->  1 files changed, 9 insertions(+), 46 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/posix_types.h b/arch/arm/include/asm/posix_types.h
-> index 2446d23..efdf990 100644
-> --- a/arch/arm/include/asm/posix_types.h
-> +++ b/arch/arm/include/asm/posix_types.h
-> @@ -19,59 +19,22 @@
->   * assume GCC is being used.
->   */
->  
-> -typedef unsigned long		__kernel_ino_t;
->  typedef unsigned short		__kernel_mode_t;
-> +#define __kernel_mode_t __kernel_mode_t
-> +
->  typedef unsigned short		__kernel_nlink_t;
-> -typedef long			__kernel_off_t;
-> -typedef int			__kernel_pid_t;
-> +#define __kernel_nlink_t __kernel_nlink_t
-> +
->  typedef unsigned short		__kernel_ipc_pid_t;
-> +#define __kernel_ipc_pid_t __kernel_ipc_pid_t
-> +
->  typedef unsigned short		__kernel_uid_t;
->  typedef unsigned short		__kernel_gid_t;
-> -typedef unsigned int		__kernel_size_t;
-> -typedef int			__kernel_ssize_t;
-> -typedef int			__kernel_ptrdiff_t;
-> -typedef long			__kernel_time_t;
-> -typedef long			__kernel_suseconds_t;
-> -typedef long			__kernel_clock_t;
-> -typedef int			__kernel_timer_t;
-> -typedef int			__kernel_clockid_t;
-> -typedef int			__kernel_daddr_t;
-> -typedef char *			__kernel_caddr_t;
-> -typedef unsigned short		__kernel_uid16_t;
-> -typedef unsigned short		__kernel_gid16_t;
-> -typedef unsigned int		__kernel_uid32_t;
-> -typedef unsigned int		__kernel_gid32_t;
-> +#define __kernel_uid_t __kernel_uid_t
->  
-> -typedef unsigned short		__kernel_old_uid_t;
-> -typedef unsigned short		__kernel_old_gid_t;
->  typedef unsigned short		__kernel_old_dev_t;
-> +#define __kernel_old_dev_t __kernel_old_dev_t
->  
-> -#ifdef __GNUC__
-> -typedef long long		__kernel_loff_t;
-> -#endif
-> -
-> -typedef struct {
-> -	int	val[2];
-> -} __kernel_fsid_t;
-> -
-> -#if defined(__KERNEL__)
-> -
-> -#undef	__FD_SET
-> -#define __FD_SET(fd, fdsetp) \
-> -		(((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] |= (1<<((fd) & 31)))
-> -
-> -#undef	__FD_CLR
-> -#define __FD_CLR(fd, fdsetp) \
-> -		(((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] &= ~(1<<((fd) & 31)))
-> -
-> -#undef	__FD_ISSET
-> -#define __FD_ISSET(fd, fdsetp) \
-> -		((((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] & (1<<((fd) & 31))) != 0)
-> -
-> -#undef	__FD_ZERO
-> -#define __FD_ZERO(fdsetp) \
-> -		(memset (fdsetp, 0, sizeof (*(fd_set *)(fdsetp))))
-> -
-> -#endif
-> +#include <asm-generic/posix_types.h>
->  
->  #endif
-> -- 
-> 1.7.6.5
-> 
+josh
