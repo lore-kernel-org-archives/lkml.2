@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab2BIRP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 12:15:56 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12965 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab2BIRPz (ORCPT
+	id S1758153Ab2BIRUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 12:20:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53936 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab2BIRUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 12:15:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 09 Feb 2012 09:15:54 -0800
-Message-ID: <4F33FEE7.9080608@nvidia.com>
-Date: Thu, 9 Feb 2012 22:44:15 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 9 Feb 2012 12:20:43 -0500
+Date: Thu, 9 Feb 2012 11:20:39 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 2/3] apple_bl: Rework in advance of gmux backlight support
+Message-ID: <20120209172039.GB2515@ubuntu-macmini>
+Mail-Followup-To: Lars-Peter Clausen <lars@metafoo.de>,
+	linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+	Matthew Garrett <mjg@redhat.com>
+References: <1328300884-21551-1-git-send-email-seth.forshee@canonical.com>
+ <1328300884-21551-3-git-send-email-seth.forshee@canonical.com>
+ <4F2C5EC8.8090203@metafoo.de>
+ <20120203225123.GD22758@ubuntu-macmini>
+ <4F2D6A21.7030903@metafoo.de>
+ <20120206145630.GC6414@ubuntu-macmini>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] regmap: add bulk_write() for non-volatile register
- set
-References: <1328789531-10067-1-git-send-email-ldewangan@nvidia.com> <20120209121704.GF3058@opensource.wolfsonmicro.com> <4F33BFDE.7020006@nvidia.com> <20120209125505.GI3058@opensource.wolfsonmicro.com>
-In-Reply-To: <20120209125505.GI3058@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206145630.GC6414@ubuntu-macmini>
+X-OfflineIMAP: 2693024310-4006838460
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 February 2012 06:25 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Feb 09, 2012 at 06:15:18PM +0530, Laxman Dewangan wrote:
->> On Thursday 09 February 2012 05:47 PM, Mark Brown wrote:
->>> On Thu, Feb 09, 2012 at 05:42:11PM +0530, Laxman Dewangan wrote:
->>>> +	if (vol || map->cache_type == REGCACHE_NONE) {
->>>> +		ret = _regmap_raw_write(map, reg, val, val_bytes * val_count);
->>> You still need to do the byte swap here.
->> I saw the regmap_raw_write() and it is using the same way without
->> byte swapping.
-> That's the whole point with the difference between the bulk and raw APIs
-> though, the raw API skips the byte swapping and the bulk does it.
->
-Ok, re-going through the apis again about the byte swapping, what I 
-understand is that raw_read or raw_write always happen in bing-endian 
-regardless of cpu. And bulk read/write supported the data which is in 
-the cpu-endianess.
-So we need to convert the data from cpu_to_bexx if we want to call 
-raw_write from bulk_write. Similarly we need to convert the data from 
-bexx_to_cpu when we read from raw-read which is called from bulk_read().
-If this is case then if we want the data in integer type from bulk_write 
-data pointer then just memcpy will be fine like
-unsigned int ival;
-memcpy(&ival, bulk_val_ptr, val_bytes);
-and for calling raw_write, it need to call format_val() so this will do 
-byte swapping. This require to duplicate the data pointer to new pointer 
-and then do manipulation. Once we do this then we will be able to call 
-raw_write() with the new duplicated pointer.
+On Mon, Feb 06, 2012 at 08:56:30AM -0600, Seth Forshee wrote:
+> > > Of course there are a couple of ways we could get around this. Not
+> > > calling the backlight ops in the gmux case would be an option; then you
+> > > don't get the check, but so far as I know right now the check doesn't
+> > > work for the gmux backlight anyway. Or allocating the backlight device
+> > > first before doing the check, but I don't see that as a good option.
+> > > 
+> > 
+> > Hm, if that the check doesn't do anything for gmux is there acutally any code
+> > shared between the gmux and the legacy path in the driver? If not would make
+> > sense to put the gmux backlight support into its own driver?
+> 
+> What I know is that the check doesn't work for the gmux on one
+> particular model. On that machine the gmux device is present but doesn't
+> control the backlight, yet reads and writes to the backlight ports
+> behave the same as if it did control the backlight. That's the only
+> model with a gmux that doesn't control the backlight that I've been able
+> to get any testing on, so I don't know how other models behave.
+> 
+> But you're right, by and large all the legacy and gmux paths share are
+> boilerplate code, other than the fact that they support the same class
+> of machines. The way apple_bl is done it seems natural to extended it
+> with other backlight interfaces for Apple hardware, but an argument can
+> be made for separting it out as well.
 
-if the register writes are broken in multiple transaction then only get 
-the integer_val using memcpy and call regmap_write(), need not to format it.
+I managed to get some more information that will allow me to do a sanity
+check on the gmux. This will be completely separate from the check for
+the legacy path, meaning they diverge even more. As a result I think I
+will go ahead and put the gmux support in its own driver. This probably
+makes the most sense anyway as the driver is likely to grow to include
+support for the display mux functionality.
 
-This may be require mem alloc/free on every call. It can be avoided by 
-allocating memory for size (val_bytes + max_register) in advance during 
-init..
-Is it correct?
-
->> Want to use the same function as it is.. I am not sure why do we
->> require byte-swapping in this case. Required things will be done by
->> _regmap_raw_write only.
-> The byte swapping is important for any device which has more than 8 bit
-> register values, it's only not an issue for you because you have 8 bit
-> registers.
->
->> This api just break the transfer in register-wise if any of the
->> register is cached..
-> Well, there's no fundamental reason why we can't support cache on raw
-> operations too.  It's not implemented because there's no need for it
-> with any current users rather than because it's impossible.
->
-Now if we want to support the caching from raw-write then we need to 
-either do caching first or device write first.
-I am seeing one issue with this approach:
-Whichever is first, if we do caching (which is in loop) and if it fails 
-in between inside loop then we may not able to revert it
-or it will be complicate to implement the reversal of old values.
-Also if it is stored in cache first and later if write fails then also 
-it will be difficult to revert it.
-
-If above error is not the issue then possibly following is the solution:
-
-- remove the warnings from raw-write...
-- Let allow the reg_write as what it is already  there.
-- Then parse input val pointer and put in cache register by register
-                for (i = 0; i < val_len / map->format.val_bytes; i++) {
-                   memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-                   ival = map->format.parse_val(map->work_buf);
-                   ret = regcache_write(map, reg + i, ival);
-                   if (ret != 0)
-                       dev_warn("Unable to cache register %d\n", reg +i);
-                }
-
-It seems modifying raw_write() looks simple if we are able to ignore the 
-caching error..
-Let me know your opinion?
+But with it being its own driver, I don't think it really belongs in
+drivers/video/backlight even though the driver will initially only
+supply backlight control. Anyone have suggestions where a driver for a
+display mux device should live? I'm not seeing anywhere that looks like
+an obviously correct location.
 
 Thanks,
-Laxman
-
-
->>>> +	} else {
->>>> +		for (i = 0; i<   val_count; i++) {
->>>> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
->>>> +			ival = map->format.parse_val(map->work_buf);
->>> They're currently symmetric but really this should use format_val().
->>>
->> The format_val is require integer argument and issue is that I dont
->> have this otherwise I need not to parse, can use directly.
->>
->> Am I missing something here?
->>
->>
->>> * Unknown Key
->>> * 0x6E30FDDD
-> * Unknown Key
-> * 0x6E30FDDD
-
+Seth
