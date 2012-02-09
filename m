@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758613Ab2BIWmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:42:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22025 "EHLO mx1.redhat.com"
+	id S1758665Ab2BIWnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:43:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab2BIWmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:42:53 -0500
+	id S1758439Ab2BIWm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 17:42:59 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
 	<fernando@oss.ntt.co.jp>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/3] watchdog: update Kconfig entries
-Date: Thu,  9 Feb 2012 17:42:21 -0500
-Message-Id: <1328827342-6253-2-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 3/3] watchdog: fix code/comments mismatches
+Date: Thu,  9 Feb 2012 17:42:22 -0500
+Message-Id: <1328827342-6253-3-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1328827342-6253-1-git-send-email-dzickus@redhat.com>
 References: <1328827342-6253-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
@@ -26,67 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
 
-The soft and hard lockup thresholds have changed so the corresponding Kconfig
-entries need to be updated accordingly. Add a reference to  watchdog_thresh
-while at it.
+Reflect the change in the soft and hard lockup thresholds and their relation to
+the frequency of the hrtimer and NMI events in the code comments. While at it,
+remove references to files that do not exist anymore.
 
 Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- lib/Kconfig.debug |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+ kernel/watchdog.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 63696aa..1e37364 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -166,18 +166,21 @@ config LOCKUP_DETECTOR
- 	  hard and soft lockups.
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 1d7bca7..7633df9 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -3,12 +3,9 @@
+  *
+  * started by Don Zickus, Copyright (C) 2010 Red Hat, Inc.
+  *
+- * this code detects hard lockups: incidents in where on a CPU
+- * the kernel does not respond to anything except NMI.
+- *
+- * Note: Most of this code is borrowed heavily from softlockup.c,
+- * so thanks to Ingo for the initial implementation.
+- * Some chunks also taken from arch/x86/kernel/apic/nmi.c, thanks
++ * Note: Most of this code is borrowed heavily from the original softlockup
++ * detector, so thanks to Ingo for the initial implementation.
++ * Some chunks also taken from the old x86-specific nmi watchdog code, thanks
+  * to those contributors as well.
+  */
  
- 	  Softlockups are bugs that cause the kernel to loop in kernel
--	  mode for more than 60 seconds, without giving other tasks a
-+	  mode for more than 20 seconds, without giving other tasks a
- 	  chance to run.  The current stack trace is displayed upon
- 	  detection and the system will stay locked up.
+@@ -117,9 +114,10 @@ static unsigned long get_sample_period(void)
+ {
+ 	/*
+ 	 * convert watchdog_thresh from seconds to ns
+-	 * the divide by 5 is to give hrtimer 5 chances to
+-	 * increment before the hardlockup detector generates
+-	 * a warning
++	 * the divide by 5 is to give hrtimer several chances (two
++	 * or three with the current relation between the soft
++	 * and hard thresholds) to increment before the
++	 * hardlockup detector generates a warning
+ 	 */
+ 	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
+ }
+@@ -336,9 +334,11 @@ static int watchdog(void *unused)
  
- 	  Hardlockups are bugs that cause the CPU to loop in kernel mode
--	  for more than 60 seconds, without letting other interrupts have a
-+	  for more than 10 seconds, without letting other interrupts have a
- 	  chance to run.  The current stack trace is displayed upon detection
- 	  and the system will stay locked up.
- 
- 	  The overhead should be minimal.  A periodic hrtimer runs to
--	  generate interrupts and kick the watchdog task every 10-12 seconds.
--	  An NMI is generated every 60 seconds or so to check for hardlockups.
-+	  generate interrupts and kick the watchdog task every 4 seconds.
-+	  An NMI is generated every 10 seconds or so to check for hardlockups.
-+
-+	  The frequency of hrtimer and NMI events and the soft and hard lockup
-+	  thresholds can be controlled through the sysctl watchdog_thresh.
- 
- config HARDLOCKUP_DETECTOR
- 	def_bool LOCKUP_DETECTOR && PERF_EVENTS && HAVE_PERF_EVENTS_NMI && \
-@@ -189,7 +192,8 @@ config BOOTPARAM_HARDLOCKUP_PANIC
- 	help
- 	  Say Y here to enable the kernel to panic on "hard lockups",
- 	  which are bugs that cause the kernel to loop in kernel
--	  mode with interrupts disabled for more than 60 seconds.
-+	  mode with interrupts disabled for more than 10 seconds (configurable
-+	  using the watchdog_thresh sysctl).
- 
- 	  Say N if unsure.
- 
-@@ -206,8 +210,8 @@ config BOOTPARAM_SOFTLOCKUP_PANIC
- 	help
- 	  Say Y here to enable the kernel to panic on "soft lockups",
- 	  which are bugs that cause the kernel to loop in kernel
--	  mode for more than 60 seconds, without giving other tasks a
--	  chance to run.
-+	  mode for more than 20 seconds (configurable using the watchdog_thresh
-+	  sysctl), without giving other tasks a chance to run.
- 
- 	  The panic can be used in combination with panic_timeout,
- 	  to cause the system to reboot automatically after a
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 	/*
+-	 * Run briefly once per second to reset the softlockup timestamp.
+-	 * If this gets delayed for more than 60 seconds then the
+-	 * debug-printout triggers in watchdog_timer_fn().
++	 * Run briefly (kicked by the hrtimer callback function) once every
++	 * get_sample_period() seconds (4 seconds by default) to reset the
++	 * softlockup timestamp. If this gets delayed for more than
++	 * 2*watchdog_thresh seconds then the debug-printout triggers in
++	 * watchdog_timer_fn().
+ 	 */
+ 	while (!kthread_should_stop()) {
+ 		__touch_watchdog();
 -- 
 1.7.7.6
 
