@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab2BIHye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 02:54:34 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49527 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755839Ab2BIHyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 02:54:33 -0500
-Date: Thu, 9 Feb 2012 08:53:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH v10 3.3-rc2 1/9] uprobes: Install and remove
- breakpoints.
-Message-ID: <20120209075357.GD18387@elte.hu>
-References: <20120202141840.5967.39687.sendpatchset@srdronam.in.ibm.com>
- <20120202141851.5967.68000.sendpatchset@srdronam.in.ibm.com>
- <20120207171707.GA24443@linux.vnet.ibm.com>
- <CAK1hOcOd3hd31vZYw1yAVGK=gMV=vQotL1mRZkVgM=7M8mbMyw@mail.gmail.com>
- <4F3320E5.1050707@hitachi.com>
- <20120209063745.GB16600@linux.vnet.ibm.com>
+	id S1752501Ab2BIH4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 02:56:36 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:41700 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750961Ab2BIH4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 02:56:34 -0500
+Date: Thu, 9 Feb 2012 09:56:30 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH 3/3] pch_udc: Specifies GPI port number at configuration.
+Message-ID: <20120209075629.GJ1121@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1328253259-9343-1-git-send-email-tomoya.rohm@gmail.com>
+ <1328253259-9343-3-git-send-email-tomoya.rohm@gmail.com>
+ <4F2BBBDA.90900@mvista.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlsYxwg8UDQn+EKZ"
 Content-Disposition: inline
-In-Reply-To: <20120209063745.GB16600@linux.vnet.ibm.com>
+In-Reply-To: <4F2BBBDA.90900@mvista.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+--UlsYxwg8UDQn+EKZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 	/* Clear REX.b bit (extension of MODRM.rm field):
-> 	 * we want to encode rax/rcx, not r8/r9.
-> 	 */
+On Fri, Feb 03, 2012 at 02:50:02PM +0400, Sergei Shtylyov wrote:
+> Hello.
+>=20
+> On 03-02-2012 11:14, Tomoya MORINAGA wrote:
+>=20
+> >Problem:
+> >  The GPIO ports used for detecting VBUS may be different
+> >  on each platform.
+> >  This should be easily modifiable.
+> >Solution:
+> >  In configuration, GPI port number is specified.
+>=20
+>    Isn't it better to pass this with driver's platform data.
 
-Small stylistic nit, just saw this chunk fly by - the proper 
-comment style is like this one:
+Yes, please re-factor this port. This doesn't fit as a compile-time
+choice.
 
-> 	/*
-> 	 * Point cursor at the modrm byte.  The next 4 bytes are the
-> 	 * displacement.  Beyond the displacement, for some instructions,
-> 	 * is the immediate operand.
-> 	 */
+--=20
+balbi
 
-Thanks,
+--UlsYxwg8UDQn+EKZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPM3wtAAoJEIaOsuA1yqREAuIP/AmQcM60iu78r6uW54IWofPg
+aiMLhiUhcngaN9UT+YkAZ8jH5Qq1fp0e1WJTBKDxFM2yhZ9ff5xD91QpVBF6hhq5
+YcdOq8ofGmO0u8c/1tewBrnhh/YLUrfMfqAHQYgaph82sqjM/3fA4F4D8hYGfgQ8
+96yYlKByQXGXOQJtaxO3MpvQfTIU3huMFll4U2BohQt+FvCltBwb3ZihsrxdFwVr
+v4zhwqwYFX0+M37I4pZLVsftBReR8Fn3rJrD/JX1aWJSdMXO7sXaQwN4lR4ENR1i
+kKxISnHhcmMqh6UXSBlcN8HxB0sixKtIm823qDH0xF5T3EsczsXMWi5Tr7UQGTy3
+ajz7Uh1DRx1h7LjrZqsn05n9/jrSJsXvvlh5M+oFRSRfUy6ts+97Cxo7vQqUUU2V
+sPFNox8ANy/taTShXlszru/HrkYbpPwTvhMbSGDZzN17n45opGRM77d26io9k8w1
+X3rWUr2yD78tp+w+dTnynGMFH6ekB/vlbHdbDrcjdOUIiYtgdIe3GnQ12qXrSmX5
+wpinEwB2XsQdxvf7eETGBR13+JGPlvO0rn+jXmcvK/1zU7GbtirVpNjv0bKThwhy
+MIx6WFnGYNoj65qd/U/3MUeRXUncElTFCV8adQej+3Gv3bi9kKkS3Z9KnYVf3ze3
+tPfAxV0/imkmegcR8JRK
+=f/a3
+-----END PGP SIGNATURE-----
+
+--UlsYxwg8UDQn+EKZ--
