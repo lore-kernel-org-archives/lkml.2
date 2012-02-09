@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2BIOxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:53:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55694 "EHLO mail.zytor.com"
+	id S1756955Ab2BIO6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:58:00 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57222 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757653Ab2BIOxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:53:20 -0500
-Message-ID: <4F33DC9A.1090909@zytor.com>
-Date: Thu, 09 Feb 2012 06:47:54 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1752265Ab2BIO57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 09:57:59 -0500
+Message-ID: <4F33DE6F.80308@linux.vnet.ibm.com>
+Date: Thu, 09 Feb 2012 08:55:43 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Indan Zupancic <indan@nul.nu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
-        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <20120116183730.GB21112@redhat.com>    <20120118015013.GR11715@one.firstfloor.org>    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>    <20120118022217.GS11715@one.firstfloor.org>    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>    <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>    <4F3007AD.50307@zytor.com>    <c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>    <4F33110D.3050904@zytor.com>    <13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>    <4F334B8C.2050005@zytor.com> <5f13059f9b57d2a0fe2be094702b8177.squirrel@webmail.greenhost.nl>
-In-Reply-To: <5f13059f9b57d2a0fe2be094702b8177.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 3/5] staging: zcache: replace xvmalloc with zsmalloc
+References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com> <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com> <20120209011326.GA2225@kroah.com>
+In-Reply-To: <20120209011326.GA2225@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12020914-9360-0000-0000-0000034F675E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 10:03 PM, Indan Zupancic wrote:
->
-> You can check the syscall instruction itself, either before it's executed
-> or afterwards by checking the IP. Though that's trickier, because the
-> kernel points the IP to just after int80 for a sysenter call, so you have
-> to check if there's a sysenter nearby too.
->
+On 02/08/2012 07:13 PM, Greg KH wrote:
+> On Mon, Jan 09, 2012 at 04:51:58PM -0600, Seth Jennings wrote:
+>> Replaces xvmalloc with zsmalloc as the persistent memory allocator
+>> for zcache
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> 
+> This patch no longer applies :(
 
-No, that's a total nightmare.  FAIL.
+Looks like my "staging: zcache: fix serialization bug in zv stats"
+patch didn't go in first.  There is an order dependency there.
+https://lkml.org/lkml/2012/1/9/403
 
-> But the kernel is actually changing the registers, so why hide that?
->
-> I mean, once user space is aware that the kernel may do swizzling, is there
-> any actual problem left? Because this sounds like user space was trying to
-> be clever, but got it wrong. E.g. it knew the kernel was entered not via
-> int80, but then got confused because of the swizzling.
+Let me know if there is still an issue after applying that patch.
 
-I would be great if we didn't have an existing compatibility problem. 
-As it is we can't get rid of it easily.
-
-	-hpa
+Thanks!
+--
+Seth
 
