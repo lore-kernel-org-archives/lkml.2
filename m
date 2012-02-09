@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758479Ab2BIXGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:06:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56728 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758366Ab2BIXGx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:06:53 -0500
-Date: Thu, 9 Feb 2012 15:06:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Xi Wang <xi.wang@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Pekka Enberg <penberg@kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
-Message-Id: <20120209150652.5b1d19dc.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
-References: <20120207141155.GA16184@elgon.mountain>
-	<4F323388.7040902@kernel.dk>
-	<20120208142513.4db2493a.akpm@linux-foundation.org>
-	<4F33BF05.208@gmail.com>
-	<CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
-	<4F33C7D7.1060801@kernel.dk>
-	<32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
-	<4F33CEAE.60400@gmail.com>
-	<alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758466Ab2BIXHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:07:32 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43760 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758402Ab2BIXHb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 18:07:31 -0500
+MIME-Version: 1.0
+Date: Fri, 10 Feb 2012 00:07:22 +0100
+Message-ID: <CAD4+3Mg-eyoOE_cykwETngHU7K7Wzk48ieFgeumSO4=7gfqOrw@mail.gmail.com>
+Subject: REPLY URGENTLY
+From: Karbiru Ahmed <karbiruahmed30@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Feb 2012 23:47:42 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
+REPLY URGENTLY
 
-> > -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
-> > +static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
-> >  {
-> >  	if (size != 0 && n > ULONG_MAX / size)
-> >  		return NULL;
-> > -	return __kmalloc(n * size, flags | __GFP_ZERO);
-> > +	return __kmalloc(n * size, flags);
-> > +}
-> > +
-> > +/**
-> > + * kcalloc - allocate memory for an array. The memory is set to zero.
-> > + * @n: number of elements.
-> > + * @size: element size.
-> > + * @flags: the type of memory to allocate (see kmalloc).
-> > + */
-> > +static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
-> > +{
-> > +	return kmalloc_array(n, size, flags | __GFP_ZERO);
-> >  }
-> >  
-> >  #if !defined(CONFIG_NUMA) && !defined(CONFIG_SLOB)
-> > 
-> 
-> Does this want adding to Documentation/CodingStyle "Chapter 14: Allocating 
-> memory" ?
+Dear Friend,
 
-Spose so.  We could possibly cook up a checkpatch rule too ;)
+I'm happy to inform you about my success in getting the fund
+transferred under the cooperation of a new partner from london.
+Presently I’m in london for investment projects with my own share of
+the total sum. Meanwhile, I didn't forget your past efforts and
+attempts to assist me in transferring those funds despite that it
+failed us some how.
 
-<gad, CodingStyle has 18 chapters and an appendix??>
+Now contact my secretary, his name is John Smith and his Email Address
+secretary email:( johnsimth36@gmail.com )ask him to send you the total
+$3,000.000.00 which i kept for your compensation for all the past
+efforts and attempts to assist me in this matter. I appreciated your
+efforts at that time very much. so feel free and get in touched with
+my secretary Mr John Smith and instruct him where to send the amount
+to you.
 
+Please do let me know immediately you receive it so that we can share
+the joy after all the sufferness at that time. In the moment, i am
+very busy here because of the investment projects which me and the new
+partner are having at hand, finally, remember that I had forwarded
+instruction to the secretary on your behalf to receive that money, so
+feel free to get in touch with Mr John Smith and he will send the
+amount to you without any delay.
+
+with best regards
+Mr Karbiru Ahmed
