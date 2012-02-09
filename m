@@ -1,132 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391Ab2BIWbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:31:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38730 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab2BIWbS (ORCPT
+	id S1758617Ab2BIWcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:32:50 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26975 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab2BIWct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:31:18 -0500
-Message-ID: <4F344928.1060804@gmail.com>
-Date: Thu, 09 Feb 2012 16:31:04 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Thu, 9 Feb 2012 17:32:49 -0500
+Date: Thu, 9 Feb 2012 23:33:25 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH 2/2] Staging; Don't leak 'pstAddIndication' in
+ CmHost.c::StoreCmControlResponseMessage()
+In-Reply-To: <20120209175217.GA13959@kroah.com>
+Message-ID: <alpine.LNX.2.00.1202092329110.32491@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201242338500.27508@swampdragon.chaosbits.net> <alpine.LNX.2.00.1201242346380.27508@swampdragon.chaosbits.net> <20120209175217.GA13959@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, b-cousson@ti.com,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v6] irq: add irq_domain support to generic-chip
-References: <1328308512-22594-1-git-send-email-robherring2@gmail.com> <1328741722-1254-1-git-send-email-robherring2@gmail.com> <20120209194806.GA2493@r65073-Latitude-D630>
-In-Reply-To: <20120209194806.GA2493@r65073-Latitude-D630>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 01:48 PM, Shawn Guo wrote:
-> On Wed, Feb 08, 2012 at 04:55:22PM -0600, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Add irq domain support to irq generic-chip. This enables users of
->> generic-chip to support dynamic irq assignment needed for DT interrupt
->> binding.
->>
->> Thanks to Shawn Guo for fixes and testing.
->>
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> ---
->> Here's the latest version. This has fixes from Shawn Guo, so should be
->> working. This version is also available here:
->>
-> Rob, yes it's working.  But I think it should be working in a better
-> way after I play it a little bit more.  See comment below.
-> ...
->> +int irq_setup_generic_chip_domain(const char *name, struct device_node *node,
->> +				int num_ct, unsigned int irq_base,
->> +				void __iomem *reg_base,
->> +				irq_flow_handler_t handler, u32 hwirq_cnt,
->> +				enum irq_gc_flags flags, unsigned int clr,
->> +				unsigned int set,
->> +				void (*gc_init_cb)(struct irq_chip_generic *),
->> +				void *private)
->> +{
->> +	int ret, i;
->> +	struct irq_chip_generic **gc;
->> +	struct irq_domain *d;
->> +	int num_gc = ALIGN(hwirq_cnt, 32) / 32;
->> +
->> +	gc = kzalloc(num_gc * sizeof(struct irq_chip_generic *), GFP_KERNEL);
->> +	if (!gc)
->> +		return -ENOMEM;
->> +
->> +	for (i = 0; i < num_gc; i++) {
->> +		gc[i] = irq_alloc_generic_chip(name, num_ct, irq_base,
->> +			       reg_base, handler);
->> +		if (!gc[i]) {
->> +			ret = -ENOMEM;
->> +			goto err;
->> +		}
->> +		gc[i]->hwirq_base = i * 32;
->> +		gc[i]->private = private;
->> +
->> +		gc_init_cb(gc[i]);
->> +
->> +		irq_setup_generic_chip(gc[i], 0, flags, clr, set);
->> +	}
->> +
->> +	if (node)
->> +		d = irq_domain_add_linear(node, hwirq_cnt,
->> +					  &irq_gc_irq_domain_ops, gc);
->> +	else
->> +		d = irq_domain_add_legacy(node, hwirq_cnt, irq_base, 0,
->> +					  &irq_gc_irq_domain_ops, gc);
->> +
-> I do not think it's good to make this decision based on whether it's
-> dt or non-dt case.  That said, it's fairly valid and actually
-> encouraged that non-dt users use linear domain too, and also the
-> irqdomain core has no limit on dt users to use legacy domain.  Instead,
-> it's much more reasonable to make this decision based on if irq_base,
-> something like you did in your v3 patch.
+On Thu, 9 Feb 2012, Greg KH wrote:
+
+> On Tue, Jan 24, 2012 at 11:47:27PM +0100, Jesper Juhl wrote:
+> > We allocate memory for 'pstAddIndication' with kmalloc() in
+> > drivers/staging/bcm/CmHost.c::StoreCmControlResponseMessage() and then
+> > neglect to free it on a number of exit paths from that function.
+> > 
+> > This could probably be resolved cleaner/nicer, but this file needs a
+> > serious overhaul in any case, so I opted for just fixing the problem
+> > as directly as I could and then we can clean it up generally
+> > later... This at least makes it stop bleeding..
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  drivers/staging/bcm/CmHost.c |   27 ++++++++++++++++++++-------
+> >  1 files changed, 20 insertions(+), 7 deletions(-)
 > 
->  
-> -       if (node)
-> +       if ((int) irq_base < 0)
+> 
+> This patch no longer applies, care to redo it against the latest
+> linux-next tree?
 > 
 
-Really, we want to discourage/limit the use of legacy domains. This is
-only used for ISA irqs on powerpc. Unfortunately, there's not really a
-way to use linear domains for non-DT ATM. But maybe we can fix that.
+No problem. Here's one against a freshly cloned linux-next.
 
-> Otherwise,
-> 
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> 
-> Tested on imx51 with tzic and gpio interrupt controller.
+>From e54030c49d36d6519fb50f89582df69a5624069f Mon Sep 17 00:00:00 2001
+From: Jesper Juhl <jj@codesealer.com>
+Date: Thu, 9 Feb 2012 13:16:09 +0100
+Subject: Staging; Don't leak 'pstAddIndication' in CmHost.c::StoreCmControlResponseMessage()
 
-Thanks!
+We allocate memory for 'pstAddIndication' with kmalloc() in 
+drivers/staging/bcm/CmHost.c::StoreCmControlResponseMessage() and then 
+neglect to free it on a number of exit paths from that function.
 
-Rob
-> 
-> Regards,
-> Shawn
-> 
->> +	for (i = 0; i < num_gc; i++)
->> +		gc[i]->domain = d;
->> +
->> +	return 0;
->> +
->> + err:
->> +	for ( ; i >= 0; i--)
->> +		kfree(gc[i]);
->> +	kfree(gc);
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(irq_setup_generic_chip_domain);
->> +#endif
->> +
+This could probably be resolved cleaner/nicer, but this file needs a
+serious overhaul in any case, so I opted for just fixing the problem
+as directly as I could and then we can clean it up generally
+later... This at least makes it stop bleeding..
+
+Signed-off-by: Jesper Juhl <jj@codesealer.com>
+---
+ drivers/staging/bcm/CmHost.c |   34 ++++++++++++++++++++++++----------
+ 1 files changed, 24 insertions(+), 10 deletions(-)
+
+ Note: I have absolutely no way to test this, so this patch is based 
+       purely on inspection of the code and then a simple check to see 
+       that it at least compiles with allyesconfig.
+       If it breaks you get to keep the pieces.
+
+diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+index c0ee95a..7c30be1 100644
+--- a/drivers/staging/bcm/CmHost.c
++++ b/drivers/staging/bcm/CmHost.c
+@@ -1663,7 +1663,7 @@ static ULONG StoreSFParam(PMINI_ADAPTER Adapter,PUCHAR pucSrcBuffer,ULONG  ulAdd
+ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *puBufferLength)
+ {
+ 	stLocalSFAddIndicationAlt *pstAddIndicationAlt = NULL;
+-	stLocalSFAddIndication *  pstAddIndication = NULL;
++	stLocalSFAddIndication *pstAddIndication = NULL;
+ 	stLocalSFDeleteRequest *pstDeletionRequest;
+ 	UINT uiSearchRuleIndex;
+ 	ULONG ulSFID;
+@@ -1698,19 +1698,23 @@ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *p
+ 	}
+ 	// For DSA_REQ, only up to "psfAuthorizedSet" parameter should be accessed by driver!
+ 
+-	pstAddIndication=kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
+-	if(NULL==pstAddIndication)
++	pstAddIndication = kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
++	if (!pstAddIndication)
+ 		return 0;
+ 
+ 	/* AUTHORIZED SET */
+ 	pstAddIndication->psfAuthorizedSet = (stServiceFlowParamSI *)
+ 			GetNextTargetBufferLocation(Adapter, pstAddIndicationAlt->u16TID);
+-	if(!pstAddIndication->psfAuthorizedSet)
++	if (!pstAddIndication->psfAuthorizedSet) {
++		kfree(pstAddIndication);
+ 		return 0;
++	}
+ 
+-	if(StoreSFParam(Adapter,(PUCHAR)&pstAddIndicationAlt->sfAuthorizedSet,
+-				(ULONG)pstAddIndication->psfAuthorizedSet)!= 1)
++	if (StoreSFParam(Adapter, (PUCHAR)&pstAddIndicationAlt->sfAuthorizedSet,
++				(ULONG)pstAddIndication->psfAuthorizedSet) != 1) {
++		kfree(pstAddIndication);
+ 		return 0;
++	}
+ 
+ 	/* this can't possibly be right */
+ 	pstAddIndication->psfAuthorizedSet = (stServiceFlowParamSI *)ntohl((ULONG)pstAddIndication->psfAuthorizedSet);
+@@ -1744,10 +1748,15 @@ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *p
+ 	/* ADMITTED SET */
+ 	pstAddIndication->psfAdmittedSet = (stServiceFlowParamSI *)
+ 		GetNextTargetBufferLocation(Adapter, pstAddIndicationAlt->u16TID);
+-	if(!pstAddIndication->psfAdmittedSet)
++	if (!pstAddIndication->psfAdmittedSet) {
++		kfree(pstAddIndication);
+ 		return 0;
+-	if(StoreSFParam(Adapter,(PUCHAR)&pstAddIndicationAlt->sfAdmittedSet,(ULONG)pstAddIndication->psfAdmittedSet) != 1)
++	}
++	if (StoreSFParam(Adapter, (PUCHAR)&pstAddIndicationAlt->sfAdmittedSet,
++				(ULONG)pstAddIndication->psfAdmittedSet) != 1) {
++		kfree(pstAddIndication);
+ 		return 0;
++	}
+ 
+ 	pstAddIndication->psfAdmittedSet = (stServiceFlowParamSI *)ntohl((ULONG)pstAddIndication->psfAdmittedSet);
+ 
+@@ -1755,10 +1764,15 @@ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *p
+ 	/* ACTIVE SET */
+ 	pstAddIndication->psfActiveSet = (stServiceFlowParamSI *)
+ 		GetNextTargetBufferLocation(Adapter, pstAddIndicationAlt->u16TID);
+-	if(!pstAddIndication->psfActiveSet)
++	if (!pstAddIndication->psfActiveSet) {
++		kfree(pstAddIndication);
+ 		return 0;
+-	if(StoreSFParam(Adapter,(PUCHAR)&pstAddIndicationAlt->sfActiveSet,(ULONG)pstAddIndication->psfActiveSet) != 1)
++	}
++	if (StoreSFParam(Adapter, (PUCHAR)&pstAddIndicationAlt->sfActiveSet,
++				(ULONG)pstAddIndication->psfActiveSet) != 1) {
++		kfree(pstAddIndication);
+ 		return 0;
++	}
+ 
+ 	pstAddIndication->psfActiveSet = (stServiceFlowParamSI *)ntohl((ULONG)pstAddIndication->psfActiveSet);
+ 
+-- 
+1.7.9
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
