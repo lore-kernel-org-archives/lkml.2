@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab2BIPra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 10:47:30 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38790 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2BIPr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 10:47:29 -0500
-Message-ID: <4F33EA8D.4050009@gmail.com>
-Date: Thu, 09 Feb 2012 08:47:25 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1757980Ab2BIPs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 10:48:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128Ab2BIPs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 10:48:26 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Reduce the number of expensive division instructions done by
+ _parse_integer()
+To: adobriyan@gmail.com
+Cc: torvalds@linux-foundation.org, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Feb 2012 15:48:20 +0000
+Message-ID: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, Jason Wang <jasowang@redhat.com>
-Subject: Re: perf: record segfaults for cycles event when collecting data
- on a VM
-References: <4F32A907.6030505@gmail.com> <20120208174434.GI22598@amd.com> <4F32B680.3090502@gmail.com> <20120208175709.GK22598@amd.com> <20120209073024.GA18010@elte.hu> <20120209111451.GM22598@amd.com> <20120209133446.GD8830@elte.hu> <20120209143253.GP22598@amd.com> <20120209152844.GQ22598@amd.com>
-In-Reply-To: <20120209152844.GQ22598@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+_parse_integer() does one or two division instructions (which are slow) per
+digit parsed to perform the overflow check.
 
+Furthermore, these are particularly expensive examples of division instruction
+as the number of clock cycles required to complete them may go up with the
+position of the most significant set bit in the dividend:
 
-On 02/09/2012 08:28 AM, Joerg Roedel wrote:
-> On Thu, Feb 09, 2012 at 03:32:53PM +0100, Joerg Roedel wrote:
->> Yeah, right. Guest samples may also show up intentionally when the event
->> modifiers are used. So crashing on machine==NULL needs to be fixed.
-> 
-> Hmm, on the other hand, there is no way to specify guest symbol
-> information to the regular perf subcommands except for perf-kvm. Without
-> that information perf can not resolve any GUEST_KERNEL samples, so in
-> the end there is no point in setting perf_guest to true except for
-> perf-kvm, no?
+	if (*res > div_u64(ULLONG_MAX - val, base))
 
-Exactly. That was my point in my last reply.
+which is as maximal as possible.
+
+Worse, on 32-bit arches, more than one of these division instructions may be
+required per digit.
+
+So, assuming we don't support a base of more than 16, skip the check if the
+top nibble of the result is not set at this point.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ lib/kstrtox.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/kstrtox.c b/lib/kstrtox.c
+index 7a94c8f..f80c896 100644
+--- a/lib/kstrtox.c
++++ b/lib/kstrtox.c
+@@ -64,7 +64,7 @@ unsigned int _parse_integer(const char *s, unsigned int base, unsigned long long
+ 
+ 		if (val >= base)
+ 			break;
+-		if (*res > div_u64(ULLONG_MAX - val, base))
++		if (unlikely(*res >> 60) && *res > div_u64(ULLONG_MAX - val, base))
+ 			overflow = 1;
+ 		*res = *res * base + val;
+ 		rv++;
 
