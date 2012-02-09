@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab2BIJLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 04:11:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49337 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab2BIJLc (ORCPT
+	id S1757547Ab2BIJLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 04:11:54 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42990 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab2BIJLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 04:11:32 -0500
-Date: Thu, 9 Feb 2012 09:11:24 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marc Kleine-Budde <mkl@blackshift.org>
-Cc: linux-kernel@vger.kernel.org, Imre Kaloz <kaloz@openwrt.org>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH 1/2] ARM: ixp4xx: fix compilation, add gpiolib support
-Message-ID: <20120209091124.GR889@n2100.arm.linux.org.uk>
-References: <1328729069-21308-1-git-send-email-mkl@blackshift.org> <1328729069-21308-2-git-send-email-mkl@blackshift.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328729069-21308-2-git-send-email-mkl@blackshift.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 9 Feb 2012 04:11:50 -0500
+Message-ID: <1328778529.2374.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Memory issues with Opteron 6220
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, jk@novozymes.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
+Date: Thu, 09 Feb 2012 10:08:49 +0100
+In-Reply-To: <20120209083315.GA19380@elte.hu>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+	 <20120209083315.GA19380@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 08:24:28PM +0100, Marc Kleine-Budde wrote:
-> diff --git a/arch/arm/mach-ixp4xx/common.c b/arch/arm/mach-ixp4xx/common.c
-> index 3841ab4..963f752 100644
-> --- a/arch/arm/mach-ixp4xx/common.c
-> +++ b/arch/arm/mach-ixp4xx/common.c
-> @@ -36,6 +36,7 @@
->  #include <asm/page.h>
->  #include <asm/irq.h>
->  #include <asm/sched_clock.h>
-> +#include <asm/gpio.h>
+Le jeudi 09 février 2012 à 09:33 +0100, Ingo Molnar a écrit :
+> * Anders Ossowicki <aowi@novozymes.com> wrote:
+> 
+> > Hey,
+> > 
+> > We're seeing unexpected slowdowns and other memory issues with a new system.
+> > Enough to render it unusable. For example:
+> > 
+> > Error: open3: fork failed: Cannot allocate memory
+> > 
+> > at times where there's no real memory pressure:
+> >                    total       used       free     shared    buffers     cached
+> >       Mem:     132270720  131942388     328332          0     299768  103334420
+> >       -/+ buffers/cache:   28308200  103962520
+> >       Swap:      7811068      13760    7797308
+> >
+> > [...]
+> 
+> > The system is a Dell Poweredge R715, with two eight-core 
+> > Opteron 6220 processors and 128G of memory. We have several 
+> > similar systems, such as the one this should replace: R715, 
+> > 2x8 core Opteron 6140, 128G memory, and they do not exhibit 
+> > any similar symptoms.
+> 
+> 130 MB of RAM visible to Linux isn't the expected bootup default 
+> indeed. Around 130 *GB* would be expected ...
 
-linux/gpio.h
+Not sure what you mean, I see 128GB in the "free" output, as expected.
 
-> diff --git a/arch/arm/mach-ixp4xx/include/mach/gpio.h b/arch/arm/mach-ixp4xx/include/mach/gpio.h
-> index 83d6b4e..093dfad 100644
-> --- a/arch/arm/mach-ixp4xx/include/mach/gpio.h
-> +++ b/arch/arm/mach-ixp4xx/include/mach/gpio.h
-> @@ -27,49 +27,31 @@
->  
->  #include <linux/kernel.h>
->  #include <mach/hardware.h>
-> +#include <asm-generic/gpio.h>			/* cansleep wrappers */
->  
->  #define __ARM_GPIOLIB_COMPLEX
->  
-> -static inline int gpio_request(unsigned gpio, const char *label)
-> -{
-> -	return 0;
-> -}
-> -
-> -static inline void gpio_free(unsigned gpio)
-> -{
-> -	might_sleep();
-> -
-> -	return;
-> -}
-> -
-> -static inline int gpio_direction_input(unsigned gpio)
-> -{
-> -	gpio_line_config(gpio, IXP4XX_GPIO_IN);
-> -	return 0;
-> -}
-> -
-> -static inline int gpio_direction_output(unsigned gpio, int level)
-> -{
-> -	gpio_line_set(gpio, level);
-> -	gpio_line_config(gpio, IXP4XX_GPIO_OUT);
-> -	return 0;
-> -}
-> +#define NR_BUILTIN_GPIO 16
->  
->  static inline int gpio_get_value(unsigned gpio)
->  {
-> -	int value;
-> -
-> -	gpio_line_get(gpio, &value);
-> -
-> -	return value;
-> +	if (gpio < NR_BUILTIN_GPIO) {
-> +		int value;
-> +		gpio_line_get(gpio, &value);
-> +		return value;
-> +	} else
-> +		return __gpio_get_value(gpio);
->  }
->  
->  static inline void gpio_set_value(unsigned gpio, int value)
->  {
-> -	gpio_line_set(gpio, value);
-> +	if (gpio < NR_BUILTIN_GPIO)
-> +		gpio_line_set(gpio, value);
-> +	else
-> +		__gpio_set_value(gpio, value);
->  }
->  
-> -#include <asm-generic/gpio.h>			/* cansleep wrappers */
-> +#define gpio_cansleep __gpio_cansleep
->  
->  extern int gpio_to_irq(int gpio);
->  #define gpio_to_irq gpio_to_irq
+I dont understand why there are 4 nodes, given "The system is a Dell
+Poweredge R715, with two eight-core Opteron 6220".
 
-Does anything on ixp4xx require fast access to on-chip GPIOs?  If not,
-it would be much better to get rid of this and just use the standard
-wrapping, which can be done by changing this entire file to be just a
-single line:
+Or are each 6220 splitted on two nodes ?
 
-/* empty */
+
