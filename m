@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab2BIKXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:23:32 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:64916 "EHLO
+	id S1757870Ab2BIKXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:23:40 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64967 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab2BIKXb (ORCPT
+	with ESMTP id S1757753Ab2BIKXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:23:31 -0500
-X-AuditID: cbfee61b-b7be3ae0000039aa-01-4f339ea23ce6
+	Thu, 9 Feb 2012 05:23:38 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-11-4f339ea9e59d
 From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Karol Lewandowski'" <k.lewandowsk@samsung.com>,
-        thomas.abraham@linaro.org
-Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+To: "'Karol Lewandowski'" <k.lewandowsk@samsung.com>
+Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com
 References: <1328028434-30139-1-git-send-email-k.lewandowsk@samsung.com>
  <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
-In-reply-to: <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
+ <4F3390D0.7040209@samsung.com>
+In-reply-to: <4F3390D0.7040209@samsung.com>
 Subject: RE: [PATCH] ARM: Exynos4: Bring exynos4-dt up to date
-Date: Thu, 09 Feb 2012 19:23:32 +0900
-Message-id: <067d01cce714$dfa3fc10$9eebf430$%kim@samsung.com>
+Date: Thu, 09 Feb 2012 19:23:40 +0900
+Message-id: <067e01cce714$e44dfc20$ace9f460$%kim@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczgN/qntE01VdByQOeANDQ1hAIriAFz85tA
+Thread-index: AcznDJOrPoNTXOejQ1G7Rp3KJch6+gABdfWQ
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,75 +33,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Karol Lewandowski wrote:
 > 
-> This commit brings exynos4-dt in line with recent changes to
-> mach-exynos tree, specifically:
+> On 31.01.2012 17:47, Karol Lewandowski wrote:
 > 
->  - Fixes build break related to replacing plat/exynos4.h with common.h
->    in commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
->    arch/arm/mach-exynos/common.[ch]")
+> > This commit brings exynos4-dt in line with recent changes to
+> > mach-exynos tree, specifically:
+> >
+> >  - Fixes build break related to replacing plat/exynos4.h with common.h
+> >    in commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
+> >    arch/arm/mach-exynos/common.[ch]")
 > 
->  - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
->    machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
->    CONFIG_MULTI_IRQ_HANDLER") converted all exynos boards but
->    exynos4-dt.c.
 > 
->  - Adds restart specifier as done for other machines in commit
->    9eb4859564d6 ("ARM: 7262/1: restart: EXYNOS: use new restart hook")
 > 
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Thomas Abraham <thomas.abraham@linaro.org>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> ---
->  arch/arm/mach-exynos/mach-exynos4-dt.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
+> >  - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
+> >    machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
+> >    CONFIG_MULTI_IRQ_HANDLER") converted all exynos boards but
+> >    exynos4-dt.c.
 > 
-> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-
-> exynos/mach-exynos4-dt.c
-> index 85fa027..e6b02fd 100644
-> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
-> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
-> @@ -15,11 +15,13 @@
->  #include <linux/serial_core.h>
 > 
->  #include <asm/mach/arch.h>
-> +#include <asm/hardware/gic.h>
->  #include <mach/map.h>
+> Minor correction - text from "converted all.." shall be deleted, like:
 > 
->  #include <plat/cpu.h>
->  #include <plat/regs-serial.h>
-> -#include <plat/exynos4.h>
-> +
-> +#include "common.h"
+>    - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
+>      machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
+>      CONFIG_MULTI_IRQ_HANDLER")
 > 
->  /*
->   * The following lookup table is used to override device names when
-> devices
-> @@ -60,7 +62,7 @@ static const struct of_dev_auxdata
-> exynos4210_auxdata_lookup[] __initconst = {
+> (It's result of not proofreading it carefully enough after squashing all
+> the patches.)
 > 
->  static void __init exynos4210_dt_map_io(void)
->  {
-> -	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
-> +	exynos_init_io(NULL, 0);
->  	s3c24xx_init_clocks(24000000);
->  }
+> I don't think such a change is worth sending patch again, but I would be
+> grateful if you could fix it while merging.
 > 
-> @@ -79,7 +81,9 @@ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4
-> (Flattened Device Tree)")
->  	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
->  	.init_irq	= exynos4_init_irq,
->  	.map_io		= exynos4210_dt_map_io,
-> +	.handle_irq	= gic_handle_irq,
->  	.init_machine	= exynos4210_dt_machine_init,
->  	.timer		= &exynos4_timer,
->  	.dt_compat	= exynos4210_dt_compat,
-> +	.restart        = exynos4_restart,
->  MACHINE_END
-> --
-> 1.7.8.3
-
-OK, applied.
+OK, I did.
 Thanks.
 
 Best regards,
