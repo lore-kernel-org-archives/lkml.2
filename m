@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758466Ab2BIXHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:07:32 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43760 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758402Ab2BIXHb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:07:31 -0500
-MIME-Version: 1.0
-Date: Fri, 10 Feb 2012 00:07:22 +0100
-Message-ID: <CAD4+3Mg-eyoOE_cykwETngHU7K7Wzk48ieFgeumSO4=7gfqOrw@mail.gmail.com>
-Subject: REPLY URGENTLY
-From: Karbiru Ahmed <karbiruahmed30@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1758509Ab2BIXI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:08:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56744 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758450Ab2BIXI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 18:08:57 -0500
+Date: Thu, 9 Feb 2012 15:08:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Xi Wang <xi.wang@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Pekka Enberg <penberg@kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+Message-Id: <20120209150856.7f97d28e.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1202091442070.7219@chino.kir.corp.google.com>
+References: <20120207141155.GA16184@elgon.mountain>
+	<4F323388.7040902@kernel.dk>
+	<20120208142513.4db2493a.akpm@linux-foundation.org>
+	<4F33BF05.208@gmail.com>
+	<CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
+	<4F33C7D7.1060801@kernel.dk>
+	<32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
+	<4F33CEAE.60400@gmail.com>
+	<alpine.DEB.2.00.1202091442070.7219@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REPLY URGENTLY
+On Thu, 9 Feb 2012 14:42:49 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Dear Friend,
+> On Thu, 9 Feb 2012, Xi Wang wrote:
+> 
+> > This patch introduces a kmalloc_array() wrapper that performs integer
+> > overflow checking without zeroing the memory.
+> > 
+> > Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> > Suggested-by: Jens Axboe <axboe@kernel.dk>
+> > Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
+> 
+> assuming there's at least one new user or one existing user that can be 
+> modified to use the new interface and this won't just sit around not being 
+> used.
 
-I'm happy to inform you about my success in getting the fund
-transferred under the cooperation of a new partner from london.
-Presently I’m in london for investment projects with my own share of
-the total sum. Meanwhile, I didn't forget your past efforts and
-attempts to assist me in transferring those funds despite that it
-failed us some how.
+The need is there - I've whined about the absence of kmalloc_array()
+maybe 3 times in the past year.
 
-Now contact my secretary, his name is John Smith and his Email Address
-secretary email:( johnsimth36@gmail.com )ask him to send you the total
-$3,000.000.00 which i kept for your compensation for all the past
-efforts and attempts to assist me in this matter. I appreciated your
-efforts at that time very much. so feel free and get in touched with
-my secretary Mr John Smith and instruct him where to send the amount
-to you.
+Often kcalloc() is suitable - quite a lot of arrays which are sized
+based on a userspace-provided dimension are also zeroed out.  For some
+reason.
 
-Please do let me know immediately you receive it so that we can share
-the joy after all the sufferness at that time. In the moment, i am
-very busy here because of the investment projects which me and the new
-partner are having at hand, finally, remember that I had forwarded
-instruction to the secretary on your behalf to receive that money, so
-feel free to get in touch with Mr John Smith and he will send the
-amount to you without any delay.
-
-with best regards
-Mr Karbiru Ahmed
