@@ -1,125 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757758Ab2BIKVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 05:21:03 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4812 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757291Ab2BIKVB (ORCPT
+	id S1757833Ab2BIKXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 05:23:32 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:64916 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab2BIKXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 05:21:01 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q19AKZ3a019371
-Subject: Re: checkpatch complaint
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Joe Perches <joe@perches.com>, Arend van Spriel <arend@broadcom.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 09 Feb 2012 11:20:36 +0100
-In-Reply-To: <20120209050551.GA25763@ericsson.com>
-References: <4F32E062.1020709@broadcom.com>
-	 <1328744534.6909.2.camel@joe2Laptop> <20120209050551.GA25763@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1328782838.25984.205.camel@thorin>
-Mime-Version: 1.0
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Thu, 9 Feb 2012 05:23:31 -0500
+X-AuditID: cbfee61b-b7be3ae0000039aa-01-4f339ea23ce6
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Karol Lewandowski'" <k.lewandowsk@samsung.com>,
+        thomas.abraham@linaro.org
+Cc: m.szyprowski@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+References: <1328028434-30139-1-git-send-email-k.lewandowsk@samsung.com>
+ <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
+In-reply-to: <1328028434-30139-2-git-send-email-k.lewandowsk@samsung.com>
+Subject: RE: [PATCH] ARM: Exynos4: Bring exynos4-dt up to date
+Date: Thu, 09 Feb 2012 19:23:32 +0900
+Message-id: <067d01cce714$dfa3fc10$9eebf430$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczgN/qntE01VdByQOeANDQ1hAIriAFz85tA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2012-02-08 at 21:05 -0800, Guenter Roeck wrote:
-> On Wed, Feb 08, 2012 at 06:42:14PM -0500, Joe Perches wrote:
-> > On Wed, 2012-02-08 at 21:51 +0100, Arend van Spriel wrote:
-> > > checkpatch complains on code below and I must overlook something or
-> > > checkpatch gives a false negative/positive/whatever:
-> > > 
-> > > #define IFPTR(usb, idx)         ((usb)->actconfig->interface[(idx)])
-> > > #define IFALTS(usb, idx)        (IFPTR((usb), (idx))->altsetting[0])
-> > > #define IFDESC(usb, idx)        IFALTS((usb), (idx)).desc
-> > > #define IFEPDESC(usb, idx, ep)  \
-> > > 	(IFALTS((usb), (idx)).endpoint[(ep)]).desc
-> > > 
-> > > checkpatch errors:
-> > > ERROR: Macros with complex values should be enclosed in parenthesis
-> > > #169: FILE: drivers/net/wireless/brcm80211/brcmfmac/usb.c:58:
-> > > +#define IFDESC(usb, idx)        (IFALTS((usb), (idx))).desc
-> > > 
-> > > ERROR: Macros with complex values should be enclosed in parenthesis
-> > > #170: FILE: drivers/net/wireless/brcm80211/brcmfmac/usb.c:59:
-> > > +#define IFEPDESC(usb, idx, ep)  ((IFALTS((usb),
-> > > (idx))).endpoint[(ep)]).desc
-> > > 
-> > > Any ideas? I tried extra parenthesis around IFALTS but that does not
-> > > resolve it.
-
-You probably did it wrong. Sent the next time what you *really* did and
-not only description .....
-
-> > I think the entries should be surround by ()
-> > I think it's reasonable too.
-> > 
-> > I tried:
-> > 
-> > $ cat cp.c
-> > #define IFPTR(usb, idx)		((usb)->actconfig->interface[(idx)])
-> > #define IFALTS(usb, idx)	(IFPTR((usb), (idx))->altsetting[0])
-> > #define IFDESC(usb, idx)	(IFALTS((usb), (idx)).desc)
-> > #define IFEPDESC(usb, idx, ep)	((IFALTS((usb), (idx)).endpoint[(ep)]).desc)
-> > 
-> > $ ./scripts/checkpatch.pl -f cp.c
-> > total: 0 errors, 0 warnings, 5 lines checked
-> > 
-> > cp.c has no obvious style problems and is ready for submission.
-> >
-> Hi Joe,
->  
-> different example, same message:
+Karol Lewandowski wrote:
 > 
-> ERROR: Macros with complex values should be enclosed in parenthesis
-> #339: FILE: hwmon/ltc4245.c:339:
-> +#define LTC4245_ALARM(name, mask, reg) \
-> +       static SENSOR_DEVICE_ATTR_2(name, S_IRUGO, \
-> +       ltc4245_show_alarm, NULL, (mask), reg)
-
-*eg* Make it one (long) line. IMHO this is a prototype example to ignore
-the 80-column limit.
-
-I haven't looked the the reg-exps (or the code in `checkpatch`) but
-either make `checkpatch` recognize the "\" at the end of lines and merge
-the lines before doing these checks (since they apparently assume that
-the complete macro definition is on one line) or allow "\\\n" within the
-reg-exps.
-
-> and:
+> This commit brings exynos4-dt in line with recent changes to
+> mach-exynos tree, specifically:
 > 
-> ERROR: Macros with complex values should be enclosed in parenthesis
-> #585: FILE: hwmon/pc87360.c:585:
-> +#define VIN_UNIT_ATTRS(X) \
-> +       &in_input[X].dev_attr.attr,     \
-> +       &in_status[X].dev_attr.attr,    \
-> +       &in_min[X].dev_attr.attr,       \
-> +       &in_max[X].dev_attr.attr,       \
-> +       &in_min_alarm[X].dev_attr.attr, \
-> +       &in_max_alarm[X].dev_attr.attr
-[...]
-> Other than labeling them as "false positive", I have no idea what to do about it.
-> Sure, we could replace all the macros with immediate code, but that doesn't sound
-> very compelling. If you have an idea, please let me know.
+>  - Fixes build break related to replacing plat/exynos4.h with common.h
+>    in commit cc511b8d84d8 ("ARM: 7257/1: EXYNOS: introduce
+>    arch/arm/mach-exynos/common.[ch]")
+> 
+>  - Converts machine to use CONFIG_MULTI_IRQ_HANDLER as done for other
+>    machines in commit 4e44d2cb95bd ("ARM: exynos4: convert to
+>    CONFIG_MULTI_IRQ_HANDLER") converted all exynos boards but
+>    exynos4-dt.c.
+> 
+>  - Adds restart specifier as done for other machines in commit
+>    9eb4859564d6 ("ARM: 7262/1: restart: EXYNOS: use new restart hook")
+> 
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>  arch/arm/mach-exynos/mach-exynos4-dt.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-
+> exynos/mach-exynos4-dt.c
+> index 85fa027..e6b02fd 100644
+> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
+> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> @@ -15,11 +15,13 @@
+>  #include <linux/serial_core.h>
+> 
+>  #include <asm/mach/arch.h>
+> +#include <asm/hardware/gic.h>
+>  #include <mach/map.h>
+> 
+>  #include <plat/cpu.h>
+>  #include <plat/regs-serial.h>
+> -#include <plat/exynos4.h>
+> +
+> +#include "common.h"
+> 
+>  /*
+>   * The following lookup table is used to override device names when
+> devices
+> @@ -60,7 +62,7 @@ static const struct of_dev_auxdata
+> exynos4210_auxdata_lookup[] __initconst = {
+> 
+>  static void __init exynos4210_dt_map_io(void)
+>  {
+> -	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+> +	exynos_init_io(NULL, 0);
+>  	s3c24xx_init_clocks(24000000);
+>  }
+> 
+> @@ -79,7 +81,9 @@ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4
+> (Flattened Device Tree)")
+>  	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
+>  	.init_irq	= exynos4_init_irq,
+>  	.map_io		= exynos4210_dt_map_io,
+> +	.handle_irq	= gic_handle_irq,
+>  	.init_machine	= exynos4210_dt_machine_init,
+>  	.timer		= &exynos4_timer,
+>  	.dt_compat	= exynos4210_dt_compat,
+> +	.restart        = exynos4_restart,
+>  MACHINE_END
+> --
+> 1.7.8.3
 
-Given that the above gives after the preprocessor the desired results:
-Add special comments (like `indent` allows to disable it temporarily) so
-that checkpatch doesn't complain about these macros.
-Yes, that can be abused but review should catch that. And newbies won't
-see false positives.
-Listing the to-be-ignored #define's in `checkpatch` (or some external
-file) or enhancing it with some "known false positives, do not emit
-*that* warning there" is also a maintenance burden (hmm, how often do
-they change?).
+OK, applied.
+Thanks.
 
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
