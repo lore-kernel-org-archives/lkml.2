@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab2BIQn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 11:43:58 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47632 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2BIQn5 (ORCPT
+	id S1758111Ab2BIQo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 11:44:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37456 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab2BIQo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 11:43:57 -0500
-Message-ID: <4F33F7C8.2090105@lwfinger.net>
-Date: Thu, 09 Feb 2012 10:43:52 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Thu, 9 Feb 2012 11:44:57 -0500
+Date: Thu, 9 Feb 2012 17:43:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paul@paulmenage.org,
+        mingo@elte.hu, rjw@sisk.pl, tj@kernel.org, frank.rowand@am.sony.com,
+        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
+        prashanth@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+Message-ID: <20120209164357.GA5218@dyad.programming.kicks-ass.net>
+References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
+ <1328671335.2482.72.camel@laptop>
+ <4F32174E.2050207@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: tim.gardner@canonical.com
-CC: Tim Gardner <rtg.canonical@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net> <4F33DAFC.1000502@canonical.com>
-In-Reply-To: <4F33DAFC.1000502@canonical.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F32174E.2050207@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 08:41 AM, Tim Gardner wrote:
->
-> I agree with you about the semantics of rtlpriv->max_fw_size, but I don't agree
-> that the size check is correct. While rtlpriv->max_fw_size has been set to
-> sizeof(struct rt_firmware), that value is _way_ bigger then the size of the
-> target buffer.
->
-> sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
->
-> The target buffer size is only 164000 bytes.
->
-> I've attached v2 of the patch that is simpler and may serve to better illustrate
-> my point. By the way, Ben Hutchings was right about the original patch having an
-> off by one error. This version also clears rtlpriv->max_fw_size if the size
-> check fails. Probably should have mentioned that in the commit log.
+On Wed, Feb 08, 2012 at 12:03:50PM +0530, Srivatsa S. Bhat wrote:
+> On 02/08/2012 08:52 AM, Peter Zijlstra wrote:
+> 
+> > On Wed, 2012-02-08 at 00:25 +0530, Srivatsa S. Bhat wrote:
+> >> There is a very long standing issue related to how cpusets handle CPU
+> >> hotplug events. The problem is that when a CPU goes offline, it is removed
+> >> from all cpusets. However, when that CPU comes back online, it is added
+> >> *only* to the root cpuset. Which means, any task attached to a cpuset lower
+> >> in the hierarchy will have one CPU less in its cpuset, though it had this
+> >> CPU in its cpuset before the CPU went offline.
+> > 
+> > Yeah so? That's known behaviour..
+> 
+> 
+> This might be a known behaviour, but this is surely not the behaviour we
+> want right? I understand that if you take a CPU offline, we have no other
+> choice but to remove it from all cpusets. But if the same CPU comes back
+> online and the userspace did not request any change to cpusets in between
+> those events (offline-online), then is it not wrong to silently keep that
+> CPU out of the cpuset even when it comes online?
 
-I agree that Ben is right.
-
-This thread forced me to go back to square one in analyzing the situation. For 
-the other drivers in the rtlwifi family, the firmware file contains an image 
-that is directly stuffed into the device. For the RTL8192SE devices, it is more 
-complicated. The structure is described in struct rt_firmware. At the moment, 
-the arrays there are grossly oversized. They could be as follows:
-
-struct rt_firmware {
-         struct fw_hdr *pfwheader;
-         enum fw_status fwstatus;
-         u16 firmwareversion;
-         u8 fw_imem[RTL8190_MAX_IMEM_CODE_SIZE];
-         u8 fw_emem[RTL8190_MAX_DMEM_CODE_SIZE];
-         u32 fw_imem_len;
-         u32 fw_emem_len;
-         u8 sz_fw_tmpbuffer[RTL8190_MAX_FIRMWARE_SIZE];
-         u32 sz_fw_tmpbufferlen;
-         u16 cmdpacket_fragthresold;
-};
-
-with
-
-RTL8190_MAX_IMEM_CODE_SIZE = 54000 (current fw is 51,208), 
-RTL8190_MAX_DMEM_CODE_SIZE = 40000 (current fw is 37,520), and 
-RTL8190_MAX_FIRMWARE_SIZE = 90000 (it holds the raw firmware image, which is 
-currently 88,856).
-
-Ultimately, all three arrays should be eliminated. Now that we are using 
-asynchronous loading, the kernel should keep its cached data and not copy it 
-into the driver's private storage when a pointer will suffice. All the drivers 
-need this change, but that can wait for now.
-
-I will ACK the patch if you resumit it with
-#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	90000
-
-Larry
+no, it is what we want because unplug is destructive, it cannot be undone in generic. consider the case where you unplug allcpus of a set. 
