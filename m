@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab2BJBdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 20:33:40 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51530 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510Ab2BJBdj (ORCPT
+	id S932294Ab2BJBd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 20:33:56 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37617 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab2BJBdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 20:33:39 -0500
-Subject: Re: linux-next: build failure after merge of the target-updates
- tree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <20120210115005.b828eca7065d1fbed82c80c6@canb.auug.org.au>
-References: <20120210115005.b828eca7065d1fbed82c80c6@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Feb 2012 17:33:36 -0800
-Message-ID: <1328837616.9333.71.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Feb 2012 20:33:55 -0500
+Date: Thu, 9 Feb 2012 15:41:45 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120209234144.GC2458@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120202153437.GD2518@linux.vnet.ibm.com>
+ <4F2AB66C.2030309@redhat.com>
+ <20120202170134.GM2518@linux.vnet.ibm.com>
+ <4F2AC69B.7000704@redhat.com>
+ <20120202175155.GV2518@linux.vnet.ibm.com>
+ <4F2E7311.8060808@redhat.com>
+ <20120205165927.GH2467@linux.vnet.ibm.com>
+ <20120209152155.GA22552@somewhere.redhat.com>
+ <4F33EEB3.4080807@redhat.com>
+ <20120209182216.GG22552@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120209182216.GG22552@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021001-3270-0000-0000-000003E1B053
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-10 at 11:50 +1100, Stephen Rothwell wrote:
-> Hi Nicholas,
+On Thu, Feb 09, 2012 at 07:22:19PM +0100, Frederic Weisbecker wrote:
+> On Thu, Feb 09, 2012 at 06:05:07PM +0200, Avi Kivity wrote:
+> > On 02/09/2012 05:22 PM, Frederic Weisbecker wrote:
+> > > > > 
+> > > > > Looks like there are new rcu_user_enter() and rcu_user_exit() APIs which
+> > > > > we can use.  Hopefully they subsume rcu_virt_note_context_switch() so we
+> > > > > only need one set of APIs.
+> > > > 
+> > > > Now that you mention it, that is a good goal.  However, it requires
+> > > > coordination with Frederic's code as well, so some investigation
+> > > > is required.  Bad things happen if you tell RCU you are idle when you
+> > > > really are not and vice versa!
+> > > > 
+> > > > 							Thanx, Paul
+> > > > 
+> > >
+> > > Right. Avi I need to know more about what you need. rcu_virt_note_context_switch()
+> > > notes a quiescent state while rcu_user_enter() shuts down RCU (it's in fact the same
+> > > thing than rcu_idle_enter() minus the is_idle_cpu() checks).
+> > 
+> > I don't know enough about RCU to say if it's okay or not (I typically
+> > peek at the quick quiz answers).  However, switching to guest mode is
+> > very similar to exiting to user mode: we're guaranteed not to be in an
+> > rcu critical section, and to remain so until the guest exits back to
+> > us.
 > 
-> After merging the target-updates tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> Awesome!
 > 
-> drivers/infiniband/ulp/srpt/ib_srpt.c: In function 'srpt_abort_cmd':
-> drivers/infiniband/ulp/srpt/ib_srpt.c:1381:25: error: 'struct se_cmd' has no member named 'transport_lun_stop'
-> drivers/infiniband/ulp/srpt/ib_srpt.c:1390:25: error: 'struct se_cmd' has no member named 'transport_lun_stop'
-> drivers/infiniband/ulp/srpt/ib_srpt.c: In function 'srpt_handle_rdma_err_comp':
-> drivers/infiniband/ulp/srpt/ib_srpt.c:1516:25: error: 'struct se_cmd' has no member named 'transport_lun_stop'
+> > What guarantees does rcu_user_enter() provide?  With luck guest
+> > entry satisifies them all.
 > 
-> Caused by commit 3f1d120476c5 ("target: replace various cmd flags with a
-> transport state").
+> So rcu_user_enter() puts the CPU into RCU idle mode, which means the CPU
+> won't need to be part of the global RCU grace period completion. This
+> prevents it to depend on the timer tick (although for now you keep it)
+> and to complete some RCU specific work during the tick.
 > 
-> I have used the target-updates tree from next-20120209 for today.
+> Paul, do you think that would be a win?
 
-Whoops, I managed to drop the piece below from hch's original patch in
-target-pending/for-next.  Sorry about that..
+As long as the code doesn't enter RCU read-side critical sections in
+the time between rcu_idle_enter() and rcu_idle_exit(), this should
+work fine.
 
-Rolling the missing ib_srpt.c bit into the patch now..
-
-Thanks Stephen!
-
---nab
-
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index 2b73d43..e1e6b5b 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1378,7 +1378,9 @@ static int srpt_abort_cmd(struct srpt_send_ioctx *ioctx)
-                break;
-        case SRPT_STATE_NEED_DATA:
-                /* DMA_TO_DEVICE (write) - RDMA read error. */
--               atomic_set(&ioctx->cmd.transport_lun_stop, 1);
-+               spin_lock_irqsave(&ioctx->cmd.t_state_lock, flags);
-+               ioctx->cmd.transport_state |= CMD_T_LUN_STOP;
-+               spin_unlock_irqrestore(&ioctx->cmd.t_state_lock, flags);
-                transport_generic_handle_data(&ioctx->cmd);
-                break;
-        case SRPT_STATE_CMD_RSP_SENT:
-@@ -1387,7 +1389,9 @@ static int srpt_abort_cmd(struct srpt_send_ioctx *ioctx)
-                 * not been received in time.
-                 */
-                srpt_unmap_sg_to_ib_sge(ioctx->ch, ioctx);
--               atomic_set(&ioctx->cmd.transport_lun_stop, 1);
-+               spin_lock_irqsave(&ioctx->cmd.t_state_lock, flags);
-+               ioctx->cmd.transport_state |= CMD_T_LUN_STOP;
-+               spin_unlock_irqrestore(&ioctx->cmd.t_state_lock, flags);
-                kref_put(&ioctx->kref, srpt_put_send_ioctx_kref);
-                break;
-        case SRPT_STATE_MGMT_RSP_SENT:
-@@ -1494,6 +1498,7 @@ static void srpt_handle_rdma_err_comp(struct srpt_rdma_ch *ch,
- {
-        struct se_cmd *cmd;
-        enum srpt_command_state state;
-+       unsigned long flags;
- 
-        cmd = &ioctx->cmd;
-        state = srpt_get_cmd_state(ioctx);
-@@ -1513,7 +1518,9 @@ static void srpt_handle_rdma_err_comp(struct srpt_rdma_ch *ch,
-                               __func__, __LINE__, state);
-                break;
-        case SRPT_RDMA_WRITE_LAST:
--               atomic_set(&ioctx->cmd.transport_lun_stop, 1);
-+               spin_lock_irqsave(&ioctx->cmd.t_state_lock, flags);
-+               ioctx->cmd.transport_state |= CMD_T_LUN_STOP;
-+               spin_unlock_irqrestore(&ioctx->cmd.t_state_lock, flags);
-                break;
-        default:
-                printk(KERN_ERR "%s[%d]: opcode = %u\n", __func__,
-
+							Thanx, Paul
 
