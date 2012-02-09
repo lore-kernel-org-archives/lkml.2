@@ -1,200 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab2BIWnC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:43:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758443Ab2BIWnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:43:00 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
-	<fernando@oss.ntt.co.jp>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 1/3] watchdog: update documentation
-Date: Thu,  9 Feb 2012 17:42:20 -0500
-Message-Id: <1328827342-6253-1-git-send-email-dzickus@redhat.com>
+	id S1758403Ab2BIWp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:45:57 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45439 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753323Ab2BIWp4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 17:45:56 -0500
 MIME-Version: 1.0
+In-Reply-To: <4F335858.4090501@linux.vnet.ibm.com>
+References: <20120126160319.GA5655@quad>
+	<4F335858.4090501@linux.vnet.ibm.com>
+Date: Thu, 9 Feb 2012 23:45:54 +0100
+Message-ID: <CABPqkBTZEHJNwEoQU9Lw=1o4kMrywZgsmPutQNBXXxpZGC9C5Q@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix broken intr throttling (v3)
+From: Stephane Eranian <eranian@google.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        gleb@redhat.com, wcohen@redhat.com, vince@deater.net, asharma@fb.com,
+        andi@firstfloor.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
+On Thu, Feb 9, 2012 at 6:23 AM, Anshuman Khandual
+<khandual@linux.vnet.ibm.com> wrote:
+> On Thursday 26 January 2012 09:33 PM, Stephane Eranian wrote:
+>>
+>> This patch fixes the throttling mechanism. It was broken
+>> in 3.2.0. Events were not being unthrottled. The unthrottling
+>> mechanism required that events be checked at each timer tick.
+>>
+>> This patch solves this problem and also separates:
+>>   - unthrottling
+>>   - multiplexing
+>>   - frequency-mode period adjustments
+>>
+>> Not all of them need to be executed at each timer tick.
+>>
+>> This third version of the patch is based on my original patch +
+>> PeterZ proposal (https://lkml.org/lkml/2012/1/7/87).
+>>
+>> At each timer tick, for each context:
+>>   - if the current CPU has throttled events, we unthrottle events
+>>
+>>   - if context has frequency-based events, we adjust sampling periods
+>>
+>>   - if we have reached the jiffies interval, we multiplex (rotate)
+>>
+>> We decoupled rotation (multiplexing) from frequency-mode sampling
+>> period adjustments.  They should not necessarily happen at the same
+>> rate. Multiplexing is subject to jiffies_interval (currently at 1
+>> but could be higher once the tunable is exposed via sysfs).
+>
+> I am wondering how much higher value would jiffies_interval can be assigned
+> to ? Once its exposed to the user through sysfs it can have any value. Are
+> we planning to impose some sort of MAX limit on this ?
+>
+It's a multiplier of the timer tick. For now, it's 1, so every tick we go
+through the entire rescheduling if the PMU is overcommitted. In most
+situations, it may not be necessary to have such granularity. I am also
+wondering about the overall overhead of the operation. I have not had
+time to measure. If tick is 1ms, then it does not necessarily sound
+unreasonable to have the multuplier be 10 = 10ms to multiplex events.
 
-The soft and hard lockup detectors are now built on top of the hrtimer
-and perf subsystems. Update the documentation accordingly.
 
-Signed-off-by: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- Documentation/lockup-watchdogs.txt |   63 +++++++++++++++++++++++++++
- Documentation/nmi_watchdog.txt     |   83 ------------------------------------
- 2 files changed, 63 insertions(+), 83 deletions(-)
- create mode 100644 Documentation/lockup-watchdogs.txt
- delete mode 100644 Documentation/nmi_watchdog.txt
-
-diff --git a/Documentation/lockup-watchdogs.txt b/Documentation/lockup-watchdogs.txt
-new file mode 100644
-index 0000000..d2a3660
---- /dev/null
-+++ b/Documentation/lockup-watchdogs.txt
-@@ -0,0 +1,63 @@
-+===============================================================
-+Softlockup detector and hardlockup detector (aka nmi_watchdog)
-+===============================================================
-+
-+The Linux kernel can act as a watchdog to detect both soft and hard
-+lockups.
-+
-+A 'softlockup' is defined as a bug that causes the kernel to loop in
-+kernel mode for more than 20 seconds (see "Implementation" below for
-+details), without giving other tasks a chance to run. The current
-+stack trace is displayed upon detection and, by default, the system
-+will stay locked up. Alternatively, the kernel can be configured to
-+panic; a sysctl, "kernel.softlockup_panic", a kernel parameter,
-+"softlockup_panic" (see "Documentation/kernel-parameters.txt" for
-+details), and a compile option, "BOOTPARAM_HARDLOCKUP_PANIC", are
-+provided for this.
-+
-+A 'hardlockup' is defined as a bug that causes the CPU to loop in
-+kernel mode for more than 10 seconds (see "Implementation" below for
-+details), without letting other interrupts have a chance to run.
-+Similarly to the softlockup case, the current stack trace is displayed
-+upon detection and the system will stay locked up unless the default
-+behavior is changed, which can be done through a compile time knob,
-+"BOOTPARAM_HARDLOCKUP_PANIC", and a kernel parameter, "nmi_watchdog"
-+(see "Documentation/kernel-parameters.txt" for details).
-+
-+The panic option can be used in combination with panic_timeout (this
-+timeout is set through the confusingly named "kernel.panic" sysctl),
-+to cause the system to reboot automatically after a specified amount
-+of time.
-+
-+=== Implementation ===
-+
-+The soft and hard lockup detectors are built on top of the hrtimer and
-+perf subsystems, respectively. A direct consequence of this is that,
-+in principle, they should work in any architecture where these
-+subsystems are present.
-+
-+A periodic hrtimer runs to generate interrupts and kick the watchdog
-+task. An NMI perf event is generated every "watchdog_thresh"
-+(compile-time initialized to 10 and configurable through sysctl of the
-+same name) seconds to check for hardlockups. If any CPU in the system
-+does not receive any hrtimer interrupt during that time the
-+'hardlockup detector' (the handler for the NMI perf event) will
-+generate a kernel warning or call panic, depending on the
-+configuration.
-+
-+The watchdog task is a high priority kernel thread that updates a
-+timestamp every time it is scheduled. If that timestamp is not updated
-+for 2*watchdog_thresh seconds (the softlockup threshold) the
-+'softlockup detector' (coded inside the hrtimer callback function)
-+will dump useful debug information to the system log, after which it
-+will call panic if it was instructed to do so or resume execution of
-+other kernel code.
-+
-+The period of the hrtimer is 2*watchdog_thresh/5, which means it has
-+two or three chances to generate an interrupt before the hardlockup
-+detector kicks in.
-+
-+As explained above, a kernel knob is provided that allows
-+administrators to configure the period of the hrtimer and the perf
-+event. The right value for a particular environment is a trade-off
-+between fast response to lockups and detection overhead.
-diff --git a/Documentation/nmi_watchdog.txt b/Documentation/nmi_watchdog.txt
-deleted file mode 100644
-index bf9f80a..0000000
---- a/Documentation/nmi_watchdog.txt
-+++ /dev/null
-@@ -1,83 +0,0 @@
--
--[NMI watchdog is available for x86 and x86-64 architectures]
--
--Is your system locking up unpredictably? No keyboard activity, just
--a frustrating complete hard lockup? Do you want to help us debugging
--such lockups? If all yes then this document is definitely for you.
--
--On many x86/x86-64 type hardware there is a feature that enables
--us to generate 'watchdog NMI interrupts'.  (NMI: Non Maskable Interrupt
--which get executed even if the system is otherwise locked up hard).
--This can be used to debug hard kernel lockups.  By executing periodic
--NMI interrupts, the kernel can monitor whether any CPU has locked up,
--and print out debugging messages if so.
--
--In order to use the NMI watchdog, you need to have APIC support in your
--kernel. For SMP kernels, APIC support gets compiled in automatically. For
--UP, enable either CONFIG_X86_UP_APIC (Processor type and features -> Local
--APIC support on uniprocessors) or CONFIG_X86_UP_IOAPIC (Processor type and
--features -> IO-APIC support on uniprocessors) in your kernel config.
--CONFIG_X86_UP_APIC is for uniprocessor machines without an IO-APIC.
--CONFIG_X86_UP_IOAPIC is for uniprocessor with an IO-APIC. [Note: certain
--kernel debugging options, such as Kernel Stack Meter or Kernel Tracer,
--may implicitly disable the NMI watchdog.]
--
--For x86-64, the needed APIC is always compiled in.
--
--Using local APIC (nmi_watchdog=2) needs the first performance register, so
--you can't use it for other purposes (such as high precision performance
--profiling.) However, at least oprofile and the perfctr driver disable the
--local APIC NMI watchdog automatically.
--
--To actually enable the NMI watchdog, use the 'nmi_watchdog=N' boot
--parameter.  Eg. the relevant lilo.conf entry:
--
--        append="nmi_watchdog=1"
--
--For SMP machines and UP machines with an IO-APIC use nmi_watchdog=1.
--For UP machines without an IO-APIC use nmi_watchdog=2, this only works
--for some processor types.  If in doubt, boot with nmi_watchdog=1 and
--check the NMI count in /proc/interrupts; if the count is zero then
--reboot with nmi_watchdog=2 and check the NMI count.  If it is still
--zero then log a problem, you probably have a processor that needs to be
--added to the nmi code.
--
--A 'lockup' is the following scenario: if any CPU in the system does not
--execute the period local timer interrupt for more than 5 seconds, then
--the NMI handler generates an oops and kills the process. This
--'controlled crash' (and the resulting kernel messages) can be used to
--debug the lockup. Thus whenever the lockup happens, wait 5 seconds and
--the oops will show up automatically. If the kernel produces no messages
--then the system has crashed so hard (eg. hardware-wise) that either it
--cannot even accept NMI interrupts, or the crash has made the kernel
--unable to print messages.
--
--Be aware that when using local APIC, the frequency of NMI interrupts
--it generates, depends on the system load. The local APIC NMI watchdog,
--lacking a better source, uses the "cycles unhalted" event. As you may
--guess it doesn't tick when the CPU is in the halted state (which happens
--when the system is idle), but if your system locks up on anything but the
--"hlt" processor instruction, the watchdog will trigger very soon as the
--"cycles unhalted" event will happen every clock tick. If it locks up on
--"hlt", then you are out of luck -- the event will not happen at all and the
--watchdog won't trigger. This is a shortcoming of the local APIC watchdog
---- unfortunately there is no "clock ticks" event that would work all the
--time. The I/O APIC watchdog is driven externally and has no such shortcoming.
--But its NMI frequency is much higher, resulting in a more significant hit
--to the overall system performance.
--
--On x86 nmi_watchdog is disabled by default so you have to enable it with
--a boot time parameter.
--
--It's possible to disable the NMI watchdog in run-time by writing "0" to
--/proc/sys/kernel/nmi_watchdog. Writing "1" to the same file will re-enable
--the NMI watchdog. Notice that you still need to use "nmi_watchdog=" parameter
--at boot time.
--
--NOTE: In kernels prior to 2.4.2-ac18 the NMI-oopser is enabled unconditionally
--on x86 SMP boxes.
--
--[ feel free to send bug reports, suggestions and patches to
--  Ingo Molnar <mingo@redhat.com> or the Linux SMP mailing
--  list at <linux-smp@vger.kernel.org> ]
--
--- 
-1.7.7.6
-
+>>
+>> We have grouped frequency-mode adjustment and unthrottling into the
+>> same routine to minimize code duplication. When throttled while in
+>> frequency mode, we scan the events only once.
+>>
+>> We have fixed the threshold enforcement code in __perf_event_overflow().
+>> There was a bug whereby it would allow more than the authorized rate
+>> because an increment of hwc->interrupts was not executed at the right
+>> place.
+>>
+>> The patch was tested with low sampling limit (2000) and fixed periods,
+>> frequency mode, overcommitted PMU.
+>>
+>> On a 2.1GHz AMD CPU:
+>> $ cat /proc/sys/kernel/perf_event_max_sample_rate
+>> 2000
+>>
+>> We set a rate of 3000 samples/sec (2.1GHz/3000 = 700000):
+>>
+>> $ perf record -e cycles,cycles -c 700000  noploop 10
+>> $ perf report -D | tail -21
+>> Aggregated stats:
+>>            TOTAL events:      80086
+>>             MMAP events:         88
+>>             COMM events:          2
+>>             EXIT events:          4
+>>         THROTTLE events:      19996
+>>       UNTHROTTLE events:      19996
+>>           SAMPLE events:      40000
+>> cycles stats:
+>>            TOTAL events:      40006
+>>             MMAP events:          5
+>>             COMM events:          1
+>>             EXIT events:          4
+>>         THROTTLE events:       9998
+>>       UNTHROTTLE events:       9998
+>>           SAMPLE events:      20000
+>> cycles stats:
+>>            TOTAL events:      39996
+>>         THROTTLE events:       9998
+>>       UNTHROTTLE events:       9998
+>>           SAMPLE events:      20000
+>>
+>> For 10s, the cap is 2x2000x10 = 40000 samples.
+>> We get exactly that: 20000 samples/event.
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>
+>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> index 0b91db2..412b790 100644
+>> --- a/include/linux/perf_event.h
+>> +++ b/include/linux/perf_event.h
+>> @@ -589,6 +589,7 @@ struct hw_perf_event {
+>>       u64                             sample_period;
+>>       u64                             last_period;
+>>       local64_t                       period_left;
+>> +     u64                             interrupts_seq;
+>>       u64                             interrupts;
+>>
+>>       u64                             freq_time_stamp;
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index de859fb..7c3b9de 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -2300,6 +2300,9 @@ do {                                    \
+>>       return div64_u64(dividend, divisor);
+>>  }
+>>
+>> +static DEFINE_PER_CPU(int, perf_throttled_count);
+>> +static DEFINE_PER_CPU(u64, perf_throttled_seq);
+>> +
+>>  static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+>>  {
+>>       struct hw_perf_event *hwc = &event->hw;
+>> @@ -2325,16 +2328,29 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+>>       }
+>>  }
+>>
+>> -static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+>> +/*
+>> + * combine freq adjustment with unthrottling to avoid two passes over the
+>> + * events. At the same time, make sure, having freq events does not change
+>> + * the rate of unthrottling as that would introduce bias.
+>> + */
+>> +static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
+>> +                                        int needs_unthr)
+>>  {
+>>       struct perf_event *event;
+>>       struct hw_perf_event *hwc;
+>> -     u64 interrupts, now;
+>> +     u64 now, period = TICK_NSEC;
+>>       s64 delta;
+>>
+>> -     if (!ctx->nr_freq)
+>> +     /*
+>> +      * only need to iterate over all events iff:
+>> +      * - context have events in frequency mode (needs freq adjust)
+>> +      * - there are events to unthrottle on this cpu
+>> +      */
+>> +     if (!(ctx->nr_freq || needs_unthr))
+>>               return;
+>>
+>> +     raw_spin_lock(&ctx->lock);
+>> +
+>>       list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+>>               if (event->state != PERF_EVENT_STATE_ACTIVE)
+>>                       continue;
+>> @@ -2344,13 +2360,8 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+>>
+>>               hwc = &event->hw;
+>>
+>> -             interrupts = hwc->interrupts;
+>> -             hwc->interrupts = 0;
+>> -
+>> -             /*
+>> -              * unthrottle events on the tick
+>> -              */
+>> -             if (interrupts == MAX_INTERRUPTS) {
+>> +             if (needs_unthr && hwc->interrupts == MAX_INTERRUPTS) {
+>> +                     hwc->interrupts = 0;
+>>                       perf_log_throttle(event, 1);
+>>                       event->pmu->start(event, 0);
+>>               }
+>> @@ -2358,14 +2369,26 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+>>               if (!event->attr.freq || !event->attr.sample_freq)
+>>                       continue;
+>>
+>> -             event->pmu->read(event);
+>> +             /*
+>> +              * stop the event and update event->count
+>> +              */
+>> +             event->pmu->stop(event, PERF_EF_UPDATE);
+>> +
+>>               now = local64_read(&event->count);
+>>               delta = now - hwc->freq_count_stamp;
+>>               hwc->freq_count_stamp = now;
+>>
+>> +             /*
+>> +              * restart the event
+>> +              * reload only if value has changed
+>> +              */
+>>               if (delta > 0)
+>>                       perf_adjust_period(event, period, delta);
+>> +
+>> +             event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
+>>       }
+>> +
+>> +     raw_spin_unlock(&ctx->lock);
+>>  }
+>>
+>>  /*
+>> @@ -2388,16 +2411,13 @@ static void rotate_ctx(struct perf_event_context *ctx)
+>>   */
+>>  static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+>>  {
+>> -     u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
+>>       struct perf_event_context *ctx = NULL;
+>> -     int rotate = 0, remove = 1, freq = 0;
+>> +     int rotate = 0, remove = 1;
+>>
+>>       if (cpuctx->ctx.nr_events) {
+>>               remove = 0;
+>>               if (cpuctx->ctx.nr_events != cpuctx->ctx.nr_active)
+>>                       rotate = 1;
+>> -             if (cpuctx->ctx.nr_freq)
+>> -                     freq = 1;
+>>       }
+>>
+>>       ctx = cpuctx->task_ctx;
+>> @@ -2405,37 +2425,26 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+>>               remove = 0;
+>>               if (ctx->nr_events != ctx->nr_active)
+>>                       rotate = 1;
+>> -             if (ctx->nr_freq)
+>> -                     freq = 1;
+>>       }
+>>
+>> -     if (!rotate && !freq)
+>> +     if (!rotate)
+>>               goto done;
+>>
+>>       perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+>>       perf_pmu_disable(cpuctx->ctx.pmu);
+>>
+>> -     if (freq) {
+>> -             perf_ctx_adjust_freq(&cpuctx->ctx, interval);
+>> -             if (ctx)
+>> -                     perf_ctx_adjust_freq(ctx, interval);
+>> -     }
+>> -
+>> -     if (rotate) {
+>> -             cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
+>> -             if (ctx)
+>> -                     ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
+>> +     cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
+>> +     if (ctx)
+>> +             ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
+>>
+>> -             rotate_ctx(&cpuctx->ctx);
+>> -             if (ctx)
+>> -                     rotate_ctx(ctx);
+>> +     rotate_ctx(&cpuctx->ctx);
+>> +     if (ctx)
+>> +             rotate_ctx(ctx);
+>>
+>> -             perf_event_sched_in(cpuctx, ctx, current);
+>> -     }
+>> +     perf_event_sched_in(cpuctx, ctx, current);
+>>
+>>       perf_pmu_enable(cpuctx->ctx.pmu);
+>>       perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+>> -
+>>  done:
+>>       if (remove)
+>>               list_del_init(&cpuctx->rotation_list);
+>> @@ -2445,10 +2454,22 @@ void perf_event_task_tick(void)
+>>  {
+>>       struct list_head *head = &__get_cpu_var(rotation_list);
+>>       struct perf_cpu_context *cpuctx, *tmp;
+>> +     struct perf_event_context *ctx;
+>> +     int throttled;
+>>
+>>       WARN_ON(!irqs_disabled());
+>>
+>> +     __this_cpu_inc(perf_throttled_seq);
+>> +     throttled = __this_cpu_xchg(perf_throttled_count, 0);
+>> +
+>>       list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
+>> +             ctx = &cpuctx->ctx;
+>> +             perf_adjust_freq_unthr_context(ctx, throttled);
+>> +
+>> +             ctx = cpuctx->task_ctx;
+>> +             if (ctx)
+>> +                     perf_adjust_freq_unthr_context(ctx, throttled);
+>> +
+>>               if (cpuctx->jiffies_interval == 1 ||
+>>                               !(jiffies % cpuctx->jiffies_interval))
+>>                       perf_rotate_context(cpuctx);
+>> @@ -4514,6 +4535,7 @@ static int __perf_event_overflow(struct perf_event *event,
+>>  {
+>>       int events = atomic_read(&event->event_limit);
+>>       struct hw_perf_event *hwc = &event->hw;
+>> +     u64 seq;
+>>       int ret = 0;
+>>
+>>       /*
+>> @@ -4523,14 +4545,20 @@ static int __perf_event_overflow(struct perf_event *event,
+>>       if (unlikely(!is_sampling_event(event)))
+>>               return 0;
+>>
+>> -     if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
+>> -             if (throttle) {
+>> +     seq = __this_cpu_read(perf_throttled_seq);
+>> +     if (seq != hwc->interrupts_seq) {
+>> +             hwc->interrupts_seq = seq;
+>> +             hwc->interrupts = 1;
+>> +     } else {
+>> +             hwc->interrupts++;
+>> +             if (unlikely(throttle
+>> +                          && hwc->interrupts >= max_samples_per_tick)) {
+>> +                     __this_cpu_inc(perf_throttled_count);
+>>                       hwc->interrupts = MAX_INTERRUPTS;
+>>                       perf_log_throttle(event, 0);
+>>                       ret = 1;
+>>               }
+>> -     } else
+>> -             hwc->interrupts++;
+>> +     }
+>>
+>>       if (event->attr.freq) {
+>>               u64 now = perf_clock();
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
