@@ -1,80 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab2BIR7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 12:59:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50253 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab2BIR7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 12:59:53 -0500
-Date: Thu, 9 Feb 2012 09:59:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
-Subject: Re: [PATCH] block: strip out locking optimization in
- put_io_context()
-Message-ID: <20120209175948.GE19392@google.com>
-References: <20120206215451.GD21292@google.com>
- <4F30C96F.1000905@kernel.dk>
- <20120207162253.GG21292@google.com>
- <4F315113.5010804@kernel.dk>
- <CA+55aFxcjE4FsUVoarc+8OTi4OkqtgBmHq500=qaCeTqqWnqoA@mail.gmail.com>
- <20120207164735.GH21292@google.com>
- <CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
- <CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
- <20120208162925.GA19392@google.com>
- <CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
+	id S1758147Ab2BISBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:01:51 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10203 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753783Ab2BISBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:01:47 -0500
+Subject: [PATCH 2/5] ipc: segment key change helper introduced
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: jmorris@namei.org, linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-security-module@vger.kernel.org, viro@zeniv.linux.org.uk,
+        eparis@parisplace.org, sds@tycho.nsa.gov
+Date: Thu, 09 Feb 2012 22:01:34 +0400
+Message-ID: <20120209180134.24392.40713.stgit@localhost6.localdomain6>
+In-Reply-To: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
+References: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch introduces existent segment key changing infrastructure.
+New function ipc_update_key() can be used change segment key, cuid, cgid
+values. It checks for that new key is not used prior to set it on existent.
+To make this possible, added copying of this fields from user-space in
+__get_compat_ipc_perm() and __get_compat_ipc64_perm() functions. Also segment
+search by key and lock were splitted into different functions, because
+ipc_update_key() doesn't need to lock the segment during check that new key is
+not used.
 
-On Thu, Feb 09, 2012 at 02:22:32PM +0800, Shaohua Li wrote:
-> >> Tried all the options, the regression still exists. Any new idea?
-> >> I'll spend some time on it if I can get anything
-> >
-> > Can you please try the following one?  Thanks a lot!
-> doesn't work.
-> I also double confirmed b2efa05265d62 causes the regression
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-I'll soon send a RCU based version.  I'm still having trouble
-reproducing the regression tho.  I've tried a few different things.
+---
+ ipc/compat.c |    6 ++++++
+ ipc/util.c   |   51 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ ipc/util.h   |    2 ++
+ 3 files changed, 56 insertions(+), 3 deletions(-)
 
-* Heavy thrashing: Disk IO dominates everything and CPUs aren't too
-  busy.  While how swap behaves affects completion time, I don't see
-  how CPU locking issue comes into play at all under this
-  circumstance.
+diff --git a/ipc/compat.c b/ipc/compat.c
+index 845a287..43f3596 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -138,6 +138,9 @@ static inline int __get_compat_ipc64_perm(struct ipc64_perm *p64,
+ 	err  = __get_user(p64->uid, &up64->uid);
+ 	err |= __get_user(p64->gid, &up64->gid);
+ 	err |= __get_user(p64->mode, &up64->mode);
++	err |= __get_user(p64->cuid, &up64->cuid);
++	err |= __get_user(p64->cgid, &up64->cgid);
++	err |= __get_user(p64->key, &up64->key);
+ 	return err;
+ }
+ 
+@@ -149,6 +152,9 @@ static inline int __get_compat_ipc_perm(struct ipc64_perm *p,
+ 	err  = __get_user(p->uid, &up->uid);
+ 	err |= __get_user(p->gid, &up->gid);
+ 	err |= __get_user(p->mode, &up->mode);
++	err |= __get_user(p->cuid, &up->cuid);
++	err |= __get_user(p->cgid, &up->cgid);
++	err |= __get_user(p->key, &up->key);
+ 	return err;
+ }
+ 
+diff --git a/ipc/util.c b/ipc/util.c
+index ac9c6a9..7b1a2d8 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -173,7 +173,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
+  *	@key: The key to find
+  *	
+  *	Requires ipc_ids.rw_mutex locked.
+- *	Returns the LOCKED pointer to the ipc structure if found or NULL
++ *	Returns the UNLOCKED pointer to the ipc structure if found or NULL
+  *	if not.
+  *	If key is found ipc points to the owning ipc structure
+  */
+@@ -195,7 +195,6 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
+ 			continue;
+ 		}
+ 
+-		ipc_lock_by_ptr(ipc);
+ 		return ipc;
+ 	}
+ 
+@@ -203,6 +202,27 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
+ }
+ 
+ /**
++ *	ipc_findkey_locked	-	find and lock a key in an ipc identifier set
++ *	@ids: Identifier set
++ *	@key: The key to find
++ *
++ *	Requires ipc_ids.rw_mutex locked.
++ *	Returns the LOCKED pointer to the ipc structure if found or NULL
++ *	if not.
++ *	If key is found ipc points to the owning ipc structure
++ */
++
++static struct kern_ipc_perm *ipc_findkey_locked(struct ipc_ids *ids, key_t key)
++{
++	struct kern_ipc_perm *ipc;
++
++	ipc = ipc_findkey(ids, key);
++	if (ipc)
++		ipc_lock_by_ptr(ipc);
++	return ipc;
++}
++
++/**
+  *	ipc_get_maxid 	-	get the last assigned id
+  *	@ids: IPC identifier set
+  *
+@@ -382,7 +402,7 @@ retry:
+ 	 * a new entry + read locks are not "upgradable"
+ 	 */
+ 	down_write(&ids->rw_mutex);
+-	ipcp = ipc_findkey(ids, params->key);
++	ipcp = ipc_findkey_locked(ids, params->key);
+ 	if (ipcp == NULL) {
+ 		/* key not used */
+ 		if (!(flg & IPC_CREAT))
+@@ -749,6 +769,31 @@ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+ }
+ 
+ /**
++ * ipc_update_key - update the key of an IPC.
++ * @in:  the permission given as input.
++ * @out: the permission of the ipc to set.
++ *
++ * Common routine called by sys_shmctl(), sys_semctl(). sys_msgctl().
++ */
++int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
++		    struct kern_ipc_perm *out)
++{
++
++	if (out->key != in->key) {
++		/*
++		 * Check for existent segment with the same key.
++		 * Note: ipc_ids.rw_mutex is taken for write already.
++		 */
++		if (ipc_findkey(ids, in->key))
++			return -EEXIST;
++	}
++	out->cuid = in->cuid;
++	out->cgid = in->cgid;
++	out->key = in->key;
++	return 0;
++}
++
++/**
+  * ipc_update_perm - update the permissions of an IPC.
+  * @in:  the permission given as input.
+  * @out: the permission of the ipc to set.
+diff --git a/ipc/util.h b/ipc/util.h
+index 5f04b02..2bc6a9a 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -126,6 +126,8 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
+ 
+ void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
+ void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
++int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
++		   struct kern_ipc_perm *out);
+ void ipc_update_perm(struct ipc64_perm *in, struct kern_ipc_perm *out);
+ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
+ 				      struct ipc_ids *ids, int id, int cmd,
 
-* Some swap load: Simulated w/ 1G memory limit and buliding defconfig
-  kernel in tmpfs.  Swap grows to a couple hundred megabytes but build
-  time is still dominated by CPU.  I didn't see any meanginful
-  difference before and after the commit - both in terms of wallclock
-  and CPU times.
-
-Maybe these two were too extreme to show the problem and I need to
-push memory limit a bit further, but it would be great if you can give
-me a bit more details about your testing.
-
-* How much memory does the machine have?  How is the tmpfs setup and
-  filled up?  What's the size of the tmpfs and the output of "free -m"
-  right before test starts?  While the test is running, how occupied
-  are the CPUs?  On test completion, what's the output of "free -m"?
-
-* What exactly is the test and what do you measure?  What does "12%
-  regression" mean?  Is it wallclock time or CPU time?  If it's CPU
-  time, does systime increase dominate the regression?
-
-Thanks.
-
--- 
-tejun
