@@ -1,201 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab2BIDO5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 22:14:57 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:61490 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757753Ab2BIDOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 22:14:55 -0500
-X-IronPort-AV: E=Sophos;i="4.73,387,1325491200"; 
-   d="scan'208";a="623837162"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: linux-next: Tree for Feb 2 (trace/events/sunrpc.h)
-Thread-Topic: linux-next: Tree for Feb 2 (trace/events/sunrpc.h)
-Thread-Index: AQHM5tO9TFW7VWehPUStvETYNujz+5Y0amiA
-Date: Thu, 9 Feb 2012 03:14:48 +0000
-Message-ID: <1328757287.3234.76.camel@lade.trondhjem.org>
-References: <20120202144516.11b33e667a7cbb8d85d96226@canb.auug.org.au>
-	 <4F2AD18D.9030904@xenotime.net>
-	 <1328755030.2200.133.camel@gandalf.stny.rr.com>
-In-Reply-To: <1328755030.2200.133.camel@gandalf.stny.rr.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D077FD8824811144B273378A92AEBD13@tahoe.netapp.com>
+	id S1757880Ab2BID2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 22:28:04 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43066 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab2BID2C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 22:28:02 -0500
 MIME-Version: 1.0
-X-OriginalArrivalTime: 09 Feb 2012 03:14:49.0112 (UTC) FILETIME=[FB58B180:01CCE6D8]
+In-Reply-To: <1328735457-29986-5-git-send-email-danny.kukawka@bisect.de>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
+	<1328735457-29986-5-git-send-email-danny.kukawka@bisect.de>
+Date: Thu, 9 Feb 2012 11:28:01 +0800
+Message-ID: <CAA_GA1dj+XiWpbgGTf4rff6cvU0jUwyc2wK5XVqJaM3SeqtxVA@mail.gmail.com>
+Subject: Re: [PATCH 04/50] adi/blackfin: set addr_assign_type correctly if random
+From: Bob Liu <lliubbo@gmail.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Scott Jiang <scott.jiang@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q193FK4f007547
 
-On Wed, 2012-02-08 at 21:37 -0500, Steven Rostedt wrote:
-> [ Added the person responsible for this ]
-> 
-> On Thu, 2012-02-02 at 10:10 -0800, Randy Dunlap wrote:
-> > On 02/01/2012 07:45 PM, Stephen Rothwell wrote:
-> > > Hi all,
-> > > 
-> > > Changes since 20120201:
-> > 
-> > 
-> > 
-> > include/trace/events/sunrpc.h:69:1: error: implicit declaration of function 'rpc_qname'
-> > include/trace/events/sunrpc.h:69:1: warning: format '%s' expects type 'char *', but argument 9 has type 'int'
-> 
-> This has actually nothing to do with the tracepoint itself. The bug is
-> with the rpc_qname().
-> 
-> The tracepoint references rpc_qname() and in
-> include/linux/sunrpc/sched.h:
-> 
-> 
-> #ifdef RPC_DEBUG
-> static inline const char * rpc_qname(const struct rpc_wait_queue *q)
-> {
-> 	return ((q && q->name) ? q->name : "unknown");
-> }
-> #endif
-> 
-> Your config had RPC_DEBUG not set, thus the function was not defined.
-> 
-> 
-> The below patch fixes the problem with the side effect that the trace
-> data will contain "unknown" for all references to rcu_qname().
-> 
-> -- Steve
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> 
-> diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
-> index f7b2df5..c89ba95 100644
-> --- a/include/linux/sunrpc/sched.h
-> +++ b/include/linux/sunrpc/sched.h
-> @@ -275,6 +275,11 @@ static inline const char * rpc_qname(const struct rpc_wait_queue *q)
->  {
->  	return ((q && q->name) ? q->name : "unknown");
->  }
-> +#else
-> +static inline const char * rpc_qname(const struct rpc_wait_queue *q)
-> +{
-> +	return "unknown";
-> +}
->  #endif
->  
->  #endif /* _LINUX_SUNRPC_SCHED_H_ */
+Hi Danny,
 
-Hmm.... How about if we rather take that out of the RPC_DEBUG condition?
-I'm assuming that if someone compiles in the tracepoint code, then they
-want to be able to do a full trace independently of whether or not they
-set CONFIG_SYSCTL.
+On Thu, Feb 9, 2012 at 5:10 AM, Danny Kukawka <danny.kukawka@bisect.de> wrote:
+> Set the addr_assign_type for adi driver correctly to
+> NET_ADDR_RANDOM if a random MAC address was generated.
+> Reset the state to NET_ADDR_PERM as soon as the MAC get
+> changed via .ndo_set_mac_address.
+>
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  arch/blackfin/mach-bf518/boards/ezbrd.c      |    3 ++-
+>  arch/blackfin/mach-bf518/boards/tcm-bf518.c  |    3 ++-
+>  arch/blackfin/mach-bf527/boards/ad7160eval.c |    3 ++-
+>  arch/blackfin/mach-bf527/boards/cm_bf527.c   |    3 ++-
+>  arch/blackfin/mach-bf527/boards/ezbrd.c      |    3 ++-
+>  arch/blackfin/mach-bf527/boards/ezkit.c      |    3 ++-
+>  arch/blackfin/mach-bf527/boards/tll6527m.c   |    3 ++-
+>  arch/blackfin/mach-bf537/boards/cm_bf537e.c  |    3 ++-
+>  arch/blackfin/mach-bf537/boards/cm_bf537u.c  |    3 ++-
+>  arch/blackfin/mach-bf537/boards/dnp5370.c    |    3 ++-
+>  arch/blackfin/mach-bf537/boards/pnav10.c     |    3 ++-
+>  arch/blackfin/mach-bf537/boards/stamp.c      |    3 ++-
+>  arch/blackfin/mach-bf537/boards/tcm_bf537.c  |    3 ++-
+>  drivers/net/ethernet/adi/bfin_mac.c          |   10 +++++++---
+>  drivers/net/ethernet/adi/bfin_mac.h          |    2 +-
 
-8<---------------------------------------------------------------------
->From d051b60dcc3032b71cf8d9b96ac4bf24f12b6dcb Mon Sep 17 00:00:00 2001
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date: Wed, 8 Feb 2012 22:01:15 -0500
-Subject: [PATCH] SUNRPC: Ensure that we can trace waitqueues when
- !defined(CONFIG_SYSCTL)
+Would you please split this into two patches, one for arch/blackfin
+and the other
+for drivers/net.
+This can make our maintain simpler and clearer.
 
-The tracepoint code relies on the queue->name being defined in order to
-be able to display the name of the waitqueue on which an RPC task is
-sleeping.
+>  15 files changed, 34 insertions(+), 17 deletions(-)
+>
+> diff --git a/arch/blackfin/mach-bf518/boards/ezbrd.c b/arch/blackfin/mach-bf518/boards/ezbrd.c
+> index a2d96d3..a173957 100644
+> --- a/arch/blackfin/mach-bf518/boards/ezbrd.c
+> +++ b/arch/blackfin/mach-bf518/boards/ezbrd.c
+> @@ -821,7 +821,7 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        /* the MAC is stored in OTP memory page 0xDF */
+>        u32 ret;
+> @@ -834,5 +834,6 @@ void bfin_get_ether_addr(char *addr)
+>                for (ret = 0; ret < 6; ++ret)
+>                        addr[ret] = otp_mac_p[5 - ret];
+>        }
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf518/boards/tcm-bf518.c b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
+> index f271310..d3c763e 100644
+> --- a/arch/blackfin/mach-bf518/boards/tcm-bf518.c
+> +++ b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
+> @@ -730,9 +730,10 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf527/boards/ad7160eval.c b/arch/blackfin/mach-bf527/boards/ad7160eval.c
+> index c8d5d2b..fad7fea 100644
+> --- a/arch/blackfin/mach-bf527/boards/ad7160eval.c
+> +++ b/arch/blackfin/mach-bf527/boards/ad7160eval.c
+> @@ -846,7 +846,7 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        /* the MAC is stored in OTP memory page 0xDF */
+>        u32 ret;
+> @@ -859,5 +859,6 @@ void bfin_get_ether_addr(char *addr)
+>                for (ret = 0; ret < 6; ++ret)
+>                        addr[ret] = otp_mac_p[5 - ret];
+>        }
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf527/boards/cm_bf527.c b/arch/blackfin/mach-bf527/boards/cm_bf527.c
+> index 7330607..5fb09ad 100644
+> --- a/arch/blackfin/mach-bf527/boards/cm_bf527.c
+> +++ b/arch/blackfin/mach-bf527/boards/cm_bf527.c
+> @@ -983,9 +983,10 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf527/boards/ezbrd.c b/arch/blackfin/mach-bf527/boards/ezbrd.c
+> index db3ecfc..17c6a24 100644
+> --- a/arch/blackfin/mach-bf527/boards/ezbrd.c
+> +++ b/arch/blackfin/mach-bf527/boards/ezbrd.c
+> @@ -870,7 +870,7 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        /* the MAC is stored in OTP memory page 0xDF */
+>        u32 ret;
+> @@ -883,5 +883,6 @@ void bfin_get_ether_addr(char *addr)
+>                for (ret = 0; ret < 6; ++ret)
+>                        addr[ret] = otp_mac_p[5 - ret];
+>        }
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf527/boards/ezkit.c b/arch/blackfin/mach-bf527/boards/ezkit.c
+> index dfdd8e6..89b0f6c 100644
+> --- a/arch/blackfin/mach-bf527/boards/ezkit.c
+> +++ b/arch/blackfin/mach-bf527/boards/ezkit.c
+> @@ -1311,7 +1311,7 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        /* the MAC is stored in OTP memory page 0xDF */
+>        u32 ret;
+> @@ -1324,5 +1324,6 @@ void bfin_get_ether_addr(char *addr)
+>                for (ret = 0; ret < 6; ++ret)
+>                        addr[ret] = otp_mac_p[5 - ret];
+>        }
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf527/boards/tll6527m.c b/arch/blackfin/mach-bf527/boards/tll6527m.c
+> index 360e97f..d192c0a 100644
+> --- a/arch/blackfin/mach-bf527/boards/tll6527m.c
+> +++ b/arch/blackfin/mach-bf527/boards/tll6527m.c
+> @@ -931,7 +931,7 @@ void native_machine_restart(char *cmd)
+>                bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        /* the MAC is stored in OTP memory page 0xDF */
+>        u32 ret;
+> @@ -945,5 +945,6 @@ void bfin_get_ether_addr(char *addr)
+>                for (ret = 0; ret < 6; ++ret)
+>                        addr[ret] = otp_mac_p[5 - ret];
+>        }
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/cm_bf537e.c b/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+> index 0d4a2f6..618fd7d 100644
+> --- a/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+> +++ b/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+> @@ -813,9 +813,10 @@ void __init native_machine_early_platform_add_devices(void)
+>                ARRAY_SIZE(cm_bf537e_early_devices));
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/cm_bf537u.c b/arch/blackfin/mach-bf537/boards/cm_bf537u.c
+> index f553698..48a7a23 100644
+> --- a/arch/blackfin/mach-bf537/boards/cm_bf537u.c
+> +++ b/arch/blackfin/mach-bf537/boards/cm_bf537u.c
+> @@ -790,9 +790,10 @@ void __init native_machine_early_platform_add_devices(void)
+>                ARRAY_SIZE(cm_bf537u_early_devices));
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/dnp5370.c b/arch/blackfin/mach-bf537/boards/dnp5370.c
+> index 11dadeb..6f77bf7 100644
+> --- a/arch/blackfin/mach-bf537/boards/dnp5370.c
+> +++ b/arch/blackfin/mach-bf537/boards/dnp5370.c
+> @@ -399,9 +399,10 @@ arch_initcall(dnp5370_init);
+>  /*
+>  * Currently the MAC address is saved in Flash by U-Boot
+>  */
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        *(u32 *)(&(addr[0])) = bfin_read32(FLASH_MAC);
+>        *(u16 *)(&(addr[4])) = bfin_read16(FLASH_MAC + 4);
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/pnav10.c b/arch/blackfin/mach-bf537/boards/pnav10.c
+> index 6fd8470..2a9cd61 100644
+> --- a/arch/blackfin/mach-bf537/boards/pnav10.c
+> +++ b/arch/blackfin/mach-bf537/boards/pnav10.c
+> @@ -535,9 +535,10 @@ void __init native_machine_early_platform_add_devices(void)
+>                ARRAY_SIZE(stamp_early_devices));
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+> index 2221173..0b80725 100644
+> --- a/arch/blackfin/mach-bf537/boards/stamp.c
+> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
+> @@ -2993,9 +2993,10 @@ void native_machine_restart(char *cmd)
+>  * Currently the MAC address is saved in Flash by U-Boot
+>  */
+>  #define FLASH_MAC      0x203f0000
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        *(u32 *)(&(addr[0])) = bfin_read32(FLASH_MAC);
+>        *(u16 *)(&(addr[4])) = bfin_read16(FLASH_MAC + 4);
+> +       return 0;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/arch/blackfin/mach-bf537/boards/tcm_bf537.c b/arch/blackfin/mach-bf537/boards/tcm_bf537.c
+> index 9885176..02eb9d0 100644
+> --- a/arch/blackfin/mach-bf537/boards/tcm_bf537.c
+> +++ b/arch/blackfin/mach-bf537/boards/tcm_bf537.c
+> @@ -780,9 +780,10 @@ void __init native_machine_early_platform_add_devices(void)
+>                ARRAY_SIZE(cm_bf537_early_devices));
+>  }
+>
+> -void bfin_get_ether_addr(char *addr)
+> +int bfin_get_ether_addr(char *addr)
+>  {
+>        random_ether_addr(addr);
+>        printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
+> +       return 1;
+>  }
+>  EXPORT_SYMBOL(bfin_get_ether_addr);
+> diff --git a/drivers/net/ethernet/adi/bfin_mac.c b/drivers/net/ethernet/adi/bfin_mac.c
+> index d812a10..064a3a6 100644
+> --- a/drivers/net/ethernet/adi/bfin_mac.c
+> +++ b/drivers/net/ethernet/adi/bfin_mac.c
+> @@ -621,6 +621,8 @@ static int bfin_mac_set_mac_address(struct net_device *dev, void *p)
+>        if (netif_running(dev))
+>                return -EBUSY;
+>        memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
+> +       if (dev->addr_assign_type & NET_ADDR_RANDOM)
+> +               dev->addr_assign_type ^= NET_ADDR_RANDOM;
+>        setup_mac_addr(dev->dev_addr);
+>        return 0;
+>  }
+> @@ -1496,12 +1498,14 @@ static int __devinit bfin_mac_probe(struct platform_device *pdev)
+>         * Grab the MAC from the board somehow
+>         * this is done in the arch/blackfin/mach-bfxxx/boards/eth_mac.c
+>         */
+> -       if (!is_valid_ether_addr(ndev->dev_addr))
+> -               bfin_get_ether_addr(ndev->dev_addr);
+> +       if (!is_valid_ether_addr(ndev->dev_addr)) {
+> +               if (bfin_get_ether_addr(ndev->dev_addr))
+> +                       ndev->addr_assign_type |= NET_ADDR_RANDOM;
+> +       }
+>
+>        /* If still not valid, get a random one */
+>        if (!is_valid_ether_addr(ndev->dev_addr))
+> -               random_ether_addr(ndev->dev_addr);
+> +               dev_hw_addr_random(ndev, ndev->dev_addr);
+>
+>        setup_mac_addr(ndev->dev_addr);
+>
+> diff --git a/drivers/net/ethernet/adi/bfin_mac.h b/drivers/net/ethernet/adi/bfin_mac.h
+> index f8559ac..960905c 100644
+> --- a/drivers/net/ethernet/adi/bfin_mac.h
+> +++ b/drivers/net/ethernet/adi/bfin_mac.h
+> @@ -101,6 +101,6 @@ struct bfin_mac_local {
+>  #endif
+>  };
+>
+> -extern void bfin_get_ether_addr(char *addr);
+> +extern int bfin_get_ether_addr(char *addr);
+>
+>  #endif
+> --
+> 1.7.7.3
+>
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- include/linux/sunrpc/debug.h |    3 +++
- include/linux/sunrpc/sched.h |   15 +++++++++++++--
- net/sunrpc/sched.c           |    4 +---
- 3 files changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/sunrpc/debug.h b/include/linux/sunrpc/debug.h
-index c2786f2..2a11eb2 100644
---- a/include/linux/sunrpc/debug.h
-+++ b/include/linux/sunrpc/debug.h
-@@ -34,6 +34,9 @@
- #ifdef CONFIG_SYSCTL
- #define  RPC_DEBUG
- #endif
-+#ifdef CONFIG_TRACEPOINTS
-+#define RPC_TRACEPOINTS
-+#endif
- /* #define  RPC_PROFILE */
- 
- /*
-diff --git a/include/linux/sunrpc/sched.h b/include/linux/sunrpc/sched.h
-index f7b2df5..22dfc24 100644
---- a/include/linux/sunrpc/sched.h
-+++ b/include/linux/sunrpc/sched.h
-@@ -195,7 +195,7 @@ struct rpc_wait_queue {
- 	unsigned char		nr;			/* # tasks remaining for cookie */
- 	unsigned short		qlen;			/* total # tasks waiting in queue */
- 	struct rpc_timer	timer_list;
--#ifdef RPC_DEBUG
-+#if defined(RPC_DEBUG) || defined(RPC_TRACEPOINTS)
- 	const char *		name;
- #endif
- };
-@@ -270,11 +270,22 @@ static inline int rpc_task_has_priority(struct rpc_task *task, unsigned char pri
- 	return (task->tk_priority + RPC_PRIORITY_LOW == prio);
- }
- 
--#ifdef RPC_DEBUG
-+#if defined(RPC_DEBUG) || defined (RPC_TRACEPOINTS)
- static inline const char * rpc_qname(const struct rpc_wait_queue *q)
- {
- 	return ((q && q->name) ? q->name : "unknown");
- }
-+
-+static inline void rpc_assign_waitqueue_name(struct rpc_wait_queue *q,
-+		const char *name)
-+{
-+	q->name = name;
-+}
-+#else
-+static inline void rpc_assign_waitqueue_name(struct rpc_wait_queue *q,
-+		const char *name)
-+{
-+}
- #endif
- 
- #endif /* _LINUX_SUNRPC_SCHED_H_ */
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index d79c63d..1c570a8 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -208,9 +208,7 @@ static void __rpc_init_priority_wait_queue(struct rpc_wait_queue *queue, const c
- 	queue->qlen = 0;
- 	setup_timer(&queue->timer_list.timer, __rpc_queue_timer_fn, (unsigned long)queue);
- 	INIT_LIST_HEAD(&queue->timer_list.list);
--#ifdef RPC_DEBUG
--	queue->name = qname;
--#endif
-+	rpc_assign_waitqueue_name(queue, qname);
- }
- 
- void rpc_init_priority_wait_queue(struct rpc_wait_queue *queue, const char *qname)
 -- 
-1.7.7.6
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Thanks,
+--Bob
