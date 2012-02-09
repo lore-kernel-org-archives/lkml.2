@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab2BIM4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:56:44 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44670 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738Ab2BIM4n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:56:43 -0500
+	id S1757333Ab2BINE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:04:29 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:57691 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756464Ab2BINE1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:04:27 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/CpqRngRPCijYS1faBp65D2jzj8UPAMIB4N9WJHh
+	tX/0+wIuZezKK/
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: Johannes Stezenbach <js@sig21.net>
+Subject: Re: swap storm since kernel 3.2.x
+Date: Thu, 9 Feb 2012 14:04:21 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.20; KDE/4.8.0; i686; ; )
+Cc: Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org
+References: <201202041109.53003.toralf.foerster@gmx.de> <CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com> <20120209113606.GA8054@sig21.net>
+In-Reply-To: <20120209113606.GA8054@sig21.net>
 MIME-Version: 1.0
-In-Reply-To: <20120208142513.4db2493a.akpm@linux-foundation.org>
-References: <20120207141155.GA16184@elgon.mountain>
-	<4F323388.7040902@kernel.dk>
-	<20120208142513.4db2493a.akpm@linux-foundation.org>
-Date: Thu, 9 Feb 2012 14:56:42 +0200
-X-Google-Sender-Auth: ROcMSNZRPIXVUuKa0JSGEOtz5PQ
-Message-ID: <CAOJsxLGMOfzgHYKrgo42sB26PQw9YZR8TGTbpkeWNZpY4FPOTg@mail.gmail.com>
-Subject: Re: integer overflows in kernel/relay.c
-From: Pekka Enberg <penberg@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201202091404.22470.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 12:25 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 08 Feb 2012 09:34:16 +0100
-> Jens Axboe <axboe@kernel.dk> wrote:
->
->> On 02/07/2012 03:11 PM, Dan Carpenter wrote:
->> > My static checker is warning about integer overflows in kernel/relay.c
->> >
->> > relay_create_buf()
->> >    170
->> >    171          buf->padding = kmalloc(chan->n_subbufs * sizeof(size_t *), GFP_KERNEL);
->> >                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->> > This can only overflow on 32bit systems.
->>
->> Correct
->
-> This is a relatively common problem.  Converting a kzalloc() call to
-> kcalloc() fixes it.  But we do not have a non-zeroing version of
-> kcalloc().
->
-> Please, someone complete this patch and send it to me!
->
->
-> --- a/include/linux/slab.h~a
-> +++ a/include/linux/slab.h
-> @@ -240,11 +240,16 @@ size_t ksize(const void *);
->  * for general use, and so are not documented here. For a full list of
->  * potential flags, always refer to linux/gfp.h.
->  */
-> -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
-> +static inline void *wtf_do_i_call_this(size_t n, size_t size, gfp_t flags)
 
-I'd call it kmalloc_array().
+Johannes Stezenbach wrote at 12:36:06
+> On Wed, Feb 08, 2012 at 08:34:14PM +0800, Hillf Danton wrote:
+> > And I want to ask kswapd to do less work, the attached diff is
+> > based on 3.2.5, mind to test it with CONFIG_DEBUG_OBJECTS enabled?
+> 
+> Sorry, for slow reply.  The patch does not apply to 3.2.4
+> (3.2.5 only has the ASPM change which I don't want to
+> try atm).  Is the patch below correct?
+> 
+confirmed - doesn't apply here too :-(
 
->  {
->        if (size != 0 && n > ULONG_MAX / size)
->                return NULL;
-> -       return __kmalloc(n * size, flags | __GFP_ZERO);
-> +       return __kmalloc(n * size, flags);
-> +}
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
