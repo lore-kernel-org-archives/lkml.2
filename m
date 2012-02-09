@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab2BIIDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:03:53 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56414 "EHLO bear.ext.ti.com"
+	id S1756639Ab2BIIET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:04:19 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55250 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2BIIDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:03:52 -0500
+	id S1752030Ab2BIIER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:04:17 -0500
 From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
 To: <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>,
@@ -14,9 +14,9 @@ CC: Sekhar Nori <nsekhar@ti.com>, Russell King <linux@arm.linux.org.uk>,
         David Woodhouse <dwmw2@infradead.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
         "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: [PATCH v4 3/3] arm:davinci: move NAND and NOR devices as aemif MFD slaves
-Date: Thu, 9 Feb 2012 12:48:28 +0530
-Message-ID: <1328771908-32527-4-git-send-email-prakash.pm@ti.com>
+Subject: [PATCH v4 2/3] arm:davinci: move emif driver to drivers/mfd from mach-davinci folder
+Date: Thu, 9 Feb 2012 12:48:27 +0530
+Message-ID: <1328771908-32527-3-git-send-email-prakash.pm@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
 References: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
@@ -26,743 +26,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAND and NOR device are made as aemif device slaves, hence all DaVinci
-board NAND/NOR device registration achieved via aemif MFD driver.
+Move aemif kernel module from arch/arm/mach-davinci/ to multi functional
+devices frame work. "davinci_aemif" MFD driver adds "davinci_nand" and
+"physmap-flash" slave devices.
 
 Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 ---
 Since v3:
-Changed NAND device id to 1 for board-mityomapl138.
+No change. Resending as 3/3 in patch changed.
 Since v2:
-Make changes for all DaVinci boards in single patch.
+Modified emif MFD driver to load multiple instance of NAND/NOR devices.
 Since v1:
 Patch generated using -M option.
 
- arch/arm/mach-davinci/board-da830-evm.c     |   31 ++++--
- arch/arm/mach-davinci/board-da850-evm.c     |   54 +++++----
- arch/arm/mach-davinci/board-dm355-evm.c     |   33 ++++--
- arch/arm/mach-davinci/board-dm355-leopard.c |   35 ++++--
- arch/arm/mach-davinci/board-dm365-evm.c     |   34 ++++--
- arch/arm/mach-davinci/board-dm644x-evm.c    |  173 +++++++++++++++------------
- arch/arm/mach-davinci/board-dm646x-evm.c    |   30 ++++--
- arch/arm/mach-davinci/board-mityomapl138.c  |   34 ++++--
- arch/arm/mach-davinci/board-neuros-osd2.c   |    1 +
- arch/arm/mach-davinci/board-sffsdr.c        |   34 ++++--
- 10 files changed, 299 insertions(+), 160 deletions(-)
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/mach-davinci/Makefile                     |    2 +-
+ drivers/mfd/Makefile                               |    1 +
+ .../aemif.c => drivers/mfd/davinci_aemif.c         |   75 +++++++++++++++++++-
+ include/linux/mfd/davinci_aemif.h                  |   14 ++++
+ 5 files changed, 91 insertions(+), 2 deletions(-)
+ rename arch/arm/mach-davinci/aemif.c => drivers/mfd/davinci_aemif.c (66%)
 
-diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
-index 0b43554..0ad3662 100644
---- a/arch/arm/mach-davinci/board-da830-evm.c
-+++ b/arch/arm/mach-davinci/board-da830-evm.c
-@@ -396,14 +396,29 @@ static struct resource da830_evm_nand_resources[] = {
- 	},
- };
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a48aecc..09dcb94 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -934,6 +934,7 @@ config ARCH_DAVINCI
+ 	select GENERIC_ALLOCATOR
+ 	select GENERIC_IRQ_CHIP
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
++	select MFD_CORE
+ 	help
+ 	  Support for TI's DaVinci platform.
  
--static struct platform_device da830_evm_nand_device = {
--	.name		= "davinci_nand",
--	.id		= 1,
--	.dev		= {
--		.platform_data	= &da830_evm_nand_pdata,
-+static struct platform_device da830_evm_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 1,
-+		.dev		= {
-+			.platform_data	= &da830_evm_nand_pdata,
-+		},
-+		.num_resources	= ARRAY_SIZE(da830_evm_nand_resources),
-+		.resource	= da830_evm_nand_resources,
-+	},
-+};
-+
-+static struct davinci_aemif_devices da830_emif_devices = {
-+	.devices	= da830_evm_devices,
-+	.num_devices	= ARRAY_SIZE(da830_evm_devices),
-+};
-+
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &da830_emif_devices,
- 	},
--	.num_resources	= ARRAY_SIZE(da830_evm_nand_resources),
--	.resource	= da830_evm_nand_resources,
- };
+diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
+index 2db78bd..8bab47c 100644
+--- a/arch/arm/mach-davinci/Makefile
++++ b/arch/arm/mach-davinci/Makefile
+@@ -5,7 +5,7 @@
  
- static inline void da830_evm_init_nand(int mux_mode)
-@@ -422,7 +437,7 @@ static inline void da830_evm_init_nand(int mux_mode)
- 		pr_warning("da830_evm_init: emif25 mux setup failed: %d\n",
- 				ret);
+ # Common objects
+ obj-y 			:= time.o clock.o serial.o psc.o \
+-			   dma.o usb.o common.o sram.o aemif.o
++			   dma.o usb.o common.o sram.o
  
--	ret = platform_device_register(&da830_evm_nand_device);
-+	ret = platform_device_register(&davinci_emif_device);
- 	if (ret)
- 		pr_warning("da830_evm_init: NAND device not registered.\n");
+ obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
  
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 9f2a544..49ab16d 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -181,16 +181,6 @@ static struct resource da850_evm_norflash_resource[] = {
- 	},
- };
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index b953bab..54fc267 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
+ obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
+ obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
  
--static struct platform_device da850_evm_norflash_device = {
--	.name		= "physmap-flash",
--	.id		= 0,
--	.dev		= {
--		.platform_data  = &da850_evm_norflash_data,
--	},
--	.num_resources	= 1,
--	.resource	= da850_evm_norflash_resource,
--};
--
- static struct davinci_pm_config da850_pm_pdata = {
- 	.sleepcount = 128,
- };
-@@ -273,19 +263,39 @@ static struct resource da850_evm_nandflash_resource[] = {
- 	},
- };
- 
--static struct platform_device da850_evm_nandflash_device = {
--	.name		= "davinci_nand",
--	.id		= 1,
--	.dev		= {
--		.platform_data	= &da850_evm_nandflash_data,
-+static struct platform_device da850_evm_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 1,
-+		.dev		= {
-+			.platform_data	= &da850_evm_nandflash_data,
-+		},
-+		.num_resources	= ARRAY_SIZE(da850_evm_nandflash_resource),
-+		.resource	= da850_evm_nandflash_resource,
- 	},
--	.num_resources	= ARRAY_SIZE(da850_evm_nandflash_resource),
--	.resource	= da850_evm_nandflash_resource,
-+	{
-+		.name		= "physmap-flash",
-+		.id		= 0,
-+		.dev		= {
-+			.platform_data  = &da850_evm_norflash_data,
-+		},
-+		.num_resources	= 1,
-+		.resource	= da850_evm_norflash_resource,
-+
-+	},
-+
-+};
-+static struct davinci_aemif_devices da850_emif_devices = {
-+	.devices	= da850_evm_devices,
-+	.num_devices	= ARRAY_SIZE(da850_evm_devices),
- };
- 
--static struct platform_device *da850_evm_devices[] __initdata = {
--	&da850_evm_nandflash_device,
--	&da850_evm_norflash_device,
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &da850_emif_devices,
-+	},
- };
- 
- #define DA8XX_AEMIF_CE2CFG_OFFSET	0x10
-@@ -352,9 +362,7 @@ static inline void da850_evm_setup_nor_nand(void)
- 				ret);
- 
- 		da850_evm_init_nor();
--
--		platform_add_devices(da850_evm_devices,
--					ARRAY_SIZE(da850_evm_devices));
-+		platform_device_register(&davinci_emif_device);
- 	}
- }
- 
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index 275341f..e7359e8 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -22,6 +22,7 @@
- #include <media/tvp514x.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/eeprom.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -93,15 +94,16 @@ static struct resource davinci_nand_resources[] = {
- 	},
- };
- 
--static struct platform_device davinci_nand_device = {
--	.name			= "davinci_nand",
--	.id			= 0,
--
--	.num_resources		= ARRAY_SIZE(davinci_nand_resources),
--	.resource		= davinci_nand_resources,
-+static struct platform_device dm355_evm_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
- 
--	.dev			= {
--		.platform_data	= &davinci_nand_data,
-+		.resource		= davinci_nand_resources,
-+		.num_resources		= ARRAY_SIZE(davinci_nand_resources),
-+		.dev		= {
-+			.platform_data	= &davinci_nand_data,
-+		},
- 	},
- };
- 
-@@ -241,9 +243,22 @@ static struct vpfe_config vpfe_cfg = {
- 	.ccdc = "DM355 CCDC",
- };
- 
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= dm355_evm_devices,
-+	.num_devices	= ARRAY_SIZE(dm355_evm_devices),
-+};
-+
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
-+	},
-+};
-+
- static struct platform_device *davinci_evm_devices[] __initdata = {
- 	&dm355evm_dm9000,
--	&davinci_nand_device,
-+	&davinci_emif_device,
- };
- 
- static struct davinci_uart_config uart_config __initdata = {
-diff --git a/arch/arm/mach-davinci/board-dm355-leopard.c b/arch/arm/mach-davinci/board-dm355-leopard.c
-index e99db28..ec057b6 100644
---- a/arch/arm/mach-davinci/board-dm355-leopard.c
-+++ b/arch/arm/mach-davinci/board-dm355-leopard.c
-@@ -19,6 +19,7 @@
++obj-${CONFIG_ARCH_DAVINCI}	+= davinci_aemif.o
+ obj-$(CONFIG_MFD_DAVINCI_VOICECODEC)	+= davinci_voicecodec.o
+ obj-$(CONFIG_MFD_DM355EVM_MSP)	+= dm355evm_msp.o
+ obj-$(CONFIG_MFD_TI_SSP)	+= ti-ssp.o
+diff --git a/arch/arm/mach-davinci/aemif.c b/drivers/mfd/davinci_aemif.c
+similarity index 66%
+rename from arch/arm/mach-davinci/aemif.c
+rename to drivers/mfd/davinci_aemif.c
+index b67c115..5fb490d 100644
+--- a/arch/arm/mach-davinci/aemif.c
++++ b/drivers/mfd/davinci_aemif.c
+@@ -14,8 +14,13 @@
  #include <linux/clk.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/eeprom.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -89,15 +90,16 @@ static struct resource davinci_nand_resources[] = {
- 	},
- };
- 
--static struct platform_device davinci_nand_device = {
--	.name			= "davinci_nand",
--	.id			= 0,
+ #include <linux/module.h>
+ #include <linux/time.h>
 -
--	.num_resources		= ARRAY_SIZE(davinci_nand_resources),
--	.resource		= davinci_nand_resources,
--
--	.dev			= {
--		.platform_data	= &davinci_nand_data,
-+static struct platform_device dm355_evm_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
+ #include <linux/mfd/davinci_aemif.h>
++#include <linux/mtd/physmap.h>
++#include <linux/slab.h>
++#include <mach/nand.h>
 +
-+		.resource		= davinci_nand_resources,
-+		.num_resources		= ARRAY_SIZE(davinci_nand_resources),
-+		.dev		= {
-+			.platform_data	= &davinci_nand_data,
-+		},
- 	},
- };
++static char *name[] = {"davinci_nand", "physmap-flash",};
++#define MAX ARRAY_SIZE(name)
  
-@@ -166,9 +168,22 @@ static struct platform_device dm355leopard_dm9000 = {
- 	.num_resources	= ARRAY_SIZE(dm355leopard_dm9000_rsrc),
- };
+ /* Timing value configuration */
  
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= dm355_evm_devices,
-+	.num_devices	= ARRAY_SIZE(dm355_evm_devices),
-+};
-+
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
-+	},
-+};
-+
- static struct platform_device *davinci_leopard_devices[] __initdata = {
- 	&dm355leopard_dm9000,
--	&davinci_nand_device,
-+	&davinci_emif_device,
- };
- 
- static struct davinci_uart_config uart_config __initdata = {
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 849311d..f97d67d 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -27,6 +27,7 @@
- #include <linux/input.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/eeprom.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -155,13 +156,16 @@ static struct resource davinci_nand_resources[] = {
- 	},
- };
- 
--static struct platform_device davinci_nand_device = {
--	.name			= "davinci_nand",
--	.id			= 0,
--	.num_resources		= ARRAY_SIZE(davinci_nand_resources),
--	.resource		= davinci_nand_resources,
--	.dev			= {
--		.platform_data	= &davinci_nand_data,
-+static struct platform_device dm365_emif_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
-+
-+		.resource		= davinci_nand_resources,
-+		.num_resources		= ARRAY_SIZE(davinci_nand_resources),
-+		.dev		= {
-+			.platform_data	= &davinci_nand_data,
-+		},
- 	},
- };
- 
-@@ -379,8 +383,17 @@ static void __init evm_init_i2c(void)
- 	i2c_register_board_info(1, i2c_info, ARRAY_SIZE(i2c_info));
+@@ -131,3 +136,71 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
+ 	return 0;
  }
- 
--static struct platform_device *dm365_evm_nand_devices[] __initdata = {
--	&davinci_nand_device,
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= dm365_emif_devices,
-+	.num_devices	= ARRAY_SIZE(dm365_emif_devices),
-+};
+ EXPORT_SYMBOL(davinci_aemif_setup_timing);
 +
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
-+	},
- };
- 
- static inline int have_leds(void)
-@@ -502,8 +515,7 @@ fail:
- 		/* external keypad mux */
- 		mux |= BIT(7);
- 
--		platform_add_devices(dm365_evm_nand_devices,
--				ARRAY_SIZE(dm365_evm_nand_devices));
-+		platform_device_register(&davinci_emif_device);
- 	} else {
- 		/* no OneNAND support yet */
- 	}
-diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
-index 99a6639..ad4c944 100644
---- a/arch/arm/mach-davinci/board-dm644x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm644x-evm.c
-@@ -44,61 +44,21 @@
- #define LXT971_PHY_ID	(0x001378e2)
- #define LXT971_PHY_MASK	(0xfffffff0)
- 
--static struct mtd_partition davinci_evm_norflash_partitions[] = {
--	/* bootloader (UBL, U-Boot, etc) in first 5 sectors */
--	{
--		.name		= "bootloader",
--		.offset		= 0,
--		.size		= 5 * SZ_64K,
--		.mask_flags	= MTD_WRITEABLE, /* force read-only */
--	},
--	/* bootloader params in the next 1 sectors */
--	{
--		.name		= "params",
--		.offset		= MTDPART_OFS_APPEND,
--		.size		= SZ_64K,
--		.mask_flags	= 0,
--	},
--	/* kernel */
--	{
--		.name		= "kernel",
--		.offset		= MTDPART_OFS_APPEND,
--		.size		= SZ_2M,
--		.mask_flags	= 0
--	},
--	/* file system */
--	{
--		.name		= "filesystem",
--		.offset		= MTDPART_OFS_APPEND,
--		.size		= MTDPART_SIZ_FULL,
--		.mask_flags	= 0
--	}
--};
--
--static struct physmap_flash_data davinci_evm_norflash_data = {
--	.width		= 2,
--	.parts		= davinci_evm_norflash_partitions,
--	.nr_parts	= ARRAY_SIZE(davinci_evm_norflash_partitions),
--};
--
--/* NOTE: CFI probe will correctly detect flash part as 32M, but EMIF
-- * limits addresses to 16M, so using addresses past 16M will wrap */
--static struct resource davinci_evm_norflash_resource = {
--	.start		= DM644X_ASYNC_EMIF_DATA_CE0_BASE,
--	.end		= DM644X_ASYNC_EMIF_DATA_CE0_BASE + SZ_16M - 1,
--	.flags		= IORESOURCE_MEM,
--};
-+#if defined(CONFIG_MTD_PHYSMAP) || \
-+	defined(CONFIG_MTD_PHYSMAP_MODULE)
-+#define HAS_NOR 1
-+#else
-+#define HAS_NOR 0
-+#endif
- 
--static struct platform_device davinci_evm_norflash_device = {
--	.name		= "physmap-flash",
--	.id		= 0,
--	.dev		= {
--		.platform_data	= &davinci_evm_norflash_data,
--	},
--	.num_resources	= 1,
--	.resource	= &davinci_evm_norflash_resource,
--};
-+#if defined(CONFIG_MTD_NAND_DAVINCI) || \
-+	defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
-+#define HAS_NAND 1
-+#else
-+#define HAS_NAND 0
-+#endif
- 
-+#if (HAS_NAND == 1)
- /* DM644x EVM includes a 64 MByte small-page NAND flash (16K blocks).
-  * It may used instead of the (default) NOR chip to boot, using TI's
-  * tools to install the secondary boot loader (UBL) and U-Boot.
-@@ -166,15 +126,79 @@ static struct resource davinci_evm_nandflash_resource[] = {
- 		.flags		= IORESOURCE_MEM,
- 	},
- };
-+#elif (HAS_NOR == 1)
-+static struct mtd_partition davinci_evm_norflash_partitions[] = {
-+	/* bootloader (UBL, U-Boot, etc) in first 5 sectors */
-+	{
-+		.name		= "bootloader",
-+		.offset		= 0,
-+		.size		= 5 * SZ_64K,
-+		.mask_flags	= MTD_WRITEABLE, /* force read-only */
-+	},
-+	/* bootloader params in the next 1 sectors */
-+	{
-+		.name		= "params",
-+		.offset		= MTDPART_OFS_APPEND,
-+		.size		= SZ_64K,
-+		.mask_flags	= 0,
-+	},
-+	/* kernel */
-+	{
-+		.name		= "kernel",
-+		.offset		= MTDPART_OFS_APPEND,
-+		.size		= SZ_2M,
-+		.mask_flags	= 0
-+	},
-+	/* file system */
-+	{
-+		.name		= "filesystem",
-+		.offset		= MTDPART_OFS_APPEND,
-+		.size		= MTDPART_SIZ_FULL,
-+		.mask_flags	= 0
-+	}
-+};
++static int __init davinci_aemif_probe(struct platform_device *pdev)
++{
++	struct davinci_aemif_devices *davinci_aemif_devices =
++		pdev->dev.platform_data;
++	struct platform_device *devices;
++	struct mfd_cell *cells;
++	int ret, i, j, count;
 +
-+static struct physmap_flash_data davinci_evm_norflash_data = {
-+	.width		= 2,
-+	.parts		= davinci_evm_norflash_partitions,
-+	.nr_parts	= ARRAY_SIZE(davinci_evm_norflash_partitions),
-+};
++	devices = davinci_aemif_devices->devices;
 +
-+/* NOTE: CFI probe will correctly detect flash part as 32M, but EMIF
-+ * limits addresses to 16M, so using addresses past 16M will wrap */
-+static struct resource davinci_evm_norflash_resource[] = {
-+	{
-+		.start		= DM644X_ASYNC_EMIF_DATA_CE0_BASE,
-+		.end		= DM644X_ASYNC_EMIF_DATA_CE0_BASE + SZ_16M - 1,
-+		.flags		= IORESOURCE_MEM,
-+	},
-+};
-+#endif
- 
--static struct platform_device davinci_evm_nandflash_device = {
--	.name		= "davinci_nand",
--	.id		= 0,
--	.dev		= {
--		.platform_data	= &davinci_evm_nandflash_data,
-+static struct platform_device dm644x_emif_devices[] __initdata = {
-+#if (HAS_NAND == 1)
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
-+		.resource		= davinci_evm_nandflash_resource,
-+		.num_resources		=
-+			ARRAY_SIZE(davinci_evm_nandflash_resource),
-+		.dev		= {
-+			.platform_data	= &davinci_evm_nandflash_data,
-+		},
- 	},
--	.num_resources	= ARRAY_SIZE(davinci_evm_nandflash_resource),
--	.resource	= davinci_evm_nandflash_resource,
-+#elif (HAS_NOR == 1)
-+	{
-+		.name		= "physmap-flash",
-+		.id		= 0,
-+		.resource		= davinci_evm_norflash_resource,
-+		.num_resources		=
-+			ARRAY_SIZE(davinci_evm_norflash_resource),
-+		.dev		= {
-+			.platform_data	= &davinci_evm_norflash_data,
-+		},
-+	},
-+#endif
- };
- 
- static u64 davinci_fb_dma_mask = DMA_BIT_MASK(32);
-@@ -649,19 +673,19 @@ static int davinci_phy_fixup(struct phy_device *phydev)
- #define HAS_ATA 0
- #endif
- 
--#if defined(CONFIG_MTD_PHYSMAP) || \
--    defined(CONFIG_MTD_PHYSMAP_MODULE)
--#define HAS_NOR 1
--#else
--#define HAS_NOR 0
--#endif
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= dm644x_emif_devices,
-+	.num_devices	= ARRAY_SIZE(dm644x_emif_devices),
-+};
++	cells = kzalloc(sizeof(struct mfd_cell) *
++			davinci_aemif_devices->num_devices, GFP_KERNEL);
 +
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
-+	},
-+};
- 
--#if defined(CONFIG_MTD_NAND_DAVINCI) || \
--    defined(CONFIG_MTD_NAND_DAVINCI_MODULE)
--#define HAS_NAND 1
--#else
--#define HAS_NAND 0
--#endif
- 
- static __init void davinci_evm_init(void)
- {
-@@ -683,13 +707,12 @@ static __init void davinci_evm_init(void)
- 
- 		/* only one device will be jumpered and detected */
- 		if (HAS_NAND) {
--			platform_device_register(&davinci_evm_nandflash_device);
- 			evm_leds[7].default_trigger = "nand-disk";
- 			if (HAS_NOR)
- 				pr_warning("WARNING: both NAND and NOR flash "
- 					"are enabled; disable one of them.\n");
--		} else if (HAS_NOR)
--			platform_device_register(&davinci_evm_norflash_device);
++	for (j = 0, count = 0; j < MAX; j++) {
++		for (i = 0; i < davinci_aemif_devices->num_devices; i++) {
++			if (strcmp(devices[i].name, name[j]))
++				continue;
++			cells[count].name = name[j];
++			cells[count].platform_data =
++				devices[i].dev.platform_data;
++			cells[count].pdata_size =
++				sizeof(struct davinci_nand_pdata);
++			cells[count].id = devices[i].id;
++			cells[count].resources = devices[i].resource;
++			cells[count].num_resources = devices[i].num_resources;
++			count++;
 +		}
-+		platform_device_register(&davinci_emif_device);
- 	}
- 
- 	platform_add_devices(davinci_evm_devices,
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index af55a9d..34bc4af 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -104,15 +104,29 @@ static struct resource davinci_nand_resources[] = {
- 	},
- };
- 
--static struct platform_device davinci_nand_device = {
--	.name			= "davinci_nand",
--	.id			= 0,
-+static struct platform_device dm646x_emif_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
++	}
 +
-+		.resource		= davinci_nand_resources,
-+		.num_resources		= ARRAY_SIZE(davinci_nand_resources),
-+		.dev		= {
-+			.platform_data	= &davinci_nand_data,
-+		},
++	ret = mfd_add_devices(&pdev->dev, 0, cells,
++			      count, NULL, 0);
++	if (ret != 0)
++		dev_err(&pdev->dev, "fail to register client devices\n");
++
++	return 0;
++}
++
++static int __devexit davinci_aemif_remove(struct platform_device *pdev)
++{
++	mfd_remove_devices(&pdev->dev);
++	return 0;
++}
++
++static struct platform_driver davinci_aemif_driver = {
++	.driver	= {
++		.name = "davinci_aemif",
++		.owner = THIS_MODULE,
 +	},
-+};
- 
--	.num_resources		= ARRAY_SIZE(davinci_nand_resources),
--	.resource		= davinci_nand_resources,
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= dm646x_emif_devices,
-+	.num_devices	= ARRAY_SIZE(dm646x_emif_devices),
-+};
- 
--	.dev			= {
--		.platform_data	= &davinci_nand_data,
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
- 	},
- };
- 
-@@ -782,7 +796,7 @@ static __init void evm_init(void)
- 	if (machine_is_davinci_dm6467tevm())
- 		davinci_nand_data.timing = &dm6467tevm_nandflash_timing;
- 
--	platform_device_register(&davinci_nand_device);
-+	platform_device_register(&davinci_emif_device);
- 
- 	dm646x_init_edma(dm646x_edma_rsv);
- 
-diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
-index 672d820..4e48ade 100644
---- a/arch/arm/mach-davinci/board-mityomapl138.c
-+++ b/arch/arm/mach-davinci/board-mityomapl138.c
-@@ -19,6 +19,7 @@
- #include <linux/etherdevice.h>
- #include <linux/spi/spi.h>
- #include <linux/spi/flash.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/io.h>
- #include <asm/mach-types.h>
-@@ -414,18 +415,35 @@ static struct resource mityomapl138_nandflash_resource[] = {
- 	},
- };
- 
--static struct platform_device mityomapl138_nandflash_device = {
--	.name		= "davinci_nand",
--	.id		= 1,
--	.dev		= {
--		.platform_data	= &mityomapl138_nandflash_data,
-+static struct platform_device mityomapl138_emif_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 1,
-+
-+		.resource		= mityomapl138_nandflash_resource,
-+		.num_resources		=
-+			ARRAY_SIZE(mityomapl138_nandflash_resource),
-+		.dev		= {
-+			.platform_data	= &mityomapl138_nandflash_data,
-+		},
-+	},
++	.remove	= __devexit_p(davinci_aemif_remove),
 +};
 +
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= mityomapl138_emif_devices,
-+	.num_devices	= ARRAY_SIZE(mityomapl138_emif_devices),
++static int __init davinci_aemif_init(void)
++{
++	return platform_driver_probe(&davinci_aemif_driver,
++			davinci_aemif_probe);
++}
++module_init(davinci_aemif_init);
++
++static void __exit davinci_aemif_exit(void)
++{
++	platform_driver_unregister(&davinci_aemif_driver);
++}
++module_exit(davinci_aemif_exit);
++
++MODULE_AUTHOR("Prakash Manjunathappa");
++MODULE_DESCRIPTION("Texas Instruments AEMIF Interface");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/davinci_aemif.h b/include/linux/mfd/davinci_aemif.h
+index 05b2934..18650c3 100644
+--- a/include/linux/mfd/davinci_aemif.h
++++ b/include/linux/mfd/davinci_aemif.h
+@@ -10,6 +10,10 @@
+ #ifndef _MACH_DAVINCI_AEMIF_H
+ #define _MACH_DAVINCI_AEMIF_H
+ 
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/core.h>
++
+ #define NRCSR_OFFSET		0x00
+ #define AWCCR_OFFSET		0x04
+ #define A1CR_OFFSET		0x10
+@@ -18,6 +22,16 @@
+ #define ACR_EW_MASK		BIT(30)
+ #define ACR_SS_MASK		BIT(31)
+ 
++enum davinci_emif_cells {
++	DAVINCI_NAND_DEVICE_CELL,
++	DAVINCI_NOR_FLASH_CELL,
 +};
 +
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
- 	},
--	.num_resources	= ARRAY_SIZE(mityomapl138_nandflash_resource),
--	.resource	= mityomapl138_nandflash_resource,
- };
- 
- static struct platform_device *mityomapl138_devices[] __initdata = {
--	&mityomapl138_nandflash_device,
-+	&davinci_emif_device,
- };
- 
- static void __init mityomapl138_setup_nand(void)
-diff --git a/arch/arm/mach-davinci/board-neuros-osd2.c b/arch/arm/mach-davinci/board-neuros-osd2.c
-index 8d34f51..c1c6fa1 100644
---- a/arch/arm/mach-davinci/board-neuros-osd2.c
-+++ b/arch/arm/mach-davinci/board-neuros-osd2.c
-@@ -26,6 +26,7 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-diff --git a/arch/arm/mach-davinci/board-sffsdr.c b/arch/arm/mach-davinci/board-sffsdr.c
-index 31da3c5..ac36320 100644
---- a/arch/arm/mach-davinci/board-sffsdr.c
-+++ b/arch/arm/mach-davinci/board-sffsdr.c
-@@ -30,6 +30,7 @@
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/mfd/davinci_aemif.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -81,14 +82,31 @@ static struct resource davinci_sffsdr_nandflash_resource[] = {
- 	},
- };
- 
--static struct platform_device davinci_sffsdr_nandflash_device = {
--	.name		= "davinci_nand", /* Name of driver */
--	.id		= 0,
--	.dev		= {
--		.platform_data	= &davinci_sffsdr_nandflash_data,
-+static struct platform_device davinci_sffsdr_emif_devices[] __initdata = {
-+	{
-+		.name		= "davinci_nand",
-+		.id		= 0,
-+
-+		.resource		= davinci_sffsdr_nandflash_resource,
-+		.num_resources		=
-+			ARRAY_SIZE(davinci_sffsdr_nandflash_resource),
-+		.dev		= {
-+			.platform_data	= &davinci_sffsdr_nandflash_data,
-+		},
-+	},
++struct davinci_aemif_devices {
++	struct platform_device *devices;
++	unsigned int num_devices;
 +};
 +
-+static struct davinci_aemif_devices davinci_emif_devices = {
-+	.devices	= davinci_sffsdr_emif_devices,
-+	.num_devices	= ARRAY_SIZE(davinci_sffsdr_emif_devices),
-+};
-+
-+static struct platform_device davinci_emif_device = {
-+	.name	= "davinci_aemif",
-+	.id	= -1,
-+	.dev	= {
-+		.platform_data	= &davinci_emif_devices,
- 	},
--	.num_resources	= ARRAY_SIZE(davinci_sffsdr_nandflash_resource),
--	.resource	= davinci_sffsdr_nandflash_resource,
- };
- 
- static struct at24_platform_data eeprom_info = {
-@@ -121,7 +139,7 @@ static void __init sffsdr_init_i2c(void)
- }
- 
- static struct platform_device *davinci_sffsdr_devices[] __initdata = {
--	&davinci_sffsdr_nandflash_device,
-+	&davinci_emif_device,
- };
- 
- static struct davinci_uart_config uart_config __initdata = {
+ /* All timings in nanoseconds */
+ struct davinci_aemif_timing {
+ 	u8	wsetup;
 -- 
 1.7.1
 
