@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757806Ab2BIPHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 10:07:21 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:57507 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab2BIPHU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 10:07:20 -0500
+	id S1757798Ab2BIPMf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 10:12:35 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42600 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab2BIPMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 10:12:34 -0500
+Date: Thu, 9 Feb 2012 16:11:58 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paul@paulmenage.org, rjw@sisk.pl,
+        tj@kernel.org, frank.rowand@am.sony.com, pjt@google.com,
+        tglx@linutronix.de, lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+Message-ID: <20120209151158.GA22489@elte.hu>
+References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
+ <1328671335.2482.72.camel@laptop>
+ <4F32174E.2050207@linux.vnet.ibm.com>
+ <20120209075701.GE18387@elte.hu>
+ <4F3386E9.7090606@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
-References: <20120209103016.GA1999@quad> <20120209144844.GA4998@infradead.org> <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
-From: Sorin Dumitru <dumitru.sorin87@gmail.com>
-Date: Thu, 9 Feb 2012 17:06:57 +0200
-Message-ID: <CAB6DaTONEDguW5ivSfSD+vUsKw+6--Z9H2V_LTBYaf_Qf_Jajg@mail.gmail.com>
-Subject: Re: [PATCH] perf: add sanity check on addr in symbol__inc_addr_samples()
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3386E9.7090606@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 4:53 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Thu, Feb 9, 2012 at 3:48 PM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
->> Em Thu, Feb 09, 2012 at 11:30:16AM +0100, Stephane Eranian escreveu:
->>>
->>> Check the value of addr against the bounds of the symbol.
->>> This is needed given we compute an offset:
->>>       offset = addr - sym->start
->>>
->>> And we don't want the offset to become negative.
->>
->> I'll try and add a debug option to show the backtrace and values of
->> addr, sym, etc, so that we can fix the real problem.
->>
->> I.e. this function shouldn't be receiving any such invalid addresses, as
->> the symbol lookup was done, the symbol was found to be this one, then
->> why it would be out of bounds at this point?!
->>
-> I tend to agree with you on this. But then I don't see why the first test
-> was there.
->
->> - Arnaldo
->>
->>> Signed-off-by: Stephane Eranian <eranian@google.com>
->>>
->>> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
->>> index 011ed26..8248d80 100644
->>> --- a/tools/perf/util/annotate.c
->>> +++ b/tools/perf/util/annotate.c
->>> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
->>>
->>>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
->>>
->>> -     if (addr >= sym->end)
->>> +     if (addr >= sym->end || addr < sym->start)
->>>               return 0;
->>>
->>>       offset = addr - sym->start;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
-I reported the same problem a couple of weeks ago. From what i can
-tell the problem
-is in perf_event__process_sample. When calling
-perf_event__process_sample, we set
-al->sym based on al->address. The symbol in the hist_entry is set to
-the one from al
-but in the call to perf_top__record_precise_ip we pass in the address
-from the event
-struct which is sometimes different than the one in the al structure.
-When this situation
-occurs, when calculating the offset in symbol__inc_addr_samples,
-because addr is not
-in the symbol [start,end] range, we get a very big value which causes
-the segfault when
-we use it to index something. I've sent a patch that works for me, but
-i don't know if it's
-the right solution at [1].
+* Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
-[1] https://lkml.org/lkml/2012/1/29/59
+> Hi Ingo,
+> 
+> On 02/09/2012 01:27 PM, Ingo Molnar wrote:
+> 
+> > 
+> > * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > 
+> >> IOW, consider:
+> >>
+> >> cpuset A has 0-10
+> >>
+> >> - Take CPU 10 offline
+> >>   [We are forced to remove CPU 10 from cpuset A, which becomes 0-9 now]
+> >>
+> >>
+> >>    <Userspace didn't request any change to cpuset A>
+> >>
+> >>
+> >> - Bring back CPU 10 online
+> >>
+> >> Now cpuset A is still 0-9! IMO, it should have been 0-10.
+> > 
+> > Why is CPU 10 taken out of the cpuset to begin with?
+> > 
+> > The cpuset code should be fixed to work with offline CPUs as 
+> > well - it can obviously not schedule to them, but otherwise 
+> > it should be fine to have a wider cpuset than the hw can 
+> > support.
+> 
+> My understanding of the code is that when a CPU is taken 
+> offline, it is removed from all the cpusets and then the 
+> scan_for_empty_cpusets() function is run to move tasks from 
+> empty cpusets to their parent cpusets.
+
+Why is that done that way? offlining a CPU should be an 
+invariant as far as cpusets are concerned.
+
+Not touching the cpuset would avoid the hot-replug complications 
+as well.
+
+Thanks,
+
+	Ingo
