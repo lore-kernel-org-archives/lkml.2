@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab2BIDpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 22:45:15 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:39213 "HELO eyou.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756313Ab2BIDpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 22:45:13 -0500
-X-EYOU-SPAMVALUE: 0
-X-EYOU-DEALDRC: 
-X-EMDG-VER: 2011-01-28
-Message-ID: <528758144.13258@eyou.net>
-X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
-From: Li Wang <liwang@nudt.edu.cn>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Yong Peng <pengyong@kylinos.com.cn>,
-        Li Wang <liwang@nudt.edu.cn>
-Subject: [PATCH] eCryptfs: Quota check incorrectly ignored
-Date: Thu,  9 Feb 2012 19:39:32 +0800
-Message-Id: <1328787572-2030-1-git-send-email-liwang@nudt.edu.cn>
-X-Mailer: git-send-email 1.7.6.5
+	id S1758016Ab2BIDsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 22:48:18 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43476 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757741Ab2BIDsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Feb 2012 22:48:17 -0500
+Date: Thu, 9 Feb 2012 14:48:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the kmap_atomic tree with the
+ staging.current tree
+Message-Id: <20120209144807.78f2807f594959f3836cf2eb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eCryptfs recently modified the write path to perform encryption
-and write down in ecryptfs_writepage(). This function invokes vfs_write()
-to write down the encrypted data to lower page cache. vfs_write() will
-first make sure this write will not exceed the quota limit for the owner
-of the file being written into, if quota is supported by 
-the underlying file system, and it is turned on. Normally, it accomplishs
-this job by calling check_idq()/check_bdq() (fs/quota/dquot.c). When system
-dirty ratio is not high, ecryptfs_writepage() is normally invoked by the 
-write back kernel thread, who has the capability CAP_SYS_RESOURCE, 
-this priority will let check_idq()/check_bdq() directly bypass the quota
-check. This sometimes makes data safely written into the disk in spite of
-exceeding the quota limit.
+--Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch temporarily removes the CAP_SYS_RESOURCE capability from the kernel
-thread before invoking vfs_write_lower(), to let it undergo quota check by
-the lower file system, if necessary. After that, reassign the capability.
+Hi Cong,
 
-Signed-off-by: Li Wang <liwang@nudt.edu.cn>
-Singed-off-by: Yong Peng <pengyong@kylinos.com.cn>
----
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+drivers/staging/zcache/zcache-main.c between commit 2a4830110b90
+("staging: zcache: fix serialization bug in zv stats") from the
+staging.current tree and commit a3a2486aeadb ("zcache: remove the second
+argument of k [un]map_atomic()") from the kmap_atomic tree.
 
-To repeat this bug, 
-	mount -o usrquota /dev/sda3 /tmp
-	cd /tmp
-	edquota -u foo // set the disk quota limit for user foo be m1 bytes
-	quotaon -a
-	mount -t ecryptfs cipher plain
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	login the system as user foo
-	cd /tmp/plain
-	execute the following simple program
-	
-	int main()
-	{
-		char buf[m2]; // m2>m1
-		FILE *f = fopen("dummy", "w");
-		fwrite(buf, 1, m2, f);
-		sleep(60); // let the kernel thread do the write back job
-		fclose(f);
-		return 0;
-	}
-	
-	This program can write as much of data as it wants, provided sleep enough long time before closing the file.
+diff --cc drivers/staging/zcache/zcache-main.c
+index 875acd8,57550ae..0000000
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@@ -674,9 -675,9 +674,9 @@@ static struct zv_hdr *zv_create(struct=20
+  			&page, &offset, ZCACHE_GFP_MASK);
+  	if (unlikely(ret))
+  		goto out;
+ -	zv_curr_dist_counts[chunks]++;
+ -	zv_cumul_dist_counts[chunks]++;
+ +	atomic_inc(&zv_curr_dist_counts[chunks]);
+ +	atomic_inc(&zv_cumul_dist_counts[chunks]);
+- 	zv =3D kmap_atomic(page, KM_USER0) + offset;
++ 	zv =3D kmap_atomic(page) + offset;
+  	zv->index =3D index;
+  	zv->oid =3D *oid;
+  	zv->pool_id =3D pool_id;
 
- fs/ecryptfs/crypto.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+--Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1
+Content-Type: application/pgp-signature
 
-diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-index 63ab245..2c1da29 100644
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -457,6 +457,7 @@ int ecryptfs_encrypt_page(struct page *page)
- 	struct page *enc_extent_page = NULL;
- 	loff_t extent_offset;
- 	int rc = 0;
-+	struct cred *cred;
- 
- 	ecryptfs_inode = page->mapping->host;
- 	crypt_stat =
-@@ -487,8 +488,34 @@ int ecryptfs_encrypt_page(struct page *page)
- 				   * (PAGE_CACHE_SIZE
- 				      / crypt_stat->extent_size))
- 				  + extent_offset), crypt_stat);
-+		if (current->flags & PF_KTHREAD) {
-+			/*
-+                         * Temporarily remove the CAP_SYS_RESOURCE capability
-+                         * from the write back kernel thread to let it undergo
-+                         * quota check by the lower file system
-+                         */
-+			cred = prepare_creds();
-+			if (unlikely(!cred)) {
-+				rc = -ENOMEM;
-+				goto out;
-+			}
-+			cap_lower(cred->cap_effective, CAP_SYS_RESOURCE);
-+			commit_creds(cred);
-+		}
- 		rc = ecryptfs_write_lower(ecryptfs_inode, enc_extent_virt,
- 					  offset, crypt_stat->extent_size);
-+		if (current->flags & PF_KTHREAD) {
-+			/*
-+                         * Reassign the CAP_SYS_RESOURCE capability
-+                         */
-+			cred = prepare_creds();
-+			if (unlikely(!cred)) {
-+				rc = -ENOMEM;
-+				goto out;
-+			}
-+			cap_raise(cred->cap_effective, CAP_SYS_RESOURCE);
-+			commit_creds(cred);
-+		}
- 		if (rc < 0) {
- 			ecryptfs_printk(KERN_ERR, "Error attempting "
- 					"to write lower page; rc = [%d]"
--- 
-1.7.6.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPM0H3AAoJEECxmPOUX5FE6JEP/j8UvJ0i2cILob20mdEVE4k4
+grLz13sH9y8kx86vSga3zSfODW6srAV0bQ7vqfVhAxpxm2B6IgiR/KSKGMXORb4a
+Bfo28tKM3wx6j8qsitnIufY/vA3NxkxfLb6vv9NC45Pw9AV5eH8DdZbJYtSLQUPF
+mSDO8rH5/Ze9nSL+EIk8odI6d9+pTVLhoPcuvtfqHJmNl+LCrh9eh2+LrCtIwq1H
+NZ1ObwFcpreTGQNd3OF+Ewq1Q+hUxyzzUnzEEr5GyPWWaHzPDHHVw0pBkGU9rtZC
+4kKeYYuVUPn6Zw6nxKyUuqHigMx4fa/H/xIiy7J1ze50UZYfvqNxGLjHHc2+mQgN
+lntoQurYPIJ0m1OBTSMPGKSXW9t6kK0re7mYyv2lhjTNteksM1SQdimZN1QOZZUQ
+fqB7ffvnuv9bIysmWvfQ9tNLBojc5HM1JhT9MwAdXHbFcj6vik92f/EJWoIefPV5
+7hnND9TUJQQnZQr3kwllCkhXEeuhSJ21Msmb57cMHBLAQaz9ADq/TkmzWHfu3Qnv
+nKFn9sCst22wFsOh3Np6wpCqivKx8bN3WZPYQgiJMMQi3dB3ezuz0sIK25vuw3fq
+oqlQcBUvuJ0zFl+mv5/up2ub17BvVOQopPIjyGNB/f75oXpiY8BPCenzbhT5401h
+InSxpJb3PxUuCp8vvEJL
+=mOw5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Feb_2012_14_48_07_+1100_Os0RzSb+.lf2oYi1--
