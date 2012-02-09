@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2BIW1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:27:14 -0500
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:43809 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758623Ab2BIWWm (ORCPT
+	id S932322Ab2BIW1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:27:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53325 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758607Ab2BIWWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:22:42 -0500
+	Thu, 9 Feb 2012 17:22:38 -0500
 MIME-Version: 1.0
-From: Yufeng Shen <miletus@chromium.org>
+From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, Yufeng Shen <miletus@chromium.org>
-Subject: [PATCH] drm/i915: Fix race condition in accessing GMBUS
-Date: Thu,  9 Feb 2012 17:14:57 -0500
-Message-Id: <1328825697-23685-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com, dsahern@gmail.com
+Subject: [PATCH v6 02/18] perf: add Intel LBR MSR definitions
+Date: Thu,  9 Feb 2012 23:20:52 +0100
+Message-Id: <1328826068-11713-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
+References: <1328826068-11713-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GMBUS has several ports and each has it's own corresponding
-I2C adpater. When multiple I2C adapters call gmbus_xfer() at
-the same time there is a race condition in using the underlying
-GMBUS controller. Fixing this by adding a mutex lock when calling
-gmbus_xfer().
+This patch adds the LBR definitions for NHM/WSM/SNB and Core.
+It also adds the definitions for the architected LBR MSR:
+LBR_SELECT, LBRT_TOS.
 
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- drivers/gpu/drm/i915/i915_drv.h  |    2 ++
- drivers/gpu/drm/i915/intel_i2c.c |   21 ++++++++++++++++-----
- 2 files changed, 18 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/msr-index.h           |    7 +++++++
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
+ 2 files changed, 16 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 9689ca3..d0f826e 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -733,6 +733,8 @@ typedef struct drm_i915_private {
- 	u8 corr;
- 	spinlock_t *mchdev_lock;
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index a6962d9..ccb8059 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -56,6 +56,13 @@
+ #define MSR_OFFCORE_RSP_0		0x000001a6
+ #define MSR_OFFCORE_RSP_1		0x000001a7
  
-+	struct mutex gmbus_mutex;
++#define MSR_LBR_SELECT			0x000001c8
++#define MSR_LBR_TOS			0x000001c9
++#define MSR_LBR_NHM_FROM		0x00000680
++#define MSR_LBR_NHM_TO			0x000006c0
++#define MSR_LBR_CORE_FROM		0x00000040
++#define MSR_LBR_CORE_TO			0x00000060
 +
- 	enum no_fbc_reason no_fbc_reason;
- 
- 	struct drm_mm_node *compressed_fb;
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index d30cccc..24fafdc 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -233,11 +233,16 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 					       struct intel_gmbus,
- 					       adapter);
- 	struct drm_i915_private *dev_priv = adapter->algo_data;
--	int i, reg_offset;
-+	int i, reg_offset, ret;
- 
--	if (bus->force_bit)
--		return intel_i2c_quirk_xfer(dev_priv,
-+	mutex_lock(&dev_priv->gmbus_mutex);
-+
-+	if (bus->force_bit) {
-+		ret = intel_i2c_quirk_xfer(dev_priv,
- 					    bus->force_bit, msgs, num);
-+		mutex_unlock(&dev_priv->gmbus_mutex);
-+		return ret;
-+	}
- 
- 	reg_offset = HAS_PCH_SPLIT(dev_priv->dev) ? PCH_GMBUS0 - GMBUS0 : 0;
- 
-@@ -321,6 +326,7 @@ done:
- 	 * start of the next xfer, till then let it sleep.
- 	 */
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
-+	mutex_unlock(&dev_priv->gmbus_mutex);
- 	return i;
- 
- timeout:
-@@ -331,9 +337,12 @@ timeout:
- 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
- 	bus->force_bit = intel_gpio_create(dev_priv, bus->reg0 & 0xff);
- 	if (!bus->force_bit)
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+	else
-+		ret = intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
- 
--	return intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
-+	mutex_unlock(&dev_priv->gmbus_mutex);
-+	return ret;
+ #define MSR_IA32_PEBS_ENABLE		0x000003f1
+ #define MSR_IA32_DS_AREA		0x00000600
+ #define MSR_IA32_PERF_CAPABILITIES	0x00000345
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 309d0cc..6710a51 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -203,23 +203,23 @@ void intel_pmu_lbr_read(void)
+ void intel_pmu_lbr_init_core(void)
+ {
+ 	x86_pmu.lbr_nr     = 4;
+-	x86_pmu.lbr_tos    = 0x01c9;
+-	x86_pmu.lbr_from   = 0x40;
+-	x86_pmu.lbr_to     = 0x60;
++	x86_pmu.lbr_tos    = MSR_LBR_TOS;
++	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
++	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
  }
  
- static u32 gmbus_func(struct i2c_adapter *adapter)
-@@ -380,6 +389,8 @@ int intel_setup_gmbus(struct drm_device *dev)
- 	if (dev_priv->gmbus == NULL)
- 		return -ENOMEM;
+ void intel_pmu_lbr_init_nhm(void)
+ {
+ 	x86_pmu.lbr_nr     = 16;
+-	x86_pmu.lbr_tos    = 0x01c9;
+-	x86_pmu.lbr_from   = 0x680;
+-	x86_pmu.lbr_to     = 0x6c0;
++	x86_pmu.lbr_tos    = MSR_LBR_TOS;
++	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
++	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
+ }
  
-+	mutex_init(&dev_priv->gmbus_mutex);
-+
- 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
- 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
- 
+ void intel_pmu_lbr_init_atom(void)
+ {
+ 	x86_pmu.lbr_nr	   = 8;
+-	x86_pmu.lbr_tos    = 0x01c9;
+-	x86_pmu.lbr_from   = 0x40;
+-	x86_pmu.lbr_to     = 0x60;
++	x86_pmu.lbr_tos    = MSR_LBR_TOS;
++	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
++	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ }
 -- 
-1.7.3.1
+1.7.4.1
 
