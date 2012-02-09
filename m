@@ -1,179 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab2BIXt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:49:59 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18448 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2BIXt4 (ORCPT
+	id S932353Ab2BIXuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 18:50:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56074 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208Ab2BIXuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:49:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 09 Feb 2012 15:49:49 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 10/10] ARM: tegra: support for secondary cores on Tegra30
-Date: Fri, 10 Feb 2012 01:47:50 +0200
-Message-Id: <1328831277-21002-11-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
+	Thu, 9 Feb 2012 18:50:39 -0500
+Date: Fri, 10 Feb 2012 10:50:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120210105026.0075dcf9eba39eb98e7b44ef@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_Feb_2012_10_50_26_+1100_zLeIPl4nyTMRP6PF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for bringing up secondary cores on Tegra30. On Tegra30 secondary
-CPU cores are powergated, so we need to turn on the domains before we can bring
-the CPU cores online. Bringing secondary cores online happens early during the
-sytem boot, so we call powergating initialization from platform early_init
-function.
+--Signature=_Fri__10_Feb_2012_10_50_26_+1100_zLeIPl4nyTMRP6PF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Based on work by:
+Hi all,
 
-Scott Williams <scwilliams@nvidia.com>
-Colin Cross <ccross@android.com>
-Alex Frid <afrid@nvidia.com>
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-at91/at91cap9.c between commit fa23e771d863 ("Merge branch
+'fixes' into for-next") from the arm tree and commit 9918ceafd4a9 ("ARM:
+at91: code removal of CAP9 SoC") from the arm-soc tree.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/headsmp.S |   32 ++++++++++++++++++++++++++
- arch/arm/mach-tegra/platsmp.c |   50 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 81 insertions(+), 1 deletions(-)
+The latter removes the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/arm/mach-tegra/headsmp.S b/arch/arm/mach-tegra/headsmp.S
-index 7973f1c..b63a4f7 100644
---- a/arch/arm/mach-tegra/headsmp.S
-+++ b/arch/arm/mach-tegra/headsmp.S
-@@ -163,6 +163,38 @@ __die:
- 	str	r1, [r7, #0x340]		@ CLK_RST_CPU_CMPLX_SET
- #endif
- 1:
-+#ifdef CONFIG_ARCH_TEGRA_3x_SOC
-+	mov32	r6, TEGRA_FLOW_CTRL_BASE
-+
-+	cmp	r10, #0
-+	moveq	r1, #FLOW_CTRL_HALT_CPU0_EVENTS
-+	moveq	r2, #FLOW_CTRL_CPU0_CSR
-+	movne	r1, r10, lsl #3
-+	addne	r2, r1, #(FLOW_CTRL_CPU1_CSR-8)
-+	addne	r1, r1, #(FLOW_CTRL_HALT_CPU1_EVENTS-8)
-+
-+	/* Clear CPU "event" and "interrupt" flags and power gate
-+	   it when halting but not before it is in the "WFI" state. */
-+	ldr	r0, [r6, +r2]
-+	orr	r0, r0, #FLOW_CTRL_CSR_INTR_FLAG | FLOW_CTRL_CSR_EVENT_FLAG
-+	orr	r0, r0, #FLOW_CTRL_CSR_ENABLE
-+	str	r0, [r6, +r2]
-+
-+	/* Unconditionally halt this CPU */
-+	mov	r0, #FLOW_CTRL_WAITEVENT
-+	str	r0, [r6, +r1]
-+	ldr	r0, [r6, +r1]			@ memory barrier
-+
-+	dsb
-+	isb
-+	wfi					@ CPU should be power gated here
-+
-+	/* If the CPU didn't power gate above just kill it's clock. */
-+
-+	mov	r0, r11, lsl #8
-+	str	r0, [r7, #348]			@ CLK_CPU_CMPLX_SET
-+#endif
-+
- 	/* If the CPU still isn't dead, just spin here. */
- 	b	.
- ENDPROC(__tegra_cpu_reset_handler)
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index 79a241a..1a208db 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -24,7 +24,9 @@
- #include <asm/mach-types.h>
- #include <asm/smp_scu.h>
- 
-+#include <mach/clk.h>
- #include <mach/iomap.h>
-+#include <mach/powergate.h>
- 
- #include "fuse.h"
- #include "flowctrl.h"
-@@ -42,6 +44,8 @@ static void __iomem *scu_base = IO_ADDRESS(TEGRA_ARM_PERIF_BASE);
- 	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x340)
- #define CLK_RST_CONTROLLER_RST_CPU_CMPLX_CLR \
- 	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x344)
-+#define CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR \
-+	(IO_ADDRESS(TEGRA_CLK_RESET_BASE) + 0x34c)
- 
- #define CPU_CLOCK(cpu)	(0x1<<(8+cpu))
- #define CPU_RESET(cpu)	(0x1111ul<<(cpu))
-@@ -73,11 +77,52 @@ static int tegra20_power_up_cpu(unsigned int cpu)
- 	return 0;
- }
- 
-+static int tegra30_power_up_cpu(unsigned int cpu)
-+{
-+	u32 reg;
-+	int ret, pwrgateid;
-+	unsigned long timeout;
-+
-+	pwrgateid = tegra_cpu_powergate_id(cpu);
-+	if (pwrgateid < 0)
-+		return pwrgateid;
-+
-+	/* If this is the first boot, toggle powergates directly. */
-+	if (!tegra_powergate_is_powered(pwrgateid)) {
-+		ret = tegra_powergate_power_on(pwrgateid);
-+		if (ret)
-+			return ret;
-+
-+		/* Wait for the power to come up. */
-+		timeout = jiffies + 10*HZ;
-+		while (tegra_powergate_is_powered(pwrgateid)) {
-+			if (time_after(jiffies, timeout))
-+				return -ETIMEDOUT;
-+			udelay(10);
-+		}
-+	}
-+
-+	/* CPU partition is powered. Enable the CPU clock. */
-+	writel(CPU_CLOCK(cpu), CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-+	reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX_CLR);
-+	udelay(10);
-+
-+	/* Remove I/O clamps. */
-+	ret = tegra_powergate_remove_clamping(pwrgateid);
-+	udelay(10);
-+
-+	/* Clear flow controller CSR. */
-+	flowctrl_write_cpu_csr(cpu, 0);
-+
-+	return 0;
-+}
-+
- int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- {
- 	int status;
- 
--	/* Force the CPU into reset. The CPU must remain in reset when the
-+	/*
-+	 * Force the CPU into reset. The CPU must remain in reset when the
- 	 * flow controller state is cleared (which will cause the flow
- 	 * controller to stop driving reset if the CPU has been power-gated
- 	 * via the flow controller). This will have no effect on first boot
-@@ -98,6 +143,9 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- 	case TEGRA20:
- 		status = tegra20_power_up_cpu(cpu);
- 		break;
-+	case TEGRA30:
-+		status = tegra30_power_up_cpu(cpu);
-+		break;
- 	default:
- 		status = -EINVAL;
- 		break;
--- 
-1.7.4.1
+--Signature=_Fri__10_Feb_2012_10_50_26_+1100_zLeIPl4nyTMRP6PF
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPNFvCAAoJEECxmPOUX5FE1lQP/2U8YejWkfc0LMjUmQODJFID
+KKkeGoexad02sipUgC8XhLwA4auSRCExcC1g4co3JD+1v51XB+Ov1Ku9EUCv17Lt
+695NRjrOWyFCeaYoA8Jmx1+D+sE91BPD4gXT0ysXCEy7q/0Dwkwv8SVxRxMazXrv
+MmEp2LHqu+i2NYPyTeCNjapivrnT3UcpJ9LbYtcjsWM8f5rLMpYzQ2wgwsw3sL+R
+bQroIeIfvvPJP+7mOk4ARuY4T/mbc4qo72uAUW4J8SFHUVEpkHfCMSJT7nn92OQM
+AEBli/8VdXu1QLKw7ugV/qkT0cD+/g3E0ntKajVJz81KRukoNP2h/snajXjM4mzc
+pyF8byJoOkBF7wLk7+LfQN/l/AKPU5oQA9UvDaYBLOo6DfzQVurdXFgJrc3VJ7HW
+OZaRP/y7Q1mmBuElvWMzuLXwvQnK+PNGrU9492xudmSQFt+GUdhS6sNBQyyFb/cS
+SBY4hErh9V3SH8wE+EJWyeQlL6c2MHcoE8NaGh2Z+11XAGZIEwKItZpzTQjHLJit
+Cq2j0Cbkxeb/IG9PusSHwSI+t6S8X459Vt2S5EUjU/HVAA+qXREDv31CPxKCXB2v
+ZBGfmKDckuFCQTQgUx/Zo5p9JFqsm/+Jrvr/NbjorKpETagKzIFRreyDpATmDrSh
+e4RKbJcl+1u/Z4jyUcoD
+=ENb1
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Feb_2012_10_50_26_+1100_zLeIPl4nyTMRP6PF--
