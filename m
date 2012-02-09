@@ -1,70 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab2BIWJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:09:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56575 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758552Ab2BIWJa (ORCPT
+	id S1758550Ab2BIWOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:14:22 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:53734
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753944Ab2BIWOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:09:30 -0500
-Date: Thu, 9 Feb 2012 22:09:26 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Miller <davem@davemloft.net>
-Cc: shawn.guo@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix mc13xxx regulator build on sparc64
-Message-ID: <20120209220925.GO3058@opensource.wolfsonmicro.com>
-References: <20120209.164301.1049075777681222673.davem@davemloft.net>
+	Thu, 9 Feb 2012 17:14:20 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM52VkUL8chIbTFkGkSHe4oNGmRZY1g0MAgAAEEgCAAAGKgP//fYTQgACIkgD//5HwUA==
+Date: Thu, 9 Feb 2012 22:13:51 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B70CC1A@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
+	 <20120209200404.GA8816@kroah.com>
+	 <1328818718.2944.20.camel@dabdike.int.hansenpartnership.com>
+	 <20120209202409.GA22365@kroah.com>
+	 <6E21E5352C11B742B20C142EB499E0481B70CB38@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bJ3jXuwtxrXxD2iT"
-Content-Disposition: inline
-In-Reply-To: <20120209.164301.1049075777681222673.davem@davemloft.net>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q19MESor013491
 
 
---bJ3jXuwtxrXxD2iT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Thu, Feb 09, 2012 at 04:43:01PM -0500, David Miller wrote:
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Thursday, February 09, 2012 3:46 PM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> On Thu, 2012-02-09 at 20:43 +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Thursday, February 09, 2012 3:24 PM
+> > > To: James Bottomley
+> > > Cc: KY Srinivasan; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> > > scsi@vger.kernel.org
+> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+> the
+> > > staging area
+> > >
+> > > On Thu, Feb 09, 2012 at 02:18:38PM -0600, James Bottomley wrote:
+> > > > On Thu, 2012-02-09 at 12:04 -0800, Greg KH wrote:
+> > > > > On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
+> > > > > > The storage driver (storvsc_drv.c) handles all block storage devices
+> > > > > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> > > > > > staging tree for a while and this patch moves it out of the staging area.
+> > > > > > As per Greg's recommendation, this patch makes no changes to the
+> > > staging/hv
+> > > > > > directory. Once the driver moves out of staging, we will cleanup the
+> > > > > > staging/hv directory.
+> > > > > >
+> > > > > > James was willing to apply this patch during the 3.3-rc phase and a
+> decision
+> > > > > > was taken to defer this to 3.4 since Greg had queued up a bunch of
+> storvsc
+> > > > > > patches for 3.4. Now that Greg has applied all of the pending storvsc
+> > > patches,
+> > > > > > I am re-sending this patch to move this driver out of staging.
+> > > > > >
+> > > > > >
+> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > > ---
+> > > > > >  drivers/scsi/Kconfig       |    7 +
+> > > > > >  drivers/scsi/Makefile      |    3 +
+> > > > > >  drivers/scsi/storvsc_drv.c | 1548
+> > > ++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  3 files changed, 1558 insertions(+), 0 deletions(-)
+> > > > > >  create mode 100644 drivers/scsi/storvsc_drv.c
+> > > > >
+> > > > > James, any objection to me applying this to the staging-next tree, and
+> > > > > at the same time, deleting this version of the driver from the
+> > > > > drivers/staging/hv/ directory?
+> > > >
+> > > > Well, yes, it has the same build failure as the previous one and that
+> > > > will make it non bisectable.
+> > >
+> > > Ah, that would make things a bit difficult, KY, please test your
+> > > patches...
+> >
+> > Greg,
+> >
+> > I pulled down your staging tree earlier today that had all the storvsc patches
+> that you
+> > checked in yesterday, applied this patch and built it (successfully).
+> 
+> You're leaving remnants in staging.
+> 
+> Move the damn thing and pull the config options from staging when you
+> put them in SCSI.
 
-> Since mc13xxx-regulator-core.c and the actual drivers can get built
-> into seperate modules, you have to export the DT support symbols
-> "mc13xxx_get_num_regulators_dt" and "mc13xxx_parse_regulators_dt"
-> otherwise the allmodconfig build fails on sparc64.
+I have now also sent out a patch that does what you are suggesting here. 
 
-Hrm, this was reported in -next and fixed with commit 234393 (regulator:
-mc13xxx-regulator-core: Fix the build when driver is selected as module)
-but didn't get reported when the commit was first introduced...
+Regards,
 
-Given that allmodconfigs are one of the most commonly tested
-configurations for -next I'm wondering both why this didn't get picked
-up by any of them and why this is a sparc64 specific issue?
+K. Y
+ 
 
---bJ3jXuwtxrXxD2iT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPNEO6AAoJEBus8iNuMP3dGn8P/1pA3Hbwy4MDQ3ghoLf414OZ
-Bg5BevEZs35+qhQLOnELTk9Gbzo/FckZUfmxElgqflMC4De4cVlbwwbC/Q+LIhci
-Q6YcAVznqeTDItZoPH/Ilsm+vFlq6X+ZHcw9XzXzdGmTYwHiU8KHYnqJRnZo8CUv
-xdGQahUb6B/aogd1jpClQeXtHHaloIiiS4LrsKo3yCyRsTXlLcZbNiI8EwJRQpKJ
-QIKrntmZLVrH8qqe7zGgoCLkJSIwLUjkVw3YBD8X9+3oUySU84pRIx/4oNrTprdi
-9a/t2OZLPf8PhHkNtgoMCknr3yTrMljKQP76D7wU5O7OjAZmjbU/EMQSMoMYOKA1
-bTZ8c3Wu1pRNOfv074Uanj8inBV8TVOZKpmE2NMn3i2UbenA1DCL//E7L/lEMiTw
-SinSbRhQdK1E3DjgfbZhig3LQLrGNeETUmfz+GMzsHAp8wztbOfl46EwDn6blFUa
-blg6gLhIu5zR5yMSyloiJmJSRzPWm7d8YQgfjYVfZwvqkMEsXDswz2STXX03eD0l
-za//7AbV1M76CWWIXywuobViEwNVhhYA9t13W/efCLF/q2cfLizMOlzl55RBBXKr
-zuEhge/iyK8Bnvjvq9IRl5STDEWGEG7wV8IKUmI71drj2aItkk6GzftQQW7gX+a2
-4oFPz2nPS8WwCcsazUdR
-=WgmO
------END PGP SIGNATURE-----
-
---bJ3jXuwtxrXxD2iT--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
