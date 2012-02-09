@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab2BIMq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:46:59 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10342 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab2BIMq5 (ORCPT
+	id S1755100Ab2BIMuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 07:50:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40322 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751738Ab2BIMuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:46:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 09 Feb 2012 04:46:57 -0800
-Message-ID: <4F33BFDE.7020006@nvidia.com>
-Date: Thu, 9 Feb 2012 18:15:18 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 9 Feb 2012 07:50:06 -0500
+Date: Thu, 9 Feb 2012 12:50:03 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3] ASoC: da7210: Add support for PLL and SRM
+Message-ID: <20120209125003.GH3058@opensource.wolfsonmicro.com>
+References: <1328095529.15257.7.camel@matrix>
+ <20120201115035.GC5648@opensource.wolfsonmicro.com>
+ <1328621149.26721.18.camel@matrix>
+ <20120207191943.GB15929@opensource.wolfsonmicro.com>
+ <1328791340.22077.3.camel@matrix>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] regmap: add bulk_write() for non-volatile register
- set
-References: <1328789531-10067-1-git-send-email-ldewangan@nvidia.com> <20120209121704.GF3058@opensource.wolfsonmicro.com>
-In-Reply-To: <20120209121704.GF3058@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LiQwW4YX+w4axhAx"
+Content-Disposition: inline
+In-Reply-To: <1328791340.22077.3.camel@matrix>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 February 2012 05:47 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Thu, Feb 09, 2012 at 05:42:11PM +0530, Laxman Dewangan wrote:
->
->> +	if (vol || map->cache_type == REGCACHE_NONE) {
->> +		ret = _regmap_raw_write(map, reg, val, val_bytes * val_count);
-> You still need to do the byte swap here.
-I saw the regmap_raw_write() and it is using the same way without byte 
-swapping.
-Want to use the same function as it is.. I am not sure why do we require 
-byte-swapping in this case. Required things will be done by 
-_regmap_raw_write only.
-This api just break the transfer in register-wise if any of the register 
-is cached..
 
->> +	} else {
->> +		for (i = 0; i<  val_count; i++) {
->> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
->> +			ival = map->format.parse_val(map->work_buf);
-> They're currently symmetric but really this should use format_val().
->
-The format_val is require integer argument and issue is that I dont have 
-this otherwise I need not to parse, can use directly.
+--LiQwW4YX+w4axhAx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Am I missing something here?
+On Thu, Feb 09, 2012 at 06:12:20PM +0530, Ashish Chavan wrote:
 
+> BTW I am also planning to add SPI support to this driver. Just want to
+> know if it should be done via reg-map APIs? If yes, then do I need to
+> convert existing I2C stuff too to use reg-map?
 
-> * Unknown Key
-> * 0x6E30FDDD
+Yes, please.  The idea is that all of the I2C and SPI drivers will get
+converted over.
 
+--LiQwW4YX+w4axhAx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPM8CgAAoJEBus8iNuMP3dgG8P/AgnmyDoMXMTkyuudtEMQKU7
+CCQ9U2iKnpx/DV3KiqMFCmP7dfxVtJMulym3if1oyDPupXthwrwKvdVoeExSsNDl
+HayyWqWYBWscM22Rsbb5K6nuJYDdSNVyltexpt6L8wg6zxZboYWeA4z6dcPSyp44
+p7IcsyeKxNQ3Ccru8chObbaAs1djl1ka+EXfEkmClJ8tg7hLEsE32b/NaeMaJPco
+CNQJJ8BJNfQRxYHsG7CnX0iwXXVLUSkBqKf+F4OosRRPyJ6JqIxKQVGU8SuotyJH
+m/F3ab4E4IlEo1RtP6uBxrZ/bXWL/sbolLWYDBmnp4KGJLBJ1L5ms1kvB3PNqRRh
+FqSTQLIsg4KNUlhyQ9yAl1SA5TeU2zPkliuR8S5wlHV72YcehkN3ZtvmcXZf5BSw
+FeCyMvsxR1/0KhA62iFkTAvFnTfRsw2t8OQMwH/0CtI39jeLAl1qs9MDrN+lH9sd
+ZInc10e93iREZ+DMr6wLwd1gHigHak9ngAwXPC3TwL3mVG5r+uTOWSP70qN4EQG9
+vNr1R3Uo3tFPHvFp+VHDY053Ly8jDNN39TB7O5l8Qbx0oFw+W1FuLiku5oij6VAl
+sbxNdlfg2Hw9kgLpgJVkNRzEqcDgoor9sFbWBQ87VlVc/odoa6eNoyrGvJuM5UVP
+wIXa2i54dYnSiEsaSqvt
+=Pz40
+-----END PGP SIGNATURE-----
+
+--LiQwW4YX+w4axhAx--
