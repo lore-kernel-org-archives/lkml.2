@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab2BIW03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:26:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab2BIW01 (ORCPT
+	id S932303Ab2BIW0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:26:44 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53325 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758304Ab2BIWWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:26:27 -0500
-Date: Thu, 9 Feb 2012 14:26:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH v9 4/8] smp: add func to IPI cpus based on parameter
- func
-Message-Id: <20120209142625.0664e055.akpm@linux-foundation.org>
-In-Reply-To: <1328776585-22518-5-git-send-email-gilad@benyossef.com>
-References: <1328776585-22518-1-git-send-email-gilad@benyossef.com>
-	<1328776585-22518-5-git-send-email-gilad@benyossef.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Feb 2012 17:22:49 -0500
+MIME-Version: 1.0
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com, dsahern@gmail.com
+Subject: [PATCH v6 06/18] perf: disable LBR support for older Intel Atom processors
+Date: Thu,  9 Feb 2012 23:20:56 +0100
+Message-Id: <1328826068-11713-7-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1328826068-11713-1-git-send-email-eranian@google.com>
+References: <1328826068-11713-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 Feb 2012 10:36:21 +0200
-Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+The patch adds a restriction for Intel Atom LBR support. Only
+steppings 10 (PineView) and more recent are supported. Older models,
+do not have a functional LBR. Their LBR does not freeze on PMU interrupt
+which makes LBR unusable in the context of perf_events.
 
-> @@ -153,6 +162,22 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
->  			local_irq_enable();		\
->  		}					\
->  	} while (0)
-> +/*
-> + * Preemption is disabled here to make sure the
-> + * cond_func is called under the same condtions in UP
-> + * and SMP.
-> + */
-> +#define on_each_cpu_cond(cond_func, func, info, wait, gfp_flags) \
-> +	do {
-> +		void *__info = (info);			\
-> +		preempt_disable();			\
-> +		if ((cond_func)(0, __info)) {		\
-> +			local_irq_disable();		\
-> +			(func)(__info);			\
-> +			local_irq_enable();		\
-> +		}					\
-> +		preempt_enable();			\
-> +	} while (0)
-
-That wasn't compile-tested!
-
-This is one of the many reasons why I convert replacement patches into
-incremental patches - so I can see what was done.
-
-Here's what I queued after converting this patch into a delta:
-
---- a/kernel/smp.c~smp-add-func-to-ipi-cpus-based-on-parameter-func-v9
-+++ a/kernel/smp.c
-@@ -771,7 +771,9 @@ EXPORT_SYMBOL(on_each_cpu_mask);
-  * The function might sleep if the GFP flags indicates a non
-  * atomic allocation is allowed.
-  *
-- * Preemption is disabled to protect against a hotplug event.
-+ * Preemption is disabled to protect against CPU going offline but not
-+ * online. CPUs going online during the call will not be seen or sent
-+ * an IPI.
-  *
-  * You must not call this function with disabled interrupts or
-  * from a hardware interrupt handler or from a bottom half handler.
-_
-
-And I queued a small fix to that:
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: smp-add-func-to-ipi-cpus-based-on-parameter-func-v9-fix
-
-s/CPU/CPUs, use all 80 cols in comment
-
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
- kernel/smp.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
---- a/kernel/smp.c~smp-add-func-to-ipi-cpus-based-on-parameter-func-v9-fix
-+++ a/kernel/smp.c
-@@ -771,9 +771,8 @@ EXPORT_SYMBOL(on_each_cpu_mask);
-  * The function might sleep if the GFP flags indicates a non
-  * atomic allocation is allowed.
-  *
-- * Preemption is disabled to protect against CPU going offline but not
-- * online. CPUs going online during the call will not be seen or sent
-- * an IPI.
-+ * Preemption is disabled to protect against CPUs going offline but not online.
-+ * CPUs going online during the call will not be seen or sent an IPI.
-  *
-  * You must not call this function with disabled interrupts or
-  * from a hardware interrupt handler or from a bottom half handler.
-_
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index e54a063..07f0ff8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -315,6 +315,16 @@ void intel_pmu_lbr_init_snb(void)
+ /* atom */
+ void intel_pmu_lbr_init_atom(void)
+ {
++	/*
++	 * only models starting at stepping 10 seems
++	 * to have an operational LBR which can freeze
++	 * on PMU interrupt
++	 */
++	if (boot_cpu_data.x86_mask < 10) {
++		pr_cont("LBR disabled due to erratum");
++		return;
++	}
++
+ 	x86_pmu.lbr_nr	   = 8;
+ 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
+ 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+-- 
+1.7.4.1
 
