@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab2BIMRK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 07:17:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39274 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756035Ab2BIMRI (ORCPT
+	id S1757463Ab2BIMSh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 07:18:37 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:51220 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757333Ab2BIMSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 07:17:08 -0500
-Date: Thu, 9 Feb 2012 12:17:05 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regmap: add bulk_write() for non-volatile register set
-Message-ID: <20120209121704.GF3058@opensource.wolfsonmicro.com>
-References: <1328789531-10067-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 9 Feb 2012 07:18:34 -0500
+In-Reply-To: <4F3390FB.80107@redhat.com>
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com> <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com> <4F3390FB.80107@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: BORNTRAE@linux.vnet.ibm.com, James Bottomley <JBottomley@parallels.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JcvBIhDvR6w3jUPA"
-Content-Disposition: inline
-In-Reply-To: <1328789531-10067-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+X-KeepSent: DF7B0B80:B44589BA-C125799F:00410C52;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OFDF7B0B80.B44589BA-ONC125799F.00410C52-C125799F.00439AD0@de.ibm.com>
+From: Christian Hoff <christian.hoff@de.ibm.com>
+Date: Thu, 9 Feb 2012 13:18:21 +0100
+X-MIMETrack: S/MIME Sign by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
+ 10, 2010) at 09/02/2012 13:18:25,
+	Serialize by Notes Client on Christian Hoff/Germany/IBM(Release 8.5.2FP3|Aug
+ 10, 2010) at 09/02/2012 13:18:25,
+	Serialize complete at 09/02/2012 13:18:25,
+	S/MIME Sign failed at 09/02/2012 13:18:25: The cryptographic key was not
+ found,
+	Serialize by Router on D06MC042/06/M/IBM(Release 8.5.2FP3|July 10, 2011) at
+ 09/02/2012 13:18:23,
+	Serialize complete at 09/02/2012 13:18:23
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12020912-4966-0000-0000-000001687E54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paolo Bonzini wrote:
+> James, will you include virtio-scsi in 3.4?
 
---JcvBIhDvR6w3jUPA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The key arguments from my side for inclusion of virtio-scsi are:
+- Support for SCSI multipathing, which can optionally be done on the host 
+operating system.
+- We can now use other SCSI(non-block) devices and make them accessible to 
+the guest. For example we were able to virtualize a SCSI FCP tape using 
+virtio-scsi. One of the biggest constraints of virtio-block is that it is 
+limited to block devices, while virtio-scsi presents you with a more 
+generic solution.
 
-On Thu, Feb 09, 2012 at 05:42:11PM +0530, Laxman Dewangan wrote:
+So I consider virtio-scsi to be the cleaner approach to do virtualization 
+of SCSI commands. This is supported by the fact that virtio-block has a 
+maintenance problem and has to change its protocol from time to time to 
+support new features introduced by a new version of the SCSI standard.
 
-> +	if (vol || map->cache_type == REGCACHE_NONE) {
-> +		ret = _regmap_raw_write(map, reg, val, val_bytes * val_count);
+So please consider including virtio-scsi into the mainline kernel tree. 
+This is good and conceptually clean code, and it has proven to work very 
+well in our internal testing.
 
-You still need to do the byte swap here.
+Mit freundlichen Grüßen / Kind regards
 
-> +	} else {
-> +		for (i = 0; i < val_count; i++) {
-> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-> +			ival = map->format.parse_val(map->work_buf);
+Christian Hoff
 
-They're currently symmetric but really this should use format_val().
+Student - Applied Computer Science
 
---JcvBIhDvR6w3jUPA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Phone:
+49-16098976-950
+ IBM Deutschland
 
-iQIcBAEBAgAGBQJPM7k6AAoJEBus8iNuMP3dgPsP/3jT/jrYFN/09eJeErBEwOiY
-c/s70UB13MpFk/l6gNe6o0gVLhDZNEYIVSVc8lHXowhGQ6yzroLK4fGJ6bEqMx+p
-Pu5OT77Os4oGxuAdFcBJf5YHDZ1zgNV1xv8gyHotI0Xc2CqNoI6iyg4/svoleyy7
-EJajaN/wa2Jmb4UprBR8/ic/GVOx60JQQc+kmIjF2R8gd2Rnc6FvApoFtBYeIpna
-jhCikWyfzm3t7Me5g0HSz+v5hNHrpf5UTjmiUoOEUXcoCkFPP3XaNNBsnQ/uRSWl
-hU5igkGMM34oZlNKBwmwXgNBrj4YCHeBVGcLqb+iEwfepj50nUKVtseK4RnW/W+Y
-JwOu8qhPzPHqgL0/rPM2qIdk6IJzCzXMlYC4P6mitMVP8OCB3xtDdjgsxhTVkV94
-P7sHN2QWTv0Zcfhc8Vqq8rezXYytcLMrwYFAJQUwcGnIr0TKkQBZjuJHNiNLALW7
-YSp9zZioYeb01UH9I3pGgPFTiIz9Gb9ut7kDmORA9sPDINRHzHd7qdePTq2D+pwa
-Gp6RbEQhZTeFrOr4mpk3sbuS7wZhC/w9w63d0NehCeAbl17bMqopQo+l/XtgfO+3
-IairWyd/c7clU78hmrgGYOs4OXGastu7AVPWRgoGeBXVb7hQVBYgI2JBqM+QJ+po
-CaCsPlsX1qPtD7EC1uN5
-=OqDE
------END PGP SIGNATURE-----
+E-Mail:
+christian.hoff@de.ibm.com
+ Am Fichtenberg 1
 
---JcvBIhDvR6w3jUPA--
+
+ 71083 Herrenberg
+
+
+ Germany
+
+
+IBM Deutschland GmbH / Vorsitzender des Aufsichtsrats: Martin Jetter
+Geschäftsführung: Martina Koederitz (Vorsitzende), Reinhard Reschke, 
+Dieter Scholz, Gregor Pillen, Joachim Heel, Christian Noll
+Sitz der Gesellschaft: Ehningen / Registergericht: Amtsgericht Stuttgart, 
+HRB 14562 / WEEE-Reg.-Nr. DE 99369940 
+
