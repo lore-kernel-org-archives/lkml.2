@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2BIICv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:02:51 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54922 "EHLO arroyo.ext.ti.com"
+	id S1756342Ab2BIIDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:03:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:56228 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab2BIICu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:02:50 -0500
+	id S1751718Ab2BIIDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:03:17 -0500
 From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
 To: <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>,
@@ -14,44 +14,124 @@ CC: Sekhar Nori <nsekhar@ti.com>, Russell King <linux@arm.linux.org.uk>,
         David Woodhouse <dwmw2@infradead.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
         "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: [PATCH v4 0/3] Moving EMIF driver to MFD framework
-Date: Thu, 9 Feb 2012 12:48:25 +0530
-Message-ID: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
+Subject: [PATCH v4 1/3] arm:davinci: prepare to move aemif driver to drivers/mfd
+Date: Thu, 9 Feb 2012 12:48:26 +0530
+Message-ID: <1328771908-32527-2-git-send-email-prakash.pm@ti.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
+References: <1328771908-32527-1-git-send-email-prakash.pm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch series are based on the discussion and concerns expressed in
-davinci-linux-open-source community. Here is the link for the same:
-http://davinci-linux-open-source.1494791.n2.nabble.com/PATCH-arm-davinci-configure-davinci-aemif-chipselects-through-OF-tt7059739.html#none
+Patch moves emif header file appropriately as a part preparation to move emif
+driver from arch/arm/mach-davinci/ to drivers/mfd folder.
+There by it isolates modifications in emif interface depicting as platform code
+change.
 
-Manjunathappa, Prakash (3):
-  arm:davinci: prepare to move aemif driver to drivers/mfd
-  arm:davinci: move emif driver to drivers/mfd from mach-davinci folder
-  arm:davinci: move NAND and NOR devices as aemif MFD slaves
+Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+---
+Since v3:
+No change. Resending as 3/3 in patch changed.
+Since v2:
+No change.
+Since v1:
+Patch generated using -M option.
 
- arch/arm/Kconfig                                   |    1 +
- arch/arm/mach-davinci/Makefile                     |    2 +-
- arch/arm/mach-davinci/aemif.c                      |  133 -------------
- arch/arm/mach-davinci/board-da830-evm.c            |   33 +++-
- arch/arm/mach-davinci/board-da850-evm.c            |   56 +++---
- arch/arm/mach-davinci/board-dm355-evm.c            |   33 +++-
- arch/arm/mach-davinci/board-dm355-leopard.c        |   35 +++-
- arch/arm/mach-davinci/board-dm365-evm.c            |   34 +++-
- arch/arm/mach-davinci/board-dm644x-evm.c           |  175 ++++++++++-------
- arch/arm/mach-davinci/board-dm646x-evm.c           |   32 +++-
- arch/arm/mach-davinci/board-mityomapl138.c         |   34 +++-
- arch/arm/mach-davinci/board-neuros-osd2.c          |    1 +
- arch/arm/mach-davinci/board-sffsdr.c               |   34 +++-
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/davinci_aemif.c                        |  206 ++++++++++++++++++++
+ arch/arm/mach-davinci/aemif.c                      |    2 +-
+ arch/arm/mach-davinci/board-da830-evm.c            |    2 +-
+ arch/arm/mach-davinci/board-da850-evm.c            |    2 +-
+ arch/arm/mach-davinci/board-dm644x-evm.c           |    2 +-
+ arch/arm/mach-davinci/board-dm646x-evm.c           |    2 +-
  drivers/mtd/nand/davinci_nand.c                    |    2 +-
- .../aemif.h => include/linux/mfd/davinci_aemif.h   |   14 ++
- 17 files changed, 527 insertions(+), 299 deletions(-)
- delete mode 100644 arch/arm/mach-davinci/aemif.c
- create mode 100644 drivers/mfd/davinci_aemif.c
- rename arch/arm/mach-davinci/include/mach/aemif.h => include/linux/mfd/davinci_aemif.h (74%)
+ .../aemif.h => include/linux/mfd/davinci_aemif.h   |    0
+ 7 files changed, 6 insertions(+), 6 deletions(-)
+ rename arch/arm/mach-davinci/include/mach/aemif.h => include/linux/mfd/davinci_aemif.h (100%)
+
+diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
+index 1ce70a9..b67c115 100644
+--- a/arch/arm/mach-davinci/aemif.c
++++ b/arch/arm/mach-davinci/aemif.c
+@@ -15,7 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/time.h>
+ 
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ /* Timing value configuration */
+ 
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index dc1afe5..0b43554 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -31,7 +31,7 @@
+ #include <mach/nand.h>
+ #include <mach/da8xx.h>
+ #include <mach/usb.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ #include <mach/spi.h>
+ 
+ #define DA830_EVM_PHY_ID		""
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index d508890..9f2a544 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -41,7 +41,7 @@
+ #include <mach/da8xx.h>
+ #include <mach/nand.h>
+ #include <mach/mux.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ #include <mach/spi.h>
+ 
+ #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+diff --git a/arch/arm/mach-davinci/board-dm644x-evm.c b/arch/arm/mach-davinci/board-dm644x-evm.c
+index 1247ecd..99a6639 100644
+--- a/arch/arm/mach-davinci/board-dm644x-evm.c
++++ b/arch/arm/mach-davinci/board-dm644x-evm.c
+@@ -38,7 +38,7 @@
+ #include <mach/nand.h>
+ #include <mach/mmc.h>
+ #include <mach/usb.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ #define DM644X_EVM_PHY_ID		"davinci_mdio-0:01"
+ #define LXT971_PHY_ID	(0x001378e2)
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index 872ac69..af55a9d 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -43,7 +43,7 @@
+ #include <mach/nand.h>
+ #include <mach/clock.h>
+ #include <mach/cdce949.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ #include "clock.h"
+ 
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index 6e56615..f19151b 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -35,7 +35,7 @@
+ #include <linux/slab.h>
+ 
+ #include <mach/nand.h>
+-#include <mach/aemif.h>
++#include <linux/mfd/davinci_aemif.h>
+ 
+ /*
+  * This is a device driver for the NAND flash controller found on the
+diff --git a/arch/arm/mach-davinci/include/mach/aemif.h b/include/linux/mfd/davinci_aemif.h
+similarity index 100%
+rename from arch/arm/mach-davinci/include/mach/aemif.h
+rename to include/linux/mfd/davinci_aemif.h
+-- 
+1.7.1
 
