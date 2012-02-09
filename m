@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab2BIAzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 19:55:10 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46654 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756597Ab2BIAzI (ORCPT
+	id S932201Ab2BIA4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 19:56:35 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58663 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932124Ab2BIA4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 19:55:08 -0500
-Message-ID: <4F331967.3070900@lwfinger.net>
-Date: Wed, 08 Feb 2012 18:55:03 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Wed, 8 Feb 2012 19:56:34 -0500
+Date: Wed, 8 Feb 2012 16:56:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kernel-team@android.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 3/6] staging: android/lowmemorykiller: Don't grab
+ tasklist_lock
+Message-ID: <20120209005610.GA16599@kroah.com>
+References: <20120203163056.GA4190@redhat.com>
+ <20120206162941.GC5117@oksana.dev.rtsoft.ru>
+ <20120206163649.GB10104@kroah.com>
+ <20120206164215.GA7741@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Tim Gardner <tim.gardner@canonical.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop>
-In-Reply-To: <1328737514.2627.14.camel@bwh-desktop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206164215.GA7741@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 03:45 PM, Ben Hutchings wrote:
-> On Wed, 2012-02-08 at 14:08 -0700, Tim Gardner wrote:
->> The firmware file size check does not use the
->> correct limit.
->>
->> Cc: Larry Finger<Larry.Finger@lwfinger.net>
->> Cc: Chaoming Li<chaoming_li@realsil.com.cn>
->> Cc: John W. Linville<linville@tuxdriver.com>
->> Cc: linux-wireless@vger.kernel.org
->> Cc: netdev@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
->> ---
->>   drivers/net/wireless/rtlwifi/rtl8192se/fw.h |    3 ++-
->>   drivers/net/wireless/rtlwifi/rtl8192se/sw.c |    2 +-
->>   2 files changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->> index babe85d..5c377fc 100644
->> --- a/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/fw.h
->> @@ -30,6 +30,7 @@
->>   #define __REALTEK_FIRMWARE92S_H__
->>
->>   #define RTL8190_MAX_FIRMWARE_CODE_SIZE		64000
->> +#define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE	164000
->>   #define RTL8190_CPU_START_OFFSET		0x80
->>   /* Firmware Local buffer size. 64k */
->>   #define	MAX_FIRMWARE_CODE_SIZE			0xFF00
->> @@ -217,7 +218,7 @@ struct rt_firmware {
->>   	u8 fw_emem[RTL8190_MAX_FIRMWARE_CODE_SIZE];
->>   	u32 fw_imem_len;
->>   	u32 fw_emem_len;
->> -	u8 sz_fw_tmpbuffer[164000];
->> +	u8 sz_fw_tmpbuffer[RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE];
->>   	u32 sz_fw_tmpbufferlen;
->>   	u16 cmdpacket_fragthresold;
->>   };
->> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->> index ca38dd9..155da0a 100644
->> --- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
->> @@ -105,7 +105,7 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
->>   		rtlpriv->max_fw_size = 0;
->>   		return;
->>   	}
->> -	if (firmware->size>  rtlpriv->max_fw_size) {
->> +	if (firmware->size>= RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE) {
->
-> This appears to reject a firmware blob which is exactly the maximum
-> size, which looks wrong.  Also doesn't this make the max_fw_size field
-> redundant?
->
-> Ben.
->
->>   		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
->>   			 "Firmware is too big!\n");
->>   		release_firmware(firmware);
->
+On Mon, Feb 06, 2012 at 08:42:15PM +0400, Anton Vorontsov wrote:
+> On Mon, Feb 06, 2012 at 08:36:49AM -0800, Greg KH wrote:
+> > On Mon, Feb 06, 2012 at 08:29:41PM +0400, Anton Vorontsov wrote:
+> > > Grabbing tasklist_lock has its disadvantages, i.e. it blocks
+> > > process creation and destruction. If there are lots of processes,
+> > > blocking doesn't sound as a great idea.
+> > > 
+> > > For LMK, it is sufficient to surround tasks list traverse with
+> > > rcu_read_{,un}lock().
+> > > 
+> > > >From now on using force_sig() is not safe, as it can race with an
+> > > already exiting task, so we use send_sig() now. As a downside, it
+> > > won't kill PID namespace init processes, but that's not what we
+> > > want anyway.
+> > > 
+> > > Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> > > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> > 
+> > Are these last 4 patches independant of the first 2 and can be taken
+> > through the staging tree now?
+> 
+> Yep, without the first two there is just a bit of sparse warnings.
+> Not a big deal.
 
-For all the drivers under rtlwifi, max_fw_size is set to zero whenever the 
-required firmware file is not found. In the original version with synchronous 
-firmware loading, the existence of the required file and it's size were known 
-immediately, but with the asynch loading now used, that info is not known until 
-later. Thus a parameter is used. In addition, rtl8192ce, rtl8192cu, and 
-rtl8192de all share the same asynchronous loading callback routine, but each has 
-a different firmware size. The parameter max_fw_size contains that info as well.
+Ok, I'll take the last 4, the first 2 needs to go through some other
+tree (-mm?)
 
-The patch is NACKed.
+thanks,
 
-Larry
+greg k-h
