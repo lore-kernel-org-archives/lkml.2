@@ -1,413 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab2BINhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 08:37:04 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59068 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753701Ab2BINhB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 08:37:01 -0500
+	id S1757575Ab2BINhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 08:37:46 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46298 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab2BINhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 08:37:45 -0500
+Message-ID: <4F33CC1E.7090403@pengutronix.de>
+Date: Thu, 09 Feb 2012 14:37:34 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
-References: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
-	<2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
-Date: Thu, 9 Feb 2012 22:37:00 +0900
-Message-ID: <CAMO-S2h-maRLhkX255XX=TPrMH5d5F_3w-aJr7g=GRHcQ+LAXg@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
- 32bit environment
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: "hpanvin@gmail.com" <hpa@zytor.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>
+CC: Mikael Pettersson <mikpe@it.uu.se>, Marc Kleine-Budde <mkl@blackshift.org>,
+        Imre Kaloz <kaloz@openwrt.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
+Subject: Re: [PATCH 1/2] ARM: ixp4xx: fix compilation, add gpiolib support
+References: <1328729069-21308-1-git-send-email-mkl@blackshift.org> <1328729069-21308-2-git-send-email-mkl@blackshift.org> <20275.35898.120590.54388@pilspetsen.it.uu.se> <87fweki8aa.fsf@lebrac.rtp-net.org>
+In-Reply-To: <87fweki8aa.fsf@lebrac.rtp-net.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig69E66737257FFCBDC2CF659F"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 12:47, hpanvin@gmail.com <hpa@zytor.com> wrote:
-> Should be volatile u64 * not volatile void *...
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig69E66737257FFCBDC2CF659F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Is this the type of parameters?
-The parameters of atomic readq/writeq defined in arch/x86/include/asm/io.h
-are defined as void *. I think that atomic readq/writeq and non-atomic
-readq/writeq
-should have same typed parameters and return values.
+On 02/09/2012 11:57 AM, Arnaud Patard (Rtp) wrote:
+> Mikael Pettersson <mikpe@it.uu.se> writes:
+>=20
+>> Marc Kleine-Budde writes:
+>>  > From: Imre Kaloz <kaloz@openwrt.org>
+>>  >=20
+>>  > The problem was introduced with commit:
+>>  > "eb9ae7f gpio: fix build error in include/asm-generic/gpio.h"
+>>  >=20
+>>  > This patch adds gpiolib support for the IXP4xx platform, which fixe=
+s the
+>>  > compilation of several ixp4xx platforms, e.g.:
+>>  >=20
+>>  > In file included from arch/arm/mach-ixp4xx/include/mach/gpio.h:72,
+>>  >                  from /home/frogger/projects/server/linux/arch/arm/=
+include/asm/gpio.h:9,
+>>  >                  from include/linux/gpio.h:30,
+>>  >                  from arch/arm/mach-ixp4xx/nslu2-setup.c:19:
+>>  > include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
+>>  > include/asm-generic/gpio.h:218: error: implicit declaration of func=
+tion '__gpio_get_value'
+>>  > include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
+>>  > include/asm-generic/gpio.h:224: error: implicit declaration of func=
+tion '__gpio_set_value'
+>>
+>> This fix is needed for 3.2 too, right?  I got the same errors when
+>> updating my (out-of-tree) ixp4xx/ds101 platform support to the 3.2 ker=
+nel
+>> a few days ago.
+>=20
+> fwiw, it's even needed for 3.1. We've added it in the debian kernel whe=
+n it
+> was sent to the linux-arm-kernel ml and it was for 3.1.
 
->
->
->
-> Hitoshi Mitake <h.mitake@gmail.com> wrote:
->
->>From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
->>
->>This patch removes some readq()s in drivers (added in
->>dbee8a0affd5e6eaa5d7c816)
->>and provides unified readq()/writeq() for the drivers.
->>
->>For some people, readq/writeq without atomicity is harmful, and order
->>of io
->>access has to be specified explicitly. So in this patch, new two header
->>files
->>which contain non-atomic readq/writeq are added.
->>io-64-nonatomic-lo-hi.h
->>provides non-atomic readq/writeq with the order of lower address ->
->>higher
->>address. io-64-nonatomic-hi-lo.h provides non-atomic readq/writeq with
->>reversed
->>order. All of them are endian awared.
->>
->>If this patch is applied, the drivers which need readq/writeq must add
->>the line:
->>#include <asm-generic/io-64-nonatomic-lo-hi.h> /* or hi-lo.h */
->>
->>But this will be nop in 64-bit environments, and no other #ifdefs are
->>required.
->>So I believe that this patch can solve the problem of
->>1. driver-specific readq/writeq
->>2. atomicity and order of io access
->>
->>This patch is tested with building allyesconfig and allmodconfig as
->>ARCH=x86 and
->>ARCH=i386 on top of tip/master.
->>
->>Cc: Kashyap Desai <Kashyap.Desai@lsi.com>
->>Cc: Len Brown <lenb@kernel.org>
->>Cc: Ravi Anand <ravi.anand@qlogic.com>
->>Cc: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
->>Cc: Matthew Garrett <mjg@redhat.com>
->>Cc: Jason Uhlenkott <juhlenko@akamai.com>
->>Cc: James Bottomley <James.Bottomley@parallels.com>
->>Cc: Thomas Gleixner <tglx@linutronix.de>
->>Cc: "H. Peter Anvin" <hpa@zytor.com>
->>Cc: Roland Dreier <roland@purestorage.com>
->>Cc: James Bottomley <jbottomley@parallels.com>
->>Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
->>Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
->>Cc: Andrew Morton <akpm@linux-foundation.org>
->>Cc: Linus Torvalds <torvalds@linux-foundation.org>
->>Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
->>
->>---
->> drivers/edac/i3200_edac.c                   |   15 +------
->> drivers/platform/x86/ibm_rtl.c              |   15 +------
->> drivers/platform/x86/intel_ips.c            |   15 +------
->> drivers/scsi/qla4xxx/ql4_nx.c               |   23 +---------
->>include/asm-generic/io-64-nonatomic-hi-lo.h |   63
->>+++++++++++++++++++++++++++
->>include/asm-generic/io-64-nonatomic-lo-hi.h |   63
->>+++++++++++++++++++++++++++
->> 6 files changed, 134 insertions(+), 60 deletions(-)
->> create mode 100644 include/asm-generic/io-64-nonatomic-hi-lo.h
->> create mode 100644 include/asm-generic/io-64-nonatomic-lo-hi.h
->>
->>diff --git a/drivers/edac/i3200_edac.c b/drivers/edac/i3200_edac.c
->>index aa08497..73f55e200 100644
->>--- a/drivers/edac/i3200_edac.c
->>+++ b/drivers/edac/i3200_edac.c
->>@@ -15,6 +15,8 @@
->> #include <linux/io.h>
->> #include "edac_core.h"
->>
->>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
->>+
->> #define I3200_REVISION        "1.1"
->>
->> #define EDAC_MOD_STR        "i3200_edac"
->>@@ -101,19 +103,6 @@ struct i3200_priv {
->>
->> static int nr_channels;
->>
->>-#ifndef readq
->>-static inline __u64 readq(const volatile void __iomem *addr)
->>-{
->>-      const volatile u32 __iomem *p = addr;
->>-      u32 low, high;
->>-
->>-      low = readl(p);
->>-      high = readl(p + 1);
->>-
->>-      return low + ((u64)high << 32);
->>-}
->>-#endif
->>-
->> static int how_many_channels(struct pci_dev *pdev)
->> {
->>       unsigned char capid0_8b; /* 8th byte of CAPID0 */
->>diff --git a/drivers/platform/x86/ibm_rtl.c
->>b/drivers/platform/x86/ibm_rtl.c
->>index 42a7d60..7481146 100644
->>--- a/drivers/platform/x86/ibm_rtl.c
->>+++ b/drivers/platform/x86/ibm_rtl.c
->>@@ -33,6 +33,8 @@
->> #include <linux/mutex.h>
->> #include <asm/bios_ebda.h>
->>
->>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
->>+
->> static bool force;
->> module_param(force, bool, 0);
->> MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
->>@@ -83,19 +85,6 @@ static void __iomem *rtl_cmd_addr;
->> static u8 rtl_cmd_type;
->> static u8 rtl_cmd_width;
->>
->>-#ifndef readq
->>-static inline __u64 readq(const volatile void __iomem *addr)
->>-{
->>-      const volatile u32 __iomem *p = addr;
->>-      u32 low, high;
->>-
->>-      low = readl(p);
->>-      high = readl(p + 1);
->>-
->>-      return low + ((u64)high << 32);
->>-}
->>-#endif
->>-
->> static void __iomem *rtl_port_map(phys_addr_t addr, unsigned long len)
->> {
->>       if (rtl_cmd_type == RTL_ADDR_TYPE_MMIO)
->>diff --git a/drivers/platform/x86/intel_ips.c
->>b/drivers/platform/x86/intel_ips.c
->>index 809a3ae..88a98cf 100644
->>--- a/drivers/platform/x86/intel_ips.c
->>+++ b/drivers/platform/x86/intel_ips.c
->>@@ -77,6 +77,8 @@
->> #include <asm/processor.h>
->> #include "intel_ips.h"
->>
->>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
->>+
->> #define PCI_DEVICE_ID_INTEL_THERMAL_SENSOR 0x3b32
->>
->> /*
->>@@ -344,19 +346,6 @@ struct ips_driver {
->> static bool
->> ips_gpu_turbo_enabled(struct ips_driver *ips);
->>
->>-#ifndef readq
->>-static inline __u64 readq(const volatile void __iomem *addr)
->>-{
->>-      const volatile u32 __iomem *p = addr;
->>-      u32 low, high;
->>-
->>-      low = readl(p);
->>-      high = readl(p + 1);
->>-
->>-      return low + ((u64)high << 32);
->>-}
->>-#endif
->>-
->> /**
->>  * ips_cpu_busy - is CPU busy?
->>  * @ips: IPS driver struct
->>diff --git a/drivers/scsi/qla4xxx/ql4_nx.c
->>b/drivers/scsi/qla4xxx/ql4_nx.c
->>index 78f1111..65253df 100644
->>--- a/drivers/scsi/qla4xxx/ql4_nx.c
->>+++ b/drivers/scsi/qla4xxx/ql4_nx.c
->>@@ -10,6 +10,8 @@
->> #include "ql4_def.h"
->> #include "ql4_glbl.h"
->>
->>+#include <asm-generic/io-64-nonatomic-lo-hi.h>
->>+
->> #define MASK(n)               DMA_BIT_MASK(n)
->>#define MN_WIN(addr)   (((addr & 0x1fc0000) >> 1) | ((addr >> 25) &
->>0x3ff))
->>#define OCM_WIN(addr)  (((addr & 0x1ff0000) >> 1) | ((addr >> 25) &
->>0x3ff))
->>@@ -655,27 +657,6 @@ static int qla4_8xxx_pci_is_same_window(struct
->>scsi_qla_host *ha,
->>       return 0;
->> }
->>
->>-#ifndef readq
->>-static inline __u64 readq(const volatile void __iomem *addr)
->>-{
->>-      const volatile u32 __iomem *p = addr;
->>-      u32 low, high;
->>-
->>-      low = readl(p);
->>-      high = readl(p + 1);
->>-
->>-      return low + ((u64)high << 32);
->>-}
->>-#endif
->>-
->>-#ifndef writeq
->>-static inline void writeq(__u64 val, volatile void __iomem *addr)
->>-{
->>-      writel(val, addr);
->>-      writel(val >> 32, addr+4);
->>-}
->>-#endif
->>-
->> static int qla4_8xxx_pci_mem_read_direct(struct scsi_qla_host *ha,
->>               u64 off, void *data, int size)
->> {
->>diff --git a/include/asm-generic/io-64-nonatomic-hi-lo.h
->>b/include/asm-generic/io-64-nonatomic-hi-lo.h
->>new file mode 100644
->>index 0000000..34e61cc
->>--- /dev/null
->>+++ b/include/asm-generic/io-64-nonatomic-hi-lo.h
->>@@ -0,0 +1,63 @@
->>+#ifndef _ASM_IO_64_NONATOMIC_HI_LO_H_
->>+#define _ASM_IO_64_NONATOMIC_HI_LO_H_
->>+
->>+#include <linux/io.h>
->>+#include <asm-generic/int-ll64.h>
->>+
->>+#ifdef CPU_LITTLE_ENDIAN
->>+
->>+#ifndef readq
->>+
->>+static inline __u64 readq(const volatile void __iomem *addr)
->>+{
->>+      const volatile u32 __iomem *p = addr;
->>+      u32 low, high;
->>+
->>+      high = readl(p + 1);
->>+      low = readl(p);
->>+
->>+      return low + ((u64)high << 32);
->>+}
->>+
->>+#endif
->>+
->>+#ifndef writeq
->>+
->>+static inline void writeq(__u64 val, volatile void __iomem *addr)
->>+{
->>+      writel(val >> 32, addr + 4);
->>+      writel(val, addr);
->>+}
->>+
->>+#endif
->>+
->>+#else  /* big endian */
->>+
->>+#ifndef readq
->>+
->>+static inline __u64 readq(const volatile void __iomem *addr)
->>+{
->>+      const volatile u32 __iomem *p = addr;
->>+      u32 low, high;
->>+
->>+      low = readl(p + 1);
->>+      high = readl(p);
->>+
->>+      return low + ((u64)high << 32);
->>+}
->>+
->>+#endif
->>+
->>+#ifndef writeq
->>+
->>+static inline void writeq(__u64 val, volatile void __iomem *addr)
->>+{
->>+      writel(val >> 32, addr);
->>+      writel(val, addr + 4);
->>+}
->>+
->>+#endif
->>+
->>+#endif
->>+
->>+#endif        /* _ASM_IO_64_NONATOMIC_HI_LO_H_ */
->>diff --git a/include/asm-generic/io-64-nonatomic-lo-hi.h
->>b/include/asm-generic/io-64-nonatomic-lo-hi.h
->>new file mode 100644
->>index 0000000..bf2fe0f
->>--- /dev/null
->>+++ b/include/asm-generic/io-64-nonatomic-lo-hi.h
->>@@ -0,0 +1,63 @@
->>+#ifndef _ASM_IO_64_NONATOMIC_LO_HI_H_
->>+#define _ASM_IO_64_NONATOMIC_LO_HI_H_
->>+
->>+#include <linux/io.h>
->>+#include <asm-generic/int-ll64.h>
->>+
->>+#ifdef CPU_LITTLE_ENDIAN
->>+
->>+#ifndef readq
->>+
->>+static inline __u64 readq(const volatile void __iomem *addr)
->>+{
->>+      const volatile u32 __iomem *p = addr;
->>+      u32 low, high;
->>+
->>+      low = readl(p);
->>+      high = readl(p + 1);
->>+
->>+      return low + ((u64)high << 32);
->>+}
->>+
->>+#endif
->>+
->>+#ifndef writeq
->>+
->>+static inline void writeq(__u64 val, volatile void __iomem *addr)
->>+{
->>+      writel(val, addr);
->>+      writel(val >> 32, addr + 4);
->>+}
->>+
->>+#endif
->>+
->>+#else  /* big endian */
->>+
->>+#ifndef readq
->>+
->>+static inline __u64 readq(const volatile void __iomem *addr)
->>+{
->>+      const volatile u32 __iomem *p = addr;
->>+      u32 low, high;
->>+
->>+      high = readl(p);
->>+      low = readl(p + 1);
->>+
->>+      return low + ((u64)high << 32);
->>+}
->>+
->>+#endif
->>+
->>+#ifndef writeq
->>+
->>+static inline void writeq(__u64 val, volatile void __iomem *addr)
->>+{
->>+      writel(val, addr + 4);
->>+      writel(val >> 32, addr);
->>+}
->>+
->>+#endif
->>+
->>+#endif
->>+
->>+#endif        /* _ASM_IO_64_NONATOMIC_LO_HI_H_ */
->>--
->>1.7.5.1
->
-> --
-> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
->
+Yep v3.1.10 fails in drivers/input/touchscreen/ads7846.c with:
+
+drivers/input/touchscreen/ads7846.c: In function 'ads7846_setup_pendown':=
+
+drivers/input/touchscreen/ads7846.c:970: error: implicit declaration of
+function 'gpio_request_one'
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+--------------enig69E66737257FFCBDC2CF659F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk8zzCQACgkQjTAFq1RaXHPWqwCdHn1Q/gFQS/Mo5RIg0YRCkcCb
+FQ8Anih2RUixsgDxthVdlKtNRB8b/07T
+=wMDQ
+-----END PGP SIGNATURE-----
+
+--------------enig69E66737257FFCBDC2CF659F--
