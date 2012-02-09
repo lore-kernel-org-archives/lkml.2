@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab2BIWOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 17:14:22 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:53734
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753944Ab2BIWOU (ORCPT
+	id S1758586Ab2BIWP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 17:15:29 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26735 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758403Ab2BIWP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 17:14:20 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Index: AQHM52VkUL8chIbTFkGkSHe4oNGmRZY1g0MAgAAEEgCAAAGKgP//fYTQgACIkgD//5HwUA==
-Date: Thu, 9 Feb 2012 22:13:51 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B70CC1A@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
-	 <20120209200404.GA8816@kroah.com>
-	 <1328818718.2944.20.camel@dabdike.int.hansenpartnership.com>
-	 <20120209202409.GA22365@kroah.com>
-	 <6E21E5352C11B742B20C142EB499E0481B70CB38@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 9 Feb 2012 17:15:28 -0500
+Date: Thu, 9 Feb 2012 23:16:04 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: x86@kernel.org
+cc: trivial@kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] X86, crypto: remove dead code from
+ serpent_sse2_glue.c::serpent_sse2_init()
+Message-ID: <alpine.LNX.2.00.1202092314340.32491@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q19MESor013491
 
+We cannot reach the line after 'return err'. Remove it.
 
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ arch/x86/crypto/serpent_sse2_glue.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Thursday, February 09, 2012 3:46 PM
-> To: KY Srinivasan
-> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
-> staging area
-> 
-> On Thu, 2012-02-09 at 20:43 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Thursday, February 09, 2012 3:24 PM
-> > > To: James Bottomley
-> > > Cc: KY Srinivasan; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
-> > > scsi@vger.kernel.org
-> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> the
-> > > staging area
-> > >
-> > > On Thu, Feb 09, 2012 at 02:18:38PM -0600, James Bottomley wrote:
-> > > > On Thu, 2012-02-09 at 12:04 -0800, Greg KH wrote:
-> > > > > On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
-> > > > > > The storage driver (storvsc_drv.c) handles all block storage devices
-> > > > > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
-> > > > > > staging tree for a while and this patch moves it out of the staging area.
-> > > > > > As per Greg's recommendation, this patch makes no changes to the
-> > > staging/hv
-> > > > > > directory. Once the driver moves out of staging, we will cleanup the
-> > > > > > staging/hv directory.
-> > > > > >
-> > > > > > James was willing to apply this patch during the 3.3-rc phase and a
-> decision
-> > > > > > was taken to defer this to 3.4 since Greg had queued up a bunch of
-> storvsc
-> > > > > > patches for 3.4. Now that Greg has applied all of the pending storvsc
-> > > patches,
-> > > > > > I am re-sending this patch to move this driver out of staging.
-> > > > > >
-> > > > > >
-> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > > > ---
-> > > > > >  drivers/scsi/Kconfig       |    7 +
-> > > > > >  drivers/scsi/Makefile      |    3 +
-> > > > > >  drivers/scsi/storvsc_drv.c | 1548
-> > > ++++++++++++++++++++++++++++++++++++++++++++
-> > > > > >  3 files changed, 1558 insertions(+), 0 deletions(-)
-> > > > > >  create mode 100644 drivers/scsi/storvsc_drv.c
-> > > > >
-> > > > > James, any objection to me applying this to the staging-next tree, and
-> > > > > at the same time, deleting this version of the driver from the
-> > > > > drivers/staging/hv/ directory?
-> > > >
-> > > > Well, yes, it has the same build failure as the previous one and that
-> > > > will make it non bisectable.
-> > >
-> > > Ah, that would make things a bit difficult, KY, please test your
-> > > patches...
-> >
-> > Greg,
-> >
-> > I pulled down your staging tree earlier today that had all the storvsc patches
-> that you
-> > checked in yesterday, applied this patch and built it (successfully).
-> 
-> You're leaving remnants in staging.
-> 
-> Move the damn thing and pull the config options from staging when you
-> put them in SCSI.
-
-I have now also sent out a patch that does what you are suggesting here. 
-
-Regards,
-
-K. Y
+diff --git a/arch/x86/crypto/serpent_sse2_glue.c b/arch/x86/crypto/serpent_sse2_glue.c
+index 7955a9b..de81cf4 100644
+--- a/arch/x86/crypto/serpent_sse2_glue.c
++++ b/arch/x86/crypto/serpent_sse2_glue.c
+@@ -1025,7 +1025,6 @@ static int __init serpent_sse2_init(void)
+ 		goto ablk_xts_err;
+ 	return err;
  
+-	crypto_unregister_alg(&ablk_xts_alg);
+ ablk_xts_err:
+ 	crypto_unregister_alg(&blk_xts_alg);
+ blk_xts_err:
+-- 
+1.7.9
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+PS. Please CC me on replies.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
