@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab2BIFIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 00:08:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59326 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2BIFIF convert rfc822-to-8bit (ORCPT
+	id S1751918Ab2BIFMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 00:12:32 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45461 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab2BIFMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 00:08:05 -0500
+	Thu, 9 Feb 2012 00:12:31 -0500
+Date: Thu, 9 Feb 2012 06:12:18 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: Re: clock_getres() and real resolution
+Message-ID: <20120209051218.GC2211@netboy.at.omicron.at>
+References: <4F32A347.4090703@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20120207.091612.181444339.anemo@mba.ocn.ne.jp>
-References: <20120207.091612.181444339.anemo@mba.ocn.ne.jp>
-Date: Thu, 9 Feb 2012 00:08:03 -0500
-Message-ID: <CACqU3MXdKti6J2ozx3mt3UHdhv1fyPredvT6zJGR+u_hNU70Cg@mail.gmail.com>
-Subject: Re: kconfig: tristate choice with depender choice
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F32A347.4090703@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Feb 08, 2012 at 08:31:03AM -0800, Dmitry Antipov wrote:
+> IIUC, an idea behind clock_getres() is to give a hint about the resolution of
+> specified clock. This hint may be used by an application programmer to check whether
+> this clock is suitable for a some purpose. So why clock_getres() always returns
+> something like {0, 1} (if hrtimers are enabled) regardless of the underlying platform's
+> real numbers?
 
-On Mon, Feb 6, 2012 at 7:16 PM, Atsushi Nemoto <anemo@mba.ocn.ne.jp> wrote:
-> If a tristate choice has another choice dependers, kconfig produce
-> wrong value.
->
-> Example:
->
-> choice
->        prompt "choice list AB"
-> config A
->        tristate "a"
-> config B
->        tristate "b"
-> endchoice
-> choice
->        prompt "choice list CD"
->        depends on A
-> config C
->        bool "c"
-> config D
->        bool "d"
-> endchoice
->
-> kconfig outputs CONFIG_A=m from defconfig with CONFIG_A=y.
->
-> This happens if the choice list CD depends on A.
-> Also, if defconfig contains CONFIG_A=y and "# CONFIG_B is not set",
-> output is correct.
->
-confirmed.
+I think "resolution" does not mean tick duration, but rather the finest timer unit.
 
-> I found commit a64b44ea ("kconfig: fix tristate choice with minimal
-> config"), but this problem still exists on v3.3-rc1.  More fix is
-> needed for choice with dependers?
->
-it would seem so.
-
- - Arnaud
+HTH,
+Richard
