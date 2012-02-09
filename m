@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab2BIOOC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 09:14:02 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33673 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab2BION2 convert rfc822-to-8bit (ORCPT
+	id S1757609Ab2BIORV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 09:17:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46532 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab2BIORU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 09:13:28 -0500
+	Thu, 9 Feb 2012 09:17:20 -0500
+Date: Thu, 9 Feb 2012 15:17:03 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, kernel@pengutronix.de
+Subject: Re: [PATCH 1/2] i.MX DMA: Add support for 2D transfers.
+Message-ID: <20120209141703.GB3852@pengutronix.de>
+References: <1328285474-26365-1-git-send-email-javier.martin@vista-silicon.com>
 MIME-Version: 1.0
-In-Reply-To: <20120209130625.GA27224@ericsson.com>
-References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
-	<1328729420.2261.329.camel@groeck-laptop>
-	<CACW_hTbLd3kbuwJy9U2ZGDi3ypD-+KsecjYhku7jwQgFPaRqhg@mail.gmail.com>
-	<20120208150548.32643cmtaxtymzok@67.228.131.195>
-	<CACW_hTad_DtwR7FqqOjzvCOzbdj1PcSCEyUpg6d-G5VtDi3wbQ@mail.gmail.com>
-	<20120209130625.GA27224@ericsson.com>
-Date: Thu, 9 Feb 2012 15:13:27 +0100
-Message-ID: <CACW_hTbtdydP1nrjfXZOo83zRfBAXbvvNzo68RO73Y54w5=Bxg@mail.gmail.com>
-Subject: Re: drivers/net/phy/phy.c issue
-From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: "guenter@roeck-us.net" <guenter@roeck-us.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "afleming@freescale.com" <afleming@freescale.com>,
-        "macro@linux-mips.org" <macro@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328285474-26365-1-git-send-email-javier.martin@vista-silicon.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 15:02:14 up 88 days, 21:49, 61 users,  load average: 0.32, 0.49,
+ 0.48
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/9 Guenter Roeck <guenter.roeck@ericsson.com>:
-> On Thu, Feb 09, 2012 at 03:12:01AM -0500, Frans Meulenbroeks wrote:
->> 2012/2/8  <guenter@roeck-us.net>:
->> > Quoting "Frans Meulenbroeks" <fransmeulenbroeks@gmail.com>:
->> >
->>
->> [...]
->> >> Apologies, but I cannot test on a git head kernel.
->> >>
->> >> And wrt the question of Andy in the subsequent reply.
->> >>
->> >> Hw is a Freescale MPC8313. This is a Gianfar. Is that the info you wanted?
->> >>
->> > This is the MAC. Andy was asking for the PHY chip.
->> >
->> Sorry yes.
->> The mac is a Marvell 88e1111bab
->
-> This time you mean the PHY is Marvell 88e1111bab, not the MAC. Looks like
-> you are getting confused ;).
->
+On Fri, Feb 03, 2012 at 05:11:13PM +0100, Javier Martin wrote:
+> DMAC present in i.MX2 and i.MX1 chips have two
+> 2D configuration slots that any DMA channel can
+> use to make 2D DMA transfers.
+> 
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
 
-Sorry yes,
-The MAC is the Gianfar on the 83813, the PHY is the Marvell.
-Guess I wasn't quite awake when I wrote my previous email.
-Apologies for the confusion.
+My problem with this patch is that it adds new code to
+arch/arm/mach-imx/dma-v1.c.
+The original intention of having a legacy driver in arch/arm/mach-imx/dma-v1.c
+and a dmaengine driver in drivers/dma was that we move remove the
+arch/arm parts to drivers/dma once all users have switched to the new
+API.  I fixed the sound drivers and the mxcmmc driver already.  We
+currently have the imxmmc driver and the i.MX1/2 camera drivers left
+in the tree.  The imxmmc driver is broken for ages and I think we can
+remove it when nobody takes care of putting it back to work. You seem to
+work on the i.MX2 camera driver and thus you should be able to fix it
+(do you use DMA here or the EMMA engine?). This leaves the i.MX1 driver
+and I have no possibility to fix it. I once pinged Paulius about this
+issue but appearently nothing has happened.
+I think we should start cleaning this up even if we risk breaking
+something. Otherwise we are stuck with the legacy driver forever.
 
-Frans
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
