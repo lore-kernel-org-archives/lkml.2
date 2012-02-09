@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab2BIJkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 04:40:25 -0500
-Received: from mga10.intel.com ([192.55.52.92]:9069 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751268Ab2BIJkX convert rfc822-to-8bit (ORCPT
+	id S1757459Ab2BIJuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 04:50:08 -0500
+Received: from mailhost-c5-p0.nerim.net ([195.5.209.11]:36447 "EHLO
+	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751429Ab2BIJuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 04:40:23 -0500
+	Thu, 9 Feb 2012 04:50:05 -0500
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Feb 2012 04:50:05 EST
+Date: Thu, 9 Feb 2012 10:40:19 +0100
+From: Damien Wyart <damien.wyart@free.fr>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] block: remove plugging at buffered write time
+Message-ID: <20120209094019.GA516@brouette>
+References: <20120208110143.GA5550@localhost>
+ <1328750089.5949.1.camel@sli10-conroe>
+ <20120209080726.GB28465@localhost>
+ <20120209092535.GA10272@brouette>
 MIME-Version: 1.0
-In-Reply-To: <CALLzPKZcr8fZ9-VXqLHN=H69+GOnp48CjZX+xxmBBksbmJsLxw@mail.gmail.com>
-References: <1327961644-6886-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<1327961644-6886-6-git-send-email-zohar@linux.vnet.ibm.com>
-	<CACLa4ptFgmCL7Z4e-YO9XJ_zkr=kOHSJ7cA8u3DPvVc-2LBfRw@mail.gmail.com>
-	<CALLzPKZcr8fZ9-VXqLHN=H69+GOnp48CjZX+xxmBBksbmJsLxw@mail.gmail.com>
-Date: Thu, 9 Feb 2012 11:40:22 +0200
-Message-ID: <CALLzPKYnpAjgQ+LWJpKVkPkcwR5zs-uiLX2DMwiARNW8DtX0Ow@mail.gmail.com>
-Subject: Re: [RFC][PATCH v1 5/9] ima: allocating iint improvements
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, David Safford <safford@watson.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120209092535.GA10272@brouette>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 1, 2012 at 8:46 PM, Kasatkin, Dmitry
-<dmitry.kasatkin@intel.com> wrote:
-> On Wed, Feb 1, 2012 at 6:58 PM, Eric Paris <eparis@parisplace.org> wrote:
->> On Mon, Jan 30, 2012 at 5:14 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>> From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
->>>
->>
->>>  static struct rb_root integrity_iint_tree = RB_ROOT;
->>> -static DEFINE_SPINLOCK(integrity_iint_lock);
->>> +static DEFINE_RWLOCK(integrity_iint_lock);
->>>  static struct kmem_cache *iint_cache __read_mostly;
->>
->> Has any profiling been done here?   rwlocks have been shown to
->> actually be slower on multi processor systems in a number of cases due
->> to the cache line bouncing required.  I believe the current kernel
->> logic is that if you have a short critical section and you can't show
->> profile data the rwlocks are better, just stick with a spinlock.
->
-> No, I have not done any profiling.
-> My assumption was that rwlocks are better when there many readers.
-> If what you say is true then rwlocks are useless...
-> With big sections it is necessary to use rw semaphores.
->
+> > Done, thanks! Here is the updated patch with O_SYNC write fix.
 
-Hello,
+> Got these errors with the updated patch on top of 3.3-rc3:
 
-I and Mimi made performance measurements with rwlocks and spinlocks.
-We used kernel compilation with multiple jobs as a test,
-because it reads and creates lots of files..
+> fs/sync.c: In function 'vfs_fsync_range':
+> fs/sync.c:167:18: error: storage size of 'plug' isn't known
+> fs/sync.c:173:2: error: implicit declaration of function 'blk_start_plug' [-Werror=implicit-function-declaration]
+> fs/sync.c:175:2: error: implicit declaration of function 'blk_finish_plug' [-Werror=implicit-function-declaration]
+> fs/sync.c:167:18: warning: unused variable 'plug' [-Wunused-variable]
 
-In all cases rwlocks implementation performed better than spinlocks,
-but very insignificantly. For example with total compilation time
-around 6 minutes, with rwlocks time was 1 - 3 seconds shorter... But
-always like that.
+Adding a #include <linux/blkdev.h> at the top of fs/sync.c solved the
+problem. Of course, this needs approval of a kernel developper before
+being added to the patch and resubmitted because I know adding #includes
+can have unwanted consequences sometimes or be seen as bloat...
 
-So as conclusion I can make, that usage of rwlocks is justified...
-
-Thanks for bringing this up...
-
-> - Dmitry
+-- 
+Damien Wyart
