@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2BIG6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:58:12 -0500
-Received: from canardo.mork.no ([148.122.252.1]:53070 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756560Ab2BIG6B convert rfc822-to-8bit (ORCPT
+	id S1755805Ab2BIG5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:57:37 -0500
+Received: from lunge.queued.net ([173.255.254.236]:52650 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab2BIG5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:58:01 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Danny Kukawka <danny.kukawka@bisect.de>, Danny Kukawka <dkukawka@suse.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 37/50] usbnet: set addr_assign_type if random_ether_addr() used
-Organization: m
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de>
-	<1328735457-29986-38-git-send-email-danny.kukawka@bisect.de>
-	<201202082230.19936.oliver@neukum.org>
-Date: Thu, 09 Feb 2012 07:57:42 +0100
-In-Reply-To: <201202082230.19936.oliver@neukum.org> (Oliver Neukum's message
-	of "Wed, 8 Feb 2012 22:30:19 +0100")
-Message-ID: <874nv07au1.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Feb 2012 01:57:35 -0500
+Date: Wed, 8 Feb 2012 22:57:34 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pgf@laptop.org
+Subject: [PATCH 1/2] input: psmouse: allow drivers to use
+ psmouse_{de,}activate
+Message-ID: <20120208225734.68007a5b@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oliver Neukum <oliver@neukum.org> writes:
+Other drivers duplicate this code; no sense in having it be private
+to psmouse-base.
 
-> Am Mittwoch, 8. Februar 2012, 22:10:44 schrieb Danny Kukawka:
->> Set addr_assign_type correctly to NET_ADDR_RANDOM in case
->> a random MAC address was generated and assigned to the netdevice.
->> 
->> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
->> ---
->>  drivers/net/usb/usbnet.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->> 
->> diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
->> index fae0fbd..7bd07d7 100644
->> --- a/drivers/net/usb/usbnet.c
->> +++ b/drivers/net/usb/usbnet.c
->> @@ -1365,6 +1365,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
->>  	dev->net = net;
->>  	strcpy (net->name, "usb%d");
->>  	memcpy (net->dev_addr, node_id, sizeof node_id);
->> +	net->addr_assign_type |= NET_ADDR_RANDOM;
->>  
->>  	/* rx and tx sides can use different message sizes;
->>  	 * bind() should set rx_urb_size in that case.
->
-> Don't you set the flag too early here? By that time we don't know
-> whether the device provides a real MAC, do we?
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/input/mouse/psmouse-base.c |   15 ++++++++++-----
+ drivers/input/mouse/psmouse.h      |    2 ++
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
-Maybe it makes sense to set it here anyway since usbnet provides this
-default random address, and let the minidrivers which set a real mac
-also clear the flag?  But in that case the patch need to clear the flag
-everywhere a minidriver currently updates the address.
+diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
+index e6c9931..22fe254 100644
+--- a/drivers/input/mouse/psmouse-base.c
++++ b/drivers/input/mouse/psmouse-base.c
+@@ -1092,28 +1092,33 @@ static void psmouse_initialize(struct psmouse *psmouse)
+  * psmouse_activate() enables the mouse so that we get motion reports from it.
+  */
+ 
+-static void psmouse_activate(struct psmouse *psmouse)
++int psmouse_activate(struct psmouse *psmouse)
+ {
+-	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE))
++	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE)) {
+ 		psmouse_warn(psmouse, "Failed to enable mouse on %s\n",
+ 			     psmouse->ps2dev.serio->phys);
++		return -1;
++	}
+ 
+ 	psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
++	return 0;
+ }
+ 
+-
+ /*
+  * psmouse_deactivate() puts the mouse into poll mode so that we don't get motion
+  * reports from it unless we explicitly request it.
+  */
+ 
+-static void psmouse_deactivate(struct psmouse *psmouse)
++int psmouse_deactivate(struct psmouse *psmouse)
+ {
+-	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_DISABLE))
++	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_DISABLE)) {
+ 		psmouse_warn(psmouse, "Failed to deactivate mouse on %s\n",
+ 			     psmouse->ps2dev.serio->phys);
++		return -1;
++	}
+ 
+ 	psmouse_set_state(psmouse, PSMOUSE_CMD_MODE);
++	return 0;
+ }
+ 
+ 
+diff --git a/drivers/input/mouse/psmouse.h b/drivers/input/mouse/psmouse.h
+index 6a41709..fe1df23 100644
+--- a/drivers/input/mouse/psmouse.h
++++ b/drivers/input/mouse/psmouse.h
+@@ -105,6 +105,8 @@ int psmouse_reset(struct psmouse *psmouse);
+ void psmouse_set_state(struct psmouse *psmouse, enum psmouse_state new_state);
+ void psmouse_set_resolution(struct psmouse *psmouse, unsigned int resolution);
+ psmouse_ret_t psmouse_process_byte(struct psmouse *psmouse);
++int psmouse_activate(struct psmouse *psmouse);
++int psmouse_deactivate(struct psmouse *psmouse);
+ 
+ struct psmouse_attribute {
+ 	struct device_attribute dattr;
+-- 
+1.7.2.5
 
-
-Bjørn
