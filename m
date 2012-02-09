@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab2BIGWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 01:22:34 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:61810 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab2BIGWc convert rfc822-to-8bit (ORCPT
+	id S1752428Ab2BIG3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 01:29:23 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49200 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab2BIG3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 01:22:32 -0500
+	Thu, 9 Feb 2012 01:29:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120208162925.GA19392@google.com>
-References: <20120206172706.GB21292@google.com>
-	<4F303506.9000201@kernel.dk>
-	<20120206215451.GD21292@google.com>
-	<4F30C96F.1000905@kernel.dk>
-	<20120207162253.GG21292@google.com>
-	<4F315113.5010804@kernel.dk>
-	<CA+55aFxcjE4FsUVoarc+8OTi4OkqtgBmHq500=qaCeTqqWnqoA@mail.gmail.com>
-	<20120207164735.GH21292@google.com>
-	<CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
-	<CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
-	<20120208162925.GA19392@google.com>
-Date: Thu, 9 Feb 2012 14:22:32 +0800
-X-Google-Sender-Auth: f7x7yrzaLLZbZy4VLNmv6XBUkdY
-Message-ID: <CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
-Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee
+In-Reply-To: <201201241537.17194.tim01@iss.tu-darmstadt.de>
+References: <201201241537.17194.tim01@iss.tu-darmstadt.de>
+Date: Thu, 9 Feb 2012 00:29:15 -0600
+Message-ID: <CAKWjMd66rTzM7AipQZsu-c0jDSNw_=CFHnN1Mms4WQp_4aaFWA@mail.gmail.com>
+Subject: Re: newbie: phy platform interrupt config
+From: Andy Fleming <afleming@gmail.com>
+To: Tim Sander <tim01@iss.tu-darmstadt.de>
+Cc: netdev@vger.kernel.org, Andy Fleming <afleming@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Decotigny <decot@google.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/9 Tejun Heo <tj@kernel.org>:
-> Hello, Shaohua.
+On Tue, Jan 24, 2012 at 8:37 AM, Tim Sander <tim01@iss.tu-darmstadt.de> wrote:
+> Hi
 >
-> On Wed, Feb 08, 2012 at 04:29:53PM +0800, Shaohua Li wrote:
->> > the test adds mem=4G in a 2 sockets 16 CPU machine.
->> > just make several copy of kernel source in tmpfs (so there is swap
->> > depending on your
->> > memory size) and run kernel build in the kernel source in the meaning time.
->> > there is only one swap device which is a rotating disk.
->> >
->> > I'll test both patches soon.
->>
->> Tried all the options, the regression still exists. Any new idea?
->> I'll spend some time on it if I can get anything
+> I would like to set the interrupt for the phy on the i.mx35 pcm43 in the file
+> arch/arm/mach-imx/mach-pcm043.c. Unfortunatly i didn't find a way to specify
+> it. So i want to set the field (struct phy_device*)->irq.
 >
-> Can you please try the following one?  Thanks a lot!
-doesn't work.
-I also double confirmed b2efa05265d62 causes the regression
+> What i managed so far is to request the gpio for the interrupt:
+> #define IMX_PHY_IRQ IMX_GPIO_NR(2,7)
+> gpio_request(IMX_PHY_IRQ, "FEC PHY irq");
+> gpio_direction_input(IMX_PHY_IRQ);
+>
+> Now i guess the result of "gpio_to_irq(IMX_PHY_IRQ)" should go into some kind
+> of argument to imx35_add_fec(pdata) which is a macro
+> imx_add_fec(&imx35_fec_data, pdata).
+> pdata is of type (?) struct fec_platform_data which contains phy_interface_t
+> and unsigned char array. So i don't see a way to set the phy interrupt there.
+>
+> I tried search for a driver which set the phy irq but i didn't find any and
+> setting the phy in the phy_fixup function is also not working since the
+> interrupt seems not get registered when opening the device.
+>
+> So how do i set the phy interrupt line in the platform file?
+
+Look in drivers/of/of_mdio.c.
+
+It's the job of the mdio driver to set the IRQs for the device. I
+don't honestly know why I designed it that way. I suspect it's because
+the MDIO controller's driver is the entity most likely to communicate
+directly with the platform code.
+
+So wherever you set up your mdio bus, set the IRQs for all the PHYs on
+the bus there.
+
+Andy
