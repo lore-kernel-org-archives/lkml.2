@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab2BIUkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 15:40:31 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:47217 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2BIUka (ORCPT
+	id S1758108Ab2BIUkl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 15:40:41 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51768 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752881Ab2BIUkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 15:40:30 -0500
-Date: Thu, 9 Feb 2012 16:40:18 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Cc: Jan Beulich <JBeulich@suse.com>, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen/tmem: cleanup
-Message-ID: <20120209204018.GC14007@andromeda.dapyr.net>
-References: <4F2C06A00200007800071071@nat28.tlf.novell.com> <d86f0be9-1530-47bd-b3fd-8c251e563b25@default> <4F2F998202000078000714CD@nat28.tlf.novell.com> <e871af1b-8003-4d3d-8fde-ea40545ff9fe@default> <4F3012B602000078000716AB@nat28.tlf.novell.com> <20120206170224.GD23240@phenom.dumpdata.com> <4F30E62B02000078000717EB@nat28.tlf.novell.com> <CACaajQt0MDNAN51g6AuYZn7ApwvuVgn+=GdyPNDJYVh95ecD0g@mail.gmail.com>
+	Thu, 9 Feb 2012 15:40:39 -0500
+Message-ID: <1328820036.2944.23.camel@dabdike.int.hansenpartnership.com>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Thu, 09 Feb 2012 14:40:36 -0600
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B70CB0A@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
+	 <20120209200404.GA8816@kroah.com>
+	 <1328818718.2944.20.camel@dabdike.int.hansenpartnership.com>
+	 <6E21E5352C11B742B20C142EB499E0481B70CB0A@TK5EX14MBXC128.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACaajQt0MDNAN51g6AuYZn7ApwvuVgn+=GdyPNDJYVh95ecD0g@mail.gmail.com>
-User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 07, 2012 at 02:23:05PM +0400, Vasiliy Tolstov wrote:
-> 2012/2/7 Jan Beulich <JBeulich@suse.com>:
+On Thu, 2012-02-09 at 20:21 +0000, KY Srinivasan wrote:
 > 
-> >
-> > As outlined above, it is possible, but I'm not certain it is a good idea
-> > to have balloon_set_new_target() exported. If you think that's
-> > acceptable, I can certainly put together a patch doing that (on top
-> > of the one here, and probably not immediately).
-> >
-> > Jan
+> > -----Original Message-----
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > Sent: Thursday, February 09, 2012 3:19 PM
+> > To: Greg KH
+> > Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> > scsi@vger.kernel.org
+> > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> > staging area
+> > 
+> > On Thu, 2012-02-09 at 12:04 -0800, Greg KH wrote:
+> > > On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
+> > > > The storage driver (storvsc_drv.c) handles all block storage devices
+> > > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> > > > staging tree for a while and this patch moves it out of the staging area.
+> > > > As per Greg's recommendation, this patch makes no changes to the
+> > staging/hv
+> > > > directory. Once the driver moves out of staging, we will cleanup the
+> > > > staging/hv directory.
+> > > >
+> > > > James was willing to apply this patch during the 3.3-rc phase and a decision
+> > > > was taken to defer this to 3.4 since Greg had queued up a bunch of storvsc
+> > > > patches for 3.4. Now that Greg has applied all of the pending storvsc patches,
+> > > > I am re-sending this patch to move this driver out of staging.
+> > > >
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > ---
+> > > >  drivers/scsi/Kconfig       |    7 +
+> > > >  drivers/scsi/Makefile      |    3 +
+> > > >  drivers/scsi/storvsc_drv.c | 1548
+> > ++++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 1558 insertions(+), 0 deletions(-)
+> > > >  create mode 100644 drivers/scsi/storvsc_drv.c
+> > >
+> > > James, any objection to me applying this to the staging-next tree, and
+> > > at the same time, deleting this version of the driver from the
+> > > drivers/staging/hv/ directory?
+> > 
+> > Well, yes, it has the same build failure as the previous one and that
+> > will make it non bisectable.
 > 
-> Exporting balloon_set_new_target can be grate feature to do own
-> modules for balloon memory inside xen guest, becouse some times we
-> need more realtime control from dom0 for memory growing speed inside
-> guest.
+> James,
+> 
+> What build failure is this. I just pulled down Greg's tree earlier today and applied this
+> patch and built it.
 
-Sounds like we have two use cases :-)
+This one
 
-I am not seeing anything against it but I wonder if other virtualization
-offerings would benefit from this as well? As in would it make sense to
-export the virtio-ballon or the microsoft one as well? And perhaps have
-an unified API? So that the ballloon drivers register and then have a
-"virt_mem_set_new_target" exported?
+marc.info/?l=linux-driver-devel&m=132760187731205
+
+James
+
 
