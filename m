@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2BIIME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 03:12:04 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57733 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab2BIIMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 03:12:02 -0500
+	id S1753423Ab2BIIMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 03:12:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40895 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756556Ab2BIIMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 03:12:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104820187"
+Date: Thu, 9 Feb 2012 16:02:24 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Li Shaohua <shaohua.li@intel.com>
+Subject: Re: [PATCH] block: remove plugging at buffered write time
+Message-ID: <20120209080224.GA28465@localhost>
+References: <20120208110143.GA5550@localhost>
+ <20120208232719.GD7479@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20120208150548.32643cmtaxtymzok@67.228.131.195>
-References: <CACW_hTY41xZV6d0W2Z2kRfKOfa+RSQ-A-BoZsZwNXSQmeF_6Gg@mail.gmail.com>
-	<1328729420.2261.329.camel@groeck-laptop>
-	<CACW_hTbLd3kbuwJy9U2ZGDi3ypD-+KsecjYhku7jwQgFPaRqhg@mail.gmail.com>
-	<20120208150548.32643cmtaxtymzok@67.228.131.195>
-Date: Thu, 9 Feb 2012 09:12:01 +0100
-Message-ID: <CACW_hTad_DtwR7FqqOjzvCOzbdj1PcSCEyUpg6d-G5VtDi3wbQ@mail.gmail.com>
-Subject: Re: drivers/net/phy/phy.c issue
-From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
-To: guenter@roeck-us.net
-Cc: guenter.roeck@ericsson.com, netdev@vger.kernel.org,
-        "afleming@freescale.com" <afleming@freescale.com>,
-        "macro@linux-mips.org" <macro@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208232719.GD7479@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/8  <guenter@roeck-us.net>:
-> Quoting "Frans Meulenbroeks" <fransmeulenbroeks@gmail.com>:
->
+On Thu, Feb 09, 2012 at 10:27:19AM +1100, Dave Chinner wrote:
+> On Wed, Feb 08, 2012 at 07:01:44PM +0800, Wu Fengguang wrote:
+> > Buffered write(2) is not directly tied to IO, so it's not suitable to
+> > handle plug in generic_file_aio_write().
+> 
+> But generic_sync_write() does issue IO for O_SYNC writes, so unless
+> there is plugging at a lower layer in the writeback code then it
+> appears to me that plugging is still necessary (at least inside the
+> sync branch)....
 
-[...]
->> Apologies, but I cannot test on a git head kernel.
->>
->> And wrt the question of Andy in the subsequent reply.
->>
->> Hw is a Freescale MPC8313. This is a Gianfar. Is that the info you wanted?
->>
-> This is the MAC. Andy was asking for the PHY chip.
->
-Sorry yes.
-The mac is a Marvell 88e1111bab
-I suspect this to be the same as in the MPC8313RDS reference design as
-this design borrows quite some stuff from it.
+Good catch! It looks that generic_write_sync() eventually calls into
+vfs_fsync_range() which further calls ->fsync(). We may add plugging
+around it:
 
-Frans
+--- linux-next.orig/fs/sync.c   2012-02-09 15:59:52.000000000 +0800
++++ linux-next/fs/sync.c        2012-02-09 16:01:02.000000000 +0800
+@@ -164,9 +164,17 @@ SYSCALL_DEFINE1(syncfs, int, fd)
+  */
+ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
+ {
++       struct blk_plug plug;
++       int ret;
++
+        if (!file->f_op || !file->f_op->fsync)
+                return -EINVAL;
+-       return file->f_op->fsync(file, start, end, datasync);
++
++       blk_start_plug(&plug);
++       ret = file->f_op->fsync(file, start, end, datasync);
++       blk_finish_plug(&plug);
++
++       return ret;
+ }
+ EXPORT_SYMBOL(vfs_fsync_range);
+
