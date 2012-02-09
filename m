@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab2BIBNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 20:13:50 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48541 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab2BIBNm (ORCPT
+	id S1757957Ab2BIBOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 20:14:37 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43465 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab2BIBOg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 20:13:42 -0500
-Date: Wed, 8 Feb 2012 17:13:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 3/5] staging: zcache: replace xvmalloc with zsmalloc
-Message-ID: <20120209011326.GA2225@kroah.com>
-References: <1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com>
+	Wed, 8 Feb 2012 20:14:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326149520-31720-4-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [108.60.121.129]
+In-Reply-To: <4F2BED06.9@atmel.com>
+References: <4F2BED06.9@atmel.com>
+Date: Wed, 8 Feb 2012 17:14:35 -0800
+Message-ID: <CAOesGMhY4OmoGHTT=8vXEwAYMAW=sRExU8=d39oTcGJus5ZaNA@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: pm cleanup for standby
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 04:51:58PM -0600, Seth Jennings wrote:
-> Replaces xvmalloc with zsmalloc as the persistent memory allocator
-> for zcache
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Hi,
 
-This patch no longer applies :(
+On Fri, Feb 3, 2012 at 6:19 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> Hi,
+>
+> Here is an AT91 power management cleanup done recently by Daniel Lezcano. This series goes on top of the pull request that I have just sent (at91-3.4-base branch).
+>
+> Here is the diffstat from the "CAP9 removal" commit that lies in the at91-3.4-base branch.
+>
+>
+> The following changes since commit 9918ceafd4a9e013572e03983f528017c29bb1cb:
+>
+>  ARM: at91: code removal of CAP9 SoC (2012-02-03 13:33:05 +0100)
+>
+> are available in the git repository at:
+>  git://github.com/at91linux/linux-at91.git at91-3.4-base+pm_cleanup
 
+Pulled, thanks.
+
+
+-Olof
