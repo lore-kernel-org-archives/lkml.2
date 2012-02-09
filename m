@@ -1,77 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab2BIA7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Feb 2012 19:59:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33692 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab2BIA7m convert rfc822-to-8bit (ORCPT
+	id S932244Ab2BIBBf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Feb 2012 20:01:35 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:35806 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab2BIBBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Feb 2012 19:59:42 -0500
+	Wed, 8 Feb 2012 20:01:33 -0500
+Message-ID: <4F331AE7.40708@oss.ntt.co.jp>
+Date: Thu, 09 Feb 2012 10:01:27 +0900
+From: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1328751082.5611.6.camel@lappy>
-References: <1328751082.5611.6.camel@lappy>
-Date: Wed, 8 Feb 2012 19:59:40 -0500
-Message-ID: <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
-Subject: Re: WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
-From: Josh Boyer <jwboyer@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] watchdog: update documentation
+References: <4F323B21.7080003@oss.ntt.co.jp> <20120208184337.GU5650@redhat.com>
+In-Reply-To: <20120208184337.GU5650@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------090104090205000904030103"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 8, 2012 at 8:31 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> Hi all,
->
-> I got the following warning when shutting down a KVM guest with a whole bunch of cores (254 in this case).
->
-> It's actually pretty easy to reproduce it, it happens every once in 2-3 shutdowns.
->
-> [   32.448626] ------------[ cut here ]------------
-> [   32.449160] WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
-> [   32.449621] Pid: 1, comm: init_stage2 Not tainted 3.2.0+ #14
-> [   32.449621] Call Trace:
-> [   32.449621]  <IRQ>  [<ffffffff81041a44>] ? native_smp_send_reschedule+0x25/0x43
-> [   32.449621]  [<ffffffff810735b2>] warn_slowpath_common+0x7b/0x93
-> [   32.449621]  [<ffffffff810962cc>] ? tick_nohz_handler+0xc9/0xc9
-> [   32.449621]  [<ffffffff81073675>] warn_slowpath_null+0x15/0x18
-> [   32.449621]  [<ffffffff81041a44>] native_smp_send_reschedule+0x25/0x43
-> [   32.449621]  [<ffffffff81067a00>] smp_send_reschedule+0xa/0xc
-> [   32.449621]  [<ffffffff8106f25e>] scheduler_tick+0x21a/0x242
-> [   32.449621]  [<ffffffff8107da10>] update_process_times+0x62/0x73
-> [   32.449621]  [<ffffffff81096336>] tick_sched_timer+0x6a/0x8a
-> [   32.449621]  [<ffffffff8108c5eb>] __run_hrtimer.clone.26+0x55/0xcb
-> [   32.449621]  [<ffffffff8108cd77>] hrtimer_interrupt+0xcb/0x19b
-> [   32.449621]  [<ffffffff810428a8>] smp_apic_timer_interrupt+0x72/0x85
-> [   32.449621]  [<ffffffff8165a8de>] apic_timer_interrupt+0x6e/0x80
-> [   32.449621]  <EOI>  [<ffffffff8165928e>] ? _raw_spin_unlock_irqrestore+0x3a/0x3e
-> [   32.449621]  [<ffffffff81042f4e>] ? arch_local_irq_restore+0x6/0xd
-> [   32.449621]  [<ffffffff810430c4>] default_send_IPI_mask_allbutself_phys+0x78/0x88
-> [   32.449621]  [<ffffffff8106c3c4>] ? __migrate_task+0xf1/0xf1
-> [   32.449621]  [<ffffffff81045445>] physflat_send_IPI_allbutself+0x12/0x14
-> [   32.449621]  [<ffffffff81041aaf>] native_stop_other_cpus+0x4d/0xa8
-> [   32.449621]  [<ffffffff810411c6>] native_machine_shutdown+0x56/0x6d
-> [   32.449621]  [<ffffffff81048499>] kvm_shutdown+0x1a/0x1c
-> [   32.449621]  [<ffffffff810411f9>] machine_shutdown+0xa/0xc
-> [   32.449621]  [<ffffffff81041265>] native_machine_restart+0x20/0x32
-> [   32.449621]  [<ffffffff81041297>] machine_restart+0xa/0xc
-> [   32.449621]  [<ffffffff81081d53>] kernel_restart+0x49/0x4d
-> [   32.449621]  [<ffffffff81081f26>] sys_reboot+0x14b/0x18a
-> [   32.449621]  [<ffffffff81089937>] ? remove_wait_queue+0x4c/0x51
-> [   32.449621]  [<ffffffff8107637f>] ? do_wait+0x1a4/0x1e7
-> [   32.449621]  [<ffffffff8107735a>] ? sys_wait4+0xa8/0xbc
-> [   32.449621]  [<ffffffff8107522b>] ? clear_tsk_thread_flag+0xf/0xf
-> [   32.449621]  [<ffffffff81659a25>] ? async_page_fault+0x25/0x30
-> [   32.449621]  [<ffffffff81659e92>] system_call_fastpath+0x16/0x1b
-> [   32.449621] ---[ end trace d0f03651493fd3d6 ]--
+This is a multi-part message in MIME format.
+--------------090104090205000904030103
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 
-You don't really point out exactly which kernel this is, but we saw this in
-3.3 git and it was fixed by commit 71325960d16cd68ea0e22a8da15b2495b0f363f7.
-Or at least something very like it was.
+On 02/09/2012 03:43 AM, Don Zickus wrote:
+> On Wed, Feb 08, 2012 at 06:06:41PM +0900, Fernando Luis Vázquez Cao wrote:
+>> Subject: [PATCH] watchdog: update documentation
+>>
+>> From: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
+>>
+>> The soft and hard lockup detectors are now built on top of the hrtimer
+>> and perf subsystems. Update the documentation accordingly.
+> I am fine with this (just  need to address Randy's little fixup).
+>
+> Ingo, should I take this in and repost for you or just ack it and let
+> someone like Andrew take this in?
 
-josh
+Fixed version attached.
+
+Thanks,
+Fernando
+
+--------------090104090205000904030103
+Content-Type: text/x-patch;
+ name="lockup-watchdogs.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="lockup-watchdogs.patch"
+
+Subject: [PATCH] watchdog: update documentation
+
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+
+The soft and hard lockup detectors are now built on top of the hrtimer
+and perf subsystems. Update the documentation accordingly.
+
+Signed-off-by: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
+---
+
+diff -urNp linux-3.2.5-orig/Documentation/lockup-watchdogs.txt linux-3.2.5/Documentation/lockup-watchdogs.txt
+--- linux-3.2.5-orig/Documentation/lockup-watchdogs.txt	1970-01-01 09:00:00.000000000 +0900
++++ linux-3.2.5/Documentation/lockup-watchdogs.txt	2012-02-09 09:53:24.922346977 +0900
+@@ -0,0 +1,63 @@
++===============================================================
++Softlockup detector and hardlockup detector (aka nmi_watchdog)
++===============================================================
++
++The Linux kernel can act as a watchdog to detect both soft and hard
++lockups.
++
++A 'softlockup' is defined as a bug that causes the kernel to loop in
++kernel mode for more than 20 seconds (see "Implementation" below for
++details), without giving other tasks a chance to run. The current
++stack trace is displayed upon detection and, by default, the system
++will stay locked up. Alternatively, the kernel can be configured to
++panic; a sysctl, "kernel.softlockup_panic", a kernel parameter,
++"softlockup_panic" (see "Documentation/kernel-parameters.txt" for
++details), and a compile option, "BOOTPARAM_HARDLOCKUP_PANIC", are
++provided for this.
++
++A 'hardlockup' is defined as a bug that causes the CPU to loop in
++kernel mode for more than 10 seconds (see "Implementation" below for
++details), without letting other interrupts have a chance to run.
++Similarly to the softlockup case, the current stack trace is displayed
++upon detection and the system will stay locked up unless the default
++behavior is changed, which can be done through a compile time knob,
++"BOOTPARAM_HARDLOCKUP_PANIC", and a kernel parameter, "nmi_watchdog"
++(see "Documentation/kernel-parameters.txt" for details).
++
++The panic option can be used in combination with panic_timeout (this
++timeout is set through the confusingly named "kernel.panic" sysctl),
++to cause the system to reboot automatically after a specified amount
++of time.
++
++=== Implementation ===
++
++The soft and hard lockup detectors are built on top of the hrtimer and
++perf subsystems, respectively. A direct consequence of this is that,
++in principle, they should work in any architecture where these
++subsystems are present.
++
++A periodic hrtimer runs to generate interrupts and kick the watchdog
++task. An NMI perf event is generated every "watchdog_thresh"
++(compile-time initialized to 10 and configurable through sysctl of the
++same name) seconds to check for hardlockups. If any CPU in the system
++does not receive any hrtimer interrupt during that time the
++'hardlockup detector' (the handler for the NMI perf event) will
++generate a kernel warning or call panic, depending on the
++configuration.
++
++The watchdog task is a high priority kernel thread that updates a
++timestamp every time it is scheduled. If that timestamp is not updated
++for 2*watchdog_thresh seconds (the softlockup threshold) the
++'softlockup detector' (coded inside the hrtimer callback function)
++will dump useful debug information to the system log, after which it
++will call panic if it was instructed to do so or resume execution of
++other kernel code.
++
++The period of the hrtimer is 2*watchdog_thresh/5, which means it has
++two or three chances to generate an interrupt before the hardlockup
++detector kicks in.
++
++As explained above, a kernel knob is provided that allows
++administrators to configure the period of the hrtimer and the perf
++event. The right value for a particular environment is a trade-off
++between fast response to lockups and detection overhead.
+diff -urNp linux-3.2.5-orig/Documentation/nmi_watchdog.txt linux-3.2.5/Documentation/nmi_watchdog.txt
+--- linux-3.2.5-orig/Documentation/nmi_watchdog.txt	2012-01-05 08:55:44.000000000 +0900
++++ linux-3.2.5/Documentation/nmi_watchdog.txt	1970-01-01 09:00:00.000000000 +0900
+@@ -1,83 +0,0 @@
+-
+-[NMI watchdog is available for x86 and x86-64 architectures]
+-
+-Is your system locking up unpredictably? No keyboard activity, just
+-a frustrating complete hard lockup? Do you want to help us debugging
+-such lockups? If all yes then this document is definitely for you.
+-
+-On many x86/x86-64 type hardware there is a feature that enables
+-us to generate 'watchdog NMI interrupts'.  (NMI: Non Maskable Interrupt
+-which get executed even if the system is otherwise locked up hard).
+-This can be used to debug hard kernel lockups.  By executing periodic
+-NMI interrupts, the kernel can monitor whether any CPU has locked up,
+-and print out debugging messages if so.
+-
+-In order to use the NMI watchdog, you need to have APIC support in your
+-kernel. For SMP kernels, APIC support gets compiled in automatically. For
+-UP, enable either CONFIG_X86_UP_APIC (Processor type and features -> Local
+-APIC support on uniprocessors) or CONFIG_X86_UP_IOAPIC (Processor type and
+-features -> IO-APIC support on uniprocessors) in your kernel config.
+-CONFIG_X86_UP_APIC is for uniprocessor machines without an IO-APIC.
+-CONFIG_X86_UP_IOAPIC is for uniprocessor with an IO-APIC. [Note: certain
+-kernel debugging options, such as Kernel Stack Meter or Kernel Tracer,
+-may implicitly disable the NMI watchdog.]
+-
+-For x86-64, the needed APIC is always compiled in.
+-
+-Using local APIC (nmi_watchdog=2) needs the first performance register, so
+-you can't use it for other purposes (such as high precision performance
+-profiling.) However, at least oprofile and the perfctr driver disable the
+-local APIC NMI watchdog automatically.
+-
+-To actually enable the NMI watchdog, use the 'nmi_watchdog=N' boot
+-parameter.  Eg. the relevant lilo.conf entry:
+-
+-        append="nmi_watchdog=1"
+-
+-For SMP machines and UP machines with an IO-APIC use nmi_watchdog=1.
+-For UP machines without an IO-APIC use nmi_watchdog=2, this only works
+-for some processor types.  If in doubt, boot with nmi_watchdog=1 and
+-check the NMI count in /proc/interrupts; if the count is zero then
+-reboot with nmi_watchdog=2 and check the NMI count.  If it is still
+-zero then log a problem, you probably have a processor that needs to be
+-added to the nmi code.
+-
+-A 'lockup' is the following scenario: if any CPU in the system does not
+-execute the period local timer interrupt for more than 5 seconds, then
+-the NMI handler generates an oops and kills the process. This
+-'controlled crash' (and the resulting kernel messages) can be used to
+-debug the lockup. Thus whenever the lockup happens, wait 5 seconds and
+-the oops will show up automatically. If the kernel produces no messages
+-then the system has crashed so hard (eg. hardware-wise) that either it
+-cannot even accept NMI interrupts, or the crash has made the kernel
+-unable to print messages.
+-
+-Be aware that when using local APIC, the frequency of NMI interrupts
+-it generates, depends on the system load. The local APIC NMI watchdog,
+-lacking a better source, uses the "cycles unhalted" event. As you may
+-guess it doesn't tick when the CPU is in the halted state (which happens
+-when the system is idle), but if your system locks up on anything but the
+-"hlt" processor instruction, the watchdog will trigger very soon as the
+-"cycles unhalted" event will happen every clock tick. If it locks up on
+-"hlt", then you are out of luck -- the event will not happen at all and the
+-watchdog won't trigger. This is a shortcoming of the local APIC watchdog
+--- unfortunately there is no "clock ticks" event that would work all the
+-time. The I/O APIC watchdog is driven externally and has no such shortcoming.
+-But its NMI frequency is much higher, resulting in a more significant hit
+-to the overall system performance.
+-
+-On x86 nmi_watchdog is disabled by default so you have to enable it with
+-a boot time parameter.
+-
+-It's possible to disable the NMI watchdog in run-time by writing "0" to
+-/proc/sys/kernel/nmi_watchdog. Writing "1" to the same file will re-enable
+-the NMI watchdog. Notice that you still need to use "nmi_watchdog=" parameter
+-at boot time.
+-
+-NOTE: In kernels prior to 2.4.2-ac18 the NMI-oopser is enabled unconditionally
+-on x86 SMP boxes.
+-
+-[ feel free to send bug reports, suggestions and patches to
+-  Ingo Molnar <mingo@redhat.com> or the Linux SMP mailing
+-  list at <linux-smp@vger.kernel.org> ]
+-
+
+--------------090104090205000904030103--
