@@ -1,60 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab2BISpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 13:45:44 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:42973
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239Ab2BISpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 13:45:42 -0500
-X-IronPort-AV: E=Sophos;i="4.73,391,1325458800"; 
-   d="scan'208";a="130779679"
-Date: Thu, 9 Feb 2012 19:45:41 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Liam Girdwood <lrg@ti.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
-In-Reply-To: <7FE21149F4667147B645348EC60578850C1864@039-SN2MPN1-012.039d.mgd.msft.net>
-Message-ID: <alpine.DEB.2.02.1202091945150.1845@localhost6.localdomain6>
-References: <1328721262-20993-1-git-send-email-Julia.Lawall@lip6.fr> <7FE21149F4667147B645348EC60578850C1864@039-SN2MPN1-012.039d.mgd.msft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1758267Ab2BISvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 13:51:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758190Ab2BISvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 13:51:04 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
+References: <CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com> <20120209154819.32070.93358.stgit@warthog.procyon.org.uk> <1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com> <CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com> <7095.1328809567@redhat.com> <CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com> <8689.1328810841@redhat.com> 
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+        adobriyan@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Reduce the number of expensive division instructions done by _parse_integer()
+Date: Thu, 09 Feb 2012 18:50:56 +0000
+Message-ID: <21276.1328813456@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Feb 2012, Dong Aisheng-B29396 wrote:
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
->> -----Original Message-----
->> From: Julia Lawall [mailto:Julia.Lawall@lip6.fr]
->> Sent: Wednesday, February 08, 2012 9:14 AM
->> To: Liam Girdwood
->> Cc: kernel-janitors@vger.kernel.org; Mark Brown; Jaroslav Kysela; Takashi Iwai;
->> alsa-devel@alsa-project.org; linux-kernel@vger.kernel.org; Dong Aisheng-B29396
->> Subject: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
->> Importance: High
->>
->> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> The various devm_ functions allocate memory that is released when a driver
->> detaches.  This patch uses these functions for data that is allocated in the
->> probe function of a platform device and is only freed in the remove function.
->>
->> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> ---
->> patch against git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
->>
-> I still failed to apply against for-3.4 branch.
-> Can you switch to for-3.4 branch and then re-generate the patch based on it?
+> > Do you want me to attach my patch description to your patch, or do you
+> > want to do that?
+> 
+> I'll commit it as yours and with your commentary, my changes were
+> purely cosmetic and just made the x86-64 inner loop look better.
 
-OK.
+Thanks!
 
-julia
+David
