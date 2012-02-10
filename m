@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759837Ab2BJSup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:50:45 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48904 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759332Ab2BJSuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:50:44 -0500
-Date: Fri, 10 Feb 2012 13:50:33 -0500
-From: Matt Porter <mporter@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Matt Porter <matt@ohporter.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] omap: board-omap3evm: add required smsc911x regulators
-Message-ID: <20120210185033.GC40045@h115-84.vpn.ti.com>
-References: <1328738812-26755-1-git-send-email-mporter@ti.com>
- <20120210174046.GQ1426@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120210174046.GQ1426@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759915Ab2BJSvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:51:21 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37543 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759901Ab2BJSvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 13:51:03 -0500
+Message-ID: <1328899861.14197.7.camel@joe2Laptop>
+Subject: Re: [Cocci] Re: [PATCH] scripts/coccinelle/misc/boolinit.cocci:
+ semantic patch for bool issues
+From: Joe Perches <joe@perches.com>
+To: dedekind1@gmail.com
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, bruce.w.allan@intel.com,
+        rusty@rustcorp.com.au, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@diku.dk,
+        Julia Lawall <julia@diku.dk>
+Date: Fri, 10 Feb 2012 10:51:01 -0800
+In-Reply-To: <1328899454.22240.91.camel@sauron.fi.intel.com>
+References: <1328893887-28932-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1328895943.14197.1.camel@joe2Laptop>
+	 <1328899454.22240.91.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 09:40:47AM -0800, Tony Lindgren wrote:
-> * Matt Porter <matt@ohporter.com> [120208 13:35]:
-> > This fixes smsc911x support on omap3evm that has been broken since
-> > the smsc911x driver was updated to require the existence of vdd33a
-> > and vddvario supplies.
-> 
-> Great. Few comments:
-> 
-> 1. Could you please include the smsc911x commit and subject here too
->    so it clearly shows the regression?
+On Fri, 2012-02-10 at 20:44 +0200, Artem Bityutskiy wrote:
+> On Fri, 2012-02-10 at 09:45 -0800, Joe Perches wrote:
+> > On Fri, 2012-02-10 at 18:11 +0100, Julia Lawall wrote:
+> > > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> > Thanks Julia.  It seems to work well.
+> I wonder though, why would we want to change if (a == true) with if (a)
+> etc? Julia did not provide the explanation in the commit message but
+> referred to you and Rusty in the semantic patch.
 
-Sure. Will do for v2.
+Testing booleans against specific values is poor form.
+booleans should be tested or !tested.
 
-> 2. Also, why don't you add this fixed regulator to gpmc-smsc911.c?
-> 
-> That way it gets fixed for other too, like zoom2/3.
+If you are going to submit these patches,
+I suggest you break them out by 2nd level
+directory.
 
-Ok, so I considered that at first and had two concerns that made me just
-do it in the omap3evm specific way and see what the feedback was.
+patch 1: drivers/foo/...
+patch 2: drivers/bar/...
+...
+patch n: drivers/baz/...
 
-1) If we do a generic implementation in gpmc-smsc911x.c, there needs to
-be a way to override it. Another board may have a variable supply that
-feeds this consumer.
+and cc: trivial@kernel.org
 
-2) Technically, this omap3evm specific implementation matches the hardware
-in that the osk_3v3 rail is software controllable. Granted, I commented
-that we simply don't hook up the gpio at this time since this real
-hardware regulator has always been silently asserted on by the nature of
-the reset state of the TWL GPIOs and the board level pull downs as well.
-
-So that said, I don't need #2 to make omap3evm work and I don't think
-anybody cares yet to actually turn that regulator off (as it will kill
-other things that appear to not have regulator support anyway). It looks
-like you talked me into respinning it as a generic implementation. Only
-question is whether I should bother consider not-yet-existing boards that
-may not want that generic regulator.
-
--Matt
