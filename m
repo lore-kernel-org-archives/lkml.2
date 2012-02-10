@@ -1,262 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222Ab2BJVDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 16:03:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760193Ab2BJVCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 16:02:46 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        tony.luck@intel.com, seiji.aguchi@hds.com, ak@linux.intel.com,
-        mjg@redhat.com, levinsasha928@gmail.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 1/2] x86, reboot: revert stop_other_cpus to using IRQ with NMI fallback
-Date: Fri, 10 Feb 2012 16:02:14 -0500
-Message-Id: <1328907735-6226-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1328907735-6226-1-git-send-email-dzickus@redhat.com>
-References: <1328907735-6226-1-git-send-email-dzickus@redhat.com>
+	id S1760207Ab2BJVDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 16:03:54 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49741 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759084Ab2BJVDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 16:03:52 -0500
+Date: Fri, 10 Feb 2012 16:03:51 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in disk event polling
+In-Reply-To: <20120210204652.GJ19392@google.com>
+Message-ID: <Pine.LNX.4.44L0.1202101557280.1281-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For v3.3, I added code to use the NMI to stop other cpus in the panic
-case.  The idea was to make sure all cpus on the system were definitely
-halted to help serialize the panic path to execute the rest of the
-code on a single cpu.
+On Fri, 10 Feb 2012, Tejun Heo wrote:
 
-The main problem it was trying to solve was how to stop a cpu that
-was spinning with its irqs disabled.  A IPI irq would be stuck and
-couldn't get in there, but an NMI could.
+> > You can see this for yourself easily enough by suspending or
+> > hibernating while a USB flash drive is plugged in.  You don't even need
+> > to go through the full suspend procedure; the first two stages are
+> > enough (echo devices >/sys/power/pm_test).  Check the system log
+> > afterward; most likely you'll find the flash drive got errors and had
+> > to be unregistered and re-enumerated.
+> 
+> Do you happen to have log of such failure?  Polilng failure itself
+> shouldn't lead to such failure mode.
 
-Things were great until we had another conversation about some pstore
-changes.  Because some of the backend pstore still uses spinlocks to
-protect the device access, things could get ugly if a panic happened
-and we were stuck spinning on a lock.
+It does, because the lower-level driver (such as usb-storage) tries to
+recover from the error and runs into problems when it's unable to
+communicate with the suspended device.  Here's an example:
 
-Now with the NMI shutting down cpus, we could assume no other cpus were
-running and just bust the spin lock and proceed.
+[ 2854.836894] PM: Marking nosave pages: 000000000009f000 - 0000000000100000
+[ 2854.836903] PM: Basic memory bitmaps created
+[ 2854.836906] PM: Syncing filesystems ... done.
+[ 2854.841396] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[ 2854.856914] PM: Preallocating image memory... done (allocated 33805 pages)
+[ 2854.973369] PM: Allocated 135220 kbytes in 0.11 seconds (1229.27 MB/s)
+[ 2854.973442] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[ 2854.991081] hub 2-0:1.0: hub_suspend
+[ 2854.991109] usb usb2: bus suspend, wakeup 0
+[ 2854.991116] ehci_hcd 0000:00:1d.7: suspend root hub
+[ 2854.994727] i8042 aux 00:0a: wake-up capability disabled by ACPI
+[ 2854.996329] i8042 kbd 00:09: wake-up capability enabled by ACPI
+[ 2855.012852] serial 00:05: disabled
+[ 2855.028375] pci 0000:00:1e.0: wake-up capability enabled by ACPI
+[ 2855.044195] PM: freeze of devices complete after 54.686 msecs
+[ 2855.045721] PM: late freeze of devices complete after 1.448 msecs
+[ 2855.045910] ACPI: Preparing to enter system sleep state S4
+[ 2855.066804] PM: Saving platform NVS memory
+[ 2855.080991] Disabling non-boot CPUs ...
+[ 2855.081189] PM: Creating hibernation image:
+[ 2855.084032] PM: Need to copy 33649 pages
+[ 2855.084032] PM: Normal pages needed: 33649 + 1024, available pages: 159745
+[ 2855.084032] PM: Restoring platform NVS memory
+[ 2855.084032] Force enabled HPET at resume
+[ 2855.088362] ACPI: Waking up from system sleep state S4
+[ 2855.146474] pci 0000:00:1f.0: power state changed by ACPI to D0
+[ 2855.146608] pci 0000:00:1f.0: power state changed by ACPI to D0
+[ 2855.147702] PM: early restore of devices complete after 1.959 msecs
+[ 2855.256478] i915 0000:00:02.0: setting latency timer to 64
+[ 2855.260350] ehci_hcd 0000:00:1d.7: setting latency timer to 64
+[ 2855.261135] usb usb2: root hub lost power or was reset
+[ 2855.261218] ehci_hcd 0000:00:1d.7: reset command 0080002 (park)=0 ithresh=8 period=1024 Reset HALT
+[ 2855.264089] pci 0000:00:1e.0: setting latency timer to 64
+[ 2855.264234] PIIX_IDE 0000:00:1f.1: setting latency timer to 64
+[ 2855.265349] usb usb4: root hub lost power or was reset
+[ 2855.265420] ehci_hcd 0000:01:01.2: reset command 0080b02  park=3 ithresh=8 period=1024 Reset HALT
+[ 2855.265435] ehci_hcd 0000:01:01.2: MWI active
+[ 2855.265443] ehci_hcd 0000:01:01.2: ...powerup ports...
+[ 2855.265965] pci 0000:00:1e.0: wake-up capability disabled by ACPI
+[ 2855.276423] ehci_hcd 0000:00:1d.7: cache line size of 32 is not supported
+[ 2855.276455] usb usb2: usb resume
+[ 2855.276463] ehci_hcd 0000:00:1d.7: resume root hub after power loss
+[ 2855.288176] usb usb4: usb resume
+[ 2855.288186] ehci_hcd 0000:01:01.2: resume root hub after power loss
+[ 2855.304037] hub 2-0:1.0: hub_reset_resume
+[ 2855.304045] hub 2-0:1.0: trying to enable port power on non-switchable hub
+[ 2855.316066] hub 4-0:1.0: hub_reset_resume
+[ 2855.316074] hub 4-0:1.0: enabling power on all ports
+[ 2855.324178] e100 0000:01:08.0: eth0: NIC Link is Up 100 Mbps Full Duplex
+[ 2855.375159] serial 00:05: activated
+[ 2855.376755] i8042 kbd 00:09: wake-up capability disabled by ACPI
+[ 2855.379728] hda: host max PIO4 wanted PIO255(auto-tune) selected PIO4
+[ 2855.384054] hda: UDMA/100 mode selected
+[ 2855.386940] hdb: host max PIO4 wanted PIO255(auto-tune) selected PIO4
+[ 2855.409021] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 001103 0  ACK POWER sig=se0 RESET CSC CONNECT
+[ 2855.409087] hub 2-0:1.0: port 8: status 0511 change 0001
+[ 2855.448429] ehci_hcd 0000:00:1d.7: port 8 full speed --> companion
+[ 2855.448440] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 003001 0  ACK POWER OWNER sig=se0 CONNECT
+[ 2855.448514] hub 2-0:1.0: port 8 not reset yet, waiting 50ms
+[ 2855.456055] hdb: UDMA/100 mode selected
+[ 2855.458606] hdc: host max PIO4 wanted PIO255(auto-tune) selected PIO4
+[ 2855.458774] hdc: UDMA/66 mode selected
+[ 2855.504214] hub 2-0:1.0: port 8 not reset yet, waiting 200ms
+[ 2855.708205] hub 2-0:1.0: port 8 not reset yet, waiting 200ms
+[ 2855.912189] hub 2-0:1.0: port 8 not reset yet, waiting 200ms
+[ 2855.912196] hub 2-0:1.0: port_wait_reset: err = -16
+[ 2855.912201] hub 2-0:1.0: port 8 not enabled, trying reset again...
+[ 2856.116416] ehci_hcd 0000:00:1d.7: port 8 high speed
+[ 2856.116427] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 001005 0  ACK POWER sig=se0 PE CONNECT
+[ 2856.172187] usb 2-8: reset high-speed USB device number 2 using ehci_hcd
+[ 2856.232393] ehci_hcd 0000:00:1d.7: port 8 high speed
+[ 2856.232405] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 001005 0  ACK POWER sig=se0 PE CONNECT
+[ 2856.288157] usb 2-8: device descriptor read/64, error -113
+[ 2856.448347] ehci_hcd 0000:00:1d.7: port 8 high speed
+[ 2856.448357] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 001005 0  ACK POWER sig=se0 PE CONNECT
+[ 2856.504154] usb 2-8: device descriptor read/64, error -113
+[ 2856.664429] ehci_hcd 0000:00:1d.7: port 8 high speed
+[ 2856.664440] ehci_hcd 0000:00:1d.7: GetStatus port:8 status 001005 0  ACK POWER sig=se0 PE CONNECT
 
-The counter argument was, well if you do that the backend could be in
-a screwed up state and you might not be able to save anything as a result.
-If we could have just given the cpu a little more time to finish things,
-we could have grabbed the spin lock cleanly and everything would have been
-fine.
+None of those resets above should have occurred.  They are the result
+of trying to recover from the failure of a TEST UNIT READY command.
 
-Well, how do give a cpu a 'little more time' in the panic case?  For the
-most part you can't without spinning on the lock and even in that case,
-how long do you spin for?
+> > I have verified that changing all occurrences of system_nrt_wq in 
+> > block/genhd.c to system_freezable_wq fixes the bug.  However this may 
+> > not be the way you want to solve it; you may prefer to have a freezable 
+> > non-reentrant work queue.
+> 
+> Please feel free to send out a patch to fix the issue. :)
 
-So instead of making it ugly in the pstore code, I had the idea that most
-spin locks are held with irqs disabled, naturally blocking other irqs until
-they are done.  We just need an irq to sit there and grab the cpu once the
-lock is released and irqs are re-enabled again.
+Is there a real reason for using system_nrt_wq?  Are you okay with just
+switching over to system_freezable_wq?
 
-I decided to modify stop_other_cpus to go back to the REBOOT_IRQ code and
-use that IPI irq as the blocking irq.  This code has been working for a long
-time and will give up after one second.  To fix the original problem of what
-happens after one second if a cpu hasn't accepted the IPI, I just added the
-NMI hammer to clobber the cpu.
-
-The end result of this more complicated-looking-diff-than-it-really-is, is
-a patch that mostly reverts
-
-3603a25 x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus
-
-and instead just sticks another if-case after the REBOOT_IRQ and checks to
-see if online_cpus are still > 1, and if so, clobber the rest of the cpus with
-an NMI.
-
-For the most part, the NMI piece will never get hit, thus behaving just like
-pre-v3.3 code.  However, in those rare conditions, we have a fallback plan.
-
-I still wrap the NMI check with the knob 'nonmi_ipi' in case someone still has
-issues with NMIs in the panic path.
-
-I also reset the original names of the functions.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/smp.c |  100 ++++++++++++++++++++++--------------------------
- 1 files changed, 46 insertions(+), 54 deletions(-)
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 66c74f4..48d2b7d 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -109,6 +109,9 @@
-  *	about nothing of note with C stepping upwards.
-  */
- 
-+static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-+static bool smp_no_nmi_ipi = false;
-+
- /*
-  * this function sends a 'reschedule' IPI to another CPU.
-  * it goes straight through and wastes no time serializing
-@@ -149,8 +152,6 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- 	free_cpumask_var(allbutself);
- }
- 
--static atomic_t stopping_cpu = ATOMIC_INIT(-1);
--
- static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
- {
- 	/* We are registered on stopping cpu too, avoid spurious NMI */
-@@ -162,7 +163,19 @@ static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
- 	return NMI_HANDLED;
- }
- 
--static void native_nmi_stop_other_cpus(int wait)
-+/*
-+ * this function calls the 'stop' function on all other CPUs in the system.
-+ */
-+
-+asmlinkage void smp_reboot_interrupt(void)
-+{
-+	ack_APIC_irq();
-+	irq_enter();
-+	stop_this_cpu(NULL);
-+	irq_exit();
-+}
-+
-+static void native_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
- 	unsigned long timeout;
-@@ -174,20 +187,25 @@ static void native_nmi_stop_other_cpus(int wait)
- 	 * Use an own vector here because smp_call_function
- 	 * does lots of things not suitable in a panic situation.
- 	 */
-+
-+	/*
-+	 * We start by using the REBOOT_VECTOR irq.
-+	 * The irq is treated as a sync point to allow critical
-+	 * regions of code on other cpus to release their spin locks
-+	 * and re-enable irqs.  Jumping straight to an NMI might
-+	 * accidentally cause deadlocks with further shutdown/panic
-+	 * code.  By syncing, we give the cpus up to one second to
-+	 * finish their work before we force them off with the NMI.
-+	 */
- 	if (num_online_cpus() > 1) {
- 		/* did someone beat us here? */
- 		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id()) != -1)
- 			return;
- 
--		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
--					 NMI_FLAG_FIRST, "smp_stop"))
--			/* Note: we ignore failures here */
--			return;
--
--		/* sync above data before sending NMI */
-+		/* sync above data before sending IRQ */
- 		wmb();
- 
--		apic->send_IPI_allbutself(NMI_VECTOR);
-+		apic->send_IPI_allbutself(REBOOT_VECTOR);
- 
- 		/*
- 		 * Don't wait longer than a second if the caller
-@@ -197,63 +215,37 @@ static void native_nmi_stop_other_cpus(int wait)
- 		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
-+	
-+	/* if the REBOOT_VECTOR didn't work, try with the NMI */
-+	if ((num_online_cpus() > 1) && (!smp_no_nmi_ipi))  {
-+		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-+					 NMI_FLAG_FIRST, "smp_stop"))
-+			/* Note: we ignore failures here */
-+			/* Hope the REBOOT_IRQ is good enough */
-+			goto finish;
- 
--	local_irq_save(flags);
--	disable_local_APIC();
--	local_irq_restore(flags);
--}
--
--/*
-- * this function calls the 'stop' function on all other CPUs in the system.
-- */
--
--asmlinkage void smp_reboot_interrupt(void)
--{
--	ack_APIC_irq();
--	irq_enter();
--	stop_this_cpu(NULL);
--	irq_exit();
--}
--
--static void native_irq_stop_other_cpus(int wait)
--{
--	unsigned long flags;
--	unsigned long timeout;
-+		/* sync above data before sending IRQ */
-+		wmb();
- 
--	if (reboot_force)
--		return;
-+		pr_emerg("Shutting down cpus with NMI\n");
- 
--	/*
--	 * Use an own vector here because smp_call_function
--	 * does lots of things not suitable in a panic situation.
--	 * On most systems we could also use an NMI here,
--	 * but there are a few systems around where NMI
--	 * is problematic so stay with an non NMI for now
--	 * (this implies we cannot stop CPUs spinning with irq off
--	 * currently)
--	 */
--	if (num_online_cpus() > 1) {
--		apic->send_IPI_allbutself(REBOOT_VECTOR);
-+		apic->send_IPI_allbutself(NMI_VECTOR);
- 
- 		/*
--		 * Don't wait longer than a second if the caller
-+		 * Don't wait longer than a 10 ms if the caller
- 		 * didn't ask us to wait.
- 		 */
--		timeout = USEC_PER_SEC;
-+		timeout = USEC_PER_MSEC * 10;
- 		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
- 
-+finish:
- 	local_irq_save(flags);
- 	disable_local_APIC();
- 	local_irq_restore(flags);
- }
- 
--static void native_smp_disable_nmi_ipi(void)
--{
--	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
--}
--
- /*
-  * Reschedule call back.
-  */
-@@ -287,8 +279,8 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
- 
- static int __init nonmi_ipi_setup(char *str)
- {
--        native_smp_disable_nmi_ipi();
--        return 1;
-+	smp_no_nmi_ipi = true;
-+	return 1;
- }
- 
- __setup("nonmi_ipi", nonmi_ipi_setup);
-@@ -298,7 +290,7 @@ struct smp_ops smp_ops = {
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.stop_other_cpus	= native_nmi_stop_other_cpus,
-+	.stop_other_cpus	= native_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
--- 
-1.7.7.6
+Alan Stern
 
