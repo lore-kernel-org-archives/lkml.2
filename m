@@ -1,62 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab2BJSOR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:14:17 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:43053 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab2BJSOQ (ORCPT
+	id S932319Ab2BJSOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:14:23 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:59324 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab2BJSOU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:14:16 -0500
-Date: Fri, 10 Feb 2012 19:14:14 +0100
-From: Lennart Poettering <mzerqung@0pointer.de>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, selinux@lists.fedoraproject.org,
-        initramfs@vger.kernel.org, systemd-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Harald Hoyer <harald@redhat.com>
-Subject: Re: [systemd-devel] dracut: ordering of modules
-Message-ID: <20120210181413.GA13111@tango.0pointer.de>
-References: <1328886121.2472.19.camel@falcor>
- <4F353840.8050505@polito.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F353840.8050505@polito.it>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Fri, 10 Feb 2012 13:14:20 -0500
+Date: Fri, 10 Feb 2012 13:14:06 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v5 4/5] hwmon: add MAX197 support
+Message-ID: <20120210131406.28c3a00b@v0nbox>
+In-Reply-To: <20120210161538.GB1060@ericsson.com>
+References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1328132138.2261.116.camel@groeck-laptop>
+	<20120206151507.73a23eb8@v0nbox>
+	<1328561164.2261.258.camel@groeck-laptop>
+	<20120210110755.4914b332@v0nbox>
+	<20120210161538.GB1060@ericsson.com>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10.02.12 16:31, Roberto Sassu (roberto.sassu@polito.it) wrote:
+Le Fri, 10 Feb 2012 08:15:38 -0800,
+Guenter Roeck <guenter.roeck@ericsson.com> a écrit :
+
+> Vivien,
+> 
+> On Fri, Feb 10, 2012 at 11:07:55AM -0500, Vivien Didelot wrote:
+> > Hi,
+> > 
+> > On Mon, 6 Feb 2012 12:46:04 -0800,
+> > Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> > 
+> > > On Mon, 2012-02-06 at 15:15 -0500, Vivien Didelot wrote:
+> > > [ ... ]
+> > > > 
+> > > > BTW, about the TS-5500 ADC part, is a platform ts5500_adc.c
+> > > > file the better solution, or should the device be declared in
+> > > > the ts5500.c platform code?
+> > > > 
+> > > I would suggest to declare it in the ts5500.c platform code. That
+> > > seems to be the common approach as far as I can see.
+> > > 
+> > > platform_add_devices() works pretty well for this. It saves you
+> > > from having to call platform_device_register() for each device
+> > > separately. Obviously that only works if all devices are declared
+> > > in a single file.
+> > 
+> > As the LED is registered using the leds_class, I think
+> > platform_add_devices() couldn't be used here.
+> > 
+> > Lots of platform codes don't check the returned
+> > value of platform_add_devices(). Should we care about a LED or ADC
+> > registration failure (is the following snippet OK?)?
+> > 
+> >     static int __init ts5500_init(void)
+> >     {
+> >     [...]
+> >         pdev = platform_device_register_simple("ts5500", -1, NULL,
+> > 0); if (IS_ERR(pdev)) {
+> >                 ret = PTR_ERR(pdev);
+> >                 goto release_mem;
+> >         }
+> >         platform_set_drvdata(pdev, ts5500);
+> >     
+> >         ret = sysfs_create_group(&pdev->dev.kobj,
+> >                                  &ts5500_attr_group);
+> >         if (ret)
+> >                 goto release_pdev;
+> >     
+> >         led_classdev_register(&pdev->dev, &ts5500_led_cdev);
+> >         if (ts5500->adc) {
+> >                 ts5500_adc_pdev.dev.parent = &pdev->dev;
+> >                 platform_device_register(&ts5500_adc_pdev);
+> >         }
+> >     
+> I didn't look at other code, but personally I try to be consistent.
+> Why do you check the return value from
+> platform_device_register_simple() above, but not the return code from
+> platform_device_register() ? That does not seem to be very consistent
+> to me.
+
+I check the platform_device_register_simple() returned value because it
+is the platform itself, while the others are on-board devices. I
+thought that it is not a big deal if their registrations failed but the
+platform registration succeeded. Maybe I'm wrong and I should check
+everything.
+
+Thanks,
+Vivien.
 
 > 
-> Hi Mimi
+> Thanks,
+> Guenter
 > 
-> i'm CCing the systemd and Fedora SELinux mailing lists.
-> 
-> Unfortunately, the SELinux policy initialization (at least
-> in Fedora 16) has been moved to systemd, so, now, loading an
-> IMA policy cannot be done in the initial ramdisk.
-> 
-> Further, the SELinux policy loading code is not in a unit file
-> but embedded in the main binary, which means that the new code for
-> loading IMA policies must be added just after that point.
-> 
-> I already wrote a patch for this. I need some time to test it
-> and will post in the systemd mailing list at the beginning of
-> the next week.
+> >         return 0;
+> >     
+> >         release_pdev:
+> >                 platform_device_unregister(pdev);
+> >         release_mem:
+> >                 kfree(ts5500);
+> >     
+> >                 return ret;
+> >     }
+> >     device_initcall(ts5500_init);
+> > 
+> > 
+> > Thanks,
+> > 
+> > 
+> > -- 
+> > Vivien Didelot
+> > Savoir-faire Linux Inc.
+> > Tel: (514) 276-5468 #149
 
-Hmm, what is this about? You need a place to load additional security
-policies into the kernel at early boot? For SELinux that indeed takes
-place from within PID 1 now in systemd. I'd expect that other security
-technologies like AppArmor should work the same.
 
-If you want to hack on this basing your work on selinux-setup.c in the
-systemd tree should be fairly easy.
-
-Lennart
 
 -- 
-Lennart Poettering - Red Hat, Inc.
+Vivien Didelot
+Savoir-faire Linux Inc.
+Tel: (514) 276-5468 #149
