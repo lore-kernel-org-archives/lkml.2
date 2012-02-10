@@ -1,46 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab2BJOa6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:30:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab2BJOa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:30:56 -0500
-Date: Fri, 10 Feb 2012 12:30:49 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] perf tools: More fixes and updates
-Message-ID: <20120210143049.GD4998@infradead.org>
-References: <1323966762-8574-1-git-send-email-robert.richter@amd.com> <20120131155154.GH16322@erda.amd.com> <20120202201402.GG8566@infradead.org> <20120210113140.GL16322@erda.amd.com>
+	id S1759370Ab2BJOcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:32:03 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59971 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757619Ab2BJOcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 09:32:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120210113140.GL16322@erda.amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+From: Javier Martin <javier.martin@vista-silicon.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, vinod.koul@intel.com,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: [PATCH 1/4] dmaengine: Add support for MEMCPY for imx-dma.
+Date: Fri, 10 Feb 2012 15:31:37 +0100
+Message-Id: <1328884300-18801-2-git-send-email-javier.martin@vista-silicon.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Feb 10, 2012 at 12:31:40PM +0100, Robert Richter escreveu:
-> On 02.02.12 18:14:02, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Jan 31, 2012 at 04:51:54PM +0100, Robert Richter escreveu:
-> > > On 15.12.11 17:32:38, Robert Richter wrote:
-> > > > Some more fixes and updates for perf tools.
+MEMCPY transfers allow DMA copies from memory to
+memory. This patch has been tested with dmatest
+device driver.
 
-> > > > Robert Richter (4):
-> 
-> > > >   perf tools: Moving code in header.c
-> > > >   perf tools: Factor out feature op to process header sections
+Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+---
+ drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++++++++++++-
+ 1 files changed, 35 insertions(+), 1 deletions(-)
 
-> > Agreed, I applied both to my local repo, after some testing and
-> > reviewing some more patches I'll push it to Ingo, thanks,
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index 3296a73..9aa6e85 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+ 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+ 	struct imx_dma_data *data = chan->private;
+ 
+-	imxdmac->dma_request = data->dma_request;
++	if (data != NULL)
++		imxdmac->dma_request = data->dma_request;
+ 
+ 	dma_async_tx_descriptor_init(&imxdmac->desc, chan);
+ 	imxdmac->desc.tx_submit = imxdma_tx_submit;
+@@ -328,6 +329,36 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+ 	return &imxdmac->desc;
+ }
+ 
++static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
++	struct dma_chan *chan, dma_addr_t dest,
++	dma_addr_t src, size_t len, unsigned long flags)
++{
++	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
++	struct imxdma_engine *imxdma = imxdmac->imxdma;
++	int ret;
++
++	dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
++			__func__, imxdmac->channel, src, dest, len);
++
++	if (imxdmac->status == DMA_IN_PROGRESS)
++		return NULL;
++	imxdmac->status = DMA_IN_PROGRESS;
++
++	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
++			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
++			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
++			       0, 0);
++	if (ret)
++		return NULL;
++
++	ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
++				   dest, DMA_MODE_WRITE);
++	if (ret)
++		return NULL;
++
++	return &imxdmac->desc;
++}
++
+ static void imxdma_issue_pending(struct dma_chan *chan)
+ {
+ 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+@@ -349,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+ 
+ 	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
+ 	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
++	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
+ 
+ 	/* Initialize channel parameters */
+ 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
+@@ -382,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
+ 	imxdma->dma_device.device_tx_status = imxdma_tx_status;
+ 	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
+ 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
++	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
+ 	imxdma->dma_device.device_control = imxdma_control;
+ 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+ 
+ 	platform_set_drvdata(pdev, imxdma);
+ 
++	imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
+ 	imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
+ 	dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
+ 
+-- 
+1.7.0.4
 
-> Arnaldo, the two above are not yet applied. Should I drop them?
-
-IIRC they didn't applied, can you check that are resubmit?
-
-Thanks,
-
-- Arnaldo
