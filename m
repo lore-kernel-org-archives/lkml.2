@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760642Ab2BJWmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:42:08 -0500
+	id S1760662Ab2BJXPQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:15:16 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab2BJWmE (ORCPT
+	with ESMTP id S1760638Ab2BJWmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:04 -0500
+	Fri, 10 Feb 2012 17:42:07 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222948.920837690@clark.kroah.org>
+Message-Id: <20120210222949.198978909@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:03 -0800
+Date: Fri, 10 Feb 2012 14:30:06 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: [patch 44/86] drm/i915: handle 3rd pipe
+        alan@lxorguk.ukuu.org.uk, Li Wang <liwang@nudt.edu.cn>,
+        Yunchuan Wen <wenyunchuan@kylinos.com.cn>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: [patch 47/86] eCryptfs: Infinite loop due to overflow in ecryptfs_write()
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Li Wang <liwang@nudt.edu.cn>
 
-commit 07c1e8c1462fa7324de4c36ae9e55da2abd79cee upstream.
+commit 684a3ff7e69acc7c678d1a1394fe9e757993fd34 upstream.
 
-We don't need to check 3rd pipe specifically, as it shares PLL with some
-other one.
+ecryptfs_write() can enter an infinite loop when truncating a file to a
+size larger than 4G. This only happens on architectures where size_t is
+represented by 32 bits.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41977
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+This was caused by a size_t overflow due to it incorrectly being used to
+store the result of a calculation which uses potentially large values of
+type loff_t.
+
+[tyhicks@canonical.com: rewrite subject and commit message]
+Signed-off-by: Li Wang <liwang@nudt.edu.cn>
+Signed-off-by: Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_suspend.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ecryptfs/read_write.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -34,6 +34,10 @@ static bool i915_pipe_enabled(struct drm
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	u32	dpll_reg;
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -130,7 +130,7 @@ int ecryptfs_write(struct inode *ecryptf
+ 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
+ 		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
+ 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
+-		size_t total_remaining_bytes = ((offset + size) - pos);
++		loff_t total_remaining_bytes = ((offset + size) - pos);
  
-+	/* On IVB, 3rd pipe shares PLL with another one */
-+	if (pipe > 1)
-+		return false;
-+
- 	if (HAS_PCH_SPLIT(dev))
- 		dpll_reg = (pipe == PIPE_A) ? _PCH_DPLL_A : _PCH_DPLL_B;
- 	else
+ 		if (fatal_signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -141,7 +141,7 @@ int ecryptfs_write(struct inode *ecryptf
+ 			num_bytes = total_remaining_bytes;
+ 		if (pos < offset) {
+ 			/* remaining zeros to write, up to destination offset */
+-			size_t total_remaining_zeros = (offset - pos);
++			loff_t total_remaining_zeros = (offset - pos);
+ 
+ 			if (num_bytes > total_remaining_zeros)
+ 				num_bytes = total_remaining_zeros;
 
 
