@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760024Ab2BJTpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 14:45:17 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65461 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759960Ab2BJTpP convert rfc822-to-8bit (ORCPT
+	id S1760031Ab2BJTp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 14:45:58 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:57369 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759958Ab2BJTp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 14:45:15 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: akpm@linux-foundation.org, "Dan Smith" <danms@us.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are
- page-aligned
-References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
-Date: Fri, 10 Feb 2012 20:45:12 +0100
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v9hahmw23l0zgt@mpn-glaptop>
-In-Reply-To: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
-User-Agent: Opera Mail/11.61 (Linux)
+	Fri, 10 Feb 2012 14:45:56 -0500
+Date: Fri, 10 Feb 2012 11:45:52 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Charlie Suffin <charlie.suffin@stratus.com>, stable@kernel.org
+Subject: Re: [PATCH] pci: Add quirk for still enabled interrupts on Intel
+ Sandy Bridge GPUs
+Message-ID: <20120210114552.5ff66007@jbarnes-desktop>
+In-Reply-To: <4EDFD5BB.1050906@intra2net.com>
+References: <4EDFD5BB.1050906@intra2net.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/CmlYTlKKLRX8kRasUrXYd9F"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 20:39:56 +0100, Dan Smith <danms@us.ibm.com> wrote:
-> The inner function walk_pte_range() increments "addr" by PAGE_SIZE after
+--Sig_/CmlYTlKKLRX8kRasUrXYd9F
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Commit message says about walk_pte_range() but commit changes walk_page_range().
+On Wed, 07 Dec 2011 22:08:11 +0100
+Thomas Jarosch <thomas.jarosch@intra2net.com> wrote:
 
-> each pte is processed, and only exits the loop if the result is equal to
-> "end". Current, if either (or both of) the starting or ending addresses
+> Some BIOS implementations leave the Intel GPU interrupts enabled,
+> even though no one is handling them (f.e. i915 driver is never loaded).
+> Additionally the interrupt destination is not set up properly
+> and the interrupt ends up -somewhere-.
+>=20
+> These spurious interrupts are "sticky" and the kernel disables
+> the (shared) interrupt line after 100.000+ generated interrupts.
+>=20
+> Fix it by disabling the still enabled interrupts.
+> This resolves crashes often seen on monitor unplug.
 
-So why not change the condition to addr < end?
+Applied to my -next branch finally (sorry I missed your last reply),
+thanks Thomas.
 
-> passed to walk_page_range() are not page-aligned, then we will never
-> satisfy that exit condition and begin calling the pte_entry handler with
-> bad data.
->
-> To be sure that we will land in the right spot, this patch checks that
-> both "addr" and "end" are page-aligned in walk_page_range() before starting
-> the traversal.
->
-> Signed-off-by: Dan Smith <danms@us.ibm.com>
-> Cc: linux-mm@kvack.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  mm/pagewalk.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-> index 2f5cf10..9242bfc 100644
-> --- a/mm/pagewalk.c
-> +++ b/mm/pagewalk.c
-> @@ -196,6 +196,8 @@ int walk_page_range(unsigned long addr, unsigned long end,
->  	if (addr >= end)
->  		return err;
->+	VM_BUG_ON((addr & ~PAGE_MASK) || (end & ~PAGE_MASK));
-> +
->  	if (!walk->mm)
->  		return -EINVAL;
->
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/CmlYTlKKLRX8kRasUrXYd9F
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNXPwAAoJEIEoDkX4Qk9hie8QAJR1bepheYAePbieLOAKuUDM
+5aUny3br9STY+eUcsdw4Wqqt/Cjp8qV8flFffN/8Wv1mDQxb32EYUCI/OE8s+Wzd
+jIBcUwHA+N6TVBLM/BW3XcGL3kIWoEYlz636BYqqipQlNFQ/XQzyxSeceqKlwurU
+DQO/NlNADrM8vedz7hmwLR+9lm9vI0rRX6cudSmqi5PECwBSBEeNLhq0LKHjWboX
+iuXCVfog8qd6dLh2feRA6t+zEwM8xm9pFOQjr/3ja4r0o5yBPadccQFt+buBGkqQ
+86QGo5HJDBBuwjT1/rkc9/CDDh7Xga2p+M9yDf5ukh/5/atNp2AeYATI3QgPif4A
+okeaXkasZ2TLXkmb1gpcGs7KLcvf9mfmyZYBnB4H2E5ydlfdY/bF3i4vuXZBL4ST
+hwcyWnqVE0rgfkBpnsx7n97qT2qHuvyV7jCVXTZH86XFjrDTtyD2lyoWt2T52AmN
+0agWRw/2XTqKsQ6CsYeCzWYW2sPjMnSLLCr5KrV1vaHqLLn1qZDi234Wi8u1oK6e
+6L40sCXc5pzHS2stY1k9o3v30LgH1bR5EkePxj8FMMC4ZBVcqk0yMVOIahqLGjGe
+YvddFj4gs3dLzJm7utHSzuzDMzPoot8J6gqkBu/DwkmE9USKYE/Rf/BuyBuLDObi
+CUMgx7M6pExWB+n/WbVM
+=evjv
+-----END PGP SIGNATURE-----
+
+--Sig_/CmlYTlKKLRX8kRasUrXYd9F--
