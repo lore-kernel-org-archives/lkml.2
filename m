@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760603Ab2BJWln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760411Ab2BJWlg (ORCPT
+	id S1760614Ab2BJWls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:41:48 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab2BJWlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:36 -0500
+	Fri, 10 Feb 2012 17:41:44 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222945.848673791@clark.kroah.org>
+Message-Id: <20120210222948.667114877@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:28 -0800
+Date: Fri, 10 Feb 2012 14:30:00 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 09/86] ASoC: wm_hubs: Enable line out VMID buffer for single ended line outputs
+        alan@lxorguk.ukuu.org.uk, Wu Fengguang <fengguang.wu@intel.com>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [patch 41/86] drm/i915: DisplayPort hot remove notification to audio driver
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit 77231abe55433aa17eca712718745275853fa66d upstream.
+commit 832afda6a7d7235ef0e09f4ec46736861540da6d upstream.
 
-For optimal performance the single ended line outputs require that the
-line output VMID buffer be enabled.
+On DP monitor hot remove, clear DP_AUDIO_OUTPUT_ENABLE accordingly,
+so that the audio driver will receive hot plug events and take action
+to refresh its device state and ELD contents.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Note that the DP_AUDIO_OUTPUT_ENABLE bit may be enabled or disabled
+only when the link training is complete and set to "Normal".
+
+Tested OK for both hot plug/remove and DPMS on/off.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_hubs.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -614,6 +614,8 @@ SND_SOC_DAPM_INPUT("IN2RP:VXRP"),
- SND_SOC_DAPM_MICBIAS("MICBIAS2", WM8993_POWER_MANAGEMENT_1, 5, 0),
- SND_SOC_DAPM_MICBIAS("MICBIAS1", WM8993_POWER_MANAGEMENT_1, 4, 0),
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1926,6 +1926,7 @@ intel_dp_link_down(struct intel_dp *inte
+ 			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
+ 	}
  
-+SND_SOC_DAPM_SUPPLY("LINEOUT_VMID_BUF", WM8993_ANTIPOP1, 7, 0, NULL, 0),
-+
- SND_SOC_DAPM_MIXER("IN1L PGA", WM8993_POWER_MANAGEMENT_2, 6, 0,
- 		   in1l_pga, ARRAY_SIZE(in1l_pga)),
- SND_SOC_DAPM_MIXER("IN1R PGA", WM8993_POWER_MANAGEMENT_2, 4, 0,
-@@ -832,9 +834,11 @@ static const struct snd_soc_dapm_route l
- };
- 
- static const struct snd_soc_dapm_route lineout1_se_routes[] = {
-+	{ "LINEOUT1N Mixer", NULL, "LINEOUT_VMID_BUF" },
- 	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output PGA" },
- 	{ "LINEOUT1N Mixer", "Right Output Switch", "Right Output PGA" },
- 
-+	{ "LINEOUT1P Mixer", NULL, "LINEOUT_VMID_BUF" },
- 	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output PGA" },
- 
- 	{ "LINEOUT1N Driver", NULL, "LINEOUT1N Mixer" },
-@@ -851,9 +855,11 @@ static const struct snd_soc_dapm_route l
- };
- 
- static const struct snd_soc_dapm_route lineout2_se_routes[] = {
-+	{ "LINEOUT2N Mixer", NULL, "LINEOUT_VMID_BUF" },
- 	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output PGA" },
- 	{ "LINEOUT2N Mixer", "Right Output Switch", "Right Output PGA" },
- 
-+	{ "LINEOUT2P Mixer", NULL, "LINEOUT_VMID_BUF" },
- 	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output PGA" },
- 
- 	{ "LINEOUT2N Driver", NULL, "LINEOUT2N Mixer" },
++	DP &= ~DP_AUDIO_OUTPUT_ENABLE;
+ 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
+ 	POSTING_READ(intel_dp->output_reg);
+ 	msleep(intel_dp->panel_power_down_delay);
 
 
