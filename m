@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2BJDDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 22:03:44 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:49953 "EHLO
+	id S1758778Ab2BJDHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 22:07:54 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:33871 "EHLO
 	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374Ab2BJDDn (ORCPT
+	with ESMTP id S1752825Ab2BJDHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 22:03:43 -0500
-Date: Fri, 10 Feb 2012 03:02:51 +0000
+	Thu, 9 Feb 2012 22:07:53 -0500
+Date: Fri, 10 Feb 2012 03:07:51 +0000
 From: Jamie Lokier <jamie@shareable.org>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Andrew Vagin <avagin@gmail.com>, Pedro Alves <palves@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] ptrace: add ability to get clear_tid_address
-Message-ID: <20120210030251.GA9349@jl-vm1.vm.bytemark.co.uk>
-References: <1328267483-3225342-1-git-send-email-avagin@openvz.org>
- <20120203162519.GB805@google.com>
- <4F2C0F13.70709@parallels.com>
- <20120203165132.GA5636@redhat.com>
- <4F31848A.9070406@redhat.com>
- <4F327B99.7020602@gmail.com>
- <20120208181222.GA12787@host2.jankratochvil.net>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+Message-ID: <20120210030751.GA9586@jl-vm1.vm.bytemark.co.uk>
+References: <4F2AB552.2070909@redhat.com>
+ <4F2B41D6.8020603@codemonkey.ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120208181222.GA12787@host2.jankratochvil.net>
+In-Reply-To: <4F2B41D6.8020603@codemonkey.ws>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kratochvil wrote:
-> On Wed, 08 Feb 2012 14:41:45 +0100, Andrew Vagin wrote:
-> > I want to say, that when you have trouble with child_tid_address,
-> > you may want to get it.
-> > If the code is your, you may get it via prctl, but if it's not, what
-> > will you do?
+Anthony Liguori wrote:
+> >The new API will do away with the IOAPIC/PIC/PIT emulation and defer
+> >them to userspace.
 > 
-> GDB does PTRACE_ARCH_PRCTL (amd64-linux-nat.c) - without inserting any code
-> into the debuggee.  How it can be simplified more?
+> I'm a big fan of this.
 
-That's x86-64 only, (although bizarrely it looks like 32-bit tasks can
-use it too, if running on a 64-bit kernel).
+I agree with getting rid of unnecessary emulations.
+(Why were those things emulated in the first place?)
 
-Whereas child_tid_address is for all architectures.
+But it would be good to retain some way to "plugin" device emulations
+in the kernel, separate from KVM core with a well-defined API boundary.
 
-We've already got a whole syscall, get_robust_list(), which fetches
-that address from a remote process if you have ptrace permission, and
-you don't even need to be ptracing it!  get_robust_list() is quite
-large, and most of it is permission checks.  How often is that useful?
+Then it wouldn't matter to the KVM core whether there's PIT emulation
+or whatever; that would just be a separate module.  Perhaps even with
+its own /dev device and maybe not tightly bound to KVM,
 
-I don't see why getting the child_tid_address should be a big deal.
+> >Note: this may cause a regression for older guests that don't
+> >support MSI or kvmclock.  Device assignment will be done using
+> >VFIO, that is, without direct kvm involvement.
 
-On the other hand, lots of little bits of info would be handy to a
-ptracer sometimes, such as the current signal mask and prctl settings.
+I don't like the sound of regressions.
 
-Maybe what's needed is a generic PTRACE_PRCTL, allowed to call a
-subset of prctl() functions from outside, or maybe even all of them.
+I tend to think of a VM as something that needs to have consistent
+behaviour over a long time, for keeping working systems running for
+years despite changing hardware, or reviving old systems to test
+software and make patches for things in long-term maintenance etc.
 
-Then add child_tid_address as a prctl.
+But I haven't noticed problems from upgrading kernelspace-KVM yet,
+only upgrading the userspace parts.  If a kernel upgrade is risky,
+that makes upgrading host kernels difficult and "all or nothing" for
+all the guests within.
 
-( Then again maybe just skip the messing around that everyone does with
-"parasite" code, and go straight for PTRACE_CALL_SYSCALL.  It'd save a
-lot of bother :-) )
+However it looks like you mean only the performance characteristics
+will change because of moving things back to userspace?
 
-All the best,
+> >Local APICs will be mandatory, but it will be possible to hide them from
+> >the guest.  This means that it will no longer be possible to emulate an
+> >APIC in userspace, but it will be possible to virtualize an APIC-less
+> >core - userspace will play with the LINT0/LINT1 inputs (configured as
+> >EXITINT and NMI) to queue interrupts and NMIs.
+> 
+> I think this makes sense.  An interesting consequence of this is
+> that it's no longer necessary to associate the VCPU context with an
+> MMIO/PIO operation.  I'm not sure if there's an obvious benefit to
+> that but it's interesting nonetheless.
+
+Would that be useful for using VCPUs to run sandboxed userspace code
+with ability to trap and control the whole environment (as opposed to
+guest OSes, or ptrace which is rather incomplete and unsuitable for
+sandboxing code meant for other OSes)?
+
+Thanks,
 -- Jamie
