@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab2BIX7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 18:59:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33985 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757580Ab2BIX7D (ORCPT
+	id S932104Ab2BJAAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:00:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34916 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758487Ab2BJAAr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 18:59:03 -0500
-Date: Thu, 9 Feb 2012 15:58:45 -0800
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
-        oleg@redhat.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20120209235845.GH19392@google.com>
-References: <20111222220911.GK17084@google.com>
- <20111222142058.41316ee0.akpm@linux-foundation.org>
- <20111223014043.GC12738@redhat.com>
- <20111222175834.66559c8b.akpm@linux-foundation.org>
- <20111223025629.GE12738@redhat.com>
- <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
- <20111227175249.GE17712@google.com>
- <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
- <20111228004102.GK17712@google.com>
- <20120105012842.GQ31746@google.com>
+	Thu, 9 Feb 2012 19:00:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105012842.GQ31746@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120209080648.GI18387@elte.hu>
+References: <1328209817-18913-1-git-send-email-bp@alien8.de>
+	<20120202193702.GA9502@elliptictech.com>
+	<20120202202427.GA2234@x1.osrc.amd.com>
+	<20120203191801.GA2846@x1.osrc.amd.com>
+	<20120207095746.GH15359@elte.hu>
+	<20120208101956.GA1772@x1.osrc.amd.com>
+	<20120209080648.GI18387@elte.hu>
+Date: Thu, 9 Feb 2012 20:00:45 -0400
+Message-ID: <CAELBVzBAYRYWsO=PpwQhi0=_hejdLaq5Yci8uC_NT12KiFLb4w@mail.gmail.com>
+Subject: Re: MCE, AMD: Hide smp-only code around CONFIG_SMP
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@alien8.de>, Nick Bowler <nbowler@elliptictech.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On 9 February 2012 04:06, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Borislav Petkov <bp@alien8.de> wrote:
+>
+>> +++ b/arch/x86/include/asm/smp.h
+>> @@ -33,8 +33,15 @@ static inline bool cpu_has_ht_siblings(void)
+>>
+>>  DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
+>>  DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
+>> -/* cpus sharing the last level cache: */
+>> +
+>> +#ifdef CONFIG_SMP
+>> +/* CPUs sharing the last level cache: */
+>>  DECLARE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
+>> +#else
+>> +static DECLARE_BITMAP(cpu_llc_shared_bits, NR_CPUS) __read_mostly = { [0] = 1UL };
+>> +static struct cpumask *const cpu_llc_shared_map = to_cpumask(cpu_llc_shared_bits);
+>> +#endif
+>
+> Why not just expose it like on SMP?
+>
+> We want to *reduce* the specialness of UP, not increase it - one
+> more word of .data and .text does not matter much - UP is
+> becoming more and more an oddball, rarely tested config. By the
+> time these changes hit any real boxes it will be even more
+> oddball.
+>
 
-On Wed, Jan 04, 2012 at 05:28:42PM -0800, Tejun Heo wrote:
-> On Tue, Dec 27, 2011 at 04:41:02PM -0800, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Wed, Dec 28, 2011 at 09:14:02AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > This is essentially more specialized form of the mempool approach.  It
-> > > > doesn't seem any simpler to me while being less generic.  I don't see
-> > > > what the upside would be.
-> > > 
-> > > Hm, but this never causes -ENOMEM error, at all.
-> > 
-> > Ooh, I missed the part it falls back to the global counter if percpu
-> > counters aren't allocated yet.  Yeah, this is an interesting approach.
-> > I'll think more about it.
-> 
-> I've been staring at the blkcg stats code and commit logs and am
-> wondering whether we can just scrap percpu counters there.  It seems
-> the reason why it was introduced in the first place is to avoid
-> stats->lock, which BTW is extremely heavy handed for gathering stats,
-> overhead in fast paths and I think there can be easier ways to avoid
-> stats->lock.
+It seems that cpu_llc_shared_map is actually defined in
+arch/x86/kernel/smpboot.c, which is not compiled/linked for UP builds.
+ Is there an equivalent file for UP that could be used instead, or
+could the:
 
-I could remove stats_lock without much trouble but couldn't get
-blk-throtl fast path stat working. :(
+DEFINE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
 
-I think I'll try to get KAMEZAWA's percpu counter working.  Any
-objections?
+be moved to some other file?
 
-Thanks.
+Generally, it sounds like you might approve of an eventual merging of
+the boot paths for SMP and UP.  Is that true?  I wonder how much work
+that would be.  That would really reduce the specialness of UP.
 
 -- 
-tejun
+Kevin Winchester
