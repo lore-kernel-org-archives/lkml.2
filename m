@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760565Ab2BJWo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:44:26 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932911Ab2BJWoR (ORCPT
+	id S932945Ab2BJXC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:02:26 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760678Ab2BJWoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:17 -0500
+	Fri, 10 Feb 2012 17:44:25 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223441.903376575@clark.kroah.org>
+Message-Id: <20120210223442.065291973@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:22 -0800
+Date: Fri, 10 Feb 2012 14:33:24 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Sadler <dsadler@us.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Louis Alex Eisner <leisner@cs.ucsd.edu>,
-        Hugh Dickins <hughd@google.com>
-Subject: [patch 18/55] mm/filemap_xip.c: fix race condition in xip_file_fault()
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [patch 20/55] drm/radeon: Set DESKTOP_HEIGHT register to the framebuffer (not mode) height.
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Carsten Otte <carsteno@de.ibm.com>
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
 
-commit 99f02ef1f18631eb0a4e0ea0a3d56878dbcb4b90 upstream.
+commit 1b61925061660009f5b8047f93c5297e04541273 upstream.
 
-Fix a race condition that shows in conjunction with xip_file_fault() when
-two threads of the same user process fault on the same memory page.
+The value of this register is transferred to the V_COUNTER register at the
+beginning of vertical blank. V_COUNTER is the reference for VLINE waits and
+goes from VIEWPORT_Y_START to VIEWPORT_Y_START+VIEWPORT_HEIGHT during scanout,
+so if VIEWPORT_Y_START is not 0, V_COUNTER actually went backwards at the
+beginning of vertical blank, and VLINE waits excluding the whole scanout area
+could never finish (possibly only if VIEWPORT_Y_START is larger than the length
+of vertical blank in scanlines). Setting DESKTOP_HEIGHT to the framebuffer
+height should prevent this for any kind of VLINE wait.
 
-In this case, the race winner will install the page table entry and the
-unlucky loser will cause an oops: xip_file_fault calls vm_insert_pfn (via
-vm_insert_mixed) which drops out at this check:
+Fixes https://bugs.freedesktop.org/show_bug.cgi?id=45329 .
 
-	retval = -EBUSY;
-	if (!pte_none(*pte))
-		goto out_unlock;
-
-The resulting -EBUSY return value will trigger a BUG_ON() in
-xip_file_fault.
-
-This fix simply considers the fault as fixed in this case, because the
-race winner has successfully installed the pte.
-
-[akpm@linux-foundation.org: use conventional (and consistent) comment layout]
-Reported-by: David Sadler <dsadler@us.ibm.com>
-Signed-off-by: Carsten Otte <cotte@de.ibm.com>
-Reported-by: Louis Alex Eisner <leisner@cs.ucsd.edu>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/filemap_xip.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -263,7 +263,12 @@ found:
- 							xip_pfn);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
--		BUG_ON(err);
-+		/*
-+		 * err == -EBUSY is fine, we've raced against another thread
-+		 * that faulted-in the same page
-+		 */
-+		if (err != -EBUSY)
-+			BUG_ON(err);
- 		return VM_FAULT_NOPAGE;
- 	} else {
- 		int err, ret = VM_FAULT_OOM;
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1173,7 +1173,7 @@ static int dce4_crtc_do_set_base(struct
+ 	WREG32(EVERGREEN_GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
+ 
+ 	WREG32(EVERGREEN_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
+-	       crtc->mode.vdisplay);
++	       target_fb->height);
+ 	x &= ~3;
+ 	y &= ~1;
+ 	WREG32(EVERGREEN_VIEWPORT_START + radeon_crtc->crtc_offset,
+@@ -1342,7 +1342,7 @@ static int avivo_crtc_do_set_base(struct
+ 	WREG32(AVIVO_D1GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
+ 
+ 	WREG32(AVIVO_D1MODE_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
+-	       crtc->mode.vdisplay);
++	       target_fb->height);
+ 	x &= ~3;
+ 	y &= ~1;
+ 	WREG32(AVIVO_D1MODE_VIEWPORT_START + radeon_crtc->crtc_offset,
 
 
