@@ -1,73 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759533Ab2BJQLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:11:54 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:48725 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752939Ab2BJQLx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:11:53 -0500
-Message-ID: <4F3541AE.50807@xenotime.net>
-Date: Fri, 10 Feb 2012 08:11:26 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1759477Ab2BJQPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:15:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab2BJQPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:15:53 -0500
+Date: Fri, 10 Feb 2012 14:05:36 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4 V13] Add functions to check if the host has stopped
+ the vm
+Message-ID: <20120210160536.GA23363@amt.cnet>
+References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
+ <1328713666-11424-3-git-send-email-emunson@mgebm.net>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [patch] usb: add missing Kconfig UWB select to USB_WHCI_HCD and
- USB_HWA_HCD
-References: <1328857675.7327.8.camel@marge.simpson.net>
-In-Reply-To: <1328857675.7327.8.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328713666-11424-3-git-send-email-emunson@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 11:07 PM, Mike Galbraith wrote:
-> usb: add missing Kconfig UWB select to USB_WHCI_HCD and USB_HWA_HCD
+On Wed, Feb 08, 2012 at 10:07:44AM -0500, Eric B Munson wrote:
+> When a host stops or suspends a VM it will set a flag to show this.  The
+> watchdog will use these functions to determine if a softlockup is real, or the
+> result of a suspended VM.
 > 
-> cripts/kconfig/conf --oldconfig Kconfig
-> warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
-> warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
-> warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
-> warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: mingo@redhat.com
+> Cc: hpa@zytor.com
+> Cc: ryanh@linux.vnet.ibm.com
+> Cc: aliguori@us.ibm.com
+> Cc: mtosatti@redhat.com
+> Cc: kvm@vger.kernel.org
+> Cc: linux-arch@vger.kernel.org
+> Cc: x86@kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+> Changes from V11:
+>  Re-add the missing asm-generic stub for check_and_clear_guest_stopped()
+> Changes from V6:
+>  Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
+> Changes from V5:
+>  Collapse generic stubs into this patch
+>  check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
+>  Include individual definitions in ia64, s390, and powerpc
 > 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-
-I have 2 patches in linux-next that fix the UWB/WUSB problems by using "depends on"
-instead...
-
-
+>  arch/ia64/include/asm/kvm_para.h    |    5 +++++
+>  arch/powerpc/include/asm/kvm_para.h |    5 +++++
+>  arch/s390/include/asm/kvm_para.h    |    5 +++++
+>  arch/x86/include/asm/kvm_para.h     |    8 ++++++++
+>  arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
+>  include/asm-generic/kvm_para.h      |   14 ++++++++++++++
+>  6 files changed, 58 insertions(+), 0 deletions(-)
+>  create mode 100644 include/asm-generic/kvm_para.h
 > 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 91413ca..b224959 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -547,6 +547,7 @@ config USB_WHCI_HCD
->  	tristate "Wireless USB Host Controller Interface (WHCI) driver (EXPERIMENTAL)"
->  	depends on EXPERIMENTAL
->  	depends on PCI && USB
-> +	select UWB
->  	select USB_WUSB
->  	select UWB_WHCI
->  	help
-> @@ -560,6 +561,7 @@ config USB_HWA_HCD
->  	tristate "Host Wire Adapter (HWA) driver (EXPERIMENTAL)"
->  	depends on EXPERIMENTAL
->  	depends on USB
-> +	select UWB
->  	select USB_WUSB
->  	select UWB_HWA
->  	help
-> 
-> 
-> --
+> diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+> index 1588aee..2019cb9 100644
+> --- a/arch/ia64/include/asm/kvm_para.h
+> +++ b/arch/ia64/include/asm/kvm_para.h
+> @@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
+>  	return 0;
+>  }
+>  
+> +static inline bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	return false;
+> +}
+> +
+>  #endif
+>  
+>  #endif
+> diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+> index 50533f9..1f80293 100644
+> --- a/arch/powerpc/include/asm/kvm_para.h
+> +++ b/arch/powerpc/include/asm/kvm_para.h
+> @@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
+>  	return r;
+>  }
+>  
+> +static inline bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	return false;
+> +}
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #endif /* __POWERPC_KVM_PARA_H__ */
+> diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+> index 6964db2..a988329 100644
+> --- a/arch/s390/include/asm/kvm_para.h
+> +++ b/arch/s390/include/asm/kvm_para.h
+> @@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
+>  	return 0;
+>  }
+>  
+> +static inline bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	return false;
+> +}
+> +
+>  #endif
+>  
+>  #endif /* __S390_KVM_PARA_H */
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index 734c376..99c4bbe 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
+>  extern void kvmclock_init(void);
+>  extern int kvm_register_clock(char *txt);
+>  
+> +#ifdef CONFIG_KVM_CLOCK
+> +bool kvm_check_and_clear_guest_paused(void);
+> +#else
+> +static inline bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	return false;
+> +}
+> +#endif /* CONFIG_KVMCLOCK */
+>  
+>  /* This instruction is vmcall.  On non-VT architectures, it will generate a
+>   * trap that we will then rewrite to the appropriate instruction.
+> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+> index 44842d7..bdf6423 100644
+> --- a/arch/x86/kernel/kvmclock.c
+> +++ b/arch/x86/kernel/kvmclock.c
+> @@ -22,6 +22,7 @@
+>  #include <asm/msr.h>
+>  #include <asm/apic.h>
+>  #include <linux/percpu.h>
+> +#include <linux/hardirq.h>
+>  
+>  #include <asm/x86_init.h>
+>  #include <asm/reboot.h>
+> @@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
+>  	preset_lpj = lpj;
+>  }
+>  
+> +bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	bool ret = false;
+> +	struct pvclock_vcpu_time_info *src;
+> +
+> +	/*
+> +	 * per_cpu() is safe here because this function is only called from
+> +	 * timer functions where preemption is already disabled.
+> +	 */
+> +	WARN_ON(!in_atomic());
+> +	src = &__get_cpu_var(hv_clock);
+> +	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
+> +		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
+> +		ret = true;
+> +	}
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
+> +
+>  static struct clocksource kvm_clock = {
+>  	.name = "kvm-clock",
+>  	.read = kvm_clock_get_cycles,
+> diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
+> new file mode 100644
+> index 0000000..05ef7e7
+> --- /dev/null
+> +++ b/include/asm-generic/kvm_para.h
+> @@ -0,0 +1,14 @@
+> +#ifndef _ASM_GENERIC_KVM_PARA_H
+> +#define _ASM_GENERIC_KVM_PARA_H
+> +
+> +
+> +/*
+> + * This function is used by architectures that support kvm to avoid issuing
+> + * false soft lockup messages.
+> + */
+> +static inline bool kvm_check_and_clear_guest_paused(void)
+> +{
+> +	return false;
+> +}
+> +
+> +#endif
 
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+How is the stub getting included for other architectures again?
