@@ -1,545 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab2BJABn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:01:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36362 "EHLO mx1.redhat.com"
+	id S1758777Ab2BJAB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:01:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52497 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758345Ab2BJABg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:01:36 -0500
+	id S1758700Ab2BJABq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:01:46 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 01/31] events/hw_event: Create a Hardware Events Report Mecanism (HERM)
-Date: Thu,  9 Feb 2012 22:01:00 -0200
-Message-Id: <1328832090-9166-2-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, bp@amd64.org,
+        tony.luck@intel.com
+Subject: =?UTF-8?q?=5BPATCH=20v3=2000/31=5D=20Hardware=20Events=20Report=20Mecanism=20=28HERM=29?=
+Date: Thu,  9 Feb 2012 22:00:59 -0200
+Message-Id: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a trace class for handle hardware events
+This is the third version of HERM patches.
 
-Part of the description bellow is shamelessly copied from Tony
-Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-Tony, thanks for your notes and discussions to generate the
-h/w error reporting requirements.
+This patch series is targeted on solving some problems found at the
+hardware error report mecanisms at the Kernel:
 
-[1] http://lwn.net/Articles/416669/
+	- MCE events generate processor specific messages. Decoding them
+require to know arch-specific, CPU specific information. On some cases,
+the same CPU output different things on different CPU stepping;
 
-    We have several subsystems & methods for reporting hardware errors:
+	- The EDAC core is outdated: it assumes that all drivers talk to
+memories via a chip select signal, using one or two channels. Drivers
+for modern architectures need to fake data to the EDAC core;
 
-    1) EDAC ("Error Detection and Correction").  In its original form
-    this consisted of a platform specific driver that read topology
-    information and error counts from chipset registers and reported
-    the results via a sysfs interface.
+	- There are several error functions for memory errors on EDAC;
+its usage is confusing, and some drivers could be providing more information,
+but they're limited to the API rigid constraints. For example, single-channel
+drivers could be reporting errors to a single DIMM, even on traditional
+memory architecture, but the EDAC function call doesn't allow it;
 
-    2) mcelog - x86 specific decoding of machine check bank registers
-    reporting in binary form via /dev/mcelog. Recent additions make use
-    of the APEI extensions that were documented in version 4.0a of the
-    ACPI specification to acquire more information about errors without
-    having to rely reading chipset registers directly. A user level
-    programs decodes into somewhat human readable format.
+	- When an error event arises on modern x86 processors, an MCE
+event is generated. Such error could be enriched by a parsed information,
+complemented by some additional data available on non-MCE registers,
+generating just one event with the complete (MCE log + parsed info)
+event information.
 
-    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
-    decodes errors reported via machine check bank registers in AMD
-    processors to the console log using printk();
+While HERM is meant to be generic, the current focus is to fix the issues
+with the memory errors.
 
-    Each of these mechanisms has a band of followers ... and none
-    of them appear to meet all the needs of all users.
+This series incorporates a feedback from Boris and Tony with regards to
+integrate memory error events with MCE, where supported.
 
-In order to provide a proper hardware event subsystem, let's
-encapsulate hardware events into a common trace facility, and
-make both edac and mce drivers to use it. After that, common
-facilities can be moved into a new core for hardware events
-reporting subsystem. This patch is the first of a series, and just
-touches at mce.
+With regard to memory errors, HERM will allow specify any memory hierarchy
+(currently limited to up to 3 layers after the memory controller, as it 
+covers all currently supported memory architectures). Expanding it should
+be easy, if later needed.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/edac_mc.c          |   32 ++++
- include/trace/events/hw_event.h |  322 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 354 insertions(+), 0 deletions(-)
+The old sysfs nodes are still supported. Latter patches will allow
+disabling the old sysfs nodes.
+
+All errors currently generate the printk events, as before, but they'll
+also generate perf events like:
+
+            bash-1680  [001]   152.349448: mc_error: [Hardware Error]: mce#0: Uncorrected error FAKE ERROR on label "mc#0channel#2slot#2 " (channel 2 slot 2  page 0x0 offset 0x0 grain 0 for EDAC testing only)
+     kworker/u:5-198   [006]  1341.771535: mc_error_mce: mce#0: Corrected error memory read error on label "CPU_SrcID#0_Channel#3_DIMM#0 " (channel 0 slot 0  page 0x3a2db9 offset 0x7ac grain 32 syndrome 0x0 CPU: 0, MCGc/s: 1000c14/0, MC5: 8c00004000010090, ADDR/MISC: 00000003a2db97ac/00000020404c4c86, RIP: 00:<0000000000000000>, TSC: 0, PROCESSOR: 0:206d6, TIME: 1328829250, SOCKET: 0, APIC: 0 1 error(s): Unknown: Err=0001:0090 socket=0 channel=2/mask=4 rank=1)
+     kworker/u:5-198   [006]  1341.792536: mc_error_mce: mce#0: Corrected error Can't discover the memory rank for ch addr 0x60f2a6d76 on label "any memory" ( page 0x0 offset 0x0 grain 32 syndrome 0x0 CPU: 0, MCGc/s: 1000c14/0, MC5: 8c00004000010090, ADDR/MISC: 0000000c1e54dab6/00000020404c4c86, RIP: 00:<0000000000000000>, TSC: 0, PROCESSOR: 0:206d6, TIME: 1328829250, SOCKET: 0, APIC: 0 )
+
+New sysfs nodes are now provided, to match the real memory architecture.
+
+For example, on a Sandy Bridge-EP machine, with up to 4 channels, and up
+to 3 DIMMs per channel:
+
+/sys/devices/system/edac/mc/mc0/
+├── ce_channel0
+├── ce_channel0_slot0
+├── ce_channel0_slot1
+├── ce_channel0_slot2
+├── ce_channel1
+├── ce_channel1_slot0
+├── ce_channel1_slot1
+├── ce_channel1_slot2
+├── ce_channel2
+├── ce_channel2_slot0
+├── ce_channel2_slot1
+├── ce_channel2_slot2
+├── ce_channel3
+├── ce_channel3_slot0
+├── ce_channel3_slot1
+├── ce_channel3_slot2
+├── ce_count
+├── ce_noinfo_count
+├── dimm0
+│   ├── dimm_dev_type
+│   ├── dimm_edac_mode
+│   ├── dimm_label
+│   ├── dimm_location
+│   ├── dimm_mem_type
+│   └── dimm_size
+├── dimm1
+│   ├── dimm_dev_type
+│   ├── dimm_edac_mode
+│   ├── dimm_label
+│   ├── dimm_location
+│   ├── dimm_mem_type
+│   └── dimm_size
+├── fake_inject
+├── ue_channel0
+├── ue_channel0_slot0
+├── ue_channel0_slot1
+├── ue_channel0_slot2
+├── ue_channel1
+├── ue_channel1_slot0
+├── ue_channel1_slot1
+├── ue_channel1_slot2
+├── ue_channel2
+├── ue_channel2_slot0
+├── ue_channel2_slot1
+├── ue_channel2_slot2
+├── ue_channel3
+├── ue_channel3_slot0
+├── ue_channel3_slot1
+├── ue_channel3_slot2
+├── ue_count
+└── ue_noinfo_count
+
+One of the above nodes allow testing the error report mechanism by
+providing a simple driver-independent way to inject errors (fake_inject).
+This node is enabled only when CONFIG_EDAC_DEBUG is enabled, and it
+is limited to test the core EDAC report mechanisms, but it helps to
+test if the tracing events are properly accredited to the right DIMMs.
+
+There's currently one assumption on the above that it might not be
+true: it assumes that the last element on the hierarchy will point to
+a single memory stick, called at the sysfs hierarchy as "dimm". This
+may not be true with dual/quad rank memories, on some memory controllers.
+Further test is needed to double check it. I intend to do that, after
+having access to csrow/channel based machines that I can equip with a mix
+of single and dual or quad rank memories (still trying to obtain some
+hardware).
+
+The memory error handling function has now the capability of reporting
+more than one dimm, when it is not possible to put the fingers into
+a single place.
+
+For example:
+	# echo 1 >/sys/devices/system/edac/mc/mc0/fake_inject  && dmesg |tail -1
+	[ 2878.130704] EDAC MC0: CE FAKE ERROR on mc#0channel#1slot#0 mc#0channel#1slot#1 mc#0channel#1slot#2  (channel 1 page 0x0 offset 0x0 grain 0 syndrome 0x0 for EDAC testing only)
+
+All dimm memories present on channel 1 are pointed as one of them were
+responsible for the error.
+
+With regards to the output, the errors are now reported on a more 
+user-friendly way, e. g. the EDAC core will output:
+
+- the timestamp;
+- the memory controller;
+- if the error is corrected, uncorrected or fatal;
+- the error message (driver specific, for example "read error", "scrubbing
+  error", etc)
+- the affected memory labels.
+
+Other technical details are provided, inside parenthesis, in order to
+allow hardware manufacturers, OEM, etc to have more details on it, and
+discover what DRAM has problems, if they want/need to.
+
+Ah, now that the memory architecture is properly represented, the DIMM
+labels are automatically filled by the mc_alloc function call, in order
+to properly represent the memory architecture.
+
+For example, in the case of Sandy Bridge, a memory can be described as:
+	mc#0channel#1slot#0
+
+This matches the way the memory is known inside the technical information,
+and, hopefully, at the OEM manuals for the motherboard. So, it should
+be simpler for OEM's and system administrators to identify what memory
+is broken, and/or to relabel it with a tool like edac-utils with the
+motherboard-specific nomenclature.
+
+Currently tested on Nehalem and Sandy Bridge. On both, the memory hierarchy
+is MC/Channel/Slot. I should be testing tomorrow with i5400, where the
+hierarchy is MC/Branch/Channel/Slot.
+
+This series should compile on all architectures (compile-tested the last
+patch that changed some bits on all drivers on x86_64, i386, ppc32, ppc64
+and tilepro). All drivers compiled fine, even the one marked as BROKEN.
+
+Of course, tests and feedback are welcome!
+
+Regards,
+Mauro
+
+Mauro Carvalho Chehab (31):
+  events/hw_event: Create a Hardware Events Report Mecanism (HERM)
+  events/hw_event: use __string() trace macros for events
+  hw_event: Consolidate uncorrected/corrected error msgs into one
+  drivers/edac: rename channel_info to csrow_channel_info
+  edac: Create a dimm struct and move the labels into it
+  edac: Add per dimm's sysfs nodes
+  edac: Prepare to push down to drivers the filling of the dimm_info
+  edac: Better describe the memory concepts     The memory terms
+    changed along the time, since when EDAC were originally    
+    written: new concepts were introduced, and some things have
+    different     meanings, depending on the memory architecture.
+    Better define those     terms, and better describe each supported
+    memory type.
+  i5400_edac: Convert it to report memory with the new location
+  i7300_edac: Convert it to report memory with the new location
+  edac: move dimm properties to struct dimm_info
+  edac: Don't initialize csrow's first_page & friends when not needed
+  edac: move nr_pages to dimm struct
+  edac: Add per-dimm sysfs show nodes
+  edac: DIMM location cleanup
+  edac/ppc4xx_edac: Fix compilation
+  edac-mc: Allow reporting errors on a non-csrow oriented way
+  edac.h: Use kernel-doc-nano-HOWTO.txt notation for enums
+  edac: rework memory layer hierarchy description
+  edac: Export MC hierarchy counters for CE and UE
+  hw_event: Add x86 MCE events on it
+  amd64_edac: convert it to use the MCE log tracepoint where applicable
+  edac: Simplify logs for i7core and sb edac drivers
+  edac_mc: Some clenups at the log message
+  edac: Add a sysfs node to test the EDAC error report facility
+  edac_mc: Fix the enable label filter logic
+  edac: Initialize the dimm label with the known information
+  edac: don't OOPS if the csrow is not visible
+  edac: Fix sysfs csrow?/*ce*count counters
+  edac: Fix new error counts
+  edac: Fix per layer error count counters
+
+ arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+ drivers/edac/amd64_edac.c        |  217 +++++++-----
+ drivers/edac/amd64_edac_dbg.c    |    6 +-
+ drivers/edac/amd64_edac_inj.c    |   24 +-
+ drivers/edac/amd76x_edac.c       |   44 ++-
+ drivers/edac/cell_edac.c         |   42 ++-
+ drivers/edac/cpc925_edac.c       |   93 +++--
+ drivers/edac/e752x_edac.c        |   94 +++--
+ drivers/edac/e7xxx_edac.c        |   88 +++--
+ drivers/edac/edac_core.h         |   48 +--
+ drivers/edac/edac_device.c       |   27 +-
+ drivers/edac/edac_mc.c           |  719 ++++++++++++++++++++++++--------------
+ drivers/edac/edac_mc_sysfs.c     |  560 +++++++++++++++++++++++++++---
+ drivers/edac/edac_module.h       |    2 +-
+ drivers/edac/edac_pci.c          |    7 +-
+ drivers/edac/i3000_edac.c        |   51 ++-
+ drivers/edac/i3200_edac.c        |   57 ++--
+ drivers/edac/i5000_edac.c        |   89 +++--
+ drivers/edac/i5100_edac.c        |   98 +++---
+ drivers/edac/i5400_edac.c        |   99 ++----
+ drivers/edac/i7300_edac.c        |  114 +++----
+ drivers/edac/i7core_edac.c       |  265 ++++----------
+ drivers/edac/i82443bxgx_edac.c   |   43 ++-
+ drivers/edac/i82860_edac.c       |   57 ++-
+ drivers/edac/i82875p_edac.c      |   53 ++-
+ drivers/edac/i82975x_edac.c      |   58 +++-
+ drivers/edac/mpc85xx_edac.c      |   45 ++-
+ drivers/edac/mv64x60_edac.c      |   47 ++-
+ drivers/edac/pasemi_edac.c       |   51 ++--
+ drivers/edac/ppc4xx_edac.c       |   62 ++--
+ drivers/edac/r82600_edac.c       |   42 ++-
+ drivers/edac/sb_edac.c           |  201 ++++-------
+ drivers/edac/tile_edac.c         |   33 ++-
+ drivers/edac/x38_edac.c          |   54 ++--
+ include/linux/edac.h             |  518 ++++++++++++++++++++--------
+ include/trace/events/hw_event.h  |  370 ++++++++++++++++++++
+ include/trace/events/mce.h       |   69 ----
+ 37 files changed, 2868 insertions(+), 1581 deletions(-)
  create mode 100644 include/trace/events/hw_event.h
+ delete mode 100644 include/trace/events/mce.h
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index d69144a..2b8382e 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -34,6 +34,9 @@
- #include "edac_core.h"
- #include "edac_module.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/hw_event.h>
-+
- /* lock to memory controller's control array */
- static DEFINE_MUTEX(mem_ctls_mutex);
- static LIST_HEAD(mc_devices);
-@@ -224,6 +227,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
- 	 * which will perform kobj unregistration and the actual free
- 	 * will occur during the kobject callback operation
- 	 */
-+
-+	trace_hw_event_init("mce", (unsigned)edac_index);
-+
- 	return mci;
- }
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
-@@ -685,6 +691,7 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 	/* FIXME - maybe make panic on INTERNAL ERROR an option */
- 	if (row >= mci->nr_csrows || row < 0) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "CE", "row", row, 0, mci->nr_csrows);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: row out of range "
- 			"(%d >= %d)\n", row, mci->nr_csrows);
-@@ -694,6 +701,8 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 
- 	if (channel >= mci->csrows[row].nr_channels || channel < 0) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "CE", "channel", channel,
-+				      0, mci->csrows[row].nr_channels);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: channel out of range "
- 			"(%d >= %d)\n", channel,
-@@ -702,6 +711,9 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 		return;
- 	}
- 
-+	trace_mc_corrected_error(mci, page_frame_number, offset_in_page,
-+				syndrome, row, channel, msg);
-+
- 	if (edac_mc_get_log_ce())
- 		/* FIXME - put in DIMM location */
- 		edac_mc_printk(mci, KERN_WARNING,
-@@ -737,6 +749,7 @@ EXPORT_SYMBOL_GPL(edac_mc_handle_ce);
- 
- void edac_mc_handle_ce_no_info(struct mem_ctl_info *mci, const char *msg)
- {
-+	trace_mc_corrected_error_no_info(mci, msg);
- 	if (edac_mc_get_log_ce())
- 		edac_mc_printk(mci, KERN_WARNING,
- 			"CE - no information available: %s\n", msg);
-@@ -761,6 +774,8 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
- 	/* FIXME - maybe make panic on INTERNAL ERROR an option */
- 	if (row >= mci->nr_csrows || row < 0) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "UE", "row", row,
-+				      0, mci->nr_csrows);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: row out of range "
- 			"(%d >= %d)\n", row, mci->nr_csrows);
-@@ -781,6 +796,8 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
- 		pos += chars;
- 	}
- 
-+	trace_mc_uncorrected_error(mci, page_frame_number, offset_in_page,
-+				row, msg, labels);
- 	if (edac_mc_get_log_ue())
- 		edac_mc_printk(mci, KERN_EMERG,
- 			"UE page 0x%lx, offset 0x%lx, grain %d, row %d, "
-@@ -801,6 +818,7 @@ EXPORT_SYMBOL_GPL(edac_mc_handle_ue);
- 
- void edac_mc_handle_ue_no_info(struct mem_ctl_info *mci, const char *msg)
- {
-+	trace_mc_uncorrected_error_no_info(mci, msg);
- 	if (edac_mc_get_panic_on_ue())
- 		panic("EDAC MC%d: Uncorrected Error", mci->mc_idx);
- 
-@@ -828,6 +846,9 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 
- 	if (csrow >= mci->nr_csrows) {
- 		/* something is wrong */
-+
-+		trace_mc_out_of_range(mci, "UE FBDIMM", "row", csrow,
-+				      0, mci->nr_csrows);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: row out of range (%d >= %d)\n",
- 			csrow, mci->nr_csrows);
-@@ -837,6 +858,8 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 
- 	if (channela >= mci->csrows[csrow].nr_channels) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "UE FBDIMM", "channel-a", channela,
-+				      0, mci->csrows[csrow].nr_channels);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: channel-a out of range "
- 			"(%d >= %d)\n",
-@@ -847,6 +870,8 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 
- 	if (channelb >= mci->csrows[csrow].nr_channels) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "UE FBDIMM", "channel-b", channelb,
-+				      0, mci->csrows[csrow].nr_channels);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: channel-b out of range "
- 			"(%d >= %d)\n",
-@@ -866,6 +891,8 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
- 	chars = snprintf(pos, len + 1, "-%s",
- 			 mci->csrows[csrow].channels[channelb].label);
- 
-+	trace_mc_uncorrected_error_fbd(mci, csrow, channela, channelb,
-+				       msg, labels);
- 	if (edac_mc_get_log_ue())
- 		edac_mc_printk(mci, KERN_EMERG,
- 			"UE row %d, channel-a= %d channel-b= %d "
-@@ -890,6 +917,8 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
- 	/* Ensure boundary values */
- 	if (csrow >= mci->nr_csrows) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "CE FBDIMM", "row", csrow,
-+				      0, mci->nr_csrows);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: row out of range (%d >= %d)\n",
- 			csrow, mci->nr_csrows);
-@@ -898,6 +927,8 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
- 	}
- 	if (channel >= mci->csrows[csrow].nr_channels) {
- 		/* something is wrong */
-+		trace_mc_out_of_range(mci, "UE FBDIMM", "channel", channel,
-+				      0, mci->csrows[csrow].nr_channels);
- 		edac_mc_printk(mci, KERN_ERR,
- 			"INTERNAL ERROR: channel out of range (%d >= %d)\n",
- 			channel, mci->csrows[csrow].nr_channels);
-@@ -905,6 +936,7 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
- 		return;
- 	}
- 
-+	trace_mc_corrected_error_fbd(mci, csrow, channel, msg);
- 	if (edac_mc_get_log_ce())
- 		/* FIXME - put in DIMM location */
- 		edac_mc_printk(mci, KERN_WARNING,
-diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-new file mode 100644
-index 0000000..3735c6f
---- /dev/null
-+++ b/include/trace/events/hw_event.h
-@@ -0,0 +1,322 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM hw_event
-+
-+#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HW_EVENT_MC_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+
-+/*
-+ * Hardware Anomaly Report Mecanism (HARM) events
-+ *
-+ * Those events are generated when hardware detected a corrected or
-+ * uncorrected event, and are meant to replace the current API to report
-+ * errors defined on both EDAC and MCE subsystems.
-+ */
-+
-+DECLARE_EVENT_CLASS(hw_event_class,
-+	TP_PROTO(const char *type, unsigned int instance),
-+	TP_ARGS(type, instance),
-+
-+	TP_STRUCT__entry(
-+		__field(	const char *,	type			)
-+		__field(	unsigned int,	instance		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type	= type;
-+		__entry->instance = instance;
-+	),
-+
-+	TP_printk("Initialized %s#%d\n",
-+		__entry->type,
-+		__entry->instance)
-+);
-+
-+/*
-+ * This event indicates that a hardware collection mechanism is started
-+ */
-+DEFINE_EVENT(hw_event_class, hw_event_init,
-+
-+	TP_PROTO(const char *type, unsigned int instance),
-+
-+	TP_ARGS(type, instance)
-+);
-+
-+
-+/*
-+ * Memory Controller specific events
-+ */
-+
-+/*
-+ * Default error mechanisms for Memory Controller errors (CE and UE)
-+ */
-+TRACE_EVENT(mc_corrected_error,
-+
-+	TP_PROTO(struct mem_ctl_info *mci,
-+		unsigned long page_frame_number,
-+		unsigned long offset_in_page, unsigned long syndrome,
-+		int row, int channel, const char *msg),
-+
-+	TP_ARGS(mci, page_frame_number, offset_in_page, syndrome, row,
-+		channel, msg),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	mc_index		)
-+		__field(	unsigned long,	page_frame_number	)
-+		__field(	unsigned long,	offset_in_page		)
-+		__field(	u32,		grain			)
-+		__field(	unsigned long,	syndrome		)
-+		__field(	int,		row			)
-+		__field(	int,		channel			)
-+		__field(	const char *,	label			)
-+		__field(	const char *,	msg			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mc_index		= mci->mc_idx;
-+		__entry->page_frame_number	= page_frame_number;
-+		__entry->offset_in_page		= offset_in_page;
-+		__entry->grain			= mci->csrows[row].grain;
-+		__entry->syndrome		= syndrome;
-+		__entry->row			= row;
-+		__entry->channel		= channel;
-+		__entry->label			= mci->csrows[row].channels[channel].label;
-+		__entry->msg			= msg;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Corrected error %s on label \"%s\" "
-+			 "(page 0x%lux, offset 0x%lux, grain %ud, "
-+			 "syndrome 0x%lux, row %d, channel %d)\n",
-+		__entry->mc_index,
-+		__entry->msg,
-+		__entry->label,
-+		__entry->page_frame_number,
-+		__entry->offset_in_page,
-+		__entry->grain,
-+		__entry->syndrome,
-+		__entry->row,
-+		__entry->channel)
-+);
-+
-+TRACE_EVENT(mc_uncorrected_error,
-+
-+	TP_PROTO(struct mem_ctl_info *mci,
-+		unsigned long page_frame_number,
-+		unsigned long offset_in_page,
-+		int row, const char *msg, const char *label),
-+
-+	TP_ARGS(mci, page_frame_number, offset_in_page,
-+		row, msg, label),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	mc_index		)
-+		__field(	unsigned long,	page_frame_number	)
-+		__field(	unsigned long,	offset_in_page		)
-+		__field(	u32,		grain			)
-+		__field(	int,		row			)
-+		__field(	const char *,	msg			)
-+		__field(	const char *,	label			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mc_index		= mci->mc_idx;
-+		__entry->page_frame_number	= page_frame_number;
-+		__entry->offset_in_page		= offset_in_page;
-+		__entry->grain			= mci->csrows[row].grain;
-+		__entry->row			= row;
-+		__entry->msg			= msg;
-+		__entry->label			= label;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Uncorrected error %s on label \"%s\""
-+			 "(page 0x%lux, offset 0x%lux, grain %ud, row %d)\n",
-+		__entry->mc_index,
-+		__entry->msg,
-+		__entry->label,
-+		__entry->page_frame_number,
-+		__entry->offset_in_page,
-+		__entry->grain,
-+		__entry->row)
-+);
-+
-+
-+/*
-+ * Fully-Buffered memory hardware in general don't provide syndrome/grain/row
-+ * information for all types of errors. So, we need to either have another
-+ * trace event or add a bitmapped field to indicate that some info are not
-+ * provided and use the previously-declared event. It seemed easier and less
-+ * confusing to create a different event for such cases
-+ */
-+TRACE_EVENT(mc_corrected_error_fbd,
-+
-+	TP_PROTO(struct mem_ctl_info *mci,
-+		int row, int channel, const char *msg),
-+
-+	TP_ARGS(mci, row, channel, msg),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	mc_index		)
-+		__field(	int,		row			)
-+		__field(	int,		channel			)
-+		__field(	const char *,	label			)
-+		__field(	const char *,	msg			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mc_index		= mci->mc_idx;
-+		__entry->row			= row;
-+		__entry->channel		= channel;
-+		__entry->label			= mci->csrows[row].channels[channel].label;
-+		__entry->msg			= msg;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Corrected Error %s on label \"%s\" "
-+			 "(row %d, channel %d)\n",
-+		__entry->mc_index,
-+		__entry->msg,
-+		__entry->label,
-+		__entry->row,
-+		__entry->channel)
-+);
-+
-+TRACE_EVENT(mc_uncorrected_error_fbd,
-+
-+	TP_PROTO(struct mem_ctl_info *mci,
-+		int row, int channela, int channelb,
-+		const char *msg, const char *label),
-+
-+	TP_ARGS(mci, row, channela, channelb, msg, label),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	mc_index		)
-+		__field(	int,		row			)
-+		__field(	int,		channela		)
-+		__field(	int,		channelb		)
-+		__field(	const char *,	msg			)
-+		__field(	const char *,	label			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mc_index		= mci->mc_idx;
-+		__entry->row			= row;
-+		__entry->channela		= channela;
-+		__entry->channelb		= channelb;
-+		__entry->msg			= msg;
-+		__entry->label			= label;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Uncorrected Error %s on label \"%s\" "
-+			 "(row %d, channels: %d, %d)\n",
-+		__entry->mc_index,
-+		__entry->msg,
-+		__entry->label,
-+		__entry->row,
-+		__entry->channela,
-+		__entry->channelb)
-+);
-+
-+/*
-+ * The Memory controller driver needs to discover the memory topology, in
-+ * order to associate a hardware error with the memory label. If, for any
-+ * reason, it receives an error for a channel or row that are not supposed
-+ * to be there, an error event needs to be generated to indicate:
-+ *	- that a Corrected or Uncorrected error was received;
-+ *	- that the driver has a bug and, for that particular hardware, was
-+ *	  not capable of detecting the hardware architecture
-+ * If one of such errors is ever received, a bug to the kernel driver must
-+ * be filled.
-+ */
-+
-+TRACE_EVENT(mc_out_of_range,
-+	TP_PROTO(struct mem_ctl_info *mci, const char *type, const char *field,
-+		int invalid_val, int min, int max),
-+
-+	TP_ARGS(mci, type, field, invalid_val, min, max),
-+
-+	TP_STRUCT__entry(
-+		__field(	const char *,	type			)
-+		__field(	const char *,	field			)
-+		__field(	unsigned int,	mc_index		)
-+		__field(	int,		invalid_val		)
-+		__field(	int,		min			)
-+		__field(	int,		max			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->type			= type;
-+		__entry->field			= field;
-+		__entry->mc_index		= mci->mc_idx;
-+		__entry->invalid_val		= invalid_val;
-+		__entry->min			= min;
-+		__entry->max			= max;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d %s: %s=%d is not between %d and %d\n",
-+		__entry->mc_index,
-+		__entry->type,
-+		__entry->field,
-+		__entry->invalid_val,
-+		__entry->min,
-+		__entry->max)
-+);
-+
-+/*
-+ * On some cases, a corrected or uncorrected error was detected, but it
-+ * couldn't be properly handled, or because another error overrided the
-+ * error registers that details the error or because of some internal problem
-+ * on the driver. Those events bellow are meant for those error types.
-+ */
-+TRACE_EVENT(mc_corrected_error_no_info,
-+	TP_PROTO(struct mem_ctl_info *mci, const char *msg),
-+
-+	TP_ARGS(mci, msg),
-+
-+	TP_STRUCT__entry(
-+		__field(	const char *,	msg			)
-+		__field(	unsigned int,	mc_index		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->msg			= msg;
-+		__entry->mc_index		= mci->mc_idx;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Corrected Error: %s\n",
-+		__entry->mc_index,
-+		__entry->msg)
-+);
-+
-+TRACE_EVENT(mc_uncorrected_error_no_info,
-+	TP_PROTO(struct mem_ctl_info *mci, const char *msg),
-+
-+	TP_ARGS(mci, msg),
-+
-+	TP_STRUCT__entry(
-+		__field(	const char *,	msg			)
-+		__field(	unsigned int,	mc_index		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->msg			= msg;
-+		__entry->mc_index		= mci->mc_idx;
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: Uncorrected Error: %s\n",
-+		__entry->mc_index,
-+		__entry->msg)
-+);
-+
-+
-+
-+/*
-+ * MCE Events placeholder. Please add non-memory events that come from the
-+ * MCE driver here
-+ */
-+
-+
-+#endif /* _TRACE_HW_EVENT_MC_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
 -- 
 1.7.8
 
