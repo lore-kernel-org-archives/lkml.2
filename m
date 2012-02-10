@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760657Ab2BJWmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:42:13 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab2BJWmJ (ORCPT
+	id S932634Ab2BJWmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:42:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932593Ab2BJWma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:09 -0500
+	Fri, 10 Feb 2012 17:42:30 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222949.291436385@clark.kroah.org>
+Message-Id: <20120210222949.917276685@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:07 -0800
+Date: Fri, 10 Feb 2012 14:30:14 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [patch 48/86] hwmon: (w83627ehf) Fix number of fans for NCT6776F
+        alan@lxorguk.ukuu.org.uk, Dax Kelson <dkelson@gurulabs.com>,
+        Andy Grover <agrover@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [patch 55/86] iscsi-target: Fix discovery with INADDR_ANY and IN6ADDR_ANY_INIT
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +28,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 585c0fd8216e0c9f98e2434092af7ec0f999522d upstream.
+commit 2f9bc894c67dbacae5a6a9875818d2a18a918d18 upstream.
 
-NCT6776F can select fan input pins for fans 3 to 5 with a secondary set of
-chip register bits. Check that second set of bits in addition to the first set
-to detect if fans 3..5 are monitored.
+This patch addresses a bug with sendtargets discovery where INADDR_ANY (0.0.0.0)
++ IN6ADDR_ANY_INIT ([0:0:0:0:0:0:0:0]) network portals where incorrectly being
+reported back to initiators instead of the address of the connecting interface.
+To address this, save local socket ->getname() output during iscsi login setup,
+and makes iscsit_build_sendtargets_response() return these TargetAddress keys
+when INADDR_ANY or IN6ADDR_ANY_INIT portals are in use.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Reported-by: Dax Kelson <dkelson@gurulabs.com>
+Reported-by: Andy Grover <agrover@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/w83627ehf.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/target/iscsi/iscsi_target.c       |   37 ++++++++++++++++++++++++++----
+ drivers/target/iscsi/iscsi_target_core.h  |    2 +
+ drivers/target/iscsi/iscsi_target_login.c |   31 +++++++++++++++++++++----
+ 3 files changed, 62 insertions(+), 8 deletions(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1920,9 +1920,26 @@ w83627ehf_check_fan_inputs(const struct
- 		fan4min = 0;
- 		fan5pin = 0;
- 	} else if (sio_data->kind == nct6776) {
--		fan3pin = !(superio_inb(sio_data->sioreg, 0x24) & 0x40);
--		fan4pin = !!(superio_inb(sio_data->sioreg, 0x1C) & 0x01);
--		fan5pin = !!(superio_inb(sio_data->sioreg, 0x1C) & 0x02);
-+		bool gpok = superio_inb(sio_data->sioreg, 0x27) & 0x80;
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3165,6 +3165,30 @@ static int iscsit_send_task_mgt_rsp(
+ 	return 0;
+ }
+ 
++static bool iscsit_check_inaddr_any(struct iscsi_np *np)
++{
++	bool ret = false;
 +
-+		superio_select(sio_data->sioreg, W83627EHF_LD_HWM);
-+		regval = superio_inb(sio_data->sioreg, SIO_REG_ENABLE);
++	if (np->np_sockaddr.ss_family == AF_INET6) {
++		const struct sockaddr_in6 sin6 = {
++			.sin6_addr = IN6ADDR_ANY_INIT };
++		struct sockaddr_in6 *sock_in6 =
++			 (struct sockaddr_in6 *)&np->np_sockaddr;
 +
-+		if (regval & 0x80)
-+			fan3pin = gpok;
-+		else
-+			fan3pin = !(superio_inb(sio_data->sioreg, 0x24) & 0x40);
++		if (!memcmp(sock_in6->sin6_addr.s6_addr,
++				sin6.sin6_addr.s6_addr, 16))
++			ret = true;
++	} else {
++		struct sockaddr_in * sock_in =
++			(struct sockaddr_in *)&np->np_sockaddr;
 +
-+		if (regval & 0x40)
-+			fan4pin = gpok;
-+		else
-+			fan4pin = !!(superio_inb(sio_data->sioreg, 0x1C) & 0x01);
++		if (sock_in->sin_addr.s_addr == INADDR_ANY)
++			ret = true;
++	}
 +
-+		if (regval & 0x20)
-+			fan5pin = gpok;
-+		else
-+			fan5pin = !!(superio_inb(sio_data->sioreg, 0x1C) & 0x02);
++	return ret;
++}
 +
- 		fan4min = fan4pin;
- 	} else if (sio_data->kind == w83667hg || sio_data->kind == w83667hg_b) {
- 		fan3pin = 1;
+ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
+ {
+ 	char *payload = NULL;
+@@ -3214,12 +3238,17 @@ static int iscsit_build_sendtargets_resp
+ 			spin_lock(&tpg->tpg_np_lock);
+ 			list_for_each_entry(tpg_np, &tpg->tpg_gnp_list,
+ 						tpg_np_list) {
++				struct iscsi_np *np = tpg_np->tpg_np;
++				bool inaddr_any = iscsit_check_inaddr_any(np);
++
+ 				len = sprintf(buf, "TargetAddress="
+ 					"%s%s%s:%hu,%hu",
+-					(tpg_np->tpg_np->np_sockaddr.ss_family == AF_INET6) ?
+-					"[" : "", tpg_np->tpg_np->np_ip,
+-					(tpg_np->tpg_np->np_sockaddr.ss_family == AF_INET6) ?
+-					"]" : "", tpg_np->tpg_np->np_port,
++					(np->np_sockaddr.ss_family == AF_INET6) ?
++					"[" : "", (inaddr_any == false) ?
++						np->np_ip : conn->local_ip,
++					(np->np_sockaddr.ss_family == AF_INET6) ?
++					"]" : "", (inaddr_any == false) ?
++						np->np_port : conn->local_port,
+ 					tpg->tpgt);
+ 				len += 1;
+ 
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -508,6 +508,7 @@ struct iscsi_conn {
+ 	u16			cid;
+ 	/* Remote TCP Port */
+ 	u16			login_port;
++	u16			local_port;
+ 	int			net_size;
+ 	u32			auth_id;
+ #define CONNFLAG_SCTP_STRUCT_FILE			0x01
+@@ -527,6 +528,7 @@ struct iscsi_conn {
+ 	unsigned char		bad_hdr[ISCSI_HDR_LEN];
+ #define IPV6_ADDRESS_SPACE				48
+ 	unsigned char		login_ip[IPV6_ADDRESS_SPACE];
++	unsigned char		local_ip[IPV6_ADDRESS_SPACE];
+ 	int			conn_usage_count;
+ 	int			conn_waiting_on_uc;
+ 	atomic_t		check_immediate_queue;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -616,8 +616,8 @@ static int iscsi_post_login_handler(
+ 		}
+ 
+ 		pr_debug("iSCSI Login successful on CID: %hu from %s to"
+-			" %s:%hu,%hu\n", conn->cid, conn->login_ip, np->np_ip,
+-				np->np_port, tpg->tpgt);
++			" %s:%hu,%hu\n", conn->cid, conn->login_ip,
++			conn->local_ip, conn->local_port, tpg->tpgt);
+ 
+ 		list_add_tail(&conn->conn_list, &sess->sess_conn_list);
+ 		atomic_inc(&sess->nconn);
+@@ -659,7 +659,8 @@ static int iscsi_post_login_handler(
+ 	sess->session_state = TARG_SESS_STATE_LOGGED_IN;
+ 
+ 	pr_debug("iSCSI Login successful on CID: %hu from %s to %s:%hu,%hu\n",
+-		conn->cid, conn->login_ip, np->np_ip, np->np_port, tpg->tpgt);
++		conn->cid, conn->login_ip, conn->local_ip, conn->local_port,
++		tpg->tpgt);
+ 
+ 	spin_lock_bh(&sess->conn_lock);
+ 	list_add_tail(&conn->conn_list, &sess->sess_conn_list);
+@@ -1019,6 +1020,18 @@ static int __iscsi_target_login_thread(s
+ 		snprintf(conn->login_ip, sizeof(conn->login_ip), "%pI6c",
+ 				&sock_in6.sin6_addr.in6_u);
+ 		conn->login_port = ntohs(sock_in6.sin6_port);
++
++		if (conn->sock->ops->getname(conn->sock,
++				(struct sockaddr *)&sock_in6, &err, 0) < 0) {
++			pr_err("sock_ops->getname() failed.\n");
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++					ISCSI_LOGIN_STATUS_TARGET_ERROR);
++			goto new_sess_out;
++		}
++		snprintf(conn->local_ip, sizeof(conn->local_ip), "%pI6c",
++				&sock_in6.sin6_addr.in6_u);
++		conn->local_port = ntohs(sock_in6.sin6_port);
++
+ 	} else {
+ 		memset(&sock_in, 0, sizeof(struct sockaddr_in));
+ 
+@@ -1031,6 +1044,16 @@ static int __iscsi_target_login_thread(s
+ 		}
+ 		sprintf(conn->login_ip, "%pI4", &sock_in.sin_addr.s_addr);
+ 		conn->login_port = ntohs(sock_in.sin_port);
++
++		if (conn->sock->ops->getname(conn->sock,
++				(struct sockaddr *)&sock_in, &err, 0) < 0) {
++			pr_err("sock_ops->getname() failed.\n");
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++					ISCSI_LOGIN_STATUS_TARGET_ERROR);
++			goto new_sess_out;
++		}
++		sprintf(conn->local_ip, "%pI4", &sock_in.sin_addr.s_addr);
++		conn->local_port = ntohs(sock_in.sin_port);
+ 	}
+ 
+ 	conn->network_transport = np->np_network_transport;
+@@ -1038,7 +1061,7 @@ static int __iscsi_target_login_thread(s
+ 	pr_debug("Received iSCSI login request from %s on %s Network"
+ 			" Portal %s:%hu\n", conn->login_ip,
+ 		(conn->network_transport == ISCSI_TCP) ? "TCP" : "SCTP",
+-			np->np_ip, np->np_port);
++			conn->local_ip, conn->local_port);
+ 
+ 	pr_debug("Moving to TARG_CONN_STATE_IN_LOGIN.\n");
+ 	conn->conn_state	= TARG_CONN_STATE_IN_LOGIN;
 
 
