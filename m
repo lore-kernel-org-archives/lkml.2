@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab2BJKFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 05:05:48 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:55379 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758931Ab2BJKFp (ORCPT
+	id S932206Ab2BJKF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 05:05:56 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:54206 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759055Ab2BJKFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 05:05:45 -0500
+	Fri, 10 Feb 2012 05:05:54 -0500
 MIME-Version: 1.0
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
@@ -15,9 +15,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/7] OMAP: 4430SDP: Correct fixed regulator device ID
-Date: Fri, 10 Feb 2012 12:05:10 +0200
-Message-Id: <1328868316-24749-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 6/7] OMAP: omap4panda: Use common configuration for V1V8, V2V1 supplies
+Date: Fri, 10 Feb 2012 12:05:15 +0200
+Message-Id: <1328868316-24749-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
@@ -25,48 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The board has two fixed voltage regulator. Correct the
-device ID for the vbat, which used -1.
-Create defines for the fixed regulator IDs so when adding new
-regulators we know the next available ID to use for them.
+These supplies going to be needed for the twl6040 driver.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/board-4430sdp.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/board-omap4panda.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index f4ac553..d02172d 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -62,6 +62,9 @@
- #define GPIO_WIFI_PMENA		54
- #define GPIO_WIFI_IRQ		53
- 
-+#define FIXED_REG_VBAT_ID	0
-+#define FIXED_REG_VWLAN_ID	1
-+
- static const int sdp4430_keymap[] = {
- 	KEY(0, 0, KEY_E),
- 	KEY(0, 1, KEY_R),
-@@ -368,7 +371,7 @@ static struct fixed_voltage_config sdp4430_vbat_pdata = {
- 
- static struct platform_device sdp4430_vbat = {
- 	.name		= "reg-fixed-voltage",
--	.id		= -1,
-+	.id		= FIXED_REG_VBAT_ID,
- 	.dev = {
- 		.platform_data = &sdp4430_vbat_pdata,
- 	},
-@@ -478,7 +481,7 @@ static struct fixed_voltage_config sdp4430_vwlan = {
- 
- static struct platform_device omap_vwlan_device = {
- 	.name		= "reg-fixed-voltage",
--	.id		= 1,
-+	.id		= FIXED_REG_VWLAN_ID,
- 	.dev = {
- 		.platform_data = &sdp4430_vwlan,
- 	},
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index da31a72..1e90e71 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -316,7 +316,9 @@ static int __init omap4_panda_i2c_init(void)
+ 			TWL_COMMON_REGULATOR_VANA |
+ 			TWL_COMMON_REGULATOR_VCXIO |
+ 			TWL_COMMON_REGULATOR_VUSB |
+-			TWL_COMMON_REGULATOR_CLK32KG);
++			TWL_COMMON_REGULATOR_CLK32KG |
++			TWL_COMMON_REGULATOR_V1V8 |
++			TWL_COMMON_REGULATOR_V2V1);
+ 	omap4_pmic_init("twl6030", &omap4_panda_twldata,
+ 			&twl6040_data, OMAP44XX_IRQ_SYS_2N);
+ 	omap_register_i2c_bus(2, 400, NULL, 0);
 -- 
 1.7.8.4
 
