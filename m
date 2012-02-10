@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760944Ab2BJXMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:12:36 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab2BJWmg (ORCPT
+	id S932648Ab2BJXMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:12:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37383 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932616Ab2BJWmf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:36 -0500
+	Fri, 10 Feb 2012 17:42:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="65477654"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "seiji.aguchi@hds.com" <seiji.aguchi@hds.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mjg@redhat.com" <mjg@redhat.com>,
+        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
+Subject: RE: [PATCH 2/2] x86, reschedule: check to see if system is shutting
+ down
+Thread-Topic: [PATCH 2/2] x86, reschedule: check to see if system is
+ shutting down
+Thread-Index: AQHM6DdWXhMuiUWedkmvGJM5sNRJdpY2uPkQ
+Date: Fri, 10 Feb 2012 22:42:24 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F03AA72@ORSMSX104.amr.corp.intel.com>
+References: <1328907735-6226-1-git-send-email-dzickus@redhat.com>
+ <1328907735-6226-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1328907735-6226-3-git-send-email-dzickus@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Message-Id: <20120210222950.189323418@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:17 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Susan Gao <sgao@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 58/86] ASoC: wm8962: Fix word length configuration
-In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+-		WARN_ON(1);
++		if (atomic_read(&stopping_cpu) == -1)
++			/* system is not shutting down.. yell */
++			WARN_ON(1);
 
-------------------
+Should that be written as:
 
-From: Susan Gao <sgao@opensource.wolfsonmicro.com>
+		/* system is not shutting down.. yell */
+		WARN_ON(atomic_read(&stopping_cpu) == -1);
 
-commit 2b6712b19531e22455e7fa18371c5ba9eec76699 upstream.
+the
+		if (something)
+			WARN_ON(1);
 
-Signed-off-by: Susan Gao <sgao@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+looks weird.
 
----
- sound/soc/codecs/wm8962.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3172,13 +3172,13 @@ static int wm8962_hw_params(struct snd_p
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		break;
- 	case SNDRV_PCM_FORMAT_S20_3LE:
--		aif0 |= 0x40;
-+		aif0 |= 0x4;
- 		break;
- 	case SNDRV_PCM_FORMAT_S24_LE:
--		aif0 |= 0x80;
-+		aif0 |= 0x8;
- 		break;
- 	case SNDRV_PCM_FORMAT_S32_LE:
--		aif0 |= 0xc0;
-+		aif0 |= 0xc;
- 		break;
- 	default:
- 		return -EINVAL;
-
-
+-Tony
