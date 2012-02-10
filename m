@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab2BJAIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:08:25 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:60073 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758700Ab2BJAIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:08:22 -0500
-Date: Thu, 09 Feb 2012 19:08:15 -0500 (EST)
-Message-Id: <20120209.190815.1793020340808993229.davem@davemloft.net>
-To: paul.gortmaker@windriver.com
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: 8250 move broke the build on sparc
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120209234818.GA814@windriver.com>
-References: <4F344A85.4070005@windriver.com>
-	<20120209.174817.1772850235758472350.davem@davemloft.net>
-	<20120209234818.GA814@windriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Feb 2012 16:08:20 -0800 (PST)
+	id S932354Ab2BJAHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:07:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28634 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758675Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:01:37 -0500
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 10/31] i7300_edac: Convert it to report memory with the new location
+Date: Thu,  9 Feb 2012 22:01:09 -0200
+Message-Id: <1328832090-9166-11-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Thu, 9 Feb 2012 18:48:19 -0500
+On this driver, the memory controller supports only FB-DIMMs.
 
->>From 1b0bc62a6583e319f8b764ac34f799b916656590 Mon Sep 17 00:00:00 2001
-> From: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Date: Thu, 9 Feb 2012 18:09:35 -0500
-> Subject: [PATCH] sparc: rename drivers/tty/serial/suncore.h ->
->  include/linux/sunserialcore.h
-> 
-> There are multiple users of this file from different source
-> paths now, and rather than have ../ paths in include statements,
-> just move the file to the linux header dir.
-> 
-> Suggested-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+The memory controller hierarchy here has 3 layers bellow the
+memory controller:
+        - two branches;
+        - each branch has two channels;
+        - each channel can select up to 8 DIMM's via the
+FB-DIMM AMB (Advanced Memory Buffer) chip.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+As EDAC currently limits memory controllers to 2 hierarchy
+levels, on this patch, both branches and channels are grouped
+together.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/i7300_edac.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 6104dba..ddd5842 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -779,6 +779,7 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	int mtr;
+ 	int ch, branch, slot, channel;
+ 	u32 last_page = 0, nr_pages;
++	struct dimm_info *dimm;
+ 
+ 	pvt = mci->pvt_info;
+ 
+@@ -803,6 +804,10 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 	}
+ 
+ 	/* Get the set of MTR[0-7] regs by each branch */
++	dimm = mci->dimms;
++	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
++	mci->nr_dimms = 0;
++	nr_pages = 0;
+ 	for (slot = 0; slot < MAX_SLOTS; slot++) {
+ 		int where = mtr_regs[slot];
+ 		for (branch = 0; branch < MAX_BRANCHES; branch++) {
+@@ -815,6 +820,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 				dinfo = &pvt->dimm_info[slot][channel];
+ 				p_csrow = &mci->csrows[slot];
+ 
++				dimm->location.mc_channel = channel;
++				dimm->location.mc_dimm_number = slot;
++
+ 				mtr = decode_mtr(pvt, slot, ch, branch,
+ 						 dinfo, p_csrow, &nr_pages);
+ 				/* if no DIMMS on this row, continue */
+@@ -828,6 +836,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
+ 				p_csrow->last_page = last_page;
+ 
+ 				rc = 0;
++
++				mci->nr_dimms++;
++				dimm++;
+ 			}
+ 		}
+ 	}
+-- 
+1.7.8
+
