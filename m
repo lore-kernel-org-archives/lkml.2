@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab2BJUCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:02:23 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:58535 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760035Ab2BJUCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:02:21 -0500
-Date: Fri, 10 Feb 2012 12:02:17 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: svaidy@linux.vnet.ibm.com
-Cc: Ram Pai <linuxram@us.ibm.com>, Yinghai Lu <yinghai.lu@oracle.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH] pci: set pci sriov page size before reading
- SRIOV BAR
-Message-ID: <20120210120217.6bb5c836@jbarnes-desktop>
-In-Reply-To: <20120202174120.GA3753@dirshya.in.ibm.com>
-References: <20120202174120.GA3753@dirshya.in.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/PkuNm076j/WqJkd0F81xqaG"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1760077Ab2BJUCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:02:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab2BJUCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:02:38 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20120209134429.GC6663@umich.edu>
+References: <20120209134429.GC6663@umich.edu> <20120208141552.GA3273@umich.edu> <20120208122905.8902.65762.stgit@warthog.procyon.org.uk> <20120208122917.8902.78395.stgit@warthog.procyon.org.uk> <17614.1328781889@redhat.com>
+To: Jim Rees <rees@umich.edu>
+Cc: dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-nfs@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-api@vger.kernel.org, libc-alpha@sourceware.org
+Subject: Re: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate name service errors
+Date: Fri, 10 Feb 2012 20:02:05 +0000
+Message-ID: <25436.1328904125@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PkuNm076j/WqJkd0F81xqaG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Jim Rees <rees@umich.edu> wrote:
 
-On Thu, 2 Feb 2012 23:11:20 +0530
-Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com> wrote:
+>   > Would this be the same as NXDOMAIN?  That is, does it mean the name server
+>   > couldn't find a record, or does it mean that the record doesn't exist?
+>   
+>   Is there a way to tell the difference?  Can you store a negative record in
+>   the DNS?  Or is it that the DNS has records for the name, just not records
+>   of the type you're looking for (eg. NO_ADDRESS/NO_DATA from
+>   gethostbyname())?
+> 
+> It's an important distinction to the resolver if you want to avoid dns
+> hijacking.  See rfc2308.  There doesn't seem to be a way to tell the
+> difference from the gethostbyname call, which was designed before this was a
+> problem.  The on-the-wire dns query protocol does make the distinction.
+> 
+> I suspect kernel dns clients won't need to know the difference, but I think
+> it's useful if we decide on and document the meaning of the error codes.
+> Maybe the answer is that ENAMEUNKNOWN means the same as a HOST_NOT_FOUND
+> from gethostbyname().
 
-> Hi Jesse,
->=20
-> The following patch fixes a regression introduced when an SRIOV card
-> is used as a PF in a 64k base page size configuration.
->=20
-> Reference: https://lkml.org/lkml/2012/2/1/165
->=20
-> Please queue this bugfix patch for the current release cycle.
+Should I propose an extra error code?  Perhaps giving:
 
-Applied, thanks.  Ram please shout if this isn't ok and you'd prefer a
-different fix.
+	ENONAMESERVICE	"Network name service unavailable"
+	ENAMEUNKNOWN	"Network name not known"
+	ENONAMERECORD	"Network name query returned no records"
 
-Thanks,
---=20
-Jesse Barnes, Intel Open Source Technology Center
+Note that ENONAMESERVICE covers all of: not having a name service configured,
+not being able to contact the configured name server and the configured name
+server not being able to chain to the authoritative name server.  However, I
+think this is probably okay.
 
---Sig_/PkuNm076j/WqJkd0F81xqaG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPNXfJAAoJEIEoDkX4Qk9hUaAP/3Ky/6j9cYfYa3s/IUskAO3O
-+U2cjoCK9cqVzE8weqBc68P27/aCrTix1UkWDiXjGJRjEgRorCUz1fnXW2eXv09q
-QHkT7DnHn5rphwplzMlSNkjcgkcm/MRzlRwDMgRWbTH1s6RnTcHYcWcj5ioCSIvU
-fPyLmytiqqLCl5FmLGJp//sM6G7Jt/giF9vqV158tTjdJeQeT06mOZ4EhcvBmFqJ
-cu9bkIL4b9yb0aneU75ynlN0qWcuKQSiHb3r0cn8rLSKE0j0y9ANEeaNsF6WeeH1
-PhhL4TRmj4XABVL/YGx/aZtFp5KdKNHj/VHWEGYS2LFjONtXkAOKqz+mSpzXUtTm
-AU2E6RGQYvDWRpPKORnLJWrgkSUpJR+wd/wAg88hscufTTqto5xPEg3C3e+xo3mS
-36qKXGIu/88zE5uzr8pmvq4VhHKFvwrRlO/dMY/poHiBjYdnwAwRc6PcClNQ5xqp
-NV+T8FCHgx63lQi1yUkTjdLTBD8X5KwzDCnXTSRea8YM3XL1bWCUuEaN1qyb6gpL
-URZHHYM3go0JUni8io2nSRdmKyjpntcSAwTlaHFdqLvWzzZYIS5swChTC61BzPbG
-raekZ7Ubj8aKU45lFgxN6nKhDPHbfx66UZPx0CK7aCYE64jNhbp4EPJONJ6q9/hH
-rlDAfrsTwNPPx7xGQJsq
-=/y6H
------END PGP SIGNATURE-----
-
---Sig_/PkuNm076j/WqJkd0F81xqaG--
+David
