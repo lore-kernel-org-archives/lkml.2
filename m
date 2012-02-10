@@ -1,196 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab2BJWmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:42:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932593Ab2BJWma (ORCPT
+	id S932664Ab2BJWms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:42:48 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:43093 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932623Ab2BJWmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:30 -0500
+	Fri, 10 Feb 2012 17:42:36 -0500
+Message-ID: <d4b1bf80e0ecde82ed2595026e3f6ba7.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F353D65.7070705@zytor.com>
+References: <20120116183730.GB21112@redhat.com>
+    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+    <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>
+    <4F3007AD.50307@zytor.com>
+    <c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>
+    <4F33110D.3050904@zytor.com>
+    <13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>
+    <4F334B8C.2050005@zytor.com>
+    <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>
+    <b3f79ce8b30e2985723eec1a3337317e.squirrel@webmail.greenhost.nl>
+    <4F346FB0.9070203@zytor.com>
+    <19ac5d5293110612dc17c514bc7e1ccd.squirrel@webmail.greenhost.nl>
+    <cc95fcf4b1c28ee6f73e373d04593634.squirrel@webmail.greenhost.nl>
+    <4F353D65.7070705@zytor.com>
+Date: Fri, 10 Feb 2012 23:42:01 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H.J. Lu" <hjl.tools@gmail.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Message-Id: <20120210222949.917276685@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dax Kelson <dkelson@gurulabs.com>,
-        Andy Grover <agrover@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [patch 55/86] iscsi-target: Fix discovery with INADDR_ANY and IN6ADDR_ANY_INIT
-In-Reply-To: <20120210223514.GA24190@kroah.com>
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: 76f3589a93270604ea078d468a2051b3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, February 10, 2012 16:53, H. Peter Anvin wrote:
+> On 02/09/2012 11:42 PM, Indan Zupancic wrote:>
+>> Patch implementing this below. It uses bit 3 for task mode and bit 5
+>> for syscall mode. Those bits are only valid if VIF is set. It increases
+>> the kernel size by around 50 bytes, 6 for a 32-bit kernel.
+>>
+>> Any objections?
+>
+> #include <stdnak.h>
 
-------------------
+Could you please elaborate? Is it just the stealing of eflags bits that
+irks you or are there technical problems too?
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+I understand some people would prefer a new regset, but that would force
+everyone to use PTRACE_GETREGSET instead of whatever they are using now.
+The problem with that is that not all archs support PTRACE_GETREGSET, so
+the user space ptrace code needs to use different ptrace calls depending
+on the architecture for no good reason. If PEEK_USER works then it's less
+of a problem, then it's one extra ptrace call compared to the eflag way
+if PTRACE_GETREGS is used. If this new info is exposed with a special
+regset instead of being appended to normal regs then one extra ptrace
+call per system call event needs to be done. You can as well add special
+x86 ptrace requests then.
 
-commit 2f9bc894c67dbacae5a6a9875818d2a18a918d18 upstream.
+Or is the main advantage of using a regset that it shows up in coredumps?
+That would merit the extra effort at least.
 
-This patch addresses a bug with sendtargets discovery where INADDR_ANY (0.0.0.0)
-+ IN6ADDR_ANY_INIT ([0:0:0:0:0:0:0:0]) network portals where incorrectly being
-reported back to initiators instead of the address of the connecting interface.
-To address this, save local socket ->getname() output during iscsi login setup,
-and makes iscsit_build_sendtargets_response() return these TargetAddress keys
-when INADDR_ANY or IN6ADDR_ANY_INIT portals are in use.
+Stealing eflags bits may be ugly like hell, but it's very simple for both
+the kernel and user space to implement.
 
-Reported-by: Dax Kelson <dkelson@gurulabs.com>
-Reported-by: Andy Grover <agrover@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I think everyone agrees that this kind of info needs to be exposed somehow.
+In the end I don't care how it is done, as long as the info is easily
+available.
 
----
- drivers/target/iscsi/iscsi_target.c       |   37 ++++++++++++++++++++++++++----
- drivers/target/iscsi/iscsi_target_core.h  |    2 +
- drivers/target/iscsi/iscsi_target_login.c |   31 +++++++++++++++++++++----
- 3 files changed, 62 insertions(+), 8 deletions(-)
+Greetings,
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3165,6 +3165,30 @@ static int iscsit_send_task_mgt_rsp(
- 	return 0;
- }
- 
-+static bool iscsit_check_inaddr_any(struct iscsi_np *np)
-+{
-+	bool ret = false;
-+
-+	if (np->np_sockaddr.ss_family == AF_INET6) {
-+		const struct sockaddr_in6 sin6 = {
-+			.sin6_addr = IN6ADDR_ANY_INIT };
-+		struct sockaddr_in6 *sock_in6 =
-+			 (struct sockaddr_in6 *)&np->np_sockaddr;
-+
-+		if (!memcmp(sock_in6->sin6_addr.s6_addr,
-+				sin6.sin6_addr.s6_addr, 16))
-+			ret = true;
-+	} else {
-+		struct sockaddr_in * sock_in =
-+			(struct sockaddr_in *)&np->np_sockaddr;
-+
-+		if (sock_in->sin_addr.s_addr == INADDR_ANY)
-+			ret = true;
-+	}
-+
-+	return ret;
-+}
-+
- static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
- {
- 	char *payload = NULL;
-@@ -3214,12 +3238,17 @@ static int iscsit_build_sendtargets_resp
- 			spin_lock(&tpg->tpg_np_lock);
- 			list_for_each_entry(tpg_np, &tpg->tpg_gnp_list,
- 						tpg_np_list) {
-+				struct iscsi_np *np = tpg_np->tpg_np;
-+				bool inaddr_any = iscsit_check_inaddr_any(np);
-+
- 				len = sprintf(buf, "TargetAddress="
- 					"%s%s%s:%hu,%hu",
--					(tpg_np->tpg_np->np_sockaddr.ss_family == AF_INET6) ?
--					"[" : "", tpg_np->tpg_np->np_ip,
--					(tpg_np->tpg_np->np_sockaddr.ss_family == AF_INET6) ?
--					"]" : "", tpg_np->tpg_np->np_port,
-+					(np->np_sockaddr.ss_family == AF_INET6) ?
-+					"[" : "", (inaddr_any == false) ?
-+						np->np_ip : conn->local_ip,
-+					(np->np_sockaddr.ss_family == AF_INET6) ?
-+					"]" : "", (inaddr_any == false) ?
-+						np->np_port : conn->local_port,
- 					tpg->tpgt);
- 				len += 1;
- 
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -508,6 +508,7 @@ struct iscsi_conn {
- 	u16			cid;
- 	/* Remote TCP Port */
- 	u16			login_port;
-+	u16			local_port;
- 	int			net_size;
- 	u32			auth_id;
- #define CONNFLAG_SCTP_STRUCT_FILE			0x01
-@@ -527,6 +528,7 @@ struct iscsi_conn {
- 	unsigned char		bad_hdr[ISCSI_HDR_LEN];
- #define IPV6_ADDRESS_SPACE				48
- 	unsigned char		login_ip[IPV6_ADDRESS_SPACE];
-+	unsigned char		local_ip[IPV6_ADDRESS_SPACE];
- 	int			conn_usage_count;
- 	int			conn_waiting_on_uc;
- 	atomic_t		check_immediate_queue;
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -616,8 +616,8 @@ static int iscsi_post_login_handler(
- 		}
- 
- 		pr_debug("iSCSI Login successful on CID: %hu from %s to"
--			" %s:%hu,%hu\n", conn->cid, conn->login_ip, np->np_ip,
--				np->np_port, tpg->tpgt);
-+			" %s:%hu,%hu\n", conn->cid, conn->login_ip,
-+			conn->local_ip, conn->local_port, tpg->tpgt);
- 
- 		list_add_tail(&conn->conn_list, &sess->sess_conn_list);
- 		atomic_inc(&sess->nconn);
-@@ -659,7 +659,8 @@ static int iscsi_post_login_handler(
- 	sess->session_state = TARG_SESS_STATE_LOGGED_IN;
- 
- 	pr_debug("iSCSI Login successful on CID: %hu from %s to %s:%hu,%hu\n",
--		conn->cid, conn->login_ip, np->np_ip, np->np_port, tpg->tpgt);
-+		conn->cid, conn->login_ip, conn->local_ip, conn->local_port,
-+		tpg->tpgt);
- 
- 	spin_lock_bh(&sess->conn_lock);
- 	list_add_tail(&conn->conn_list, &sess->sess_conn_list);
-@@ -1019,6 +1020,18 @@ static int __iscsi_target_login_thread(s
- 		snprintf(conn->login_ip, sizeof(conn->login_ip), "%pI6c",
- 				&sock_in6.sin6_addr.in6_u);
- 		conn->login_port = ntohs(sock_in6.sin6_port);
-+
-+		if (conn->sock->ops->getname(conn->sock,
-+				(struct sockaddr *)&sock_in6, &err, 0) < 0) {
-+			pr_err("sock_ops->getname() failed.\n");
-+			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-+					ISCSI_LOGIN_STATUS_TARGET_ERROR);
-+			goto new_sess_out;
-+		}
-+		snprintf(conn->local_ip, sizeof(conn->local_ip), "%pI6c",
-+				&sock_in6.sin6_addr.in6_u);
-+		conn->local_port = ntohs(sock_in6.sin6_port);
-+
- 	} else {
- 		memset(&sock_in, 0, sizeof(struct sockaddr_in));
- 
-@@ -1031,6 +1044,16 @@ static int __iscsi_target_login_thread(s
- 		}
- 		sprintf(conn->login_ip, "%pI4", &sock_in.sin_addr.s_addr);
- 		conn->login_port = ntohs(sock_in.sin_port);
-+
-+		if (conn->sock->ops->getname(conn->sock,
-+				(struct sockaddr *)&sock_in, &err, 0) < 0) {
-+			pr_err("sock_ops->getname() failed.\n");
-+			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
-+					ISCSI_LOGIN_STATUS_TARGET_ERROR);
-+			goto new_sess_out;
-+		}
-+		sprintf(conn->local_ip, "%pI4", &sock_in.sin_addr.s_addr);
-+		conn->local_port = ntohs(sock_in.sin_port);
- 	}
- 
- 	conn->network_transport = np->np_network_transport;
-@@ -1038,7 +1061,7 @@ static int __iscsi_target_login_thread(s
- 	pr_debug("Received iSCSI login request from %s on %s Network"
- 			" Portal %s:%hu\n", conn->login_ip,
- 		(conn->network_transport == ISCSI_TCP) ? "TCP" : "SCTP",
--			np->np_ip, np->np_port);
-+			conn->local_ip, conn->local_port);
- 
- 	pr_debug("Moving to TARG_CONN_STATE_IN_LOGIN.\n");
- 	conn->conn_state	= TARG_CONN_STATE_IN_LOGIN;
+Indan
 
 
