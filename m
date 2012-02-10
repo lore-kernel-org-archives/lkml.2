@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab2BJWti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:49:38 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab2BJWpS (ORCPT
+	id S933099Ab2BJWt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:49:56 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65316 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999Ab2BJWpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:18 -0500
+	Fri, 10 Feb 2012 17:45:15 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223444.395055875@clark.kroah.org>
+Message-Id: <20120210223444.306795921@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:51 -0800
+Date: Fri, 10 Feb 2012 14:33:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [patch 47/55] staging: r8712u: Add new Sitecom UsB ID
+        alan@lxorguk.ukuu.org.uk, Jakub Schmidtke <sjakub@gmail.com>,
+        Pekka Paalanen <pq@iki.fi>
+Subject: [patch 46/55] Staging: asus_oled: fix NULL-ptr crash on unloading
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Pekka Paalanen <pq@iki.fi>
 
-commit 1793bf1deddc8ce25dc41925d5dbe64536c841b6 upstream.
+commit 3589e74595a4332ebf77b5ed006f3c6686071ecd upstream.
 
-Add USB ID for SITECOM WLA-1000 V1 001 WLAN
+Asus_oled triggers the following bug on module unloading:
 
-Reported-and-tested-by: Roland Gruber <post@rolandgruber.de>
-Reported-and-tested-by: Dario Lucia <dario.lucia@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+ usbcore: deregistering interface driver asus-oled
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+ IP: [<ffffffff8111292b>] sysfs_delete_link+0x30/0x66
+
+ Call Trace:
+  [<ffffffff81225373>] device_remove_class_symlinks+0x6b/0x70
+  [<ffffffff812256a8>] device_del+0x9f/0x1ab
+  [<ffffffff812257c5>] device_unregister+0x11/0x1e
+  [<ffffffffa000cb82>] asus_oled_disconnect+0x4f/0x9e [asus_oled]
+  [<ffffffff81277430>] usb_unbind_interface+0x54/0x103
+  [<ffffffff812276c4>] __device_release_driver+0xa2/0xeb
+  [<ffffffff81227794>] driver_detach+0x87/0xad
+  [<ffffffff812269e9>] bus_remove_driver+0x91/0xc1
+  [<ffffffff81227fb4>] driver_unregister+0x66/0x6e
+  [<ffffffff812771ed>] usb_deregister+0xbb/0xc4
+  [<ffffffffa000ce87>] asus_oled_exit+0x2f/0x31 [asus_oled]
+  [<ffffffff81068365>] sys_delete_module+0x1b8/0x21b
+  [<ffffffff810ae3de>] ? do_munmap+0x2ef/0x313
+  [<ffffffff813699bb>] system_call_fastpath+0x16/0x1b
+
+This is due to an incorrect destruction sequence in asus_oled_exit().
+
+Fix the order, fixes the bug. Tested on an Asus G50V laptop only.
+
+Cc: Jakub Schmidtke <sjakub@gmail.com>
+Signed-off-by: Pekka Paalanen <pq@iki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/usb_intf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/asus_oled/asus_oled.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -86,6 +86,7 @@ static struct usb_device_id rtl871x_usb_
- 	{USB_DEVICE(0x0DF6, 0x0045)},
- 	{USB_DEVICE(0x0DF6, 0x0059)}, /* 11n mode disable */
- 	{USB_DEVICE(0x0DF6, 0x004B)},
-+	{USB_DEVICE(0x0DF6, 0x005B)},
- 	{USB_DEVICE(0x0DF6, 0x005D)},
- 	{USB_DEVICE(0x0DF6, 0x0063)},
- 	/* Sweex */
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -811,10 +811,9 @@ error:
+ 
+ static void __exit asus_oled_exit(void)
+ {
++	usb_deregister(&oled_driver);
+ 	class_remove_file(oled_class, &class_attr_version.attr);
+ 	class_destroy(oled_class);
+-
+-	usb_deregister(&oled_driver);
+ }
+ 
+ module_init(asus_oled_init);
 
 
