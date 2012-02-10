@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760965Ab2BJXOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:14:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
+	id S1760642Ab2BJWmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:42:08 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760646Ab2BJWmL (ORCPT
+	with ESMTP id S1754107Ab2BJWmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:11 -0500
+	Fri, 10 Feb 2012 17:42:04 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222949.389848736@clark.kroah.org>
+Message-Id: <20120210222948.920837690@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:08 -0800
+Date: Fri, 10 Feb 2012 14:30:03 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [patch 49/86] cifs: Fix oops in session setup code for null user mounts
+        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: [patch 44/86] drm/i915: handle 3rd pipe
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit de47a4176c532ef5961b8a46a2d541a3517412d3 upstream.
+commit 07c1e8c1462fa7324de4c36ae9e55da2abd79cee upstream.
 
-For null user mounts, do not invoke string length function
-during session setup.
+We don't need to check 3rd pipe specifically, as it shares PLL with some
+other one.
 
-Reported-and-Tested-by: Chris Clayton <chris2553@googlemail.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41977
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/sess.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_suspend.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -246,16 +246,15 @@ static void ascii_ssetup_strings(char **
- 	/* copy user */
- 	/* BB what about null user mounts - check that we do this BB */
- 	/* copy user */
--	if (ses->user_name != NULL)
-+	if (ses->user_name != NULL) {
- 		strncpy(bcc_ptr, ses->user_name, MAX_USERNAME_SIZE);
-+		bcc_ptr += strnlen(ses->user_name, MAX_USERNAME_SIZE);
-+	}
- 	/* else null user mount */
--
--	bcc_ptr += strnlen(ses->user_name, MAX_USERNAME_SIZE);
- 	*bcc_ptr = 0;
- 	bcc_ptr++; /* account for null termination */
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -34,6 +34,10 @@ static bool i915_pipe_enabled(struct drm
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32	dpll_reg;
  
- 	/* copy domain */
--
- 	if (ses->domainName != NULL) {
- 		strncpy(bcc_ptr, ses->domainName, 256);
- 		bcc_ptr += strnlen(ses->domainName, 256);
++	/* On IVB, 3rd pipe shares PLL with another one */
++	if (pipe > 1)
++		return false;
++
+ 	if (HAS_PCH_SPLIT(dev))
+ 		dpll_reg = (pipe == PIPE_A) ? _PCH_DPLL_A : _PCH_DPLL_B;
+ 	else
 
 
