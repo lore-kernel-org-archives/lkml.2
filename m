@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760379Ab2BJW44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:56:56 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933058Ab2BJWpI (ORCPT
+	id S1760750Ab2BJW4z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:56:55 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab2BJWpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 17:45:08 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223443.959612337@clark.kroah.org>
+Message-Id: <20120210223443.879744329@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:46 -0800
+Date: Fri, 10 Feb 2012 14:33:45 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marco Sanvido <marco@purestorage.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [patch 42/55] target: Use correct preempted registration sense code
+        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [patch 41/55] mm: fix UP THP spin_is_locked BUGs
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marco Sanvido <marco@purestorage.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 9e08e34e3735ae057eb3834da3570995811b7eb9 upstream.
+commit b9980cdcf2524c5fe15d8cbae9c97b3ed6385563 upstream.
 
-The comments quote the right parts of the spec:
+Fix CONFIG_TRANSPARENT_HUGEPAGE=y CONFIG_SMP=n CONFIG_DEBUG_VM=y
+CONFIG_DEBUG_SPINLOCK=n kernel: spin_is_locked() is then always false,
+and so triggers some BUGs in Transparent HugePage codepaths.
 
-   * d) Establish a unit attention condition for the
-   *    initiator port associated with every I_T nexus
-   *    that lost its registration other than the I_T
-   *    nexus on which the PERSISTENT RESERVE OUT command
-   *    was received, with the additional sense code set
-   *    to REGISTRATIONS PREEMPTED.
+asm-generic/bug.h mentions this problem, and provides a WARN_ON_SMP(x);
+but being too lazy to add VM_BUG_ON_SMP, BUG_ON_SMP, WARN_ON_SMP_ONCE,
+VM_WARN_ON_SMP_ONCE, just test NR_CPUS != 1 in the existing VM_BUG_ONs.
 
-and
-
-   * e) Establish a unit attention condition for the initiator
-   *    port associated with every I_T nexus that lost its
-   *    persistent reservation and/or registration, with the
-   *    additional sense code set to REGISTRATIONS PREEMPTED;
-
-but the actual code accidentally uses ASCQ_2AH_RESERVATIONS_PREEMPTED
-instead of ASCQ_2AH_REGISTRATIONS_PREEMPTED.  Fix this.
-
-Signed-off-by: Marco Sanvido <marco@purestorage.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_pr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ mm/swap.c        |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_pr.c
-+++ b/drivers/target/target_core_pr.c
-@@ -3079,7 +3079,7 @@ static int core_scsi3_pro_preempt(
- 			if (!(calling_it_nexus))
- 				core_scsi3_ua_allocate(pr_reg_nacl,
- 					pr_res_mapped_lun, 0x2A,
--					ASCQ_2AH_RESERVATIONS_PREEMPTED);
-+					ASCQ_2AH_REGISTRATIONS_PREEMPTED);
- 		}
- 		spin_unlock(&pr_tmpl->registration_lock);
- 		/*
-@@ -3191,7 +3191,7 @@ static int core_scsi3_pro_preempt(
- 		 *    additional sense code set to REGISTRATIONS PREEMPTED;
- 		 */
- 		core_scsi3_ua_allocate(pr_reg_nacl, pr_res_mapped_lun, 0x2A,
--				ASCQ_2AH_RESERVATIONS_PREEMPTED);
-+				ASCQ_2AH_REGISTRATIONS_PREEMPTED);
- 	}
- 	spin_unlock(&pr_tmpl->registration_lock);
- 	/*
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2020,7 +2020,7 @@ static void collect_mm_slot(struct mm_sl
+ {
+ 	struct mm_struct *mm = mm_slot->mm;
+ 
+-	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
++	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
+ 
+ 	if (khugepaged_test_exit(mm)) {
+ 		/* free mm_slot */
+@@ -2048,7 +2048,7 @@ static unsigned int khugepaged_scan_mm_s
+ 	int progress = 0;
+ 
+ 	VM_BUG_ON(!pages);
+-	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
++	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
+ 
+ 	if (khugepaged_scan.mm_slot)
+ 		mm_slot = khugepaged_scan.mm_slot;
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -667,7 +667,7 @@ void lru_add_page_tail(struct zone* zone
+ 	VM_BUG_ON(!PageHead(page));
+ 	VM_BUG_ON(PageCompound(page_tail));
+ 	VM_BUG_ON(PageLRU(page_tail));
+-	VM_BUG_ON(!spin_is_locked(&zone->lru_lock));
++	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&zone->lru_lock));
+ 
+ 	SetPageLRU(page_tail);
+ 
 
 
