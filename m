@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759347Ab2BJNuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:50:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53772 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab2BJNuD (ORCPT
+	id S1759353Ab2BJNxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:53:52 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56418 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757510Ab2BJNxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:50:03 -0500
+	Fri, 10 Feb 2012 08:53:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzePmV8st-PaQeO_eS05CUWQePDoQsXdd=HaiLffz+wxw@mail.gmail.com>
-References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
-	<1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com>
-	<CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com>
-	<7095.1328809567@redhat.com>
-	<CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com>
-	<8689.1328810841@redhat.com>
-	<CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
-	<21276.1328813456@redhat.com>
-	<CA+55aFzePmV8st-PaQeO_eS05CUWQePDoQsXdd=HaiLffz+wxw@mail.gmail.com>
-Date: Fri, 10 Feb 2012 15:50:02 +0200
-Message-ID: <CACVxJT9Z5On2hzZ68qVuj1XM79UzM_ECN81e34p0Y0+V9CLU_w@mail.gmail.com>
-Subject: Re: [PATCH] Reduce the number of expensive division instructions done
- by _parse_integer()
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120210135253.12442.95497.stgit@bob.linux.org.uk>
+References: <20120210134929.12442.59041.stgit@bob.linux.org.uk>
+	<20120210135253.12442.95497.stgit@bob.linux.org.uk>
+Date: Fri, 10 Feb 2012 21:53:50 +0800
+Message-ID: <CAJd=RBAYtrQZBB3LHX=9xFru=r1XAuZrm1kL1siMKvBmCuuO9A@mail.gmail.com>
+Subject: Re: [PATCH 3/6] sep: Add interfaces for the new functions
+From: Hillf Danton <dhillf@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org, mark.a.allyn@intel.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1ADrvOi018039
 
-On Thu, Feb 9, 2012 at 10:14 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Hello Alan
 
-Ugh, I'm late to the party.
+On Fri, Feb 10, 2012 at 9:52 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> From: Mark A. Allyn <mark.a.allyn@intel.com>
+>
+> [This is picked out of the differences between the upstream driver and
+>  the staging driver. I'm resolving the differences as a series of updates -AC]
+>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+>
+>  drivers/staging/sep/sep_main.c |   60 +++++++++++++++++++++++++++++++++-------
+>  1 files changed, 49 insertions(+), 11 deletions(-)
+>
+>
+> diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
+> index 7d7cb48..1fcabca 100644
+> --- a/drivers/staging/sep/sep_main.c
+> +++ b/drivers/staging/sep/sep_main.c
+> @@ -3067,9 +3067,13 @@ static long sep_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>
+>        switch (cmd) {
+>        case SEP_IOCSENDSEPCOMMAND:
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCSENDSEPCOMMAND start\n",
+> +                       current->pid);
+>                if (1 == test_bit(SEP_LEGACY_SENDMSG_DONE_OFFSET,
+>                                  &call_status->status)) {
+> -                       dev_dbg(&sep->pdev->dev, "[PID%d] send msg already done\n",
+> +                       dev_warn(&sep->pdev->dev,
+> +                               "[PID%d] send msg already done\n",
+>                                current->pid);
+>                        error = -EPROTO;
+>                        goto end_function;
+> @@ -3079,37 +3083,71 @@ static long sep_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>                if (!error)
+>                        set_bit(SEP_LEGACY_SENDMSG_DONE_OFFSET,
+>                                &call_status->status);
+> -               dev_dbg(&sep->pdev->dev, "[PID%d] SEP_IOCSENDSEPCOMMAND end\n",
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCSENDSEPCOMMAND end\n",
+>                        current->pid);
+>                break;
+>        case SEP_IOCENDTRANSACTION:
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCENDTRANSACTION start\n",
+> +                       current->pid);
+>                error = sep_end_transaction_handler(sep, dma_ctx, call_status,
+> -                       my_queue_elem);
+> -               dev_dbg(&sep->pdev->dev, "[PID%d] SEP_IOCENDTRANSACTION end\n",
+> +                                                   my_queue_elem);
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCENDTRANSACTION end\n",
+>                        current->pid);
+>                break;
+>        case SEP_IOCPREPAREDCB:
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCPREPAREDCB start\n",
+> +                       current->pid);
+> +       case SEP_IOCPREPAREDCB_SECURE_DMA:
+> +               dev_dbg(&sep->pdev->dev,
+> +                       "[PID%d] SEP_IOCPREPAREDCB_SECURE_DMA start\n",
+> +                       current->pid);
+>                if (1 == test_bit(SEP_LEGACY_SENDMSG_DONE_OFFSET,
+>                                  &call_status->status)) {
+> -                       dev_dbg(&sep->pdev->dev,
+> -                               "[PID%d] dcb preparation needed before send msg\n",
+> +                       dev_warn(&sep->pdev->dev,
+> +                               "[PID%d] dcb prep needed before send msg\n",
+>                                current->pid);
+>                        error = -EPROTO;
+>                        goto end_function;
+>                }
+>
+>                if (!arg) {
+> -                       dev_dbg(&sep->pdev->dev,
+> -                               "[PID%d] dcb prep null arg\n", current->pid);
+> -                       error = -EINVAL;
+> +                       dev_warn(&sep->pdev->dev,
+> +                               "[PID%d] dcb null arg\n", current->pid);
+> +                       error = EINVAL;
 
-> Because quite frankly, I think we only support bases 8/10/16 in the
-> kernel, and if you really have some case where this all is expensive,
-> it might be better to simply have three different functions for the
-> three bases. That would turn the multiplies into constants too, and
-> also simplify the character tests.
-
-base 2 is used to sort of autolimit input to 0/1 characters.
-
-> That said, I can't really see how this could ever be all that hot a
-> function. Did you ever see it in a profile, or was this all just from
-> looking at the code?
-
-That's why there was no such check from the beginning -- not
-performance critical.
-We could maintain small table from which digit overflow can happen,
-but since this is already committed...
-
-There is CONFIG_TEST_KSTRTOX, does it still passes?
+Typo if error = -EPROTO allowed?
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
