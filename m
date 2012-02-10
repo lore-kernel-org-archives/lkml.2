@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2BJOoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:44:09 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55014 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab2BJOoE (ORCPT
+	id S1759391Ab2BJOpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:45:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62615 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085Ab2BJOpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:44:04 -0500
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH 4/5] ptrace: renumber PTRACE_EVENT_STOP so that future new options and events can match
-Date: Fri, 10 Feb 2012 15:43:10 +0100
-Message-Id: <1328884991-23889-5-git-send-email-vda.linux@googlemail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1328884991-23889-4-git-send-email-vda.linux@googlemail.com>
-References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com>
- <1328884991-23889-2-git-send-email-vda.linux@googlemail.com>
- <1328884991-23889-3-git-send-email-vda.linux@googlemail.com>
- <1328884991-23889-4-git-send-email-vda.linux@googlemail.com>
+	Fri, 10 Feb 2012 09:45:22 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=eSfxnIkts4oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=BhM_4Fa3dstg1yn3x2cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1328885120.8273.7.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCHv8 0/8] ftrace, perf: Adding support to use function trace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Fri, 10 Feb 2012 09:45:20 -0500
+In-Reply-To: <1328880444.8273.3.camel@gandalf.stny.rr.com>
+References: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+	 <1328643899-8361-1-git-send-email-jolsa@redhat.com>
+	 <1328880444.8273.3.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PTRACE_EVENT_foo and PTRACE_O_TRACEfoo used to match.
+On Fri, 2012-02-10 at 08:27 -0500, Steven Rostedt wrote:
+> On Tue, 2012-02-07 at 20:44 +0100, Jiri Olsa wrote:
+> > hi,
+> > here's another version of perf support for function trace
+> > with filter. 
+> 
+> OK, I've applied all of these and I'm now going to run them through my
+> test suite before sending them to Ingo. I'll let you know if anything
+> goes wrong.
 
-New PTRACE_EVENT_STOP is the first event which has no corresponding
-PTRACE_O_TRACE option. If we will ever want to add another such option,
-its PTRACE_EVENT's value will collide with PTRACE_EVENT_STOP's value.
+OK, I build booted and installed a kernel with your patches. I also
+installed the latest perf code from linus/master. Then I ran the
+following:
 
-This patch changes PTRACE_EVENT_STOP value to prevent this.
+# perf record -e ftrace:function ls
 
-While at it, added a comment - the one atop PTRACE_EVENT block,
-saying "Wait extended result codes for the above trace options",
-is not true for PTRACE_EVENT_STOP.
+and then ran
 
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
----
- include/linux/ptrace.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+# perf report
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 06be6a3..ec6571c 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -61,7 +61,8 @@
- #define PTRACE_EVENT_EXEC	4
- #define PTRACE_EVENT_VFORK_DONE	5
- #define PTRACE_EVENT_EXIT	6
--#define PTRACE_EVENT_STOP	7
-+/* Extended result codes which enabled by means other than options.  */
-+#define PTRACE_EVENT_STOP	128
- 
- /* options set using PTRACE_SETOPTIONS */
- #define PTRACE_O_TRACESYSGOOD	1
--- 
-1.7.7.6
+It went into an infinite loop of "Processing time ordered events".
+
+Is this expected?
+
+Although perf script works fine.
+
+-- Steve
+
 
