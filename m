@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759539Ab2BJQSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:18:18 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:36111 "EHLO imr4.ericy.com"
+	id S1759292Ab2BJQT7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:19:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab2BJQSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:18:15 -0500
-Date: Fri, 10 Feb 2012 08:15:38 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v5 4/5] hwmon: add MAX197 support
-Message-ID: <20120210161538.GB1060@ericsson.com>
-References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1328132138.2261.116.camel@groeck-laptop>
- <20120206151507.73a23eb8@v0nbox>
- <1328561164.2261.258.camel@groeck-laptop>
- <20120210110755.4914b332@v0nbox>
+	id S1758164Ab2BJQT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:19:59 -0500
+Message-ID: <4F3543AA.5040003@redhat.com>
+Date: Fri, 10 Feb 2012 17:19:54 +0100
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120210110755.4914b332@v0nbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@parisplace.org>
+Subject: Re: I finally prepared a testcase for read(inotify_fd) getting EINTR
+ on PTRACE_ATTACH
+References: <4F352565.6030402@redhat.com> <20120210144846.GA10798@redhat.com> <20120210150923.GA12322@redhat.com>
+In-Reply-To: <20120210150923.GA12322@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivien,
+On 02/10/2012 04:09 PM, Oleg Nesterov wrote:
+> On 02/10, Oleg Nesterov wrote:
+>> At first glance this looks obvious? I never used inotify and I never
+>> looked into fs/notify/inotify/, but it seems that inotify_read() simply
+>> returns -EINTR if signal_pending() and doesn't implement restarts.
+>>
+>> Probably this trivial change
+>>
+>> 	--- x/fs/notify/inotify/inotify_user.c
+>> 	+++ x/fs/notify/inotify/inotify_user.c
+>> 	@@ -264,7 +264,7 @@ static ssize_t inotify_read(struct file
+>> 			ret = -EAGAIN;
+>> 			if (file->f_flags&  O_NONBLOCK)
+>> 				break;
+>> 	-		ret = -EINTR;
+>> 	+		ret = -ERESTARTSYS;
+>> 			if (signal_pending(current))
+>> 				break;
+>>
+>>
+>> makes sense.
+>
+> except I meant -ERESTARTNOHAND to avoid the behavioural change.
 
-On Fri, Feb 10, 2012 at 11:07:55AM -0500, Vivien Didelot wrote:
-> Hi,
-> 
-> On Mon, 6 Feb 2012 12:46:04 -0800,
-> Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> 
-> > On Mon, 2012-02-06 at 15:15 -0500, Vivien Didelot wrote:
-> > [ ... ]
-> > > 
-> > > BTW, about the TS-5500 ADC part, is a platform ts5500_adc.c file the
-> > > better solution, or should the device be declared in the ts5500.c
-> > > platform code?
-> > > 
-> > I would suggest to declare it in the ts5500.c platform code. That
-> > seems to be the common approach as far as I can see.
-> > 
-> > platform_add_devices() works pretty well for this. It saves you from
-> > having to call platform_device_register() for each device separately.
-> > Obviously that only works if all devices are declared in a single
-> > file.
-> 
-> As the LED is registered using the leds_class, I think
-> platform_add_devices() couldn't be used here.
-> 
-> Lots of platform codes don't check the returned
-> value of platform_add_devices(). Should we care about a LED or ADC
-> registration failure (is the following snippet OK?)?
-> 
->     static int __init ts5500_init(void)
->     {
->     [...]
->         pdev = platform_device_register_simple("ts5500", -1, NULL, 0); 
->         if (IS_ERR(pdev)) {
->                 ret = PTR_ERR(pdev);
->                 goto release_mem;
->         }
->         platform_set_drvdata(pdev, ts5500);
->     
->         ret = sysfs_create_group(&pdev->dev.kobj,
->                                  &ts5500_attr_group);
->         if (ret)
->                 goto release_pdev;
->     
->         led_classdev_register(&pdev->dev, &ts5500_led_cdev);
->         if (ts5500->adc) {
->                 ts5500_adc_pdev.dev.parent = &pdev->dev;
->                 platform_device_register(&ts5500_adc_pdev);
->         }
->     
-I didn't look at other code, but personally I try to be consistent.
-Why do you check the return value from platform_device_register_simple() above,
-but not the return code from platform_device_register() ?
-That does not seem to be very consistent to me.
+I run-tested the fix. It works: testcase no longer fails
+(modulo incorrect logic in the testcase which wase not working
+properly on "no bug detected" code path. Fixed one:
+http://sources.redhat.com/cgi-bin/cvsweb.cgi/~checkout~/tests/ptrace-tests/tests/eintr-on-attach.c?cvsroot=systemtap
+)
 
-Thanks,
-Guenter
+I'm not sure inotify really wants to deviate from other reads
+and return -EINTR even for SA_RESTARTing signals. IOW:
+I think -ERESTARTSYS here would be more correct than -ERESTARTNOHAND.
 
->         return 0;
->     
->         release_pdev:
->                 platform_device_unregister(pdev);
->         release_mem:
->                 kfree(ts5500);
->     
->                 return ret;
->     }
->     device_initcall(ts5500_init);
-> 
-> 
-> Thanks,
-> 
-> 
-> -- 
-> Vivien Didelot
-> Savoir-faire Linux Inc.
-> Tel: (514) 276-5468 #149
+If -ERESTARTNOHAND is really what inotify people want, they need to
+add a comment about it.
+
+-- 
+vda
