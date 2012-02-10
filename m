@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760955Ab2BJXNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:13:32 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932615Ab2BJWmc (ORCPT
+	id S932637Ab2BJXNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:13:51 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab2BJWm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:32 -0500
+	Fri, 10 Feb 2012 17:42:28 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222949.998748819@clark.kroah.org>
+Message-Id: <20120210222949.837569902@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:15 -0800
+Date: Fri, 10 Feb 2012 14:30:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 56/86] ASoC: wm_hubs: Fix routing of input PGAs to line output
- mixer
+        alan@lxorguk.ukuu.org.uk, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [patch 54/86] iscsi-target: Fix double list_add with iscsit_alloc_buffs reject
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit ee76744c51ec342df9822b4a85dbbfc3887b6d60 upstream.
+commit cd931ee62fd0258fc85c76a7c5499fe85e0f3436 upstream.
 
-IN1L/R is routed to both line output mixers, we don't route IN1 to LINEOUT1
-and IN2 to LINEOUT2.
+This patch fixes a bug where the iscsit_add_reject_from_cmd() call
+from a failure to iscsit_alloc_buffs() was incorrectly passing
+add_to_conn=1 and causing a double list_add after iscsi_cmd->i_list
+had already been added in iscsit_handle_scsi_cmd().
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_hubs.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -587,8 +587,8 @@ SOC_DAPM_SINGLE("Left Output Switch", WM
- };
- 
- static const struct snd_kcontrol_new line2_mix[] = {
--SOC_DAPM_SINGLE("IN2R Switch", WM8993_LINE_MIXER2, 2, 1, 0),
--SOC_DAPM_SINGLE("IN2L Switch", WM8993_LINE_MIXER2, 1, 1, 0),
-+SOC_DAPM_SINGLE("IN1R Switch", WM8993_LINE_MIXER2, 2, 1, 0),
-+SOC_DAPM_SINGLE("IN1L Switch", WM8993_LINE_MIXER2, 1, 1, 0),
- SOC_DAPM_SINGLE("Output Switch", WM8993_LINE_MIXER2, 0, 1, 0),
- };
- 
-@@ -846,8 +846,8 @@ static const struct snd_soc_dapm_route l
- };
- 
- static const struct snd_soc_dapm_route lineout2_diff_routes[] = {
--	{ "LINEOUT2 Mixer", "IN2L Switch", "IN2L PGA" },
--	{ "LINEOUT2 Mixer", "IN2R Switch", "IN2R PGA" },
-+	{ "LINEOUT2 Mixer", "IN1L Switch", "IN1L PGA" },
-+	{ "LINEOUT2 Mixer", "IN1R Switch", "IN1R PGA" },
- 	{ "LINEOUT2 Mixer", "Output Switch", "Right Output PGA" },
- 
- 	{ "LINEOUT2N Driver", NULL, "LINEOUT2 Mixer" },
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1062,7 +1062,7 @@ attach_cmd:
+ 	if (ret < 0)
+ 		return iscsit_add_reject_from_cmd(
+ 				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
+-				1, 1, buf, cmd);
++				1, 0, buf, cmd);
+ 	/*
+ 	 * Check the CmdSN against ExpCmdSN/MaxCmdSN here if
+ 	 * the Immediate Bit is not set, and no Immediate
 
 
