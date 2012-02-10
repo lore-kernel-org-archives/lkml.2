@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760849Ab2BJXC4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:02:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50642 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932906Ab2BJWoQ (ORCPT
+	id S932902Ab2BJWoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:44:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932817Ab2BJWoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:16 -0500
-From: Martin Rogge <marogge@onlinehome.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: linux thread scheduling
-Date: Fri, 10 Feb 2012 23:44:12 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.4-ck1; KDE/4.5.5; x86_64; ; )
+	Fri, 10 Feb 2012 17:44:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202102344.12509.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:mD+Mhk9QDPpD8SFo1AjbYSNpxcqS/p6yHUsnRumIvTV
- eX+A5M5nl9psugu36R+mNlv8fHUP0jd/9BD0MwbZKWJtroqoK5
- 98GW0X9VNA8z5ATsUlyK+YYgk7AdXFlPUKUe6pGSS7uxkLhPS/
- Hft4laLJPgK1ncDONFK5F0PXejQuzPloXGUylNu2GBj5fDgqz9
- LWtBWDKvZPpcw1oBNoPsYuxqX5mbhy0NqPAyPwZjkgTuuSj7Ex
- YeP/W5d/API3NSJHO7NBrU4sM8gPudpBeRlmA5xjzrgTkcbUPd
- LddxIts2MYgTsYuGBt4vlmFSw1ckFUAr3f9HLiZFMz6h+FCqw0
- fOCJ88H/ZGH5LaF9Kd+9tgq2LVnTE1FptOzcaFFZQ
+Message-Id: <20120210223441.569197739@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Fri, 10 Feb 2012 14:33:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Stefan Thomas <kontrapunktstefan@googlemail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [patch 14/55] firewire: ohci: disable MSI on Ricoh controllers
+In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xin Tong wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> I have a program that spawns 3 threads and there is a great deal of
-> sharing among the three threads. they all read/update a couple of
-> shared variables.
-> 
-> I run this on nehalem (8 cores, 4 core in each physical package),  I
-> find that running the 3 threads on core 0, 1, 2 (using
-> pthread_setaffinitiy) gives much better results, this is because the
-> cache coherency protocol performs much better on the same package.
-> However, if  I leave Linux (Suse Enterprise) to schedule it. it gives
-> much worse performance, i suspect that linux is scheduling the 3
-> threads across the physical packages ( 2 on one package, 1 on
-> another). Is this possible ? why does linux do this ?
+------------------
 
-the following paper on cpu schedulers was posted recently. Maybe it gives you 
-a starting point.
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-http://research.cs.wisc.edu/wind/Publications/meehean-thesis11.html
+commit 320cfa6ce0b3dc794fedfa4bae54c0f65077234d upstream.
+
+The PCIe device
+
+    FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd FireWire Host Controller
+    [1180:e832] (prog-if 10 [OHCI])
+
+is unable to access attached FireWire devices when MSI is enabled but
+works if MSI is disabled.
+http://www.mail-archive.com/alsa-user@lists.sourceforge.net/msg28251.html
+
+Hence add the "disable MSI" quirks flag for this device, or in fact for
+safety and simplicity for all current (R5U230, R5U231, R5U240) and
+future Ricoh PCIe 1394 controllers.
+
+Reported-by: Stefan Thomas <kontrapunktstefan@googlemail.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/firewire/ohci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -299,7 +299,7 @@ static const struct {
+ 		QUIRK_NO_MSI},
+ 
+ 	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
+-		QUIRK_CYCLE_TIMER},
++		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+ 
+ 	{PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_TSB12LV22, PCI_ANY_ID,
+ 		QUIRK_CYCLE_TIMER | QUIRK_RESET_PACKET | QUIRK_NO_1394A},
+
+
