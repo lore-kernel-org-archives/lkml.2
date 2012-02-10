@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab2BJMb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 07:31:56 -0500
-Received: from smtp-out-165.synserver.de ([212.40.185.165]:1042 "EHLO
-	smtp-out-158.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754727Ab2BJMbz (ORCPT
+	id S1758930Ab2BJMgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 07:36:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44237 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab2BJMgn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 07:31:55 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 27182
-Message-ID: <4F350E8C.6030907@metafoo.de>
-Date: Fri, 10 Feb 2012 13:33:16 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+	Fri, 10 Feb 2012 07:36:43 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regmap: Support for caching in reg_raw_write()
-References: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com> <4F350716.9050407@metafoo.de> <20120210121405.GD6472@opensource.wolfsonmicro.com>
-In-Reply-To: <20120210121405.GD6472@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F33D2F1.5000606@redhat.com>
+References: <201202041109.53003.toralf.foerster@gmx.de>
+	<201202051107.26634.toralf.foerster@gmx.de>
+	<CAJd=RBCvvVgWqfSkoEaWVG=2mwKhyXarDOthHt9uwOb2fuDE9g@mail.gmail.com>
+	<201202080956.18727.toralf.foerster@gmx.de>
+	<20120208115244.GA24959@sig21.net>
+	<CAJd=RBDbYA4xZRikGtHJvKESdiSE-B4OucZ6vQ+tHCi+hG2+aw@mail.gmail.com>
+	<20120209113606.GA8054@sig21.net>
+	<CAJd=RBDzUpUgZLVU+WSfb8grzMAbi3fcyyZkpX8qpaxu6zYe1g@mail.gmail.com>
+	<20120209132155.GA15147@sig21.net>
+	<20120209135407.GA15492@sig21.net>
+	<4F33D2F1.5000606@redhat.com>
+Date: Fri, 10 Feb 2012 20:36:42 +0800
+Message-ID: <CAJd=RBBqGpgn=9R5-T0YOOzsQcS1L7V=T2v8upTHp8ARczZJGQ@mail.gmail.com>
+Subject: Re: swap storm since kernel 3.2.x
+From: Hillf Danton <dhillf@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Stezenbach <js@sig21.net>,
+        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 01:14 PM, Mark Brown wrote:
-> On Fri, Feb 10, 2012 at 01:01:26PM +0100, Lars-Peter Clausen wrote:
-> 
->> In my opinion it makes more sense to introduce a regmap_bulk_write function
->> for this. regmap_raw_write was not really meant to write registers but
-> 
-> This isn't exclusive to that, I think Laxman planned to send a patch
-> doing that on top of this one which would be what most users would end
-> up using.
-> 
->> rather binary blobs, like firmware. Also this keeps things consistent with
->> the read part of the regmap API.
-> 
-> See the previous discussion on this in the past day or so - bulk_write()
-> is more complicated to implement by itself since it's going to end up
-> boling down to a raw_write() internally anyway (as does reg_write()) and
-> it seems nicer to just do the right thing if people ask for it.  
+On Thu, Feb 9, 2012 at 10:06 PM, Rik van Riel <riel@redhat.com> wrote:
+> On 02/09/2012 08:54 AM, Johannes Stezenbach wrote:
+>>
+>> On Thu, Feb 09, 2012 at 02:21:55PM +0100, Johannes Stezenbach wrote:
+>>>
+>>> it looks good.  Neither do I get the huge debug_objects_cache
+>>> nor does it swap, after running a crosstool-ng toolchain build.
+>>> Well, last time I also had one kvm -m 1G instance running.  I'll
+>>> try if that triggers the issue.  So far:
+>>
+>>
+>> The kvm produced a bunch of page allocation failures
+>> on the host:
+>
+>
+>> (repeats a few times)
+>>
+>> I guess that is expected with your patch?
+>
+>
+> That is indeed why my patch series was significantly larger
+> than Hillf's little test patch :)
 >
 
-regmap_write doesn't always go the raw_write path. Also with this approach
-we end up formatting the value into the raw format, only to parse it again
-in the next step.
+Yes, Johannes did show that kswapd running purely in single
+mode, without helps from compaction or lumpy, could not
+meet all requests in VM core.
 
-Furthermore I don't think it makes sense to cache raw values as the cache
-operates on a register level, not on a byte level.
+Thank you all
+Hillf
