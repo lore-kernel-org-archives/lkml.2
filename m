@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab2BJWnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:43:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932748Ab2BJWnP (ORCPT
+	id S932834Ab2BJWnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:43:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932697Ab2BJWnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:43:15 -0500
+	Fri, 10 Feb 2012 17:43:39 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222951.977928532@clark.kroah.org>
+Message-Id: <20120210222950.809284222@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:37 -0800
+Date: Fri, 10 Feb 2012 14:30:24 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Timo Juhani Lindfors <timo.lindfors@iki.fi>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [patch 78/86] usb: gadget: zero: fix bug in loopback autoresume handling
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [patch 65/86] mm: compaction: check for overlapping nodes during isolation for migration
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 683da59d7b8ae04891636d4b59893cd4e9b0b7e5 upstream.
+commit dc9086004b3d5db75997a645b3fe08d9138b7ad0 upstream.
 
-ab943a2e125b (USB: gadget: gadget zero uses new suspend/resume hooks)
-introduced a copy-paste error where f_loopback.c writes to a variable
-declared in f_sourcesink.c. This prevents one from creating gadgets
-that only have a loopback function.
+When isolating pages for migration, migration starts at the start of a
+zone while the free scanner starts at the end of the zone.  Migration
+avoids entering a new zone by never going beyond the free scanned.
 
-Signed-off-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Unfortunately, in very rare cases nodes can overlap.  When this happens,
+migration isolates pages without the LRU lock held, corrupting lists
+which will trigger errors in reclaim or during page free such as in the
+following oops
+
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+  IP: [<ffffffff810f795c>] free_pcppages_bulk+0xcc/0x450
+  PGD 1dda554067 PUD 1e1cb58067 PMD 0
+  Oops: 0000 [#1] SMP
+  CPU 37
+  Pid: 17088, comm: memcg_process_s Tainted: G            X
+  RIP: free_pcppages_bulk+0xcc/0x450
+  Process memcg_process_s (pid: 17088, threadinfo ffff881c2926e000, task ffff881c2926c0c0)
+  Call Trace:
+    free_hot_cold_page+0x17e/0x1f0
+    __pagevec_free+0x90/0xb0
+    release_pages+0x22a/0x260
+    pagevec_lru_move_fn+0xf3/0x110
+    putback_lru_page+0x66/0xe0
+    unmap_and_move+0x156/0x180
+    migrate_pages+0x9e/0x1b0
+    compact_zone+0x1f3/0x2f0
+    compact_zone_order+0xa2/0xe0
+    try_to_compact_pages+0xdf/0x110
+    __alloc_pages_direct_compact+0xee/0x1c0
+    __alloc_pages_slowpath+0x370/0x830
+    __alloc_pages_nodemask+0x1b1/0x1c0
+    alloc_pages_vma+0x9b/0x160
+    do_huge_pmd_anonymous_page+0x160/0x270
+    do_page_fault+0x207/0x4c0
+    page_fault+0x25/0x30
+
+The "X" in the taint flag means that external modules were loaded but but
+is unrelated to the bug triggering.  The real problem was because the PFN
+layout looks like this
+
+  Zone PFN ranges:
+    DMA      0x00000010 -> 0x00001000
+    DMA32    0x00001000 -> 0x00100000
+    Normal   0x00100000 -> 0x01e80000
+  Movable zone start PFN for each node
+  early_node_map[14] active PFN ranges
+      0: 0x00000010 -> 0x0000009b
+      0: 0x00000100 -> 0x0007a1ec
+      0: 0x0007a354 -> 0x0007a379
+      0: 0x0007f7ff -> 0x0007f800
+      0: 0x00100000 -> 0x00680000
+      1: 0x00680000 -> 0x00e80000
+      0: 0x00e80000 -> 0x01080000
+      1: 0x01080000 -> 0x01280000
+      0: 0x01280000 -> 0x01480000
+      1: 0x01480000 -> 0x01680000
+      0: 0x01680000 -> 0x01880000
+      1: 0x01880000 -> 0x01a80000
+      0: 0x01a80000 -> 0x01c80000
+      1: 0x01c80000 -> 0x01e80000
+
+The fix is straight-forward.  isolate_migratepages() has to make a
+similar check to isolate_freepage to ensure that it never isolates pages
+from a zone it does not hold the LRU lock for.
+
+This was discovered in a 3.0-based kernel but it affects 3.1.x, 3.2.x
+and current mainline.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_loopback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/compaction.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/f_loopback.c
-+++ b/drivers/usb/gadget/f_loopback.c
-@@ -418,7 +418,7 @@ int __init loopback_add(struct usb_compo
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -330,8 +330,17 @@ static isolate_migrate_t isolate_migrate
+ 			continue;
+ 		nr_scanned++;
  
- 	/* support autoresume for remote wakeup testing */
- 	if (autoresume)
--		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
-+		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+-		/* Get the page and skip if free */
++		/*
++		 * Get the page and ensure the page is within the same zone.
++		 * See the comment in isolate_freepages about overlapping
++		 * nodes. It is deliberate that the new zone lock is not taken
++		 * as memory compaction should not move pages between nodes.
++		 */
+ 		page = pfn_to_page(low_pfn);
++		if (page_zone(page) != zone)
++			continue;
++
++		/* Skip if free */
+ 		if (PageBuddy(page))
+ 			continue;
  
- 	/* support OTG systems */
- 	if (gadget_is_otg(cdev->gadget)) {
 
 
