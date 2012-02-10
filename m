@@ -1,510 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab2BJNF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:05:57 -0500
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:56875
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754719Ab2BJNFn (ORCPT
+	id S1759062Ab2BJNJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:09:08 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19934 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758694Ab2BJNJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:05:43 -0500
-X-SpamScore: 9
-X-BigFish: VPS9(zz2176Mc8kzz1202hzz8275bh11f642sz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH] HWMON: DA9052/53 hwmon driver v2
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: <guenter.roeck@ericsson.com>
-CC: <randy.dunlap@oracle.com>, <linaro-dev@lists.linaro.org>,
-        <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>,
-        <lm-sensors@lm-sensors.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Feb 2012 18:28:22 +0530
-Message-ID: <1328878702.30549.155.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	Fri, 10 Feb 2012 08:09:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 10 Feb 2012 05:09:06 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
+        lars@metafoo.de, linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V2] regmap: add regmap_bulk_write() for register write
+Date: Fri, 10 Feb 2012 18:37:18 +0530
+Message-Id: <1328879238-9290-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
-resolution and 10 channels.
+The bulk_write() supports the data transfer to multi
+register which takes the data into cpu_endianness format
+and does formatting of data to device format before
+sending to device.
+The transfer can be completed in single transfer or multiple
+transfer based on data formatting.
 
-This patch montiors the DA9052 PMIC's ADC channels mostly for battery
-parameters like battery temperature, junction temperature, battery
-current etc.
-
-This patch is functionally tested on Samsung SMDKV6410.
-
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-Changes since v1
-- Update documentation file for url
-- Modify the entry in Kconfig file
-- Correct reporting of junction temperature
-- Add conversion function for backup battery voltage
-- Change labels for temperatures in the device attributes to follow
-sensor index
----
- Documentation/hwmon/da9052   |   62 ++++++++
- drivers/hwmon/Kconfig        |   10 ++
- drivers/hwmon/Makefile       |    1 +
- drivers/hwmon/da9052-hwmon.c |  344 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 417 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/hwmon/da9052
- create mode 100644 drivers/hwmon/da9052-hwmon.c
-diff --git a/Documentation/hwmon/da9052 b/Documentation/hwmon/da9052
-new file mode 100644
-index 0000000..7caa066
---- /dev/null
-+++ b/Documentation/hwmon/da9052
-@@ -0,0 +1,62 @@
-+Supported chips:
-+  * Dialog Semiconductors DA9052-BC and DA9053-AA/Bx PMICs
-+    Prefix: 'da9052'
-+    Datasheet: Kindly visit www.dialog-semiconductor.com/product_table.php
-+	       and request for the official datasheet.
-+
-+Authors: David Dajun Chen <dchen@diasemi.com>
-+
-+Description
-+-----------
-+
-+The DA9052/53 provides an Analogue to Digital Converter (ADC) with 10 bits
-+resolution and track and hold circuitry combined with an analogue input
-+multiplexer. The analogue input multiplexer will allow conversion of up to 10
-+different inputs. The track and hold circuit ensures stable input voltages at
-+the input of the ADC during the conversion.
-+
-+The ADC is used to measure the following inputs:
-+Channel 0: VDDOUT - measurement of the system voltage
-+Channel 1: ICH - internal battery charger current measurement
-+Channel 2: TBAT - output from the battery NTC
-+Channel 3: VBAT - measurement of the battery voltage
-+Channel 4: ADC_IN4 - high impedance input (0 - 2.5V)
-+Channel 5: ADC_IN5 - high impedance input (0 - 2.5V)
-+Channel 6: ADC_IN6 - high impedance input (0 - 2.5V)
-+Channel 7: XY - TSI interface to measure the X and Y voltage of the touch
-+screen resistive potentiometers
-+Channel 8: Internal Tjunc. - sense (internal temp. sensor)
-+Channel 9: VBBAT - measurement of the backup battery voltage
-+
-+By using sysfs attributes we can measure the system voltage VDDOUT, the battery
-+charging current ICH, battery temperature TBAT, battery junction temperature
-+TJUNC, battery voltage VBAT and the back up battery voltage VBBAT.
-+
-+Voltage Monitoring
-+------------------
-+
-+Voltages are sampled by a 10 bit ADC.
-+
-+The battery voltage is calculated as:
-+	Milli volt = ((ADC value * 1000) / 512) + 2500
-+
-+The backup battery voltage is calculated as:
-+	Milli volt = (ADC value * 2500) / 512;
-+
-+The voltages on ADC channels 4, 5 and 6 are calculated as:
-+	Milli volt = (ADC value * 2500) / 1023
-+
-+Temperature Monitoring
-+----------------------
-+
-+Temperatures are sampled by a 10 bit ADC.  Junction and battery temperatures
-+are monitored by the ADC channels.
-+
-+The junction temperature is calculated:
-+	Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+The junction temperature attribute is supported by the driver.
-+
-+The battery temperature is calculated:
-+	Degree Celcius = 1 / (t1 + 1/298)- 273
-+where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
-+Default values of R25, B, ITBAT are 10e3, 3380 and 50e-6 respectively.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 24d584a..42b5f1a 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -313,6 +313,16 @@ config SENSORS_DS1621
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called ds1621.
+Changes from V1:
+- Change commit message.
+- Byte swapping in input data packet.
+ drivers/base/regmap/regmap.c |   53 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |    2 +
+ 2 files changed, 55 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index b4f4455..875e381 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -482,6 +482,59 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
  
-+config SENSORS_DA9052_ADC
-+	tristate "Dialog DA9052/DA9053 ADC"
-+	depends on PMIC_DA9052
-+	help
-+	  Say y here to support the ADC found on Dialog Semiconductor
-+	  DA9052-BC and DA9053-AA/Bx PMICs.
-+
-+	  This driver can also be built as module. If so, the module
-+	  will be called da9052-hwmon.
-+
- config SENSORS_EXYNOS4_TMU
- 	tristate "Temperature sensor on Samsung EXYNOS4"
- 	depends on ARCH_EXYNOS4
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 8251ce8..5fe96e5 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_SENSORS_APPLESMC)	+= applesmc.o
- obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
- obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
- obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
-+obj-$(CONFIG_SENSORS_DA9052_ADC)+= da9052-hwmon.o
- obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
- obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
- obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
-new file mode 100644
-index 0000000..9bef6ab
---- /dev/null
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -0,0 +1,344 @@
 +/*
-+ * HWMON Driver for Dialog DA9052
++ * regmap_bulk_write(): Write multiple registers to the device
 + *
-+ * Copyright(c) 2012 Dialog Semiconductor Ltd.
++ * @map: Register map to write to
++ * @reg: First register to be write from
++ * @val: Block of data to be written, in native register size for device
++ * @val_count: Number of registers to write
 + *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
++ * This function is intended to be used for writing a large block of
++ * data to be device either in single transfer or multiple transfer.
 + *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
 + */
-+
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+struct da9052_hwmon {
-+	struct da9052	*da9052;
-+	struct device	*class_device;
-+	struct mutex	hwmon_lock;
-+};
-+
-+static const char * const input_names[] = {
-+	[DA9052_ADC_VDDOUT]	=	"VDDOUT",
-+	[DA9052_ADC_ICH]	=	"CHARGING CURRENT",
-+	[DA9052_ADC_TBAT]	=	"BATTERY TEMP",
-+	[DA9052_ADC_VBAT]	=	"BATTERY VOLTAGE",
-+	[DA9052_ADC_IN4]	=	"ADC IN4",
-+	[DA9052_ADC_IN5]	=	"ADC IN5",
-+	[DA9052_ADC_IN6]	=	"ADC IN6",
-+	[DA9052_ADC_TJUNC]	=	"BATTERY JUNCTION TEMP",
-+	[DA9052_ADC_VBBAT]	=	"BACK-UP BATTERY VOLTAGE",
-+};
-+
-+/* Conversion function for VDDOUT and VBAT */
-+static inline int volt_reg_to_mV(int value)
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++		     size_t val_count)
 +{
-+	return ((value * 1000) / 512) + 2500;
-+}
++	int ret = 0, i;
++	unsigned int ival;
++	size_t val_bytes = map->format.val_bytes;
 +
-+/* Conversion function for ADC channels 4, 5 and 6 */
-+static inline int input_reg_to_mV(int value)
-+{
-+	return (value * 2500) / 1023;
-+}
++	mutex_lock(&map->lock);
 +
-+/* Conversion function for VBBAT */
-+static inline int vbbat_reg_to_mV(int value)
-+{
-+	return (value * 2500) / 512;
-+}
++	if (map->format.parse_val) {
++		void *wptr = kmemdup(val, val_count, GFP_KERNEL);
++		if (!wptr) {
++			mutex_unlock(&map->lock);
++			dev_err(map->dev, "Error in memory allocation\n");
++			return -ENOMEM;
++		}
++		for (i = 0; i < val_count * val_bytes; i += val_bytes)
++			map->format.parse_val(wptr + i);
++		ret = _regmap_raw_write(map, reg, wptr, val_bytes * val_count);
 +
-+static int da9052_enable_vddout_channel(struct da9052 *da9052)
-+{
-+	int ret;
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret |= DA9052_ADCCONT_AUTOVDDEN;
-+
-+	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+}
-+
-+static int da9052_disable_vddout_channel(struct da9052 *da9052)
-+{
-+	int ret;
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_CONT_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret &= ~DA9052_ADCCONT_AUTOVDDEN;
-+
-+	return da9052_reg_write(da9052, DA9052_ADC_CONT_REG, ret);
-+}
-+
-+static ssize_t da9052_read_vddout(struct device *dev,
-+				  struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret, vdd;
-+
-+	mutex_lock(&hwmon->hwmon_lock);
-+
-+	ret = da9052_enable_vddout_channel(hwmon->da9052);
-+	if (ret < 0)
-+		goto hwmon_err;
-+
-+	vdd = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
-+	if (vdd < 0) {
-+		ret = vdd;
-+		goto hwmon_err_release;
++		kfree(wptr);
++	} else {
++		for (i = 0; i < val_count; i++) {
++			memcpy(&ival, val + (i * val_bytes), val_bytes);
++			ret = _regmap_write(map, reg + i, ival);
++			if (ret) {
++				dev_err(map->dev,
++				    "Error in register %u write, ret %d\n",
++						reg + i, ret);
++				break;
++			}
++		}
 +	}
 +
-+	ret = da9052_disable_vddout_channel(hwmon->da9052);
-+	if (ret < 0)
-+		goto hwmon_err;
-+
-+	mutex_unlock(&hwmon->hwmon_lock);
-+	return sprintf(buf, "%d\n", volt_reg_to_mV(vdd));
-+
-+hwmon_err_release:
-+	da9052_disable_vddout_channel(hwmon->da9052);
-+hwmon_err:
-+	mutex_unlock(&hwmon->hwmon_lock);
++	mutex_unlock(&map->lock);
 +	return ret;
 +}
++EXPORT_SYMBOL_GPL(regmap_bulk_write);
 +
-+static ssize_t da9052_read_ich(struct device *dev,
-+			       struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = da9052_reg_read(hwmon->da9052, DA9052_ICHG_AV_REG);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Equivalent to 3.9mA/bit in register ICHG_AV */
-+	return sprintf(buf, "%d\n", DIV_ROUND_CLOSEST(ret * 39, 10));
-+}
-+
-+static ssize_t da9052_read_tbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", da9052_adc_read_temp(hwmon->da9052));
-+}
-+
-+static ssize_t da9052_read_vbat(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBAT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", volt_reg_to_mV(ret));
-+}
-+
-+static ssize_t da9052_read_misc_channel(struct device *dev,
-+					struct device_attribute *devattr,
-+					char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int channel = to_sensor_dev_attr(devattr)->index;
-+	int ret;
-+
-+	ret = da9052_adc_manual_read(hwmon->da9052, channel);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", input_reg_to_mV(ret));
-+}
-+
-+static ssize_t da9052_read_tjunc(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int tjunc;
-+	int toffset;
-+
-+	tjunc = da9052_reg_read(hwmon->da9052, DA9052_TJUNC_RES_REG);
-+	if (tjunc < 0)
-+		return tjunc;
-+
-+	toffset = da9052_reg_read(hwmon->da9052, DA9052_T_OFFSET_REG);
-+	if (toffset < 0)
-+		return toffset;
-+
-+	/*
-+	 * Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
-+	 * T_OFFSET is a trim value used to improve accuracy of the result
-+	 */
-+	return sprintf(buf, "%d\n", 1708 * (tjunc - toffset) - 108800);
-+}
-+
-+static ssize_t da9052_read_vbbat(struct device *dev,
-+				 struct device_attribute *devattr, char *buf)
-+{
-+	struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-+	int ret;
-+
-+	ret = da9052_adc_manual_read(hwmon->da9052, DA9052_ADC_VBBAT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return sprintf(buf, "%d\n", vbbat_reg_to_mV(ret));
-+}
-+
-+static ssize_t da9052_hwmon_show_name(struct device *dev,
-+				      struct device_attribute *devattr,
-+				      char *buf)
-+{
-+	return sprintf(buf, "da9052-hwmon\n");
-+}
-+
-+static ssize_t show_label(struct device *dev,
-+			  struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n",
-+		       input_names[to_sensor_dev_attr(devattr)->index]);
-+}
-+
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9052_read_vddout, NULL,
-+			  DA9052_ADC_VDDOUT);
-+static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VDDOUT);
-+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, da9052_read_vbat, NULL,
-+			  DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in3_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VBAT);
-+static SENSOR_DEVICE_ATTR(in4_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in4_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN4);
-+static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in5_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN5);
-+static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, da9052_read_misc_channel, NULL,
-+			  DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in6_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_IN6);
-+static SENSOR_DEVICE_ATTR(in9_input, S_IRUGO, da9052_read_vbbat, NULL,
-+			  DA9052_ADC_VBBAT);
-+static SENSOR_DEVICE_ATTR(in9_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_VBBAT);
-+
-+static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, da9052_read_ich, NULL,
-+			  DA9052_ADC_ICH);
-+static SENSOR_DEVICE_ATTR(curr1_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_ICH);
-+
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9052_read_tbat, NULL,
-+			  DA9052_ADC_TBAT);
-+static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_TBAT);
-+static SENSOR_DEVICE_ATTR(temp8_input, S_IRUGO, da9052_read_tjunc, NULL,
-+			  DA9052_ADC_TJUNC);
-+static SENSOR_DEVICE_ATTR(temp8_label, S_IRUGO, show_label, NULL,
-+			  DA9052_ADC_TJUNC);
-+
-+static DEVICE_ATTR(name, S_IRUGO, da9052_hwmon_show_name, NULL);
-+
-+static struct attribute *da9052_attr[] = {
-+	&dev_attr_name.attr,
-+	&sensor_dev_attr_in0_input.dev_attr.attr,
-+	&sensor_dev_attr_in0_label.dev_attr.attr,
-+	&sensor_dev_attr_in3_input.dev_attr.attr,
-+	&sensor_dev_attr_in3_label.dev_attr.attr,
-+	&sensor_dev_attr_in4_input.dev_attr.attr,
-+	&sensor_dev_attr_in4_label.dev_attr.attr,
-+	&sensor_dev_attr_in5_input.dev_attr.attr,
-+	&sensor_dev_attr_in5_label.dev_attr.attr,
-+	&sensor_dev_attr_in6_input.dev_attr.attr,
-+	&sensor_dev_attr_in6_label.dev_attr.attr,
-+	&sensor_dev_attr_in9_input.dev_attr.attr,
-+	&sensor_dev_attr_in9_label.dev_attr.attr,
-+	&sensor_dev_attr_curr1_input.dev_attr.attr,
-+	&sensor_dev_attr_curr1_label.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+	&sensor_dev_attr_temp2_label.dev_attr.attr,
-+	&sensor_dev_attr_temp8_input.dev_attr.attr,
-+	&sensor_dev_attr_temp8_label.dev_attr.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group da9052_attr_group = {.attrs = da9052_attr};
-+
-+static int __init da9052_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct da9052_hwmon *hwmon;
-+	int ret;
-+
-+	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9052_hwmon),
-+			     GFP_KERNEL);
-+	if (!hwmon)
-+		return -ENOMEM;
-+
-+	mutex_init(&hwmon->hwmon_lock);
-+	hwmon->da9052 = dev_get_drvdata(pdev->dev.parent);
-+
-+	platform_set_drvdata(pdev, hwmon);
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &da9052_attr_group);
-+	if (ret)
-+		goto err_mem;
-+
-+	hwmon->class_device = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(hwmon->class_device)) {
-+		ret = PTR_ERR(hwmon->class_device);
-+		goto err_sysfs;
-+	}
-+
-+	return 0;
-+
-+err_sysfs:
-+	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
-+err_mem:
-+	return ret;
-+}
-+
-+static int __devexit da9052_hwmon_remove(struct platform_device *pdev)
-+{
-+	struct da9052_hwmon *hwmon = platform_get_drvdata(pdev);
-+
-+	hwmon_device_unregister(hwmon->class_device);
-+	sysfs_remove_group(&pdev->dev.kobj, &da9052_attr_group);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9052_hwmon_driver = {
-+	.probe = da9052_hwmon_probe,
-+	.remove = __devexit_p(da9052_hwmon_remove),
-+	.driver = {
-+		.name = "da9052-hwmon",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(da9052_hwmon_driver);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9052 HWMON driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9052-hwmon");
-
+ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 			    unsigned int val_len)
+ {
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a6ed6e6..0925e24 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -135,6 +135,8 @@ int regmap_reinit_cache(struct regmap *map,
+ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
+ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 		     const void *val, size_t val_len);
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++			size_t val_count);
+ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
+ int regmap_raw_read(struct regmap *map, unsigned int reg,
+ 		    void *val, size_t val_len);
+-- 
+1.7.1.1
 
