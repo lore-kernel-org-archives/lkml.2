@@ -1,152 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab2BJJtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 04:49:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38202 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab2BJJtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 04:49:00 -0500
-Date: Fri, 10 Feb 2012 10:48:58 +0100
-From: Jan Kara <jack@suse.cz>
-To: Eric Sandeen <sandeen@sandeen.net>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, mpatocka@redhat.com
-Subject: Re: [PATCH 1/2] vfs: Provide function to get superblock and wait
- for it to thaw
-Message-ID: <20120210094858.GC10509@quack.suse.cz>
-References: <1328654267-18855-1-git-send-email-jack@suse.cz>
- <1328654267-18855-2-git-send-email-jack@suse.cz>
- <20120208232049.GC7479@dastard>
- <20120208232705.GF1696@quack.suse.cz>
- <20120208234703.GG1696@quack.suse.cz>
- <4F33F640.7040508@sandeen.net>
+	id S1758751Ab2BJKAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 05:00:40 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:50068 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757894Ab2BJKAi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 05:00:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F33F640.7040508@sandeen.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Cc: Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/3] MFD: twl-core: Detach twl6040 from the pmic mfd driver
+Date: Fri, 10 Feb 2012 12:00:16 +0200
+Message-Id: <1328868018-24668-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <1328868018-24668-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1328868018-24668-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-02-12 10:37:20, Eric Sandeen wrote:
-> On 2/8/12 5:47 PM, Jan Kara wrote:
-> > On Thu 09-02-12 00:27:05, Jan Kara wrote:
-> >> On Thu 09-02-12 10:20:49, Dave Chinner wrote:
-> >>> The thawed parameter appears to be unused and the waiting for frozen
-> >>> filesystems appears to happen for all callers. Is this intentional?
-> >>   Ah, sorry. Obviously that's a bug. Thanks for spotting it. I'll fix it
-> >> up.
-> >   Attached is a fixed version.
-> > 
-> > 								Honza
-> 
-> > From 5dce7adb0c281612a14fa3dd8c8d5ef3f5eb3666 Mon Sep 17 00:00:00 2001
-> > From: Jan Kara <jack@suse.cz>
-> > Date: Tue, 7 Feb 2012 22:59:06 +0100
-> > Subject: [PATCH 1/2] vfs: Provide function to get superblock and wait for it to thaw
-> > 
-> > In quota code we need to find a superblock corresponding to a device and wait
-> > for superblock to be unfrozen. However this waiting has to happen without
-> > s_umount semaphore because that is required for superblock to thaw. So provide
-> > a function in VFS for this to keep dances with s_umount where they belong.
-> > 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  fs/super.c         |   47 +++++++++++++++++++++++++++++++++++------------
-> >  include/linux/fs.h |    1 +
-> >  2 files changed, 36 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/fs/super.c b/fs/super.c
-> > index 6015c02..e15aaa9 100644
-> > --- a/fs/super.c
-> > +++ b/fs/super.c
-> > @@ -593,15 +593,7 @@ void iterate_supers_type(struct file_system_type *type,
-> >  
-> >  EXPORT_SYMBOL(iterate_supers_type);
-> >  
-> > -/**
-> > - *	get_super - get the superblock of a device
-> > - *	@bdev: device to get the superblock for
-> > - *	
-> > - *	Scans the superblock list and finds the superblock of the file system
-> > - *	mounted on the device given. %NULL is returned if no match is found.
-> > - */
-> 
-> > -
-> > -struct super_block *get_super(struct block_device *bdev)
-> > +static struct super_block *__get_super(struct block_device *bdev, bool thawed)
-> >  {
-> >  	struct super_block *sb;
-> >  
-> > @@ -618,9 +610,13 @@ rescan:
-> >  			spin_unlock(&sb_lock);
-> >  			down_read(&sb->s_umount);
-> >  			/* still alive? */
-> > -			if (sb->s_root && (sb->s_flags & MS_BORN))
-> > -				return sb;
-> > -			up_read(&sb->s_umount);
-> > +			if (sb->s_root && (sb->s_flags & MS_BORN)) {
-> > +				if (!thawed || sb->s_frozen == SB_UNFROZEN)
-> 
-> I guess this has the same race we are worried about elsewhere (sb gets
-> frozen immediately after we check) but probably can't fix that yet.
-  As Mikulas said, this is OK. We return to the caller with s_umount held
-thus freezing cannot happen in parallel. That's why I'm sending this as a
-separate patch set...
+On OMAP4 platform audio has separate IC, it is no longer part
+of the pmic chip.
+Prevent twl-core to claim the 0x4b address, which belongs to
+the twl6040 audio IC.
 
-> would "wait_for_thaw" vs. "thaw" be any clearer?  Nitpicky I guess but the
-> meaning of "thawed" isn't immediately clear here.  If it's already thawed?  If
-> we want to wait for it it to be thawed?  You can figure it out from the callers
-> but maybe a comment or a different name might help.  No big deal.
-  How about "wait_thaw". That should be explicit enough...
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/mfd/twl-core.c |   58 +++++++++++++++++++++++++++--------------------
+ 1 files changed, 33 insertions(+), 25 deletions(-)
 
->  
-> > +					return sb;
-> > +				up_read(&sb->s_umount);
-> > +				vfs_check_frozen(sb, SB_FREEZE_WRITE);
-> > +			} else
-> > +				up_read(&sb->s_umount);
-> >  			/* nope, got unmounted */
-> >  			spin_lock(&sb_lock);
-> >  			__put_super(sb);
-> > @@ -631,9 +627,36 @@ rescan:
-> >  	return NULL;
-> >  }
-> >  
-> > +/**
-> > + *	get_super - get the superblock of a device
-> > + *	@bdev: device to get the superblock for
-> > + *
-> > + *	Scans the superblock list and finds the superblock of the file system
-> > + *	mounted on the device given. %NULL is returned if no match is found.
-> > + */
-> 
-> I think it'd be nice to explicitly say in the comment that this may
-> return a frozen superblock.
-  Will do.
-
-> > +struct super_block *get_super(struct block_device *bdev)
-> > +{
-> > +	return __get_super(bdev, false);
-> > +}
-> >  EXPORT_SYMBOL(get_super);
-> >  
-> >  /**
-> > + *	get_super_thawed - get thawed superblock of a device
-> > + *	@bdev: device to get the superblock for
-> > + *
-> > + *	Scans the superblock list and finds the superblock of the file system
-> > + *	mounted on the device given once the superblock is thawed. %NULL is
-> > + *	returned if no match is found.
-> > + */
-> 
-> And to explicitly say that this one will not return until the sb is unfrozen?
-  It is written in the comment ("once the superblock is thawed"). But the
-sentence looks ugly when I read it now so I'll try to reformulate it.
-
-								Honza
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index e04e04d..ac6fdd93 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -115,8 +115,8 @@
+ #define twl_has_watchdog()        false
+ #endif
+ 
+-#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
+-	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
++#if defined(CONFIG_MFD_TWL4030_AUDIO) || \
++	defined(CONFIG_MFD_TWL4030_AUDIO_MODULE)
+ #define twl_has_codec()	true
+ #else
+ #define twl_has_codec()	false
+@@ -146,6 +146,7 @@
+ #define SUB_CHIP_ID1 1
+ #define SUB_CHIP_ID2 2
+ #define SUB_CHIP_ID3 3
++#define SUB_CHIP_ID_INVAL 0xff
+ 
+ #define TWL_MODULE_LAST TWL4030_MODULE_LAST
+ 
+@@ -315,7 +316,7 @@ static struct twl_mapping twl6030_map[] = {
+ 	 * so they continue to match the order in this table.
+ 	 */
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_USB },
+-	{ SUB_CHIP_ID3, TWL6030_BASEADD_AUDIO },
++	{ SUB_CHIP_ID_INVAL, TWL6030_BASEADD_AUDIO },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_DIEID },
+ 	{ SUB_CHIP_ID2, TWL6030_BASEADD_RSV },
+ 	{ SUB_CHIP_ID1, TWL6030_BASEADD_PIH },
+@@ -377,6 +378,11 @@ int twl_i2c_write(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -434,6 +440,11 @@ int twl_i2c_read(u8 mod_no, u8 *value, u8 reg, unsigned num_bytes)
+ 		return -EPERM;
+ 	}
+ 	sid = twl_map[mod_no].sid;
++	if (unlikely(sid == SUB_CHIP_ID_INVAL)) {
++		pr_err("%s: module %d is not part of the pmic\n",
++		       DRIVER_NAME, mod_no);
++		return -EINVAL;
++	}
+ 	twl = &twl_modules[sid];
+ 
+ 	mutex_lock(&twl->xfer_lock);
+@@ -834,15 +845,6 @@ add_children(struct twl4030_platform_data *pdata, unsigned long features)
+ 			return PTR_ERR(child);
+ 	}
+ 
+-	if (twl_has_codec() && pdata->audio && twl_class_is_6030()) {
+-		sub_chip_id = twl_map[TWL_MODULE_AUDIO_VOICE].sid;
+-		child = add_child(sub_chip_id, "twl6040",
+-				pdata->audio, sizeof(*pdata->audio),
+-				false, 0, 0);
+-		if (IS_ERR(child))
+-			return PTR_ERR(child);
+-	}
+-
+ 	/* twl4030 regulators */
+ 	if (twl_has_regulator() && twl_class_is_4030()) {
+ 		child = add_regulator(TWL4030_REG_VPLL1, pdata->vpll1,
+@@ -1163,18 +1165,21 @@ int twl6030_exit_irq(void);
+ 
+ static int twl_remove(struct i2c_client *client)
+ {
+-	unsigned i;
++	unsigned i, num_slaves;
+ 	int status;
+ 
+-	if (twl_class_is_4030())
++	if (twl_class_is_4030()) {
+ 		status = twl4030_exit_irq();
+-	else
++		num_slaves = TWL_NUM_SLAVES;
++	} else {
+ 		status = twl6030_exit_irq();
++		num_slaves = TWL_NUM_SLAVES - 1;
++	}
+ 
+ 	if (status < 0)
+ 		return status;
+ 
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
+ 
+ 		if (twl->client && twl->client != client)
+@@ -1190,7 +1195,7 @@ static int __devinit
+ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ {
+ 	int				status;
+-	unsigned			i;
++	unsigned			i, num_slaves;
+ 	struct twl4030_platform_data	*pdata = client->dev.platform_data;
+ 	struct device_node		*node = client->dev.of_node;
+ 	u8 temp;
+@@ -1244,7 +1249,17 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		return -EBUSY;
+ 	}
+ 
+-	for (i = 0; i < TWL_NUM_SLAVES; i++) {
++	if ((id->driver_data) & TWL6030_CLASS) {
++		twl_id = TWL6030_CLASS_ID;
++		twl_map = &twl6030_map[0];
++		num_slaves = TWL_NUM_SLAVES - 1;
++	} else {
++		twl_id = TWL4030_CLASS_ID;
++		twl_map = &twl4030_map[0];
++		num_slaves = TWL_NUM_SLAVES;
++	}
++
++	for (i = 0; i < num_slaves; i++) {
+ 		struct twl_client	*twl = &twl_modules[i];
+ 
+ 		twl->address = client->addr + i;
+@@ -1263,13 +1278,6 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		mutex_init(&twl->xfer_lock);
+ 	}
+ 	inuse = true;
+-	if ((id->driver_data) & TWL6030_CLASS) {
+-		twl_id = TWL6030_CLASS_ID;
+-		twl_map = &twl6030_map[0];
+-	} else {
+-		twl_id = TWL4030_CLASS_ID;
+-		twl_map = &twl4030_map[0];
+-	}
+ 
+ 	/* setup clock framework */
+ 	clocks_init(&client->dev, pdata->clock);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.4
+
