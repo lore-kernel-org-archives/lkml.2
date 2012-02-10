@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758408Ab2BJIRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 03:17:11 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:44609 "EHLO mgw2.diku.dk"
+	id S1758495Ab2BJIRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 03:17:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043Ab2BJIRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 03:17:10 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Liam Girdwood <lrg@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
-Date: Fri, 10 Feb 2012 09:17:01 +0100
-Message-Id: <1328861821-3380-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1758462Ab2BJIR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 03:17:29 -0500
+Message-ID: <4F34D292.4080404@redhat.com>
+Date: Fri, 10 Feb 2012 09:17:22 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Matthew Wilcox <willy@linux.intel.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Doug Nelson <doug.nelson@intel.com>
+Subject: Re: scsi_id: sending ioctl 2285 to a partition
+References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com> <20120209210039.GB14342@linux.intel.com>
+In-Reply-To: <20120209210039.GB14342@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 02/09/2012 10:00 PM, Matthew Wilcox wrote:
+> On Thu, Feb 09, 2012 at 12:42:00PM -0800, Linus Torvalds wrote:
+>> On Thu, Feb 9, 2012 at 12:29 PM, Matthew Wilcox<willy@linux.intel.com>  wrote:
+>>>
+>>> Commit 0bfc96cb77 adds this printk that triggers tens of thousands of
+>>> times during a run of "a well-known database benchmark".  0x2285 is SG_IO.
+>>> I'm not sure why scsi_id feels that it needs to repeatedly send a SCSI
+>>> INQUIRY to a partition, but there we are.
+>>
+>> So is it doing this as root (in which case we end up allowing it) or
+>> as a normal user (in which case we end up disallowing it)?
+>
+> I'm pretty sure it's doing it as root ... it'll be run by udev, after all.
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+What does the rule look like?  Here it is like this:
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+# scsi devices
+KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
+IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
+ENV{ID_BUS}="scsi"
 
----
-patch against
-git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git from the
-branch for-3.4
+which should exclude partitions, and indeed I don't see any such 
+message.  I also have this rule:
 
- sound/soc/mxs/mxs-saif.c |   51 ++++++++++-------------------------------------
- 1 file changed, 11 insertions(+), 40 deletions(-)
+# for partitions import parent information
+ENV{DEVTYPE}=="partition", IMPORT{parent}="ID_*"
 
-diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
-index f204dba..12be05b 100644
---- a/sound/soc/mxs/mxs-saif.c
-+++ b/sound/soc/mxs/mxs-saif.c
-@@ -630,7 +630,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 	if (pdev->id >= ARRAY_SIZE(mxs_saif))
- 		return -EINVAL;
- 
--	saif = kzalloc(sizeof(*saif), GFP_KERNEL);
-+	saif = devm_kzalloc(&pdev->dev, sizeof(*saif), GFP_KERNEL);
- 	if (!saif)
- 		return -ENOMEM;
- 
-@@ -655,29 +655,16 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 		ret = PTR_ERR(saif->clk);
- 		dev_err(&pdev->dev, "Cannot get the clock: %d\n",
- 			ret);
--		goto failed_clk;
-+		return ret;
- 	}
- 
- 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!iores) {
--		ret = -ENODEV;
--		dev_err(&pdev->dev, "failed to get io resource: %d\n",
--			ret);
--		goto failed_get_resource;
--	}
- 
--	if (!request_mem_region(iores->start, resource_size(iores),
--				"mxs-saif")) {
--		dev_err(&pdev->dev, "request_mem_region failed\n");
--		ret = -EBUSY;
--		goto failed_get_resource;
--	}
--
--	saif->base = ioremap(iores->start, resource_size(iores));
-+	saif->base = devm_request_and_ioremap(&pdev->dev, iores);
- 	if (!saif->base) {
- 		dev_err(&pdev->dev, "ioremap failed\n");
- 		ret = -ENODEV;
--		goto failed_ioremap;
-+		goto failed_get_resource;
- 	}
- 
- 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-@@ -685,7 +672,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 		ret = -ENODEV;
- 		dev_err(&pdev->dev, "failed to get dma resource: %d\n",
- 			ret);
--		goto failed_ioremap;
-+		goto failed_get_resource;
- 	}
- 	saif->dma_param.chan_num = dmares->start;
- 
-@@ -694,14 +681,15 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 		ret = saif->irq;
- 		dev_err(&pdev->dev, "failed to get irq resource: %d\n",
- 			ret);
--		goto failed_get_irq1;
-+		goto failed_get_resource;
- 	}
- 
- 	saif->dev = &pdev->dev;
--	ret = request_irq(saif->irq, mxs_saif_irq, 0, "mxs-saif", saif);
-+	ret = devm_request_irq(&pdev->dev, saif->irq, mxs_saif_irq, 0,
-+			       "mxs-saif", saif);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to request irq\n");
--		goto failed_get_irq1;
-+		goto failed_get_resource;
- 	}
- 
- 	saif->dma_param.chan_irq = platform_get_irq(pdev, 1);
-@@ -709,7 +697,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 		ret = saif->dma_param.chan_irq;
- 		dev_err(&pdev->dev, "failed to get dma irq resource: %d\n",
- 			ret);
--		goto failed_get_irq2;
-+		goto failed_get_resource;
- 	}
- 
- 	platform_set_drvdata(pdev, saif);
-@@ -717,7 +705,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 	ret = snd_soc_register_dai(&pdev->dev, &mxs_saif_dai);
- 	if (ret) {
- 		dev_err(&pdev->dev, "register DAI failed\n");
--		goto failed_register;
-+		goto failed_get_resource;
- 	}
- 
- 	saif->soc_platform_pdev = platform_device_alloc(
-@@ -740,36 +728,19 @@ failed_pdev_add:
- 	platform_device_put(saif->soc_platform_pdev);
- failed_pdev_alloc:
- 	snd_soc_unregister_dai(&pdev->dev);
--failed_register:
--failed_get_irq2:
--	free_irq(saif->irq, saif);
--failed_get_irq1:
--	iounmap(saif->base);
--failed_ioremap:
--	release_mem_region(iores->start, resource_size(iores));
- failed_get_resource:
- 	clk_put(saif->clk);
--failed_clk:
--	kfree(saif);
- 
- 	return ret;
- }
- 
- static int __devexit mxs_saif_remove(struct platform_device *pdev)
- {
--	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	struct mxs_saif *saif = platform_get_drvdata(pdev);
- 
- 	platform_device_unregister(saif->soc_platform_pdev);
--
- 	snd_soc_unregister_dai(&pdev->dev);
--
--	iounmap(saif->base);
--	release_mem_region(res->start, resource_size(res));
--	free_irq(saif->irq, saif);
--
- 	clk_put(saif->clk);
--	kfree(saif);
- 
- 	return 0;
- }
+which makes it clear that udev does not need to send INQUIRY to the 
+partition.
 
+>> And does it all work well apart from the printk? Because the printk
+>> itself is scheduled to be removed, it's only there to hear about users
+>> that may be doing crazy things that got disallowed by the patches in
+>> question?
+>
+> If it is being run as root, then the printk is pointless, right?
+
+At the time the printk is removed, access also will be disallowed to root.
+
+Paolo
