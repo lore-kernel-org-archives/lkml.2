@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2BJXMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:12:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37383 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932616Ab2BJWmf convert rfc822-to-8bit (ORCPT
+	id S1760931Ab2BJXNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:13:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932622Ab2BJWme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="65477654"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "seiji.aguchi@hds.com" <seiji.aguchi@hds.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mjg@redhat.com" <mjg@redhat.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
-Subject: RE: [PATCH 2/2] x86, reschedule: check to see if system is shutting
- down
-Thread-Topic: [PATCH 2/2] x86, reschedule: check to see if system is
- shutting down
-Thread-Index: AQHM6DdWXhMuiUWedkmvGJM5sNRJdpY2uPkQ
-Date: Fri, 10 Feb 2012 22:42:24 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F03AA72@ORSMSX104.amr.corp.intel.com>
-References: <1328907735-6226-1-git-send-email-dzickus@redhat.com>
- <1328907735-6226-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1328907735-6226-3-git-send-email-dzickus@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Feb 2012 17:42:34 -0500
 MIME-Version: 1.0
+Message-Id: <20120210222950.096567448@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Fri, 10 Feb 2012 14:30:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [patch 57/86] ASoC: wm_hubs: Correct line input to line output 2 paths
+In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--		WARN_ON(1);
-+		if (atomic_read(&stopping_cpu) == -1)
-+			/* system is not shutting down.. yell */
-+			WARN_ON(1);
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Should that be written as:
+------------------
 
-		/* system is not shutting down.. yell */
-		WARN_ON(atomic_read(&stopping_cpu) == -1);
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-the
-		if (something)
-			WARN_ON(1);
+commit 43b6cec27e1e50a1de3eff47e66e502f3fe7e66e upstream.
 
-looks weird.
+The second line output mixer has the controls for the line input bypasses
+in the opposite order.
 
--Tony
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/soc/codecs/wm_hubs.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -587,8 +587,8 @@ SOC_DAPM_SINGLE("Left Output Switch", WM
+ };
+ 
+ static const struct snd_kcontrol_new line2_mix[] = {
+-SOC_DAPM_SINGLE("IN1R Switch", WM8993_LINE_MIXER2, 2, 1, 0),
+-SOC_DAPM_SINGLE("IN1L Switch", WM8993_LINE_MIXER2, 1, 1, 0),
++SOC_DAPM_SINGLE("IN1L Switch", WM8993_LINE_MIXER2, 2, 1, 0),
++SOC_DAPM_SINGLE("IN1R Switch", WM8993_LINE_MIXER2, 1, 1, 0),
+ SOC_DAPM_SINGLE("Output Switch", WM8993_LINE_MIXER2, 0, 1, 0),
+ };
+ 
+
+
