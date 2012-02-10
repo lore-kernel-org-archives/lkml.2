@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab2BJQET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:04:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35173 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757501Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:04:16 -0500
-From: Jan Kara <jack@suse.cz>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/4] ocfs2: Use generic handlers of O_SYNC AIO DIO
-Date: Fri, 10 Feb 2012 17:04:00 +0100
-Message-Id: <1328889842-23231-3-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1328889842-23231-1-git-send-email-jack@suse.cz>
-References: <1328889842-23231-1-git-send-email-jack@suse.cz>
+	id S932221Ab2BJQIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:08:13 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:36985 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759457Ab2BJQIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:08:11 -0500
+Date: Fri, 10 Feb 2012 11:07:55 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: guenter.roeck@ericsson.com
+Cc: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v5 4/5] hwmon: add MAX197 support
+Message-ID: <20120210110755.4914b332@v0nbox>
+In-Reply-To: <1328561164.2261.258.camel@groeck-laptop>
+References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1328132138.2261.116.camel@groeck-laptop>
+	<20120206151507.73a23eb8@v0nbox>
+	<1328561164.2261.258.camel@groeck-laptop>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-file.
+Hi,
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ocfs2/aops.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+On Mon, 6 Feb 2012 12:46:04 -0800,
+Guenter Roeck <guenter.roeck@ericsson.com> wrote:
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 78b68af..3d14c2b 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -593,9 +593,7 @@ static void ocfs2_dio_end_io(struct kiocb *iocb,
- 	level = ocfs2_iocb_rw_locked_level(iocb);
- 	ocfs2_rw_unlock(inode, level);
- 
--	if (is_async)
--		aio_complete(iocb, ret, 0);
--	inode_dio_done(inode);
-+	generic_dio_end_io(iocb, offset, bytes, private, ret, is_async);
- }
- 
- /*
-@@ -642,7 +640,7 @@ static ssize_t ocfs2_direct_IO(int rw,
- 	return __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
- 				    iov, offset, nr_segs,
- 				    ocfs2_direct_IO_get_blocks,
--				    ocfs2_dio_end_io, NULL, 0);
-+				    ocfs2_dio_end_io, NULL, DIO_SYNC_WRITES);
- }
- 
- static void ocfs2_figure_cluster_boundaries(struct ocfs2_super *osb,
+> On Mon, 2012-02-06 at 15:15 -0500, Vivien Didelot wrote:
+> [ ... ]
+> > 
+> > BTW, about the TS-5500 ADC part, is a platform ts5500_adc.c file the
+> > better solution, or should the device be declared in the ts5500.c
+> > platform code?
+> > 
+> I would suggest to declare it in the ts5500.c platform code. That
+> seems to be the common approach as far as I can see.
+> 
+> platform_add_devices() works pretty well for this. It saves you from
+> having to call platform_device_register() for each device separately.
+> Obviously that only works if all devices are declared in a single
+> file.
+
+As the LED is registered using the leds_class, I think
+platform_add_devices() couldn't be used here.
+
+Lots of platform codes don't check the returned
+value of platform_add_devices(). Should we care about a LED or ADC
+registration failure (is the following snippet OK?)?
+
+    static int __init ts5500_init(void)
+    {
+    [...]
+        pdev = platform_device_register_simple("ts5500", -1, NULL, 0); 
+        if (IS_ERR(pdev)) {
+                ret = PTR_ERR(pdev);
+                goto release_mem;
+        }
+        platform_set_drvdata(pdev, ts5500);
+    
+        ret = sysfs_create_group(&pdev->dev.kobj,
+                                 &ts5500_attr_group);
+        if (ret)
+                goto release_pdev;
+    
+        led_classdev_register(&pdev->dev, &ts5500_led_cdev);
+        if (ts5500->adc) {
+                ts5500_adc_pdev.dev.parent = &pdev->dev;
+                platform_device_register(&ts5500_adc_pdev);
+        }
+    
+        return 0;
+    
+        release_pdev:
+                platform_device_unregister(pdev);
+        release_mem:
+                kfree(ts5500);
+    
+                return ret;
+    }
+    device_initcall(ts5500_init);
+
+
+Thanks,
+
+
 -- 
-1.7.1
-
+Vivien Didelot
+Savoir-faire Linux Inc.
+Tel: (514) 276-5468 #149
