@@ -1,148 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705Ab2BJANM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:13:12 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64094 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab2BJANK (ORCPT
+	id S1758690Ab2BJARH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:17:07 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34570 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757485Ab2BJARF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:13:10 -0500
-Message-ID: <4F346111.1040506@gmail.com>
-Date: Thu, 09 Feb 2012 17:13:05 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Subject: Re: Hmm.. WARN_ON_ONCE(cpuc->enabled)
-References: <CA+55aFyXyfYd+_NJ8kLYz-bk7Qt0SLHu4t7RN1PCQptt75RGXQ@mail.gmail.com>
-In-Reply-To: <CA+55aFyXyfYd+_NJ8kLYz-bk7Qt0SLHu4t7RN1PCQptt75RGXQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Feb 2012 19:17:05 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH 1/2] [RFC] Range tree implementation
+Date: Thu,  9 Feb 2012 16:16:32 -0800
+Message-Id: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021000-4242-0000-0000-000000BB2401
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+After Andrew suggested something like his mumbletree idea
+to better store a list of ranges, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
+I suspect range-tree isn't a totally accurate name, but I
+couldn't quite make out the difference between range trees
+and interval trees, so I just picked one to call it. Do
+let me know if you have a better name.
 
-On 02/09/2012 04:46 PM, Linus Torvalds wrote:
-> Ok, so I get the appended on my Core i5 when I did a "perf record -f
-> -e cycles:pp make -j" on the kernel build.
-> 
-> What's up, guys? I haven't tried that particular perf run in a while,
-> so it might have been going on for quite some time.
+The idea of storing ranges in a tree is nice, but has a number
+of complications. When adding a range, its possible that a
+large range will consume and merge a number of smaller ranges.
+When removing a range, its possible you may end up splitting an
+existing range, causing one range to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
-Perhaps already fixed by
-https://lkml.org/lkml/2012/2/4/42
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent ranges.
 
-It's not in your tree; but in tip/urgent.
+I made the tree self-balancing via splaying as it seemed easier
+to handle with the merging/splitting cases I originally tried to
+make the generic code handle, but since I've dropped that, I
+suspect it can be reworked to use a rbtree. I just wanted to get
+this out for initial review.
 
-David
+Andrew also really wanted this range-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+ranges and file locking are really equivelent, but this reduced
+impelementation may make it possible.
 
-> 
->                              Linus
-> 
-> ---
-> 
->  WARNING: at arch/x86/kernel/cpu/perf_event_intel_ds.c:442
-> intel_pmu_pebs_enable+0x89/0xa0()
->  Hardware name: System Product Name
->  Pid: 12994, comm: perf Not tainted 3.3.0-rc3-00001-g690d137f448d #34
->  Call Trace:
->   <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
->   [<ffffffff8105c1d4>] ? load_balance+0xc4/0x860
->   [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
->   [<ffffffff81013f59>] intel_pmu_pebs_enable+0x89/0xa0
->   [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
->   [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
->   [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
->   [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
->   [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
->   [<ffffffff81055856>] scheduler_tick+0xc6/0x100
->   [<ffffffff8103b649>] update_process_times+0x69/0x80
->   [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
->   [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
->   [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
->   [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
->   [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
->   <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
->   [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
->   [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
->   [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
->   [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
->   [<ffffffff8110834f>] ? __getblk+0x1f/0x280
->   [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
->   [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
->   [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
->   [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
->   [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
->   [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
->   [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
->   [<ffffffff810e4280>] inode_permission+0x40/0xd0
->   [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
->   [<ffffffff810e7807>] path_openat+0xb7/0x430
->   [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
->   [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
->   [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
->   [<ffffffff810df7dd>] open_exec+0x2d/0xf0
->   [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
->   [<ffffffff810e0b26>] do_execve+0x16/0x20
->   [<ffffffff8100aba5>] sys_execve+0x45/0x70
->   [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
->  ---[ end trace 55816fcc72df1997 ]---
->  ------------[ cut here ]------------
->  WARNING: at arch/x86/kernel/cpu/perf_event_intel_lbr.c:75
-> intel_pmu_lbr_enable+0x92/0xa0()
->  Hardware name: System Product Name
->  Pid: 12994, comm: perf Tainted: G        W    3.3.0-rc3-00001-g690d137f448d #34
->  Call Trace:
->   <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
->   [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
->   [<ffffffff81012e32>] intel_pmu_lbr_enable+0x92/0xa0
->   [<ffffffff81013f38>] intel_pmu_pebs_enable+0x68/0xa0
->   [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
->   [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
->   [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
->   [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
->   [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
->   [<ffffffff81055856>] scheduler_tick+0xc6/0x100
->   [<ffffffff8103b649>] update_process_times+0x69/0x80
->   [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
->   [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
->   [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
->   [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
->   [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
->   <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
->   [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
->   [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
->   [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
->   [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
->   [<ffffffff8110834f>] ? __getblk+0x1f/0x280
->   [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
->   [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
->   [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
->   [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
->   [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
->   [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
->   [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
->   [<ffffffff810e4280>] inode_permission+0x40/0xd0
->   [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
->   [<ffffffff810e7807>] path_openat+0xb7/0x430
->   [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
->   [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
->   [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
->   [<ffffffff810df7dd>] open_exec+0x2d/0xf0
->   [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
->   [<ffffffff810e0b26>] do_execve+0x16/0x20
->   [<ffffffff8100aba5>] sys_execve+0x45/0x70
->   [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
->  ---[ end trace 55816fcc72df1998 ]---
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Do let me know what you think or if you have other ideas for
+better ways to do the same.
+
+thanks
+-john
+
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Android Kernel Team <kernel-team@android.com>
+CC: Robert Love <rlove@google.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Hugh Dickins <hughd@google.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/rangetree.h |   35 +++++
+ lib/Makefile              |    2 +-
+ lib/rangetree.c           |  325 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 361 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/rangetree.h
+ create mode 100644 lib/rangetree.c
+
+diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
+new file mode 100644
+index 0000000..998ebcc
+--- /dev/null
++++ b/include/linux/rangetree.h
+@@ -0,0 +1,35 @@
++#ifndef _LINUX_RANGETREE_H
++#define _LINUX_RANGETREE_H
++
++#include <linux/types.h>
++#include <linux/fs.h>
++
++struct range_tree_node {
++	struct range_tree_node *parent;
++	struct range_tree_node *left;
++	struct range_tree_node *right;
++	u64 start;
++	u64 end;
++};
++
++static inline void range_tree_node_init(struct range_tree_node *node)
++{
++	node->parent = NULL;
++	node->left = NULL;
++	node->right = NULL;
++	node->start = 0;
++	node->end = 0;
++}
++
++extern struct range_tree_node *range_tree_in_range(struct range_tree_node *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_in_range_adjacent(
++						struct range_tree_node *root,
++							 u64 start, u64 end);
++extern struct range_tree_node *range_tree_add(struct range_tree_node *root,
++						struct range_tree_node *node);
++extern struct range_tree_node *range_tree_remove(struct range_tree_node *root,
++						struct range_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 18515f0..f43ef0d 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o rangetree.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/rangetree.c b/lib/rangetree.c
+new file mode 100644
+index 0000000..db20665
+--- /dev/null
++++ b/lib/rangetree.c
+@@ -0,0 +1,325 @@
++#include <linux/rangetree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++/**
++ * rotate_right - Splay tree helper
++ * @node: node to be rotated right
++ * @root: tree root
++ *
++ * Returns the tree root after rotating the node right
++ */
++static struct range_tree_node *rotate_right(struct range_tree_node *node,
++						struct range_tree_node *root)
++{
++	struct range_tree_node *new_root, *new_right;
++
++	if (!node->left)
++		return root;
++
++	new_root = node->left;
++	new_right = node;
++
++	if (root == node)
++		root = new_root;
++
++	new_right->left = new_root->right;
++	new_root->parent = new_right->parent;
++	if (new_root->parent) {
++		if (new_root->parent->right == new_right)
++			new_root->parent->right = new_root;
++		else
++			new_root->parent->left = new_root;
++	}
++	new_right->parent = new_root;
++
++	new_root->right = new_right;
++
++	if (new_right->left)
++		new_right->left->parent = new_right;
++
++
++	/* Paranoid sanity checking */
++	if (new_root->left)
++		BUG_ON(new_root->left->parent != new_root);
++	if (new_root->right)
++		BUG_ON(new_root->right->parent != new_root);
++	if (new_right->left)
++		BUG_ON(new_right->left->parent != new_right);
++	if (new_right->right)
++		BUG_ON(new_right->right->parent != new_right);
++
++
++	return root;
++
++}
++
++/**
++ * rotate_left - Splay tree helper
++ * @node: node to be rotated left
++ * @root: tree root
++ *
++ * Returns the tree root after rotating the node left
++ */
++static struct range_tree_node *rotate_left(struct range_tree_node *node,
++						struct range_tree_node *root)
++{
++	struct range_tree_node *new_root, *new_left;
++
++	if (!node->right)
++		return root;
++
++	new_root = node->right;
++	new_left = node;
++
++	if (root == node)
++		root = new_root;
++
++	new_left->right = new_root->left;
++	if (new_left->right)
++		new_left->right->parent = new_left;
++	new_root->parent = new_left->parent;
++	if (new_root->parent) {
++		if (new_root->parent->left == new_left)
++			new_root->parent->left = new_root;
++		else
++			new_root->parent->right = new_root;
++	}
++	new_left->parent = new_root;
++	new_root->left = new_left;
++
++
++	/* Paranoid sanity checking */
++	if (new_root->left)
++		BUG_ON(new_root->left->parent != new_root);
++	if (new_root->right)
++		BUG_ON(new_root->right->parent != new_root);
++	if (new_left->left)
++		BUG_ON(new_left->left->parent != new_left);
++	if (new_left->right)
++		BUG_ON(new_left->right->parent != new_left);
++
++	return root;
++}
++
++/**
++ * splay_tree Splays a node to the top of a tree
++ * @root: root of the splay tree
++ * @node: node to be splayed to the root
++ *
++ * Returns the root of a tree after splaying
++ */
++static struct range_tree_node *splay_tree(struct range_tree_node *root,
++						struct range_tree_node *node)
++{
++restart:
++	if (root == node)
++		return root;
++
++	if (node->parent == root) {
++		if (root->left == node)
++			root = rotate_right(root, root);
++		else
++			root = rotate_left(root, root);
++		return root;
++	} else {
++		struct range_tree_node *parent, *grandparent;
++
++		parent = node->parent;
++		grandparent = parent->parent;
++
++		if ((node == parent->left) && (parent == grandparent->left)) {
++			root = rotate_right(grandparent, root);
++			root = rotate_right(parent, root);
++		} else if ((node == parent->right) &&
++					(parent == grandparent->right)) {
++			root = rotate_left(grandparent, root);
++			root = rotate_left(parent, root);
++		} else if ((node == parent->right) &&
++					(parent == grandparent->left)) {
++			root = rotate_left(parent, root);
++			root = rotate_right(grandparent, root);
++		} else if ((node == parent->left) &&
++					(parent == grandparent->right)) {
++			root = rotate_right(parent, root);
++			root = rotate_left(grandparent, root);
++		} else {
++			BUG_ON(1); /* Something is odd */
++		}
++		goto restart;
++	}
++}
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps with the
++ *                       given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range(struct range_tree_node *root,
++						u64 start, u64 end)
++{
++	struct range_tree_node *candidate = root;
++
++	if (!candidate)
++		return 0;
++restart:
++	if (end < candidate->start) {
++		if (candidate->left) {
++			candidate = candidate->left;
++			goto restart;
++		}
++	} else if (start > candidate->end) {
++		if (candidate->right) {
++			candidate = candidate->right;
++			goto restart;
++		}
++	} else
++		return candidate;
++	return 0;
++}
++
++
++/**
++ * range_tree_in_range - Returns the first node that overlaps or is adjacent
++ *                       with the given range
++ * @root: range_tree root
++ * @start: range start
++ * @end: range end
++ *
++ */
++struct range_tree_node *range_tree_in_range_adjacent(
++					struct range_tree_node *root,
++					u64 start, u64 end)
++{
++	struct range_tree_node *candidate = root;
++
++	if (!candidate)
++		return 0;
++restart:
++	if (end + 1 < candidate->start) {
++		if (candidate->left) {
++			candidate = candidate->left;
++			goto restart;
++		}
++	} else if (start > candidate->end + 1) {
++		if (candidate->right) {
++			candidate = candidate->right;
++			goto restart;
++		}
++	} else
++		return candidate;
++	return 0;
++}
++
++/**
++ * range_tree_add - Add a node to a range tree
++ * @root: range tree to be added to
++ * @node: range_tree_node to be added
++ *
++ * Adds a node to the range tree.
++ */
++struct range_tree_node *range_tree_add(struct range_tree_node *root,
++					struct range_tree_node *node)
++{
++	struct range_tree_node *candidate;
++	/* make sure its not connected */
++	BUG_ON(node->parent || node->left || node->right);
++
++	if (!root)
++		return node;
++
++	candidate = root;
++restart:
++	if (node->start < candidate->start) {
++		if (candidate->left) {
++			candidate = candidate->left;
++			goto restart;
++		}
++		candidate->left = node;
++		node->parent = candidate;
++	} else if (node->start > candidate->start) {
++		if (candidate->right) {
++			candidate = candidate->right;
++			goto restart;
++		}
++		candidate->right = node;
++		node->parent = candidate;
++	}
++
++	root = splay_tree(root, node);
++	return root;
++}
++
++/**
++ * range_tree_merge - Helper to merge two range sub-trees
++ * @left: left subtree to be merged
++ * @right: right subtree to be merged
++ *
++ * Returns a merged range tree of two subtrees. left subtree
++ * must be all less then the right subtree.
++ */
++static struct range_tree_node *range_tree_merge(struct range_tree_node *left,
++						struct range_tree_node *right)
++{
++	struct range_tree_node *merge;
++
++	if (!left)
++		return right;
++	if (!right)
++		return left;
++
++	merge = left;
++	/* grab the right-most node on the left side */
++	while (merge->right)
++		merge = merge->right;
++	merge->right = right;
++	if (right)
++		right->parent = merge;
++
++	return left;
++}
++
++/**
++ * null_node: Helper that clears node data
++ * @node: Node to be cleared
++ */
++static void null_node(struct range_tree_node *node)
++{
++	node->left = node->right = node->parent = NULL;
++	node->start = node->end = 0;
++}
++
++/**
++ * range_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++struct range_tree_node *range_tree_remove(struct range_tree_node *root,
++						struct range_tree_node *node)
++{
++	struct range_tree_node *subtree;
++
++	subtree = range_tree_merge(node->left, node->right);
++
++	if (subtree)
++		subtree->parent = node->parent;
++
++	if (node->parent && node->parent->left == node)
++		node->parent->left = subtree;
++	if (node->parent && node->parent->right == node)
++		node->parent->right = subtree;
++
++	null_node(node);
++	if (node == root)
++		return subtree;
++
++	if (subtree)
++		root = splay_tree(root, subtree);
++	return root;
++}
+-- 
+1.7.3.2.146.gca209
+
