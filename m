@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758977Ab2BJKDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 05:03:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39330 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758657Ab2BJKDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 05:03:10 -0500
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, mpatocka@redhat.com,
-        Eric Sandeen <sandeen@sandeen.net>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/2] quota: Fix deadlock with suspend and quotas
-Date: Fri, 10 Feb 2012 11:03:01 +0100
-Message-Id: <1328868181-16979-3-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1328868181-16979-1-git-send-email-jack@suse.cz>
-References: <1328868181-16979-1-git-send-email-jack@suse.cz>
+	id S1758967Ab2BJKFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 05:05:44 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:60661 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758444Ab2BJKFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 05:05:43 -0500
+MIME-Version: 1.0
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/7] TWL6040: Regulator support
+Date: Fri, 10 Feb 2012 12:05:09 +0200
+Message-Id: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script causes a kernel deadlock:
-set -e
-DEVICE=/dev/vg1/linear
-lvchange -ay $DEVICE
-mkfs.ext3 $DEVICE
-mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
-quotacheck -gu /mnt/test
-umount /mnt/test
-mount -t ext3 -o usrquota,grpquota $DEVICE /mnt/test
-quotaon /mnt/test
-dmsetup suspend $DEVICE
-setquota -u root 1 2 3 4 /mnt/test &
-sleep 1
-dmsetup resume $DEVICE
+Hello,
 
-setquota acquired semaphore s_umount for read and then tried to perform a
-transaction (and waits because the device is suspended).  dmsetup resume tries
-to acquire s_umount for write before resuming the device (and waits for
-setquota).
+This series depends on the V3 of MFD: twl6040: Conversion to i2c driver set.
 
-Fix the deadlock by grabbing a thawed superblock for quota commands which need
-it.
+In order to have proper regulator support for twl6040 on SDP4430, and
+PandaBoards I needed to add support for the V1V8, and V2V1 SMPS supplies from
+twl6030.
+The configuration on both boards (and the TRM recommendations) are the same, so
+it make sens to have the V1V8, V2V1 supply configured in the twl-common to avoid
+duplicated code in board files.
 
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+The last patch in this series was part of the V2 of MFD: twl6040: Conversion to
+i2c driver set. I have added Mark's Reviewd-by tag, and also addressed his
+comment regarding to the supplies member of the twl6040 struct (no need to
+allocate it separately).
+
+Regards,
+Peter
 ---
- fs/quota/quota.c |   24 +++++++++++++++++++++---
- 1 files changed, 21 insertions(+), 3 deletions(-)
+Peter Ujfalusi (7):
+  OMAP: 4430SDP: Correct fixed regulator device ID
+  regulator: twl-regulator: Add fixed LDO for V1V8, V2V1 supply
+  MFD: twl-core: regulator configuration for twl6030 V1V8, V2V1 SMPS
+  OMAP4: twl-common: Add twl6030 V1V8, V2V1 SMPS common configuration
+  OMAP: 4430SDP: Use common configuration for V1V8, V2V1 supplies
+  OMAP: omap4panda: Use common configuration for V1V8, V2V1 supplies
+  MFD: TWL6040: Add regulator support for VIO, V2V1 supplies
 
-diff --git a/fs/quota/quota.c b/fs/quota/quota.c
-index 7898cd6..fc2c438 100644
---- a/fs/quota/quota.c
-+++ b/fs/quota/quota.c
-@@ -292,11 +292,26 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
- 	}
- }
- 
-+/* Return 1 if 'cmd' will block on frozen filesystem */
-+static int quotactl_cmd_write(int cmd)
-+{
-+	switch (cmd) {
-+	case Q_GETFMT:
-+	case Q_GETINFO:
-+	case Q_SYNC:
-+	case Q_XGETQSTAT:
-+	case Q_XGETQUOTA:
-+	case Q_XQUOTASYNC:
-+		return 0;
-+	}
-+	return 1;
-+}
-+
- /*
-  * look up a superblock on which quota ops will be performed
-  * - use the name of a block device to find the superblock thereon
-  */
--static struct super_block *quotactl_block(const char __user *special)
-+static struct super_block *quotactl_block(const char __user *special, int cmd)
- {
- #ifdef CONFIG_BLOCK
- 	struct block_device *bdev;
-@@ -309,7 +324,10 @@ static struct super_block *quotactl_block(const char __user *special)
- 	putname(tmp);
- 	if (IS_ERR(bdev))
- 		return ERR_CAST(bdev);
--	sb = get_super(bdev);
-+	if (quotactl_cmd_write(cmd))
-+		sb = get_super_thawed(bdev);
-+	else
-+		sb = get_super(bdev);
- 	bdput(bdev);
- 	if (!sb)
- 		return ERR_PTR(-ENODEV);
-@@ -361,7 +379,7 @@ SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
- 			pathp = &path;
- 	}
- 
--	sb = quotactl_block(special);
-+	sb = quotactl_block(special, cmds);
- 	if (IS_ERR(sb)) {
- 		ret = PTR_ERR(sb);
- 		goto out;
+ arch/arm/mach-omap2/board-4430sdp.c    |   11 ++++++--
+ arch/arm/mach-omap2/board-omap4panda.c |    4 ++-
+ arch/arm/mach-omap2/twl-common.c       |   43 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/twl-common.h       |    2 +
+ drivers/mfd/twl-core.c                 |   10 +++++++
+ drivers/mfd/twl6040-core.c             |   33 +++++++++++++++++++++---
+ drivers/regulator/twl-regulator.c      |    2 +
+ include/linux/i2c/twl.h                |    2 +
+ include/linux/mfd/twl6040.h            |    2 +
+ 9 files changed, 101 insertions(+), 8 deletions(-)
+
 -- 
-1.7.1
+1.7.8.4
 
