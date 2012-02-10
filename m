@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab2BJUeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:34:12 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:59340 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752139Ab2BJUeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:34:10 -0500
-Date: Fri, 10 Feb 2012 12:34:07 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] PCI / PM: Disable wakeup during shutdown for devices
- not enabled to wake up
-Message-ID: <20120210123407.7087d6a4@jbarnes-desktop>
-In-Reply-To: <201202070050.35931.rjw@sisk.pl>
-References: <201202070050.35931.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/L88X/y5H_gfWU8yoLP+iGMc"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1760145Ab2BJUei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:34:38 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:36443 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752139Ab2BJUeg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:34:36 -0500
+From: Philip Rakity <prakity@marvell.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "arindam.nath@amd.com" <arindam.nath@amd.com>,
+        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>
+Date: Fri, 10 Feb 2012 12:28:10 -0800
+Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
+Thread-Topic: mmc sdhci mmcblk0: error -110 sending status command, retrying
+Thread-Index: AczoMoIQTtFjI1iOQgiiuHI0eARKQw==
+Message-ID: <4B11A480-8122-4A0B-A0EE-E1E95477F985@marvell.com>
+References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
+ <m2pqdr2tyq.fsf@bob.laptop.org>
+ <CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
+ <4F30E19B.9020503@intel.com>
+ <CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
+ <4F310529.4020101@intel.com>
+ <CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
+ <CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
+ <CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
+ <CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
+ <4F31B789.9020509@samsung.com>
+ <CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
+ <15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
+ <CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
+In-Reply-To: <CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/L88X/y5H_gfWU8yoLP+iGMc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, 7 Feb 2012 00:50:35 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Feb 10, 2012, at 8:18 AM, Jeff Chua wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->=20
-> If a PCI device is enabled to generate wakeup signals (PME) when put
-> into a low-power state by runtime PM, it will be still enabled to
-> generate those signals after the system shutdown, unless its driver's
-> .shutdown() callback takes care of the wakeup signals generation
-> setting.  Moreover, there are devices that are not enabled to wake
-> up the system and that are configured by runtime PM to generate
-> wakeup signals so that (runtime) remote wakeup works with them.
-> Those devices should be reconfigured during system shutdown so that
-> they don't generate wakeup signals, but at least some drivers don't
-> do that.  However, that very well may be done by the PCI core so
-> that drivers don't have to worry about it.  For this reason, modify
-> pci_device_shutdown() to disable the generation of wakeup events for
-> devices not supposed to wake up the system.
->=20
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=3D37952
-> Reported-and-tested-by: Kamil Iskra <kamil.54002@iskra.name>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/pci/pci-driver.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> Index: linux/drivers/pci/pci-driver.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/pci/pci-driver.c
-> +++ linux/drivers/pci/pci-driver.c
-> @@ -430,6 +430,16 @@ static void pci_device_shutdown(struct d
->  		drv->shutdown(pci_dev);
->  	pci_msi_shutdown(pci_dev);
->  	pci_msix_shutdown(pci_dev);
-> +
-> +	/*
-> +	 * Devices may be enabled to wake up by runtime PM, but they need not
-> +	 * be supposed to wake up the system from its "power off" state (e.g.
-> +	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
-> +	 * supposed to wake up the system at this point.  The state argument
-> +	 * will be ignored by pci_enable_wake().
-> +	 */
-> +	if (!device_may_wakeup(dev))
-> +		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
->  }
-> =20
->  #ifdef CONFIG_PM
->=20
+> On Thu, Feb 9, 2012 at 3:09 AM, Philip Rakity <prakity@marvell.com> wrote:
+>> 
+>> 
+>> Jeff,
+>> 
+>> I think the sdhci.c clock setting code was changed a while ago.   Maybe revert that mod and see what happens.
+>> 
+>> The card is a 24MHz which is rather slow so I would be surprised if that was it.
+>> The other option is the force enable the High Speed bit in the  controller (used when speed is 25MHz or faster).  Will give the system more time (in theory) to work.
+> 
+> That's a good point to start looking. I poked around and by setting
+> host->ios.clock to 10000000 instead of 25000000, read from a 16GB card
+> is no longer giving any error.
+> 
+> I still don't dare to do any write. Already burn one 16GB SD and not
+> ready to trash another. I asked earlier but haven't got any reply as
+> to how to recover an SD that says "No medium found". Any chance of
+> recovering it?
+> 
+> Here's what I did. If set too low (1000000) or too high (25000000),
+> random errors appeared.
+> 
+> --- linux/drivers/mmc/core/core.c.org   2012-02-10 23:57:49.000000000 +0800
+> +++ linux/drivers/mmc/core/core.c       2012-02-10 23:53:59.000000000 +0800
+> @@ -881,7 +881,7 @@
+>        if (hz > host->f_max)
+>                hz = host->f_max;
+> 
+> -       host->ios.clock = hz;
+> +       host->ios.clock = 10000000;
+>        mmc_set_ios(host);
+> }
+> 
+> 
 
-So where do we end up setting the right wakeup state for devices we
-actually *do* want to wake the system from S5?  Presumably later in the
-shutdown sequence?
+good news.  The other possibility but unlikely is that the timeout is too low for the card.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+There is a quirk for this.
 
---Sig_/L88X/y5H_gfWU8yoLP+iGMc
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+SDHCI_BROKEN_TIMEOUT_VAL
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+my guess is that you will need to measure the clk pin and see if it matches the frequency being programmed.  (could be less).
 
-iQIcBAEBAgAGBQJPNX8/AAoJEIEoDkX4Qk9hJkcP/ibuYtU7qFV6Ey42W3NheuWb
-bVajGEw4J/48npAeSqUZ1B0wTruEEoyemN/88QocFmQOLkW215nfN/dj65Ngam7K
-HBE5on3d+7WzrdroPiiUowFlwxlRiZoL9Csi07lgSBY9u9mQIAQn4r5xJu9CtRJF
-zQBTTjP/Bw9VEaE9woy8W9cIVLf9j5lgZOr+G+FF27seDcsFyDXRKK2yGjnnbpjE
-94vWpE5SwRRrbWPFzB+f1kfmfNvYfJBdbEpy+KuQqYJHREm60Dd81B+W89zPKTiE
-H40pSPIDqQuSCSu8u3+rY8NwAyoCnsevEBMS8/NbXia+YtU+OgI8gPBe+o+OBKmm
-lMT3WnkEGXHb287rHsUW46cBA7rd4epNz610Oh71C3P6Axf2w/YaFWKdjZ621iF5
-USr6RveeYlRvkGMov5wFMzc61Qehnb+d3o4wZTHsM6m3x4WnXL3h7+xWdS5s6Dnk
-Dhu2hbye2x7Ye0bh+96FPdsUp0rVrFyYIQNp+7jeL2bAVVQNGoEGFNF4hAl+pXKZ
-/2nrnMUDMw51hkIF/rAeTL5zqIBOjECNMBrgo8FLx2cpdfSGPppXUSTKwz+UNNKq
-25VrWT8D/GqMiJxOa3qAaTNo/6XFzwenVsPDRBmI0GTum/dBILBkRYycoWABUUP0
-Rj0O1yWHoW3B1ntLLWEB
-=7pdL
------END PGP SIGNATURE-----
+a simple hack is to add a printk to set_ios() or set_clock() and print out the clock rate clock register (divider) and see if they match what you should be seeing.
+It is possible the bug is NOT in this area but in the platform code where an incorrect base freq is being setup for the controller.
 
---Sig_/L88X/y5H_gfWU8yoLP+iGMc--
+Philip
+
+> 
+> Thanks,
+> Jeff
+
