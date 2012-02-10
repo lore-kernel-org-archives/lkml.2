@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab2BJPlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:41:47 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:42906
+	id S1758074Ab2BJPmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:42:43 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:42911
 	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751904Ab2BJPlq (ORCPT
+	by vger.kernel.org with ESMTP id S1753005Ab2BJPmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:41:46 -0500
+	Fri, 10 Feb 2012 10:42:42 -0500
 From: Masanari Iida <standby24x7@gmail.com>
 To: wim@iguana.be, linux-watchdog@vger.kernel.org
 Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] watchdog: Fix typo in pnx4008_wdt.c
-Date: Sat, 11 Feb 2012 00:40:56 +0900
-Message-Id: <1328888456-3827-1-git-send-email-standby24x7@gmail.com>
+Subject: [PATCH] [trivial] watchdog: Fix typo in Kconfig
+Date: Sat, 11 Feb 2012 00:42:16 +0900
+Message-Id: <1328888536-3872-1-git-send-email-standby24x7@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "resouce" to "resource" in
-drivers/watchdog/pnx4008_wdt.c
+Correct spelling "overidden" to "overridden" in
+drivers/watchdog/Kconfig
 
 Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- drivers/watchdog/pnx4008_wdt.c |    2 +-
+ drivers/watchdog/Kconfig |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/watchdog/pnx4008_wdt.c b/drivers/watchdog/pnx4008_wdt.c
-index 8e210aa..dfae030 100644
---- a/drivers/watchdog/pnx4008_wdt.c
-+++ b/drivers/watchdog/pnx4008_wdt.c
-@@ -264,7 +264,7 @@ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
- 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (wdt_mem == NULL) {
- 		printk(KERN_INFO MODULE_NAME
--			"failed to get memory region resouce\n");
-+			"failed to get memory region resource\n");
- 		return -ENOENT;
- 	}
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 877b107..df9e8f0 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -1098,7 +1098,7 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+ 	  For Freescale Book-E processors, this is a number between 0 and 63.
+ 	  For other Book-E processors, this is a number between 0 and 3.
+ 
+-	  The value can be overidden by the wdt_period command-line parameter.
++	  The value can be overridden by the wdt_period command-line parameter.
+ 
+ # PPC64 Architecture
  
 -- 
 1.7.6.5
