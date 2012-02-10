@@ -1,108 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab2BJRbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:31:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab2BJRa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:30:59 -0500
-Date: Fri, 10 Feb 2012 18:24:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] ptrace: remove PTRACE_SEIZE_DEVEL bit
-Message-ID: <20120210172427.GE8908@redhat.com>
-References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com> <1328884991-23889-2-git-send-email-vda.linux@googlemail.com> <1328884991-23889-3-git-send-email-vda.linux@googlemail.com> <1328884991-23889-4-git-send-email-vda.linux@googlemail.com> <1328884991-23889-5-git-send-email-vda.linux@googlemail.com> <1328884991-23889-6-git-send-email-vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328884991-23889-6-git-send-email-vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759571Ab2BJRck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:32:40 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17584 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab2BJRcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:32:36 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 10 Feb 2012 18:32:15 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCHv21 00/16] Contiguous Memory Allocator
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
+Message-id: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10, Denys Vlasenko wrote:
->
-> PTRACE_SEIZE code is tested and ready for production use,
-> remove the code which requires special bit in data argument
-> to make PTRACE_SEIZE work.
->
-> Strace team prepares for a new release of strace, and we
-> would like to ship the code which uses PTRACE_SEIZE,
-> preferably after this change goes into released kernel.
->
-> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Hello,
 
-Personally I agree with this change. PTRACE_SEIZE_DEVEL complicates
-the testing/development for the user-space.
+This is yet another quick update on CMA patches (this should be the last
+one, really). We fixed minor bug which might cause incorrect operation
+of memory compaction code as well as merged some simple updates to
+memory reclaim function called by alloc_contig_range. 
 
-Tejun, do you agree?
+I really hope that this will be a last iteration of this series.
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
--
->  include/linux/ptrace.h |    5 +----
->  kernel/ptrace.c        |   15 ---------------
->  2 files changed, 1 insertions(+), 19 deletions(-)
-> 
-> diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-> index ec6571c..6dffe18 100644
-> --- a/include/linux/ptrace.h
-> +++ b/include/linux/ptrace.h
-> @@ -51,9 +51,6 @@
->  #define PTRACE_INTERRUPT	0x4207
->  #define PTRACE_LISTEN		0x4208
->  
-> -/* flags in @data for PTRACE_SEIZE */
-> -#define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
-> -
->  /* Wait extended result codes for the above trace options.  */
->  #define PTRACE_EVENT_FORK	1
->  #define PTRACE_EVENT_VFORK	2
-> @@ -64,7 +61,7 @@
->  /* Extended result codes which enabled by means other than options.  */
->  #define PTRACE_EVENT_STOP	128
->  
-> -/* options set using PTRACE_SETOPTIONS */
-> +/* Options set using PTRACE_SETOPTIONS or using PTRACE_SEIZE @data param */
->  #define PTRACE_O_TRACESYSGOOD	1
->  #define PTRACE_O_TRACEFORK	(1 << PTRACE_EVENT_FORK)
->  #define PTRACE_O_TRACEVFORK	(1 << PTRACE_EVENT_VFORK)
-> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-> index 99a18a0..32846f7 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -237,25 +237,10 @@ static int ptrace_attach(struct task_struct *task, long request,
->  	bool seize = (request == PTRACE_SEIZE);
->  	int retval;
->  
-> -	/*
-> -	 * SEIZE will enable new ptrace behaviors which will be implemented
-> -	 * gradually.  SEIZE_DEVEL bit is used to prevent applications
-> -	 * expecting full SEIZE behaviors trapping on kernel commits which
-> -	 * are still in the process of implementing them.
-> -	 *
-> -	 * Only test programs for new ptrace behaviors being implemented
-> -	 * should set SEIZE_DEVEL.  If unset, SEIZE will fail with -EIO.
-> -	 *
-> -	 * Once SEIZE behaviors are completely implemented, this flag
-> -	 * will be removed.
-> -	 */
->  	retval = -EIO;
->  	if (seize) {
->  		if (addr != 0)
->  			goto out;
-> -		if (!(flags & PTRACE_SEIZE_DEVEL))
-> -			goto out;
-> -		flags &= ~(unsigned long)PTRACE_SEIZE_DEVEL;
->  		if (flags & ~(unsigned long)PTRACE_O_MASK)
->  			goto out;
->  		flags = PT_PTRACED | PT_SEIZED | (flags << PT_OPT_FLAG_SHIFT);
-> -- 
-> 1.7.7.6
-> 
+Links to previous versions of the patchset:
+v20: <http://www.spinics.net/lists/linux-mm/msg29145.html>
+v19: <http://www.spinics.net/lists/linux-mm/msg29145.html>
+v18: <http://www.spinics.net/lists/linux-mm/msg28125.html>
+v17: <http://www.spinics.net/lists/arm-kernel/msg148499.html>
+v16: <http://www.spinics.net/lists/linux-mm/msg25066.html>
+v15: <http://www.spinics.net/lists/linux-mm/msg23365.html>
+v14: <http://www.spinics.net/lists/linux-media/msg36536.html>
+v13: (internal, intentionally not released)
+v12: <http://www.spinics.net/lists/linux-media/msg35674.html>
+v11: <http://www.spinics.net/lists/linux-mm/msg21868.html>
+v10: <http://www.spinics.net/lists/linux-mm/msg20761.html>
+ v9: <http://article.gmane.org/gmane.linux.kernel.mm/60787>
+ v8: <http://article.gmane.org/gmane.linux.kernel.mm/56855>
+ v7: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
+ v6: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
+ v5: (intentionally left out as CMA v5 was identical to CMA v4)
+ v4: <http://article.gmane.org/gmane.linux.kernel.mm/52010>
+ v3: <http://article.gmane.org/gmane.linux.kernel.mm/51573>
+ v2: <http://article.gmane.org/gmane.linux.kernel.mm/50986>
+ v1: <http://article.gmane.org/gmane.linux.kernel.mm/50669>
+
+
+Changelog:
+
+v21:
+    1. Fixed incorrect check which broke memory compaction code
+
+    2. Fixed hacky and racy min_free_kbytes handling
+
+    3. Added serialization patch to watermark calculation
+
+    4. Fixed typos here and there in the comments
+
+v20 and earlier - see previous patchsets.
+
+
+Patches in this patchset:
+
+Marek Szyprowski (6):
+  mm: extract reclaim code from __alloc_pages_direct_reclaim()
+  mm: trigger page reclaim in alloc_contig_range() to stabilise
+    watermarks
+  drivers: add Contiguous Memory Allocator
+  X86: integrate CMA with DMA-mapping subsystem
+  ARM: integrate CMA with DMA-mapping subsystem
+  ARM: Samsung: use CMA for 2 memory banks for s5p-mfc device
+
+Mel Gorman (1):
+  mm: Serialize access to min_free_kbytes
+
+Michal Nazarewicz (9):
+  mm: page_alloc: remove trailing whitespace
+  mm: compaction: introduce isolate_migratepages_range()
+  mm: compaction: introduce map_pages()
+  mm: compaction: introduce isolate_freepages_range()
+  mm: compaction: export some of the functions
+  mm: page_alloc: introduce alloc_contig_range()
+  mm: page_alloc: change fallbacks array handling
+  mm: mmzone: MIGRATE_CMA migration type added
+  mm: page_isolation: MIGRATE_CMA isolation functions added
+
+ Documentation/kernel-parameters.txt   |    9 +
+ arch/Kconfig                          |    3 +
+ arch/arm/Kconfig                      |    2 +
+ arch/arm/include/asm/dma-contiguous.h |   16 ++
+ arch/arm/include/asm/mach/map.h       |    1 +
+ arch/arm/kernel/setup.c               |    9 +-
+ arch/arm/mm/dma-mapping.c             |  368 ++++++++++++++++++++++++------
+ arch/arm/mm/init.c                    |   24 ++-
+ arch/arm/mm/mm.h                      |    3 +
+ arch/arm/mm/mmu.c                     |   31 ++-
+ arch/arm/plat-s5p/dev-mfc.c           |   51 +----
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/dma-contiguous.h |   13 +
+ arch/x86/include/asm/dma-mapping.h    |    4 +
+ arch/x86/kernel/pci-dma.c             |   18 ++-
+ arch/x86/kernel/pci-nommu.c           |    8 +-
+ arch/x86/kernel/setup.c               |    2 +
+ drivers/base/Kconfig                  |   89 +++++++
+ drivers/base/Makefile                 |    1 +
+ drivers/base/dma-contiguous.c         |  403 +++++++++++++++++++++++++++++++
+ include/asm-generic/dma-contiguous.h  |   27 ++
+ include/linux/device.h                |    4 +
+ include/linux/dma-contiguous.h        |  110 +++++++++
+ include/linux/gfp.h                   |   12 +
+ include/linux/mmzone.h                |   47 +++-
+ include/linux/page-isolation.h        |   18 +-
+ mm/Kconfig                            |    2 +-
+ mm/Makefile                           |    3 +-
+ mm/compaction.c                       |  418 +++++++++++++++++++++------------
+ mm/internal.h                         |   33 +++
+ mm/memory-failure.c                   |    2 +-
+ mm/memory_hotplug.c                   |    6 +-
+ mm/page_alloc.c                       |  413 ++++++++++++++++++++++++++++----
+ mm/page_isolation.c                   |   15 +-
+ mm/vmstat.c                           |    3 +
+ 35 files changed, 1794 insertions(+), 375 deletions(-)
+ create mode 100644 arch/arm/include/asm/dma-contiguous.h
+ create mode 100644 arch/x86/include/asm/dma-contiguous.h
+ create mode 100644 drivers/base/dma-contiguous.c
+ create mode 100644 include/asm-generic/dma-contiguous.h
+ create mode 100644 include/linux/dma-contiguous.h
+
+-- 
+1.7.1.569.g6f426
 
