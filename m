@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895Ab2BJXDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:03:54 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932880Ab2BJWoG (ORCPT
+	id S932908Ab2BJXEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:04:34 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932838Ab2BJWnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:06 -0500
+	Fri, 10 Feb 2012 17:43:47 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223441.390048075@clark.kroah.org>
+Message-Id: <20120210222951.148532627@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:16 -0800
+Date: Fri, 10 Feb 2012 14:30:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oleg Nesterov <oleg@redhat.com>
-Subject: [patch 12/55] proc: make sure mem_open() doesnt pin the targets memory
-In-Reply-To: <20120210223500.GA24178@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [patch 69/86] target: Correct sense key for INVALID FIELD IN {PARAMETER LIST,CDB}
+In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 6d08f2c7139790c268820a2e590795cb8333181a upstream.
+commit 9fbc8909876a2160044e71d376848973b9bfdc3f upstream.
 
-Once /proc/pid/mem is opened, the memory can't be released until
-mem_release() even if its owner exits.
+According to SPC-4, the sense key for commands that are failed with
+INVALID FIELD IN PARAMETER LIST and INVALID FIELD IN CDB should be
+ILLEGAL REQUEST (5h) rather than ABORTED COMMAND (Bh).  Without this
+patch, a tcm_loop LUN incorrectly gives:
 
-Change mem_open() to do atomic_inc(mm_count) + mmput(), this only
-pins mm_struct. Change mem_rw() to do atomic_inc_not_zero(mm_count)
-before access_remote_vm(), this verifies that this mm is still alive.
+    # sg_raw -r 1 -v /dev/sda 3 1 0 0 ff 0
+    Sense Information:
+     Fixed format, current;  Sense key: Aborted Command
+     Additional sense: Invalid field in cdb
+     Raw sense data (in hex):
+            70 00 0b 00 00 00 00 0a  00 00 00 00 24 00 00 00
+            00 00
 
-I am not sure what should mem_rw() return if atomic_inc_not_zero()
-fails. With this patch it returns zero to match the "mm == NULL" case,
-may be it should return -EINVAL like it did before e268337d.
+While a real SCSI disk gives:
 
-Perhaps it makes sense to add the additional fatal_signal_pending()
-check into the main loop, to ensure we do not hold this memory if
-the target task was oom-killed.
+    Sense Information:
+     Fixed format, current;  Sense key: Illegal Request
+     Additional sense: Invalid field in cdb
+     Raw sense data (in hex):
+            70 00 05 00 00 00 00 18  00 00 00 00 24 00 00 00
+            00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+with the main point being that the real disk gives a sense key of
+ILLEGAL REQUEST (5h).
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/base.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/target/target_core_transport.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -775,6 +775,13 @@ static int mem_open(struct inode* inode,
- 	if (IS_ERR(mm))
- 		return PTR_ERR(mm);
- 
-+	if (mm) {
-+		/* ensure this mm_struct can't be freed */
-+		atomic_inc(&mm->mm_count);
-+		/* but do not pin its memory */
-+		mmput(mm);
-+	}
-+
- 	/* OK to pass negative loff_t, we can catch out-of-range */
- 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
- 	file->private_data = mm;
-@@ -798,6 +805,9 @@ static ssize_t mem_rw(struct file *file,
- 		return -ENOMEM;
- 
- 	copied = 0;
-+	if (!atomic_inc_not_zero(&mm->mm_users))
-+		goto free;
-+
- 	while (count > 0) {
- 		int this_len = min_t(int, count, PAGE_SIZE);
- 
-@@ -825,6 +835,8 @@ static ssize_t mem_rw(struct file *file,
- 	}
- 	*ppos = addr;
- 
-+	mmput(mm);
-+free:
- 	free_page((unsigned long) page);
- 	return copied;
- }
-@@ -861,7 +873,7 @@ static int mem_release(struct inode *ino
- {
- 	struct mm_struct *mm = file->private_data;
- 	if (mm)
--		mmput(mm);
-+		mmdrop(mm);
- 	return 0;
- }
- 
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -4403,8 +4403,8 @@ int transport_send_check_condition_and_s
+ 		/* CURRENT ERROR */
+ 		buffer[offset] = 0x70;
+ 		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
+-		/* ABORTED COMMAND */
+-		buffer[offset+SPC_SENSE_KEY_OFFSET] = ABORTED_COMMAND;
++		/* ILLEGAL REQUEST */
++		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+ 		/* INVALID FIELD IN CDB */
+ 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x24;
+ 		break;
+@@ -4412,8 +4412,8 @@ int transport_send_check_condition_and_s
+ 		/* CURRENT ERROR */
+ 		buffer[offset] = 0x70;
+ 		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
+-		/* ABORTED COMMAND */
+-		buffer[offset+SPC_SENSE_KEY_OFFSET] = ABORTED_COMMAND;
++		/* ILLEGAL REQUEST */
++		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+ 		/* INVALID FIELD IN PARAMETER LIST */
+ 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x26;
+ 		break;
 
 
