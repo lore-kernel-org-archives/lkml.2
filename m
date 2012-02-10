@@ -1,323 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab2BJFpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:45:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9755 "EHLO mx1.redhat.com"
+	id S932462Ab2BJFpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:45:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13222 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab2BJFpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:45:15 -0500
+	id S932432Ab2BJFpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:45:19 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH 28/60] btrfs: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:49 +0800
-Message-Id: <1328852421-19678-29-git-send-email-amwang@redhat.com>
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 27/60] fs: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:48 +0800
+Message-Id: <1328852421-19678-28-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- fs/btrfs/compression.c |   12 ++++++------
- fs/btrfs/extent_io.c   |   16 ++++++++--------
- fs/btrfs/file-item.c   |    4 ++--
- fs/btrfs/inode.c       |   26 +++++++++++++-------------
- fs/btrfs/lzo.c         |    4 ++--
- fs/btrfs/scrub.c       |    8 ++++----
- fs/btrfs/zlib.c        |    4 ++--
- 7 files changed, 37 insertions(+), 37 deletions(-)
+ fs/aio.c            |   30 +++++++++++++++---------------
+ fs/bio-integrity.c  |   10 +++++-----
+ fs/exec.c           |    4 ++--
+ fs/namei.c          |    4 ++--
+ fs/pipe.c           |    8 ++++----
+ fs/splice.c         |    7 ++-----
+ include/linux/bio.h |    8 ++++----
+ 7 files changed, 34 insertions(+), 37 deletions(-)
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index 14f1c5a..93f4af1 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -120,10 +120,10 @@ static int check_compressed_csum(struct inode *inode,
- 		page = cb->compressed_pages[i];
- 		csum = ~(u32)0;
+diff --git a/fs/aio.c b/fs/aio.c
+index 969beb0..04ae7e2 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -160,7 +160,7 @@ static int aio_setup_ring(struct kioctx *ctx)
  
--		kaddr = kmap_atomic(page, KM_USER0);
-+		kaddr = kmap_atomic(page);
- 		csum = btrfs_csum_data(root, kaddr, csum, PAGE_CACHE_SIZE);
- 		btrfs_csum_final(csum, (char *)&csum);
+ 	info->nr = nr_events;		/* trusted copy */
+ 
+-	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
++	ring = kmap_atomic(info->ring_pages[0]);
+ 	ring->nr = nr_events;	/* user copy */
+ 	ring->id = ctx->user_id;
+ 	ring->head = ring->tail = 0;
+@@ -168,32 +168,32 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	ring->compat_features = AIO_RING_COMPAT_FEATURES;
+ 	ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
+ 	ring->header_length = sizeof(struct aio_ring);
+-	kunmap_atomic(ring, KM_USER0);
++	kunmap_atomic(ring);
+ 
+ 	return 0;
+ }
+ 
+ 
+ /* aio_ring_event: returns a pointer to the event at the given index from
+- * kmap_atomic(, km).  Release the pointer with put_aio_ring_event();
++ * kmap_atomic().  Release the pointer with put_aio_ring_event();
+  */
+ #define AIO_EVENTS_PER_PAGE	(PAGE_SIZE / sizeof(struct io_event))
+ #define AIO_EVENTS_FIRST_PAGE	((PAGE_SIZE - sizeof(struct aio_ring)) / sizeof(struct io_event))
+ #define AIO_EVENTS_OFFSET	(AIO_EVENTS_PER_PAGE - AIO_EVENTS_FIRST_PAGE)
+ 
+-#define aio_ring_event(info, nr, km) ({					\
++#define aio_ring_event(info, nr) ({					\
+ 	unsigned pos = (nr) + AIO_EVENTS_OFFSET;			\
+ 	struct io_event *__event;					\
+ 	__event = kmap_atomic(						\
+-			(info)->ring_pages[pos / AIO_EVENTS_PER_PAGE], km); \
++			(info)->ring_pages[pos / AIO_EVENTS_PER_PAGE]); \
+ 	__event += pos % AIO_EVENTS_PER_PAGE;				\
+ 	__event;							\
+ })
+ 
+-#define put_aio_ring_event(event, km) do {	\
++#define put_aio_ring_event(event) do {		\
+ 	struct io_event *__event = (event);	\
+ 	(void)__event;				\
+-	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK), km); \
++	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK)); \
+ } while(0)
+ 
+ static void ctx_rcu_free(struct rcu_head *head)
+@@ -1019,10 +1019,10 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 	if (kiocbIsCancelled(iocb))
+ 		goto put_rq;
+ 
+-	ring = kmap_atomic(info->ring_pages[0], KM_IRQ1);
++	ring = kmap_atomic(info->ring_pages[0]);
+ 
+ 	tail = info->tail;
+-	event = aio_ring_event(info, tail, KM_IRQ0);
++	event = aio_ring_event(info, tail);
+ 	if (++tail >= info->nr)
+ 		tail = 0;
+ 
+@@ -1043,8 +1043,8 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 	info->tail = tail;
+ 	ring->tail = tail;
+ 
+-	put_aio_ring_event(event, KM_IRQ0);
+-	kunmap_atomic(ring, KM_IRQ1);
++	put_aio_ring_event(event);
++	kunmap_atomic(ring);
+ 
+ 	pr_debug("added to ring %p at [%lu]\n", iocb, tail);
+ 
+@@ -1089,7 +1089,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
+ 	unsigned long head;
+ 	int ret = 0;
+ 
+-	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
++	ring = kmap_atomic(info->ring_pages[0]);
+ 	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail,
+ 		 (unsigned long)ring->nr);
+@@ -1101,18 +1101,18 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
+ 
+ 	head = ring->head % info->nr;
+ 	if (head != ring->tail) {
+-		struct io_event *evp = aio_ring_event(info, head, KM_USER1);
++		struct io_event *evp = aio_ring_event(info, head);
+ 		*ent = *evp;
+ 		head = (head + 1) % info->nr;
+ 		smp_mb(); /* finish reading the event before updatng the head */
+ 		ring->head = head;
+ 		ret = 1;
+-		put_aio_ring_event(evp, KM_USER1);
++		put_aio_ring_event(evp);
+ 	}
+ 	spin_unlock(&info->ring_lock);
+ 
+ out:
+-	kunmap_atomic(ring, KM_USER0);
++	kunmap_atomic(ring);
+ 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail);
+ 	return ret;
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index c2183f3..e85c04b 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -357,7 +357,7 @@ static void bio_integrity_generate(struct bio *bio)
+ 	bix.sector_size = bi->sector_size;
+ 
+ 	bio_for_each_segment(bv, bio, i) {
+-		void *kaddr = kmap_atomic(bv->bv_page, KM_USER0);
++		void *kaddr = kmap_atomic(bv->bv_page);
+ 		bix.data_buf = kaddr + bv->bv_offset;
+ 		bix.data_size = bv->bv_len;
+ 		bix.prot_buf = prot_buf;
+@@ -371,7 +371,7 @@ static void bio_integrity_generate(struct bio *bio)
+ 		total += sectors * bi->tuple_size;
+ 		BUG_ON(total > bio->bi_integrity->bip_size);
+ 
 -		kunmap_atomic(kaddr, KM_USER0);
 +		kunmap_atomic(kaddr);
- 
- 		if (csum != *cb_sum) {
- 			printk(KERN_INFO "btrfs csum failed ino %llu "
-@@ -521,10 +521,10 @@ static noinline int add_ra_bio_pages(struct inode *inode,
- 			if (zero_offset) {
- 				int zeros;
- 				zeros = PAGE_CACHE_SIZE - zero_offset;
--				userpage = kmap_atomic(page, KM_USER0);
-+				userpage = kmap_atomic(page);
- 				memset(userpage + zero_offset, 0, zeros);
- 				flush_dcache_page(page);
--				kunmap_atomic(userpage, KM_USER0);
-+				kunmap_atomic(userpage);
- 			}
- 		}
- 
-@@ -991,9 +991,9 @@ int btrfs_decompress_buf2page(char *buf, unsigned long buf_start,
- 		bytes = min(PAGE_CACHE_SIZE - *pg_offset,
- 			    PAGE_CACHE_SIZE - buf_offset);
- 		bytes = min(bytes, working_bytes);
--		kaddr = kmap_atomic(page_out, KM_USER0);
-+		kaddr = kmap_atomic(page_out);
- 		memcpy(kaddr + *pg_offset, buf + buf_offset, bytes);
--		kunmap_atomic(kaddr, KM_USER0);
-+		kunmap_atomic(kaddr);
- 		flush_dcache_page(page_out);
- 
- 		*pg_offset += bytes;
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index fcf77e1..8a57b0d 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2535,10 +2535,10 @@ static int __extent_read_full_page(struct extent_io_tree *tree,
- 
- 		if (zero_offset) {
- 			iosize = PAGE_CACHE_SIZE - zero_offset;
--			userpage = kmap_atomic(page, KM_USER0);
-+			userpage = kmap_atomic(page);
- 			memset(userpage + zero_offset, 0, iosize);
- 			flush_dcache_page(page);
--			kunmap_atomic(userpage, KM_USER0);
-+			kunmap_atomic(userpage);
- 		}
  	}
- 	while (cur <= end) {
-@@ -2547,10 +2547,10 @@ static int __extent_read_full_page(struct extent_io_tree *tree,
- 			struct extent_state *cached = NULL;
+ }
  
- 			iosize = PAGE_CACHE_SIZE - pg_offset;
--			userpage = kmap_atomic(page, KM_USER0);
-+			userpage = kmap_atomic(page);
- 			memset(userpage + pg_offset, 0, iosize);
- 			flush_dcache_page(page);
--			kunmap_atomic(userpage, KM_USER0);
-+			kunmap_atomic(userpage);
- 			set_extent_uptodate(tree, cur, cur + iosize - 1,
- 					    &cached, GFP_NOFS);
- 			unlock_extent_cached(tree, cur, cur + iosize - 1,
-@@ -2596,10 +2596,10 @@ static int __extent_read_full_page(struct extent_io_tree *tree,
- 			char *userpage;
- 			struct extent_state *cached = NULL;
+@@ -498,7 +498,7 @@ static int bio_integrity_verify(struct bio *bio)
+ 	bix.sector_size = bi->sector_size;
  
--			userpage = kmap_atomic(page, KM_USER0);
-+			userpage = kmap_atomic(page);
- 			memset(userpage + pg_offset, 0, iosize);
- 			flush_dcache_page(page);
--			kunmap_atomic(userpage, KM_USER0);
-+			kunmap_atomic(userpage);
+ 	bio_for_each_segment(bv, bio, i) {
+-		void *kaddr = kmap_atomic(bv->bv_page, KM_USER0);
++		void *kaddr = kmap_atomic(bv->bv_page);
+ 		bix.data_buf = kaddr + bv->bv_offset;
+ 		bix.data_size = bv->bv_len;
+ 		bix.prot_buf = prot_buf;
+@@ -507,7 +507,7 @@ static int bio_integrity_verify(struct bio *bio)
+ 		ret = bi->verify_fn(&bix);
  
- 			set_extent_uptodate(tree, cur, cur + iosize - 1,
- 					    &cached, GFP_NOFS);
-@@ -2745,10 +2745,10 @@ static int __extent_writepage(struct page *page, struct writeback_control *wbc,
- 	if (page->index == end_index) {
- 		char *userpage;
- 
--		userpage = kmap_atomic(page, KM_USER0);
-+		userpage = kmap_atomic(page);
- 		memset(userpage + pg_offset, 0,
- 		       PAGE_CACHE_SIZE - pg_offset);
--		kunmap_atomic(userpage, KM_USER0);
-+		kunmap_atomic(userpage);
- 		flush_dcache_page(page);
- 	}
- 	pg_offset = 0;
-diff --git a/fs/btrfs/file-item.c b/fs/btrfs/file-item.c
-index c7fb3a4..078b4fd 100644
---- a/fs/btrfs/file-item.c
-+++ b/fs/btrfs/file-item.c
-@@ -447,13 +447,13 @@ int btrfs_csum_one_bio(struct btrfs_root *root, struct inode *inode,
- 			sums->bytenr = ordered->start;
- 		}
- 
--		data = kmap_atomic(bvec->bv_page, KM_USER0);
-+		data = kmap_atomic(bvec->bv_page);
- 		sector_sum->sum = ~(u32)0;
- 		sector_sum->sum = btrfs_csum_data(root,
- 						  data + bvec->bv_offset,
- 						  sector_sum->sum,
- 						  bvec->bv_len);
--		kunmap_atomic(data, KM_USER0);
-+		kunmap_atomic(data);
- 		btrfs_csum_final(sector_sum->sum,
- 				 (char *)&sector_sum->sum);
- 		sector_sum->bytenr = disk_bytenr;
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 32214fe..a5adfe6 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -173,9 +173,9 @@ static noinline int insert_inline_extent(struct btrfs_trans_handle *trans,
- 			cur_size = min_t(unsigned long, compressed_size,
- 				       PAGE_CACHE_SIZE);
- 
--			kaddr = kmap_atomic(cpage, KM_USER0);
-+			kaddr = kmap_atomic(cpage);
- 			write_extent_buffer(leaf, kaddr, ptr, cur_size);
+ 		if (ret) {
 -			kunmap_atomic(kaddr, KM_USER0);
 +			kunmap_atomic(kaddr);
+ 			return ret;
+ 		}
  
- 			i++;
- 			ptr += cur_size;
-@@ -187,10 +187,10 @@ static noinline int insert_inline_extent(struct btrfs_trans_handle *trans,
- 		page = find_get_page(inode->i_mapping,
- 				     start >> PAGE_CACHE_SHIFT);
- 		btrfs_set_file_extent_compression(leaf, ei, 0);
+@@ -517,7 +517,7 @@ static int bio_integrity_verify(struct bio *bio)
+ 		total += sectors * bi->tuple_size;
+ 		BUG_ON(total > bio->bi_integrity->bip_size);
+ 
+-		kunmap_atomic(kaddr, KM_USER0);
++		kunmap_atomic(kaddr);
+ 	}
+ 
+ 	return ret;
+diff --git a/fs/exec.c b/fs/exec.c
+index 92ce83a..7043408e 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1339,13 +1339,13 @@ int remove_arg_zero(struct linux_binprm *bprm)
+ 			ret = -EFAULT;
+ 			goto out;
+ 		}
 -		kaddr = kmap_atomic(page, KM_USER0);
 +		kaddr = kmap_atomic(page);
- 		offset = start & (PAGE_CACHE_SIZE - 1);
- 		write_extent_buffer(leaf, kaddr + offset, ptr, size);
+ 
+ 		for (; offset < PAGE_SIZE && kaddr[offset];
+ 				offset++, bprm->p++)
+ 			;
+ 
 -		kunmap_atomic(kaddr, KM_USER0);
 +		kunmap_atomic(kaddr);
- 		page_cache_release(page);
- 	}
- 	btrfs_mark_buffer_dirty(leaf);
-@@ -422,10 +422,10 @@ again:
- 			 * sending it down to disk
- 			 */
- 			if (offset) {
--				kaddr = kmap_atomic(page, KM_USER0);
-+				kaddr = kmap_atomic(page);
- 				memset(kaddr + offset, 0,
- 				       PAGE_CACHE_SIZE - offset);
--				kunmap_atomic(kaddr, KM_USER0);
-+				kunmap_atomic(kaddr);
- 			}
- 			will_compress = 1;
- 		}
-@@ -1863,7 +1863,7 @@ static int btrfs_readpage_end_io_hook(struct page *page, u64 start, u64 end,
- 	} else {
- 		ret = get_state_private(io_tree, start, &private);
- 	}
+ 		put_arg_page(page);
+ 
+ 		if (offset == PAGE_SIZE)
+diff --git a/fs/namei.c b/fs/namei.c
+index 208c6aa..dcc4f42 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3347,9 +3347,9 @@ retry:
+ 	if (err)
+ 		goto fail;
+ 
 -	kaddr = kmap_atomic(page, KM_USER0);
 +	kaddr = kmap_atomic(page);
- 	if (ret)
- 		goto zeroit;
- 
-@@ -1872,7 +1872,7 @@ static int btrfs_readpage_end_io_hook(struct page *page, u64 start, u64 end,
- 	if (csum != private)
- 		goto zeroit;
- 
+ 	memcpy(kaddr, symname, len-1);
 -	kunmap_atomic(kaddr, KM_USER0);
 +	kunmap_atomic(kaddr);
- good:
- 	return 0;
  
-@@ -1884,7 +1884,7 @@ zeroit:
- 		       (unsigned long long)private);
- 	memset(kaddr + offset, 1, end - start + 1);
- 	flush_dcache_page(page);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 	if (private == 0)
- 		return 0;
- 	return -EIO;
-@@ -4909,12 +4909,12 @@ static noinline int uncompress_inline(struct btrfs_path *path,
- 	ret = btrfs_decompress(compress_type, tmp, page,
- 			       extent_offset, inline_size, max_size);
- 	if (ret) {
--		char *kaddr = kmap_atomic(page, KM_USER0);
-+		char *kaddr = kmap_atomic(page);
- 		unsigned long copy_size = min_t(u64,
- 				  PAGE_CACHE_SIZE - pg_offset,
- 				  max_size - extent_offset);
- 		memset(kaddr + pg_offset, 0, copy_size);
--		kunmap_atomic(kaddr, KM_USER0);
-+		kunmap_atomic(kaddr);
+ 	err = pagecache_write_end(NULL, mapping, 0, len-1, len-1,
+ 							page, fsdata);
+diff --git a/fs/pipe.c b/fs/pipe.c
+index a932ced..fe0502f 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -230,7 +230,7 @@ void *generic_pipe_buf_map(struct pipe_inode_info *pipe,
+ {
+ 	if (atomic) {
+ 		buf->flags |= PIPE_BUF_FLAG_ATOMIC;
+-		return kmap_atomic(buf->page, KM_USER0);
++		return kmap_atomic(buf->page);
  	}
- 	kfree(tmp);
- 	return 0;
-@@ -5691,11 +5691,11 @@ static void btrfs_endio_direct_read(struct bio *bio, int err)
- 			unsigned long flags;
  
- 			local_irq_save(flags);
--			kaddr = kmap_atomic(page, KM_IRQ0);
-+			kaddr = kmap_atomic(page);
- 			csum = btrfs_csum_data(root, kaddr + bvec->bv_offset,
- 					       csum, bvec->bv_len);
- 			btrfs_csum_final(csum, (char *)&csum);
--			kunmap_atomic(kaddr, KM_IRQ0);
-+			kunmap_atomic(kaddr);
- 			local_irq_restore(flags);
- 
- 			flush_dcache_page(bvec->bv_page);
-diff --git a/fs/btrfs/lzo.c b/fs/btrfs/lzo.c
-index a178f5e..743b86f 100644
---- a/fs/btrfs/lzo.c
-+++ b/fs/btrfs/lzo.c
-@@ -411,9 +411,9 @@ static int lzo_decompress(struct list_head *ws, unsigned char *data_in,
- 
- 	bytes = min_t(unsigned long, destlen, out_len - start_byte);
- 
--	kaddr = kmap_atomic(dest_page, KM_USER0);
-+	kaddr = kmap_atomic(dest_page);
- 	memcpy(kaddr, workspace->buf + start_byte, bytes);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- out:
- 	return ret;
+ 	return kmap(buf->page);
+@@ -251,7 +251,7 @@ void generic_pipe_buf_unmap(struct pipe_inode_info *pipe,
+ {
+ 	if (buf->flags & PIPE_BUF_FLAG_ATOMIC) {
+ 		buf->flags &= ~PIPE_BUF_FLAG_ATOMIC;
+-		kunmap_atomic(map_data, KM_USER0);
++		kunmap_atomic(map_data);
+ 	} else
+ 		kunmap(buf->page);
  }
-diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
-index 9770cc5..1867109 100644
---- a/fs/btrfs/scrub.c
-+++ b/fs/btrfs/scrub.c
-@@ -591,7 +591,7 @@ static int scrub_fixup_check(struct scrub_bio *sbio, int ix)
- 	u64 flags = sbio->spag[ix].flags;
+@@ -565,14 +565,14 @@ redo1:
+ 			iov_fault_in_pages_read(iov, chars);
+ redo2:
+ 			if (atomic)
+-				src = kmap_atomic(page, KM_USER0);
++				src = kmap_atomic(page);
+ 			else
+ 				src = kmap(page);
  
- 	page = sbio->bio->bi_io_vec[ix].bv_page;
--	buffer = kmap_atomic(page, KM_USER0);
-+	buffer = kmap_atomic(page);
- 	if (flags & BTRFS_EXTENT_FLAG_DATA) {
- 		ret = scrub_checksum_data(sbio->sdev,
- 					  sbio->spag + ix, buffer);
-@@ -603,7 +603,7 @@ static int scrub_fixup_check(struct scrub_bio *sbio, int ix)
- 	} else {
- 		WARN_ON(1);
+ 			error = pipe_iov_copy_from_user(src, iov, chars,
+ 							atomic);
+ 			if (atomic)
+-				kunmap_atomic(src, KM_USER0);
++				kunmap_atomic(src);
+ 			else
+ 				kunmap(page);
+ 
+diff --git a/fs/splice.c b/fs/splice.c
+index 1ec0493..f16402e 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -737,15 +737,12 @@ int pipe_to_file(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+ 		goto out;
+ 
+ 	if (buf->page != page) {
+-		/*
+-		 * Careful, ->map() uses KM_USER0!
+-		 */
+ 		char *src = buf->ops->map(pipe, buf, 1);
+-		char *dst = kmap_atomic(page, KM_USER1);
++		char *dst = kmap_atomic(page);
+ 
+ 		memcpy(dst + offset, src + buf->offset, this_len);
+ 		flush_dcache_page(page);
+-		kunmap_atomic(dst, KM_USER1);
++		kunmap_atomic(dst);
+ 		buf->ops->unmap(pipe, buf, src);
  	}
--	kunmap_atomic(buffer, KM_USER0);
-+	kunmap_atomic(buffer);
+ 	ret = pagecache_write_end(file, mapping, sd->pos, this_len, this_len,
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 129a9c0..de5422a 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -101,10 +101,10 @@ static inline int bio_has_allocated_vec(struct bio *bio)
+  * I/O completely on that queue (see ide-dma for example)
+  */
+ #define __bio_kmap_atomic(bio, idx, kmtype)				\
+-	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page, kmtype) +	\
++	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
+ 		bio_iovec_idx((bio), (idx))->bv_offset)
  
- 	return ret;
+-#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr, kmtype)
++#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr)
+ 
+ /*
+  * merge helpers etc
+@@ -317,7 +317,7 @@ static inline char *bvec_kmap_irq(struct bio_vec *bvec, unsigned long *flags)
+ 	 * balancing is a lot nicer this way
+ 	 */
+ 	local_irq_save(*flags);
+-	addr = (unsigned long) kmap_atomic(bvec->bv_page, KM_BIO_SRC_IRQ);
++	addr = (unsigned long) kmap_atomic(bvec->bv_page);
+ 
+ 	BUG_ON(addr & ~PAGE_MASK);
+ 
+@@ -328,7 +328,7 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+ {
+ 	unsigned long ptr = (unsigned long) buffer & PAGE_MASK;
+ 
+-	kunmap_atomic((void *) ptr, KM_BIO_SRC_IRQ);
++	kunmap_atomic((void *) ptr);
+ 	local_irq_restore(*flags);
  }
-@@ -792,7 +792,7 @@ static void scrub_checksum(struct btrfs_work *work)
- 	}
- 	for (i = 0; i < sbio->count; ++i) {
- 		page = sbio->bio->bi_io_vec[i].bv_page;
--		buffer = kmap_atomic(page, KM_USER0);
-+		buffer = kmap_atomic(page);
- 		flags = sbio->spag[i].flags;
- 		logical = sbio->logical + i * PAGE_SIZE;
- 		ret = 0;
-@@ -807,7 +807,7 @@ static void scrub_checksum(struct btrfs_work *work)
- 		} else {
- 			WARN_ON(1);
- 		}
--		kunmap_atomic(buffer, KM_USER0);
-+		kunmap_atomic(buffer);
- 		if (ret) {
- 			ret = scrub_recheck_error(sbio, i);
- 			if (!ret) {
-diff --git a/fs/btrfs/zlib.c b/fs/btrfs/zlib.c
-index faccd47..92c2065 100644
---- a/fs/btrfs/zlib.c
-+++ b/fs/btrfs/zlib.c
-@@ -370,9 +370,9 @@ static int zlib_decompress(struct list_head *ws, unsigned char *data_in,
- 			    PAGE_CACHE_SIZE - buf_offset);
- 		bytes = min(bytes, bytes_left);
  
--		kaddr = kmap_atomic(dest_page, KM_USER0);
-+		kaddr = kmap_atomic(dest_page);
- 		memcpy(kaddr + pg_offset, workspace->buf + buf_offset, bytes);
--		kunmap_atomic(kaddr, KM_USER0);
-+		kunmap_atomic(kaddr);
- 
- 		pg_offset += bytes;
- 		bytes_left -= bytes;
 -- 
 1.7.7.6
 
