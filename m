@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2BJFpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:45:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24065 "EHLO mx1.redhat.com"
+	id S1759085Ab2BJFxH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:53:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44135 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab2BJFpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:45:40 -0500
+	id S932472Ab2BJFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:45:43 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
-Subject: [PATCH 34/60] gfs2: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:55 +0800
-Message-Id: <1328852421-19678-35-git-send-email-amwang@redhat.com>
+        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 36/60] jbd2: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:57 +0800
+Message-Id: <1328852421-19678-37-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,106 +21,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- fs/gfs2/aops.c  |   12 ++++++------
- fs/gfs2/lops.c  |    8 ++++----
- fs/gfs2/quota.c |    4 ++--
- 3 files changed, 12 insertions(+), 12 deletions(-)
+ fs/jbd2/commit.c      |    4 ++--
+ fs/jbd2/journal.c     |   12 ++++++------
+ fs/jbd2/transaction.c |    4 ++--
+ 3 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 501e5cb..38b7a74 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -434,12 +434,12 @@ static int stuffed_readpage(struct gfs2_inode *ip, struct page *page)
- 	if (error)
- 		return error;
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index 5069b84..c067a8c 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -286,10 +286,10 @@ static __u32 jbd2_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
+ 	char *addr;
+ 	__u32 checksum;
  
--	kaddr = kmap_atomic(page, KM_USER0);
-+	kaddr = kmap_atomic(page);
- 	if (dsize > (dibh->b_size - sizeof(struct gfs2_dinode)))
- 		dsize = (dibh->b_size - sizeof(struct gfs2_dinode));
- 	memcpy(kaddr, dibh->b_data + sizeof(struct gfs2_dinode), dsize);
- 	memset(kaddr + dsize, 0, PAGE_CACHE_SIZE - dsize);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 	flush_dcache_page(page);
- 	brelse(dibh);
- 	SetPageUptodate(page);
-@@ -542,9 +542,9 @@ int gfs2_internal_read(struct gfs2_inode *ip, struct file_ra_state *ra_state,
- 		page = read_cache_page(mapping, index, __gfs2_readpage, NULL);
- 		if (IS_ERR(page))
- 			return PTR_ERR(page);
--		p = kmap_atomic(page, KM_USER0);
-+		p = kmap_atomic(page);
- 		memcpy(buf + copied, p + offset, amt);
--		kunmap_atomic(p, KM_USER0);
-+		kunmap_atomic(p);
- 		mark_page_accessed(page);
- 		page_cache_release(page);
- 		copied += amt;
-@@ -788,11 +788,11 @@ static int gfs2_stuffed_write_end(struct inode *inode, struct buffer_head *dibh,
- 	unsigned char *buf = dibh->b_data + sizeof(struct gfs2_dinode);
+-	addr = kmap_atomic(page, KM_USER0);
++	addr = kmap_atomic(page);
+ 	checksum = crc32_be(crc32_sum,
+ 		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+-	kunmap_atomic(addr, KM_USER0);
++	kunmap_atomic(addr);
  
- 	BUG_ON((pos + len) > (dibh->b_size - sizeof(struct gfs2_dinode)));
--	kaddr = kmap_atomic(page, KM_USER0);
-+	kaddr = kmap_atomic(page);
- 	memcpy(buf + pos, kaddr + pos, copied);
- 	memset(kaddr + pos + copied, 0, len - copied);
- 	flush_dcache_page(page);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 
- 	if (!PageUptodate(page))
- 		SetPageUptodate(page);
-diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
-index 0301be6..df7c6e8 100644
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -553,11 +553,11 @@ static void gfs2_check_magic(struct buffer_head *bh)
- 	__be32 *ptr;
- 
- 	clear_buffer_escaped(bh);
--	kaddr = kmap_atomic(bh->b_page, KM_USER0);
-+	kaddr = kmap_atomic(bh->b_page);
- 	ptr = kaddr + bh_offset(bh);
- 	if (*ptr == cpu_to_be32(GFS2_MAGIC))
- 		set_buffer_escaped(bh);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
+ 	return checksum;
  }
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index c0a5f9f..5ff8940 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -345,7 +345,7 @@ repeat:
+ 		new_offset = offset_in_page(jh2bh(jh_in)->b_data);
+ 	}
  
- static void gfs2_write_blocks(struct gfs2_sbd *sdp, struct buffer_head *bh,
-@@ -594,10 +594,10 @@ static void gfs2_write_blocks(struct gfs2_sbd *sdp, struct buffer_head *bh,
- 		if (buffer_escaped(bd->bd_bh)) {
- 			void *kaddr;
- 			bh1 = gfs2_log_get_buf(sdp);
--			kaddr = kmap_atomic(bd->bd_bh->b_page, KM_USER0);
-+			kaddr = kmap_atomic(bd->bd_bh->b_page);
- 			memcpy(bh1->b_data, kaddr + bh_offset(bd->bd_bh),
- 			       bh1->b_size);
--			kunmap_atomic(kaddr, KM_USER0);
-+			kunmap_atomic(kaddr);
- 			*(__be32 *)bh1->b_data = 0;
- 			clear_buffer_escaped(bd->bd_bh);
- 			unlock_buffer(bd->bd_bh);
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index a45b21b..c0f8904 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -720,12 +720,12 @@ get_a_page:
+-	mapped_data = kmap_atomic(new_page, KM_USER0);
++	mapped_data = kmap_atomic(new_page);
+ 	/*
+ 	 * Fire data frozen trigger if data already wasn't frozen.  Do this
+ 	 * before checking for escaping, as the trigger may modify the magic
+@@ -364,7 +364,7 @@ repeat:
+ 		need_copy_out = 1;
+ 		do_escape = 1;
+ 	}
+-	kunmap_atomic(mapped_data, KM_USER0);
++	kunmap_atomic(mapped_data);
  
- 	gfs2_trans_add_bh(ip->i_gl, bh, 0);
+ 	/*
+ 	 * Do we need to do a data copy?
+@@ -385,9 +385,9 @@ repeat:
+ 		}
  
--	kaddr = kmap_atomic(page, KM_USER0);
-+	kaddr = kmap_atomic(page);
- 	if (offset + sizeof(struct gfs2_quota) > PAGE_CACHE_SIZE)
- 		nbytes = PAGE_CACHE_SIZE - offset;
- 	memcpy(kaddr + offset, ptr, nbytes);
- 	flush_dcache_page(page);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 	unlock_page(page);
- 	page_cache_release(page);
+ 		jh_in->b_frozen_data = tmp;
+-		mapped_data = kmap_atomic(new_page, KM_USER0);
++		mapped_data = kmap_atomic(new_page);
+ 		memcpy(tmp, mapped_data + new_offset, jh2bh(jh_in)->b_size);
+-		kunmap_atomic(mapped_data, KM_USER0);
++		kunmap_atomic(mapped_data);
  
+ 		new_page = virt_to_page(tmp);
+ 		new_offset = offset_in_page(tmp);
+@@ -406,9 +406,9 @@ repeat:
+ 	 * copying, we can finally do so.
+ 	 */
+ 	if (do_escape) {
+-		mapped_data = kmap_atomic(new_page, KM_USER0);
++		mapped_data = kmap_atomic(new_page);
+ 		*((unsigned int *)(mapped_data + new_offset)) = 0;
+-		kunmap_atomic(mapped_data, KM_USER0);
++		kunmap_atomic(mapped_data);
+ 	}
+ 
+ 	set_bh_page(new_bh, new_page, new_offset);
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 35ae096..e5aba56 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -783,12 +783,12 @@ done:
+ 			    "Possible IO failure.\n");
+ 		page = jh2bh(jh)->b_page;
+ 		offset = offset_in_page(jh2bh(jh)->b_data);
+-		source = kmap_atomic(page, KM_USER0);
++		source = kmap_atomic(page);
+ 		/* Fire data frozen trigger just before we copy the data */
+ 		jbd2_buffer_frozen_trigger(jh, source + offset,
+ 					   jh->b_triggers);
+ 		memcpy(jh->b_frozen_data, source+offset, jh2bh(jh)->b_size);
+-		kunmap_atomic(source, KM_USER0);
++		kunmap_atomic(source);
+ 
+ 		/*
+ 		 * Now that the frozen data is saved off, we need to store
 -- 
 1.7.7.6
 
