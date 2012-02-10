@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758192Ab2BJREL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:04:11 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:52993 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754722Ab2BJREJ (ORCPT
+	id S1758288Ab2BJRFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:05:20 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:48796
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757729Ab2BJRFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:04:09 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: drbd-dev@lists.linbit.com
-Cc: Danny Kukawka <dkukawka@suse.de>, drbd-user@lists.linbit.com,
-        linux-kernel@vger.kernel.org, Philipp Reisner <phil@linbit.com>,
-        Lars Ellenberg <lars@linbit.com>
-Subject: [PATCH] drbd: fix -Waddress warning
-Date: Fri, 10 Feb 2012 18:03:53 +0100
-Message-Id: <1328893433-28017-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 10 Feb 2012 12:05:19 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZ6SSN-01-1NN-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Jason Wang <jasowang@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 1/2] perf-tool: Don't process samples with no valid machine object
+Date: Fri, 10 Feb 2012 18:05:04 +0100
+Message-ID: <1328893505-4115-2-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
+References: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1328893449;6e2b0c78;
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for:
-drivers/block/drbd/drbd_main.c: In function ‘drbd_buildtag’:
-drivers/block/drbd/drbd_main.c:4187:19: warning: the comparison will
- always evaluate as ‘true’ for the address of ‘__this_module’ will
- never be NULL [-Waddress]
+The perf sample processing code relies on a valid machine
+object. Make sure that this path is only entered when such a
+object exists.
 
-Remove "THIS_MODULE != NULL" check since always true and move else 
-block to #else.
+A counter for samples where no machine object exits is also
+introduced to give the user a message about these samples.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/block/drbd/drbd_main.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ tools/perf/builtin-top.c  |    6 ++++++
+ tools/perf/util/hist.h    |    1 +
+ tools/perf/util/session.c |   10 ++++++++++
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 211fc44..36a51ac 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -4184,11 +4184,10 @@ const char *drbd_buildtag(void)
- 
- 	if (buildtag[0] == 0) {
- #ifdef CONFIG_MODULES
--		if (THIS_MODULE != NULL)
--			sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
--		else
-+		sprintf(buildtag, "srcversion: %-24s", THIS_MODULE->srcversion);
-+#else
-+		buildtag[0] = 'b';
- #endif
--			buildtag[0] = 'b';
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index dd162aa..48e0090 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -668,6 +668,12 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		return;
  	}
  
- 	return buildtag;
++	if (!machine) {
++		pr_err("%u unprocessable samples recorded.",
++		       top->session->hists.stats.nr_unprocessable_samples++);
++		return;
++	}
++
+ 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
+ 		top->exact_samples++;
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f55f0a8d..8d5641f 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -32,6 +32,7 @@ struct events_stats {
+ 	u32 nr_unknown_events;
+ 	u32 nr_invalid_chains;
+ 	u32 nr_unknown_id;
++	u32 nr_unprocessable_samples;
+ };
+ 
+ enum hist_column {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b5ca2558..a8d25d9 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -796,6 +796,10 @@ static int perf_session_deliver_event(struct perf_session *session,
+ 			++session->hists.stats.nr_unknown_id;
+ 			return -1;
+ 		}
++		if (machine == NULL) {
++			++session->hists.stats.nr_unprocessable_samples;
++			return -1;
++		}
+ 		return tool->sample(tool, event, sample, evsel, machine);
+ 	case PERF_RECORD_MMAP:
+ 		return tool->mmap(tool, event, sample, machine);
+@@ -964,6 +968,12 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
+  			    session->hists.stats.nr_invalid_chains,
+  			    session->hists.stats.nr_events[PERF_RECORD_SAMPLE]);
+  	}
++
++	if (session->hists.stats.nr_unprocessable_samples != 0) {
++		ui__warning("%u unprocessable samples recorded.\n"
++			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
++			    session->hists.stats.nr_unprocessable_samples);
++	}
+ }
+ 
+ #define session_done()	(*(volatile int *)(&session_done))
 -- 
-1.7.7.3
+1.7.5.4
+
 
