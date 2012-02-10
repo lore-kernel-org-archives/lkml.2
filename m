@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab2BJLee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 06:34:34 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61269 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757920Ab2BJLed (ORCPT
+	id S1759219Ab2BJLeq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 06:34:46 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11822 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759197Ab2BJLeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 06:34:33 -0500
-Message-ID: <1328873668.4203.3.camel@phoenix>
-Subject: [PATCH] drivers/leds/leds-pca9633.c: Fix kcalloc parameters swapped
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Meerwald <p.meerwald@bct-electronic.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 10 Feb 2012 19:34:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 10 Feb 2012 06:34:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 10 Feb 2012 03:34:43 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1] regmap: Support for caching in reg_raw_write()
+Date: Fri, 10 Feb 2012 17:02:52 +0530
+Message-Id: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first parameter should be "number of elements" and the second parameter
-should be "element size".
+Adding support for caching of data into the
+non-volatile register from the call of reg_raw_write().
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This will allow the larger block of data write into multiple
+register without worrying whether register is cached or not
+through reg_raw_write().
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/leds/leds-pca9633.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/base/regmap/regmap.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index c408ddc..80cb61a 100644
---- a/drivers/leds/leds-pca9633.c
-+++ b/drivers/leds/leds-pca9633.c
-@@ -110,7 +110,7 @@ static int __devinit pca9633_probe(struct i2c_client *client,
- 		}
- 	}
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 80129c0..e5986ab 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -323,6 +323,25 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 			if (!map->writeable_reg(map->dev, reg + i))
+ 				return -EINVAL;
  
--	pca9633 = kcalloc(sizeof(*pca9633), 4, GFP_KERNEL);
-+	pca9633 = kcalloc(4, sizeof(*pca9633), GFP_KERNEL);
- 	if (!pca9633)
- 		return -ENOMEM;
++	if (!map->cache_bypass && map->format.parse_val) {
++		int val_bytes = map->format.val_bytes;
++		unsigned int ival;
++		for (i = 0; i < val_len / map->format.val_bytes; i++) {
++			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
++			ival = map->format.parse_val(map->work_buf);
++			ret = regcache_write(map, reg + i, ival);
++			if (ret) {
++				dev_warn(map->dev,
++					"Error in caching of register\n");
++				return ret;
++			}
++		}
++		if (map->cache_only) {
++			map->cache_dirty = true;
++			return 0;
++		}
++	}
++
+ 	map->format.format_reg(map->work_buf, reg);
  
+ 	u8[0] |= map->write_flag_mask;
+@@ -373,7 +392,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 	int ret;
+ 	BUG_ON(!map->format.format_write && !map->format.format_val);
+ 
+-	if (!map->cache_bypass) {
++	if (!map->cache_bypass && map->format.format_write) {
+ 		ret = regcache_write(map, reg, val);
+ 		if (ret != 0)
+ 			return ret;
+@@ -450,12 +469,8 @@ EXPORT_SYMBOL_GPL(regmap_write);
+ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 		     const void *val, size_t val_len)
+ {
+-	size_t val_count = val_len / map->format.val_bytes;
+ 	int ret;
+ 
+-	WARN_ON(!regmap_volatile_range(map, reg, val_count) &&
+-		map->cache_type != REGCACHE_NONE);
+-
+ 	mutex_lock(&map->lock);
+ 
+ 	ret = _regmap_raw_write(map, reg, val, val_len);
 -- 
-1.7.5.4
-
-
+1.7.1.1
 
