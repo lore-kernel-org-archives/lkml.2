@@ -1,169 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab2BJOnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:43:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:41923 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758838Ab2BJOnu (ORCPT
+	id S1759419Ab2BJOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:43:59 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55014 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759406Ab2BJOn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:43:50 -0500
+	Fri, 10 Feb 2012 09:43:56 -0500
 From: Denys Vlasenko <vda.linux@googlemail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
         Tejun Heo <tj@kernel.org>, Pedro Alves <palves@redhat.com>,
         Jan Kratochvil <jan.kratochvil@redhat.com>,
         linux-kernel@vger.kernel.org
 Cc: Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH 2/5] ptrace: simplify PTRACE_foo constants and PTRACE_SETOPTIONS code
-Date: Fri, 10 Feb 2012 15:43:08 +0100
-Message-Id: <1328884991-23889-3-git-send-email-vda.linux@googlemail.com>
+Subject: [PATCH 3/5] ptrace: make PTRACE_SEIZE set ptrace options specified in 'data' parameter
+Date: Fri, 10 Feb 2012 15:43:09 +0100
+Message-Id: <1328884991-23889-4-git-send-email-vda.linux@googlemail.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1328884991-23889-2-git-send-email-vda.linux@googlemail.com>
+In-Reply-To: <1328884991-23889-3-git-send-email-vda.linux@googlemail.com>
 References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com>
  <1328884991-23889-2-git-send-email-vda.linux@googlemail.com>
+ <1328884991-23889-3-git-send-email-vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exchange PT_TRACESYSGOOD and PT_PTRACE_CAP bit positions, which makes
-PT_option bits contiguous and therefore makes code in ptrace_setoptions()
-much simpler.
+This can be used to close a few corner cases in strace where we get
+unwanted racy behavior after attach, but before we have a chance
+to set options (the notorious post-execve SIGTRAP comes to mind),
+and removes the need to track "did we set opts for this task" state
+in strace internals.
 
-Every PTRACE_O_TRACEevent is defined to (1 << PTRACE_EVENT_event)
-instead of using explicit numeric constants, to ensure we don't
-mess up relationship between bit positions and event ids.
+While we are at it:
 
-PT_EVENT_FLAG_SHIFT was not particularly useful, PT_OPT_FLAG_SHIFT with
-value of PT_EVENT_FLAG_SHIFT-1 is easier to use.
+Make it possible to extend SEIZE in the future with more functionality
+by passing non-zero 'addr' parameter.
+To that end, error out if 'addr' is non-zero.
+PTRACE_ATTACH did not (and still does not) have such check,
+and users (strace) do pass garbage there... let's avoid repeating
+this mistake with SEIZE.
 
-PT_TRACE_MASK constant is nuked, the only its use is replaced by
-(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT).
+Set all task->ptrace bits in one operation - before this change,
+we were adding PT_SEIZED and PT_PTRACE_CAP with task->ptrace |= BIT ops.
+This was probably ok (not a bug), but let's be on a safer side.
+
+Changes since v2: use (unsigned long) casts instead of (long) ones,
+move PTRACE_SEIZE_DEVEL-related code to separate lines of code.
 
 Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/ptrace.h |   33 +++++++++++++++------------------
- kernel/ptrace.c        |   31 ++++++++-----------------------
- 2 files changed, 23 insertions(+), 41 deletions(-)
+ kernel/ptrace.c |   29 ++++++++++++++++++++---------
+ 1 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index c2f1f6a..06be6a3 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -54,17 +54,6 @@
- /* flags in @data for PTRACE_SEIZE */
- #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
- 
--/* options set using PTRACE_SETOPTIONS */
--#define PTRACE_O_TRACESYSGOOD	0x00000001
--#define PTRACE_O_TRACEFORK	0x00000002
--#define PTRACE_O_TRACEVFORK	0x00000004
--#define PTRACE_O_TRACECLONE	0x00000008
--#define PTRACE_O_TRACEEXEC	0x00000010
--#define PTRACE_O_TRACEVFORKDONE	0x00000020
--#define PTRACE_O_TRACEEXIT	0x00000040
--
--#define PTRACE_O_MASK		0x0000007f
--
- /* Wait extended result codes for the above trace options.  */
- #define PTRACE_EVENT_FORK	1
- #define PTRACE_EVENT_VFORK	2
-@@ -74,6 +63,17 @@
- #define PTRACE_EVENT_EXIT	6
- #define PTRACE_EVENT_STOP	7
- 
-+/* options set using PTRACE_SETOPTIONS */
-+#define PTRACE_O_TRACESYSGOOD	1
-+#define PTRACE_O_TRACEFORK	(1 << PTRACE_EVENT_FORK)
-+#define PTRACE_O_TRACEVFORK	(1 << PTRACE_EVENT_VFORK)
-+#define PTRACE_O_TRACECLONE	(1 << PTRACE_EVENT_CLONE)
-+#define PTRACE_O_TRACEEXEC	(1 << PTRACE_EVENT_EXEC)
-+#define PTRACE_O_TRACEVFORKDONE	(1 << PTRACE_EVENT_VFORK_DONE)
-+#define PTRACE_O_TRACEEXIT	(1 << PTRACE_EVENT_EXIT)
-+
-+#define PTRACE_O_MASK		0x0000007f
-+
- #include <asm/ptrace.h>
- 
- #ifdef __KERNEL__
-@@ -88,13 +88,12 @@
- #define PT_SEIZED	0x00010000	/* SEIZE used, enable new behavior */
- #define PT_PTRACED	0x00000001
- #define PT_DTRACE	0x00000002	/* delayed trace (used on m68k, i386) */
--#define PT_TRACESYSGOOD	0x00000004
--#define PT_PTRACE_CAP	0x00000008	/* ptracer can follow suid-exec */
-+#define PT_PTRACE_CAP	0x00000004	/* ptracer can follow suid-exec */
- 
-+#define PT_OPT_FLAG_SHIFT	3
- /* PT_TRACE_* event enable flags */
--#define PT_EVENT_FLAG_SHIFT	4
--#define PT_EVENT_FLAG(event)	(1 << (PT_EVENT_FLAG_SHIFT + (event) - 1))
--
-+#define PT_EVENT_FLAG(event)	(1 << (PT_OPT_FLAG_SHIFT + (event)))
-+#define PT_TRACESYSGOOD		PT_EVENT_FLAG(0)
- #define PT_TRACE_FORK		PT_EVENT_FLAG(PTRACE_EVENT_FORK)
- #define PT_TRACE_VFORK		PT_EVENT_FLAG(PTRACE_EVENT_VFORK)
- #define PT_TRACE_CLONE		PT_EVENT_FLAG(PTRACE_EVENT_CLONE)
-@@ -102,8 +101,6 @@
- #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
- #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
- 
--#define PT_TRACE_MASK	0x000003f4
--
- /* single stepping state bits (used on ARM and PA-RISC) */
- #define PT_SINGLESTEP_BIT	31
- #define PT_SINGLESTEP		(1<<PT_SINGLESTEP_BIT)
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 273f56e..9acd07a 100644
+index 9acd07a..99a18a0 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
-@@ -262,7 +262,7 @@ static int ptrace_attach(struct task_struct *task, long request,
+@@ -231,6 +231,7 @@ bool ptrace_may_access(struct task_struct *task, unsigned int mode)
+ }
+ 
+ static int ptrace_attach(struct task_struct *task, long request,
++			 unsigned long addr,
+ 			 unsigned long flags)
+ {
+ 	bool seize = (request == PTRACE_SEIZE);
+@@ -238,19 +239,29 @@ static int ptrace_attach(struct task_struct *task, long request,
  
  	/*
- 	 * Protect exec's credential calculations against our interference;
--	 * interference; SUID, SGID and LSM creds get determined differently
-+	 * SUID, SGID and LSM creds get determined differently
- 	 * under ptrace.
+ 	 * SEIZE will enable new ptrace behaviors which will be implemented
+-	 * gradually.  SEIZE_DEVEL is used to prevent applications
++	 * gradually.  SEIZE_DEVEL bit is used to prevent applications
+ 	 * expecting full SEIZE behaviors trapping on kernel commits which
+ 	 * are still in the process of implementing them.
+ 	 *
+ 	 * Only test programs for new ptrace behaviors being implemented
+ 	 * should set SEIZE_DEVEL.  If unset, SEIZE will fail with -EIO.
+ 	 *
+-	 * Once SEIZE behaviors are completely implemented, this flag and
+-	 * the following test will be removed.
++	 * Once SEIZE behaviors are completely implemented, this flag
++	 * will be removed.
  	 */
- 	retval = -ERESTARTNOINTR;
-@@ -528,31 +528,16 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
+ 	retval = -EIO;
+-	if (seize && !(flags & PTRACE_SEIZE_DEVEL))
+-		goto out;
++	if (seize) {
++		if (addr != 0)
++			goto out;
++		if (!(flags & PTRACE_SEIZE_DEVEL))
++			goto out;
++		flags &= ~(unsigned long)PTRACE_SEIZE_DEVEL;
++		if (flags & ~(unsigned long)PTRACE_O_MASK)
++			goto out;
++		flags = PT_PTRACED | PT_SEIZED | (flags << PT_OPT_FLAG_SHIFT);
++	} else {
++		flags = PT_PTRACED;
++	}
  
- static int ptrace_setoptions(struct task_struct *child, unsigned long data)
- {
-+	unsigned flags;
-+
- 	if (data & ~(unsigned long)PTRACE_O_MASK)
- 		return -EINVAL;
+ 	audit_ptrace(task);
  
--	child->ptrace &= ~PT_TRACE_MASK;
--
--	if (data & PTRACE_O_TRACESYSGOOD)
--		child->ptrace |= PT_TRACESYSGOOD;
--
--	if (data & PTRACE_O_TRACEFORK)
--		child->ptrace |= PT_TRACE_FORK;
--
--	if (data & PTRACE_O_TRACEVFORK)
--		child->ptrace |= PT_TRACE_VFORK;
--
--	if (data & PTRACE_O_TRACECLONE)
--		child->ptrace |= PT_TRACE_CLONE;
--
--	if (data & PTRACE_O_TRACEEXEC)
--		child->ptrace |= PT_TRACE_EXEC;
--
--	if (data & PTRACE_O_TRACEVFORKDONE)
--		child->ptrace |= PT_TRACE_VFORK_DONE;
--
--	if (data & PTRACE_O_TRACEEXIT)
--		child->ptrace |= PT_TRACE_EXIT;
-+	/* Avoid intermediate state when all opts are cleared */
-+	flags = child->ptrace;
-+	flags &= ~(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT);
-+	flags |= (data << PT_OPT_FLAG_SHIFT);
-+	child->ptrace = flags;
+@@ -282,11 +293,11 @@ static int ptrace_attach(struct task_struct *task, long request,
+ 	if (task->ptrace)
+ 		goto unlock_tasklist;
  
- 	return 0;
- }
+-	task->ptrace = PT_PTRACED;
+ 	if (seize)
+-		task->ptrace |= PT_SEIZED;
++		flags |= PT_SEIZED;
+ 	if (ns_capable(task_user_ns(task), CAP_SYS_PTRACE))
+-		task->ptrace |= PT_PTRACE_CAP;
++		flags |= PT_PTRACE_CAP;
++	task->ptrace = flags;
+ 
+ 	__ptrace_link(task, current);
+ 
+@@ -879,7 +890,7 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
+ 	}
+ 
+ 	if (request == PTRACE_ATTACH || request == PTRACE_SEIZE) {
+-		ret = ptrace_attach(child, request, data);
++		ret = ptrace_attach(child, request, addr, data);
+ 		/*
+ 		 * Some architectures need to do book-keeping after
+ 		 * a ptrace attach.
 -- 
 1.7.7.6
 
