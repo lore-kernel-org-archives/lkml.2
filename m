@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab2BJBFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 20:05:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61977 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625Ab2BJBFo (ORCPT
+	id S1758498Ab2BJBKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 20:10:33 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:33268 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab2BJBKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 20:05:44 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TRgVYD6ZyiEA:10 a=PpbjMBYbAasA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=I5bUxF1VxH2wb6pcP14A:9 a=Ouj1IebUWkgCi1o-j3oA:7 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.81.36.228
-Date: Thu, 09 Feb 2012 19:05:37 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: chunkeey@web.de
-Cc: m@bues.ch, jcmvbkbc@gmail.com, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org
-Subject: [RFC/RFT] p54spi: Convert driver to use asynchronous firmware
- loading
-Message-ID: <4f346d61.3S6x22TS5RH2gGO5%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.5 7/5/10
+	Thu, 9 Feb 2012 20:10:30 -0500
+Message-ID: <b3f79ce8b30e2985723eec1a3337317e.squirrel@webmail.greenhost.nl>
+In-Reply-To: <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>
+References: <20120116183730.GB21112@redhat.com>
+    <20120118015013.GR11715@one.firstfloor.org>
+    <20120118020453.GL7180@jl-vm1.vm.bytemark.co.uk>
+    <20120118022217.GS11715@one.firstfloor.org>
+    <fc8f165e541482d136ff8fc115fe6875.squirrel@webmail.greenhost.nl>
+    <CA+55aFysH3h8sLHwNcaLnYMsgA28vmHgd3DSLPVw-=TzgfBrbg@mail.gmail.com>
+    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>
+    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>
+    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>
+    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>
+    <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>
+    <4F3007AD.50307@zytor.com>
+    <c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>
+    <4F33110D.3050904@zytor.com>
+    <13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>
+    <4F334B8C.2050005@zytor.com>
+    <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>
+Date: Fri, 10 Feb 2012 02:09:59 +0100
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Jamie Lokier" <jamie@shareable.org>,
+        "Andrew Lutomirski" <luto@mit.edu>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 1.4
+X-Scan-Signature: 4052b6d1c9976086d5ab5ce040fcf5b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers that load firmware from their probe routine have problems with the
-latest versions of udev as they get timeouts while waiting for user
-space to start. The problem is fixed by using request_firmware_nowait()
-and delaying the start of mac80211 until the firmware is loaded.
+On Thu, February 9, 2012 17:00, H.J. Lu wrote:
+> GDB uses CS value to tell ia32 process from x86-64 process.
 
-To prevent the possibility of the driver being unloaded while the firmware
-loading callback is still active, a completion queue entry is used.
+Are there any cases when this doesn't work? Someone said Xen can
+have different CS values, but looking at the source it seems it's
+using the same ones, at least with a Linux hypervisor. So perhaps
+it was KVM. Looking at the header it seems paravirtualisation uses
+different cs values. On the upside, it seems we can just use that
+user_64bit_mode() to know whether it is 32 or 64 bit mode, so
+adding a bit telling the process mode is easier than I thought.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+Currently there is a need to tell if the 32 or 64-bit syscall
+path is being taken, which is independent of the process mode.
 
-This conversion of p54spi to use asynchronous firmware loading is based
-on the method used in p54usb. As I do not have the hardware, it is only
-compile tested. I would appreciate any feedback from people that have the
-hardware.
+> At minimum, we need a bit in CS for GDB.  But any changes
+> will break old GDB.
 
-Larry
----
+Would adding bits to the upper 32-bit of rflags break GDB?
 
-Index: wireless-testing-new/drivers/net/wireless/p54/p54spi.c
-===================================================================
---- wireless-testing-new.orig/drivers/net/wireless/p54/p54spi.c
-+++ wireless-testing-new/drivers/net/wireless/p54/p54spi.c
-@@ -163,25 +163,41 @@ static int p54spi_spi_write_dma(struct p
- 	return 0;
- }
- 
--static int p54spi_request_firmware(struct ieee80211_hw *dev)
-+
-+static void p54s_load_firmware_cb(const struct firmware *firmware,
-+				  void *context)
- {
-+	struct ieee80211_hw *dev = context;
- 	struct p54s_priv *priv = dev->priv;
- 	int ret;
- 
--	/* FIXME: should driver use it's own struct device? */
--	ret = request_firmware(&priv->firmware, "3826.arm", &priv->spi->dev);
--
--	if (ret < 0) {
--		dev_err(&priv->spi->dev, "request_firmware() failed: %d", ret);
--		return ret;
-+	if (!firmware) {
-+		/* alternate firmware not found */
-+		dev_err(&priv->spi->dev, "Firmware loading failed\n");
-+		return;
- 	}
-+	complete(&priv->fw_loaded);
-+	priv->firmware = firmware;
- 
- 	ret = p54_parse_firmware(dev, priv->firmware);
--	if (ret) {
-+	if (ret)
- 		release_firmware(priv->firmware);
-+}
-+
-+static int p54spi_request_firmware(struct ieee80211_hw *dev)
-+{
-+	struct p54s_priv *priv = dev->priv;
-+	int ret;
-+
-+	init_completion(&priv->fw_loaded);
-+	/* FIXME: should driver use it's own struct device? */
-+	ret = request_firmware_nowait(THIS_MODULE, 1, "3826.arm",
-+				      &priv->spi->dev, GFP_KERNEL, dev,
-+				      p54s_load_firmware_cb);
-+	if (ret < 0) {
-+		dev_err(&priv->spi->dev, "request_firmware() failed: %d", ret);
- 		return ret;
- 	}
--
- 	return 0;
- }
- 
-@@ -681,6 +697,7 @@ static int __devexit p54spi_remove(struc
- {
- 	struct p54s_priv *priv = dev_get_drvdata(&spi->dev);
- 
-+	wait_for_completion(&priv->fw_loaded);
- 	p54_unregister_common(priv->hw);
- 
- 	free_irq(gpio_to_irq(p54spi_gpio_irq), spi);
-Index: wireless-testing-new/drivers/net/wireless/p54/p54spi.h
-===================================================================
---- wireless-testing-new.orig/drivers/net/wireless/p54/p54spi.h
-+++ wireless-testing-new/drivers/net/wireless/p54/p54spi.h
-@@ -120,6 +120,7 @@ struct p54s_priv {
- 
- 	enum fw_state fw_state;
- 	const struct firmware *firmware;
-+	struct completion fw_loaded;
- };
- 
- #endif /* P54SPI_H */
+Do you also need a way to know whether the kernel was entered via
+int 0x80, SYSCALL32/64 or SYSENTER?
+
+Greetings,
+
+Indan
+
+
