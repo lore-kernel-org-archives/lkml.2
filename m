@@ -1,42 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759249Ab2BJNPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:15:13 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62731 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab2BJNPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:15:11 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=7-ybfLsbWqgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=hD80L64hAAAA:8 a=SdpgHQnQPSgYRAe2sEcA:9 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1328879709.8273.0.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] ftrace: Append wakeup_rt description of ftrace doc
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Geunsik Lim <geunsik.lim@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 10 Feb 2012 08:15:09 -0500
-In-Reply-To: <1328695537-15081-2-git-send-email-geunsik.lim@gmail.com>
-References: <1328695537-15081-1-git-send-email-geunsik.lim@gmail.com>
-	 <1328695537-15081-2-git-send-email-geunsik.lim@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759261Ab2BJNPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:15:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:52971 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754427Ab2BJNPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 08:15:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105421444"
+Date: Fri, 10 Feb 2012 21:05:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: [PATCH v2] block: remove plugging at buffered write time
+Message-ID: <20120210130532.GA13185@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-08 at 19:05 +0900, Geunsik Lim wrote:
-> From: Geunsik Lim <geunsik.lim@samsung.com>
-> 
-> Append and update the description about wakeup/wakeup_rt usage.
-> 
+Buffered write(2) is not directly tied to IO, so it's not suitable to
+handle plug in generic_file_aio_write().
 
-Thanks, I applied both patches.
+Also moves unplugging for direct I/O from around ->direct_IO() down to
+do_blockdev_direct_IO().
 
--- Steve
+Note that plugging for O_SYNC writes is also removed. The user may pass
+arbitrary @size arguments, which may be much larger than the preferable
+I/O size, or may cross extent/device boundaries. Let the lower layers
+handle the plugging. The plugging code here actually turns them into
+no-ops.
 
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Li Shaohua <shaohua.li@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/direct-io.c |    5 +++++
+ fs/sync.c      |   11 ++++++++++-
+ mm/filemap.c   |    7 -------
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 
+--- linux-next.orig/mm/filemap.c	2012-02-08 19:33:29.000000000 +0800
++++ linux-next/mm/filemap.c	2012-02-09 15:59:47.000000000 +0800
+@@ -1421,12 +1421,8 @@ generic_file_aio_read(struct kiocb *iocb
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+ 					pos + iov_length(iov, nr_segs) - 1);
+ 			if (!retval) {
+-				struct blk_plug plug;
+-
+-				blk_start_plug(&plug);
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+ 							iov, pos, nr_segs);
+-				blk_finish_plug(&plug);
+ 			}
+ 			if (retval > 0) {
+ 				*ppos = pos + retval;
+@@ -2610,13 +2606,11 @@ ssize_t generic_file_aio_write(struct ki
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+-	struct blk_plug plug;
+ 	ssize_t ret;
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	blk_start_plug(&plug);
+ 	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+@@ -2627,7 +2621,6 @@ ssize_t generic_file_aio_write(struct ki
+ 		if (err < 0 && ret > 0)
+ 			ret = err;
+ 	}
+-	blk_finish_plug(&plug);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(generic_file_aio_write);
+--- linux-next.orig/fs/direct-io.c	2012-02-08 19:33:29.000000000 +0800
++++ linux-next/fs/direct-io.c	2012-02-09 16:03:04.000000000 +0800
+@@ -1106,6 +1106,7 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	unsigned long user_addr;
+ 	size_t bytes;
+ 	struct buffer_head map_bh = { 0, };
++	struct blk_plug plug;
+ 
+ 	if (rw & WRITE)
+ 		rw = WRITE_ODIRECT;
+@@ -1221,6 +1222,8 @@ do_blockdev_direct_IO(int rw, struct kio
+ 				PAGE_SIZE - user_addr / PAGE_SIZE);
+ 	}
+ 
++	blk_start_plug(&plug);
++
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		user_addr = (unsigned long)iov[seg].iov_base;
+ 		sdio.size += bytes = iov[seg].iov_len;
+@@ -1279,6 +1282,8 @@ do_blockdev_direct_IO(int rw, struct kio
+ 	if (sdio.bio)
+ 		dio_bio_submit(dio, &sdio);
+ 
++	blk_finish_plug(&plug);
++
+ 	/*
+ 	 * It is possible that, we return short IO due to end of file.
+ 	 * In that case, we need to release all the pages we got hold on.
