@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759812Ab2BJS3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:29:19 -0500
-Received: from nm3-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.136]:37633
-	"HELO nm3-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759746Ab2BJS3R (ORCPT
+	id S1759880Ab2BJScn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:32:43 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:20498 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758351Ab2BJScj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:29:17 -0500
-X-Yahoo-Newman-Id: 895203.41456.bm@smtp106.biz.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: U5lyHCoVM1n8Yxt1Cax_gQRX_sDuETLgqCQJ51U6rT5YVYg
- u9.RGCgEuOYPUpu87ylEd._pu48iQA0eBAi0jSJk5N5guZJqmH8ioEnOIEgU
- 2ZTavAd5.OnrRzvt.1TC1l9ZYTV05_X4UNJH4pzoL_5RFn25YvasxSmaTIS2
- gfJA4ExWuBPmOyivcUE_drez0ObUwJKhxfVh4BN2RazT.8sIBcaeXufzoQV.
- TuPXv2pzg26fjYnrRMnQZUcUn6OVY47.U9cKP5GcZCPwZ_Ef.hnI_70TJrZF
- 4zh9vf4dR8GxJzoyRBHKM64hxacD03nrFB7eEyYm1EN8BB_Cek6er_m02aTA
- LLUOekUZNUh8zkbLya3plUPJ8qkeDVzTfyT4lAsXA4OeVsV49tkME9jWGHGH
- HckRtYDeoiFJ0cVhes3ZGoeATMGjUFmjGMEboS2_Vg836V9c-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4F356206.1080509@schaufler-ca.com>
-Date: Fri, 10 Feb 2012 10:29:26 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: akpm@linux-foundation.org, jmorris@namei.org, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-security-module@vger.kernel.org,
-        viro@zeniv.linux.org.uk, eparis@parisplace.org, sds@tycho.nsa.gov
-Subject: Re: [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
-References: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
-In-Reply-To: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Feb 2012 13:32:39 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 10 Feb 2012 19:32:17 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PULL REQUEST] DMA-mapping framework redesign preparation patches
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Message-id: <1328898737-15854-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/9/2012 10:01 AM, Stanislav Kinsbursky wrote:
-> This patch set aimed to provide additional functionality for all IPC objects,
-> which is required for migration these objects by user-space checkpoint/restore
-> utils.
-> The main problem here was impossibility to set up object id. This patch set
-> solves the problem in two steps:
-> 1) Makes it possible to create new object (shared memory, semaphores set or
-> messages queue) with ID, equal to passed key.
-> 2) Makes it possible to change existent object key.
+Hi Stephen,
 
-Is there any chance you might include the LSM data as well?
+Our patches with DMA-mapping framework redesign proposal have been
+hanging for over a month with just a few comments. We would like to go
+further in the development, but first I would like to ask You to give
+them a try in the linux-next kernel.
 
->
-> The following series consists of:
->
-> ---
->
-> Stanislav Kinsbursky (5):
->        ipc: "use key as id" functionality for resource get system call introduced
->        ipc: segment key change helper introduced
->        ipc: add new SHM_SET command for sys_shmctl() call
->        ipc: add new MSG_SET command for sys_msgctl() call
->        ipc: add new SEM_SET command for sys_semctl() call
->
->
->   include/linux/ipc.h        |    1 +
->   include/linux/msg.h        |    1 +
->   include/linux/sem.h        |    1 +
->   include/linux/shm.h        |    1 +
->   ipc/compat.c               |    9 +++++++
->   ipc/msg.c                  |   14 +++++++++-
->   ipc/sem.c                  |   11 +++++++-
->   ipc/shm.c                  |   14 +++++++++-
->   ipc/util.c                 |   59 +++++++++++++++++++++++++++++++++++++++++---
->   ipc/util.h                 |    3 ++
->   security/selinux/hooks.c   |    3 ++
->   security/smack/smack_lsm.c |    3 ++
->   12 files changed, 110 insertions(+), 10 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+For everyone interested in this patch series, here is the relevant
+thread: https://lkml.org/lkml/2011/12/23/97
+
+If there are any problems with our git tree, please contact Marek 
+Szyprowski <m.szyprowski@samsung.com> or alternatively Kyungmin Park
+<kyungmin.park@samsung.com>.
+
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
+
+  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
+
+are available in the git repository at:
+  git://git.infradead.org/users/kmpark/linux-samsung dma-mapping-next
+
+Andrzej Pietrasiewicz (9):
+      X86: adapt for dma_map_ops changes
+      MIPS: adapt for dma_map_ops changes
+      PowerPC: adapt for dma_map_ops changes
+      IA64: adapt for dma_map_ops changes
+      SPARC: adapt for dma_map_ops changes
+      Alpha: adapt for dma_map_ops changes
+      SH: adapt for dma_map_ops changes
+      Microblaze: adapt for dma_map_ops changes
+      Unicore32: adapt for dma_map_ops changes
+
+Marek Szyprowski (5):
+      common: dma-mapping: introduce alloc_attrs and free_attrs methods
+      common: dma-mapping: remove old alloc_coherent and free_coherent methods
+      common: dma-mapping: introduce mmap method
+      common: DMA-mapping: add WRITE_COMBINE attribute
+      common: DMA-mapping: add NON-CONSISTENT attribute
+
+ Documentation/DMA-attributes.txt          |   19 +++++++++++++++++++
+ arch/alpha/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/alpha/kernel/pci-noop.c              |   10 ++++++----
+ arch/alpha/kernel/pci_iommu.c             |   10 ++++++----
+ arch/ia64/hp/common/sba_iommu.c           |   11 ++++++-----
+ arch/ia64/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/ia64/kernel/pci-swiotlb.c            |    9 +++++----
+ arch/ia64/sn/pci/pci_dma.c                |    9 +++++----
+ arch/microblaze/include/asm/dma-mapping.h |   18 ++++++++++++------
+ arch/microblaze/kernel/dma.c              |   10 ++++++----
+ arch/mips/include/asm/dma-mapping.h       |   18 ++++++++++++------
+ arch/mips/mm/dma-default.c                |    8 ++++----
+ arch/powerpc/include/asm/dma-mapping.h    |   24 ++++++++++++++++--------
+ arch/powerpc/kernel/dma-iommu.c           |   10 ++++++----
+ arch/powerpc/kernel/dma-swiotlb.c         |    4 ++--
+ arch/powerpc/kernel/dma.c                 |   10 ++++++----
+ arch/powerpc/kernel/ibmebus.c             |   10 ++++++----
+ arch/powerpc/platforms/cell/iommu.c       |   16 +++++++++-------
+ arch/powerpc/platforms/ps3/system-bus.c   |   13 +++++++------
+ arch/sh/include/asm/dma-mapping.h         |   28 ++++++++++++++++++----------
+ arch/sh/kernel/dma-nommu.c                |    4 ++--
+ arch/sh/mm/consistent.c                   |    6 ++++--
+ arch/sparc/include/asm/dma-mapping.h      |   18 ++++++++++++------
+ arch/sparc/kernel/iommu.c                 |   10 ++++++----
+ arch/sparc/kernel/ioport.c                |   18 ++++++++++--------
+ arch/sparc/kernel/pci_sun4v.c             |    9 +++++----
+ arch/unicore32/include/asm/dma-mapping.h  |   18 ++++++++++++------
+ arch/unicore32/mm/dma-swiotlb.c           |    4 ++--
+ arch/x86/include/asm/dma-mapping.h        |   26 ++++++++++++++++----------
+ arch/x86/kernel/amd_gart_64.c             |   11 ++++++-----
+ arch/x86/kernel/pci-calgary_64.c          |    9 +++++----
+ arch/x86/kernel/pci-dma.c                 |    3 ++-
+ arch/x86/kernel/pci-nommu.c               |    6 +++---
+ arch/x86/kernel/pci-swiotlb.c             |   12 +++++++-----
+ arch/x86/xen/pci-swiotlb-xen.c            |    4 ++--
+ drivers/iommu/amd_iommu.c                 |   10 ++++++----
+ drivers/iommu/intel-iommu.c               |    9 +++++----
+ drivers/xen/swiotlb-xen.c                 |    5 +++--
+ include/linux/dma-attrs.h                 |    2 ++
+ include/linux/dma-mapping.h               |   13 +++++++++----
+ include/linux/swiotlb.h                   |    6 ++++--
+ include/xen/swiotlb-xen.h                 |    6 ++++--
+ lib/swiotlb.c                             |    5 +++--
+ 43 files changed, 305 insertions(+), 182 deletions(-)
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
