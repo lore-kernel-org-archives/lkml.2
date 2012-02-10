@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab2BJAVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:21:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45215 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008Ab2BJAVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:21:08 -0500
-Message-ID: <4F3462F0.20905@lwfinger.net>
-Date: Thu, 09 Feb 2012 18:21:04 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: tim.gardner@canonical.com
-CC: Tim Gardner <rtg.canonical@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S1758781Ab2BJAVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:21:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:51819 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758521Ab2BJAVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:21:18 -0500
+Date: Fri, 10 Feb 2012 11:21:12 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, aik@ozlabs.ru, qemu-devel@nongnu.org,
+        alex.williamson@redhat.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328735291-33220-1-git-send-email-tim.gardner@canonical.com> <1328737514.2627.14.camel@bwh-desktop> <4F332FC3.7000808@lwfinger.net> <4F33DAFC.1000502@canonical.com> <4F33F7C8.2090105@lwfinger.net> <4F34019E.60007@canonical.com>
-In-Reply-To: <4F34019E.60007@canonical.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/3] Device isolation group infrastructure (v3)
+Message-ID: <20120210002112.GB10536@truffala.fritz.box>
+Mail-Followup-To: Joerg Roedel <joerg.roedel@amd.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+	aik@ozlabs.ru, qemu-devel@nongnu.org, alex.williamson@redhat.com,
+	kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1328071614-8320-1-git-send-email-david@gibson.dropbear.id.au>
+ <1328071614-8320-2-git-send-email-david@gibson.dropbear.id.au>
+ <20120208152748.GD22598@amd.com>
+ <1328737168.2903.35.camel@pasglop>
+ <20120209112805.GN22598@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120209112805.GN22598@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 11:25 AM, Tim Gardner wrote:
-> On 02/09/2012 09:43 AM, Larry Finger wrote:
->> On 02/09/2012 08:41 AM, Tim Gardner wrote:
->>>
->>> I agree with you about the semantics of rtlpriv->max_fw_size, but I
->>> don't agree
->>> that the size check is correct. While rtlpriv->max_fw_size has been
->>> set to
->>> sizeof(struct rt_firmware), that value is _way_ bigger then the size
->>> of the
->>> target buffer.
->>>
->>> sizeof(struct rt_firmware) == 64000+64000+164000 plus some change
->>>
->>> The target buffer size is only 164000 bytes.
->>>
->>> I've attached v2 of the patch that is simpler and may serve to better
->>> illustrate
->>> my point. By the way, Ben Hutchings was right about the original patch
->>> having an
->>> off by one error. This version also clears rtlpriv->max_fw_size if the
->>> size
->>> check fails. Probably should have mentioned that in the commit log.
->>
->> I agree that Ben is right.
->>
->> This thread forced me to go back to square one in analyzing the
->> situation. For the other drivers in the rtlwifi family, the firmware
->> file contains an image that is directly stuffed into the device. For the
->> RTL8192SE devices, it is more complicated. The structure is described in
->> struct rt_firmware. At the moment, the arrays there are grossly
->> oversized. They could be as follows:
->>
->> struct rt_firmware {
->> struct fw_hdr *pfwheader;
->> enum fw_status fwstatus;
->> u16 firmwareversion;
->> u8 fw_imem[RTL8190_MAX_IMEM_CODE_SIZE];
->> u8 fw_emem[RTL8190_MAX_DMEM_CODE_SIZE];
->> u32 fw_imem_len;
->> u32 fw_emem_len;
->> u8 sz_fw_tmpbuffer[RTL8190_MAX_FIRMWARE_SIZE];
->> u32 sz_fw_tmpbufferlen;
->> u16 cmdpacket_fragthresold;
->> };
->>
->> with
->>
->> RTL8190_MAX_IMEM_CODE_SIZE = 54000 (current fw is 51,208),
->> RTL8190_MAX_DMEM_CODE_SIZE = 40000 (current fw is 37,520), and
->> RTL8190_MAX_FIRMWARE_SIZE = 90000 (it holds the raw firmware image,
->> which is currently 88,856).
->>
->> Ultimately, all three arrays should be eliminated. Now that we are using
->> asynchronous loading, the kernel should keep its cached data and not
->> copy it into the driver's private storage when a pointer will suffice.
->> All the drivers need this change, but that can wait for now.
->>
->> I will ACK the patch if you resumit it with
->> #define RTL8190_MAX_RAW_FIRMWARE_CODE_SIZE 90000
->>
->> Larry
->
-> v3 expands the commit log a bit. It doesn't apply to stable 3.2.y, but could
-> easily be backported. If I remember I'll do it when its merged in Linus' tree.
+On Thu, Feb 09, 2012 at 12:28:05PM +0100, Joerg Roedel wrote:
+> On Thu, Feb 09, 2012 at 08:39:28AM +1100, Benjamin Herrenschmidt wrote:
+> > On Wed, 2012-02-08 at 16:27 +0100, Joerg Roedel wrote:
+> > > Again, device grouping is done by the IOMMU drivers, so this all
+> > > belongs
+> > > into the generic iommu-code rather than the driver core.
+> > 
+> > Except that there isn't really a "generic iommu code"... discovery,
+> > initialization & matching of iommu vs. devices etc... that's all
+> > implemented in the arch specific iommu code.
+> 
+> The whole point of moving the iommu drivers to drivers/iommu was to
+> factor out common code. We are not where we want to be yet but the goal
+> is to move more code to the generic part.
+> 
+> For the group-code this means that the generic code should iterate over
+> all devices on a bus and build up group structures based on isolation
+> information provided by the arch specific code.
 
-I added my S-O-B and pushed it on to John.
+And how exactly do you suggest it provide that information.  I really
+can't see how an iommu driver would specify its isolation constraints
+generally enough, except in the form of code and then we're back to
+where we are now.
 
-Thanks,
-
-Larry
-
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
