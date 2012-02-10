@@ -1,98 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758749Ab2BJO2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:28:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56884 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab2BJO23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:28:29 -0500
-Date: Fri, 10 Feb 2012 12:28:21 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf tools: Allow multiple threads or processes in
- record, stat, top
-Message-ID: <20120210142821.GH2526@infradead.org>
-References: <1328718772-16688-1-git-send-email-dsahern@gmail.com>
- <4F331F14.5070100@gmail.com>
- <4F3334F7.70809@gmail.com>
- <20120209073727.GA18152@elte.hu>
- <20120209143449.GA2526@infradead.org>
- <20120209144451.GB2526@infradead.org>
- <4F34AE29.5010202@gmail.com>
+	id S1758501Ab2BJOa6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:30:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63633 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754257Ab2BJOa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 09:30:56 -0500
+Date: Fri, 10 Feb 2012 12:30:49 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] perf tools: More fixes and updates
+Message-ID: <20120210143049.GD4998@infradead.org>
+References: <1323966762-8574-1-git-send-email-robert.richter@amd.com> <20120131155154.GH16322@erda.amd.com> <20120202201402.GG8566@infradead.org> <20120210113140.GL16322@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F34AE29.5010202@gmail.com>
+In-Reply-To: <20120210113140.GL16322@erda.amd.com>
 X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Feb 10, 2012 at 02:42:01PM +0900, Namhyung Kim escreveu:
-> 2012-02-09 11:44 PM, Arnaldo Carvalho de Melo wrote:
-> > [root@aninha linux]# tools/perf/python/twatch.py
-> > Traceback (most recent call last):
-> >    File "tools/perf/python/twatch.py", line 16, in<module>
-> >      import perf
-> > ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: ui__error
+Em Fri, Feb 10, 2012 at 12:31:40PM +0100, Robert Richter escreveu:
+> On 02.02.12 18:14:02, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Jan 31, 2012 at 04:51:54PM +0100, Robert Richter escreveu:
+> > > On 15.12.11 17:32:38, Robert Richter wrote:
+> > > > Some more fixes and updates for perf tools.
 
-> > it breaks, I'll check an alternative way to report problems without
-> > calling ui__ methods from thread_map.
+> > > > Robert Richter (4):
 > 
-> I have a different result:
->  $ git checkout tip/perf/core
->  HEAD is now at c98fdeaa9273... x86/sched/perf/AMD: Set sched_clock_stable
->  $ patch -p1 < perf-allow-multiple-threads.patch
->  patching file tools/perf/Documentation/perf-record.txt
-<SNIP>
->  $ cd tools/perf
->  $ make -j8
-<SNIP>
->  $ sudo python/twatch.py
->  Traceback (most recent call last):
->    File "python/twatch.py", line 41, in <module>
->      main()
->    File "python/twatch.py", line 25, in main
->      evsel.open(cpus = cpus, threads = threads);
->  OSError: [Errno 22] Invalid argument
+> > > >   perf tools: Moving code in header.c
+> > > >   perf tools: Factor out feature op to process header sections
 
-This is another problem and one I would appreciate if you could fix :-)
+> > Agreed, I applied both to my local repo, after some testing and
+> > reviewing some more patches I'll push it to Ingo, thanks,
 
-I mentioned it to David in a private message and there was at least one
-instance where Linus was involved and I promised to fix this but haven't
-find the time to do so.
+> Arnaldo, the two above are not yet applied. Should I drop them?
 
-The problem is that one needs to research how to make the python binding
-to be rebuilt when one of the files that are linked into it changes.
+IIRC they didn't applied, can you check that are resubmit?
 
-Please take a look at tools/perf/util/setup.py and you'll see:
-
-perf = Extension('perf',
-          sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
-                     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
-                     'util/util.c', 'util/xyarray.c', 'util/cgroup.c',
-                     'util/debugfs.c'],
-          include_dirs = ['util/include'],
-          extra_compile_args = cflags,
-        )
-
-	Probably is something simple in the Makefiles.
-
-	So please try again after doing:
-
-  cd tools/perf
-  rm -rf python/perf.so
-  make
-
-	And you should get the same problem. Also check
-/proc/sys/kernel/perf_event_paranoid as this script does syswide sampling.
-
-	I'll try to fix this problem now that I took the time to think about it
-8-)
+Thanks,
 
 - Arnaldo
