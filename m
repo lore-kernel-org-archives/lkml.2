@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614Ab2BJWls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:48 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	id S1760627Ab2BJWmC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:42:02 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50022 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2BJWlo (ORCPT
+	with ESMTP id S1754107Ab2BJWlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:44 -0500
+	Fri, 10 Feb 2012 17:41:46 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222948.667114877@clark.kroah.org>
+Message-Id: <20120210222948.758793281@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:00 -0800
+Date: Fri, 10 Feb 2012 14:30:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wu Fengguang <fengguang.wu@intel.com>,
+        alan@lxorguk.ukuu.org.uk, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Keith Packard <keithp@keithp.com>,
         Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: [patch 41/86] drm/i915: DisplayPort hot remove notification to audio driver
+Subject: [patch 42/86] drm/i915: check ACTHD of all rings
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 832afda6a7d7235ef0e09f4ec46736861540da6d upstream.
+commit 097354eb14fa94d31a09c64d640643f58e4a5a9a upstream.
 
-On DP monitor hot remove, clear DP_AUDIO_OUTPUT_ENABLE accordingly,
-so that the audio driver will receive hot plug events and take action
-to refresh its device state and ELD contents.
+Otherwise hangcheck spuriously fires when running blitter/bsd-only
+workloads.
 
-Note that the DP_AUDIO_OUTPUT_ENABLE bit may be enabled or disabled
-only when the link training is complete and set to "Normal".
+Contrary to a similar patch by Ben Widawsky this does not check
+INSTDONE of the other rings. Chris Wilson implied that in a failure to
+detect a hang, most likely because INSTDONE was fluctuating. Thus only
+check ACTHD, which as far as I know is rather reliable. Also, blitter
+and bsd rings can't launch complex tasks from a single instruction
+(like 3D_PRIM on the render with complex or even infinite shaders).
 
-Tested OK for both hot plug/remove and DPMS on/off.
+This fixes spurious gpu hang detection when running
+tests/gem_hangcheck_forcewake on snb/ivb.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/gpu/drm/i915/intel_dp.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1926,6 +1926,7 @@ intel_dp_link_down(struct intel_dp *inte
- 			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
+---
+ drivers/gpu/drm/i915/i915_drv.h |    2 ++
+ drivers/gpu/drm/i915/i915_irq.c |   13 ++++++++++---
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -337,6 +337,8 @@ typedef struct drm_i915_private {
+ 	struct timer_list hangcheck_timer;
+ 	int hangcheck_count;
+ 	uint32_t last_acthd;
++	uint32_t last_acthd_bsd;
++	uint32_t last_acthd_blt;
+ 	uint32_t last_instdone;
+ 	uint32_t last_instdone1;
+ 
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1669,7 +1669,7 @@ void i915_hangcheck_elapsed(unsigned lon
+ {
+ 	struct drm_device *dev = (struct drm_device *)data;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	uint32_t acthd, instdone, instdone1;
++	uint32_t acthd, instdone, instdone1, acthd_bsd, acthd_blt;
+ 	bool err = false;
+ 
+ 	if (!i915_enable_hangcheck)
+@@ -1686,16 +1686,21 @@ void i915_hangcheck_elapsed(unsigned lon
  	}
  
-+	DP &= ~DP_AUDIO_OUTPUT_ENABLE;
- 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
- 	POSTING_READ(intel_dp->output_reg);
- 	msleep(intel_dp->panel_power_down_delay);
+ 	if (INTEL_INFO(dev)->gen < 4) {
+-		acthd = I915_READ(ACTHD);
+ 		instdone = I915_READ(INSTDONE);
+ 		instdone1 = 0;
+ 	} else {
+-		acthd = I915_READ(ACTHD_I965);
+ 		instdone = I915_READ(INSTDONE_I965);
+ 		instdone1 = I915_READ(INSTDONE1);
+ 	}
++	acthd = intel_ring_get_active_head(&dev_priv->ring[RCS]);
++	acthd_bsd = HAS_BSD(dev) ?
++		intel_ring_get_active_head(&dev_priv->ring[VCS]) : 0;
++	acthd_blt = HAS_BLT(dev) ?
++		intel_ring_get_active_head(&dev_priv->ring[BCS]) : 0;
+ 
+ 	if (dev_priv->last_acthd == acthd &&
++	    dev_priv->last_acthd_bsd == acthd_bsd &&
++	    dev_priv->last_acthd_blt == acthd_blt &&
+ 	    dev_priv->last_instdone == instdone &&
+ 	    dev_priv->last_instdone1 == instdone1) {
+ 		if (dev_priv->hangcheck_count++ > 1) {
+@@ -1727,6 +1732,8 @@ void i915_hangcheck_elapsed(unsigned lon
+ 		dev_priv->hangcheck_count = 0;
+ 
+ 		dev_priv->last_acthd = acthd;
++		dev_priv->last_acthd_bsd = acthd_bsd;
++		dev_priv->last_acthd_blt = acthd_blt;
+ 		dev_priv->last_instdone = instdone;
+ 		dev_priv->last_instdone1 = instdone1;
+ 	}
 
 
