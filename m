@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab2BJNjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:39:14 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42046 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757955Ab2BJNio (ORCPT
+	id S1759294Ab2BJNlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:41:19 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48760 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758799Ab2BJNlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:38:44 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 1/6] sep: Add new PCI identifier
-To: greg@kroah.com, linux-kernel@vger.kernel.org, mark.a.allyn@intel.com
-Date: Fri, 10 Feb 2012 13:52:27 +0000
-Message-ID: <20120210135225.12442.88492.stgit@bob.linux.org.uk>
-In-Reply-To: <20120210134929.12442.59041.stgit@bob.linux.org.uk>
-References: <20120210134929.12442.59041.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Fri, 10 Feb 2012 08:41:18 -0500
+Date: Fri, 10 Feb 2012 14:41:15 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 01/31] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+Message-ID: <20120210134115.GC16783@aftab>
+References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+ <1328832090-9166-2-git-send-email-mchehab@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328832090-9166-2-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark A. Allyn <mark.a.allyn@intel.com>
+On Thu, Feb 09, 2012 at 10:01:00PM -0200, Mauro Carvalho Chehab wrote:
+> In order to provide a proper hardware event subsystem, let's
+> encapsulate hardware events into a common trace facility, and
+> make both edac and mce drivers to use it. After that, common
+> facilities can be moved into a new core for hardware events
+> reporting subsystem. This patch is the first of a series, and just
+> touches at mce.
 
-[This is picked out of the differences between the upstream driver and
- the staging driver. I'm resolving the differences as a series of updates -AC]
+I think it would work too if you had only one event:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+* trace_hw_error(...)
 
- drivers/staging/sep/sep_driver_hw_defs.h |    3 ---
- drivers/staging/sep/sep_main.c           |    5 +++--
- 2 files changed, 3 insertions(+), 5 deletions(-)
+which would have as an argument a string describing it, like
+"Uncorrected Memory Read Error", "Memory Read Error (out of range)" "TLB
+Multimatch Error" etc., followed by the rest of the error info.
 
+Currently, you're introducing at least 5 trace_* calls _only_ for memory
+errors. What about the remaining couples of tens of errors which haven't
+been addressed yet?
 
-diff --git a/drivers/staging/sep/sep_driver_hw_defs.h b/drivers/staging/sep/sep_driver_hw_defs.h
-index c48e49a..a6a4481 100644
---- a/drivers/staging/sep/sep_driver_hw_defs.h
-+++ b/drivers/staging/sep/sep_driver_hw_defs.h
-@@ -33,9 +33,6 @@
- #ifndef SEP_DRIVER_HW_DEFS__H
- #define SEP_DRIVER_HW_DEFS__H
- 
--/* PCI ID's */
--#define MFLD_PCI_DEVICE_ID 0x0826
--
- /*----------------------- */
- /* HW Registers Defines.  */
- /*                        */
-diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
-index 7f8362c..421a2b1 100644
---- a/drivers/staging/sep/sep_main.c
-+++ b/drivers/staging/sep/sep_main.c
-@@ -4085,8 +4085,9 @@ static void sep_remove(struct pci_dev *pdev)
- 
- /* Initialize struct pci_device_id for our driver */
- static DEFINE_PCI_DEVICE_TABLE(sep_pci_id_tbl) = {
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MFLD_PCI_DEVICE_ID)},
--	{0}
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0826)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x08e9)},
-+ 	{0}
- };
- 
- /* Export our pci_device_id structure to user space */
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
