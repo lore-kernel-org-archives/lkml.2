@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2BJPP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:15:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab2BJPPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:15:55 -0500
-Date: Fri, 10 Feb 2012 16:09:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@parisplace.org>
-Subject: Re: I finally prepared a testcase for read(inotify_fd) getting
-	EINTR on PTRACE_ATTACH
-Message-ID: <20120210150923.GA12322@redhat.com>
-References: <4F352565.6030402@redhat.com> <20120210144846.GA10798@redhat.com>
+	id S1754850Ab2BJPVV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:21:21 -0500
+Received: from 2605ds1-ynoe.0.fullrate.dk ([90.184.12.24]:33992 "EHLO
+	shrek.krogh.cc" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904Ab2BJPVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 10:21:20 -0500
+Message-ID: <4F3535E7.4000007@krogh.cc>
+Date: Fri, 10 Feb 2012 16:21:11 +0100
+From: Jesper Krogh <jesper@krogh.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120210144846.GA10798@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, jk@novozymes.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        herrmann.der.user@googlemail.com
+Subject: Re: Memory issues with Opteron 6220
+References: <20120208143741.GB28486@otto.nzcorp.net> <20120209083315.GA19380@elte.hu> <4F343582.7080007@krogh.cc>
+In-Reply-To: <4F343582.7080007@krogh.cc>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10, Oleg Nesterov wrote:
->
-> Add CC's,
->
-> On 02/10, Denys Vlasenko wrote:
-> >
-> > I recalled that I saw a spurious EINTR on strace attach.
-> > I found time/inspiration to create an isolated testcase for it.
-> > Already committed it to ptrace-tests.
-> >
-> > The code: skip all the cruft, read reproduce() function body.
-> > It's quite straightforward.
-> >
-> > $ gcc -Wall -Os eintr-on-attach.c -oeintr-on-attach
-> > $ ./eintr-on-attach 1;echo 1
-> > bug: read was interrupted by attach, errno: Interrupted system call
->
-> At first glance this looks obvious? I never used inotify and I never
-> looked into fs/notify/inotify/, but it seems that inotify_read() simply
-> returns -EINTR if signal_pending() and doesn't implement restarts.
->
-> Probably this trivial change
->
->
-> 	--- x/fs/notify/inotify/inotify_user.c
-> 	+++ x/fs/notify/inotify/inotify_user.c
-> 	@@ -264,7 +264,7 @@ static ssize_t inotify_read(struct file
-> 			ret = -EAGAIN;
-> 			if (file->f_flags & O_NONBLOCK)
-> 				break;
-> 	-		ret = -EINTR;
-> 	+		ret = -ERESTARTSYS;
-> 			if (signal_pending(current))
-> 				break;
->
->
-> makes sense.
+Long story short, this is a red herring.
 
-except I meant -ERESTARTNOHAND to avoid the behavioural change.
+The system we migrated the configuration from had
+vm.overcommit_memory => 2, so then the new
+one got that too. (50% actual memory + swap)
 
-Oleg.
+That worked fine.. We set it back in 2008 due to the
+heuristic version not doing the correct thing. What
+has happened over the years is that the memory grow
+and swap/memory ration has gone smaller, both due
+to memory growth and swap being more and more irellevant.
 
+So the new system was set up with reduced swap 8GB vs. 100GB
+which mean that the algorithm used by overcommit_memory
+ended up not allowing more than: 64GB+8GB of memory being
+used (less than physical memory).. The system migrated from would
+by this rule allow 64+100GB, this fitting quite ok.
+
+I guess it took so long to realize, since something with "overcommit"
+isn't what springs into mind when you dont think you're even
+close to be there, combined with the mis-leading power-saving issue
+that just confused the problem.
+
+I would admit that we could have saved a significant of time/fustration
+if dmesg had revealed a message that it was the overcommit limits being
+hit and thus knocking off the processes.
+
+Another change to suggest would be to not kill off processes due
+to overcommit at least before actual memory size had been reached.
+
+But, long story short, system misconfiguration..
+
+-- 
+Jesper
