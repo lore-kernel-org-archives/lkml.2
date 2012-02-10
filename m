@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab2BJTp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 14:45:58 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:57369 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759958Ab2BJTp4 (ORCPT
+	id S1760028Ab2BJTqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 14:46:46 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51030 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759958Ab2BJTqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 14:45:56 -0500
-Date: Fri, 10 Feb 2012 11:45:52 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Charlie Suffin <charlie.suffin@stratus.com>, stable@kernel.org
-Subject: Re: [PATCH] pci: Add quirk for still enabled interrupts on Intel
- Sandy Bridge GPUs
-Message-ID: <20120210114552.5ff66007@jbarnes-desktop>
-In-Reply-To: <4EDFD5BB.1050906@intra2net.com>
-References: <4EDFD5BB.1050906@intra2net.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/CmlYTlKKLRX8kRasUrXYd9F"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 10 Feb 2012 14:46:45 -0500
+Message-ID: <4F357420.6030603@gmail.com>
+Date: Fri, 10 Feb 2012 12:46:40 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH] perf tools: Allow multiple threads or processes in record,
+ stat, top
+References: <1328718772-16688-1-git-send-email-dsahern@gmail.com> <20120210192402.GJ2526@infradead.org> <4F3570B9.5090708@gmail.com> <20120210193429.GL2526@infradead.org>
+In-Reply-To: <20120210193429.GL2526@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CmlYTlKKLRX8kRasUrXYd9F
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 07 Dec 2011 22:08:11 +0100
-Thomas Jarosch <thomas.jarosch@intra2net.com> wrote:
 
-> Some BIOS implementations leave the Intel GPU interrupts enabled,
-> even though no one is handling them (f.e. i915 driver is never loaded).
-> Additionally the interrupt destination is not set up properly
-> and the interrupt ends up -somewhere-.
->=20
-> These spurious interrupts are "sticky" and the kernel disables
-> the (shared) interrupt line after 100.000+ generated interrupts.
->=20
-> Fix it by disabling the still enabled interrupts.
-> This resolves crashes often seen on monitor unplug.
+On 02/10/2012 12:34 PM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Feb 10, 2012 at 12:32:09PM -0700, David Ahern escreveu:
+>>
+>>
+>> On 02/10/2012 12:24 PM, Arnaldo Carvalho de Melo wrote:
+>>> Em Wed, Feb 08, 2012 at 09:32:52AM -0700, David Ahern escreveu:
+>>>> Allow a user to collect events for multiple threads or processes
+>>>> using a comma separated list.
+>>>>
+>>>> e.g., collect data on a VM and its vhost thread:
+>>>>   perf top -p 21483,21485
+>>>>   perf stat -p 21483,21485 -ddd
+>>>>   perf record -p 21483,21485
+>>>>
+>>>> or monitoring vcpu threads
+>>>>   perf top -t 21488,21489
+>>>>   perf stat -t 21488,21489 -ddd
+>>>>   perf record -t 21488,21489
+>>>
+>>> I found some problems below:
+>>>  
+>>>> diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+>>>> index 3d4b6c5..e793c16 100644
+>>>> --- a/tools/perf/util/thread_map.c
+>>>> +++ b/tools/perf/util/thread_map.c
+>>>> +static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+>>>> +{
+>>>> +	struct thread_map *threads = NULL;
+>>> <SNIP>
+>>>> +		if (threads)
+>>>> +			threads = realloc(threads,
+>>>> +					  sizeof(*threads) + sizeof(pid_t)*total_tasks);
+>>>> +		else
+>>>> +			threads = malloc(sizeof(*threads) + sizeof(pid_t)*items);
+>>>
+>>> If realloc fails and threads was allocated before... we leak memory.
+>>
+>> ok.
+>>
+>>>
+>>> We don't need to use this if clause, realloc handles threads == NULL
+>>> just fines and then works as malloc.
+>>
+>> ok.
+>>
+>>>
+>>> Also I didn't use ctype altogether + that CSV parsing routine, we have
+>>> strlist for that, it even will allow us to trow away duplicate pids/tids
+>>> and also supports passing a file with a list of threads to monitor, for
+>>> free.
+>>
+>> Interesting. I did look at strlist before going with the string parsing.
+>> It was not obvious to me how to use it for this case.
+>>
+>>>
+>>> Take a look at the modified patch below, if you're ok with it I can keep
+>>> your autorship and put a [committer note: use strlist] or take autorship
+>>> and state that it was based on a patch made by you, definetely your
+>>> call. I'd go for the committer note.
+>>
+>> I'm fine with either one. Patch below looks fine. If needed:
+>>
+>> Acked-by: David Ahern <dsahern@gmail.com>
+> 
+> I assume you tested it in a few scenarios (I know I did, but hey, more
+> testing is always good) and that I can add another stamp, a Tested-by:
+> ya, right?
+> 
+> - Arnaldo
 
-Applied to my -next branch finally (sorry I missed your last reply),
-thanks Thomas.
+Hmmm... that was a radical idea. Build breaks on Fedora 16, x86_64:
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+util/thread_map.c: In function ‘thread_map__new_by_pid_str’:
+util/thread_map.c:164:2: error: overflow in implicit constant conversion
+[-Werror=overflow]
+util/thread_map.c:175:3: error: comparison is always false due to
+limited range of data type [-Werror=type-limits]
+util/thread_map.c:175:3: error: comparison is always false due to
+limited range of data type [-Werror=type-limits]
+util/thread_map.c: In function ‘thread_map__new_by_tid_str’:
+util/thread_map.c:223:2: error: overflow in implicit constant conversion
+[-Werror=overflow]
+util/thread_map.c:245:3: error: comparison is always false due to
+limited range of data type [-Werror=type-limits]
+util/thread_map.c:245:3: error: comparison is always false due to
+limited range of data type [-Werror=type-limits]
+cc1: all warnings being treated as errors
 
---Sig_/CmlYTlKKLRX8kRasUrXYd9F
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPNXPwAAoJEIEoDkX4Qk9hie8QAJR1bepheYAePbieLOAKuUDM
-5aUny3br9STY+eUcsdw4Wqqt/Cjp8qV8flFffN/8Wv1mDQxb32EYUCI/OE8s+Wzd
-jIBcUwHA+N6TVBLM/BW3XcGL3kIWoEYlz636BYqqipQlNFQ/XQzyxSeceqKlwurU
-DQO/NlNADrM8vedz7hmwLR+9lm9vI0rRX6cudSmqi5PECwBSBEeNLhq0LKHjWboX
-iuXCVfog8qd6dLh2feRA6t+zEwM8xm9pFOQjr/3ja4r0o5yBPadccQFt+buBGkqQ
-86QGo5HJDBBuwjT1/rkc9/CDDh7Xga2p+M9yDf5ukh/5/atNp2AeYATI3QgPif4A
-okeaXkasZ2TLXkmb1gpcGs7KLcvf9mfmyZYBnB4H2E5ydlfdY/bF3i4vuXZBL4ST
-hwcyWnqVE0rgfkBpnsx7n97qT2qHuvyV7jCVXTZH86XFjrDTtyD2lyoWt2T52AmN
-0agWRw/2XTqKsQ6CsYeCzWYW2sPjMnSLLCr5KrV1vaHqLLn1qZDi234Wi8u1oK6e
-6L40sCXc5pzHS2stY1k9o3v30LgH1bR5EkePxj8FMMC4ZBVcqk0yMVOIahqLGjGe
-YvddFj4gs3dLzJm7utHSzuzDMzPoot8J6gqkBu/DwkmE9USKYE/Rf/BuyBuLDObi
-CUMgx7M6pExWB+n/WbVM
-=evjv
------END PGP SIGNATURE-----
-
---Sig_/CmlYTlKKLRX8kRasUrXYd9F--
+I think you want INT_MAX not LONG_MAX.
