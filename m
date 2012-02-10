@@ -1,52 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab2BJQEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:04:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35175 "EHLO mx2.suse.de"
+	id S1759516Ab2BJQEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:04:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35171 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758165Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758072Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 11:04:16 -0500
 From: Jan Kara <jack@suse.cz>
 To: Jeff Moyer <jmoyer@redhat.com>
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         ocfs2-devel@oss.oracle.com, xfs@oss.sgi.com,
         Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 4/4] btrfs: Use generic handlers of O_SYNC AIO DIO
-Date: Fri, 10 Feb 2012 17:04:02 +0100
-Message-Id: <1328889842-23231-5-git-send-email-jack@suse.cz>
+        cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] Generic O_SYNC AIO DIO handling
+Date: Fri, 10 Feb 2012 17:03:58 +0100
+Message-Id: <1328889842-23231-1-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1328889842-23231-1-git-send-email-jack@suse.cz>
-References: <1328889842-23231-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-file. Although we use our own bio->end_io function, we call dio_end_io()
-from it and thus, because we don't set any specific dio->end_io function,
-generic code ends up calling generic_dio_end_io() which is all what we need
-for proper O_SYNC AIO DIO handling.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/btrfs/inode.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  Hi Jeff,
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 32214fe..68add6e 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -6221,7 +6221,7 @@ static ssize_t btrfs_direct_IO(int rw, struct kiocb *iocb,
- 	ret = __blockdev_direct_IO(rw, iocb, inode,
- 		   BTRFS_I(inode)->root->fs_info->fs_devices->latest_bdev,
- 		   iov, offset, nr_segs, btrfs_get_blocks_direct, NULL,
--		   btrfs_submit_direct, 0);
-+		   btrfs_submit_direct, DIO_SYNC_WRITES);
- 
- 	if (ret < 0 && ret != -EIOCBQUEUED) {
- 		clear_extent_bit(&BTRFS_I(inode)->io_tree, offset,
--- 
-1.7.1
+  these patches implement generic way of handling O_SYNC AIO DIO. They work
+for all filesystems except for ext4 and xfs. Thus together with your patches,
+all filesystems should handle O_SYNC AIO DIO correctly. I've tested ext3,
+btrfs, and xfs (to check that I didn't break anything when the generic code
+is unused) and things seem to work fine. Will you add these patches to your
+series please? Thanks.
 
+								Honza
