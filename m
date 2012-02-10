@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab2BJWsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:48:50 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
+	id S933102Ab2BJWp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:45:26 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933049Ab2BJWp3 (ORCPT
+	with ESMTP id S933049Ab2BJWpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:29 -0500
+	Fri, 10 Feb 2012 17:45:20 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223442.478488563@clark.kroah.org>
+Message-Id: <20120210223444.478174922@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:29 -0800
+Date: Fri, 10 Feb 2012 14:33:52 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Namjae Jeon <linkinjeon@gmail.com>,
-        Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>
-Subject: [patch 25/55] udf: Mark LVID buffer as uptodate before marking it dirty
+        alan@lxorguk.ukuu.org.uk, Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [patch 48/55] usb: gadget: zero: fix bug in loopback autoresume handling
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
 
-commit 853a0c25baf96b028de1654bea1e0c8857eadf3d upstream.
+commit 683da59d7b8ae04891636d4b59893cd4e9b0b7e5 upstream.
 
-When we hit EIO while writing LVID, the buffer uptodate bit is cleared.
-This then results in an anoying warning from mark_buffer_dirty() when we
-write the buffer again. So just set uptodate flag unconditionally.
+ab943a2e125b (USB: gadget: gadget zero uses new suspend/resume hooks)
+introduced a copy-paste error where f_loopback.c writes to a variable
+declared in f_sourcesink.c. This prevents one from creating gadgets
+that only have a loopback function.
 
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/super.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/gadget/f_loopback.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1830,6 +1830,12 @@ static void udf_close_lvid(struct super_
- 				le16_to_cpu(lvid->descTag.descCRCLength)));
+--- a/drivers/usb/gadget/f_loopback.c
++++ b/drivers/usb/gadget/f_loopback.c
+@@ -373,7 +373,7 @@ int __init loopback_add(struct usb_compo
  
- 	lvid->descTag.tagChecksum = udf_tag_checksum(&lvid->descTag);
-+	/*
-+	 * We set buffer uptodate unconditionally here to avoid spurious
-+	 * warnings from mark_buffer_dirty() when previous EIO has marked
-+	 * the buffer as !uptodate
-+	 */
-+	set_buffer_uptodate(bh);
- 	mark_buffer_dirty(bh);
- 	sbi->s_lvid_dirty = 0;
- 	mutex_unlock(&sbi->s_alloc_mutex);
+ 	/* support autoresume for remote wakeup testing */
+ 	if (autoresume)
+-		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
++		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+ 
+ 	/* support OTG systems */
+ 	if (gadget_is_otg(cdev->gadget)) {
 
 
