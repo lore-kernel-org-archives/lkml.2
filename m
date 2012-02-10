@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635Ab2BJRjy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:39:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab2BJRjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:39:53 -0500
-Date: Fri, 10 Feb 2012 18:33:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org, Chris Evans <scarybeasts@gmail.com>,
-        Indan Zupancic <indan@nul.nu>
-Subject: [PATCH 2/2] ptrace: don't send SIGTRAP on exec if SEIZED
-Message-ID: <20120210173319.GH8908@redhat.com>
-References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com> <20120210173237.GF8908@redhat.com>
+	id S1759565Ab2BJRkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:40:53 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15499 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab2BJRkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:40:51 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+PuTrm0SiNu/pYr7Y+VI+8
+Date: Fri, 10 Feb 2012 09:40:47 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Matt Porter <matt@ohporter.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] omap: board-omap3evm: add required smsc911x regulators
+Message-ID: <20120210174046.GQ1426@atomide.com>
+References: <1328738812-26755-1-git-send-email-mporter@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120210173237.GF8908@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1328738812-26755-1-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_event(PTRACE_EVENT_EXEC) sends SIGTRAP if PT_TRACE_EXEC is
-not set. This is because this SIGTRAP predates PTRACE_O_TRACEEXEC
-option, we do not need/want this with PT_SEIZED which can set the
-options during attach.
+* Matt Porter <matt@ohporter.com> [120208 13:35]:
+> This fixes smsc911x support on omap3evm that has been broken since
+> the smsc911x driver was updated to require the existence of vdd33a
+> and vddvario supplies.
 
-Suggested-by: Pedro Alves <palves@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/ptrace.h |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Great. Few comments:
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 6dffe18..407c678 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -194,9 +194,10 @@ static inline void ptrace_event(int event, unsigned long message)
- 	if (unlikely(ptrace_event_enabled(current, event))) {
- 		current->ptrace_message = message;
- 		ptrace_notify((event << 8) | SIGTRAP);
--	} else if (event == PTRACE_EVENT_EXEC && unlikely(current->ptrace)) {
-+	} else if (event == PTRACE_EVENT_EXEC) {
- 		/* legacy EXEC report via SIGTRAP */
--		send_sig(SIGTRAP, current, 0);
-+		if ((current->ptrace & (PT_PTRACED|PT_SEIZED)) == PT_PTRACED)
-+			send_sig(SIGTRAP, current, 0);
- 	}
- }
- 
--- 
-1.5.5.1
+1. Could you please include the smsc911x commit and subject here too
+   so it clearly shows the regression?
 
+2. Also, why don't you add this fixed regulator to gpmc-smsc911.c?
 
+That way it gets fixed for other too, like zoom2/3.
+
+Regards,
+
+Tony
