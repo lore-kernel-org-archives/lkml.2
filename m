@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761081Ab2BJXWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:22:42 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50022 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758295Ab2BJWku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:40:50 -0500
+	id S1760458Ab2BJXbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:31:46 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47347 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753048Ab2BJXbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 18:31:44 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] PM / Sleep: Remove unnecessary label from suspend_freeze_processes()
+Date: Sat, 11 Feb 2012 00:35:32 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Message-Id: <20120210222946.198111485@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [patch 13/86] ARM: 7308/1: vfp: flush thread hwstate before copying ptrace registers
-In-Reply-To: <20120210223514.GA24190@kroah.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202110035.32993.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-------------------
+The Finish label in suspend_freeze_processes() is in fact necessary
+and makes the function look more complicated that it really is, so
+remove it (along with a few empty lines).
 
-From: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-commit 8130b9d7b9d858aa04ce67805e8951e3cb6e9b2f upstream.
+The patch is on top of linux-pm/pm-sleep.
 
-If we are context switched whilst copying into a thread's
-vfp_hard_struct then the partial copy may be corrupted by the VFP
-context switching code (see "ARM: vfp: flush thread hwstate before
-restoring context from sigframe").
-
-This patch updates the ptrace VFP set code so that the thread state is
-flushed before the copy, therefore disabling VFP and preventing
-corruption from occurring.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks,
+Rafael
 
 ---
- arch/arm/kernel/ptrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/power/power.h |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -726,8 +726,8 @@ static int vfp_set(struct task_struct *t
- 	if (ret)
- 		return ret;
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -234,16 +234,14 @@ static inline int suspend_freeze_process
+ 	int error;
  
--	thread->vfpstate.hard = new_vfp;
- 	vfp_flush_hwstate(thread);
-+	thread->vfpstate.hard = new_vfp;
+ 	error = freeze_processes();
+-
+ 	/*
+ 	 * freeze_processes() automatically thaws every task if freezing
+ 	 * fails. So we need not do anything extra upon error.
+ 	 */
+ 	if (error)
+-		goto Finish;
++		return error;
  
- 	return 0;
+ 	error = freeze_kernel_threads();
+-
+ 	/*
+ 	 * freeze_kernel_threads() thaws only kernel threads upon freezing
+ 	 * failure. So we have to thaw the userspace tasks ourselves.
+@@ -251,7 +249,6 @@ static inline int suspend_freeze_process
+ 	if (error)
+ 		thaw_processes();
+ 
+- Finish:
+ 	return error;
  }
-
-
+ 
