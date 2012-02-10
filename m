@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab2BJADB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:03:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758732Ab2BJABk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758734Ab2BJABk (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 Feb 2012 19:01:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756625Ab2BJABg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:01:36 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 25/31] edac: Add a sysfs node to test the EDAC error report facility
-Date: Thu,  9 Feb 2012 22:01:24 -0200
-Message-Id: <1328832090-9166-26-git-send-email-mchehab@redhat.com>
+Subject: [PATCH v3 02/31] events/hw_event: use __string() trace macros for events
+Date: Thu,  9 Feb 2012 22:01:01 -0200
+Message-Id: <1328832090-9166-3-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
 References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,126 +20,240 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all hardware supports error injection. Also, this feature
-could be disabled by the BIOS. As we need to test the EDAC
-error report facilities and the edac utils logic, add a way
-to generate fake errors, when EDAC debug is enabled.
+Some data there uses temporary alloced space. Just attributing
+string pointers directly won't work on such cases.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_mc_sysfs.c |   62 ++++++++++++++++++++++++++++++++++++++++-
- include/linux/edac.h         |    4 +++
- 2 files changed, 64 insertions(+), 2 deletions(-)
+ include/trace/events/hw_event.h |   78 +++++++++++++++++++-------------------
+ 1 files changed, 39 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 4e8f0ec..f8132ff 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -744,6 +744,42 @@ static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data,
- 	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
- }
+diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
+index 3735c6f..078a099 100644
+--- a/include/trace/events/hw_event.h
++++ b/include/trace/events/hw_event.h
+@@ -20,17 +20,17 @@ DECLARE_EVENT_CLASS(hw_event_class,
+ 	TP_ARGS(type, instance),
  
-+#ifdef CONFIG_EDAC_DEBUG
-+static ssize_t edac_fake_inject_show(struct mem_ctl_info *mci,
-+				     char *data, void *priv)
-+{
-+	return sprintf(data,
-+		       "EDAC fake test engine. Writing to this node a value in the form of :\n"
-+		       "\t0:1:0\n"
-+		       "will call the EDAC core routine to produce a memory error for the given memory location (0, 1, 0).\n"
-+		       "The driver's error parsing logic won't be tested. This tool is useful only\n"
-+		       "if you're testing the EDAC core tracing facility, or if you're needing to test\n"
-+		       "some userspace application.\n");
-+}
-+
-+static ssize_t edac_fake_inject_store(struct mem_ctl_info *mci,
-+				      const char *data, size_t count,
-+				      void *priv)
-+{
-+	static enum hw_event_mc_err_type type = HW_EVENT_ERR_CORRECTED;
-+	int err, layer0 = -1, layer1 = -1, layer2= -1;
-+	err = sscanf(data, "%i:%i:%i", &layer0, &layer1, &layer2);
-+	if (err < 0)
-+		return err;
-+
-+	printk(KERN_DEBUG
-+	       "Generating a fake error to %d.%d.%d to test core handling. NOTE: this won't test the driver-specific decoding logic.\n",
-+	       layer0, layer1, layer2);
-+	edac_mc_handle_error(type, mci, 0, 0, 0,
-+			     layer0, layer1, layer2,
-+			     "FAKE ERROR", "for EDAC testing only", NULL);
-+	if (++type == HW_EVENT_ERR_FATAL)
-+		type = HW_EVENT_ERR_CORRECTED;
-+
-+	return count;
-+}
-+#endif
-+
- #define to_mci(k) container_of(k, struct mem_ctl_info, edac_mci_kobj)
- #define to_mcidev_attr(a) container_of(a,struct mcidev_sysfs_attribute,attr)
+ 	TP_STRUCT__entry(
+-		__field(	const char *,	type			)
++		__string(	type,		type			)
+ 		__field(	unsigned int,	instance		)
+ 	),
  
-@@ -875,7 +911,7 @@ static int edac_create_errcount_layer(struct mem_ctl_info *mci,
- 		debugf4("%s() creating %s\n", __func__, (*erc)->attr.name);
- 		if (!(*erc)->attr.name)
- 			return -ENOMEM;
--		(*erc)->attr.mode = S_IRUGO;
-+		(*erc)->attr.mode = S_IRUGO | S_IWUSR;
- 		(*erc)->show = errcount_ce_show;
- 		(*erc)->priv = *ercd;
- 		(*ercd)->n_layers = layer + 1;
-@@ -1320,7 +1356,24 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 			goto fail2;
- 		}
- 	}
--	edac_create_errcount_objects(mci);
-+	err = edac_create_errcount_objects(mci);
-+	if (err) {
-+		debugf1("%s() failure: create error count objects\n",
-+			__func__);
-+		goto fail2;
-+	}
-+#ifdef CONFIG_EDAC_DEBUG
-+	mci->errinject_attr.attr.name = "fake_inject";
-+	mci->errinject_attr.attr.mode = S_IRUGO | S_IWUSR;
-+	mci->errinject_attr.show = edac_fake_inject_show;
-+	mci->errinject_attr.store = edac_fake_inject_store;
-+	err = sysfs_create_file(&mci->edac_mci_kobj, &mci->errinject_attr.attr);
-+	if (err < 0) {
-+		printk(KERN_ERR
-+		       "sysfs_create_file for fake inject failed: %d\n", err);
-+		mci->errinject_attr.attr.name = NULL;
-+	}
-+#endif
+ 	TP_fast_assign(
+-		__entry->type	= type;
++		__assign_str(type, type);
+ 		__entry->instance = instance;
+ 	),
  
- 	return 0;
+ 	TP_printk("Initialized %s#%d\n",
+-		__entry->type,
++		__get_str(type),
+ 		__entry->instance)
+ );
  
-@@ -1366,6 +1419,11 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
+@@ -70,8 +70,8 @@ TRACE_EVENT(mc_corrected_error,
+ 		__field(	unsigned long,	syndrome		)
+ 		__field(	int,		row			)
+ 		__field(	int,		channel			)
+-		__field(	const char *,	label			)
+-		__field(	const char *,	msg			)
++		__string(	label,		mci->csrows[row].channels[channel].label)
++		__string(	msg,		msg			)
+ 	),
  
- 	debugf0("%s()\n", __func__);
+ 	TP_fast_assign(
+@@ -82,16 +82,16 @@ TRACE_EVENT(mc_corrected_error,
+ 		__entry->syndrome		= syndrome;
+ 		__entry->row			= row;
+ 		__entry->channel		= channel;
+-		__entry->label			= mci->csrows[row].channels[channel].label;
+-		__entry->msg			= msg;
++		__assign_str(label, mci->csrows[row].channels[channel].label);
++		__assign_str(msg, msg);
+ 	),
  
-+#ifdef CONFIG_EDAC_DEBUG
-+	if (mci->errinject_attr.attr.name)
-+		sysfs_remove_file(&mci->edac_mci_kobj,
-+				  &mci->errinject_attr.attr);
-+#endif
- 	edac_remove_errcount(mci);
+ 	TP_printk(HW_ERR "mce#%d: Corrected error %s on label \"%s\" "
+ 			 "(page 0x%lux, offset 0x%lux, grain %ud, "
+ 			 "syndrome 0x%lux, row %d, channel %d)\n",
+ 		__entry->mc_index,
+-		__entry->msg,
+-		__entry->label,
++		__get_str(msg),
++		__get_str(label),
+ 		__entry->page_frame_number,
+ 		__entry->offset_in_page,
+ 		__entry->grain,
+@@ -116,8 +116,8 @@ TRACE_EVENT(mc_uncorrected_error,
+ 		__field(	unsigned long,	offset_in_page		)
+ 		__field(	u32,		grain			)
+ 		__field(	int,		row			)
+-		__field(	const char *,	msg			)
+-		__field(	const char *,	label			)
++		__string(	msg,		msg			)
++		__string(	label,		label			)
+ 	),
  
- 	/* remove all dimms kobjects */
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 790e1c2..6f03768 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -597,6 +597,10 @@ struct mem_ctl_info {
- 	struct mcidev_sysfs_attribute *errcount_attr;
- 	struct errcount_attribute_data *errcount_attr_data;
+ 	TP_fast_assign(
+@@ -126,15 +126,15 @@ TRACE_EVENT(mc_uncorrected_error,
+ 		__entry->offset_in_page		= offset_in_page;
+ 		__entry->grain			= mci->csrows[row].grain;
+ 		__entry->row			= row;
+-		__entry->msg			= msg;
+-		__entry->label			= label;
++		__assign_str(msg, msg);
++		__assign_str(label, label);
+ 	),
  
-+#ifdef CONFIG_EDAC_DEBUG
-+	struct mcidev_sysfs_attribute errinject_attr;
-+#endif
-+
- 	struct completion complete;
+ 	TP_printk(HW_ERR "mce#%d: Uncorrected error %s on label \"%s\""
+ 			 "(page 0x%lux, offset 0x%lux, grain %ud, row %d)\n",
+ 		__entry->mc_index,
+-		__entry->msg,
+-		__entry->label,
++		__get_str(msg),
++		__get_str(label),
+ 		__entry->page_frame_number,
+ 		__entry->offset_in_page,
+ 		__entry->grain,
+@@ -160,23 +160,23 @@ TRACE_EVENT(mc_corrected_error_fbd,
+ 		__field(	unsigned int,	mc_index		)
+ 		__field(	int,		row			)
+ 		__field(	int,		channel			)
+-		__field(	const char *,	label			)
+-		__field(	const char *,	msg			)
++		__string(	label,		mci->csrows[row].channels[channel].label)
++		__string(	msg,		msg			)
+ 	),
  
- 	/* edac sysfs device control */
+ 	TP_fast_assign(
+ 		__entry->mc_index		= mci->mc_idx;
+ 		__entry->row			= row;
+ 		__entry->channel		= channel;
+-		__entry->label			= mci->csrows[row].channels[channel].label;
+-		__entry->msg			= msg;
++		__assign_str(label, mci->csrows[row].channels[channel].label);
++		__assign_str(msg, msg);
+ 	),
+ 
+ 	TP_printk(HW_ERR "mce#%d: Corrected Error %s on label \"%s\" "
+ 			 "(row %d, channel %d)\n",
+ 		__entry->mc_index,
+-		__entry->msg,
+-		__entry->label,
++		__get_str(msg),
++		__get_str(label),
+ 		__entry->row,
+ 		__entry->channel)
+ );
+@@ -194,8 +194,8 @@ TRACE_EVENT(mc_uncorrected_error_fbd,
+ 		__field(	int,		row			)
+ 		__field(	int,		channela		)
+ 		__field(	int,		channelb		)
+-		__field(	const char *,	msg			)
+-		__field(	const char *,	label			)
++		__string(	msg,		msg			)
++		__string(	label,		label			)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -203,15 +203,15 @@ TRACE_EVENT(mc_uncorrected_error_fbd,
+ 		__entry->row			= row;
+ 		__entry->channela		= channela;
+ 		__entry->channelb		= channelb;
+-		__entry->msg			= msg;
+-		__entry->label			= label;
++		__assign_str(msg, msg);
++		__assign_str(label, label);
+ 	),
+ 
+ 	TP_printk(HW_ERR "mce#%d: Uncorrected Error %s on label \"%s\" "
+ 			 "(row %d, channels: %d, %d)\n",
+ 		__entry->mc_index,
+-		__entry->msg,
+-		__entry->label,
++		__get_str(msg),
++		__get_str(label),
+ 		__entry->row,
+ 		__entry->channela,
+ 		__entry->channelb)
+@@ -236,8 +236,8 @@ TRACE_EVENT(mc_out_of_range,
+ 	TP_ARGS(mci, type, field, invalid_val, min, max),
+ 
+ 	TP_STRUCT__entry(
+-		__field(	const char *,	type			)
+-		__field(	const char *,	field			)
++		__string(	type,		type			)
++		__string(	field,		field			)
+ 		__field(	unsigned int,	mc_index		)
+ 		__field(	int,		invalid_val		)
+ 		__field(	int,		min			)
+@@ -245,8 +245,8 @@ TRACE_EVENT(mc_out_of_range,
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->type			= type;
+-		__entry->field			= field;
++		__assign_str(type, type);
++		__assign_str(field, field);
+ 		__entry->mc_index		= mci->mc_idx;
+ 		__entry->invalid_val		= invalid_val;
+ 		__entry->min			= min;
+@@ -255,8 +255,8 @@ TRACE_EVENT(mc_out_of_range,
+ 
+ 	TP_printk(HW_ERR "mce#%d %s: %s=%d is not between %d and %d\n",
+ 		__entry->mc_index,
+-		__entry->type,
+-		__entry->field,
++		__get_str(type),
++		__get_str(field),
+ 		__entry->invalid_val,
+ 		__entry->min,
+ 		__entry->max)
+@@ -274,18 +274,18 @@ TRACE_EVENT(mc_corrected_error_no_info,
+ 	TP_ARGS(mci, msg),
+ 
+ 	TP_STRUCT__entry(
+-		__field(	const char *,	msg			)
++	__string(	msg,			msg			)
+ 		__field(	unsigned int,	mc_index		)
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->msg			= msg;
++		__assign_str(msg, msg);
+ 		__entry->mc_index		= mci->mc_idx;
+ 	),
+ 
+ 	TP_printk(HW_ERR "mce#%d: Corrected Error: %s\n",
+ 		__entry->mc_index,
+-		__entry->msg)
++		__get_str(msg))
+ );
+ 
+ TRACE_EVENT(mc_uncorrected_error_no_info,
+@@ -294,18 +294,18 @@ TRACE_EVENT(mc_uncorrected_error_no_info,
+ 	TP_ARGS(mci, msg),
+ 
+ 	TP_STRUCT__entry(
+-		__field(	const char *,	msg			)
++		__string(	msg,		msg			)
+ 		__field(	unsigned int,	mc_index		)
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->msg			= msg;
++		__assign_str(msg, msg);
+ 		__entry->mc_index		= mci->mc_idx;
+ 	),
+ 
+ 	TP_printk(HW_ERR "mce#%d: Uncorrected Error: %s\n",
+ 		__entry->mc_index,
+-		__entry->msg)
++		__get_str(msg))
+ );
+ 
+ 
 -- 
 1.7.8
 
