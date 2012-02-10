@@ -1,194 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab2BJMpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 07:45:51 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48011 "EHLO mx3.mail.elte.hu"
+	id S1754894Ab2BJM6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 07:58:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:16694 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758694Ab2BJMpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 07:45:50 -0500
-Date: Fri, 10 Feb 2012 13:45:31 +0100
-From: Ingo Molnar <mingo@elte.hu>
+	id S1751032Ab2BJM6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 07:58:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105416390"
+Date: Fri, 10 Feb 2012 20:47:59 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20120210124531.GA6482@elte.hu>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [GIT PULL] writeback fixes
+Message-ID: <20120210124759.GA11381@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/PLAIN; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 Linus,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+Please pull 4 writeback fixes for
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+- 1 divide error
+- 3 NULL dereference bugs in writeback tracing, when SD card is removed w/o umount
 
-   HEAD: f39d47ff819ed52a2afbdbecbe35f23f7755f58d perf: Fix double start/stop in x86_pmu_start()
+Thanks,
+Fengguang
 
- Thanks,
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
 
-	Ingo
+  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
 
------------------->
-Jiri Olsa (2):
-      perf tools: Fix perf stack to non executable on x86_64
-      perf tools: Fix prefix matching for kernel maps
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git writeback-fixes
 
-Naveen N. Rao (1):
-      perf evsel: Fix an issue where perf report fails to show the proper percentage
+Rabin Vincent (1):
+      backing-dev: fix wakeup timer races with bdi_unregister()
 
-Stephane Eranian (2):
-      perf: Remove deprecated WARN_ON_ONCE()
-      perf: Fix double start/stop in x86_pmu_start()
+Wu Fengguang (3):
+      writeback: fix NULL bdi->dev in trace writeback_single_inode
+      lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
+      writeback: fix dereferencing NULL bdi->dev on trace_writeback_queue
 
+ fs/fs-writeback.c                |   16 ++++++++--------
+ include/linux/proportions.h      |    4 ++++
+ include/trace/events/writeback.h |    7 +++++--
+ mm/backing-dev.c                 |   23 ++++++++++++++++++-----
+ 4 files changed, 35 insertions(+), 15 deletions(-)
 
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |    1 -
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |    2 --
- kernel/events/core.c                       |   19 ++++++++++++++-----
- tools/perf/bench/mem-memcpy-x86-64-asm.S   |    6 ++++++
- tools/perf/util/event.c                    |    2 +-
- tools/perf/util/evsel.c                    |    1 +
- 6 files changed, 22 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 73da6b6..d6bd49f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -439,7 +439,6 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index f855916..5b4a936 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -53,14 +53,6 @@ struct wb_writeback_work {
+ };
  
- 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
--	WARN_ON_ONCE(cpuc->enabled);
- 
- 	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
- 		intel_pmu_lbr_enable(event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 3fab3de..47a7e63 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -72,8 +72,6 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 	if (!x86_pmu.lbr_nr)
- 		return;
- 
--	WARN_ON_ONCE(cpuc->enabled);
+ /*
+- * Include the creation of the trace points after defining the
+- * wb_writeback_work structure so that the definition remains local to this
+- * file.
+- */
+-#define CREATE_TRACE_POINTS
+-#include <trace/events/writeback.h>
 -
- 	/*
- 	 * Reset the LBR stack if we changed task context to
- 	 * avoid data leaks.
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ba36013..1b5c081 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2303,7 +2303,7 @@ do {					\
- static DEFINE_PER_CPU(int, perf_throttled_count);
- static DEFINE_PER_CPU(u64, perf_throttled_seq);
- 
--static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
-+static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count, bool disable)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	s64 period, sample_period;
-@@ -2322,9 +2322,13 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
- 	hwc->sample_period = sample_period;
- 
- 	if (local64_read(&hwc->period_left) > 8*sample_period) {
--		event->pmu->stop(event, PERF_EF_UPDATE);
-+		if (disable)
-+			event->pmu->stop(event, PERF_EF_UPDATE);
-+
- 		local64_set(&hwc->period_left, 0);
--		event->pmu->start(event, PERF_EF_RELOAD);
-+
-+		if (disable)
-+			event->pmu->start(event, PERF_EF_RELOAD);
- 	}
+-/*
+  * We don't actually have pdflush, but this one is exported though /proc...
+  */
+ int nr_pdflush_threads;
+@@ -92,6 +84,14 @@ static inline struct inode *wb_inode(struct list_head *head)
+ 	return list_entry(head, struct inode, i_wb_list);
  }
  
-@@ -2350,6 +2354,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
++/*
++ * Include the creation of the trace points after defining the
++ * wb_writeback_work structure and inline functions so that the definition
++ * remains local to this file.
++ */
++#define CREATE_TRACE_POINTS
++#include <trace/events/writeback.h>
++
+ /* Wakeup flusher thread or forker thread to fork it. Requires bdi->wb_lock. */
+ static void bdi_wakeup_flusher(struct backing_dev_info *bdi)
+ {
+diff --git a/include/linux/proportions.h b/include/linux/proportions.h
+index ef35bb7..26a8a4e 100644
+--- a/include/linux/proportions.h
++++ b/include/linux/proportions.h
+@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl)
+  * Limit the time part in order to ensure there are some bits left for the
+  * cycle counter and fraction multiply.
+  */
++#if BITS_PER_LONG == 32
+ #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
++#else
++#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
++#endif
+ 
+ #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
+ #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
+diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+index 8588a89..5973410 100644
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -47,7 +47,10 @@ DECLARE_EVENT_CLASS(writeback_work_class,
+ 		__field(int, reason)
+ 	),
+ 	TP_fast_assign(
+-		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		struct device *dev = bdi->dev;
++		if (!dev)
++			dev = default_backing_dev_info.dev;
++		strncpy(__entry->name, dev_name(dev), 32);
+ 		__entry->nr_pages = work->nr_pages;
+ 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
+ 		__entry->sync_mode = work->sync_mode;
+@@ -426,7 +429,7 @@ DECLARE_EVENT_CLASS(writeback_single_inode_template,
+ 
+ 	TP_fast_assign(
+ 		strncpy(__entry->name,
+-			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
++			dev_name(inode_to_bdi(inode)->dev), 32);
+ 		__entry->ino		= inode->i_ino;
+ 		__entry->state		= inode->i_state;
+ 		__entry->dirtied_when	= inode->dirtied_when;
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 7ba8fea..dd8e2aa 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
+ 	if (bdi->wb.task) {
+ 		trace_writeback_wake_thread(bdi);
+ 		wake_up_process(bdi->wb.task);
+-	} else {
++	} else if (bdi->dev) {
+ 		/*
+ 		 * When bdi tasks are inactive for long time, they are killed.
+ 		 * In this case we have to wake-up the forker thread which
+@@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
+  */
+ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ {
++	struct task_struct *task;
++
+ 	if (!bdi_cap_writeback_dirty(bdi))
  		return;
  
- 	raw_spin_lock(&ctx->lock);
-+	perf_pmu_disable(ctx->pmu);
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
- 		if (event->state != PERF_EVENT_STATE_ACTIVE)
-@@ -2381,13 +2386,17 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
- 		/*
- 		 * restart the event
- 		 * reload only if value has changed
-+		 * we have stopped the event so tell that
-+		 * to perf_adjust_period() to avoid stopping it
-+		 * twice.
- 		 */
- 		if (delta > 0)
--			perf_adjust_period(event, period, delta);
-+			perf_adjust_period(event, period, delta, false);
- 
- 		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
- 	}
- 
-+	perf_pmu_enable(ctx->pmu);
- 	raw_spin_unlock(&ctx->lock);
+@@ -602,8 +604,13 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	 * Finally, kill the kernel thread. We don't need to be RCU
+ 	 * safe anymore, since the bdi is gone from visibility.
+ 	 */
+-	if (bdi->wb.task)
+-		kthread_stop(bdi->wb.task);
++	spin_lock_bh(&bdi->wb_lock);
++	task = bdi->wb.task;
++	bdi->wb.task = NULL;
++	spin_unlock_bh(&bdi->wb_lock);
++
++	if (task)
++		kthread_stop(task);
  }
  
-@@ -4562,7 +4571,7 @@ static int __perf_event_overflow(struct perf_event *event,
- 		hwc->freq_time_stamp = now;
+ /*
+@@ -623,7 +630,9 @@ static void bdi_prune_sb(struct backing_dev_info *bdi)
  
- 		if (delta > 0 && delta < 2*TICK_NSEC)
--			perf_adjust_period(event, delta, hwc->last_period);
-+			perf_adjust_period(event, delta, hwc->last_period, true);
+ void bdi_unregister(struct backing_dev_info *bdi)
+ {
+-	if (bdi->dev) {
++	struct device *dev = bdi->dev;
++
++	if (dev) {
+ 		bdi_set_min_ratio(bdi, 0);
+ 		trace_writeback_bdi_unregister(bdi);
+ 		bdi_prune_sb(bdi);
+@@ -632,8 +641,12 @@ void bdi_unregister(struct backing_dev_info *bdi)
+ 		if (!bdi_cap_flush_forker(bdi))
+ 			bdi_wb_shutdown(bdi);
+ 		bdi_debug_unregister(bdi);
+-		device_unregister(bdi->dev);
++
++		spin_lock_bh(&bdi->wb_lock);
+ 		bdi->dev = NULL;
++		spin_unlock_bh(&bdi->wb_lock);
++
++		device_unregister(dev);
  	}
- 
- 	/*
-diff --git a/tools/perf/bench/mem-memcpy-x86-64-asm.S b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-index a57b66e..185a96d 100644
---- a/tools/perf/bench/mem-memcpy-x86-64-asm.S
-+++ b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-@@ -1,2 +1,8 @@
- 
- #include "../../../arch/x86/lib/memcpy_64.S"
-+/*
-+ * We need to provide note.GNU-stack section, saying that we want
-+ * NOT executable stack. Otherwise the final linking will assume that
-+ * the ELF stack should not be restricted at all and set it RWX.
-+ */
-+.section .note.GNU-stack,"",@progbits
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 73ddaf0..2044324 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -554,7 +554,7 @@ static int perf_event__process_kernel_mmap(struct perf_tool *tool __used,
- 
- 	is_kernel_mmap = memcmp(event->mmap.filename,
- 				kmmap_prefix,
--				strlen(kmmap_prefix)) == 0;
-+				strlen(kmmap_prefix) - 1) == 0;
- 	if (event->mmap.filename[0] == '/' ||
- 	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 667f3b7..7132ee8 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -463,6 +463,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	memset(data, 0, sizeof(*data));
- 	data->cpu = data->pid = data->tid = -1;
- 	data->stream_id = data->id = data->time = -1ULL;
-+	data->period = 1;
- 
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
- 		if (!sample_id_all)
+ }
+ EXPORT_SYMBOL(bdi_unregister);
