@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab2BJNms (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:42:48 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:46449 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759297Ab2BJNmf (ORCPT
+	id S1759280Ab2BJNpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:45:32 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:45808 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab2BJNpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:42:35 -0500
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 3/3] firewire-sbp2: Fix SCSI sense data mangling
-Date: Fri, 10 Feb 2012 13:41:54 +0000
-Message-Id: <1328881314-26544-4-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1328881314-26544-1-git-send-email-bootc@bootc.net>
-References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
- <1328881314-26544-1-git-send-email-bootc@bootc.net>
+	Fri, 10 Feb 2012 08:45:30 -0500
+Date: Fri, 10 Feb 2012 13:45:26 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: liang tang <liang.tang@oracle.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, konrad.wilk@oracle.com
+Subject: Re: [PATCH 3/5] EFI: add efi driver for Xen efi
+Message-ID: <20120210134525.GA29662@srcf.ucam.org>
+References: <1328758250-23989-1-git-send-email-liang.tang@oracle.com>
+ <1328758401-24258-1-git-send-email-liang.tang@oracle.com>
+ <20120209194723.GA8622@srcf.ucam.org>
+ <4F34C622.3060905@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F34C622.3060905@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCSI sense data in SBP-2/3 is carried in an unusual format that means we
-have to un-mangle it on our end before we pass it to the SCSI subsystem.
-Currently our un-mangling code doesn't quite follow the SBP-2 standard
-in that we always assume Current and never Deferred error types, we
-never set the VALID bit, and we mishandle the FILEMARK, EOM and ILI
-bits.
+On Fri, Feb 10, 2012 at 03:24:18PM +0800, liang tang wrote:
+> Hi,Matthew
+> the xen efi call need to use hypercall. that is different from the
+> generic efi code. do you any idea about that. thanks!
 
-This patch fixes the sense un-mangling to correctly handle those and
-follow the spec.
+Right, but 32-bit EFI needs to make different calls to 64-bit EFI 
+anyway. It would be good if the abstraction could be done at this level 
+instead of duplicating the code.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/sbp2.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index 1572a79..ff632c2 100644
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1318,10 +1318,19 @@ static void sbp2_unmap_scatterlist(struct device *card_device,
- static unsigned int sbp2_status_to_sense_data(u8 *sbp2_status, u8 *sense_data)
- {
- 	int sam_status;
-+	int sfmt = (sbp2_status[0] >> 6) & 0x03;
- 
--	sense_data[0] = 0x70;
-+	if (sfmt == 2 || sfmt == 3) {
-+		/*
-+		 * Reserved for future standardization (2) or
-+		 * Status block format vendor-dependent (3)
-+		 */
-+		return DID_ERROR << 16;
-+	}
-+
-+	sense_data[0] = 0x70 | sfmt | (sbp2_status[1] & 0x80);
- 	sense_data[1] = 0x0;
--	sense_data[2] = sbp2_status[1];
-+	sense_data[2] = ((sbp2_status[1] << 1) & 0xe0) | (sbp2_status[1] & 0x0f);
- 	sense_data[3] = sbp2_status[4];
- 	sense_data[4] = sbp2_status[5];
- 	sense_data[5] = sbp2_status[6];
 -- 
-1.7.8.3
-
+Matthew Garrett | mjg59@srcf.ucam.org
