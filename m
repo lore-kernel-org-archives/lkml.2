@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760104Ab2BJUG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:06:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14097 "EHLO mx1.redhat.com"
+	id S1760107Ab2BJUHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:07:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760056Ab2BJUGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:06:55 -0500
-Date: Fri, 10 Feb 2012 21:00:21 +0100
+	id S1760066Ab2BJUHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:07:10 -0500
+Date: Fri, 10 Feb 2012 21:00:37 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
@@ -14,9 +14,9 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] signal: give SEND_SIG_FORCED more power to beat
-	SIGNAL_UNKILLABLE
-Message-ID: <20120210200021.GA20898@redhat.com>
+Subject: [PATCH 2/4] signal: cosmetic, s/from_ancestor_ns/force/ in
+	prepare_signal() paths
+Message-ID: <20120210200037.GB20898@redhat.com>
 References: <20120210200004.GA20890@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,43 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-force_sig_info() and friends have the special semantics for
-synchronous signals, this interface should not be used if the
-target is not current. And it needs the fixes, in particular
-the clearing of SIGNAL_UNKILLABLE is not exactly right.
-
-However there are callers which have to use force_ exactly because
-it clears SIGNAL_UNKILLABLE and thus it can kill the CLONE_NEWPID
-tasks, although this is almost always is wrong by various reasons.
-
-With this patch SEND_SIG_FORCED ignores SIGNAL_UNKILLABLE, like
-we do if the signal comes from the ancestor namespace.
-
-This makes the naming in prepare_signal() paths insane, fixed by
-the next cleanup.
-
-Note: this only affects SIGKILL/SIGSTOP, but this is enough for
-force_sig() abusers.
+Cosmetic, rename the from_ancestor_ns argument in prepare_signal()
+paths. After the previous change it doesn't match the reality.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/signal.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ kernel/signal.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/signal.c b/kernel/signal.c
-index c73c428..bfb2b97 100644
+index bfb2b97..541905b 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -1059,7 +1059,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+@@ -58,21 +58,20 @@ static int sig_handler_ignored(void __user *handler, int sig)
+ 		(handler == SIG_DFL && sig_kernel_ignore(sig));
+ }
  
- 	assert_spin_locked(&t->sighand->siglock);
+-static int sig_task_ignored(struct task_struct *t, int sig,
+-		int from_ancestor_ns)
++static int sig_task_ignored(struct task_struct *t, int sig, bool force)
+ {
+ 	void __user *handler;
  
--	if (!prepare_signal(sig, t, from_ancestor_ns))
-+	if (!prepare_signal(sig, t,
-+			from_ancestor_ns || (info == SEND_SIG_FORCED)))
+ 	handler = sig_handler(t, sig);
+ 
+ 	if (unlikely(t->signal->flags & SIGNAL_UNKILLABLE) &&
+-			handler == SIG_DFL && !from_ancestor_ns)
++			handler == SIG_DFL && !force)
+ 		return 1;
+ 
+ 	return sig_handler_ignored(handler, sig);
+ }
+ 
+-static int sig_ignored(struct task_struct *t, int sig, int from_ancestor_ns)
++static int sig_ignored(struct task_struct *t, int sig, bool force)
+ {
+ 	/*
+ 	 * Blocked signals are never ignored, since the
+@@ -82,7 +81,7 @@ static int sig_ignored(struct task_struct *t, int sig, int from_ancestor_ns)
+ 	if (sigismember(&t->blocked, sig) || sigismember(&t->real_blocked, sig))
  		return 0;
  
- 	pending = group ? &t->signal->shared_pending : &t->pending;
+-	if (!sig_task_ignored(t, sig, from_ancestor_ns))
++	if (!sig_task_ignored(t, sig, force))
+ 		return 0;
+ 
+ 	/*
+@@ -855,7 +854,7 @@ static void ptrace_trap_notify(struct task_struct *t)
+  * Returns true if the signal should be actually delivered, otherwise
+  * it should be dropped.
+  */
+-static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
++static int prepare_signal(int sig, struct task_struct *p, bool force)
+ {
+ 	struct signal_struct *signal = p->signal;
+ 	struct task_struct *t;
+@@ -915,7 +914,7 @@ static int prepare_signal(int sig, struct task_struct *p, int from_ancestor_ns)
+ 		}
+ 	}
+ 
+-	return !sig_ignored(p, sig, from_ancestor_ns);
++	return !sig_ignored(p, sig, force);
+ }
+ 
+ /*
+@@ -1595,7 +1594,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
+ 		goto ret;
+ 
+ 	ret = 1; /* the signal is ignored */
+-	if (!prepare_signal(sig, t, 0))
++	if (!prepare_signal(sig, t, false))
+ 		goto out;
+ 
+ 	ret = 0;
 -- 
 1.5.5.1
 
