@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760669Ab2BJWmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:42:22 -0500
+	id S1760948Ab2BJXOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:14:37 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab2BJWmQ (ORCPT
+	with ESMTP id S1755257Ab2BJWmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:16 -0500
+	Fri, 10 Feb 2012 17:42:20 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222947.819521593@clark.kroah.org>
+Message-Id: <20120210222949.565921192@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:50 -0800
+Date: Fri, 10 Feb 2012 14:30:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [patch 31/86] drm/radeon: Set DESKTOP_HEIGHT register to the framebuffer (not mode) height.
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 51/86] lockdep, bug: Exclude TAINT_FIRMWARE_WORKAROUND from disabling lockdep
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,49 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 1b61925061660009f5b8047f93c5297e04541273 upstream.
+commit df754e6af2f237a6c020c0daff55a1a609338e31 upstream.
 
-The value of this register is transferred to the V_COUNTER register at the
-beginning of vertical blank. V_COUNTER is the reference for VLINE waits and
-goes from VIEWPORT_Y_START to VIEWPORT_Y_START+VIEWPORT_HEIGHT during scanout,
-so if VIEWPORT_Y_START is not 0, V_COUNTER actually went backwards at the
-beginning of vertical blank, and VLINE waits excluding the whole scanout area
-could never finish (possibly only if VIEWPORT_Y_START is larger than the length
-of vertical blank in scanlines). Setting DESKTOP_HEIGHT to the framebuffer
-height should prevent this for any kind of VLINE wait.
+It's unlikely that TAINT_FIRMWARE_WORKAROUND causes false
+lockdep messages, so do not disable lockdep in that case.
+We still want to keep lockdep disabled in the
+TAINT_OOT_MODULE case:
 
-Fixes https://bugs.freedesktop.org/show_bug.cgi?id=45329 .
+  - bin-only modules can cause various instabilities in
+    their and in unrelated kernel code
 
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+  - they are impossible to debug for kernel developers
+
+  - they also typically do not have the copyright license
+    permission to link to the GPL-ed lockdep code.
+
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-xopopjjens57r0i13qnyh2yo@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/panic.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1189,7 +1189,7 @@ static int dce4_crtc_do_set_base(struct
- 	WREG32(EVERGREEN_GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -240,8 +240,16 @@ void add_taint(unsigned flag)
+ 	 * Also we want to keep up lockdep for staging development and
+ 	 * post-warning case.
+ 	 */
+-	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+-		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++	switch (flag) {
++	case TAINT_CRAP:
++	case TAINT_WARN:
++	case TAINT_FIRMWARE_WORKAROUND:
++		break;
++
++	default:
++		if (__debug_locks_off())
++			printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++	}
  
- 	WREG32(EVERGREEN_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
--	       crtc->mode.vdisplay);
-+	       target_fb->height);
- 	x &= ~3;
- 	y &= ~1;
- 	WREG32(EVERGREEN_VIEWPORT_START + radeon_crtc->crtc_offset,
-@@ -1358,7 +1358,7 @@ static int avivo_crtc_do_set_base(struct
- 	WREG32(AVIVO_D1GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
- 
- 	WREG32(AVIVO_D1MODE_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
--	       crtc->mode.vdisplay);
-+	       target_fb->height);
- 	x &= ~3;
- 	y &= ~1;
- 	WREG32(AVIVO_D1MODE_VIEWPORT_START + radeon_crtc->crtc_offset,
+ 	set_bit(flag, &tainted_mask);
+ }
 
 
