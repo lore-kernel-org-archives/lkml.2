@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab2BJRYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:24:02 -0500
-Received: from mail.sust.edu ([180.211.180.10]:33427 "EHLO mail.sust.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab2BJRX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:23:58 -0500
-X-Greylist: delayed 4749 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Feb 2012 12:23:57 EST
-From: "test" <test@sust.edu>
-Reply-To: mrjoewong2022@yahoo.com.hk
-Subject: Business Proposal
-Date: Fri, 10 Feb 2012 21:18:16 +0600
-Message-Id: <20120210151816.M76657@sust.edu>
-X-Mailer: OpenWebMail 2.52 20061019
-X-OriginatingIP: 82.132.210.183 (test)
+	id S1759499Ab2BJRYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:24:24 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48300 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757857Ab2BJRYV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:24:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
-X-Shahajalal-University-MailScanner-Information: Please contact the ISP for more information
-X-Shahajalal-University-MailScanner-ID: DD2F6B080BA.6ACF6
-X-Shahajalal-University-MailScanner: Found to be clean
-X-Shahajalal-University-MailScanner-From: test@sust.edu
+In-Reply-To: <4F35517F.9070904@linux.intel.com>
+References: <CALCETrVWBdp2yyuZ54osq_QQ0a8NKUfOk8stxtuiFWq76FO7JQ@mail.gmail.com>
+ <4F35517F.9070904@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 10 Feb 2012 09:24:01 -0800
+Message-ID: <CALCETrVHpfW5=paX8XjGNBg3Q7sjeLptMBG6bW=iQpXk0Uo+PA@mail.gmail.com>
+Subject: Re: Do the x86 kernel entry points need an xabort on TSX cpus?
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I am Mr.Joe Wong, Bank of China Hong Kong, head of corporate sustainability 
-Asia pacific region.I have a business transaction with you To embrace my 
-generous offer,please reply me on this e-mail:mrjoewong2022@yahoo.com.hk
-Thanks
-Joe Wong
+On Fri, Feb 10, 2012 at 9:18 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 02/09/2012 11:40 PM, Andy Lutomirski wrote:
+>>
+>> [...]
+>>
+>>  - Ring transitions: SYSENTER, SYSCALL, SYSEXIT, and SYSRET.
+>>
+>> I suspect that many bits of the kernel expect that things they do
+>> won't unhappen.  For example, it could be fun to do:
+>>
+>
+> That's why entering the kernel will cause an abort.  In other words, you
+> will ALWAYS abort when you do a read(), and you will never reach your
+> _xabort().
 
+Is that architecturally guaranteed?  (My manual suggests that it's
+specifically *not* guaranteed, which is surprising.)
 
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+--Andy
