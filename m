@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760876Ab2BJXQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:16:40 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36393 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932560Ab2BJXQi (ORCPT
+	id S1760947Ab2BJXQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:16:58 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760595Ab2BJWlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 18:16:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuEFAE6kNU95LD+bgWdsb2JhbABDrnd7IwEBFiYngXIBAQU6HCMQCAMOCi4UJQMhE7p9E4sIKDAQAgQHAgcHCwQBCwENAQQRA4NkBQITAQENAQIBCgEEBQODVASVL5J5
-Date: Sat, 11 Feb 2012 10:16:33 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Eric Sandeen <sandeen@sandeen.net>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        mpatocka@redhat.com
-Subject: Re: [PATCH 1/2] vfs: Provide function to get superblock and wait for
- it to thaw
-Message-ID: <20120210231633.GH12836@dastard>
-References: <1328654267-18855-1-git-send-email-jack@suse.cz>
- <1328654267-18855-2-git-send-email-jack@suse.cz>
- <20120208232049.GC7479@dastard>
- <20120208232705.GF1696@quack.suse.cz>
- <20120208234703.GG1696@quack.suse.cz>
- <4F33F640.7040508@sandeen.net>
- <20120210094858.GC10509@quack.suse.cz>
+	Fri, 10 Feb 2012 17:41:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120210094858.GC10509@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20120210222948.580828114@clark.kroah.org>
+User-Agent: quilt/0.51-15.1
+Date: Fri, 10 Feb 2012 14:29:59 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Wang Zhenyu <zhenyu.z.wang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [patch 40/86] drm/i915: HDMI hot remove notification to audio driver
+In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 10:48:58AM +0100, Jan Kara wrote:
-> On Thu 09-02-12 10:37:20, Eric Sandeen wrote:
-> > would "wait_for_thaw" vs. "thaw" be any clearer?  Nitpicky I guess but the
-> > meaning of "thawed" isn't immediately clear here.  If it's already thawed?  If
-> > we want to wait for it it to be thawed?  You can figure it out from the callers
-> > but maybe a comment or a different name might help.  No big deal.
->   How about "wait_thaw". That should be explicit enough...
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-IMO, wait_for_thaw is much easier to read (i.e. better english ;) and
-hence the code documents itself better. There's no reason to skimp
-on characters here - it's not a heavily used variable....
+------------------
 
-Cheers,
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+commit 2deed761188d7480eb5f7efbfe7aa77f09322ed8 upstream.
+
+On HDMI monitor hot remove, clear SDVO_AUDIO_ENABLE accordingly, so that
+the audio driver will receive hot plug events and take action to refresh
+its device state and ELD contents.
+
+The cleared SDVO_AUDIO_ENABLE bit needs to be restored to prevent losing
+HDMI audio after DPMS on.
+
+CC: Wang Zhenyu <zhenyu.z.wang@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_hdmi.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -269,6 +269,10 @@ static void intel_hdmi_dpms(struct drm_e
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_hdmi *intel_hdmi = enc_to_intel_hdmi(encoder);
+ 	u32 temp;
++	u32 enable_bits = SDVO_ENABLE;
++
++	if (intel_hdmi->has_audio)
++		enable_bits |= SDVO_AUDIO_ENABLE;
+ 
+ 	temp = I915_READ(intel_hdmi->sdvox_reg);
+ 
+@@ -281,9 +285,9 @@ static void intel_hdmi_dpms(struct drm_e
+ 	}
+ 
+ 	if (mode != DRM_MODE_DPMS_ON) {
+-		temp &= ~SDVO_ENABLE;
++		temp &= ~enable_bits;
+ 	} else {
+-		temp |= SDVO_ENABLE;
++		temp |= enable_bits;
+ 	}
+ 
+ 	I915_WRITE(intel_hdmi->sdvox_reg, temp);
+
+
