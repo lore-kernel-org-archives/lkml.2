@@ -1,237 +1,682 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab2BJTcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 14:32:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59068 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758542Ab2BJTcD (ORCPT
+	id S932380Ab2BJTcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 14:32:17 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55719 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2BJTcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 14:32:03 -0500
-Date: Fri, 10 Feb 2012 13:31:49 -0600
-From: "'Tyler Hicks'" <tyhicks@canonical.com>
-To: Li Wang <liwang@nudt.edu.cn>
-Cc: "'Jan Kara'" <jack@suse.cz>, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Yong Peng'" <pengyong@kylinos.com.cn>,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, Thieu Le <thieule@chromium.org>
-Subject: Re: [PATCH] eCryptfs: Quota check incorrectly ignored
-Message-ID: <20120210193148.GA15606@boyd>
-References: <1328787572-2030-1-git-send-email-liwang@nudt.edu.cn>
- <528868922.02520@eyou.net>
- <000001cce802$709bf770$51d3e650$@edu.cn>
+	Fri, 10 Feb 2012 14:32:14 -0500
+Message-ID: <4F3570B9.5090708@gmail.com>
+Date: Fri, 10 Feb 2012 12:32:09 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-In-Reply-To: <000001cce802$709bf770$51d3e650$@edu.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH] perf tools: Allow multiple threads or processes in record,
+ stat, top
+References: <1328718772-16688-1-git-send-email-dsahern@gmail.com> <20120210192402.GJ2526@infradead.org>
+In-Reply-To: <20120210192402.GJ2526@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On 2012-02-10 22:44:05, Li Wang wrote:
-> > -----Original Message-----
-> > From: Jan Kara [mailto:jack@suse.cz]
-> > Sent: Friday, February 10, 2012 6:32 PM
-> > To: Li Wang
-> > Cc: Tyler Hicks; ecryptfs@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Jan
-> > Kara; Yong Peng
-> > Subject: Re: [PATCH] eCryptfs: Quota check incorrectly ignored
-> >=20
-> > On Thu 09-02-12 19:39:32, Li Wang wrote:
-> > > eCryptfs recently modified the write path to perform encryption
-> > > and write down in ecryptfs_writepage(). This function invokes
-> vfs_write()
-> > > to write down the encrypted data to lower page cache. vfs_write() will
-> > > first make sure this write will not exceed the quota limit for the ow=
-ner
-> > > of the file being written into, if quota is supported by
-> > > the underlying file system, and it is turned on. Normally, it
-> accomplishs
-> > > this job by calling check_idq()/check_bdq() (fs/quota/dquot.c). When
-> system
-> > > dirty ratio is not high, ecryptfs_writepage() is normally invoked by =
-the
-> > > write back kernel thread, who has the capability CAP_SYS_RESOURCE,
-> > > this priority will let check_idq()/check_bdq() directly bypass the qu=
-ota
-> > > check. This sometimes makes data safely written into the disk in spite
-> of
-> > > exceeding the quota limit.
-> > >
-> > > This patch temporarily removes the CAP_SYS_RESOURCE capability from t=
-he
-> > kernel
-> > > thread before invoking vfs_write_lower(), to let it undergo quota che=
-ck
-> by
-> > > the lower file system, if necessary. After that, reassign the
-> capability.
-> >   Hmm, but then the error will just be thrown away by the flusher thread
-> > and the application never learns about it? That doesn't sound like a go=
-od
-> > solution.
-> >=20
-> > 								Honza
->=20
-> Yes. we are aware of that, but we have not found better solution, since it
-> seems=20
-> VFS does not supply a file system independent interface to check quota ea=
-rly
-> and only
-> (fix us if we are wrong), The file systems just perform the quota check in
-> their own way,=20
-> the routine is wrapped deeply inside the file system specific code path.
-> Maybe we could
-> copy some codes from _dquot_alloc_space() & dquot_alloc_inode
-> (fs/quota/dquot.c) to=20
-> perform quota check on lower inode ourselves, but that is ugly, and we are
-> not sure if it works
-> for any file system or not..., On the other side, due to the existence of
-> write buffer, and io schedule,
-> the successful write call does not gurantee the data will be written into
-> disk, in terms of that,
-> we do not change much of the semantic of write call.=20
+On 02/10/2012 12:24 PM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Feb 08, 2012 at 09:32:52AM -0700, David Ahern escreveu:
+>> Allow a user to collect events for multiple threads or processes
+>> using a comma separated list.
+>>
+>> e.g., collect data on a VM and its vhost thread:
+>>   perf top -p 21483,21485
+>>   perf stat -p 21483,21485 -ddd
+>>   perf record -p 21483,21485
+>>
+>> or monitoring vcpu threads
+>>   perf top -t 21488,21489
+>>   perf stat -t 21488,21489 -ddd
+>>   perf record -t 21488,21489
+> 
+> I found some problems below:
+>  
+>> diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+>> index 3d4b6c5..e793c16 100644
+>> --- a/tools/perf/util/thread_map.c
+>> +++ b/tools/perf/util/thread_map.c
+>> +static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+>> +{
+>> +	struct thread_map *threads = NULL;
+> <SNIP>
+>> +		if (threads)
+>> +			threads = realloc(threads,
+>> +					  sizeof(*threads) + sizeof(pid_t)*total_tasks);
+>> +		else
+>> +			threads = malloc(sizeof(*threads) + sizeof(pid_t)*items);
+> 
+> If realloc fails and threads was allocated before... we leak memory.
 
-Maybe I should just revert 57db4e8d73ef2b5e94a3f412108dff2576670a8a
-(and friends) and go back to the write-through cache model for eCryptfs.
-The write-back model has some nice performance improvements, but we keep
-running into little issues like this. For write-through to work
-reliably, we're going to need some support from the VFS that isn't there
-yet.
+ok.
 
-Handling ENOSPC correctly is another area that is lacking after the
-switch to write-back. Currently, an application will continue to write
-out data without having any indication that the disk is full. Thieu
-proposed a fix, but it was never merged:
+> 
+> We don't need to use this if clause, realloc handles threads == NULL
+> just fines and then works as malloc.
 
-http://article.gmane.org/gmane.linux.kernel/1209265
+ok.
 
-So, what do folks think about going back to a write-through cache until
-we have the ability to alert the application of these error conditions?
+> 
+> Also I didn't use ctype altogether + that CSV parsing routine, we have
+> strlist for that, it even will allow us to trow away duplicate pids/tids
+> and also supports passing a file with a list of threads to monitor, for
+> free.
 
-Tyler
+Interesting. I did look at strlist before going with the string parsing.
+It was not obvious to me how to use it for this case.
 
-> =20
-> >=20
-> >=20
-> > >
-> > > Signed-off-by: Li Wang <liwang@nudt.edu.cn>
-> > > Singed-off-by: Yong Peng <pengyong@kylinos.com.cn>
-> > > ---
-> > >
-> > > To repeat this bug,
-> > > 	mount -o usrquota /dev/sda3 /tmp
-> > > 	cd /tmp
-> > > 	edquota -u foo // set the disk quota limit for user foo be m1 bytes
-> > > 	quotaon -a
-> > > 	mount -t ecryptfs cipher plain
-> > >
-> > > 	login the system as user foo
-> > > 	cd /tmp/plain
-> > > 	execute the following simple program
-> > >
-> > > 	int main()
-> > > 	{
-> > > 		char buf[m2]; // m2>m1
-> > > 		FILE *f =3D fopen("dummy", "w");
-> > > 		fwrite(buf, 1, m2, f);
-> > > 		sleep(60); // let the kernel thread do the write back job
-> > > 		fclose(f);
-> > > 		return 0;
-> > > 	}
-> > >
-> > > 	This program can write as much of data as it wants, provided sleep
-> > enough long time before closing the file.
-> > >
-> > >  fs/ecryptfs/crypto.c |   27 +++++++++++++++++++++++++++
-> > >  1 files changed, 27 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-> > > index 63ab245..2c1da29 100644
-> > > --- a/fs/ecryptfs/crypto.c
-> > > +++ b/fs/ecryptfs/crypto.c
-> > > @@ -457,6 +457,7 @@ int ecryptfs_encrypt_page(struct page *page)
-> > >  	struct page *enc_extent_page =3D NULL;
-> > >  	loff_t extent_offset;
-> > >  	int rc =3D 0;
-> > > +	struct cred *cred;
-> > >
-> > >  	ecryptfs_inode =3D page->mapping->host;
-> > >  	crypt_stat =3D
-> > > @@ -487,8 +488,34 @@ int ecryptfs_encrypt_page(struct page *page)
-> > >  				   * (PAGE_CACHE_SIZE
-> > >  				      / crypt_stat->extent_size))
-> > >  				  + extent_offset), crypt_stat);
-> > > +		if (current->flags & PF_KTHREAD) {
-> > > +			/*
-> > > +                         * Temporarily remove the
-> > CAP_SYS_RESOURCE capability
-> > > +                         * from the write back kernel thread to let =
-it
-> > undergo
-> > > +                         * quota check by the lower file system
-> > > +                         */
-> > > +			cred =3D prepare_creds();
-> > > +			if (unlikely(!cred)) {
-> > > +				rc =3D -ENOMEM;
-> > > +				goto out;
-> > > +			}
-> > > +			cap_lower(cred->cap_effective, CAP_SYS_RESOURCE);
-> > > +			commit_creds(cred);
-> > > +		}
-> > >  		rc =3D ecryptfs_write_lower(ecryptfs_inode, enc_extent_virt,
-> > >  					  offset, crypt_stat->extent_size);
-> > > +		if (current->flags & PF_KTHREAD) {
-> > > +			/*
-> > > +                         * Reassign the CAP_SYS_RESOURCE
-> > capability
-> > > +                         */
-> > > +			cred =3D prepare_creds();
-> > > +			if (unlikely(!cred)) {
-> > > +				rc =3D -ENOMEM;
-> > > +				goto out;
-> > > +			}
-> > > +			cap_raise(cred->cap_effective, CAP_SYS_RESOURCE);
-> > > +			commit_creds(cred);
-> > > +		}
-> > >  		if (rc < 0) {
-> > >  			ecryptfs_printk(KERN_ERR, "Error attempting "
-> > >  					"to write lower page; rc =3D [%d]"
-> > > --
-> > > 1.7.6.5
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
->=20
+> 
+> Take a look at the modified patch below, if you're ok with it I can keep
+> your autorship and put a [committer note: use strlist] or take autorship
+> and state that it was based on a patch made by you, definetely your
+> call. I'd go for the committer note.
 
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I'm fine with either one. Patch below looks fine. If needed:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Acked-by: David Ahern <dsahern@gmail.com>
 
-iQIcBAEBCgAGBQJPNXCkAAoJENaSAD2qAscKV3sP/0zYHKxGCrwhMsMXKesZNpDi
-vosBnx9RfE4DjW/oc7k00BXQusPwgboRmskLBUFKXzihTqnYZm2pLb3VBbZ17+Nh
-SXWJOprvEDlZt2UzHvFbn9/9VZChEosLwV3dV8TyMh3DvPy2GdFFW2mG6d8BR6hT
-p0nAglQ+iRbIZS4TTLvNTURbs63qugHcLNswAstqxwhCiMfRK5Qli0iy7dZZGbtw
-Q+ktn6qmiRpv/WLxMEI7W44sRFY7Fc8dg91CsvicXAUOjQifU0iJbVX3cvy56OvD
-4ZNpktbAz7uAuG8i3R5SpZEXIga7b7LRAQzYF1c5Ae2EB2jn8lfYiKimpUCFnpM3
-Af3smMCle1VtdDkltqI5VcIo4iikFGxaGOOqLz82URqk48oMnPqWLQDRnOvztSow
-S8SKTtOWwd7o4lMldAkX4Yi9jmAcLTEg8m0wXF88sOTAH2jRooEHowKXo4ZWf8dX
-AfQdHkbv4nX2GNFWYWTdyfjZAy2IdoWB8447TNf2jEwV0zTr+Svp8Nt7HpkvLfWx
-LD2ixHxGshVjwu/axpSQgOB25rn13BnxFrVU/g5I73msEIm9JM9KvY269xSyNrOP
-qIkR+RCj8iAd2JuzEHU6Oua9/uMnImE5cqiDHYQQHL3+OV97AaB4jth6F2e+6VQI
-eVzr7yc+bYlRt+SSA6zN
-=gKDP
------END PGP SIGNATURE-----
+David
 
---envbJBWh7q8WU6mo--
+
+> 
+> - Arnaldo
+> 
+> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+> index ff9a66e..a5766b4 100644
+> --- a/tools/perf/Documentation/perf-record.txt
+> +++ b/tools/perf/Documentation/perf-record.txt
+> @@ -52,11 +52,11 @@ OPTIONS
+>  
+>  -p::
+>  --pid=::
+> -	Record events on existing process ID.
+> +	Record events on existing process ID (comma separated list).
+>  
+>  -t::
+>  --tid=::
+> -        Record events on existing thread ID.
+> +        Record events on existing thread ID (comma separated list).
+>  
+>  -u::
+>  --uid=::
+> diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+> index 8966b9a..2fa173b 100644
+> --- a/tools/perf/Documentation/perf-stat.txt
+> +++ b/tools/perf/Documentation/perf-stat.txt
+> @@ -35,11 +35,11 @@ OPTIONS
+>          child tasks do not inherit counters
+>  -p::
+>  --pid=<pid>::
+> -        stat events on existing process id
+> +        stat events on existing process id (comma separated list)
+>  
+>  -t::
+>  --tid=<tid>::
+> -        stat events on existing thread id
+> +        stat events on existing thread id (comma separated list)
+>  
+>  
+>  -a::
+> diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+> index ab1454e..4a5680c 100644
+> --- a/tools/perf/Documentation/perf-top.txt
+> +++ b/tools/perf/Documentation/perf-top.txt
+> @@ -72,11 +72,11 @@ Default is to monitor all CPUS.
+>  
+>  -p <pid>::
+>  --pid=<pid>::
+> -	Profile events on existing Process ID.
+> +	Profile events on existing Process ID (comma separated list).
+>  
+>  -t <tid>::
+>  --tid=<tid>::
+> -        Profile events on existing thread ID.
+> +        Profile events on existing thread ID (comma separated list).
+>  
+>  -u::
+>  --uid=::
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index d6d1c6c..08ed24b 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -645,8 +645,6 @@ static const char * const record_usage[] = {
+>   */
+>  static struct perf_record record = {
+>  	.opts = {
+> -		.target_pid	     = -1,
+> -		.target_tid	     = -1,
+>  		.mmap_pages	     = UINT_MAX,
+>  		.user_freq	     = UINT_MAX,
+>  		.user_interval	     = ULLONG_MAX,
+> @@ -670,9 +668,9 @@ const struct option record_options[] = {
+>  		     parse_events_option),
+>  	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
+>  		     "event filter", parse_filter),
+> -	OPT_INTEGER('p', "pid", &record.opts.target_pid,
+> +	OPT_STRING('p', "pid", &record.opts.target_pid, "pid",
+>  		    "record events on existing process id"),
+> -	OPT_INTEGER('t', "tid", &record.opts.target_tid,
+> +	OPT_STRING('t', "tid", &record.opts.target_tid, "tid",
+>  		    "record events on existing thread id"),
+>  	OPT_INTEGER('r', "realtime", &record.realtime_prio,
+>  		    "collect data with this RT SCHED_FIFO priority"),
+> @@ -739,7 +737,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  
+>  	argc = parse_options(argc, argv, record_options, record_usage,
+>  			    PARSE_OPT_STOP_AT_NON_OPTION);
+> -	if (!argc && rec->opts.target_pid == -1 && rec->opts.target_tid == -1 &&
+> +	if (!argc && !rec->opts.target_pid && !rec->opts.target_tid &&
+>  		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
+>  		usage_with_options(record_usage, record_options);
+>  
+> @@ -785,7 +783,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
+>  		goto out_free_fd;
+>  
+> -	if (rec->opts.target_pid != -1)
+> +	if (rec->opts.target_pid)
+>  		rec->opts.target_tid = rec->opts.target_pid;
+>  
+>  	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index d14b37a..ea40e4e 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -182,8 +182,8 @@ static int			run_count			=  1;
+>  static bool			no_inherit			= false;
+>  static bool			scale				=  true;
+>  static bool			no_aggr				= false;
+> -static pid_t			target_pid			= -1;
+> -static pid_t			target_tid			= -1;
+> +static const char		*target_pid;
+> +static const char		*target_tid;
+>  static pid_t			child_pid			= -1;
+>  static bool			null_run			=  false;
+>  static int			detailed_run			=  0;
+> @@ -296,7 +296,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+>  	if (system_wide)
+>  		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+>  						group, group_fd);
+> -	if (target_pid == -1 && target_tid == -1) {
+> +	if (!target_pid && !target_tid) {
+>  		attr->disabled = 1;
+>  		attr->enable_on_exec = 1;
+>  	}
+> @@ -446,7 +446,7 @@ static int run_perf_stat(int argc __used, const char **argv)
+>  			exit(-1);
+>  		}
+>  
+> -		if (target_tid == -1 && target_pid == -1 && !system_wide)
+> +		if (!target_tid && !target_pid && !system_wide)
+>  			evsel_list->threads->map[0] = child_pid;
+>  
+>  		/*
+> @@ -968,14 +968,14 @@ static void print_stat(int argc, const char **argv)
+>  	if (!csv_output) {
+>  		fprintf(output, "\n");
+>  		fprintf(output, " Performance counter stats for ");
+> -		if(target_pid == -1 && target_tid == -1) {
+> +		if (!target_pid && !target_tid) {
+>  			fprintf(output, "\'%s", argv[0]);
+>  			for (i = 1; i < argc; i++)
+>  				fprintf(output, " %s", argv[i]);
+> -		} else if (target_pid != -1)
+> -			fprintf(output, "process id \'%d", target_pid);
+> +		} else if (target_pid)
+> +			fprintf(output, "process id \'%s", target_pid);
+>  		else
+> -			fprintf(output, "thread id \'%d", target_tid);
+> +			fprintf(output, "thread id \'%s", target_tid);
+>  
+>  		fprintf(output, "\'");
+>  		if (run_count > 1)
+> @@ -1049,10 +1049,10 @@ static const struct option options[] = {
+>  		     "event filter", parse_filter),
+>  	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+>  		    "child tasks do not inherit counters"),
+> -	OPT_INTEGER('p', "pid", &target_pid,
+> -		    "stat events on existing process id"),
+> -	OPT_INTEGER('t', "tid", &target_tid,
+> -		    "stat events on existing thread id"),
+> +	OPT_STRING('p', "pid", &target_pid, "pid",
+> +		   "stat events on existing process id"),
+> +	OPT_STRING('t', "tid", &target_tid, "tid",
+> +		   "stat events on existing thread id"),
+>  	OPT_BOOLEAN('a', "all-cpus", &system_wide,
+>  		    "system-wide collection from all CPUs"),
+>  	OPT_BOOLEAN('g', "group", &group,
+> @@ -1190,7 +1190,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+>  	} else if (big_num_opt == 0) /* User passed --no-big-num */
+>  		big_num = false;
+>  
+> -	if (!argc && target_pid == -1 && target_tid == -1)
+> +	if (!argc && !target_pid && !target_tid)
+>  		usage_with_options(stat_usage, options);
+>  	if (run_count <= 0)
+>  		usage_with_options(stat_usage, options);
+> @@ -1206,10 +1206,11 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+>  	if (add_default_attributes())
+>  		goto out;
+>  
+> -	if (target_pid != -1)
+> +	if (target_pid)
+>  		target_tid = target_pid;
+>  
+> -	evsel_list->threads = thread_map__new(target_pid, target_tid, UINT_MAX);
+> +	evsel_list->threads = thread_map__new_str(target_pid,
+> +						  target_tid, UINT_MAX);
+>  	if (evsel_list->threads == NULL) {
+>  		pr_err("Problems finding threads of monitor\n");
+>  		usage_with_options(stat_usage, options);
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 70c4eb2..0f15195 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -1010,8 +1010,6 @@ realloc:
+>  static int test__PERF_RECORD(void)
+>  {
+>  	struct perf_record_opts opts = {
+> -		.target_pid = -1,
+> -		.target_tid = -1,
+>  		.no_delay   = true,
+>  		.freq	    = 10,
+>  		.mmap_pages = 256,
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index d869b21..5ed62a8 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -965,7 +965,7 @@ static int __cmd_top(struct perf_top *top)
+>  	if (ret)
+>  		goto out_delete;
+>  
+> -	if (top->target_tid != -1 || top->uid != UINT_MAX)
+> +	if (top->target_tid || top->uid != UINT_MAX)
+>  		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
+>  						  perf_event__process,
+>  						  &top->session->host_machine);
+> @@ -1103,8 +1103,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+>  	struct perf_top top = {
+>  		.count_filter	     = 5,
+>  		.delay_secs	     = 2,
+> -		.target_pid	     = -1,
+> -		.target_tid	     = -1,
+>  		.uid		     = UINT_MAX,
+>  		.freq		     = 1000, /* 1 KHz */
+>  		.sample_id_all_avail = true,
+> @@ -1118,9 +1116,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+>  		     parse_events_option),
+>  	OPT_INTEGER('c', "count", &top.default_interval,
+>  		    "event period to sample"),
+> -	OPT_INTEGER('p', "pid", &top.target_pid,
+> +	OPT_STRING('p', "pid", &top.target_pid, "pid",
+>  		    "profile events on existing process id"),
+> -	OPT_INTEGER('t', "tid", &top.target_tid,
+> +	OPT_STRING('t', "tid", &top.target_tid, "tid",
+>  		    "profile events on existing thread id"),
+>  	OPT_BOOLEAN('a', "all-cpus", &top.system_wide,
+>  			    "system-wide collection from all CPUs"),
+> @@ -1210,19 +1208,19 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+>  		goto out_delete_evlist;
+>  
+>  	/* CPU and PID are mutually exclusive */
+> -	if (top.target_tid > 0 && top.cpu_list) {
+> +	if (top.target_tid && top.cpu_list) {
+>  		printf("WARNING: PID switch overriding CPU\n");
+>  		sleep(1);
+>  		top.cpu_list = NULL;
+>  	}
+>  
+> -	if (top.target_pid != -1)
+> +	if (top.target_pid)
+>  		top.target_tid = top.target_pid;
+>  
+>  	if (perf_evlist__create_maps(top.evlist, top.target_pid,
+>  				     top.target_tid, top.uid, top.cpu_list) < 0)
+>  		usage_with_options(top_usage, options);
+> -
+> +	
+>  	if (!top.evlist->nr_entries &&
+>  	    perf_evlist__add_default(top.evlist) < 0) {
+>  		pr_err("Not enough memory for event selector list\n");
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 92af168..deb17db 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -186,8 +186,8 @@ extern const char perf_version_string[];
+>  void pthread__unblock_sigwinch(void);
+>  
+>  struct perf_record_opts {
+> -	pid_t	     target_pid;
+> -	pid_t	     target_tid;
+> +	const char   *target_pid;
+> +	const char   *target_tid;
+>  	uid_t	     uid;
+>  	bool	     call_graph;
+>  	bool	     group;
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index a57a8cf..5c61dc5 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -593,15 +593,15 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+>  	return perf_evlist__mmap_per_cpu(evlist, prot, mask);
+>  }
+>  
+> -int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+> -			     pid_t target_tid, uid_t uid, const char *cpu_list)
+> +int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
+> +			     const char *target_tid, uid_t uid, const char *cpu_list)
+>  {
+> -	evlist->threads = thread_map__new(target_pid, target_tid, uid);
+> +	evlist->threads = thread_map__new_str(target_pid, target_tid, uid);
+>  
+>  	if (evlist->threads == NULL)
+>  		return -1;
+>  
+> -	if (uid != UINT_MAX || (cpu_list == NULL && target_tid != -1))
+> +	if (uid != UINT_MAX || (cpu_list == NULL && target_tid))
+>  		evlist->cpus = cpu_map__dummy_new();
+>  	else
+>  		evlist->cpus = cpu_map__new(cpu_list);
+> @@ -820,7 +820,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+>  		exit(-1);
+>  	}
+>  
+> -	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
+> +	if (!opts->system_wide && !opts->target_tid && !opts->target_pid)
+>  		evlist->threads->map[0] = evlist->workload.pid;
+>  
+>  	close(child_ready_pipe[1]);
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index 1b4282b..21f1c9e 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -106,8 +106,8 @@ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+>  	evlist->threads	= threads;
+>  }
+>  
+> -int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+> -			     pid_t tid, uid_t uid, const char *cpu_list);
+> +int perf_evlist__create_maps(struct perf_evlist *evlist, const char *target_pid,
+> +			     const char *tid, uid_t uid, const char *cpu_list);
+>  void perf_evlist__delete_maps(struct perf_evlist *evlist);
+>  int perf_evlist__set_filters(struct perf_evlist *evlist);
+>  
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index 9a11f9e..f910f50 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -130,7 +130,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>  	attr->mmap = track;
+>  	attr->comm = track;
+>  
+> -	if (opts->target_pid == -1 && opts->target_tid == -1 && !opts->system_wide) {
+> +	if (!opts->target_pid && !opts->target_tid && !opts->system_wide) {
+>  		attr->disabled = 1;
+>  		attr->enable_on_exec = 1;
+>  	}
+> diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+> index 36d4c56..4f85b8f 100644
+> --- a/tools/perf/util/setup.py
+> +++ b/tools/perf/util/setup.py
+> @@ -28,7 +28,8 @@ perf = Extension('perf',
+>  		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
+>  			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
+>  			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c',
+> -			     'util/debugfs.c'],
+> +			     'util/debugfs.c', '../../lib/rbtree.c',
+> +			     'util/strlist.c'],
+>  		  include_dirs = ['util/include'],
+>  		  extra_compile_args = cflags,
+>                   )
+> diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+> index 3d4b6c5..884f7e2 100644
+> --- a/tools/perf/util/thread_map.c
+> +++ b/tools/perf/util/thread_map.c
+> @@ -6,6 +6,8 @@
+>  #include <sys/types.h>
+>  #include <sys/stat.h>
+>  #include <unistd.h>
+> +#include "strlist.h"
+> +#include <string.h>
+>  #include "thread_map.h"
+>  
+>  /* Skip "." and ".." directories */
+> @@ -152,6 +154,132 @@ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid)
+>  	return thread_map__new_by_tid(tid);
+>  }
+>  
+> +static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+> +{
+> +	struct thread_map *threads = NULL, *nt;
+> +	char name[256];
+> +	int items, total_tasks = 0;
+> +	struct dirent **namelist = NULL;
+> +	int i, j = 0;
+> +	pid_t pid, prev_pid = LONG_MAX;
+> +	char *end_ptr;
+> +	struct str_node *pos;
+> +	struct strlist *slist = strlist__new(false, pid_str);
+> +
+> +	if (!slist)
+> +		return NULL;
+> +
+> +	strlist__for_each(pos, slist) {
+> +		pid = strtol(pos->s, &end_ptr, 10);
+> +
+> +		if (pid == LONG_MIN || pid == LONG_MAX ||
+> +		    (*end_ptr != '\0' && *end_ptr != ','))
+> +			goto out_free_threads;
+> +
+> +		if (pid == prev_pid)
+> +			continue;
+> +
+> +		sprintf(name, "/proc/%d/task", pid);
+> +		items = scandir(name, &namelist, filter, NULL);
+> +		if (items <= 0)
+> +			break;
+> +
+> +		total_tasks += items;
+> +		nt = realloc(threads, (sizeof(*threads) +
+> +				       sizeof(pid_t) * total_tasks));
+> +		if (nt == NULL)
+> +			goto out_free_threads;
+> +
+> +		threads = nt;
+> +
+> +		if (threads) {
+> +			for (i = 0; i < items; i++)
+> +				threads->map[j++] = atoi(namelist[i]->d_name);
+> +			threads->nr = total_tasks;
+> +		}
+> +
+> +		for (i = 0; i < items; i++)
+> +			free(namelist[i]);
+> +		free(namelist);
+> +
+> +		if (!threads)
+> +			break;
+> +	}
+> +
+> +out:
+> +	strlist__delete(slist);
+> +	return threads;
+> +
+> +out_free_threads:
+> +	free(threads);
+> +	threads = NULL;
+> +	goto out;
+> +}
+> +
+> +static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+> +{
+> +	struct thread_map *threads = NULL, *nt;
+> +	int ntasks = 0;
+> +	pid_t tid, prev_tid = LONG_MAX;
+> +	char *end_ptr;
+> +	struct str_node *pos;
+> +	struct strlist *slist;
+> +
+> +	/* perf-stat expects threads to be generated even if tid not given */
+> +	if (!tid_str) {
+> +		threads = malloc(sizeof(*threads) + sizeof(pid_t));
+> +		if (threads != NULL) {
+> +			threads->map[1] = -1;
+> +			threads->nr	= 1;
+> +		}
+> +		return threads;
+> +	}
+> +
+> +	slist = strlist__new(false, tid_str);
+> +	if (!slist)
+> +		return NULL;
+> +
+> +	strlist__for_each(pos, slist) {
+> +		tid = strtol(pos->s, &end_ptr, 10);
+> +
+> +		if (tid == LONG_MIN || tid == LONG_MAX ||
+> +		    (*end_ptr != '\0' && *end_ptr != ','))
+> +			goto out_free_threads;
+> +
+> +		if (tid == prev_tid)
+> +			continue;
+> +
+> +		ntasks++;
+> +		nt = realloc(threads, sizeof(*threads) + sizeof(pid_t) * ntasks);
+> +
+> +		if (nt == NULL)
+> +			goto out_free_threads;
+> +
+> +		threads = nt;
+> +		threads->map[ntasks - 1] = tid;
+> +		threads->nr		 = ntasks;
+> +	}
+> +out:
+> +	return threads;
+> +
+> +out_free_threads:
+> +	free(threads);
+> +	threads = NULL;
+> +	goto out;
+> +}
+> +
+> +struct thread_map *thread_map__new_str(const char *pid, const char *tid,
+> +				       uid_t uid)
+> +{
+> +	if (pid)
+> +		return thread_map__new_by_pid_str(pid);
+> +
+> +	if (!tid && uid != UINT_MAX)
+> +		return thread_map__new_by_uid(uid);
+> +
+> +	return thread_map__new_by_tid_str(tid);
+> +}
+> +
+>  void thread_map__delete(struct thread_map *threads)
+>  {
+>  	free(threads);
+> diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+> index c75ddba..7da80f1 100644
+> --- a/tools/perf/util/thread_map.h
+> +++ b/tools/perf/util/thread_map.h
+> @@ -13,6 +13,10 @@ struct thread_map *thread_map__new_by_pid(pid_t pid);
+>  struct thread_map *thread_map__new_by_tid(pid_t tid);
+>  struct thread_map *thread_map__new_by_uid(uid_t uid);
+>  struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid);
+> +
+> +struct thread_map *thread_map__new_str(const char *pid,
+> +		const char *tid, uid_t uid);
+> +
+>  void thread_map__delete(struct thread_map *threads);
+>  
+>  size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
+> diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+> index e4370ca..09fe579 100644
+> --- a/tools/perf/util/top.c
+> +++ b/tools/perf/util/top.c
+> @@ -69,11 +69,11 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+>  
+>  	ret += SNPRINTF(bf + ret, size - ret, "], ");
+>  
+> -	if (top->target_pid != -1)
+> -		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %d",
+> +	if (top->target_pid)
+> +		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
+>  				top->target_pid);
+> -	else if (top->target_tid != -1)
+> -		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %d",
+> +	else if (top->target_tid)
+> +		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
+>  				top->target_tid);
+>  	else if (top->uid_str != NULL)
+>  		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
+> @@ -85,7 +85,7 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
+>  		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
+>  				top->evlist->cpus->nr > 1 ? "s" : "", top->cpu_list);
+>  	else {
+> -		if (top->target_tid != -1)
+> +		if (top->target_tid)
+>  			ret += SNPRINTF(bf + ret, size - ret, ")");
+>  		else
+>  			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
+> diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+> index def3e53..49eb848 100644
+> --- a/tools/perf/util/top.h
+> +++ b/tools/perf/util/top.h
+> @@ -23,7 +23,7 @@ struct perf_top {
+>  	u64		   guest_us_samples, guest_kernel_samples;
+>  	int		   print_entries, count_filter, delay_secs;
+>  	int		   freq;
+> -	pid_t		   target_pid, target_tid;
+> +	const char	   *target_pid, *target_tid;
+>  	uid_t		   uid;
+>  	bool		   hide_kernel_symbols, hide_user_symbols, zero;
+>  	bool		   system_wide;
+> diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
+> index d0c0139..52bb07c 100644
+> --- a/tools/perf/util/usage.c
+> +++ b/tools/perf/util/usage.c
+> @@ -83,7 +83,7 @@ void warning(const char *warn, ...)
+>  	va_end(params);
+>  }
+>  
+> -uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
+> +uid_t parse_target_uid(const char *str, const char *tid, const char *pid)
+>  {
+>  	struct passwd pwd, *result;
+>  	char buf[1024];
+> @@ -91,8 +91,8 @@ uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid)
+>  	if (str == NULL)
+>  		return UINT_MAX;
+>  
+> -	/* CPU and PID are mutually exclusive */
+> -	if (tid > 0 || pid > 0) {
+> +	/* UID and PID are mutually exclusive */
+> +	if (tid || pid) {
+>  		ui__warning("PID/TID switch overriding UID\n");
+>  		sleep(1);
+>  		return UINT_MAX;
+> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> index 232d17e..7917b09 100644
+> --- a/tools/perf/util/util.h
+> +++ b/tools/perf/util/util.h
+> @@ -245,7 +245,7 @@ struct perf_event_attr;
+>  
+>  void event_attr_init(struct perf_event_attr *attr);
+>  
+> -uid_t parse_target_uid(const char *str, pid_t tid, pid_t pid);
+> +uid_t parse_target_uid(const char *str, const char *tid, const char *pid);
+>  
+>  #define _STR(x) #x
+>  #define STR(x) _STR(x)
