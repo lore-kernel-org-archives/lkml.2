@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab2BJQEX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:04:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35174 "EHLO mx2.suse.de"
+	id S932116Ab2BJQEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:04:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35175 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758193Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758165Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 11:04:16 -0500
 From: Jan Kara <jack@suse.cz>
 To: Jeff Moyer <jmoyer@redhat.com>
@@ -13,9 +13,9 @@ Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
         Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/4] gfs2: Use generic handlers of O_SYNC AIO DIO
-Date: Fri, 10 Feb 2012 17:04:01 +0100
-Message-Id: <1328889842-23231-4-git-send-email-jack@suse.cz>
+Subject: [PATCH 4/4] btrfs: Use generic handlers of O_SYNC AIO DIO
+Date: Fri, 10 Feb 2012 17:04:02 +0100
+Message-Id: <1328889842-23231-5-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1328889842-23231-1-git-send-email-jack@suse.cz>
 References: <1328889842-23231-1-git-send-email-jack@suse.cz>
@@ -24,26 +24,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-file.
+file. Although we use our own bio->end_io function, we call dio_end_io()
+from it and thus, because we don't set any specific dio->end_io function,
+generic code ends up calling generic_dio_end_io() which is all what we need
+for proper O_SYNC AIO DIO handling.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- fs/gfs2/aops.c |    2 +-
+ fs/btrfs/inode.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 501e5cb..9c381ff 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -1034,7 +1034,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 32214fe..68add6e 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -6221,7 +6221,7 @@ static ssize_t btrfs_direct_IO(int rw, struct kiocb *iocb,
+ 	ret = __blockdev_direct_IO(rw, iocb, inode,
+ 		   BTRFS_I(inode)->root->fs_info->fs_devices->latest_bdev,
+ 		   iov, offset, nr_segs, btrfs_get_blocks_direct, NULL,
+-		   btrfs_submit_direct, 0);
++		   btrfs_submit_direct, DIO_SYNC_WRITES);
  
- 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
- 				  offset, nr_segs, gfs2_get_block_direct,
--				  NULL, NULL, 0);
-+				  NULL, NULL, DIO_SYNC_WRITES);
- out:
- 	gfs2_glock_dq_m(1, &gh);
- 	gfs2_holder_uninit(&gh);
+ 	if (ret < 0 && ret != -EIOCBQUEUED) {
+ 		clear_extent_bit(&BTRFS_I(inode)->io_tree, offset,
 -- 
 1.7.1
 
