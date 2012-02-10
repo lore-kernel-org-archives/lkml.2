@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068Ab2BJWpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:45:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040Ab2BJWpD (ORCPT
+	id S933159Ab2BJWpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:45:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933118Ab2BJWpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:03 -0500
+	Fri, 10 Feb 2012 17:45:31 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223442.225732956@clark.kroah.org>
+Message-Id: <20120210223442.568405386@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:26 -0800
+Date: Fri, 10 Feb 2012 14:33:30 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [patch 22/55] drm/radeon/kms: disable output polling when suspended
+        alan@lxorguk.ukuu.org.uk, Wang Zhenyu <zhenyu.z.wang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [patch 26/55] drm/i915: HDMI hot remove notification to audio driver
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit 86698c20f71d488b32c49ed4687fb3cf8a88a5ca upstream.
+commit 2deed761188d7480eb5f7efbfe7aa77f09322ed8 upstream.
 
-Polling the outputs when the device is suspended can result in erroneous
-status updates. Disable output polling during suspend to prevent this
-from happening.
+On HDMI monitor hot remove, clear SDVO_AUDIO_ENABLE accordingly, so that
+the audio driver will receive hot plug events and take action to refresh
+its device state and ELD contents.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The cleared SDVO_AUDIO_ENABLE bit needs to be restored to prevent losing
+HDMI audio after DPMS on.
+
+CC: Wang Zhenyu <zhenyu.z.wang@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_hdmi.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -857,6 +857,8 @@ int radeon_suspend_kms(struct drm_device
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
-+	drm_kms_helper_poll_disable(dev);
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -158,6 +158,10 @@ static void intel_hdmi_dpms(struct drm_e
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_hdmi *intel_hdmi = enc_to_intel_hdmi(encoder);
+ 	u32 temp;
++	u32 enable_bits = SDVO_ENABLE;
 +
- 	/* turn off display hw */
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-@@ -943,6 +945,8 @@ int radeon_resume_kms(struct drm_device
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
++	if (intel_hdmi->has_audio)
++		enable_bits |= SDVO_AUDIO_ENABLE;
+ 
+ 	temp = I915_READ(intel_hdmi->sdvox_reg);
+ 
+@@ -170,9 +174,9 @@ static void intel_hdmi_dpms(struct drm_e
  	}
-+
-+	drm_kms_helper_poll_enable(dev);
- 	return 0;
- }
  
+ 	if (mode != DRM_MODE_DPMS_ON) {
+-		temp &= ~SDVO_ENABLE;
++		temp &= ~enable_bits;
+ 	} else {
+-		temp |= SDVO_ENABLE;
++		temp |= enable_bits;
+ 	}
+ 
+ 	I915_WRITE(intel_hdmi->sdvox_reg, temp);
 
 
