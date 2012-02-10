@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2BJWov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:44:51 -0500
+	id S932963Ab2BJW7A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:59:00 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab2BJWoq (ORCPT
+	with ESMTP id S933000Ab2BJWou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:46 -0500
+	Fri, 10 Feb 2012 17:44:50 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223443.108958973@clark.kroah.org>
+Message-Id: <20120210223443.279046084@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:36 -0800
+Date: Fri, 10 Feb 2012 14:33:38 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [patch 32/55] cifs: Fix oops in session setup code for null user mounts
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 34/55] lockdep, bug: Exclude TAINT_FIRMWARE_WORKAROUND from disabling lockdep
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit de47a4176c532ef5961b8a46a2d541a3517412d3 upstream.
+commit df754e6af2f237a6c020c0daff55a1a609338e31 upstream.
 
-For null user mounts, do not invoke string length function
-during session setup.
+It's unlikely that TAINT_FIRMWARE_WORKAROUND causes false
+lockdep messages, so do not disable lockdep in that case.
+We still want to keep lockdep disabled in the
+TAINT_OOT_MODULE case:
 
-Reported-and-Tested-by: Chris Clayton <chris2553@googlemail.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+  - bin-only modules can cause various instabilities in
+    their and in unrelated kernel code
+
+  - they are impossible to debug for kernel developers
+
+  - they also typically do not have the copyright license
+    permission to link to the GPL-ed lockdep code.
+
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-xopopjjens57r0i13qnyh2yo@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/sess.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/panic.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -244,16 +244,15 @@ static void ascii_ssetup_strings(char **
- 	/* copy user */
- 	/* BB what about null user mounts - check that we do this BB */
- 	/* copy user */
--	if (ses->user_name != NULL)
-+	if (ses->user_name != NULL) {
- 		strncpy(bcc_ptr, ses->user_name, MAX_USERNAME_SIZE);
-+		bcc_ptr += strnlen(ses->user_name, MAX_USERNAME_SIZE);
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -236,8 +236,16 @@ void add_taint(unsigned flag)
+ 	 * Also we want to keep up lockdep for staging development and
+ 	 * post-warning case.
+ 	 */
+-	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+-		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++	switch (flag) {
++	case TAINT_CRAP:
++	case TAINT_WARN:
++	case TAINT_FIRMWARE_WORKAROUND:
++		break;
++
++	default:
++		if (__debug_locks_off())
++			printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
 +	}
- 	/* else null user mount */
--
--	bcc_ptr += strnlen(ses->user_name, MAX_USERNAME_SIZE);
- 	*bcc_ptr = 0;
- 	bcc_ptr++; /* account for null termination */
  
- 	/* copy domain */
--
- 	if (ses->domainName != NULL) {
- 		strncpy(bcc_ptr, ses->domainName, 256);
- 		bcc_ptr += strnlen(ses->domainName, 256);
+ 	set_bit(flag, &tainted_mask);
+ }
 
 
