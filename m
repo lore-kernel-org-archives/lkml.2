@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760750Ab2BJW4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:56:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933043Ab2BJWpI (ORCPT
+	id S1760767Ab2BJW5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:57:38 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933035Ab2BJWo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:08 -0500
+	Fri, 10 Feb 2012 17:44:59 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223443.879744329@clark.kroah.org>
+Message-Id: <20120210223443.703814554@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:45 -0800
+Date: Fri, 10 Feb 2012 14:33:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [patch 41/55] mm: fix UP THP spin_is_locked BUGs
+        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: [patch 39/55] pcmcia: fix socket refcount decrementing on each resume
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +26,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit b9980cdcf2524c5fe15d8cbae9c97b3ed6385563 upstream.
+commit 025e4ab3db07fcbf62c01e4f30d1012234beb980 upstream.
 
-Fix CONFIG_TRANSPARENT_HUGEPAGE=y CONFIG_SMP=n CONFIG_DEBUG_VM=y
-CONFIG_DEBUG_SPINLOCK=n kernel: spin_is_locked() is then always false,
-and so triggers some BUGs in Transparent HugePage codepaths.
+This fixes a memory-corrupting bug: not only does it cause the warning,
+but as a result of dropping the refcount to zero, it causes the
+pcmcia_socket0 device structure to be freed while it still has
+references, causing slab caches corruption.  A fatal oops quickly
+follows this warning - often even just a 'dmesg' following the warning
+causes the kernel to oops.
 
-asm-generic/bug.h mentions this problem, and provides a WARN_ON_SMP(x);
-but being too lazy to add VM_BUG_ON_SMP, BUG_ON_SMP, WARN_ON_SMP_ONCE,
-VM_WARN_ON_SMP_ONCE, just test NR_CPUS != 1 in the existing VM_BUG_ONs.
+While testing suspend/resume on an ARM device with PCMCIA support, and a
+CF card inserted, I found that after five suspend and resumes, the
+kernel would complain, and shortly die after with slab corruption.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+  WARNING: at include/linux/kref.h:41 kobject_get+0x28/0x50()
+
+As the message doesn't give a clue about which kobject, and the built-in
+debugging in drivers/base/power/main.c happens too late, this was added
+right before each get_device():
+
+  printk("%s: %p [%s] %u\n", __func__, dev, kobject_name(&dev->kobj), atomic_read(&dev->kobj.kref.refcount));
+
+and on the 3rd s2ram cycle, the following behaviour observed:
+
+On the 3rd suspend/resume cycle:
+
+  dpm_prepare: c1a0d998 [pcmcia_socket0] 3
+  dpm_suspend: c1a0d998 [pcmcia_socket0] 3
+  dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 3
+  dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 3
+  dpm_resume: c1a0d998 [pcmcia_socket0] 3
+  dpm_complete: c1a0d998 [pcmcia_socket0] 2
+
+4th:
+
+  dpm_prepare: c1a0d998 [pcmcia_socket0] 2
+  dpm_suspend: c1a0d998 [pcmcia_socket0] 2
+  dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 2
+  dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 2
+  dpm_resume: c1a0d998 [pcmcia_socket0] 2
+  dpm_complete: c1a0d998 [pcmcia_socket0] 1
+
+5th:
+
+  dpm_prepare: c1a0d998 [pcmcia_socket0] 1
+  dpm_suspend: c1a0d998 [pcmcia_socket0] 1
+  dpm_suspend_noirq: c1a0d998 [pcmcia_socket0] 1
+  dpm_resume_noirq: c1a0d998 [pcmcia_socket0] 1
+  dpm_resume: c1a0d998 [pcmcia_socket0] 1
+  dpm_complete: c1a0d998 [pcmcia_socket0] 0
+  ------------[ cut here ]------------
+  WARNING: at include/linux/kref.h:41 kobject_get+0x28/0x50()
+  Modules linked in: ucb1x00_core
+  Backtrace:
+  [<c0212090>] (dump_backtrace+0x0/0x110) from [<c04799dc>] (dump_stack+0x18/0x1c)
+  [<c04799c4>] (dump_stack+0x0/0x1c) from [<c021cba0>] (warn_slowpath_common+0x50/0x68)
+  [<c021cb50>] (warn_slowpath_common+0x0/0x68) from [<c021cbdc>] (warn_slowpath_null+0x24/0x28)
+  [<c021cbb8>] (warn_slowpath_null+0x0/0x28) from [<c0335374>] (kobject_get+0x28/0x50)
+  [<c033534c>] (kobject_get+0x0/0x50) from [<c03804f4>] (get_device+0x1c/0x24)
+  [<c0388c90>] (dpm_complete+0x0/0x1a0) from [<c0389cc0>] (dpm_resume_end+0x1c/0x20)
+  ...
+
+[changelog edited to make quilt mail happy...]
+
+As can be seen, the original function called pcmcia_get_socket() and
+pcmcia_put_socket() around the guts, whereas the replacement code
+calls pcmcia_put_socket() only in one path.  This creates an imbalance
+in the refcounting.
+
+Testing with pcmcia_put_socket() put removed shows that the bug is gone:
+
+  dpm_suspend: c1a10998 [pcmcia_socket0] 5
+  dpm_suspend_noirq: c1a10998 [pcmcia_socket0] 5
+  dpm_resume_noirq: c1a10998 [pcmcia_socket0] 5
+  dpm_resume: c1a10998 [pcmcia_socket0] 5
+  dpm_complete: c1a10998 [pcmcia_socket0] 5
+
+Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    4 ++--
- mm/swap.c        |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/pcmcia/ds.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2020,7 +2020,7 @@ static void collect_mm_slot(struct mm_sl
+--- a/drivers/pcmcia/ds.c
++++ b/drivers/pcmcia/ds.c
+@@ -1269,10 +1269,8 @@ static int pcmcia_bus_add(struct pcmcia_
+ 
+ static int pcmcia_bus_early_resume(struct pcmcia_socket *skt)
  {
- 	struct mm_struct *mm = mm_slot->mm;
+-	if (!verify_cis_cache(skt)) {
+-		pcmcia_put_socket(skt);
++	if (!verify_cis_cache(skt))
+ 		return 0;
+-	}
  
--	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
- 
- 	if (khugepaged_test_exit(mm)) {
- 		/* free mm_slot */
-@@ -2048,7 +2048,7 @@ static unsigned int khugepaged_scan_mm_s
- 	int progress = 0;
- 
- 	VM_BUG_ON(!pages);
--	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
- 
- 	if (khugepaged_scan.mm_slot)
- 		mm_slot = khugepaged_scan.mm_slot;
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -667,7 +667,7 @@ void lru_add_page_tail(struct zone* zone
- 	VM_BUG_ON(!PageHead(page));
- 	VM_BUG_ON(PageCompound(page_tail));
- 	VM_BUG_ON(PageLRU(page_tail));
--	VM_BUG_ON(!spin_is_locked(&zone->lru_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&zone->lru_lock));
- 
- 	SetPageLRU(page_tail);
+ 	dev_dbg(&skt->dev, "cis mismatch - different card\n");
  
 
 
