@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2BJAHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:07:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28634 "EHLO mx1.redhat.com"
+	id S1758832Ab2BJAIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:08:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758675Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:01:37 -0500
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 10/31] i7300_edac: Convert it to report memory with the new location
-Date: Thu,  9 Feb 2012 22:01:09 -0200
-Message-Id: <1328832090-9166-11-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1758807Ab2BJAIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:08:50 -0500
+Subject: Re: [PATCH] ACPI: Fix logic for removing mappings in 'acpi_unmap'
+From: Myron Stowe <mstowe@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com, tony.luck@intel.com,
+        trenn@suse.de, linux-kernel@vger.kernel.org, mingo@elte.hu
+In-Reply-To: <CAErSpo47+kHmS6477Bne84rPiy+sHGjgtK3mpk6VJc+hM4hhbg@mail.gmail.com>
+References: <20120209163641.26858.59399.stgit@amt.stowe>
+	 <CAErSpo47+kHmS6477Bne84rPiy+sHGjgtK3mpk6VJc+hM4hhbg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Feb 2012 17:08:38 -0700
+Message-ID: <1328832518.2404.86.camel@zim.stowe>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On this driver, the memory controller supports only FB-DIMMs.
+On Thu, 2012-02-09 at 08:42 -0800, Bjorn Helgaas wrote:
+> On Thu, Feb 9, 2012 at 8:36 AM, Myron Stowe <myron.stowe@redhat.com> wrote:
+> > From: Myron Stowe <mstowe@redhat.com>
+> >
+> > Make sure the removal of mappings uses the same logic that put the
+> > mappings in place.
+> >
+> > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> > ---
+> >
+> >  drivers/acpi/osl.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> > index 412a1e0..5aef087 100644
+> > --- a/drivers/acpi/osl.c
+> > +++ b/drivers/acpi/osl.c
+> > @@ -347,7 +347,7 @@ static void acpi_unmap(acpi_physical_address pg_off, void __iomem *vaddr)
+> >        unsigned long pfn;
+> >
+> >        pfn = pg_off >> PAGE_SHIFT;
+> > -       if (page_is_ram(pfn))
+> > +       if (should_use_kmap(pfn))
+> >                kunmap(pfn_to_page(pfn));
+> >        else
+> >                iounmap(vaddr);
+> >
+> 
+> Whatever happened to the question of why we have arch-specific
+> ioremap() behavior?  It's good to make map/unmap symmetric, but it'd
+> be better to get rid of the ioremap/kmap hack.
 
-The memory controller hierarchy here has 3 layers bellow the
-memory controller:
-        - two branches;
-        - each branch has two channels;
-        - each channel can select up to 8 DIMM's via the
-FB-DIMM AMB (Advanced Memory Buffer) chip.
++cc ingo
 
-As EDAC currently limits memory controllers to 2 hierarchy
-levels, on this patch, both branches and channels are grouped
-together.
+We never received any explanation for why ioremap() failed for Ying with
+RAM on x86.  Last I saw Ying asked Ingo for some input here but there
+was never any reply -
+http://marc.info/?l=linux-acpi&m=132788392604738&w=2
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i7300_edac.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+I like your idea of possibly changing ioremap's implementation so that
+it would handle requests related to RAM - by using kmap() internally
+when necessary - so that a *user* wouldn't need to care what
+architecture we're on.  I, however, feel like I don't have enough
+experience with the memory management subsystem to know if such a tactic
+would fly or not so was uncomfortable proceeding along those lines.  As
+a result, I just wanted to get this in for the meantime.
 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index 6104dba..ddd5842 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -779,6 +779,7 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 	int mtr;
- 	int ch, branch, slot, channel;
- 	u32 last_page = 0, nr_pages;
-+	struct dimm_info *dimm;
- 
- 	pvt = mci->pvt_info;
- 
-@@ -803,6 +804,10 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 	}
- 
- 	/* Get the set of MTR[0-7] regs by each branch */
-+	dimm = mci->dimms;
-+	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
-+	nr_pages = 0;
- 	for (slot = 0; slot < MAX_SLOTS; slot++) {
- 		int where = mtr_regs[slot];
- 		for (branch = 0; branch < MAX_BRANCHES; branch++) {
-@@ -815,6 +820,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 				dinfo = &pvt->dimm_info[slot][channel];
- 				p_csrow = &mci->csrows[slot];
- 
-+				dimm->location.mc_channel = channel;
-+				dimm->location.mc_dimm_number = slot;
-+
- 				mtr = decode_mtr(pvt, slot, ch, branch,
- 						 dinfo, p_csrow, &nr_pages);
- 				/* if no DIMMS on this row, continue */
-@@ -828,6 +836,9 @@ static int i7300_init_csrows(struct mem_ctl_info *mci)
- 				p_csrow->last_page = last_page;
- 
- 				rc = 0;
-+
-+				mci->nr_dimms++;
-+				dimm++;
- 			}
- 		}
- 	}
--- 
-1.7.8
+Myron
+
+> 
+> Bjorn
+
 
