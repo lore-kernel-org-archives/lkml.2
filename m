@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760653Ab2BJXIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:08:38 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	id S932745Ab2BJXIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:08:51 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab2BJWnL (ORCPT
+	with ESMTP id S932730Ab2BJWnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:43:11 -0500
+	Fri, 10 Feb 2012 17:43:08 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222951.788092831@clark.kroah.org>
+Message-Id: <20120210222951.609240380@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:35 -0800
+Date: Fri, 10 Feb 2012 14:30:33 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [patch 76/86] staging: r8712u: Use asynchronous firmware loading
+        alan@lxorguk.ukuu.org.uk, Jakub Schmidtke <sjakub@gmail.com>,
+        Pekka Paalanen <pq@iki.fi>
+Subject: [patch 74/86] Staging: asus_oled: fix NULL-ptr crash on unloading
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,275 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Pekka Paalanen <pq@iki.fi>
 
-commit 8c213fa59199f9673d66970d6940fa093186642f upstream.
+commit 3589e74595a4332ebf77b5ed006f3c6686071ecd upstream.
 
-In https://bugs.archlinux.org/task/27996, failure of driver r8712u is
-reported, with a timeout during module loading due to synchronous loading
-of the firmware. The code now uses request_firmware_nowait().
+Asus_oled triggers the following bug on module unloading:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+ usbcore: deregistering interface driver asus-oled
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+ IP: [<ffffffff8111292b>] sysfs_delete_link+0x30/0x66
+
+ Call Trace:
+  [<ffffffff81225373>] device_remove_class_symlinks+0x6b/0x70
+  [<ffffffff812256a8>] device_del+0x9f/0x1ab
+  [<ffffffff812257c5>] device_unregister+0x11/0x1e
+  [<ffffffffa000cb82>] asus_oled_disconnect+0x4f/0x9e [asus_oled]
+  [<ffffffff81277430>] usb_unbind_interface+0x54/0x103
+  [<ffffffff812276c4>] __device_release_driver+0xa2/0xeb
+  [<ffffffff81227794>] driver_detach+0x87/0xad
+  [<ffffffff812269e9>] bus_remove_driver+0x91/0xc1
+  [<ffffffff81227fb4>] driver_unregister+0x66/0x6e
+  [<ffffffff812771ed>] usb_deregister+0xbb/0xc4
+  [<ffffffffa000ce87>] asus_oled_exit+0x2f/0x31 [asus_oled]
+  [<ffffffff81068365>] sys_delete_module+0x1b8/0x21b
+  [<ffffffff810ae3de>] ? do_munmap+0x2ef/0x313
+  [<ffffffff813699bb>] system_call_fastpath+0x16/0x1b
+
+This is due to an incorrect destruction sequence in asus_oled_exit().
+
+Fix the order, fixes the bug. Tested on an Asus G50V laptop only.
+
+Cc: Jakub Schmidtke <sjakub@gmail.com>
+Signed-off-by: Pekka Paalanen <pq@iki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/drv_types.h   |    7 +++
- drivers/staging/rtl8712/hal_init.c    |   62 +++++++++++++++++++++++-----------
- drivers/staging/rtl8712/os_intfs.c    |   14 ++++++-
- drivers/staging/rtl8712/rtl8712_hal.h |    1 
- drivers/staging/rtl8712/usb_intf.c    |    9 +++-
- 5 files changed, 68 insertions(+), 25 deletions(-)
+ drivers/staging/asus_oled/asus_oled.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8712/drv_types.h
-+++ b/drivers/staging/rtl8712/drv_types.h
-@@ -37,6 +37,8 @@ struct _adapter;
- #include "wlan_bssdef.h"
- #include "rtl8712_spec.h"
- #include "rtl8712_hal.h"
-+#include <linux/mutex.h>
-+#include <linux/completion.h>
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -811,10 +811,9 @@ error:
  
- enum _NIC_VERSION {
- 	RTL8711_NIC,
-@@ -168,6 +170,7 @@ struct _adapter {
- 	s32	bSurpriseRemoved;
- 	u32	IsrContent;
- 	u32	ImrContent;
-+	bool	fw_found;
- 	u8	EepromAddressSize;
- 	u8	hw_init_completed;
- 	struct task_struct *cmdThread;
-@@ -184,6 +187,10 @@ struct _adapter {
- 	_workitem wkFilterRxFF0;
- 	u8 blnEnableRxFF0Filter;
- 	spinlock_t lockRxFF0Filter;
-+	const struct firmware *fw;
-+	struct usb_interface *pusb_intf;
-+	struct mutex mutex_start;
-+	struct completion rtl8712_fw_ready;
- };
- 
- static inline u8 *myid(struct eeprom_priv *peepriv)
---- a/drivers/staging/rtl8712/hal_init.c
-+++ b/drivers/staging/rtl8712/hal_init.c
-@@ -42,29 +42,56 @@
- #define FWBUFF_ALIGN_SZ 512
- #define MAX_DUMP_FWSZ	49152 /*default = 49152 (48k)*/
- 
--static u32 rtl871x_open_fw(struct _adapter *padapter, void **pphfwfile_hdl,
--		    const u8 **ppmappedfw)
-+static void rtl871x_load_fw_cb(const struct firmware *firmware, void *context)
+ static void __exit asus_oled_exit(void)
  {
-+	struct _adapter *padapter = context;
-+
-+	complete(&padapter->rtl8712_fw_ready);
-+	if (!firmware) {
-+		struct usb_device *udev = padapter->dvobjpriv.pusbdev;
-+		struct usb_interface *pusb_intf = padapter->pusb_intf;
-+		printk(KERN_ERR "r8712u: Firmware request failed\n");
-+		padapter->fw_found = false;
-+		usb_put_dev(udev);
-+		usb_set_intfdata(pusb_intf, NULL);
-+		return;
-+	}
-+	padapter->fw = firmware;
-+	padapter->fw_found = true;
-+	/* firmware available - start netdev */
-+	register_netdev(padapter->pnetdev);
-+}
-+
-+static const char firmware_file[] = "rtlwifi/rtl8712u.bin";
-+
-+int rtl871x_load_fw(struct _adapter *padapter)
-+{
-+	struct device *dev = &padapter->dvobjpriv.pusbdev->dev;
- 	int rc;
--	const char firmware_file[] = "rtlwifi/rtl8712u.bin";
--	const struct firmware **praw = (const struct firmware **)
--				       (pphfwfile_hdl);
--	struct dvobj_priv *pdvobjpriv = (struct dvobj_priv *)
--					(&padapter->dvobjpriv);
--	struct usb_device *pusbdev = pdvobjpriv->pusbdev;
- 
-+	init_completion(&padapter->rtl8712_fw_ready);
- 	printk(KERN_INFO "r8712u: Loading firmware from \"%s\"\n",
- 	       firmware_file);
--	rc = request_firmware(praw, firmware_file, &pusbdev->dev);
--	if (rc < 0) {
--		printk(KERN_ERR "r8712u: Unable to load firmware\n");
--		printk(KERN_ERR "r8712u: Install latest linux-firmware\n");
-+	rc = request_firmware_nowait(THIS_MODULE, 1, firmware_file, dev,
-+				     GFP_KERNEL, padapter, rtl871x_load_fw_cb);
-+	if (rc)
-+		printk(KERN_ERR "r8712u: Firmware request error %d\n", rc);
-+	return rc;
-+}
-+MODULE_FIRMWARE("rtlwifi/rtl8712u.bin");
-+
-+static u32 rtl871x_open_fw(struct _adapter *padapter, const u8 **ppmappedfw)
-+{
-+	const struct firmware **praw = &padapter->fw;
-+
-+	if (padapter->fw->size > 200000) {
-+		printk(KERN_ERR "r8172u: Badfw->size of %d\n",
-+		       (int)padapter->fw->size);
- 		return 0;
- 	}
- 	*ppmappedfw = (u8 *)((*praw)->data);
- 	return (*praw)->size;
- }
--MODULE_FIRMWARE("rtlwifi/rtl8712u.bin");
- 
- static void fill_fwpriv(struct _adapter *padapter, struct fw_priv *pfwpriv)
- {
-@@ -142,18 +169,17 @@ static u8 rtl8712_dl_fw(struct _adapter
- 	uint dump_imem_sz, imem_sz, dump_emem_sz, emem_sz; /* max = 49152; */
- 	struct fw_hdr fwhdr;
- 	u32 ulfilelength;	/* FW file size */
--	void *phfwfile_hdl = NULL;
- 	const u8 *pmappedfw = NULL;
- 	u8 *ptmpchar = NULL, *ppayload, *ptr;
- 	struct tx_desc *ptx_desc;
- 	u32 txdscp_sz = sizeof(struct tx_desc);
- 	u8 ret = _FAIL;
- 
--	ulfilelength = rtl871x_open_fw(padapter, &phfwfile_hdl, &pmappedfw);
-+	ulfilelength = rtl871x_open_fw(padapter, &pmappedfw);
- 	if (pmappedfw && (ulfilelength > 0)) {
- 		update_fwhdr(&fwhdr, pmappedfw);
- 		if (chk_fwhdr(&fwhdr, ulfilelength) == _FAIL)
--			goto firmware_rel;
-+			return ret;
- 		fill_fwpriv(padapter, &fwhdr.fwpriv);
- 		/* firmware check ok */
- 		maxlen = (fwhdr.img_IMEM_size > fwhdr.img_SRAM_size) ?
-@@ -161,7 +187,7 @@ static u8 rtl8712_dl_fw(struct _adapter
- 		maxlen += txdscp_sz;
- 		ptmpchar = _malloc(maxlen + FWBUFF_ALIGN_SZ);
- 		if (ptmpchar == NULL)
--			goto firmware_rel;
-+			return ret;
- 
- 		ptx_desc = (struct tx_desc *)(ptmpchar + FWBUFF_ALIGN_SZ -
- 			    ((addr_t)(ptmpchar) & (FWBUFF_ALIGN_SZ - 1)));
-@@ -297,8 +323,6 @@ static u8 rtl8712_dl_fw(struct _adapter
- 
- exit_fail:
- 	kfree(ptmpchar);
--firmware_rel:
--	release_firmware((struct firmware *)phfwfile_hdl);
- 	return ret;
++	usb_deregister(&oled_driver);
+ 	class_remove_file(oled_class, &class_attr_version.attr);
+ 	class_destroy(oled_class);
+-
+-	usb_deregister(&oled_driver);
  }
  
---- a/drivers/staging/rtl8712/os_intfs.c
-+++ b/drivers/staging/rtl8712/os_intfs.c
-@@ -31,6 +31,7 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/kthread.h>
-+#include <linux/firmware.h>
- #include "osdep_service.h"
- #include "drv_types.h"
- #include "xmit_osdep.h"
-@@ -264,12 +265,12 @@ static void start_drv_timers(struct _ada
- void r8712_stop_drv_timers(struct _adapter *padapter)
- {
- 	_cancel_timer_ex(&padapter->mlmepriv.assoc_timer);
--	_cancel_timer_ex(&padapter->mlmepriv.sitesurveyctrl.
--			 sitesurvey_ctrl_timer);
- 	_cancel_timer_ex(&padapter->securitypriv.tkip_timer);
- 	_cancel_timer_ex(&padapter->mlmepriv.scan_to_timer);
- 	_cancel_timer_ex(&padapter->mlmepriv.dhcp_timer);
- 	_cancel_timer_ex(&padapter->mlmepriv.wdg_timer);
-+	_cancel_timer_ex(&padapter->mlmepriv.sitesurveyctrl.
-+			 sitesurvey_ctrl_timer);
- }
- 
- static u8 init_default_value(struct _adapter *padapter)
-@@ -347,7 +348,8 @@ u8 r8712_free_drv_sw(struct _adapter *pa
- 	r8712_free_mlme_priv(&padapter->mlmepriv);
- 	r8712_free_io_queue(padapter);
- 	_free_xmit_priv(&padapter->xmitpriv);
--	_r8712_free_sta_priv(&padapter->stapriv);
-+	if (padapter->fw_found)
-+		_r8712_free_sta_priv(&padapter->stapriv);
- 	_r8712_free_recv_priv(&padapter->recvpriv);
- 	mp871xdeinit(padapter);
- 	if (pnetdev)
-@@ -388,6 +390,7 @@ static int netdev_open(struct net_device
- {
- 	struct _adapter *padapter = (struct _adapter *)netdev_priv(pnetdev);
- 
-+	mutex_lock(&padapter->mutex_start);
- 	if (padapter->bup == false) {
- 		padapter->bDriverStopped = false;
- 		padapter->bSurpriseRemoved = false;
-@@ -435,11 +438,13 @@ static int netdev_open(struct net_device
- 	/* start driver mlme relation timer */
- 	start_drv_timers(padapter);
- 	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_NO_LINK);
-+	mutex_unlock(&padapter->mutex_start);
- 	return 0;
- netdev_open_error:
- 	padapter->bup = false;
- 	netif_carrier_off(pnetdev);
- 	netif_stop_queue(pnetdev);
-+	mutex_unlock(&padapter->mutex_start);
- 	return -1;
- }
- 
-@@ -473,6 +478,9 @@ static int netdev_close(struct net_devic
- 	r8712_free_network_queue(padapter);
- 	/* The interface is no longer Up: */
- 	padapter->bup = false;
-+	release_firmware(padapter->fw);
-+	/* never exit with a firmware callback pending */
-+	wait_for_completion(&padapter->rtl8712_fw_ready);
- 	return 0;
- }
- 
---- a/drivers/staging/rtl8712/rtl8712_hal.h
-+++ b/drivers/staging/rtl8712/rtl8712_hal.h
-@@ -145,5 +145,6 @@ struct hal_priv {
- };
- 
- uint	 rtl8712_hal_init(struct _adapter *padapter);
-+int rtl871x_load_fw(struct _adapter *padapter);
- 
- #endif
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -390,6 +390,7 @@ static int r871xu_drv_init(struct usb_in
- 	pdvobjpriv = &padapter->dvobjpriv;
- 	pdvobjpriv->padapter = padapter;
- 	padapter->dvobjpriv.pusbdev = udev;
-+	padapter->pusb_intf = pusb_intf;
- 	usb_set_intfdata(pusb_intf, pnetdev);
- 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
- 	/* step 2. */
-@@ -596,10 +597,11 @@ static int r871xu_drv_init(struct usb_in
- 			       "%pM\n", mac);
- 		memcpy(pnetdev->dev_addr, mac, ETH_ALEN);
- 	}
--	/* step 6. Tell the network stack we exist */
--	if (register_netdev(pnetdev) != 0)
-+	/* step 6. Load the firmware asynchronously */
-+	if (rtl871x_load_fw(padapter))
- 		goto error;
- 	spin_lock_init(&padapter->lockRxFF0Filter);
-+	mutex_init(&padapter->mutex_start);
- 	return 0;
- error:
- 	usb_put_dev(udev);
-@@ -630,7 +632,8 @@ static void r871xu_dev_remove(struct usb
- 		flush_scheduled_work();
- 		udelay(1);
- 		/*Stop driver mlme relation timer */
--		r8712_stop_drv_timers(padapter);
-+		if (padapter->fw_found)
-+			r8712_stop_drv_timers(padapter);
- 		r871x_dev_unload(padapter);
- 		r8712_free_drv_sw(padapter);
- 	}
+ module_init(asus_oled_init);
 
 
