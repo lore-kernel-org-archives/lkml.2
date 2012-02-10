@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761153Ab2BJXfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:35:15 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:56285 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760482Ab2BJXeT (ORCPT
+	id S1761139Ab2BJXfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:35:13 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27168 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760496Ab2BJXeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 18:34:19 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,89 +14,42 @@ Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/7] PCI: Skip reset cardbus assigned resource during pci bus rescan
-Date: Fri, 10 Feb 2012 15:33:48 -0800
-Message-Id: <1328916832-6588-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 6/7] PCI: print out suggestion about using pci=realloc
+Date: Fri, 10 Feb 2012 15:33:51 -0800
+Message-Id: <1328916832-6588-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
 References: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4F35A972.002B,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090201.4F35A975.006B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-otherwise when rescan is used for cardbus, assigned resource will get
-cleared.
+let user know they could try if pci=realloc could help.
 
+-v2: update suggestion text.
+
+Suggested-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Tested-by: Dominik Brodowski <linux@dominikbrodowski.net>
-
 ---
- drivers/pci/setup-bus.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/pci/setup-bus.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 3b3932a..2991a89 100644
+index 22454c5..c73244a 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -901,6 +901,8 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 	resource_size_t b_res_3_size = pci_cardbus_mem_size * 2;
- 	u16 ctrl;
+@@ -1346,6 +1346,9 @@ again:
+ 		goto enable_and_dump;
  
-+	if (b_res[0].parent)
-+		goto handle_b_res_1;
- 	/*
- 	 * Reserve some resources for CardBus.  We reserve
- 	 * a fixed amount of bus space for CardBus bridges.
-@@ -914,6 +916,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 				pci_cardbus_io_size);
- 	}
- 
-+handle_b_res_1:
-+	if (b_res[1].parent)
-+		goto handle_b_res_2;
- 	b_res[1].start = pci_cardbus_io_size;
- 	b_res[1].end = b_res[1].start + pci_cardbus_io_size - 1;
- 	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_STARTALIGN;
-@@ -923,6 +928,7 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 				 pci_cardbus_io_size);
- 	}
- 
-+handle_b_res_2:
- 	/* MEM1 must not be pref mmio */
- 	pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
- 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM1) {
-@@ -942,6 +948,8 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 		pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
- 	}
- 
-+	if (b_res[2].parent)
-+		goto handle_b_res_3;
- 	/*
- 	 * If we have prefetchable memory support, allocate
- 	 * two regions.  Otherwise, allocate one region of
-@@ -962,6 +970,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 		b_res_3_size = pci_cardbus_mem_size;
- 	}
- 
-+handle_b_res_3:
-+	if (b_res[3].parent)
-+		goto handle_done;
- 	b_res[3].start = pci_cardbus_mem_size;
- 	b_res[3].end = b_res[3].start + b_res_3_size - 1;
- 	b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_STARTALIGN;
-@@ -970,6 +981,9 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
- 		add_to_list(realloc_head, bridge, b_res+3, b_res_3_size,
- 				 pci_cardbus_mem_size);
- 	}
+ 	if (tried_times >= pci_try_num) {
++		if (pci_realloc_enable == enable_not_set)
++			printk(KERN_INFO "Some PCI device resources are unassigned, try booting with pci=realloc\n");
 +
-+handle_done:
-+	;
- }
- 
- void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+ 		free_list(&fail_head);
+ 		goto enable_and_dump;
+ 	}
 -- 
 1.7.7
 
