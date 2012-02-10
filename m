@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab2BJXEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:04:34 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932838Ab2BJWnr (ORCPT
+	id S932923Ab2BJXEy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:04:54 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932825Ab2BJWno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:43:47 -0500
+	Fri, 10 Feb 2012 17:43:44 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222951.148532627@clark.kroah.org>
+Message-Id: <20120210222950.977680599@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:28 -0800
+Date: Fri, 10 Feb 2012 14:30:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        alan@lxorguk.ukuu.org.uk, Marco Sanvido <marco@purestorage.com>,
+        Roland Dreier <roland@purestorage.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [patch 69/86] target: Correct sense key for INVALID FIELD IN {PARAMETER LIST,CDB}
+Subject: [patch 67/86] target: Use correct preempted registration sense code
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Marco Sanvido <marco@purestorage.com>
 
-commit 9fbc8909876a2160044e71d376848973b9bfdc3f upstream.
+commit 9e08e34e3735ae057eb3834da3570995811b7eb9 upstream.
 
-According to SPC-4, the sense key for commands that are failed with
-INVALID FIELD IN PARAMETER LIST and INVALID FIELD IN CDB should be
-ILLEGAL REQUEST (5h) rather than ABORTED COMMAND (Bh).  Without this
-patch, a tcm_loop LUN incorrectly gives:
+The comments quote the right parts of the spec:
 
-    # sg_raw -r 1 -v /dev/sda 3 1 0 0 ff 0
-    Sense Information:
-     Fixed format, current;  Sense key: Aborted Command
-     Additional sense: Invalid field in cdb
-     Raw sense data (in hex):
-            70 00 0b 00 00 00 00 0a  00 00 00 00 24 00 00 00
-            00 00
+   * d) Establish a unit attention condition for the
+   *    initiator port associated with every I_T nexus
+   *    that lost its registration other than the I_T
+   *    nexus on which the PERSISTENT RESERVE OUT command
+   *    was received, with the additional sense code set
+   *    to REGISTRATIONS PREEMPTED.
 
-While a real SCSI disk gives:
+and
 
-    Sense Information:
-     Fixed format, current;  Sense key: Illegal Request
-     Additional sense: Invalid field in cdb
-     Raw sense data (in hex):
-            70 00 05 00 00 00 00 18  00 00 00 00 24 00 00 00
-            00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+   * e) Establish a unit attention condition for the initiator
+   *    port associated with every I_T nexus that lost its
+   *    persistent reservation and/or registration, with the
+   *    additional sense code set to REGISTRATIONS PREEMPTED;
 
-with the main point being that the real disk gives a sense key of
-ILLEGAL REQUEST (5h).
+but the actual code accidentally uses ASCQ_2AH_RESERVATIONS_PREEMPTED
+instead of ASCQ_2AH_REGISTRATIONS_PREEMPTED.  Fix this.
 
+Signed-off-by: Marco Sanvido <marco@purestorage.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/target/target_core_pr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4403,8 +4403,8 @@ int transport_send_check_condition_and_s
- 		/* CURRENT ERROR */
- 		buffer[offset] = 0x70;
- 		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
--		/* ABORTED COMMAND */
--		buffer[offset+SPC_SENSE_KEY_OFFSET] = ABORTED_COMMAND;
-+		/* ILLEGAL REQUEST */
-+		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
- 		/* INVALID FIELD IN CDB */
- 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x24;
- 		break;
-@@ -4412,8 +4412,8 @@ int transport_send_check_condition_and_s
- 		/* CURRENT ERROR */
- 		buffer[offset] = 0x70;
- 		buffer[offset+SPC_ADD_SENSE_LEN_OFFSET] = 10;
--		/* ABORTED COMMAND */
--		buffer[offset+SPC_SENSE_KEY_OFFSET] = ABORTED_COMMAND;
-+		/* ILLEGAL REQUEST */
-+		buffer[offset+SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
- 		/* INVALID FIELD IN PARAMETER LIST */
- 		buffer[offset+SPC_ASC_KEY_OFFSET] = 0x26;
- 		break;
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -3138,7 +3138,7 @@ static int core_scsi3_pro_preempt(
+ 			if (!calling_it_nexus)
+ 				core_scsi3_ua_allocate(pr_reg_nacl,
+ 					pr_res_mapped_lun, 0x2A,
+-					ASCQ_2AH_RESERVATIONS_PREEMPTED);
++					ASCQ_2AH_REGISTRATIONS_PREEMPTED);
+ 		}
+ 		spin_unlock(&pr_tmpl->registration_lock);
+ 		/*
+@@ -3251,7 +3251,7 @@ static int core_scsi3_pro_preempt(
+ 		 *    additional sense code set to REGISTRATIONS PREEMPTED;
+ 		 */
+ 		core_scsi3_ua_allocate(pr_reg_nacl, pr_res_mapped_lun, 0x2A,
+-				ASCQ_2AH_RESERVATIONS_PREEMPTED);
++				ASCQ_2AH_REGISTRATIONS_PREEMPTED);
+ 	}
+ 	spin_unlock(&pr_tmpl->registration_lock);
+ 	/*
 
 
