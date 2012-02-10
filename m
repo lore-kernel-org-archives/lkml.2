@@ -1,115 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab2BJOcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:32:06 -0500
+	id S1758826Ab2BJOcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:32:01 -0500
 Received: from mail-wi0-f174.google.com ([209.85.212.174]:59971 "EHLO
 	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759372Ab2BJOcE (ORCPT
+	with ESMTP id S1751205Ab2BJOcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:32:04 -0500
+	Fri, 10 Feb 2012 09:32:00 -0500
 MIME-Version: 1.0
 From: Javier Martin <javier.martin@vista-silicon.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, vinod.koul@intel.com,
-        dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH 3/4] dmaengine: i.MX: Add support for interleaved transfers.
-Date: Fri, 10 Feb 2012 15:31:39 +0100
-Message-Id: <1328884300-18801-4-git-send-email-javier.martin@vista-silicon.com>
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] dmaengine: i.MX DMA series.
+Date: Fri, 10 Feb 2012 15:31:36 +0100
+Message-Id: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i.MX2 and i.MX1 chips have the possibility to do
-interleaved transfers with one constraint: only one
-chunk can be used (i.e. only 2D transfers are allowed).
+Patches 1-3 have already been sent to the list (not merged yet) 
+but they are submitted so that everyone can get the whole picture
+of what we're trying to do here.
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
- drivers/dma/imx-dma.c |   53 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
+A new patch(4) has been added which adds support for multiple 
+descriptors.
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9aa6e85..366a248 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -359,6 +359,57 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
- 	return &imxdmac->desc;
- }
- 
-+static struct dma_async_tx_descriptor *imxdma_prep_dma_interleaved(
-+	struct dma_chan *chan, struct dma_interleaved_template *xt,
-+	unsigned long flags)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	unsigned int src_config, dst_config;
-+	unsigned int x, y, w;
-+	int ret;
-+
-+	dev_dbg(imxdma->dev, "%s channel: %d src_start=0x%x dst_start=0x%x\n"
-+		"   src_sgl=%s dst_sgl=%s numf=%d frame_size=%d\n", __func__,
-+		imxdmac->channel, xt->src_start, xt->dst_start,
-+		xt->src_sgl ? "true" : "false", xt->dst_sgl ? "true" : "false",
-+		xt->numf, xt->frame_size);
-+
-+	if (imxdmac->status == DMA_IN_PROGRESS)
-+		return NULL;
-+	imxdmac->status = DMA_IN_PROGRESS;
-+
-+
-+	if (xt->frame_size != 1 || xt->numf <= 0 || xt->dir != DMA_MEM_TO_MEM)
-+		return NULL;
-+
-+	y = xt->numf;
-+	x = xt->sgl[0].size;
-+	w = xt->sgl[0].icg + x;
-+	ret = imx_dma_config_2d(imxdmac->imxdma_channel, x, y, w);
-+	if (ret)
-+		return NULL;
-+
-+	src_config = IMX_DMA_MEMSIZE_32;
-+	dst_config = IMX_DMA_MEMSIZE_32;
-+	if (xt->src_sgl)
-+		src_config |= IMX_DMA_TYPE_2D;
-+	if (xt->dst_sgl)
-+		dst_config |= IMX_DMA_TYPE_2D;
-+
-+	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
-+				     dst_config, src_config, 0, 0);
-+	if (ret)
-+		return NULL;
-+
-+	ret = imx_dma_setup_single(imxdmac->imxdma_channel, xt->src_start,
-+				   x * y, xt->dst_start, DMA_MODE_WRITE);
-+	if (ret)
-+		return NULL;
-+
-+	return &imxdmac->desc;
-+}
-+
- static void imxdma_issue_pending(struct dma_chan *chan)
- {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-@@ -381,6 +432,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
- 	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
-+	dma_cap_set(DMA_INTERLEAVE, imxdma->dma_device.cap_mask);
- 
- 	/* Initialize channel parameters */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-@@ -415,6 +467,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
- 	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
-+	imxdma->dma_device.device_prep_interleaved_dma = imxdma_prep_dma_interleaved;
- 	imxdma->dma_device.device_control = imxdma_control;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
- 
--- 
-1.7.0.4
-
+[PATCH 1/4] dmaengine: Add support for MEMCPY for imx-dma.
+[PATCH 2/4] i.MX DMA: Add support for 2D transfers.
+[PATCH 3/4] dmaengine: i.MX: Add support for interleaved transfers.
+[PATCH 4/4] dmaengine: Add support for multiple descriptors for imx-dma.
