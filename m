@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab2BJRci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:32:38 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:11998 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab2BJRcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:32:36 -0500
-Date: Fri, 10 Feb 2012 18:32:16 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv21 01/16] mm: page_alloc: remove trailing whitespace
-In-reply-to: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1328895151-5196-2-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.8.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+	id S1759547Ab2BJRjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:39:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40594 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab2BJRjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:39:14 -0500
+Date: Fri, 10 Feb 2012 18:32:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Pedro Alves <palves@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org, Chris Evans <scarybeasts@gmail.com>,
+        Indan Zupancic <indan@nul.nu>
+Subject: [PATCH 0/2] more tweaks (Was: ptrace tweaks)
+Message-ID: <20120210173237.GF8908@redhat.com>
+References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On 02/10, Denys Vlasenko wrote:
+>
+> This patch set fixes a minor bug in PTRACE_SETOPTIONS,
+> slightly extends PTRACE_SEIZE (now it can take ptrace options),
+> changes PTRACE_EVENT_STOP value,
+> and enables PTRACE_SEIZE for non-development use.
+>
+> Ptrace git tree on kernel.org is not restored yet,
+> so this patch set can't go through it.
+>
+> Andrew, please consider taking this patch set.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
----
- mm/page_alloc.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+Yes, please...
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d2186ec..7fe7697 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -513,10 +513,10 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
-  * free pages of length of (1 << order) and marked with _mapcount -2. Page's
-  * order is recorded in page_private(page) field.
-  * So when we are allocating or freeing one, we can derive the state of the
-- * other.  That is, if we allocate a small block, and both were   
-- * free, the remainder of the region must be split into blocks.   
-+ * other.  That is, if we allocate a small block, and both were
-+ * free, the remainder of the region must be split into blocks.
-  * If a block is freed, and its buddy is also free, then this
-- * triggers coalescing into a block of larger size.            
-+ * triggers coalescing into a block of larger size.
-  *
-  * -- wli
-  */
-@@ -1061,17 +1061,17 @@ retry_reserve:
- 	return page;
- }
- 
--/* 
-+/*
-  * Obtain a specified number of elements from the buddy allocator, all under
-  * a single hold of the lock, for efficiency.  Add them to the supplied list.
-  * Returns the number of new pages which were placed at *list.
-  */
--static int rmqueue_bulk(struct zone *zone, unsigned int order, 
-+static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			unsigned long count, struct list_head *list,
- 			int migratetype, int cold)
- {
- 	int i;
--	
-+
- 	spin_lock(&zone->lock);
- 	for (i = 0; i < count; ++i) {
- 		struct page *page = __rmqueue(zone, order, migratetype);
-@@ -4258,7 +4258,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	pgdat->kswapd_max_order = 0;
- 	pgdat_page_cgroup_init(pgdat);
--	
-+
- 	for (j = 0; j < MAX_NR_ZONES; j++) {
- 		struct zone *zone = pgdat->node_zones + j;
- 		unsigned long size, realsize, memmap_pages;
-@@ -5081,11 +5081,11 @@ int __meminit init_per_zone_wmark_min(void)
- module_init(init_per_zone_wmark_min)
- 
- /*
-- * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so 
-+ * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so
-  *	that we can call two helper functions whenever min_free_kbytes
-  *	changes.
-  */
--int min_free_kbytes_sysctl_handler(ctl_table *table, int write, 
-+int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
--- 
-1.7.1.569.g6f426
+I was going to send 1-4 to Linus a long ago, but I can't restore
+my korg account.
+
+Plus I have a couple of other minor ptrace changes, could you
+take them too ?
+
+Chris, iirc you suggested to add PTRACE_O_KILL_TRACEE_IF_DEBUGGER_DIES.
+The necessary change is simple, please suggest the good name for the
+new option ;)
+
+Oleg.
 
