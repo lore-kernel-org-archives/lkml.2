@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2BJWyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:54:19 -0500
+	id S933203Ab2BJWuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:50:08 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:53942 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933211Ab2BJWuM (ORCPT
+	with ESMTP id S933021Ab2BJWuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:50:12 -0500
+	Fri, 10 Feb 2012 17:50:03 -0500
 MIME-Version: 1.0
-Message-Id: <20120210224852.407209882@clark.kroah.org>
+Message-Id: <20120210224851.969824726@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:47:57 -0800
+Date: Fri, 10 Feb 2012 14:47:52 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Milan Kocian <milon@wq.cz>
-Subject: [18/21] USB: usbserial: add new PID number (0xa951) to the ftdi driver
+        alan@lxorguk.ukuu.org.uk, Jakub Schmidtke <sjakub@gmail.com>,
+        "Kevin A. Granade" <kevin.granade@gmail.com>,
+        Pekka Paalanen <pq@iki.fi>
+Subject: [13/21] Staging: asus_oled: fix image processing
 In-Reply-To: <20120210224858.GA30752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milan Kocian <milon@wq.cz>
+From: Pekka Paalanen <pq@iki.fi>
 
-commit 90451e6973a5da155c6f315a409ca0a8d3ce6b76 upstream.
+commit 635032cb397b396241372fa0ff36ae758e658b23 upstream.
 
-Signed-off-by: Milan Kocian <milon@wq.cz>
+Programming an image was broken, because odev->buf_offs was not advanced
+for val == 0 in append_values(). This regression was introduced in:
+
+ commit 1ff12a4aa354bed093a0240d5e6347b1e27601bc
+ Author: Kevin A. Granade <kevin.granade@gmail.com>
+ Date:   Sat Sep 5 01:03:39 2009 -0500
+
+     Staging: asus_oled: Cleaned up checkpatch issues.
+
+Fix the image processing by special-casing val == 0.
+
+I have tested this change on an Asus G50V laptop only.
+
+Cc: Jakub Schmidtke <sjakub@gmail.com>
+Cc: Kevin A. Granade <kevin.granade@gmail.com>
+Signed-off-by: Pekka Paalanen <pq@iki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/staging/asus_oled/asus_oled.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -840,6 +840,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CINTERION_MC55I_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
- 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1192,3 +1192,10 @@
-  */
- /* ZigBee controller */
- #define FTDI_RF_R106		0x8A28
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -349,7 +349,14 @@ static void send_data(struct asus_oled_d
+ 
+ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
+ {
+-	while (count-- > 0 && val) {
++	odev->last_val = val;
 +
-+/*
-+ * Product: HCP HIT GPRS modem
-+ * Manufacturer: HCP d.o.o.
-+ * ATI command output: Cinterion MC55i
-+ */
-+#define FTDI_CINTERION_MC55I_PID	0xA951
++	if (val == 0) {
++		odev->buf_offs += count;
++		return 0;
++	}
++
++	while (count-- > 0) {
+ 		size_t x = odev->buf_offs % odev->width;
+ 		size_t y = odev->buf_offs / odev->width;
+ 		size_t i;
+@@ -400,7 +407,6 @@ static int append_values(struct asus_ole
+ 			;
+ 		}
+ 
+-		odev->last_val = val;
+ 		odev->buf_offs++;
+ 	}
+ 
 
 
