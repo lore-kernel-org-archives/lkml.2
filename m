@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab2BJXBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:01:39 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932926Ab2BJWob (ORCPT
+	id S932964Ab2BJXBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:01:55 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760696Ab2BJWo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:31 -0500
+	Fri, 10 Feb 2012 17:44:28 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223440.689991447@clark.kroah.org>
+Message-Id: <20120210223440.506003629@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:08 -0800
+Date: Fri, 10 Feb 2012 14:33:06 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, UK KIM <w0806.kim@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 04/55] ASoC: wm_hubs: fix wrong bits for LINEOUT2 N/P mixer
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [patch 02/55] ALSA: HDA: Fix duplicated output to more than one codec
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: UK KIM <w0806.kim@samsung.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 114395c61ad2eb5a7a5cd163fcadb2414e48245a upstream.
+commit 54c2a89f60fd71b924d0f848ac892442951401a6 upstream.
 
-Signed-off-by: UK KIM <w0806.kim@samsung.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This typo caused the wrong codec's nid to be checked for wcaps type.
+As a result, sometimes speakers would duplicate the output sent to
+HDMI output.
+
+BugLink: https://bugs.launchpad.net/bugs/924320
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_hubs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -568,8 +568,8 @@ SOC_DAPM_SINGLE("Output Switch", WM8993_
- };
- 
- static const struct snd_kcontrol_new line2n_mix[] = {
--SOC_DAPM_SINGLE("Left Output Switch", WM8993_LINE_MIXER2, 6, 1, 0),
--SOC_DAPM_SINGLE("Right Output Switch", WM8993_LINE_MIXER2, 5, 1, 0),
-+SOC_DAPM_SINGLE("Left Output Switch", WM8993_LINE_MIXER2, 5, 1, 0),
-+SOC_DAPM_SINGLE("Right Output Switch", WM8993_LINE_MIXER2, 6, 1, 0),
- };
- 
- static const struct snd_kcontrol_new line2p_mix[] = {
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -1328,7 +1328,7 @@ void snd_hda_codec_setup_stream(struct h
+ 		for (i = 0; i < c->cvt_setups.used; i++) {
+ 			p = snd_array_elem(&c->cvt_setups, i);
+ 			if (!p->active && p->stream_tag == stream_tag &&
+-			    get_wcaps_type(get_wcaps(codec, p->nid)) == type)
++			    get_wcaps_type(get_wcaps(c, p->nid)) == type)
+ 				p->dirty = 1;
+ 		}
+ 	}
 
 
