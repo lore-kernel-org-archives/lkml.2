@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759149Ab2BJKHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 05:07:34 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:52918 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758670Ab2BJKFv (ORCPT
+	id S1758941Ab2BJKQB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 05:16:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45110 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab2BJKQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 05:05:51 -0500
+	Fri, 10 Feb 2012 05:16:00 -0500
+Message-ID: <4F34EE5C.7040103@monstr.eu>
+Date: Fri, 10 Feb 2012 11:15:56 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/7] OMAP4: twl-common: Add twl6030 V1V8, V2V1 SMPS common configuration
-Date: Fri, 10 Feb 2012 12:05:13 +0200
-Message-Id: <1328868316-24749-5-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.arm.linux.org.uk
+Subject: Re: CMA on arm from zero address
+References: <4F326A4E.1030106@monstr.eu> <20120208130807.GJ889@n2100.arm.linux.org.uk> <4F3276D6.3060507@monstr.eu> <20120208132622.GL889@n2100.arm.linux.org.uk>
+In-Reply-To: <20120208132622.GL889@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V1V8 supply from twl6030 commonly used as VIO for the machine.
-V2V1 is adviced to supply the twl6040, and also to feed the twl6030's
-VCXIO_IN, and VDAC_IN inputs.
-Create the common regulator configurations for these regulators:
-Make the V2V1 as supply_regulator for VCXIO, VDAC.
-Add twl6040 (1-004b) as consumer for V1V8, and V2V1.
+Russell King - ARM Linux wrote:
+> On Wed, Feb 08, 2012 at 02:21:26PM +0100, Michal Simek wrote:
+>> First of all I have found how to do it (by CONFIG_PHYS_OFFSET) so the
+>> problem is in QEMU.
+> 
+> So you're basically not telling the kernel about the first 32MB of memory.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- arch/arm/mach-omap2/twl-common.c |   43 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/twl-common.h |    2 +
- 2 files changed, 45 insertions(+), 0 deletions(-)
+It is not a problem.
 
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index bc03154..cc9ede3 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -201,6 +201,7 @@ static struct regulator_init_data omap4_vdac_idata = {
- 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
- 					| REGULATOR_CHANGE_STATUS,
- 	},
-+	.supply_regulator	= "V2V1",
- };
- 
- static struct regulator_init_data omap4_vaux2_idata = {
-@@ -291,6 +292,7 @@ static struct regulator_init_data omap4_vcxio_idata = {
- 	},
- 	.num_consumer_supplies	= ARRAY_SIZE(omap4_vcxio_supply),
- 	.consumer_supplies	= omap4_vcxio_supply,
-+	.supply_regulator	= "V2V1",
- };
- 
- static struct regulator_init_data omap4_vusb_idata = {
-@@ -311,6 +313,41 @@ static struct regulator_init_data omap4_clk32kg_idata = {
- 	},
- };
- 
-+static struct regulator_consumer_supply omap4_v1v8_supply[] = {
-+	REGULATOR_SUPPLY("vio", "1-004b"),
-+};
-+
-+static struct regulator_init_data omap4_v1v8_idata = {
-+	.constraints = {
-+		.min_uV			= 1800000,
-+		.max_uV			= 1800000,
-+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
-+		.always_on		= true,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(omap4_v1v8_supply),
-+	.consumer_supplies	= omap4_v1v8_supply,
-+};
-+
-+static struct regulator_consumer_supply omap4_v2v1_supply[] = {
-+	REGULATOR_SUPPLY("v2v1", "1-004b"),
-+};
-+
-+static struct regulator_init_data omap4_v2v1_idata = {
-+	.constraints = {
-+		.min_uV			= 2100000,
-+		.max_uV			= 2100000,
-+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies	= ARRAY_SIZE(omap4_v2v1_supply),
-+	.consumer_supplies	= omap4_v2v1_supply,
-+};
-+
- void __init omap4_pmic_get_config(struct twl4030_platform_data *pmic_data,
- 				  u32 pdata_flags, u32 regulators_flags)
- {
-@@ -351,5 +388,11 @@ void __init omap4_pmic_get_config(struct twl4030_platform_data *pmic_data,
- 	if (regulators_flags & TWL_COMMON_REGULATOR_CLK32KG &&
- 	    !pmic_data->clk32kg)
- 		pmic_data->clk32kg = &omap4_clk32kg_idata;
-+
-+	if (regulators_flags & TWL_COMMON_REGULATOR_V1V8 && !pmic_data->v1v8)
-+		pmic_data->v1v8 = &omap4_v1v8_idata;
-+
-+	if (regulators_flags & TWL_COMMON_REGULATOR_V2V1 && !pmic_data->v2v1)
-+		pmic_data->v2v1 = &omap4_v2v1_idata;
- }
- #endif /* CONFIG_ARCH_OMAP4 */
-diff --git a/arch/arm/mach-omap2/twl-common.h b/arch/arm/mach-omap2/twl-common.h
-index 0962748..8fe71cf 100644
---- a/arch/arm/mach-omap2/twl-common.h
-+++ b/arch/arm/mach-omap2/twl-common.h
-@@ -22,6 +22,8 @@
- #define TWL_COMMON_REGULATOR_VCXIO	(1 << 8)
- #define TWL_COMMON_REGULATOR_VUSB	(1 << 9)
- #define TWL_COMMON_REGULATOR_CLK32KG	(1 << 10)
-+#define TWL_COMMON_REGULATOR_V1V8	(1 << 11)
-+#define TWL_COMMON_REGULATOR_V2V1	(1 << 12)
- 
- /* TWL4030 LDO regulators */
- #define TWL_COMMON_REGULATOR_VPLL1	(1 << 4)
+> 
+>> Currently experimenting how to convince CMA to allocate that memory for
+>> my purpose.
+> 
+> Which means it won't be part of the kernels normal memory map, and so
+> won't be in the page pool.  So CMA won't be able to help.
+> 
+> Instead, just ignore the first 32MB of RAM, and map it like any other
+> peripheral to gain access to it.  You might need to use ioremap_wc()
+> to avoid treating the memory as a 'device type' in ARMv6+.
+
+I switched from cma to dma_declare_coherent_memory which does exactly what I wanted to
+do.
+
+Thanks,
+Michal
+
+
 -- 
-1.7.8.4
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
