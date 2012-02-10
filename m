@@ -1,94 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab2BJBjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 20:39:22 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:46031 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab2BJBjV (ORCPT
+	id S1758823Ab2BJBmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 20:42:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59222 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab2BJBmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 20:39:21 -0500
-Date: Fri, 10 Feb 2012 02:39:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-Message-ID: <20120210013911.GM22552@somewhere.redhat.com>
-References: <4F2AB66C.2030309@redhat.com>
- <20120202170134.GM2518@linux.vnet.ibm.com>
- <4F2AC69B.7000704@redhat.com>
- <20120202175155.GV2518@linux.vnet.ibm.com>
- <4F2E7311.8060808@redhat.com>
- <20120205165927.GH2467@linux.vnet.ibm.com>
- <20120209152155.GA22552@somewhere.redhat.com>
- <4F33EEB3.4080807@redhat.com>
- <20120209182216.GG22552@somewhere.redhat.com>
- <20120209234144.GC2458@linux.vnet.ibm.com>
+	Thu, 9 Feb 2012 20:42:49 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TRgVYD6ZyiEA:10 a=vGjuO-vQnTQA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=Yy02Jf9F3dnwX-l911kA:9 a=jXESwwUM2F31nsx6vycA:7 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 75.81.36.228
+Date: Thu, 09 Feb 2012 19:42:46 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: chunkeey@web.de
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org
+Subject: [RFC/RFT V2] p54pci: Convert driver to use asynchronous firmware
+ loading
+Message-ID: <4f347616.jXdqWXSZa+x+oGh0%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120209234144.GC2458@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 03:41:45PM -0800, Paul E. McKenney wrote:
-> On Thu, Feb 09, 2012 at 07:22:19PM +0100, Frederic Weisbecker wrote:
-> > On Thu, Feb 09, 2012 at 06:05:07PM +0200, Avi Kivity wrote:
-> > > On 02/09/2012 05:22 PM, Frederic Weisbecker wrote:
-> > > > > > 
-> > > > > > Looks like there are new rcu_user_enter() and rcu_user_exit() APIs which
-> > > > > > we can use.  Hopefully they subsume rcu_virt_note_context_switch() so we
-> > > > > > only need one set of APIs.
-> > > > > 
-> > > > > Now that you mention it, that is a good goal.  However, it requires
-> > > > > coordination with Frederic's code as well, so some investigation
-> > > > > is required.  Bad things happen if you tell RCU you are idle when you
-> > > > > really are not and vice versa!
-> > > > > 
-> > > > > 							Thanx, Paul
-> > > > > 
-> > > >
-> > > > Right. Avi I need to know more about what you need. rcu_virt_note_context_switch()
-> > > > notes a quiescent state while rcu_user_enter() shuts down RCU (it's in fact the same
-> > > > thing than rcu_idle_enter() minus the is_idle_cpu() checks).
-> > > 
-> > > I don't know enough about RCU to say if it's okay or not (I typically
-> > > peek at the quick quiz answers).  However, switching to guest mode is
-> > > very similar to exiting to user mode: we're guaranteed not to be in an
-> > > rcu critical section, and to remain so until the guest exits back to
-> > > us.
-> > 
-> > Awesome!
-> > 
-> > > What guarantees does rcu_user_enter() provide?  With luck guest
-> > > entry satisifies them all.
-> > 
-> > So rcu_user_enter() puts the CPU into RCU idle mode, which means the CPU
-> > won't need to be part of the global RCU grace period completion. This
-> > prevents it to depend on the timer tick (although for now you keep it)
-> > and to complete some RCU specific work during the tick.
-> > 
-> > Paul, do you think that would be a win?
-> 
-> As long as the code doesn't enter RCU read-side critical sections in
-> the time between rcu_idle_enter() and rcu_idle_exit(), this should
-> work fine.
+Drivers that load firmware from their probe routine have problems with the
+latest versions of udev as they get timeouts while waiting for user
+space to start. The problem is fixed by using request_firmware_nowait()
+and delaying the start of mac80211 until the firmware is loaded.
 
-This should work fine yeah but further the correctness, I wonder if this
-is going to be a win.
+To prevent the possibility of the driver being unloaded while the firmware
+loading callback is still active, a completion queue entry is used.
 
-We use rcu_idle_enter() in idle to avoid to keep the tick for RCU. But
-what about falling into guest mode? I guess the tick is kept there
-so is it going to be a win in throughput or something to use rcu_idle_enter()?
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
+V2 - get the driver name right
+
+This conversion of p54pci to use asynchronous firmware loading is based
+on the method used in p54usb. As I do not have the hardware, it is only
+compile tested. I would appreciate any feedback from people that have the
+hardware.
+
+Larry
+---
+
+Index: wireless-testing-new/drivers/net/wireless/p54/p54pci.c
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/p54/p54pci.c
++++ wireless-testing-new/drivers/net/wireless/p54/p54pci.c
+@@ -488,6 +488,69 @@ static int p54p_open(struct ieee80211_hw
+ 	return 0;
+ }
+ 
++static void p54_start_ops(struct ieee80211_hw *dev)
++{
++	struct p54p_priv *priv = dev->priv;
++	int err;
++
++	err = p54p_open(dev);
++	if (err) {
++		dev_err(&priv->pdev->dev, "Failed in p54p_open\n");
++		return;
++	}
++	err = p54_read_eeprom(dev);
++	p54p_stop(dev);
++	if (err) {
++		dev_err(&priv->pdev->dev, "Failed in p54p_read_eeprom\n");
++		return;
++	}
++
++	err = p54_register_common(dev, &priv->pdev->dev);
++	if (err) {
++		dev_err(&priv->pdev->dev,
++			"Failed in p54_register_common\n");
++		return;
++	}
++}
++
++static void p54p_load_firmware_cb2(const struct firmware *firmware,
++				  void *context)
++{
++	struct ieee80211_hw *dev = context;
++	struct p54p_priv *priv = dev->priv;
++
++	if (!firmware) {
++		/* alternate firmware not found */
++		dev_err(&priv->pdev->dev, "Firmware loading failed\n");
++		return;
++	}
++	complete(&priv->fw_loaded);
++	priv->firmware = firmware;
++	p54_start_ops(dev);
++}
++
++static void p54p_load_firmware_cb(const struct firmware *firmware,
++				  void *context)
++{
++	struct ieee80211_hw *dev = context;
++	struct p54p_priv *priv = dev->priv;
++	int err;
++
++	if (!firmware) {
++		/* Primary firmware not found - try for alternate file */
++		dev_info(&priv->pdev->dev, "Loading firmware file isl3886");
++		err = request_firmware_nowait(THIS_MODULE, 1,
++					      "isl3886",
++					      &priv->pdev->dev, GFP_KERNEL, dev,
++					      p54p_load_firmware_cb2);
++		if (err)
++			return;
++	}
++	complete(&priv->fw_loaded);
++	priv->firmware = firmware;
++	p54_start_ops(dev);
++}
++
+ static int __devinit p54p_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *id)
+ {
+@@ -561,28 +624,15 @@ static int __devinit p54p_probe(struct p
+ 	spin_lock_init(&priv->lock);
+ 	tasklet_init(&priv->tasklet, p54p_tasklet, (unsigned long)dev);
+ 
+-	err = request_firmware(&priv->firmware, "isl3886pci",
+-			       &priv->pdev->dev);
++	init_completion(&priv->fw_loaded);
++	dev_info(&priv->pdev->dev, "Loading firmware file isl3886pci\n");
++	err = request_firmware_nowait(THIS_MODULE, 1, "isl3886pci",
++				      &pdev->dev, GFP_KERNEL, dev,
++				      p54p_load_firmware_cb);
+ 	if (err) {
+-		dev_err(&pdev->dev, "Cannot find firmware (isl3886pci)\n");
+-		err = request_firmware(&priv->firmware, "isl3886",
+-				       &priv->pdev->dev);
+-		if (err)
+-			goto err_free_common;
+-	}
+-
+-	err = p54p_open(dev);
+-	if (err)
+-		goto err_free_common;
+-	err = p54_read_eeprom(dev);
+-	p54p_stop(dev);
+-	if (err)
++		dev_err(&pdev->dev, "Cannot load firmware (isl3886pci)\n");
+ 		goto err_free_common;
+-
+-	err = p54_register_common(dev, &pdev->dev);
+-	if (err)
+-		goto err_free_common;
+-
++	}
+ 	return 0;
+ 
+  err_free_common:
+@@ -612,8 +662,9 @@ static void __devexit p54p_remove(struct
+ 	if (!dev)
+ 		return;
+ 
+-	p54_unregister_common(dev);
+ 	priv = dev->priv;
++	wait_for_completion(&priv->fw_loaded);
++	p54_unregister_common(dev);
+ 	release_firmware(priv->firmware);
+ 	pci_free_consistent(pdev, sizeof(*priv->ring_control),
+ 			    priv->ring_control, priv->ring_control_dma);
+Index: wireless-testing-new/drivers/net/wireless/p54/p54pci.h
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/p54/p54pci.h
++++ wireless-testing-new/drivers/net/wireless/p54/p54pci.h
+@@ -105,6 +105,7 @@ struct p54p_priv {
+ 	struct sk_buff *tx_buf_data[32];
+ 	struct sk_buff *tx_buf_mgmt[4];
+ 	struct completion boot_comp;
++	struct completion fw_loaded;
+ };
+ 
+ #endif /* P54USB_H */
