@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab2BJNmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:42:49 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:46446 "EHLO
+	id S1759340Ab2BJNms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:42:48 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:46449 "EHLO
 	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759284Ab2BJNmf (ORCPT
+	with ESMTP id S1759297Ab2BJNmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 08:42:35 -0500
 From: Chris Boot <bootc@bootc.net>
 To: linux1394-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>,
         Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 2/3] firewire-sbp2: Ignore SBP-2 targets on the local node
-Date: Fri, 10 Feb 2012 13:41:53 +0000
-Message-Id: <1328881314-26544-3-git-send-email-bootc@bootc.net>
+Subject: [PATCH 3/3] firewire-sbp2: Fix SCSI sense data mangling
+Date: Fri, 10 Feb 2012 13:41:54 +0000
+Message-Id: <1328881314-26544-4-git-send-email-bootc@bootc.net>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1328881314-26544-1-git-send-email-bootc@bootc.net>
 References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
@@ -22,64 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The firewire-sbp2 module tries to login to an SBP-2/3 target even when
-it is running on the local node, which fails because of the inability to
-fetch data from DMA mapped regions using firewire transactions on the
-local node. It also doesn't make much sense to have the initiator and
-target on the same node, so this patch prevents this behaviour.
+SCSI sense data in SBP-2/3 is carried in an unusual format that means we
+have to un-mangle it on our end before we pass it to the SCSI subsystem.
+Currently our un-mangling code doesn't quite follow the SBP-2 standard
+in that we always assume Current and never Deferred error types, we
+never set the VALID bit, and we mishandle the FILEMARK, EOM and ILI
+bits.
+
+This patch fixes the sense un-mangling to correctly handle those and
+follow the spec.
 
 Signed-off-by: Chris Boot <bootc@bootc.net>
 Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/firewire/sbp2.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/firewire/sbp2.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index ed5bbbf..1572a79 100644
+index 1572a79..ff632c2 100644
 --- a/drivers/firewire/sbp2.c
 +++ b/drivers/firewire/sbp2.c
-@@ -1138,6 +1138,12 @@ static int sbp2_probe(struct device *dev)
- 	struct Scsi_Host *shost;
- 	u32 model, firmware_revision;
+@@ -1318,10 +1318,19 @@ static void sbp2_unmap_scatterlist(struct device *card_device,
+ static unsigned int sbp2_status_to_sense_data(u8 *sbp2_status, u8 *sense_data)
+ {
+ 	int sam_status;
++	int sfmt = (sbp2_status[0] >> 6) & 0x03;
  
-+	/* ignore targets on the local node */
-+	if (device->node == device->card->local_node) {
-+		dev_set_drvdata(&unit->device, NULL);
-+		return 0;
+-	sense_data[0] = 0x70;
++	if (sfmt == 2 || sfmt == 3) {
++		/*
++		 * Reserved for future standardization (2) or
++		 * Status block format vendor-dependent (3)
++		 */
++		return DID_ERROR << 16;
 +	}
 +
- 	if (dma_get_max_seg_size(device->card->device) > SBP2_MAX_SEG_SIZE)
- 		BUG_ON(dma_set_max_seg_size(device->card->device,
- 					    SBP2_MAX_SEG_SIZE));
-@@ -1204,6 +1210,10 @@ static void sbp2_update(struct fw_unit *unit)
- 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
- 	struct sbp2_logical_unit *lu;
- 
-+	/* no drvdata means a target on a local node; ignoring */
-+	if (!tgt)
-+		return;
-+
- 	fw_device_enable_phys_dma(fw_parent_device(unit));
- 
- 	/*
-@@ -1223,10 +1233,15 @@ static int sbp2_remove(struct device *dev)
- 	struct fw_device *device = fw_parent_device(unit);
- 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
- 	struct sbp2_logical_unit *lu, *next;
--	struct Scsi_Host *shost =
--		container_of((void *)tgt, struct Scsi_Host, hostdata[0]);
-+	struct Scsi_Host *shost;
- 	struct scsi_device *sdev;
- 
-+	/* no drvdata means a target on a local node; ignoring */
-+	if (!tgt)
-+		return 0;
-+
-+	shost = container_of((void *)tgt, struct Scsi_Host, hostdata[0]);
-+
- 	/* prevent deadlocks */
- 	sbp2_unblock(tgt);
- 
++	sense_data[0] = 0x70 | sfmt | (sbp2_status[1] & 0x80);
+ 	sense_data[1] = 0x0;
+-	sense_data[2] = sbp2_status[1];
++	sense_data[2] = ((sbp2_status[1] << 1) & 0xe0) | (sbp2_status[1] & 0x0f);
+ 	sense_data[3] = sbp2_status[4];
+ 	sense_data[4] = sbp2_status[5];
+ 	sense_data[5] = sbp2_status[6];
 -- 
 1.7.8.3
 
