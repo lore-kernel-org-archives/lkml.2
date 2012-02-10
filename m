@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2BJU5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:57:25 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46615 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440Ab2BJU5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:57:23 -0500
-Message-ID: <4F3584AF.6030601@redhat.com>
-Date: Fri, 10 Feb 2012 21:57:19 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1760163Ab2BJU6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:58:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:57581 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045Ab2BJU6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:58:10 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        bruce.w.allan@intel.com, joe@perches.com
+Subject: Re: [PATCH v2] scripts/coccinelle/misc/boolinit.cocci: semantic patch for bool issues
+In-Reply-To: <1328905355-30874-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1328905355-30874-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sat, 11 Feb 2012 07:27:01 +1030
+Message-ID: <874nuye7aa.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: "Nelson, Doug" <doug.nelson@intel.com>
-CC: Matthew Wilcox <willy@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: scsi_id: sending ioctl 2285 to a partition
-References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com> <20120209210039.GB14342@linux.intel.com> <4F34D292.4080404@redhat.com> <4F3552A4.70902@intel.com> <4F3572C1.1060703@redhat.com> <4F35746A.1090109@intel.com>
-In-Reply-To: <4F35746A.1090109@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 08:47 PM, Nelson, Doug wrote:
->>>> # scsi devices
->>>> KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
->>>> IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
->>>> ENV{ID_BUS}="scsi"
->>>
->>> The rule I had was not excluding partitions.   I'll fix that and try
->>> again.
->>
->> So was it a custom rule, or it came with the distro?
->>
->
-> It's a custom rule we've been using for a long time to rename our 672 x
-> ssd's.
+On Fri, 10 Feb 2012 21:22:35 +0100, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Can you post the whole snippet?
+FWIW: 
+Reviewed-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Paolo
+> +coccilib.report.print_report(p2[0],"WARNING: Assignment of bool to non-0/1 constant")
+
+IMHO, this one should be an error!
+
+Thanks,
+Rusty.
