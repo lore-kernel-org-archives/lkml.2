@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760538Ab2BJWlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:08 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760499Ab2BJWlB (ORCPT
+	id S1760557Ab2BJWlM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:41:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50022 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760537Ab2BJWlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:01 -0500
+	Fri, 10 Feb 2012 17:41:08 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222946.727903938@clark.kroah.org>
+Message-Id: <20120210222946.999041733@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:38 -0800
+Date: Fri, 10 Feb 2012 14:29:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [patch 19/86] firewire: ohci: add reset packet quirk for SB Audigy
+        alan@lxorguk.ukuu.org.uk,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        Sven Breuner <sven.breuner@itwm.fraunhofer.de>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [patch 22/86] RDMA/core: Fix kernel panic by always initializing qp->usecnt
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit d1bb399ad03c11e792f6dea198d3b1e23061f094 upstream.
+commit e47e321a35c741ee41b67976f8c6a3a7a42bc5c0 upstream.
 
-The Audigy's SB1394 controller is actually from Texas Instruments
-and has the same bus reset packet generation bug, so it needs the
-same quirk entry.
+We have just been investigating kernel panics related to
+cq->ibcq.event_handler() completion calls.  The problem is that
+ib_destroy_qp() fails with -EBUSY.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Further investigation revealed qp->usecnt is not initialized.  This
+counter was introduced in linux-3.2 by commit 0e0ec7e0638e
+("RDMA/core: Export ib_open_qp() to share XRC TGT QPs") but it only
+gets initialized for IB_QPT_XRC_TGT, but it is checked in
+ib_destroy_qp() for any QP type.
+
+Fix this by initializing qp->usecnt for every QP we create.
+
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: Sven Breuner <sven.breuner@itwm.fraunhofer.de>
+
+[ Initialize qp->usecnt in uverbs too.  - Sean ]
+
+Signed-off-by: Sean Hefty <sean.hefty@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/ohci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/core/uverbs_cmd.c |    1 +
+ drivers/infiniband/core/verbs.c      |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -263,6 +263,7 @@ static inline struct fw_ohci *fw_ohci(st
- static char ohci_driver_name[] = KBUILD_MODNAME;
+--- a/drivers/infiniband/core/uverbs_cmd.c
++++ b/drivers/infiniband/core/uverbs_cmd.c
+@@ -1485,6 +1485,7 @@ ssize_t ib_uverbs_create_qp(struct ib_uv
+ 		qp->event_handler = attr.event_handler;
+ 		qp->qp_context	  = attr.qp_context;
+ 		qp->qp_type	  = attr.qp_type;
++		atomic_set(&qp->usecnt, 0);
+ 		atomic_inc(&pd->usecnt);
+ 		atomic_inc(&attr.send_cq->usecnt);
+ 		if (attr.recv_cq)
+--- a/drivers/infiniband/core/verbs.c
++++ b/drivers/infiniband/core/verbs.c
+@@ -421,6 +421,7 @@ struct ib_qp *ib_create_qp(struct ib_pd
+ 		qp->uobject    = NULL;
+ 		qp->qp_type    = qp_init_attr->qp_type;
  
- #define PCI_DEVICE_ID_AGERE_FW643	0x5901
-+#define PCI_DEVICE_ID_CREATIVE_SB1394	0x4001
- #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
- #define PCI_DEVICE_ID_TI_TSB12LV22	0x8009
- #define PCI_DEVICE_ID_TI_TSB12LV26	0x8020
-@@ -289,6 +290,9 @@ static const struct {
- 	{PCI_VENDOR_ID_ATT, PCI_DEVICE_ID_AGERE_FW643, 6,
- 		QUIRK_NO_MSI},
++		atomic_set(&qp->usecnt, 0);
+ 		if (qp_init_attr->qp_type == IB_QPT_XRC_TGT) {
+ 			qp->event_handler = __ib_shared_qp_event_handler;
+ 			qp->qp_context = qp;
+@@ -430,7 +431,6 @@ struct ib_qp *ib_create_qp(struct ib_pd
+ 			qp->xrcd = qp_init_attr->xrcd;
+ 			atomic_inc(&qp_init_attr->xrcd->usecnt);
+ 			INIT_LIST_HEAD(&qp->open_list);
+-			atomic_set(&qp->usecnt, 0);
  
-+	{PCI_VENDOR_ID_CREATIVE, PCI_DEVICE_ID_CREATIVE_SB1394, PCI_ANY_ID,
-+		QUIRK_RESET_PACKET},
-+
- 	{PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB38X_FW, PCI_ANY_ID,
- 		QUIRK_NO_MSI},
- 
+ 			real_qp = qp;
+ 			qp = __ib_open_qp(real_qp, qp_init_attr->event_handler,
 
 
