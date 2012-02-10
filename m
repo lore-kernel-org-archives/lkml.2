@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab2BJQE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:04:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27711 "EHLO mx1.redhat.com"
+	id S932251Ab2BJQEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:04:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35174 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300Ab2BJQE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:04:26 -0500
-Date: Fri, 10 Feb 2012 16:57:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] ptrace: make PTRACE_SEIZE set ptrace options
-	specified in 'data' parameter
-Message-ID: <20120210155753.GA25923@redhat.com>
-References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com> <1328884991-23889-2-git-send-email-vda.linux@googlemail.com> <1328884991-23889-3-git-send-email-vda.linux@googlemail.com> <1328884991-23889-4-git-send-email-vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328884991-23889-4-git-send-email-vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758193Ab2BJQEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:04:16 -0500
+From: Jan Kara <jack@suse.cz>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        cluster-devel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3/4] gfs2: Use generic handlers of O_SYNC AIO DIO
+Date: Fri, 10 Feb 2012 17:04:01 +0100
+Message-Id: <1328889842-23231-4-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1328889842-23231-1-git-send-email-jack@suse.cz>
+References: <1328889842-23231-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10, Denys Vlasenko wrote:
->
-> @@ -879,7 +890,7 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, unsigned long, addr,
->  	}
->
->  	if (request == PTRACE_ATTACH || request == PTRACE_SEIZE) {
-> -		ret = ptrace_attach(child, request, data);
-> +		ret = ptrace_attach(child, request, addr, data);
+Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
+file.
 
-There is another caller which should be updated, sys_compat_ptrace().
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/gfs2/aops.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Otherwise looks good.
-
-Oleg.
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index 501e5cb..9c381ff 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -1034,7 +1034,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ 
+ 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
+ 				  offset, nr_segs, gfs2_get_block_direct,
+-				  NULL, NULL, 0);
++				  NULL, NULL, DIO_SYNC_WRITES);
+ out:
+ 	gfs2_glock_dq_m(1, &gh);
+ 	gfs2_holder_uninit(&gh);
+-- 
+1.7.1
 
