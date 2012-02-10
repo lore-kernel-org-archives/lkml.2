@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758304Ab2BJPvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:51:12 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:55380 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754728Ab2BJPvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:51:11 -0500
-Date: Fri, 10 Feb 2012 15:51:09 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1202101549290.1054@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758406Ab2BJPwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:52:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60081 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758124Ab2BJPwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 10:52:17 -0500
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, paul@paulmenage.org,
+        rjw@sisk.pl, tj@kernel.org, frank.rowand@am.sony.com, pjt@google.com,
+        tglx@linutronix.de, lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+In-Reply-To: <20120209151158.GA22489@elte.hu>
+References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
+	 <1328671335.2482.72.camel@laptop> <4F32174E.2050207@linux.vnet.ibm.com>
+	 <20120209075701.GE18387@elte.hu> <4F3386E9.7090606@linux.vnet.ibm.com>
+	 <20120209151158.GA22489@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Feb 2012 16:52:07 +0100
+Message-ID: <1328889127.25989.14.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-02-09 at 16:11 +0100, Ingo Molnar wrote:
 
-Hi Linus,
+> > My understanding of the code is that when a CPU is taken 
+> > offline, it is removed from all the cpusets and then the 
+> > scan_for_empty_cpusets() function is run to move tasks from 
+> > empty cpusets to their parent cpusets.
+> 
+> Why is that done that way? offlining a CPU should be an 
+> invariant as far as cpusets are concerned.
 
-all fairly minor stuff, A few intel fixes mainly, a randon mismerge fix, and one core compat ioctl 
-fix.
+Can't, tasks need to run someplace. There's two choices, add a still
+online cpu to the now empty cpuset or move the tasks to a parent that
+still has online cpus.
 
-The intel dp fix fixes a bunch of eDP/DP regressions, and it at least lets 
-me suspend/resume my laptop panel again.
+Both are destructive.
 
-Dave.
 
-The following changes since commit 6c073a7ee250118b8be3a2379c96fd7f78382b06:
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2012-02-02 15:47:33 -0800)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Chris Wilson (1):
-      drm/i915:: Disable FBC on SandyBridge
-
-Daniel Vetter (2):
-      drm/i915: fixup interlaced bits clearing in PIPECONF on PCH_SPLIT
-      drm/i915: no lvds quirk for AOpen MP45
-
-Dave Airlie (1):
-      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../keithp/linux into drm-fixes
-
-Julia Lawall (1):
-      drivers/gpu/drm/drm_ioc32.c: initialize all fields
-
-Keith Packard (2):
-      drm/i915: Force explicit bpp selection for intel_dp_link_required
-      drm/i915: fixup interlaced bits clearing in PIPECONF on PCH_SPLIT (v2)
-
-Matthijs Kooijman (1):
-      drm/radeon: do not continue after error from r600_ib_test
-
- drivers/gpu/drm/drm_ioc32.c          |    3 ++-
- drivers/gpu/drm/i915/intel_display.c |    8 +++++---
- drivers/gpu/drm/i915/intel_dp.c      |   20 +++++---------------
- drivers/gpu/drm/i915/intel_lvds.c    |    8 ++++++++
- drivers/gpu/drm/radeon/evergreen.c   |    1 +
- 5 files changed, 21 insertions(+), 19 deletions(-)
