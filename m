@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760726Ab2BJWyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:54:55 -0500
+	id S933174Ab2BJWuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:50:05 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:51143 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999Ab2BJWuG (ORCPT
+	with ESMTP id S932999Ab2BJWuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:50:06 -0500
+	Fri, 10 Feb 2012 17:50:01 -0500
 MIME-Version: 1.0
-Message-Id: <20120210224852.150132339@clark.kroah.org>
+Message-Id: <20120210224850.893611277@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:47:54 -0800
+Date: Fri, 10 Feb 2012 14:47:40 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [15/21] Staging: android: binder: Fix crashes when sharing a binder file between processes
+        alan@lxorguk.ukuu.org.uk, Jack Morgenstein <jackm@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Ira Weiny <weiny2@llnl.gov>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [01/21] IB/mlx4: pass SMP vendor-specific attribute MADs to firmware
 In-Reply-To: <20120210224858.GA30752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arve Hjønnevåg <arve@android.com>
+From: Jack Morgenstein <jackm@mellanox.com>
 
-commit bd1eff9741af27378b241b347041c724bb28e857 upstream.
+commit a6f7feae6d19e84253918d88b04153af09d3a243 upstream.
 
-Opening the binder driver and sharing the file returned with
-other processes (e.g. by calling fork) can crash the kernel.
-Prevent these crashes with the following changes:
-- Add a mutex to protect against two processes mmapping the
-  same binder_proc.
-- After locking mmap_sem, check that the vma we want to access
-  (still) points to the same mm_struct.
-- Use proc->tsk instead of current to get the files struct since
-  this is where we get the rlimit from.
+In the current code, vendor-specific MADs (e.g with the FDR-10
+attribute) are silently dropped by the driver, resulting in timeouts
+at the sending side and inability to query/configure the relevant
+feature.  However, the ConnectX firmware is able to handle such MADs.
+For unsupported attributes, the firmware returns a GET_RESPONSE MAD
+containing an error status.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
+For example, for a FDR-10 node with LID 11:
+
+    # ibstat mlx4_0 1
+
+    CA: 'mlx4_0'
+    Port 1:
+    State: Active
+    Physical state: LinkUp
+    Rate: 40 (FDR10)
+    Base lid: 11
+    LMC: 0
+    SM lid: 24
+    Capability mask: 0x02514868
+    Port GUID: 0x0002c903002e65d1
+    Link layer: InfiniBand
+
+Extended Port Query (EPI) vendor mad timeouts before the patch:
+
+    # smpquery MEPI 11 -d
+
+    ibwarn: [4196] smp_query_via: attr 0xff90 mod 0x0 route Lid 11
+    ibwarn: [4196] _do_madrpc: retry 1 (timeout 1000 ms)
+    ibwarn: [4196] _do_madrpc: retry 2 (timeout 1000 ms)
+    ibwarn: [4196] _do_madrpc: timeout after 3 retries, 3000 ms
+    ibwarn: [4196] mad_rpc: _do_madrpc failed; dport (Lid 11)
+    smpquery: iberror: [pid 4196] main: failed: operation EPI: ext port info query failed
+
+EPI query works OK with the patch:
+
+    # smpquery MEPI 11 -d
+
+    ibwarn: [6548] smp_query_via: attr 0xff90 mod 0x0 route Lid 11
+    ibwarn: [6548] mad_rpc: data offs 64 sz 64
+    mad data
+    0000 0000 0000 0001 0000 0001 0000 0001
+    0000 0000 0000 0000 0000 0000 0000 0000
+    0000 0000 0000 0000 0000 0000 0000 0000
+    0000 0000 0000 0000 0000 0000 0000 0000
+    # Ext Port info: Lid 11 port 0
+    StateChangeEnable:...............0x00
+    LinkSpeedSupported:..............0x01
+    LinkSpeedEnabled:................0x01
+    LinkSpeedActive:.................0x01
+
+Signed-off-by: Jack Morgenstein <jackm@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Acked-by: Ira Weiny <weiny2@llnl.gov>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/android/binder.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/mlx4/mad.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -36,6 +36,7 @@
+--- a/drivers/infiniband/hw/mlx4/mad.c
++++ b/drivers/infiniband/hw/mlx4/mad.c
+@@ -252,12 +252,9 @@ int mlx4_ib_process_mad(struct ib_device
+ 			return IB_MAD_RESULT_SUCCESS;
  
- static DEFINE_MUTEX(binder_lock);
- static DEFINE_MUTEX(binder_deferred_lock);
-+static DEFINE_MUTEX(binder_mmap_lock);
- 
- static HLIST_HEAD(binder_procs);
- static HLIST_HEAD(binder_deferred_list);
-@@ -614,6 +615,11 @@ static int binder_update_page_range(stru
- 	if (mm) {
- 		down_write(&mm->mmap_sem);
- 		vma = proc->vma;
-+		if (vma && mm != vma->vm_mm) {
-+			pr_err("binder: %d: vma mm and task mm mismatch\n",
-+				proc->pid);
-+			vma = NULL;
-+		}
- 	}
- 
- 	if (allocate == 0)
-@@ -2784,6 +2790,7 @@ static int binder_mmap(struct file *filp
- 	}
- 	vma->vm_flags = (vma->vm_flags | VM_DONTCOPY) & ~VM_MAYWRITE;
- 
-+	mutex_lock(&binder_mmap_lock);
- 	if (proc->buffer) {
- 		ret = -EBUSY;
- 		failure_string = "already mapped";
-@@ -2798,6 +2805,7 @@ static int binder_mmap(struct file *filp
- 	}
- 	proc->buffer = area->addr;
- 	proc->user_buffer_offset = vma->vm_start - (uintptr_t)proc->buffer;
-+	mutex_unlock(&binder_mmap_lock);
- 
- #ifdef CONFIG_CPU_CACHE_VIPT
- 	if (cache_is_vipt_aliasing()) {
-@@ -2830,7 +2838,7 @@ static int binder_mmap(struct file *filp
- 	binder_insert_free_buffer(proc, buffer);
- 	proc->free_async_space = proc->buffer_size / 2;
- 	barrier();
--	proc->files = get_files_struct(current);
-+	proc->files = get_files_struct(proc->tsk);
- 	proc->vma = vma;
- 
- 	/*printk(KERN_INFO "binder_mmap: %d %lx-%lx maps %p\n",
-@@ -2841,10 +2849,12 @@ err_alloc_small_buf_failed:
- 	kfree(proc->pages);
- 	proc->pages = NULL;
- err_alloc_pages_failed:
-+	mutex_lock(&binder_mmap_lock);
- 	vfree(proc->buffer);
- 	proc->buffer = NULL;
- err_get_vm_area_failed:
- err_already_mapped:
-+	mutex_unlock(&binder_mmap_lock);
- err_bad_arg:
- 	printk(KERN_ERR "binder_mmap: %d %lx-%lx %s failed %d\n",
- 	       proc->pid, vma->vm_start, vma->vm_end, failure_string, ret);
+ 		/*
+-		 * Don't process SMInfo queries or vendor-specific
+-		 * MADs -- the SMA can't handle them.
++		 * Don't process SMInfo queries -- the SMA can't handle them.
+ 		 */
+-		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO ||
+-		    ((in_mad->mad_hdr.attr_id & IB_SMP_ATTR_VENDOR_MASK) ==
+-		     IB_SMP_ATTR_VENDOR_MASK))
++		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO)
+ 			return IB_MAD_RESULT_SUCCESS;
+ 	} else if (in_mad->mad_hdr.mgmt_class == IB_MGMT_CLASS_PERF_MGMT ||
+ 		   in_mad->mad_hdr.mgmt_class == MLX4_IB_VENDOR_CLASS1   ||
 
 
