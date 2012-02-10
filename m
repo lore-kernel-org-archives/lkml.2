@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760928Ab2BJXLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:11:51 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	id S1760939Ab2BJXMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:12:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640Ab2BJWmm (ORCPT
+	with ESMTP id S1758608Ab2BJWml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:42 -0500
+	Fri, 10 Feb 2012 17:42:41 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222950.358830765@clark.kroah.org>
+Message-Id: <20120210222947.909830591@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:19 -0800
+Date: Fri, 10 Feb 2012 14:29:51 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 60/86] ASoC: wm8994: Fix typo in VMID ramp setting
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>
+Subject: [patch 32/86] drm/nouveau/gem: fix fence_sync race / oops
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +25,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit f647e1526fd6c7c8ab720781c40d11e11f930e93 upstream.
+commit 525895ba388c949aa906f26e3ec5cb1ab041f56b upstream.
 
-The VMID ramp rate is supposed to be 0x3, not 11b. Fix that.
+Due to a race it was possible for a fence to be destroyed while another
+thread was trying to synchronise with it.  If this happened in the fallback
+non-semaphore path, it lead to the following oops due to fence->channel
+being NULL.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+BUG: unable to handle kernel NULL pointer dereference at   (null)
+IP: [<fa9632ce>] nouveau_fence_update+0xe/0xe0 [nouveau]
+*pde = a649c067
+SMP
+Modules linked in: fuse nouveau(O) ttm(O) drm_kms_helper(O) drm(O) mxm_wmi video wmi netconsole configfs lockd bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel snd_hda_cobinfmt_misc uinput ata_generic pata_acpi pata_aet2c_algo_bit i2c_core [last unloaded: wmi]
+
+Pid: 2255, comm: gnome-shell Tainted: G           O 3.2.0-0.rc5.git0.1.fc17.i686 #1 System manufacturer System Product Name/M2A-VM
+EIP: 0060:[<fa9632ce>] EFLAGS: 00010296 CPU: 1
+EIP is at nouveau_fence_update+0xe/0xe0 [nouveau]
+EAX: 00000000 EBX: ddfc6dd0 ECX: dd111580 EDX: 00000000
+ESI: 00003e80 EDI: dd111580 EBP: dd121d00 ESP: dd121ce8
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process gnome-shell (pid: 2255, ti=dd120000 task=dd111580 task.ti=dd120000)
+Stack:
+ 7dc86c76 00000000 00003e80 ddfc6dd0 00003e80 dd111580 dd121d0c fa96371f
+ 00000000 dd121d3c fa963773 dd111580 01000246 000ec53d 00000000 ddfc6dd0
+ 00001f40 00000000 ddfc6dd0 00000010 dc7df840 dd121d6c fa9639a0 00000000
+Call Trace:
+ [<fa96371f>] __nouveau_fence_signalled+0x1f/0x30 [nouveau]
+ [<fa963773>] __nouveau_fence_wait+0x43/0xd0 [nouveau]
+ [<fa9639a0>] nouveau_fence_sync+0x1a0/0x1c0 [nouveau]
+ [<fa964046>] validate_list+0x176/0x300 [nouveau]
+ [<f7d9c9c0>] ? ttm_bo_mem_put+0x30/0x30 [ttm]
+ [<fa964b8a>] nouveau_gem_ioctl_pushbuf+0x48a/0xfd0 [nouveau]
+ [<c0406481>] ? die+0x31/0x80
+ [<f7c93d98>] drm_ioctl+0x388/0x490 [drm]
+ [<c0406481>] ? die+0x31/0x80
+ [<fa964700>] ? nouveau_gem_ioctl_new+0x150/0x150 [nouveau]
+ [<c0635c7b>] ? file_has_perm+0xcb/0xe0
+ [<f7c93a10>] ? drm_copy_field+0x80/0x80 [drm]
+ [<c0564f56>] do_vfs_ioctl+0x86/0x5b0
+ [<c0406481>] ? die+0x31/0x80
+ [<c0635f22>] ? selinux_file_ioctl+0x62/0x130
+ [<c0554f30>] ? fget_light+0x30/0x340
+ [<c05654ef>] sys_ioctl+0x6f/0x80
+ [<c099e3a4>] syscall_call+0x7/0xb
+ [<c0406481>] ? die+0x31/0x80
+ [<c0406481>] ? die+0x31/0x80
+
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8994.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_gem.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -744,7 +744,7 @@ static void vmid_reference(struct snd_so
- 				    WM8994_VMID_RAMP_MASK,
- 				    WM8994_STARTUP_BIAS_ENA |
- 				    WM8994_VMID_BUF_ENA |
--				    (0x11 << WM8994_VMID_RAMP_SHIFT));
-+				    (0x3 << WM8994_VMID_RAMP_SHIFT));
+--- a/drivers/gpu/drm/nouveau/nouveau_gem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+@@ -380,6 +380,25 @@ retry:
+ }
  
- 		/* Main bias enable, VMID=2x40k */
- 		snd_soc_update_bits(codec, WM8994_POWER_MANAGEMENT_1,
+ static int
++validate_sync(struct nouveau_channel *chan, struct nouveau_bo *nvbo)
++{
++	struct nouveau_fence *fence = NULL;
++	int ret = 0;
++
++	spin_lock(&nvbo->bo.bdev->fence_lock);
++	if (nvbo->bo.sync_obj)
++		fence = nouveau_fence_ref(nvbo->bo.sync_obj);
++	spin_unlock(&nvbo->bo.bdev->fence_lock);
++
++	if (fence) {
++		ret = nouveau_fence_sync(fence, chan);
++		nouveau_fence_unref(&fence);
++	}
++
++	return ret;
++}
++
++static int
+ validate_list(struct nouveau_channel *chan, struct list_head *list,
+ 	      struct drm_nouveau_gem_pushbuf_bo *pbbo, uint64_t user_pbbo_ptr)
+ {
+@@ -393,7 +412,7 @@ validate_list(struct nouveau_channel *ch
+ 	list_for_each_entry(nvbo, list, entry) {
+ 		struct drm_nouveau_gem_pushbuf_bo *b = &pbbo[nvbo->pbbo_index];
+ 
+-		ret = nouveau_fence_sync(nvbo->bo.sync_obj, chan);
++		ret = validate_sync(chan, nvbo);
+ 		if (unlikely(ret)) {
+ 			NV_ERROR(dev, "fail pre-validate sync\n");
+ 			return ret;
+@@ -416,7 +435,7 @@ validate_list(struct nouveau_channel *ch
+ 			return ret;
+ 		}
+ 
+-		ret = nouveau_fence_sync(nvbo->bo.sync_obj, chan);
++		ret = validate_sync(chan, nvbo);
+ 		if (unlikely(ret)) {
+ 			NV_ERROR(dev, "fail post-validate sync\n");
+ 			return ret;
 
 
