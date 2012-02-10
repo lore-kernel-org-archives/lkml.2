@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab2BJIRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 03:17:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758462Ab2BJIR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 03:17:29 -0500
-Message-ID: <4F34D292.4080404@redhat.com>
-Date: Fri, 10 Feb 2012 09:17:22 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1758485Ab2BJIsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 03:48:52 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54484 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab2BJIsu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 03:48:50 -0500
 MIME-Version: 1.0
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Doug Nelson <doug.nelson@intel.com>
-Subject: Re: scsi_id: sending ioctl 2285 to a partition
-References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com> <20120209210039.GB14342@linux.intel.com>
-In-Reply-To: <20120209210039.GB14342@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com>
+References: <4F315113.5010804@kernel.dk>
+	<CA+55aFxcjE4FsUVoarc+8OTi4OkqtgBmHq500=qaCeTqqWnqoA@mail.gmail.com>
+	<20120207164735.GH21292@google.com>
+	<CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
+	<CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
+	<20120208162925.GA19392@google.com>
+	<CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
+	<20120209175948.GE19392@google.com>
+	<CA+55aFzVmb_DfPPDyeON9X2KAii79g=NszPi+k9jrNLdQS7+4g@mail.gmail.com>
+	<20120209192431.GF19392@google.com>
+	<20120209234844.GG19392@google.com>
+	<CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com>
+Date: Fri, 10 Feb 2012 16:48:49 +0800
+X-Google-Sender-Auth: N83mqzb9XIe8pdqL2x-Ou6YvJh0
+Message-ID: <CANejiEVBd6eu8LwmhbMvQqMW4LqUh6F-5psyW0dVYU06WEJqBQ@mail.gmail.com>
+Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
+From: Shaohua Li <shli@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 10:00 PM, Matthew Wilcox wrote:
-> On Thu, Feb 09, 2012 at 12:42:00PM -0800, Linus Torvalds wrote:
->> On Thu, Feb 9, 2012 at 12:29 PM, Matthew Wilcox<willy@linux.intel.com>  wrote:
->>>
->>> Commit 0bfc96cb77 adds this printk that triggers tens of thousands of
->>> times during a run of "a well-known database benchmark".  0x2285 is SG_IO.
->>> I'm not sure why scsi_id feels that it needs to repeatedly send a SCSI
->>> INQUIRY to a partition, but there we are.
+2012/2/10 Shaohua Li <shli@kernel.org>:
+> 2012/2/10 Tejun Heo <tj@kernel.org>:
+>> Hello, Shaohua.
 >>
->> So is it doing this as root (in which case we end up allowing it) or
->> as a normal user (in which case we end up disallowing it)?
->
-> I'm pretty sure it's doing it as root ... it'll be run by udev, after all.
-
-What does the rule look like?  Here it is like this:
-
-# scsi devices
-KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
-IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
-ENV{ID_BUS}="scsi"
-
-which should exclude partitions, and indeed I don't see any such 
-message.  I also have this rule:
-
-# for partitions import parent information
-ENV{DEVTYPE}=="partition", IMPORT{parent}="ID_*"
-
-which makes it clear that udev does not need to send INQUIRY to the 
-partition.
-
->> And does it all work well apart from the printk? Because the printk
->> itself is scheduled to be removed, it's only there to hear about users
->> that may be doing crazy things that got disallowed by the patches in
->> question?
->
-> If it is being run as root, then the printk is pointless, right?
-
-At the time the printk is removed, access also will be disallowed to root.
-
-Paolo
+>> Can you please test the following one?  It's probably the simplest
+>> version w/o RCU and wq deferring.  RCUfying isn't too bad but I'm
+>> still a bit hesitant because RCU coverage needs to be extended to
+>> request_queue via conditional synchronize_rcu() in queue exit path
+>> (can't enforce delayed RCU free on request_queues and unconditional
+>> synchronize_rcu() may cause excessive delay during boot for certain
+>> configurations).  It now can be done in the block core layer proper so
+>> it shouldn't be as bad tho.  If this too flops, I'll get to that.
+> doesn't work.
+I added trace in the schedule_work code path of put_io_context, which
+runs very rare. So it's not lock contention for sure.
+Sounds the only difference between the good/bad cases is the good
+case runs with rcu_lock_read/rcu_read_unlock. I also checked slab
+info, the cfq related slab doesn't use too many memory, unlikely
+because rcu latency uses too many memory.
