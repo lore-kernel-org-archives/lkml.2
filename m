@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab2BJT2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 14:28:49 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62955 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab2BJT2r convert rfc822-to-8bit (ORCPT
+	id S1760001Ab2BJT3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 14:29:10 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60877 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab2BJT3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 14:28:47 -0500
+	Fri, 10 Feb 2012 14:29:08 -0500
+Date: Fri, 10 Feb 2012 17:29:01 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: bisected: 'perf top' causing soft lockups under Xen
+Message-ID: <20120210192901.GK2526@infradead.org>
+References: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
+ <1328894901.25989.20.camel@laptop>
+ <CAKbGBLi268_o25h31SEdt=+QfzkQc+WT_oz9=hnQ--hmgJF8bQ@mail.gmail.com>
+ <CAKbGBLgj-k7=Oqy8JD1Dcuj_YRjP3H_7nV9a4Q8fCaMmyA5LTA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <D35F212C-0C17-43CE-885D-62C6DF58E2C2@dilger.ca>
-References: <92291682-5422-4AE2-9608-97775603E7FD@tuxera.com>
- <20120208001519.501b6fea@pyramind.ukuu.org.uk> <673AFC57-2B73-49AC-962E-CAB1DE775B2C@tuxera.com>
- <D35F212C-0C17-43CE-885D-62C6DF58E2C2@dilger.ca>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 10 Feb 2012 11:28:27 -0800
-X-Google-Sender-Auth: VM2zWB5Q1P5Dd6kfco74SudB0Lg
-Message-ID: <CA+55aFyBAiZ3khqQiSU0OBafMABsAzdU5DLzZvaM_Et52Wte5w@mail.gmail.com>
-Subject: Re: Direct i/o changes break all non-GPL file systems
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Anton Altaparmakov <anton@tuxera.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Szabolcs Szakacsits <szaka@tuxera.com>,
-        =?ISO-8859-1?Q?Janne_Kalliom=E4ki?= <janne@tuxera.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKbGBLgj-k7=Oqy8JD1Dcuj_YRjP3H_7nV9a4Q8fCaMmyA5LTA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 7, 2012 at 5:51 PM, Andreas Dilger <adilger@dilger.ca> wrote:
->
-> This doesn't affect me directly, since Lustre is itself a GPL filesystem,
-> but it does seem a bit harsh for such a minor amount of functionality.
+Em Fri, Feb 10, 2012 at 11:27:23AM -0800, Steven Noonan escreveu:
+> > [  160.172856] iwlwifi 0000:02:00.0: L1 Enabled; Disabling L0S
+> > [  160.172984] iwlwifi 0000:02:00.0: Radio type=0x1-0x2-0x0
+> 
+> It actually gets even more interesting. Once I did 'perf test' under
+> Xen, and I waited for it to finish, perf suddenly works fine. I can
+> re-run 'perf test -v 3' with no hangs, and can now run 'perf top' with
+> no issue. Bizarre.
 
-It also wasn't documented in the commit or apparently even intentional.
+Heck, I keep wishing people use perf test more often to figure out bugs
+sooner, but this side effect was surprising! ;-)
 
-> Looking at inode_dio_wait(), there isn't anything in there that couldn't
-> be implemented without using that GPL-only symbol export.  Both inode_dio_wait()
-> and __inode_dio_wait() use only functions that are themselves EXPORT_SYMBOL()
-> (i.e. not GPL-only) and locally accessible structures (inode->i_dio_count
-> and inode->i_state), so I don't see any benefit or reason in making
-> inode_dio_wait() itself GPL.
-
-Yes. I suspect we should just remove the _GPL part. Christoph, Al?
-
-                      Linus
+- Arnaldo
