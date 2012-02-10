@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab2BJFo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:44:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65479 "EHLO mx1.redhat.com"
+	id S932285Ab2BJFom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:44:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15582 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759083Ab2BJFo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:44:26 -0500
+	id S932225Ab2BJFoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:44:39 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Noah Watkins <noahwatkins@gmail.com>, NeilBrown <neilb@suse.de>,
         devel@driverdev.osuosl.org
-Subject: [PATCH 23/60] rtl8192u: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:44 +0800
-Message-Id: <1328852421-19678-24-git-send-email-amwang@redhat.com>
+Subject: [PATCH 24/60] zram: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:45 +0800
+Message-Id: <1328852421-19678-25-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,188 +26,301 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/staging/rtl8192u/ieee80211/cipher.c      |    8 ++++----
- drivers/staging/rtl8192u/ieee80211/digest.c      |    8 ++++----
- drivers/staging/rtl8192u/ieee80211/internal.h    |   17 -----------------
- drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 --------------------
- drivers/staging/rtl8192u/ieee80211/scatterwalk.c |   19 +++++--------------
- 5 files changed, 13 insertions(+), 59 deletions(-)
- delete mode 100644 drivers/staging/rtl8192u/ieee80211/kmap_types.h
+ drivers/staging/zram/xvmalloc.c |   39 ++++++++++++++++-----------------
+ drivers/staging/zram/zram_drv.c |   44 +++++++++++++++++++-------------------
+ 2 files changed, 41 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/cipher.c b/drivers/staging/rtl8192u/ieee80211/cipher.c
-index 69dcc31..d47345c 100644
---- a/drivers/staging/rtl8192u/ieee80211/cipher.c
-+++ b/drivers/staging/rtl8192u/ieee80211/cipher.c
-@@ -71,8 +71,8 @@ static int crypt(struct crypto_tfm *tfm,
- 		u8 *src_p, *dst_p;
- 		int in_place;
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index 1f9c508..93ba8e9 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -56,17 +56,17 @@ static void clear_flag(struct block_header *block, enum blockflags flag)
+  * This is called from xv_malloc/xv_free path, so it
+  * needs to be fast.
+  */
+-static void *get_ptr_atomic(struct page *page, u16 offset, enum km_type type)
++static void *get_ptr_atomic(struct page *page, u16 offset)
+ {
+ 	unsigned char *base;
  
--		scatterwalk_map(&walk_in, 0);
--		scatterwalk_map(&walk_out, 1);
-+		scatterwalk_map(&walk_in);
-+		scatterwalk_map(&walk_out);
- 		src_p = scatterwalk_whichbuf(&walk_in, bsize, tmp_src);
- 		dst_p = scatterwalk_whichbuf(&walk_out, bsize, tmp_dst);
- 		in_place = scatterwalk_samebuf(&walk_in, &walk_out,
-@@ -84,10 +84,10 @@ static int crypt(struct crypto_tfm *tfm,
+-	base = kmap_atomic(page, type);
++	base = kmap_atomic(page);
+ 	return base + offset;
+ }
  
- 		prfn(tfm, dst_p, src_p, crfn, enc, info, in_place);
+-static void put_ptr_atomic(void *ptr, enum km_type type)
++static void put_ptr_atomic(void *ptr)
+ {
+-	kunmap_atomic(ptr, type);
++	kunmap_atomic(ptr);
+ }
  
--		scatterwalk_done(&walk_in, 0, nbytes);
-+		scatterwalk_done(&walk_in, nbytes);
+ static u32 get_blockprev(struct block_header *block)
+@@ -202,10 +202,10 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
  
- 		scatterwalk_copychunks(dst_p, &walk_out, bsize, 1);
--		scatterwalk_done(&walk_out, 1, nbytes);
-+		scatterwalk_done(&walk_out, nbytes);
- 
- 		if (!nbytes)
- 			return 0;
-diff --git a/drivers/staging/rtl8192u/ieee80211/digest.c b/drivers/staging/rtl8192u/ieee80211/digest.c
-index 301ed51..05e7497 100644
---- a/drivers/staging/rtl8192u/ieee80211/digest.c
-+++ b/drivers/staging/rtl8192u/ieee80211/digest.c
-@@ -39,12 +39,12 @@ static void update(struct crypto_tfm *tfm,
- 			unsigned int bytes_from_page = min(l, ((unsigned int)
- 							   (PAGE_SIZE)) -
- 							   offset);
--			char *p = crypto_kmap(pg, 0) + offset;
-+			char *p = kmap_atomic(pg) + offset;
- 
- 			tfm->__crt_alg->cra_digest.dia_update
- 					(crypto_tfm_ctx(tfm), p,
- 					 bytes_from_page);
--			crypto_kunmap(p, 0);
-+			kunmap_atomic(p);
- 			crypto_yield(tfm);
- 			offset = 0;
- 			pg++;
-@@ -75,10 +75,10 @@ static void digest(struct crypto_tfm *tfm,
- 	tfm->crt_digest.dit_init(tfm);
- 
- 	for (i = 0; i < nsg; i++) {
--		char *p = crypto_kmap(sg[i].page, 0) + sg[i].offset;
-+		char *p = kmap_atomic(sg[i].page) + sg[i].offset;
- 		tfm->__crt_alg->cra_digest.dia_update(crypto_tfm_ctx(tfm),
- 						      p, sg[i].length);
--		crypto_kunmap(p, 0);
-+		kunmap_atomic(p);
- 		crypto_yield(tfm);
+ 	if (block->link.next_page) {
+ 		nextblock = get_ptr_atomic(block->link.next_page,
+-					block->link.next_offset, KM_USER1);
++					block->link.next_offset);
+ 		nextblock->link.prev_page = page;
+ 		nextblock->link.prev_offset = offset;
+-		put_ptr_atomic(nextblock, KM_USER1);
++		put_ptr_atomic(nextblock);
+ 		/* If there was a next page then the free bits are set. */
+ 		return;
  	}
- 	crypto_digest_final(tfm, out);
-diff --git a/drivers/staging/rtl8192u/ieee80211/internal.h b/drivers/staging/rtl8192u/ieee80211/internal.h
-index a7c096e..bebe13a 100644
---- a/drivers/staging/rtl8192u/ieee80211/internal.h
-+++ b/drivers/staging/rtl8192u/ieee80211/internal.h
-@@ -23,23 +23,6 @@
- #include <asm/kmap_types.h>
+@@ -225,18 +225,18 @@ static void remove_block(struct xv_pool *pool, struct page *page, u32 offset,
  
+ 	if (block->link.prev_page) {
+ 		tmpblock = get_ptr_atomic(block->link.prev_page,
+-				block->link.prev_offset, KM_USER1);
++				block->link.prev_offset);
+ 		tmpblock->link.next_page = block->link.next_page;
+ 		tmpblock->link.next_offset = block->link.next_offset;
+-		put_ptr_atomic(tmpblock, KM_USER1);
++		put_ptr_atomic(tmpblock);
+ 	}
  
--extern enum km_type crypto_km_types[];
--
--static inline enum km_type crypto_kmap_type(int out)
--{
--	return crypto_km_types[(in_softirq() ? 2 : 0) + out];
--}
--
--static inline void *crypto_kmap(struct page *page, int out)
--{
--	return kmap_atomic(page, crypto_kmap_type(out));
--}
--
--static inline void crypto_kunmap(void *vaddr, int out)
--{
--	kunmap_atomic(vaddr, crypto_kmap_type(out));
--}
--
- static inline void crypto_yield(struct crypto_tfm *tfm)
- {
- 	if (!in_softirq())
-diff --git a/drivers/staging/rtl8192u/ieee80211/kmap_types.h b/drivers/staging/rtl8192u/ieee80211/kmap_types.h
-deleted file mode 100644
-index de67bb0..0000000
---- a/drivers/staging/rtl8192u/ieee80211/kmap_types.h
-+++ /dev/null
-@@ -1,20 +0,0 @@
--#ifndef __KMAP_TYPES_H
--
--#define __KMAP_TYPES_H
--
--
--enum km_type {
--	KM_BOUNCE_READ,
--	KM_SKB_SUNRPC_DATA,
--	KM_SKB_DATA_SOFTIRQ,
--	KM_USER0,
--	KM_USER1,
--	KM_BH_IRQ,
--	KM_SOFTIRQ0,
--	KM_SOFTIRQ1,
--	KM_TYPE_NR
--};
--
--#define _ASM_KMAP_TYPES_H
--
--#endif
-diff --git a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
-index 3543a61..8b73f6c 100644
---- a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
-+++ b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
-@@ -13,8 +13,6 @@
-  * any later version.
-  *
-  */
--#include "kmap_types.h"
--
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/pagemap.h>
-@@ -23,13 +21,6 @@
- #include "internal.h"
- #include "scatterwalk.h"
+ 	if (block->link.next_page) {
+ 		tmpblock = get_ptr_atomic(block->link.next_page,
+-				block->link.next_offset, KM_USER1);
++				block->link.next_offset);
+ 		tmpblock->link.prev_page = block->link.prev_page;
+ 		tmpblock->link.prev_offset = block->link.prev_offset;
+-		put_ptr_atomic(tmpblock, KM_USER1);
++		put_ptr_atomic(tmpblock);
+ 	}
  
--enum km_type crypto_km_types[] = {
--	KM_USER0,
--	KM_USER1,
--	KM_SOFTIRQ0,
--	KM_SOFTIRQ1,
--};
--
- void *scatterwalk_whichbuf(struct scatter_walk *walk, unsigned int nbytes, void *scratch)
- {
- 	if (nbytes <= walk->len_this_page &&
-@@ -62,9 +53,9 @@ void scatterwalk_start(struct scatter_walk *walk, struct scatterlist *sg)
- 	walk->offset = sg->offset;
+ 	/* Is this block is at the head of the freelist? */
+@@ -249,11 +249,10 @@ static void remove_block(struct xv_pool *pool, struct page *page, u32 offset,
+ 		if (pool->freelist[slindex].page) {
+ 			struct block_header *tmpblock;
+ 			tmpblock = get_ptr_atomic(pool->freelist[slindex].page,
+-					pool->freelist[slindex].offset,
+-					KM_USER1);
++					pool->freelist[slindex].offset);
+ 			tmpblock->link.prev_page = NULL;
+ 			tmpblock->link.prev_offset = 0;
+-			put_ptr_atomic(tmpblock, KM_USER1);
++			put_ptr_atomic(tmpblock);
+ 		} else {
+ 			/* This freelist bucket is empty */
+ 			__clear_bit(slindex % BITS_PER_LONG,
+@@ -284,7 +283,7 @@ static int grow_pool(struct xv_pool *pool, gfp_t flags)
+ 	stat_inc(&pool->total_pages);
+ 
+ 	spin_lock(&pool->lock);
+-	block = get_ptr_atomic(page, 0, KM_USER0);
++	block = get_ptr_atomic(page, 0);
+ 
+ 	block->size = PAGE_SIZE - XV_ALIGN;
+ 	set_flag(block, BLOCK_FREE);
+@@ -293,7 +292,7 @@ static int grow_pool(struct xv_pool *pool, gfp_t flags)
+ 
+ 	insert_block(pool, page, 0, block);
+ 
+-	put_ptr_atomic(block, KM_USER0);
++	put_ptr_atomic(block);
+ 	spin_unlock(&pool->lock);
+ 
+ 	return 0;
+@@ -375,7 +374,7 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
+ 		return -ENOMEM;
+ 	}
+ 
+-	block = get_ptr_atomic(*page, *offset, KM_USER0);
++	block = get_ptr_atomic(*page, *offset);
+ 
+ 	remove_block(pool, *page, *offset, block, index);
+ 
+@@ -405,7 +404,7 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
+ 	block->size = origsize;
+ 	clear_flag(block, BLOCK_FREE);
+ 
+-	put_ptr_atomic(block, KM_USER0);
++	put_ptr_atomic(block);
+ 	spin_unlock(&pool->lock);
+ 
+ 	*offset += XV_ALIGN;
+@@ -426,7 +425,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
+ 
+ 	spin_lock(&pool->lock);
+ 
+-	page_start = get_ptr_atomic(page, 0, KM_USER0);
++	page_start = get_ptr_atomic(page, 0);
+ 	block = (struct block_header *)((char *)page_start + offset);
+ 
+ 	/* Catch double free bugs */
+@@ -468,7 +467,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
+ 
+ 	/* No used objects in this page. Free it. */
+ 	if (block->size == PAGE_SIZE - XV_ALIGN) {
+-		put_ptr_atomic(page_start, KM_USER0);
++		put_ptr_atomic(page_start);
+ 		spin_unlock(&pool->lock);
+ 
+ 		__free_page(page);
+@@ -486,7 +485,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
+ 		set_blockprev(tmpblock, offset);
+ 	}
+ 
+-	put_ptr_atomic(page_start, KM_USER0);
++	put_ptr_atomic(page_start);
+ 	spin_unlock(&pool->lock);
  }
+ EXPORT_SYMBOL_GPL(xv_free);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 2a2a92d..1cf68ad 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -161,9 +161,9 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 		goto out;
+ 	}
  
--void scatterwalk_map(struct scatter_walk *walk, int out)
-+void scatterwalk_map(struct scatter_walk *walk)
- {
--	walk->data = crypto_kmap(walk->page, out) + walk->offset;
-+	walk->data = kmap_atomic(walk->page) + walk->offset;
+-	obj = kmap_atomic(page, KM_USER0) + offset;
++	obj = kmap_atomic(page) + offset;
+ 	clen = xv_get_object_size(obj) - sizeof(struct zobj_header);
+-	kunmap_atomic(obj, KM_USER0);
++	kunmap_atomic(obj);
+ 
+ 	xv_free(zram->mem_pool, page, offset);
+ 	if (clen <= PAGE_SIZE / 2)
+@@ -182,9 +182,9 @@ static void handle_zero_page(struct bio_vec *bvec)
+ 	struct page *page = bvec->bv_page;
+ 	void *user_mem;
+ 
+-	user_mem = kmap_atomic(page, KM_USER0);
++	user_mem = kmap_atomic(page);
+ 	memset(user_mem + bvec->bv_offset, 0, bvec->bv_len);
+-	kunmap_atomic(user_mem, KM_USER0);
++	kunmap_atomic(user_mem);
+ 
+ 	flush_dcache_page(page);
  }
+@@ -195,12 +195,12 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
+ 	struct page *page = bvec->bv_page;
+ 	unsigned char *user_mem, *cmem;
  
- static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
-@@ -103,7 +94,7 @@ void scatterwalk_done(struct scatter_walk *walk, int out, int more)
-  * has been verified as multiple of the block size.
-  */
- int scatterwalk_copychunks(void *buf, struct scatter_walk *walk,
--			   size_t nbytes, int out)
-+			   size_t nbytes)
- {
- 	if (buf != walk->data) {
- 		while (nbytes > walk->len_this_page) {
-@@ -111,9 +102,9 @@ int scatterwalk_copychunks(void *buf, struct scatter_walk *walk,
- 			buf += walk->len_this_page;
- 			nbytes -= walk->len_this_page;
+-	user_mem = kmap_atomic(page, KM_USER0);
+-	cmem = kmap_atomic(zram->table[index].page, KM_USER1);
++	user_mem = kmap_atomic(page);
++	cmem = kmap_atomic(zram->table[index].page);
  
--			crypto_kunmap(walk->data, out);
-+			kunmap_atomic(walk->data);
- 			scatterwalk_pagedone(walk, out, 1);
--			scatterwalk_map(walk, out);
-+			scatterwalk_map(walk);
+ 	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
+-	kunmap_atomic(cmem, KM_USER1);
+-	kunmap_atomic(user_mem, KM_USER0);
++	kunmap_atomic(cmem);
++	kunmap_atomic(user_mem);
+ 
+ 	flush_dcache_page(page);
+ }
+@@ -249,12 +249,12 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
  		}
+ 	}
  
- 		memcpy_dir(buf, walk->data, nbytes, out);
+-	user_mem = kmap_atomic(page, KM_USER0);
++	user_mem = kmap_atomic(page);
+ 	if (!is_partial_io(bvec))
+ 		uncmem = user_mem;
+ 	clen = PAGE_SIZE;
+ 
+-	cmem = kmap_atomic(zram->table[index].page, KM_USER1) +
++	cmem = kmap_atomic(zram->table[index].page) +
+ 		zram->table[index].offset;
+ 
+ 	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
+@@ -267,8 +267,8 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		kfree(uncmem);
+ 	}
+ 
+-	kunmap_atomic(cmem, KM_USER1);
+-	kunmap_atomic(user_mem, KM_USER0);
++	kunmap_atomic(cmem);
++	kunmap_atomic(user_mem);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -295,20 +295,20 @@ static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
+ 		return 0;
+ 	}
+ 
+-	cmem = kmap_atomic(zram->table[index].page, KM_USER0) +
++	cmem = kmap_atomic(zram->table[index].page) +
+ 		zram->table[index].offset;
+ 
+ 	/* Page is stored uncompressed since it's incompressible */
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+ 		memcpy(mem, cmem, PAGE_SIZE);
+-		kunmap_atomic(cmem, KM_USER0);
++		kunmap_atomic(cmem);
+ 		return 0;
+ 	}
+ 
+ 	ret = lzo1x_decompress_safe(cmem + sizeof(*zheader),
+ 				    xv_get_object_size(cmem) - sizeof(*zheader),
+ 				    mem, &clen);
+-	kunmap_atomic(cmem, KM_USER0);
++	kunmap_atomic(cmem);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -359,7 +359,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	    zram_test_flag(zram, index, ZRAM_ZERO))
+ 		zram_free_page(zram, index);
+ 
+-	user_mem = kmap_atomic(page, KM_USER0);
++	user_mem = kmap_atomic(page);
+ 
+ 	if (is_partial_io(bvec))
+ 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
+@@ -368,7 +368,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		uncmem = user_mem;
+ 
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem, KM_USER0);
++		kunmap_atomic(user_mem);
+ 		if (is_partial_io(bvec))
+ 			kfree(uncmem);
+ 		zram_stat_inc(&zram->stats.pages_zero);
+@@ -380,7 +380,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+ 			       zram->compress_workmem);
+ 
+-	kunmap_atomic(user_mem, KM_USER0);
++	kunmap_atomic(user_mem);
+ 	if (is_partial_io(bvec))
+ 			kfree(uncmem);
+ 
+@@ -408,7 +408,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
+ 		zram_stat_inc(&zram->stats.pages_expand);
+ 		zram->table[index].page = page_store;
+-		src = kmap_atomic(page, KM_USER0);
++		src = kmap_atomic(page);
+ 		goto memstore;
+ 	}
+ 
+@@ -424,7 +424,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ memstore:
+ 	zram->table[index].offset = store_offset;
+ 
+-	cmem = kmap_atomic(zram->table[index].page, KM_USER1) +
++	cmem = kmap_atomic(zram->table[index].page) +
+ 		zram->table[index].offset;
+ 
+ #if 0
+@@ -438,9 +438,9 @@ memstore:
+ 
+ 	memcpy(cmem, src, clen);
+ 
+-	kunmap_atomic(cmem, KM_USER1);
++	kunmap_atomic(cmem);
+ 	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+-		kunmap_atomic(src, KM_USER0);
++		kunmap_atomic(src);
+ 
+ 	/* Update stats */
+ 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
 -- 
 1.7.7.6
 
