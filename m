@@ -1,63 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205Ab2BJVEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 16:04:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50092 "EHLO mx1.redhat.com"
+	id S1760219Ab2BJVF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 16:05:28 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:53184 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758980Ab2BJVEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 16:04:45 -0500
-Date: Fri, 10 Feb 2012 16:04:23 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: WARNING: at arch/x86/kernel/smp.c:119
- native_smp_send_reschedule+0x25/0x43()
-Message-ID: <20120210210423.GJ5650@redhat.com>
-References: <1328751082.5611.6.camel@lappy>
- <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
- <CA+1xoqfYPYi2godgsgmnX7z7GQL+spNmMZhpdGU4UqfYGTB06g@mail.gmail.com>
- <4F34EC35.7010109@linux.vnet.ibm.com>
- <1328900283.25989.45.camel@laptop>
- <1328900633.25989.47.camel@laptop>
- <20120210200250.GG5650@redhat.com>
- <1328905121.25989.52.camel@laptop>
- <20120210203117.GI5650@redhat.com>
- <1328906163.25989.59.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328906163.25989.59.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760158Ab2BJVF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 16:05:27 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        bruce.w.allan@intel.com, joe@perches.com, rusty@rustcorp.com.au
+Subject: [PATCH v3] scripts/coccinelle/misc/boolinit.cocci: semantic patch for bool issues
+Date: Fri, 10 Feb 2012 22:05:18 +0100
+Message-Id: <1328907918-31335-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 09:36:03PM +0100, Peter Zijlstra wrote:
-> On Fri, 2012-02-10 at 15:31 -0500, Don Zickus wrote:
-> > So my second patch which I will eventually post will just skip the WARN_ON
-> > if the system is going down.  Not sure if that is the proper way to address
-> > this problem or change all of the stop_this_cpu code to use a different
-> > bitmask than the cpu_online bitmask (but then you run the risk of a stuck
-> > IPI I guess if the cpu is halted without notifying anyone). 
-> 
-> Yeah, the async hard kill of all cpus is bound to make problems.. what
-> I'm wondering is, why is this in the normal shutdown path and not
-> specific to a hard panic?
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-I didn't write the original code, I just changed it from REBOOT_IRQ to
-NMI and left all the stop_this_cpu stuff alone.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> 
-> Trying to make this work is just not going to be pretty, and in the
-> panic case we really don't care much.
+---
+ERROR's changed to WARNING, except in assignment to non-0/1 case.
 
-Sure.
+ scripts/coccinelle/misc/boolinit.cocci |  178 +++++++++++++++++++++++++++++++++
+ 1 file changed, 178 insertions(+)
 
-Cheers,
-Don
+diff --git a/scripts/coccinelle/misc/boolinit.cocci b/scripts/coccinelle/misc/boolinit.cocci
+new file mode 100644
+index 0000000..b7edfdb
+--- /dev/null
++++ b/scripts/coccinelle/misc/boolinit.cocci
+@@ -0,0 +1,178 @@
++/// Bool initializations should use true and false.  Bool tests don't need
++/// comparisons.  Based on contributions from Joe Perches, Rusty Russell
++/// and Bruce W Allan.
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Options: -include_headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@depends on patch@
++bool t;
++symbol true;
++symbol false;
++@@
++
++(
++- t == true
+++ t
++|
++- true == t
+++ t
++|
++- t != true
+++ !t
++|
++- true != t
+++ !t
++|
++- t == false
+++ !t
++|
++- false == t
+++ !t
++|
++- t != false
+++ t
++|
++- false != t
+++ t
++)
++
++@depends on patch disable is_zero, isnt_zero@
++bool t;
++@@
++
++(
++- t == 1
+++ t
++|
++- t != 1
+++ !t
++|
++- t == 0
+++ !t
++|
++- t != 0
+++ t
++)
++
++@depends on patch@
++bool b;
++@@
++(
++ b =
++- 0
+++ false
++|
++ b =
++- 1
+++ true
++)
++
++// ---------------------------------------------------------------------
++
++@r1 depends on !patch@
++bool t;
++position p;
++@@
++
++(
++* t@p == true
++|
++* true == t@p
++|
++* t@p != true
++|
++* true != t@p
++|
++* t@p == false
++|
++* false == t@p
++|
++* t@p != false
++|
++* false != t@p
++)
++
++@r2 depends on !patch disable is_zero, isnt_zero@
++bool t;
++position p;
++@@
++
++(
++* t@p == 1
++|
++* t@p != 1
++|
++* t@p == 0
++|
++* t@p != 0
++)
++
++@r3 depends on !patch@
++bool b;
++position p1,p2;
++constant c;
++@@
++(
++*b@p1 = 0
++|
++*b@p1 = 1
++|
++*b@p2 = c
++)
++
++@script:python depends on org@
++p << r1.p;
++@@
++
++cocci.print_main("WARNING: Comparison to bool",p)
++
++@script:python depends on org@
++p << r2.p;
++@@
++
++cocci.print_main("WARNING: Comparison of bool to 0/1",p)
++
++@script:python depends on org@
++p1 << r3.p1;
++@@
++
++cocci.print_main("WARNING: Assignment of bool to 0/1",p1)
++
++@script:python depends on org@
++p2 << r3.p2;
++@@
++
++cocci.print_main("ERROR: Assignment of bool to non-0/1 constant",p2)
++
++@script:python depends on report@
++p << r1.p;
++@@
++
++coccilib.report.print_report(p[0],"WARNING: Comparison to bool")
++
++@script:python depends on report@
++p << r2.p;
++@@
++
++coccilib.report.print_report(p[0],"WARNING: Comparison of bool to 0/1")
++
++@script:python depends on report@
++p1 << r3.p1;
++@@
++
++coccilib.report.print_report(p1[0],"WARNING: Assignment of bool to 0/1")
++
++@script:python depends on report@
++p2 << r3.p2;
++@@
++
++coccilib.report.print_report(p2[0],"ERROR: Assignment of bool to non-0/1 constant")
+
