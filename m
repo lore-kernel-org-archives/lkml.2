@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761139Ab2BJXfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:35:13 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27168 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760496Ab2BJXeT (ORCPT
+	id S932588Ab2BJXfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:35:52 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:56280 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab2BJXeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 18:34:19 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,42 +14,140 @@ Cc: Ram Pai <linuxram@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 6/7] PCI: print out suggestion about using pci=realloc
-Date: Fri, 10 Feb 2012 15:33:51 -0800
-Message-Id: <1328916832-6588-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 5/7] PCI: Make pci bridge reallocating enabled/disabled
+Date: Fri, 10 Feb 2012 15:33:50 -0800
+Message-Id: <1328916832-6588-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
 References: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F35A975.006B,ss=1,re=0.000,fgs=0
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F35A973.00B2,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-let user know they could try if pci=realloc could help.
+Let the user could enable and disable with pci=realloc=on or pci=realloc=off
 
--v2: update suggestion text.
+Also
+1. move variable and functions near the place they are used.
+2. change macro to function
+3. change related functions and variable to static and _init
+4. update parameter description accordingly.
 
-Suggested-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+-v2: still honor pci=realloc, and treat it as pci=realloc=on
+     also use enum instead of ...
+-v3: update kernel-paramenters.txt according to Jesse.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 ---
- drivers/pci/setup-bus.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt |    9 +++++++--
+ drivers/pci/pci.c                   |    4 +++-
+ drivers/pci/pci.h                   |    2 +-
+ drivers/pci/setup-bus.c             |   33 ++++++++++++++++++++++++++-------
+ 4 files changed, 37 insertions(+), 11 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 033d4e6..791c7fd 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2109,8 +2109,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 				the default.
+ 				off: Turn ECRC off
+ 				on: Turn ECRC on.
+-		realloc		reallocate PCI resources if allocations done by BIOS
+-				are erroneous.
++		realloc=	Enable/disable reallocating PCI bridge resources
++				if allocations done by BIOS are too small to
++				accommodate resources required by all child
++				devices.
++				off: Turn realloc off
++				on: Turn realloc on
++		realloc		same as realloc=on
+ 
+ 	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+ 			Management.
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 9c89447..09cb1f2 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3744,8 +3744,10 @@ static int __init pci_setup(char *str)
+ 				pci_no_msi();
+ 			} else if (!strcmp(str, "noaer")) {
+ 				pci_no_aer();
++			} else if (!strncmp(str, "realloc=", 8)) {
++				pci_realloc_get_opt(str + 8);
+ 			} else if (!strncmp(str, "realloc", 7)) {
+-				pci_realloc();
++				pci_realloc_get_opt("on");
+ 			} else if (!strcmp(str, "nodomains")) {
+ 				pci_no_domains();
+ 			} else if (!strncmp(str, "cbiosize=", 9)) {
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index aaf7ff8..f862a5a 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -148,7 +148,7 @@ static inline void pci_no_msi(void) { }
+ static inline void pci_msi_init_pci_dev(struct pci_dev *dev) { }
+ #endif
+ 
+-extern void pci_realloc(void);
++void pci_realloc_get_opt(char *);
+ 
+ static inline int pci_no_d1d2(struct pci_dev *dev)
+ {
 diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 22454c5..c73244a 100644
+index 162edfb..22454c5 100644
 --- a/drivers/pci/setup-bus.c
 +++ b/drivers/pci/setup-bus.c
-@@ -1346,6 +1346,9 @@ again:
- 		goto enable_and_dump;
- 
- 	if (tried_times >= pci_try_num) {
-+		if (pci_realloc_enable == enable_not_set)
-+			printk(KERN_INFO "Some PCI device resources are unassigned, try booting with pci=realloc\n");
-+
- 		free_list(&fail_head);
- 		goto enable_and_dump;
+@@ -48,13 +48,6 @@ static void free_list(struct list_head *head)
  	}
+ }
+ 
+-int pci_realloc_enable = 0;
+-#define pci_realloc_enabled() pci_realloc_enable
+-void pci_realloc(void)
+-{
+-	pci_realloc_enable = 1;
+-}
+-
+ /**
+  * add_to_list() - add a new resource tracker to the list
+  * @head:	Head of the list
+@@ -1273,6 +1266,32 @@ static int __init pci_get_max_depth(void)
+ 	return depth;
+ }
+ 
++/*
++ * -1: undefined, will auto detect later
++ *  0: disabled by user
++ *  1: enabled by user
++ *  2: enabled by auto detect
++ */
++enum enable_type {
++	enable_not_set = -1,
++	enable_no_user,
++	enable_no_detected,
++	enable_yes_user,
++	enable_yes_detected,
++};
++
++static enum enable_type pci_realloc_enable __initdata = enable_not_set;
++void __init pci_realloc_get_opt(char *str)
++{
++	if (!strncmp(str, "off", 3))
++		pci_realloc_enable = enable_no_user;
++	else if (!strncmp(str, "on", 2))
++		pci_realloc_enable = enable_yes_user;
++}
++static bool __init pci_realloc_enabled(void)
++{
++	return pci_realloc_enable >= enable_yes_user;
++}
+ 
+ /*
+  * first try will not touch pci bridge res
 -- 
 1.7.7
 
