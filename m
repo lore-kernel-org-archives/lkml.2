@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab2BJWu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:50:29 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51143 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933278Ab2BJWu0 (ORCPT
+	id S933321Ab2BJWuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:50:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55384 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933278Ab2BJWub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:50:26 -0500
+	Fri, 10 Feb 2012 17:50:31 -0500
 MIME-Version: 1.0
-Message-Id: <20120210224851.424806592@clark.kroah.org>
+Message-Id: <20120210224851.711452933@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:47:46 -0800
+Date: Fri, 10 Feb 2012 14:47:49 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chuck Lever <chuck.lever@oracle.com>
-Subject: [07/21] NFSv4: Fix open recovery
+        alan@lxorguk.ukuu.org.uk, Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [10/21] drm/i915: Fix TV Out refresh rate.
 In-Reply-To: <20120210224858.GA30752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
 
-commit b0ed9dbc24f1fd912b2dd08b995153cafc1d5b1c upstream.
+commit 23bd15ec662344dc10e9918fdd0dbc58bc71526d upstream.
 
-NFSv4 open recovery is currently broken: since we do not clear the
-state->flags states before attempting recovery, we end up with the
-'can_open_cached()' function triggering. This again leads to no OPEN call
-being put on the wire.
+TV Out refresh rate was half of the specification for almost all modes.
+Due to this reason pixel clock was so low for some modes causing flickering screen.
 
-Reported-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_tv.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1067,6 +1067,7 @@ static int nfs4_open_recover(struct nfs4
- 	clear_bit(NFS_DELEGATED_STATE, &state->flags);
- 	smp_rmb();
- 	if (state->n_rdwr != 0) {
-+		clear_bit(NFS_O_RDWR_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_READ|FMODE_WRITE, &newstate);
- 		if (ret != 0)
- 			return ret;
-@@ -1074,6 +1075,7 @@ static int nfs4_open_recover(struct nfs4
- 			return -ESTALE;
- 	}
- 	if (state->n_wronly != 0) {
-+		clear_bit(NFS_O_WRONLY_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_WRITE, &newstate);
- 		if (ret != 0)
- 			return ret;
-@@ -1081,6 +1083,7 @@ static int nfs4_open_recover(struct nfs4
- 			return -ESTALE;
- 	}
- 	if (state->n_rdonly != 0) {
-+		clear_bit(NFS_O_RDONLY_STATE, &state->flags);
- 		ret = nfs4_open_recover_helper(opendata, FMODE_READ, &newstate);
- 		if (ret != 0)
- 			return ret;
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -415,7 +415,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name		= "NTSC-M",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 3.580MHz */
+@@ -458,7 +458,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name		= "NTSC-443",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 4.43MHz */
+@@ -500,7 +500,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name		= "NTSC-J",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -543,7 +543,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name		= "PAL-M",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -587,7 +587,7 @@ static const struct tv_mode tv_modes[] =
+ 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
+ 		.name	    = "PAL-N",
+ 		.clock		= 108000,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -632,7 +632,7 @@ static const struct tv_mode tv_modes[] =
+ 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
+ 		.name	    = "PAL",
+ 		.clock		= 108000,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -819,7 +819,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name       = "1080i@50Hz",
+ 		.clock		= 148800,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample     = TV_OVERSAMPLE_2X,
+ 		.component_only = 1,
+ 
+@@ -845,7 +845,7 @@ static const struct tv_mode tv_modes[] =
+ 	{
+ 		.name       = "1080i@60Hz",
+ 		.clock		= 148800,
+-		.refresh	= 30000,
++		.refresh	= 60000,
+ 		.oversample     = TV_OVERSAMPLE_2X,
+ 		.component_only = 1,
+ 
 
 
