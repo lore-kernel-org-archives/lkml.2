@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933227Ab2BJWqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:46:45 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65316 "EHLO
+	id S933156Ab2BJWr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:47:26 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab2BJWpr (ORCPT
+	with ESMTP id S933104Ab2BJWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:47 -0500
+	Fri, 10 Feb 2012 17:45:38 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223444.891483048@clark.kroah.org>
+Message-Id: <20120210223442.927927715@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:57 -0800
+Date: Fri, 10 Feb 2012 14:33:34 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Dave Jones <davej@redhat.com>
-Subject: [patch 53/55] [CPUFREQ] powernow-k8: Avoid Pstate MSR accesses on systems supporting CPB
+        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: [patch 30/55] drm/i915: handle 3rd pipe
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit 201bf0f129e1715a33568d1563d9a75b840ab4d3 upstream.
+commit 07c1e8c1462fa7324de4c36ae9e55da2abd79cee upstream.
 
-Due to CPB we can't directly map SW Pstates to Pstate MSRs. Get rid of
-the paranoia check. (assuming that the ACPI Pstate information is
-correct.)
+We don't need to check 3rd pipe specifically, as it shares PLL with some
+other one.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Signed-off-by: Dave Jones <davej@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41977
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k8.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/i915_suspend.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -926,23 +926,24 @@ static int fill_powernow_table_pstate(st
- 			invalidate_entry(powernow_table, i);
- 			continue;
- 		}
--		rdmsr(MSR_PSTATE_DEF_BASE + index, lo, hi);
--		if (!(hi & HW_PSTATE_VALID_MASK)) {
--			pr_debug("invalid pstate %d, ignoring\n", index);
--			invalidate_entry(powernow_table, i);
--			continue;
--		}
--
--		powernow_table[i].index = index;
--
- 		/* Frequency may be rounded for these */
- 		if ((boot_cpu_data.x86 == 0x10 && boot_cpu_data.x86_model < 10)
- 				 || boot_cpu_data.x86 == 0x11) {
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -34,6 +34,10 @@ static bool i915_pipe_enabled(struct drm
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32	dpll_reg;
+ 
++	/* On IVB, 3rd pipe shares PLL with another one */
++	if (pipe > 1)
++		return false;
 +
-+			rdmsr(MSR_PSTATE_DEF_BASE + index, lo, hi);
-+			if (!(hi & HW_PSTATE_VALID_MASK)) {
-+				pr_debug("invalid pstate %d, ignoring\n", index);
-+				invalidate_entry(powernow_table, i);
-+				continue;
-+			}
-+
- 			powernow_table[i].frequency =
- 				freq_from_fid_did(lo & 0x3f, (lo >> 6) & 7);
- 		} else
- 			powernow_table[i].frequency =
- 				data->acpi_data.states[i].core_frequency * 1000;
-+
-+		powernow_table[i].index = index;
- 	}
- 	return 0;
- }
+ 	if (HAS_PCH_SPLIT(dev))
+ 		dpll_reg = (pipe == PIPE_A) ? _PCH_DPLL_A : _PCH_DPLL_B;
+ 	else
 
 
