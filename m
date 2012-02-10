@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab2BJWoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:44:14 -0500
+	id S1760856Ab2BJXDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:03:19 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932817Ab2BJWoJ (ORCPT
+	with ESMTP id S932896Ab2BJWoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:09 -0500
+	Fri, 10 Feb 2012 17:44:13 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223441.569197739@clark.kroah.org>
+Message-Id: <20120210223441.738916124@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:18 -0800
+Date: Fri, 10 Feb 2012 14:33:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Stefan Thomas <kontrapunktstefan@googlemail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [patch 14/55] firewire: ohci: disable MSI on Ricoh controllers
+        alan@lxorguk.ukuu.org.uk, Jiang Liu <jiang.liu@huawei.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [patch 16/55] kprobes: fix a memory leak in function pre_handler_kretprobe()
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 320cfa6ce0b3dc794fedfa4bae54c0f65077234d upstream.
+commit 55ca6140e9bb307efc97a9301a4f501de02a6fd6 upstream.
 
-The PCIe device
+In function pre_handler_kretprobe(), the allocated kretprobe_instance
+object will get leaked if the entry_handler callback returns non-zero.
+This may cause all the preallocated kretprobe_instance objects exhausted.
 
-    FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd FireWire Host Controller
-    [1180:e832] (prog-if 10 [OHCI])
+This issue can be reproduced by changing
+samples/kprobes/kretprobe_example.c to probe "mutex_unlock".  And the fix
+is straightforward: just put the allocated kretprobe_instance object back
+onto the free_instances list.
 
-is unable to access attached FireWire devices when MSI is enabled but
-works if MSI is disabled.
-http://www.mail-archive.com/alsa-user@lists.sourceforge.net/msg28251.html
-
-Hence add the "disable MSI" quirks flag for this device, or in fact for
-safety and simplicity for all current (R5U230, R5U231, R5U240) and
-future Ricoh PCIe 1394 controllers.
-
-Reported-by: Stefan Thomas <kontrapunktstefan@googlemail.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+[akpm@linux-foundation.org: use raw_spin_lock/unlock]
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/ohci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/kprobes.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -299,7 +299,7 @@ static const struct {
- 		QUIRK_NO_MSI},
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1660,8 +1660,12 @@ static int __kprobes pre_handler_kretpro
+ 		ri->rp = rp;
+ 		ri->task = current;
  
- 	{PCI_VENDOR_ID_RICOH, PCI_ANY_ID, PCI_ANY_ID,
--		QUIRK_CYCLE_TIMER},
-+		QUIRK_CYCLE_TIMER | QUIRK_NO_MSI},
+-		if (rp->entry_handler && rp->entry_handler(ri, regs))
++		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
++			raw_spin_lock_irqsave(&rp->lock, flags);
++			hlist_add_head(&ri->hlist, &rp->free_instances);
++			raw_spin_unlock_irqrestore(&rp->lock, flags);
+ 			return 0;
++		}
  
- 	{PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_TSB12LV22, PCI_ANY_ID,
- 		QUIRK_CYCLE_TIMER | QUIRK_RESET_PACKET | QUIRK_NO_1394A},
+ 		arch_prepare_kretprobe(ri, regs);
+ 
 
 
