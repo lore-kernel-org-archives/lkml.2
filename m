@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab2BJRFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:05:35 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:53852
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757857Ab2BJRFW (ORCPT
+	id S1758255Ab2BJRHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:07:55 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49252 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754800Ab2BJRHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:05:22 -0500
-X-SpamScore: 3
-X-BigFish: VPS3(zz853kzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZ6SSO-01-1NQ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 2/2] perf-tool: Change perf_guest default back to false
-Date: Fri, 10 Feb 2012 18:05:05 +0100
-Message-ID: <1328893505-4115-3-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
-References: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
+	Fri, 10 Feb 2012 12:07:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120210153546.GA5109@comet.dominikbrodowski.net>
+References: <1327140517-14811-1-git-send-email-yinghai@kernel.org>
+	<1327140517-14811-19-git-send-email-yinghai@kernel.org>
+	<20120127102311.6027ea2c@jbarnes-desktop>
+	<CAE9FiQXQPFYU45rctaNX4kSqh7JGCnds8U-Bh1N93xVieuqz5Q@mail.gmail.com>
+	<20120205215824.GA5071@comet.dominikbrodowski.net>
+	<CAE9FiQXvU-GCDSVMGvUT23WMMVmbyHpQOApuAp5mV+=UOPf_1Q@mail.gmail.com>
+	<20120210153546.GA5109@comet.dominikbrodowski.net>
+Date: Fri, 10 Feb 2012 09:07:53 -0800
+X-Google-Sender-Auth: mFUvnWy3HLTx9wJNtn6PPpdhrRQ
+Message-ID: <CAE9FiQUnw17uFMBHJh65vCGWwfx3SQAcO3NG02=2S0LKP++Heg@mail.gmail.com>
+Subject: Re: [PATCH 18/21] PCI: Fix cardbus bridge resources as optional size handling
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting perf_guest to true by default makes no sense because
-the perf subcommands can not setup guest symbol information
-and thus not process and guest samples. The only exception
-is perf-kvm which changes the perf_guest value on its own.
-So change the default for perf_guest back to false.
+On Fri, Feb 10, 2012 at 7:35 AM, Dominik Brodowski
+<linux@dominikbrodowski.net> wrote:
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- tools/perf/util/util.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> Found another regression by one commit already got into linus' tree.
+>>
+>> and should be fixed by
+>>
+>> [PATCH] pci: Fix pci cardbus removal
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=patch;h=29834f2faeed3cb87dea984a3d411337752e6b7c
+>>
+>> please double check
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci3
+>>
+>> or
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> for-pci-busn-alloc
+>
+> I pulled both trees, and things still work fine on my test system.
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 8131410..fb25d13 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -6,7 +6,7 @@
-  * XXX We need to find a better place for these things...
-  */
- bool perf_host  = true;
--bool perf_guest = true;
-+bool perf_guest = false;
- 
- void event_attr_init(struct perf_event_attr *attr)
- {
--- 
-1.7.5.4
+thanks a lot
 
-
+Yinghai
