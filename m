@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759114Ab2BJKGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 05:06:38 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:54752 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759018Ab2BJKFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759039Ab2BJKFw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 10 Feb 2012 05:05:52 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:32842 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758983Ab2BJKFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 05:05:48 -0500
 MIME-Version: 1.0
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
@@ -15,9 +15,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 5/7] OMAP: 4430SDP: Use common configuration for V1V8, V2V1 supplies
-Date: Fri, 10 Feb 2012 12:05:14 +0200
-Message-Id: <1328868316-24749-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 2/7] regulator: twl-regulator: Add fixed LDO for V1V8, V2V1 supply
+Date: Fri, 10 Feb 2012 12:05:11 +0200
+Message-Id: <1328868316-24749-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.8.4
 In-Reply-To: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
@@ -25,28 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These supplies going to be needed for the twl6040 driver.
+V1V8 supply most common use is to provide VIO for the system.
+V2V1 supply is used on SDP4430/PandaBoards to provide 2.1V to
+twl6040, and also as an input to VCXIO_IN, VDAC_IN of twl6030.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- arch/arm/mach-omap2/board-4430sdp.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/regulator/twl-regulator.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index d02172d..2b3ff4b 100644
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -612,7 +612,9 @@ static int __init omap4_i2c_init(void)
- 			TWL_COMMON_REGULATOR_VANA |
- 			TWL_COMMON_REGULATOR_VCXIO |
- 			TWL_COMMON_REGULATOR_VUSB |
--			TWL_COMMON_REGULATOR_CLK32KG);
-+			TWL_COMMON_REGULATOR_CLK32KG |
-+			TWL_COMMON_REGULATOR_V1V8 |
-+			TWL_COMMON_REGULATOR_V2V1);
- 	omap4_pmic_init("twl6030", &sdp4430_twldata,
- 			&twl6040_data, OMAP44XX_IRQ_SYS_2N);
- 	omap_register_i2c_bus(2, 400, NULL, 0);
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 181a2cf..e4d8d3c 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -1005,6 +1005,8 @@ static struct twlreg_info twl_regs[] = {
+ 	TWL6030_ADJUSTABLE_LDO(VMMC, 0x68, 1000, 3300),
+ 	TWL6030_ADJUSTABLE_LDO(VPP, 0x6c, 1000, 3300),
+ 	TWL6030_ADJUSTABLE_LDO(VUSIM, 0x74, 1000, 3300),
++	TWL6030_FIXED_LDO(V1V8, 0x16, 1800, 0),
++	TWL6030_FIXED_LDO(V2V1, 0x1c, 2100, 0),
+ 	TWL6030_FIXED_LDO(VANA, 0x50, 2100, 0),
+ 	TWL6030_FIXED_LDO(VCXIO, 0x60, 1800, 0),
+ 	TWL6030_FIXED_LDO(VDAC, 0x64, 1800, 0),
 -- 
 1.7.8.4
 
