@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933061Ab2BJWpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:45:09 -0500
+	id S1760379Ab2BJW44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:56:56 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab2BJWpB (ORCPT
+	with ESMTP id S933058Ab2BJWpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:01 -0500
+	Fri, 10 Feb 2012 17:45:08 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223443.789578100@clark.kroah.org>
+Message-Id: <20120210223443.959612337@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:44 -0800
+Date: Fri, 10 Feb 2012 14:33:46 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [patch 40/55] mm: compaction: check for overlapping nodes during isolation for migration
+        alan@lxorguk.ukuu.org.uk, Marco Sanvido <marco@purestorage.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [patch 42/55] target: Use correct preempted registration sense code
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,108 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Marco Sanvido <marco@purestorage.com>
 
-commit dc9086004b3d5db75997a645b3fe08d9138b7ad0 upstream.
+commit 9e08e34e3735ae057eb3834da3570995811b7eb9 upstream.
 
-When isolating pages for migration, migration starts at the start of a
-zone while the free scanner starts at the end of the zone.  Migration
-avoids entering a new zone by never going beyond the free scanned.
+The comments quote the right parts of the spec:
 
-Unfortunately, in very rare cases nodes can overlap.  When this happens,
-migration isolates pages without the LRU lock held, corrupting lists
-which will trigger errors in reclaim or during page free such as in the
-following oops
+   * d) Establish a unit attention condition for the
+   *    initiator port associated with every I_T nexus
+   *    that lost its registration other than the I_T
+   *    nexus on which the PERSISTENT RESERVE OUT command
+   *    was received, with the additional sense code set
+   *    to REGISTRATIONS PREEMPTED.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff810f795c>] free_pcppages_bulk+0xcc/0x450
-  PGD 1dda554067 PUD 1e1cb58067 PMD 0
-  Oops: 0000 [#1] SMP
-  CPU 37
-  Pid: 17088, comm: memcg_process_s Tainted: G            X
-  RIP: free_pcppages_bulk+0xcc/0x450
-  Process memcg_process_s (pid: 17088, threadinfo ffff881c2926e000, task ffff881c2926c0c0)
-  Call Trace:
-    free_hot_cold_page+0x17e/0x1f0
-    __pagevec_free+0x90/0xb0
-    release_pages+0x22a/0x260
-    pagevec_lru_move_fn+0xf3/0x110
-    putback_lru_page+0x66/0xe0
-    unmap_and_move+0x156/0x180
-    migrate_pages+0x9e/0x1b0
-    compact_zone+0x1f3/0x2f0
-    compact_zone_order+0xa2/0xe0
-    try_to_compact_pages+0xdf/0x110
-    __alloc_pages_direct_compact+0xee/0x1c0
-    __alloc_pages_slowpath+0x370/0x830
-    __alloc_pages_nodemask+0x1b1/0x1c0
-    alloc_pages_vma+0x9b/0x160
-    do_huge_pmd_anonymous_page+0x160/0x270
-    do_page_fault+0x207/0x4c0
-    page_fault+0x25/0x30
+and
 
-The "X" in the taint flag means that external modules were loaded but but
-is unrelated to the bug triggering.  The real problem was because the PFN
-layout looks like this
+   * e) Establish a unit attention condition for the initiator
+   *    port associated with every I_T nexus that lost its
+   *    persistent reservation and/or registration, with the
+   *    additional sense code set to REGISTRATIONS PREEMPTED;
 
-  Zone PFN ranges:
-    DMA      0x00000010 -> 0x00001000
-    DMA32    0x00001000 -> 0x00100000
-    Normal   0x00100000 -> 0x01e80000
-  Movable zone start PFN for each node
-  early_node_map[14] active PFN ranges
-      0: 0x00000010 -> 0x0000009b
-      0: 0x00000100 -> 0x0007a1ec
-      0: 0x0007a354 -> 0x0007a379
-      0: 0x0007f7ff -> 0x0007f800
-      0: 0x00100000 -> 0x00680000
-      1: 0x00680000 -> 0x00e80000
-      0: 0x00e80000 -> 0x01080000
-      1: 0x01080000 -> 0x01280000
-      0: 0x01280000 -> 0x01480000
-      1: 0x01480000 -> 0x01680000
-      0: 0x01680000 -> 0x01880000
-      1: 0x01880000 -> 0x01a80000
-      0: 0x01a80000 -> 0x01c80000
-      1: 0x01c80000 -> 0x01e80000
+but the actual code accidentally uses ASCQ_2AH_RESERVATIONS_PREEMPTED
+instead of ASCQ_2AH_REGISTRATIONS_PREEMPTED.  Fix this.
 
-The fix is straight-forward.  isolate_migratepages() has to make a
-similar check to isolate_freepage to ensure that it never isolates pages
-from a zone it does not hold the LRU lock for.
-
-This was discovered in a 3.0-based kernel but it affects 3.1.x, 3.2.x
-and current mainline.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Marco Sanvido <marco@purestorage.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/target/target_core_pr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -337,8 +337,17 @@ static isolate_migrate_t isolate_migrate
- 			continue;
- 		nr_scanned++;
- 
--		/* Get the page and skip if free */
-+		/*
-+		 * Get the page and ensure the page is within the same zone.
-+		 * See the comment in isolate_freepages about overlapping
-+		 * nodes. It is deliberate that the new zone lock is not taken
-+		 * as memory compaction should not move pages between nodes.
-+		 */
- 		page = pfn_to_page(low_pfn);
-+		if (page_zone(page) != zone)
-+			continue;
-+
-+		/* Skip if free */
- 		if (PageBuddy(page))
- 			continue;
- 
+--- a/drivers/target/target_core_pr.c
++++ b/drivers/target/target_core_pr.c
+@@ -3079,7 +3079,7 @@ static int core_scsi3_pro_preempt(
+ 			if (!(calling_it_nexus))
+ 				core_scsi3_ua_allocate(pr_reg_nacl,
+ 					pr_res_mapped_lun, 0x2A,
+-					ASCQ_2AH_RESERVATIONS_PREEMPTED);
++					ASCQ_2AH_REGISTRATIONS_PREEMPTED);
+ 		}
+ 		spin_unlock(&pr_tmpl->registration_lock);
+ 		/*
+@@ -3191,7 +3191,7 @@ static int core_scsi3_pro_preempt(
+ 		 *    additional sense code set to REGISTRATIONS PREEMPTED;
+ 		 */
+ 		core_scsi3_ua_allocate(pr_reg_nacl, pr_res_mapped_lun, 0x2A,
+-				ASCQ_2AH_RESERVATIONS_PREEMPTED);
++				ASCQ_2AH_REGISTRATIONS_PREEMPTED);
+ 	}
+ 	spin_unlock(&pr_tmpl->registration_lock);
+ 	/*
 
 
