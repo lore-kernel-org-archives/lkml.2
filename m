@@ -1,191 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759477Ab2BJQPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:15:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22586 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab2BJQPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:15:53 -0500
-Date: Fri, 10 Feb 2012 14:05:36 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4 V13] Add functions to check if the host has stopped
- the vm
-Message-ID: <20120210160536.GA23363@amt.cnet>
-References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
- <1328713666-11424-3-git-send-email-emunson@mgebm.net>
+	id S1758270Ab2BJQQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:16:50 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17813 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab2BJQQs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:16:48 -0500
+Date: Fri, 10 Feb 2012 11:12:53 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Steven Noonan <steven@uplinklabs.net>, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: bisected: 'perf top' causing soft lockups under Xen
+Message-ID: <20120210161253.GA11690@phenom.dumpdata.com>
+References: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1328713666-11424-3-git-send-email-emunson@mgebm.net>
+In-Reply-To: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090204.4F3542BB.0173,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 10:07:44AM -0500, Eric B Munson wrote:
-> When a host stops or suspends a VM it will set a flag to show this.  The
-> watchdog will use these functions to determine if a softlockup is real, or the
-> result of a suspended VM.
-> 
-> Signed-off-by: Eric B Munson <emunson@mgebm.net>
-> asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: mingo@redhat.com
-> Cc: hpa@zytor.com
-> Cc: ryanh@linux.vnet.ibm.com
-> Cc: aliguori@us.ibm.com
-> Cc: mtosatti@redhat.com
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Changes from V11:
->  Re-add the missing asm-generic stub for check_and_clear_guest_stopped()
-> Changes from V6:
->  Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-> Changes from V5:
->  Collapse generic stubs into this patch
->  check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
->  Include individual definitions in ia64, s390, and powerpc
-> 
->  arch/ia64/include/asm/kvm_para.h    |    5 +++++
->  arch/powerpc/include/asm/kvm_para.h |    5 +++++
->  arch/s390/include/asm/kvm_para.h    |    5 +++++
->  arch/x86/include/asm/kvm_para.h     |    8 ++++++++
->  arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
->  include/asm-generic/kvm_para.h      |   14 ++++++++++++++
->  6 files changed, 58 insertions(+), 0 deletions(-)
->  create mode 100644 include/asm-generic/kvm_para.h
-> 
-> diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
-> index 1588aee..2019cb9 100644
-> --- a/arch/ia64/include/asm/kvm_para.h
-> +++ b/arch/ia64/include/asm/kvm_para.h
-> @@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
->  	return 0;
->  }
->  
-> +static inline bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	return false;
-> +}
-> +
->  #endif
->  
->  #endif
-> diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
-> index 50533f9..1f80293 100644
-> --- a/arch/powerpc/include/asm/kvm_para.h
-> +++ b/arch/powerpc/include/asm/kvm_para.h
-> @@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
->  	return r;
->  }
->  
-> +static inline bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	return false;
-> +}
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __POWERPC_KVM_PARA_H__ */
-> diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
-> index 6964db2..a988329 100644
-> --- a/arch/s390/include/asm/kvm_para.h
-> +++ b/arch/s390/include/asm/kvm_para.h
-> @@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
->  	return 0;
->  }
->  
-> +static inline bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	return false;
-> +}
-> +
->  #endif
->  
->  #endif /* __S390_KVM_PARA_H */
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 734c376..99c4bbe 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
->  extern void kvmclock_init(void);
->  extern int kvm_register_clock(char *txt);
->  
-> +#ifdef CONFIG_KVM_CLOCK
-> +bool kvm_check_and_clear_guest_paused(void);
-> +#else
-> +static inline bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	return false;
-> +}
-> +#endif /* CONFIG_KVMCLOCK */
->  
->  /* This instruction is vmcall.  On non-VT architectures, it will generate a
->   * trap that we will then rewrite to the appropriate instruction.
-> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-> index 44842d7..bdf6423 100644
-> --- a/arch/x86/kernel/kvmclock.c
-> +++ b/arch/x86/kernel/kvmclock.c
-> @@ -22,6 +22,7 @@
->  #include <asm/msr.h>
->  #include <asm/apic.h>
->  #include <linux/percpu.h>
-> +#include <linux/hardirq.h>
->  
->  #include <asm/x86_init.h>
->  #include <asm/reboot.h>
-> @@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
->  	preset_lpj = lpj;
->  }
->  
-> +bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	bool ret = false;
-> +	struct pvclock_vcpu_time_info *src;
-> +
-> +	/*
-> +	 * per_cpu() is safe here because this function is only called from
-> +	 * timer functions where preemption is already disabled.
-> +	 */
-> +	WARN_ON(!in_atomic());
-> +	src = &__get_cpu_var(hv_clock);
-> +	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-> +		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
-> +		ret = true;
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-> +
->  static struct clocksource kvm_clock = {
->  	.name = "kvm-clock",
->  	.read = kvm_clock_get_cycles,
-> diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
-> new file mode 100644
-> index 0000000..05ef7e7
-> --- /dev/null
-> +++ b/include/asm-generic/kvm_para.h
-> @@ -0,0 +1,14 @@
-> +#ifndef _ASM_GENERIC_KVM_PARA_H
-> +#define _ASM_GENERIC_KVM_PARA_H
-> +
-> +
-> +/*
-> + * This function is used by architectures that support kvm to avoid issuing
-> + * false soft lockup messages.
-> + */
-> +static inline bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	return false;
-> +}
-> +
-> +#endif
+On Thu, Feb 09, 2012 at 06:32:07PM -0800, Steven Noonan wrote:
+> This lockup is pretty reliably reproducible (but only under Xen). I've
+> seen this happen under multiple hardware configurations and multiple
+> different configs.
 
-How is the stub getting included for other architectures again?
+Hm, during bootup what does perf say about the CPU availability? Is
+it that it can only do perf via NMI's?
+.. snip..
+> I did a bit of manual bisection (based on tags) and noticed the issue
+> was introduced sometime between v3.0 and v3.1-rc1. This is where the
+
+Whoa, 3.1? Yikes!
+
+> bisection took me:
+> 
+> # bad: [322a8b034003c0d46d39af85bf24fee27b902f48] Linux 3.1-rc1
+> # good: [02f8c6aee8df3cdc935e9bdd4f2d020306035dbe] Linux 3.0
+> git bisect start 'v3.1-rc1' 'v3.0'
+> # bad: [0003230e8200699860f0b10af524dc47bf8aecad] Merge branch
+> 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+> git bisect bad 0003230e8200699860f0b10af524dc47bf8aecad
+> # good: [72f96e0e38d7e29ba16dcfd824ecaebe38b8293e] Merge branch
+> 'for-linus-core' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending
+> git bisect good 72f96e0e38d7e29ba16dcfd824ecaebe38b8293e
+> # bad: [f5fc87905ea075a0b14878086fd4fe38be128844] Merge branch
+> 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap
+> git bisect bad f5fc87905ea075a0b14878086fd4fe38be128844
+> # bad: [f5fc87905ea075a0b14878086fd4fe38be128844] Merge branch
+> 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap
+> git bisect bad f5fc87905ea075a0b14878086fd4fe38be128844
+> # bad: [bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff] Merge branch
+> 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+> git bisect bad bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff
+> # bad: [4d4abdcb1dee03a4f9d6d2021622ed07e14dfd17] Merge branch
+> 'perf-core-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
+> git bisect bad 4d4abdcb1dee03a4f9d6d2021622ed07e14dfd17
+> # bad: [190b57fcb9c5fed5414935a174094f534fc510bc] perf probe: Add
+> probed module in front of function
+> git bisect bad 190b57fcb9c5fed5414935a174094f534fc510bc
+> # bad: [26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350] perf: export
+> perf_event_refresh() to modules
+> git bisect bad 26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350
+> # bad: [26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350] perf: export
+> perf_event_refresh() to modules
+> git bisect bad 26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350
+> # good: [b0af8dfdd67699e25083478c63eedef2e72ebd85] Linux 3.0-rc5
+> git bisect good b0af8dfdd67699e25083478c63eedef2e72ebd85
+> # good: [b0af8dfdd67699e25083478c63eedef2e72ebd85] Linux 3.0-rc5
+> git bisect good b0af8dfdd67699e25083478c63eedef2e72ebd85
+> # good: [af07ce3e77d3b24ab1d71fcc5833d41800f23b2b] Merge branch
+> 'tip/perf/core-2' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace
+> into perf/core
+> git bisect good af07ce3e77d3b24ab1d71fcc5833d41800f23b2b
+> # good: [af07ce3e77d3b24ab1d71fcc5833d41800f23b2b] Merge branch
+> 'tip/perf/core-2' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace
+> into perf/core
+> git bisect good af07ce3e77d3b24ab1d71fcc5833d41800f23b2b
+> # good: [1880c4ae182afb5650c5678949ecfe7ff66a724e] perf, x86: Add
+> hw_watchdog_set_attr() in a sake of nmi-watchdog on P4
+> git bisect good 1880c4ae182afb5650c5678949ecfe7ff66a724e
+> # bad: [ee89cbc2d48150c7c0e9f2aaac00afde99af098c] perf_events: Add
+> Intel Sandy Bridge offcore_response low-level support
+> git bisect bad ee89cbc2d48150c7c0e9f2aaac00afde99af098c
+> # bad: [a7ac67ea021b4603095d2aa458bc41641238f22c] perf: Remove the
+> perf_output_begin(.sample) argument
+> git bisect bad a7ac67ea021b4603095d2aa458bc41641238f22c
+> # bad: [a8b0ca17b80e92faab46ee7179ba9e99ccb61233] perf: Remove the nmi
+> parameter from the swevent and overflow interface
+> git bisect bad a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> 
+> 
+> So, it looks like somehow this broke things:
+
+
+Hm, Peter any thoughts? Is there a need to introduce some new code
+to utilize this?
+
+> 
+> commit a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Mon Jun 27 14:41:57 2011 +0200
+> 
+>     perf: Remove the nmi parameter from the swevent and overflow interface
+> 
+>     The nmi parameter indicated if we could do wakeups from the current
+>     context, if not, we would set some state and self-IPI and let the
+>     resulting interrupt do the wakeup.
+> 
+>     For the various event classes:
+> 
+>       - hardware: nmi=0; PMI is in fact an NMI or we run irq_work_run from
+>         the PMI-tail (ARM etc.)
+>       - tracepoint: nmi=0; since tracepoint could be from NMI context.
+>       - software: nmi=[0,1]; some, like the schedule thing cannot
+>         perform wakeups, and hence need 0.
+> 
+>     As one can see, there is very little nmi=1 usage, and the down-side of
+>     not using it is that on some platforms some software events can have a
+>     jiffy delay in wakeup (when arch_irq_work_raise isn't implemented).
+> 
+>     The up-side however is that we can remove the nmi parameter and save a
+>     bunch of conditionals in fast paths.
+> 
+>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Cc: Michael Cree <mcree@orcon.net.nz>
+>     Cc: Will Deacon <will.deacon@arm.com>
+>     Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+>     Cc: Anton Blanchard <anton@samba.org>
+>     Cc: Eric B Munson <emunson@mgebm.net>
+>     Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+>     Cc: Paul Mundt <lethal@linux-sh.org>
+>     Cc: David S. Miller <davem@davemloft.net>
+>     Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>     Cc: Jason Wessel <jason.wessel@windriver.com>
+>     Cc: Don Zickus <dzickus@redhat.com>
+>     Link: http://lkml.kernel.org/n/tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> 
+> 
+> Relevant maintainers CC'd. Any ideas, folks?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
