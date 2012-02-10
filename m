@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761068Ab2BJXTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:19:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707Ab2BJWlO (ORCPT
+	id S1760552Ab2BJXUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:20:30 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50022 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760509Ab2BJWlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:14 -0500
+	Fri, 10 Feb 2012 17:41:10 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222947.277802164@clark.kroah.org>
+Message-Id: <20120210222947.088663066@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:44 -0800
+Date: Fri, 10 Feb 2012 14:29:42 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nikolaus Voss <n.voss@weinmann.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [patch 25/86] Revert "mtd: atmel_nand: optimize read/write buffer functions"
+        alan@lxorguk.ukuu.org.uk, Jiang Liu <jiang.liu@huawei.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [patch 23/86] kprobes: fix a memory leak in function pre_handler_kretprobe()
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,107 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 500823195d0c9eec2a4637484f30cc93ec633d4a upstream.
+commit 55ca6140e9bb307efc97a9301a4f501de02a6fd6 upstream.
 
-This reverts commit fb5427508abbd635e877fabdf55795488119c2d6.
+In function pre_handler_kretprobe(), the allocated kretprobe_instance
+object will get leaked if the entry_handler callback returns non-zero.
+This may cause all the preallocated kretprobe_instance objects exhausted.
 
-The reason is that it breaks 16 bits NAND flash as it was reported by
-Nikolaus Voss and confirmed by Eric Bénard.
+This issue can be reproduced by changing
+samples/kprobes/kretprobe_example.c to probe "mutex_unlock".  And the fix
+is straightforward: just put the allocated kretprobe_instance object back
+onto the free_instances list.
 
-Nicolas Ferre <nicolas.ferre@atmel.com> alco confirmed:
-"After double checking with designers, I must admit that I misunderstood
-the way of optimizing accesses to SMC. 16 bit nand is not so common
-those days..."
-
-Reported-by: Nikolaus Voss <n.voss@weinmann.de>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+[akpm@linux-foundation.org: use raw_spin_lock/unlock]
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/atmel_nand.c |   45 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 41 insertions(+), 4 deletions(-)
+ kernel/kprobes.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -161,6 +161,37 @@ static int atmel_nand_device_ready(struc
-                 !!host->board->rdy_pin_active_low;
- }
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1673,8 +1673,12 @@ static int __kprobes pre_handler_kretpro
+ 		ri->rp = rp;
+ 		ri->task = current;
  
-+/*
-+ * Minimal-overhead PIO for data access.
-+ */
-+static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
-+{
-+	struct nand_chip	*nand_chip = mtd->priv;
-+
-+	__raw_readsb(nand_chip->IO_ADDR_R, buf, len);
-+}
-+
-+static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
-+{
-+	struct nand_chip	*nand_chip = mtd->priv;
-+
-+	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
-+}
-+
-+static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
-+{
-+	struct nand_chip	*nand_chip = mtd->priv;
-+
-+	__raw_writesb(nand_chip->IO_ADDR_W, buf, len);
-+}
-+
-+static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len)
-+{
-+	struct nand_chip	*nand_chip = mtd->priv;
-+
-+	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
-+}
-+
- static void dma_complete_func(void *completion)
- {
- 	complete(completion);
-@@ -235,27 +266,33 @@ err_buf:
- static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
- {
- 	struct nand_chip *chip = mtd->priv;
-+	struct atmel_nand_host *host = chip->priv;
+-		if (rp->entry_handler && rp->entry_handler(ri, regs))
++		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
++			raw_spin_lock_irqsave(&rp->lock, flags);
++			hlist_add_head(&ri->hlist, &rp->free_instances);
++			raw_spin_unlock_irqrestore(&rp->lock, flags);
+ 			return 0;
++		}
  
- 	if (use_dma && len > mtd->oobsize)
- 		/* only use DMA for bigger than oob size: better performances */
- 		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
- 			return;
+ 		arch_prepare_kretprobe(ri, regs);
  
--	/* if no DMA operation possible, use PIO */
--	memcpy_fromio(buf, chip->IO_ADDR_R, len);
-+	if (host->board->bus_width_16)
-+		atmel_read_buf16(mtd, buf, len);
-+	else
-+		atmel_read_buf8(mtd, buf, len);
- }
- 
- static void atmel_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
- {
- 	struct nand_chip *chip = mtd->priv;
-+	struct atmel_nand_host *host = chip->priv;
- 
- 	if (use_dma && len > mtd->oobsize)
- 		/* only use DMA for bigger than oob size: better performances */
- 		if (atmel_nand_dma_op(mtd, (void *)buf, len, 0) == 0)
- 			return;
- 
--	/* if no DMA operation possible, use PIO */
--	memcpy_toio(chip->IO_ADDR_W, buf, len);
-+	if (host->board->bus_width_16)
-+		atmel_write_buf16(mtd, buf, len);
-+	else
-+		atmel_write_buf8(mtd, buf, len);
- }
- 
- /*
 
 
