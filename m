@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab2BJLpp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 06:45:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33164 "EHLO
+	id S1759183Ab2BJLrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 06:47:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37437 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754568Ab2BJLpo (ORCPT
+	by vger.kernel.org with ESMTP id S1754568Ab2BJLrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 06:45:44 -0500
-Date: Fri, 10 Feb 2012 11:45:42 +0000
+	Fri, 10 Feb 2012 06:47:15 -0500
+Date: Fri, 10 Feb 2012 11:47:13 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regmap: Support for caching in reg_raw_write()
-Message-ID: <20120210114541.GB6472@opensource.wolfsonmicro.com>
-References: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Fix kcalloc parameters swapped
+Message-ID: <20120210114713.GC6472@opensource.wolfsonmicro.com>
+References: <1328873395.4203.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cmJC7u66zC7hs+87"
+	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
 Content-Disposition: inline
-In-Reply-To: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1328873395.4203.1.camel@phoenix>
 X-Cookie: If you can read this, you're too close.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,54 +26,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cmJC7u66zC7hs+87
+--UFHRwCdBEJvubb2X
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Feb 10, 2012 at 05:02:52PM +0530, Laxman Dewangan wrote:
+On Fri, Feb 10, 2012 at 07:29:55PM +0800, Axel Lin wrote:
+> The first parameter should be "number of elements" and the second parameter
+> should be "element size".
 
-This looks good, but could you make the few small improvements below
-please?
+Applied, thanks.  Not that it makes any practical difference given that
+the function will just multiply the two numbers...
 
-> +	if (!map->cache_bypass && map->format.parse_val) {
-> +		int val_bytes = map->format.val_bytes;
-> +		unsigned int ival;
-> +		for (i = 0; i < val_len / map->format.val_bytes; i++) {
-
-A bit nit picky but since you've got a local val_bytes you may as well
-use it.
-
-> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-> +			ival = map->format.parse_val(map->work_buf);
-> +			ret = regcache_write(map, reg + i, ival);
-> +			if (ret) {
-> +				dev_warn(map->dev,
-> +					"Error in caching of register\n");
-
-Say which register and the return value here - knowing the register
-might be very helpful for debug.  This should probably also be at least
-a dev_err().
-
---cmJC7u66zC7hs+87
+--UFHRwCdBEJvubb2X
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPNQNfAAoJEBus8iNuMP3dvl4QAJXDu0MPk+oWCsua2sdGprtf
-AAnjUwTO5/0CfFnElfn+GHCBTXlf/QnIsxz42u+7QF9cjz3x2jqL2mmoRLEIK1w9
-tvVL4U5huXi+I+1UcMGhIwh5+1MtPJhsEPteBVevv5/RRWU4IcniMhosRQeyPRrq
-9E7LIUQ18niV68AxihDqnWc0JO0LpnU5OZFJyFJeP5r4cYVFpVwE1m5zlki9iJjL
-5w0pZIJ8HO46k0myXDUwE2vjgqKyX2HLKiXLwXVLDP/+/nyW/xRi1wZnSuD4EYnw
-Ce3iT3Q4YsT1XaxENeh9DWJs14J6W6YkrxVX0vbqzl1sL4i8WRw5iUlw8tgb2Fv2
-0ZohwpEa/Tt1LnF1K2bu+BL//zJwrxaxW+k/qPcoW/F+Ts8/Cn5z17PRyQxQL77J
-I92xkIYmmD4s+CNJayZZ3/oETF2JPkEdFRRs9Pc3ByRXG3nxRZNWga4DwmrOcBIM
-djz86tSe+FP5SddLYEhqua25B/ZVgXxENVL/tnJPcWg3pU+4CQY1UnOuL8qVjUM+
-CD/Fk4tfviltjHm3PGe8CxrjLUaA8yzBg7d1dU7wUxxv34xLuI4q6ZcWkY5fjB4m
-GimbWBbyfnVsCE+F+he7Fbi/+Me0hyBWT5wi5QTYX3XbLus2mILZEIY/K+GcJYUg
-s7a0dcFN1tCndbLuFT3u
-=2/MY
+iQIcBAEBAgAGBQJPNQOhAAoJEBus8iNuMP3dYAwQAJ00nw1f9IF7qsP4RHZhIc+w
+maGZ357/041dna8lAxrKR4TSh+Xu5o2owl7Pjh15oK58Ko6gsv3jOSVI2ovQd8Y1
+X1CUENEdwD3o8SPiIew+gvyqOU+/5pGxMsLqsrMeraeakIZQIUZn1wTjH3lvL0LP
+CqZjMzXNY0/zi1EmyxOE4EHrTyz4zPeTUMD7hldICwlNsfvg6qba/3oIWXsiZu8D
+b70qCd/iVNR/zGo0S4eZnAihdwP1Yj4dIIqT9IHyR6ydXjeTwqCSLDA79iks9dWv
+jxI1LRa5BLZhm075Cis1y4A22S+25y2dZOqN2njvvTHHY8zDsytm5ux/Rt2o0ER7
+G2z/ljHupx9LhgWC76skH4pJtwxEL4bVpGESgUFpcyPrWkEjWfZbKbBqZUSVn/4v
++hX70avlQWSQfXtONecfz3n7JRkNCXEw8clVrjAiYac4Lggfv0YKCUrJPEKUMCiG
+36/gbcRoER70IeVLA3BH4oY1uTbDzwxKaYFVQ4CpMxnwDbSqoprQKKYZAsNJNYQn
+HJJJTHcJN/bwUpM53+2O4quUmHu5IFBBfNxRckTmJmsGJpfrDuyrWaEy7SBkdjuU
+RlnwU1Hgp0u4j5ZiPLlStA9fJMiXpZZfoUvivz63vPzIWFMnABLo7BoaIplebj1w
+lnat8fWslQW9HQ5FFxhV
+=BNZr
 -----END PGP SIGNATURE-----
 
---cmJC7u66zC7hs+87--
+--UFHRwCdBEJvubb2X--
