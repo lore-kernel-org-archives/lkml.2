@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab2BJWpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:45:34 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65316 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933087Ab2BJWpX (ORCPT
+	id S933142Ab2BJWs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:48:29 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933121Ab2BJWpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:23 -0500
+	Fri, 10 Feb 2012 17:45:33 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223444.648944327@clark.kroah.org>
+Message-Id: <20120210223442.647456350@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:54 -0800
+Date: Fri, 10 Feb 2012 14:33:31 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Milan Kocian <milon@wq.cz>
-Subject: [patch 50/55] USB: usbserial: add new PID number (0xa951) to the ftdi driver
+        alan@lxorguk.ukuu.org.uk, Wu Fengguang <fengguang.wu@intel.com>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [patch 27/55] drm/i915: DisplayPort hot remove notification to audio driver
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milan Kocian <milon@wq.cz>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit 90451e6973a5da155c6f315a409ca0a8d3ce6b76 upstream.
+commit 832afda6a7d7235ef0e09f4ec46736861540da6d upstream.
 
-Signed-off-by: Milan Kocian <milon@wq.cz>
+On DP monitor hot remove, clear DP_AUDIO_OUTPUT_ENABLE accordingly,
+so that the audio driver will receive hot plug events and take action
+to refresh its device state and ELD contents.
+
+Note that the DP_AUDIO_OUTPUT_ENABLE bit may be enabled or disabled
+only when the link training is complete and set to "Normal".
+
+Tested OK for both hot plug/remove and DPMS on/off.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -838,6 +838,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_CINTERION_MC55I_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
- 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1187,3 +1187,10 @@
-  */
- /* ZigBee controller */
- #define FTDI_RF_R106		0x8A28
-+
-+/*
-+ * Product: HCP HIT GPRS modem
-+ * Manufacturer: HCP d.o.o.
-+ * ATI command output: Cinterion MC55i
-+ */
-+#define FTDI_CINTERION_MC55I_PID	0xA951
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1554,6 +1554,7 @@ intel_dp_link_down(struct intel_dp *inte
+ 			intel_wait_for_vblank(dev, to_intel_crtc(crtc)->pipe);
+ 	}
+ 
++	DP &= ~DP_AUDIO_OUTPUT_ENABLE;
+ 	I915_WRITE(intel_dp->output_reg, DP & ~DP_PORT_EN);
+ 	POSTING_READ(intel_dp->output_reg);
+ }
 
 
