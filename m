@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761131Ab2BJXfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:35:50 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:56284 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760480Ab2BJXeT (ORCPT
+	id S1761168Ab2BJXgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:36:52 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59233 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761110Ab2BJXgu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 18:34:19 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 7/7] PCI: only enable pci realloc when SRIOV bar is not assigned
-Date: Fri, 10 Feb 2012 15:33:52 -0800
-Message-Id: <1328916832-6588-8-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
-References: <1328916832-6588-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F35A975.0019,ss=1,re=0.000,fgs=0
+	Fri, 10 Feb 2012 18:36:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120210162134.GA2723@r65073-Latitude-D630>
+References: <1328612075-5825-1-git-send-email-b32955@freescale.com>
+	<1328612075-5825-2-git-send-email-b32955@freescale.com>
+	<20120210162134.GA2723@r65073-Latitude-D630>
+Date: Sat, 11 Feb 2012 07:36:50 +0800
+Message-ID: <CAMiH66EP6UFDYkguzfSFgysDzVREPZ8P1x29TkYvQ+Cuvz-4hg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] mxs-dma : move the mxs dma.h to a more common place
+From: Huang Shijie <shijie8@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Huang Shijie <b32955@freescale.com>, vinod.koul@intel.com,
+        artem.bityutskiy@intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        LW@karo-electronics.de, alsa-devel@alsa-project.org,
+        b29396@freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If bios does not assign those BAR or wrong address, then kernel will
-try to do pci realloc.
+hi,
 
-in that case, user still can use pci=realloc=off to override it.
+On Sat, Feb 11, 2012 at 12:21 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Tue, Feb 07, 2012 at 06:54:34PM +0800, Huang Shijie wrote:
+>> Move the header to a more common place.
+>> The mxs dma engine is not only used in mx23/mx28, but also used
+>> in mx50/mx6q.  It will also be used in the future chips.
+>>
+>> Rename it to mxs-dma.h
+>>
+>> change mxs-dma driver, mxs-mmc driver, gpmi-nand driver, mxs-saif driver
+>> to the new header file.
+>>
+>> Signed-off-by: Huang Shijie <b32955@freescale.com>
+>> ---
+>>  drivers/dma/mxs-dma.c                              |    2 +-
+>>  drivers/mmc/host/mxs-mmc.c                         |    2 +-
+>>  drivers/mtd/nand/gpmi-nand/gpmi-nand.h             |    2 +-
+>>  .../include/mach/dma.h => include/linux/mxs-dma.h  |    0
+>>  sound/soc/mxs/mxs-pcm.c                            |    2 +-
+>>  sound/soc/mxs/mxs-pcm.h                            |    2 +-
+>>  sound/soc/mxs/mxs-saif.c                           |    2 +-
+>>  7 files changed, 6 insertions(+), 6 deletions(-)
+>>  rename arch/arm/mach-mxs/include/mach/dma.h => include/linux/mxs-dma.h (100%)
+>
+> I suggested you rename it include/linux/fsl/mxs-dma.h [1].  It seems
+> you are ignoring the comment.  Can you explain why it's not a
+> reasonable suggestion?
 
--v2: According to Jesse, adding one CONFIG option for distribution to
-     disable it or enable it.
+For gpmi-nand.h is placed in include/linux/mtd/ directory, so i think
+it's better to place the mxs-dma.h
+to similar include/linux/dma/ directory, but the directory does not exit.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/Kconfig     |   10 ++++++++++
- drivers/pci/setup-bus.c |   28 ++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+If i place it at include/linux/fsl/mxs-dma.h , i have to create a new
+folder, I am not sure i have the right
+to do so. But i can try it in the next version.
 
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 37856f7..ee29565 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -31,6 +31,16 @@ config PCI_DEBUG
- 
- 	  When in doubt, say N.
- 
-+config PCI_REALLOC_ENABLE_DETECT
-+	bool "PCI Realloc Enable Detecting"
-+	depends on PCI
-+	help
-+	  Say Y here if you want the PCI core to detect if  pci realloc
-+	  need to be enabled. You can always use pci=realloc=on or
-+	  pci=realloc=off to override it.
-+
-+	  When in doubt, say N.
-+
- config PCI_STUB
- 	tristate "PCI Stub driver"
- 	depends on PCI
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index c73244a..3aef181 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1293,6 +1293,31 @@ static bool __init pci_realloc_enabled(void)
- 	return pci_realloc_enable >= enable_yes_user;
- }
- 
-+static void __init pci_realloc_detect(void)
-+{
-+#if defined(CONFIG_PCI_IOV) && defined(CONFIG_PCI_REALLOC_ENABLE_DETECT)
-+	struct pci_dev *dev = NULL;
-+
-+	if (pci_realloc_enable != enable_not_set)
-+		return;
-+
-+	for_each_pci_dev(dev) {
-+		int i;
-+
-+		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
-+			struct resource *r = &dev->resource[i];
-+
-+			/* Not assigned, or rejected by kernel ? */
-+			if (r->flags && !r->start) {
-+				pci_realloc_enable = enable_yes_detected;
-+
-+				return;
-+			}
-+		}
-+	}
-+#endif
-+}
-+
- /*
-  * first try will not touch pci bridge res
-  * second  and later try will clear small leaf bridge res
-@@ -1314,6 +1339,7 @@ pci_assign_unassigned_resources(void)
- 	int pci_try_num = 1;
- 
- 	/* don't realloc if asked to do so */
-+	pci_realloc_detect();
- 	if (pci_realloc_enabled()) {
- 		int max_depth = pci_get_max_depth();
- 
-@@ -1348,6 +1374,8 @@ again:
- 	if (tried_times >= pci_try_num) {
- 		if (pci_realloc_enable == enable_not_set)
- 			printk(KERN_INFO "Some PCI device resources are unassigned, try booting with pci=realloc\n");
-+		else if (pci_realloc_enable == enable_yes_detected)
-+			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
- 
- 		free_list(&fail_head);
- 		goto enable_and_dump;
--- 
-1.7.7
+thanks a lot.
 
+
+
+>
+> And Wolfram and Mark told you that you need to Cc subsystem maintainers
+> to collect their acks [2].  But you are still not Ccing Mark Brown and
+> Chris Ball for sound/soc/ and drivers/mmc changes.  So you are not
+> listening.
+
+ok, i will CC them in next version.  I　really did not know to whom I　should cc .
+
+BR
+Huang Shijie
+
+>
+> Regards,
+> Shawn
+>
+> [1] http://article.gmane.org/gmane.linux.kernel.mmc/12301
+> [2] http://article.gmane.org/gmane.linux.alsa.devel/93751
