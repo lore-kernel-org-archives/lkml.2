@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760155Ab2BJUnF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:43:05 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:49713 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755209Ab2BJUnC (ORCPT
+	id S1760168Ab2BJUqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:46:19 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:60083 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760124Ab2BJUqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:43:02 -0500
-Date: Fri, 10 Feb 2012 15:43:01 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Nelson, Doug" <doug.nelson@intel.com>
-cc: Paolo Bonzini <pbonzini@redhat.com>,
+	Fri, 10 Feb 2012 15:46:17 -0500
+Date: Fri, 10 Feb 2012 12:46:14 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: scsi_id: sending ioctl 2285 to a partition
-Message-ID: <Pine.LNX.4.44L0.1202101533210.1281-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] PCI: Disable cardbus bridge MEM1 pref CTL
+Message-ID: <20120210124614.5006563e@jbarnes-desktop>
+In-Reply-To: <1328424908-6385-4-git-send-email-yinghai@kernel.org>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+	<1328424908-6385-4-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Xw.lNCemD=g6gl3MLg8_U=Z"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012, "Nelson, Doug" wrote:
+--Sig_/Xw.lNCemD=g6gl3MLg8_U=Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On 02/10/2012 11:40 AM, Paolo Bonzini wrote:
-> > On 02/10/2012 06:23 PM, Nelson, Doug wrote:
-> >>> # scsi devices
-> >>> KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
-> >>> IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
-> >>> ENV{ID_BUS}="scsi"
-> >>
-> >> The rule I had was not excluding partitions.   I'll fix that and try 
-> >> again.
-> >
-> > So was it a custom rule, or it came with the distro?
-> >
-> 
-> It's a custom rule we've been using for a long time to rename our 672 x 
-> ssd's.
+On Sat,  4 Feb 2012 22:55:02 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-By the way, I see the same sort of thing happening with mdadm.  Maybe I 
-haven't gotten things configured quite right...
+> Some BIOS enable both pref for MEM0 and MEM1.
+>=20
+> but we assume MEM1 is non-pref...
+>=20
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/setup-bus.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 090217a..d5897c3 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -914,6 +914,14 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+>  	if (realloc_head)
+>  		add_to_list(realloc_head, bridge, b_res+1, pci_cardbus_io_size, 0 /* d=
+ont care */);
+> =20
+> +	/* MEM1 must not be pref mmio */
+> +	pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+> +	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM1) {
+> +		ctrl &=3D ~PCI_CB_BRIDGE_CTL_PREFETCH_MEM1;
+> +		pci_write_config_word(bridge, PCI_CB_BRIDGE_CONTROL, ctrl);
+> +		pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+> +	}
+> +
+>  	/*
+>  	 * Check whether prefetchable memory is supported
+>  	 * by this bridge.
 
-Anyway, here's an example extracted from the system log (this is under
-Fedora 16's 3.2.3 kernel):
+Does this actually fix any bugs?  Dominik, have you tested it?
 
-Feb 10 11:19:52 netrider kernel: [    2.803184] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803191] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803194] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803201] mdadm: sending ioctl 1261 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803203] mdadm: sending ioctl 1261 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803382] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803385] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803389] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803390] mdadm: sending ioctl 800c0910 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.803393] mdadm: sending ioctl 1261 to a partition!
-Feb 10 11:19:52 netrider kernel: [    2.975991] md: bind<sdb3>
-Feb 10 11:19:52 netrider kernel: [    3.104305] md: bind<sda3>
-Feb 10 11:19:52 netrider kernel: [    3.106372] md: raid1 personality registered for level 1
-Feb 10 11:19:52 netrider kernel: [    3.106567] bio: create slab <bio-1> at 1
-Feb 10 11:19:52 netrider kernel: [    3.106728] md/raid1:md1: active with 2 out of 2 mirrors
-Feb 10 11:19:52 netrider kernel: [    3.106841] md1: detected capacity change from 0 to 4301717504
-Feb 10 11:19:52 netrider kernel: [    3.108360]  md1: unknown partition table
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-Alan Stern
+--Sig_/Xw.lNCemD=g6gl3MLg8_U=Z
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNYIWAAoJEIEoDkX4Qk9hCAIP/imSMtl+Cm2CrK0reSRlXZp6
+f99slEizLCqd5qkx3vU/lYEcHTtDS+8KT/lZyYitWB7a7tXRCuJdmG+cH3StOJxf
+zcg2LW5G5hXmw/uTBR3YjkZwGtGRdukXqxLgQGX/o7pn7/UpdCF09Mj/z+J+Rfe5
+quq9ydItZUZC+jhv3Cr53vmhhYU3djDFJKrjQHbmBEetwgiVhqFmScJQ33D40sZF
+qRxG5yCFfta8odfmgvdQgPI1pQAzdH4hhsaYkC3w+sukPJ0SkVMEfXLawnVNMHr3
+xXAI5ks4z/QNgjK5xVOobwNKfL0Y0pr6WefxZoqqzDuQYPpN+ptHHAgg4vqKizTW
+B3MMcr3ic9ldcA6ruYOy92SRMfSVtBDZI2NOoJFOV7ScmwLRnyvI/JoHzGnMkyzf
+Qp8XoIWtfMsiU0Nb9f0EusOAV8xqjR9nUmroxbfikla4e19D2y5RY8U/JOstXsh7
+E+lKwiWkfKG2KAjwpmRnD+qB7PWu3B2snoSQeYLejs5JD89iLKcceWam3jrTfuOj
+kJYcoUvzcnqzKQU3pdaZlYuVjgcDVac6aM39rqka3KrgBIc2erb80vU20EpgcgRI
+e4QdSB8VaiLBv5PO0VSaFtb5D8ioIMyqlr0h75smHCgg46ZApan3IkCHley/WFbd
+Es+4Byx/GhxIanuwvyTY
+=TZ0U
+-----END PGP SIGNATURE-----
+
+--Sig_/Xw.lNCemD=g6gl3MLg8_U=Z--
