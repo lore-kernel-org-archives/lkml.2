@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab2BJWuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:50:12 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51143 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933021Ab2BJWuK (ORCPT
+	id S933309Ab2BJWuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:50:37 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55384 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933294Ab2BJWud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:50:10 -0500
+	Fri, 10 Feb 2012 17:50:33 -0500
 MIME-Version: 1.0
-Message-Id: <20120210224852.322397251@clark.kroah.org>
+Message-Id: <20120210224851.790694638@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:47:56 -0800
+Date: Fri, 10 Feb 2012 14:47:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Jayachandran C <jayachandranc@netlogicmicro.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [17/21] usb: Skip PCI USB quirk handling for Netlogic XLP
+        alan@lxorguk.ukuu.org.uk, Li Wang <liwang@nudt.edu.cn>,
+        Yunchuan Wen <wenyunchuan@kylinos.com.cn>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Tyler Hicks <tyhicks@canonical.com>
+Subject: [11/21] eCryptfs: Infinite loop due to overflow in ecryptfs_write()
 In-Reply-To: <20120210224858.GA30752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jayachandran C <jayachandranc@netlogicmicro.com>
+From: Li Wang <liwang@nudt.edu.cn>
 
-commit e4436a7c17ac2b5e138f93f83a541cba9b311685 upstream.
+commit 684a3ff7e69acc7c678d1a1394fe9e757993fd34 upstream.
 
-The Netlogic XLP SoC's on-chip USB controller appears as a PCI
-USB device, but does not need the EHCI/OHCI handoff done in
-usb/host/pci-quirks.c.
+ecryptfs_write() can enter an infinite loop when truncating a file to a
+size larger than 4G. This only happens on architectures where size_t is
+represented by 32 bits.
 
-The pci-quirks.c is enabled for all vendors and devices, and is
-enabled if USB and PCI are configured.
+This was caused by a size_t overflow due to it incorrectly being used to
+store the result of a calculation which uses potentially large values of
+type loff_t.
 
-If we do not skip the qurik handling on XLP, the readb() call in
-ehci_bios_handoff() will cause a crash since byte access is not
-supported for EHCI registers in XLP.
-
-Signed-off-by: Jayachandran C <jayachandranc@netlogicmicro.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[tyhicks@canonical.com: rewrite subject and commit message]
+Signed-off-by: Li Wang <liwang@nudt.edu.cn>
+Signed-off-by: Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ecryptfs/read_write.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -498,6 +498,12 @@ hc_init:
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -134,7 +134,7 @@ int ecryptfs_write(struct file *ecryptfs
+ 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
+ 		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
+ 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
+-		size_t total_remaining_bytes = ((offset + size) - pos);
++		loff_t total_remaining_bytes = ((offset + size) - pos);
  
- static void __devinit quirk_usb_early_handoff(struct pci_dev *pdev)
- {
-+	/* Skip Netlogic mips SoC's internal PCI USB controller.
-+	 * This device does not need/support EHCI/OHCI handoff
-+	 */
-+	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
-+		return;
-+
- 	if (pdev->class == PCI_CLASS_SERIAL_USB_UHCI)
- 		quirk_usb_handoff_uhci(pdev);
- 	else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
+ 		if (fatal_signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -145,7 +145,7 @@ int ecryptfs_write(struct file *ecryptfs
+ 			num_bytes = total_remaining_bytes;
+ 		if (pos < offset) {
+ 			/* remaining zeros to write, up to destination offset */
+-			size_t total_remaining_zeros = (offset - pos);
++			loff_t total_remaining_zeros = (offset - pos);
+ 
+ 			if (num_bytes > total_remaining_zeros)
+ 				num_bytes = total_remaining_zeros;
 
 
