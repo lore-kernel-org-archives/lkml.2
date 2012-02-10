@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab2BJFOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:14:11 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41362 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2BJFOK convert rfc822-to-8bit (ORCPT
+	id S1751969Ab2BJFR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:17:26 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34480 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab2BJFRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:14:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120209234844.GG19392@google.com>
-References: <4F315113.5010804@kernel.dk>
-	<CA+55aFxcjE4FsUVoarc+8OTi4OkqtgBmHq500=qaCeTqqWnqoA@mail.gmail.com>
-	<20120207164735.GH21292@google.com>
-	<CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
-	<CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
-	<20120208162925.GA19392@google.com>
-	<CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
-	<20120209175948.GE19392@google.com>
-	<CA+55aFzVmb_DfPPDyeON9X2KAii79g=NszPi+k9jrNLdQS7+4g@mail.gmail.com>
-	<20120209192431.GF19392@google.com>
-	<20120209234844.GG19392@google.com>
-Date: Fri, 10 Feb 2012 13:14:09 +0800
-X-Google-Sender-Auth: tU6-0BVHbfFVZXDcLWpRycxeh_c
-Message-ID: <CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com>
-Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
-From: Shaohua Li <shli@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Feb 2012 00:17:25 -0500
+Date: Fri, 10 Feb 2012 16:17:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Evgeniy Polyakov <zbr@ioremap.net>
+Subject: linux-next: manual merge of the kmap_atomic tree with Linus' tree
+Message-Id: <20120210161714.a769968c1569bcd30ec79956@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_Feb_2012_16_17_14_+1100_nd0me_y0agD1IMON"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/10 Tejun Heo <tj@kernel.org>:
-> Hello, Shaohua.
->
-> Can you please test the following one?  It's probably the simplest
-> version w/o RCU and wq deferring.  RCUfying isn't too bad but I'm
-> still a bit hesitant because RCU coverage needs to be extended to
-> request_queue via conditional synchronize_rcu() in queue exit path
-> (can't enforce delayed RCU free on request_queues and unconditional
-> synchronize_rcu() may cause excessive delay during boot for certain
-> configurations).  It now can be done in the block core layer proper so
-> it shouldn't be as bad tho.  If this too flops, I'll get to that.
-doesn't work.
+--Signature=_Fri__10_Feb_2012_16_17_14_+1100_nd0me_y0agD1IMON
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Cong,
+
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+drivers/staging/pohmelfs/inode.c between commit 67435319866f ("staging:
+pohmelfs: remove drivers/staging/pohmelfs") from Linus' tree and commit
+709bc0d6b5c6 ("pohmelfs: remove the second argument of k[un]map_atomic
+()") from the kmap_atomic tree.
+
+The former removes the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__10_Feb_2012_16_17_14_+1100_nd0me_y0agD1IMON
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPNKhaAAoJEECxmPOUX5FEQDwQAIjLqVhLi7dTXW0bpU4RftOo
+Ao0F5+1OfR3lDb3T28HX6+GP9++QftQhp149yU0HF8hjgfWtMJuW/ldK8wWLgMyC
+brOJZcXdTHkSzf3WrimAIfZooOexvksWLoPoZD6WnpUOFUVeHLS9jwCmHNOg2+zt
+akUaXRQ10zs2+x9zRXf/iFysmv4UFKJD1zBpt6WNGrq+06foLFsgKWSjdkJF9hVY
+K4Wom1+cLjxyhY97XbIAMuae0bAgjhm8BLoElOeKGA0GW4HwtRuoUED+bcCUU9Re
+UcHvUTX3e5JawCxRyDE7EdiUIKw2we+5xY6tJSYl7LVB0CHn82ELfnbAgKH+8x2H
+xsKH0HJkV+yVdwlQI2K9p5qECPfyl5LHslapUFelhrEsJV53alexPfUe+5LDZroY
+DULZpPD1oFceZH0cfRY8uqDi1qJlNjwhoRINJrgFKbWTBteb0gxXQOpePoZ4f7eT
+ROudwHAERdkZ6CsxV6hhtHjT+DXmapyw2V2fYo52RMeBAIZdYayBHhIsEg7bg7yl
+nbLDuDJnTIz1UGibe4AbJN93S+/CnNn7bHMgyKFdeZ/UYFC6LGFUf2FnXWx0O37p
+Ecv5vt4qFG0tqrxNEM8YGKJm70oo5em2aFjhZ1GBFsCZ0TQTJpmQOIQwP2BMUPfp
+SbVDPoRhjuK9ynsxC+DO
+=KQ4A
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Feb_2012_16_17_14_+1100_nd0me_y0agD1IMON--
