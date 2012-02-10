@@ -1,96 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab2BJQCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:02:18 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18822 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758212Ab2BJQCR (ORCPT
+	id S1759483Ab2BJQC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:02:29 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15844 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757501Ab2BJQC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:02:17 -0500
+	Fri, 10 Feb 2012 11:02:27 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 10 Feb 2012 08:02:16 -0800
+	by hqnvupgp06.nvidia.com on Fri, 10 Feb 2012 08:02:26 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
         lars@metafoo.de, linux-kernel@vger.kernel.org
 Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V3 1/2] regmap: Support for caching in reg_raw_write()
-Date: Fri, 10 Feb 2012 21:30:27 +0530
-Message-Id: <1328889628-13151-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 2/2] regmap: add regmap_bulk_write() for register write
+Date: Fri, 10 Feb 2012 21:30:28 +0530
+Message-Id: <1328889628-13151-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1328889628-13151-1-git-send-email-ldewangan@nvidia.com>
+References: <1328889628-13151-1-git-send-email-ldewangan@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for caching of data into the
-non-volatile register from the call of reg_raw_write().
-
-This will allow the larger block of data write into multiple
-register without worrying whether register is cached or not
-through reg_raw_write().
+The bulk_write() supports the data transfer to multi
+register which takes the data into cpu_endianness format
+and does formatting of data to device format before
+sending to device.
+The transfer can be completed in single transfer or multiple
+transfer based on data formatting.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
 Changes from V1: 
-- Add register number and return value in error case.
-- Some variable usage cleanups..
+- Change commit message.
+- Byte swapping in input data packet.
 Changes from V2:
-- Fixing register number during error printing.
- drivers/base/regmap/regmap.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+- Remove formatting if val_byte is 1.
+- Allocating proper size of memory for val_byte != 1
+ drivers/base/regmap/regmap.c |   61 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |    2 +
+ 2 files changed, 63 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 80129c0..ba92217 100644
+index ba92217..a1656a7 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -323,6 +323,26 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 			if (!map->writeable_reg(map->dev, reg + i))
- 				return -EINVAL;
+@@ -482,6 +482,67 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
  
-+	if (!map->cache_bypass && map->format.parse_val) {
-+		unsigned int ival;
-+		int val_bytes = map->format.val_bytes;
-+		for (i = 0; i < val_len / val_bytes; i++) {
-+			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-+			ival = map->format.parse_val(map->work_buf);
-+			ret = regcache_write(map, reg + i, ival);
++/*
++ * regmap_bulk_write(): Write multiple registers to the device
++ *
++ * @map: Register map to write to
++ * @reg: First register to be write from
++ * @val: Block of data to be written, in native register size for device
++ * @val_count: Number of registers to write
++ *
++ * This function is intended to be used for writing a large block of
++ * data to be device either in single transfer or multiple transfer.
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++		     size_t val_count)
++{
++	int ret = 0, i;
++	unsigned int ival;
++	size_t val_bytes = map->format.val_bytes;
++
++	mutex_lock(&map->lock);
++
++	if (map->format.parse_val) {
++		void *wval;
++		/* No formatting is require if val_byte is 1 */
++		if (val_bytes == 1)
++			wval = (void *)val;
++		else {
++			wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
++			if (!wval) {
++				mutex_unlock(&map->lock);
++				dev_err(map->dev,
++					"Error in memory allocation\n");
++				return -ENOMEM;
++			}
++			for (i = 0; i < val_count * val_bytes; i += val_bytes)
++				map->format.parse_val(wval + i);
++		}
++		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
++
++		if (val_bytes != 1)
++			kfree(wval);
++	} else {
++		for (i = 0; i < val_count; i++) {
++			memcpy(&ival, val + (i * val_bytes), val_bytes);
++			ret = _regmap_write(map, reg + i, ival);
 +			if (ret) {
 +				dev_err(map->dev,
-+				   "Error in caching of register: %u ret: %d\n",
-+					reg + i, ret);
-+				return ret;
++				    "Error in register %u write, ret %d\n",
++						reg + i, ret);
++				break;
 +			}
-+		}
-+		if (map->cache_only) {
-+			map->cache_dirty = true;
-+			return 0;
 +		}
 +	}
 +
- 	map->format.format_reg(map->work_buf, reg);
- 
- 	u8[0] |= map->write_flag_mask;
-@@ -373,7 +393,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
- 	int ret;
- 	BUG_ON(!map->format.format_write && !map->format.format_val);
- 
--	if (!map->cache_bypass) {
-+	if (!map->cache_bypass && map->format.format_write) {
- 		ret = regcache_write(map, reg, val);
- 		if (ret != 0)
- 			return ret;
-@@ -450,12 +470,8 @@ EXPORT_SYMBOL_GPL(regmap_write);
- int regmap_raw_write(struct regmap *map, unsigned int reg,
- 		     const void *val, size_t val_len)
++	mutex_unlock(&map->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_bulk_write);
++
+ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 			    unsigned int val_len)
  {
--	size_t val_count = val_len / map->format.val_bytes;
- 	int ret;
- 
--	WARN_ON(!regmap_volatile_range(map, reg, val_count) &&
--		map->cache_type != REGCACHE_NONE);
--
- 	mutex_lock(&map->lock);
- 
- 	ret = _regmap_raw_write(map, reg, val, val_len);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a6ed6e6..0925e24 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -135,6 +135,8 @@ int regmap_reinit_cache(struct regmap *map,
+ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
+ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 		     const void *val, size_t val_len);
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++			size_t val_count);
+ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
+ int regmap_raw_read(struct regmap *map, unsigned int reg,
+ 		    void *val, size_t val_len);
 -- 
 1.7.1.1
 
