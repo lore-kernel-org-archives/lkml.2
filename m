@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab2BJFmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:42:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26521 "EHLO mx1.redhat.com"
+	id S1758565Ab2BJFmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:42:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18667 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab2BJFmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:42:02 -0500
+	id S1752105Ab2BJFmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:42:11 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>, Stuart Menefy <stuart.menefy@st.com>,
-        linux-sh@vger.kernel.org
-Subject: [PATCH 06/60] sh: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:27 +0800
-Message-Id: <1328852421-19678-7-git-send-email-amwang@redhat.com>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-mips@linux-mips.org
+Subject: [PATCH 04/60] mips: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:25 +0800
+Message-Id: <1328852421-19678-5-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,48 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- arch/sh/mm/cache-sh4.c |    4 ++--
- arch/sh/mm/cache.c     |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ arch/mips/mm/c-r4k.c |    4 ++--
+ arch/mips/mm/init.c  |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/sh/mm/cache-sh4.c b/arch/sh/mm/cache-sh4.c
-index 92eb986..112fea1 100644
---- a/arch/sh/mm/cache-sh4.c
-+++ b/arch/sh/mm/cache-sh4.c
-@@ -244,7 +244,7 @@ static void sh4_flush_cache_page(void *args)
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index 4f9eb0b..c97087d 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -498,7 +498,7 @@ static inline void local_r4k_flush_cache_page(void *args)
  		if (map_coherent)
- 			vaddr = kmap_coherent(page, address);
+ 			vaddr = kmap_coherent(page, addr);
  		else
 -			vaddr = kmap_atomic(page, KM_USER0);
 +			vaddr = kmap_atomic(page);
- 
- 		address = (unsigned long)vaddr;
+ 		addr = (unsigned long)vaddr;
  	}
-@@ -259,7 +259,7 @@ static void sh4_flush_cache_page(void *args)
+ 
+@@ -521,7 +521,7 @@ static inline void local_r4k_flush_cache_page(void *args)
  		if (map_coherent)
- 			kunmap_coherent(vaddr);
+ 			kunmap_coherent();
  		else
 -			kunmap_atomic(vaddr, KM_USER0);
 +			kunmap_atomic(vaddr);
  	}
  }
  
-diff --git a/arch/sh/mm/cache.c b/arch/sh/mm/cache.c
-index 5a580ea..616966a 100644
---- a/arch/sh/mm/cache.c
-+++ b/arch/sh/mm/cache.c
-@@ -95,7 +95,7 @@ void copy_user_highpage(struct page *to, struct page *from,
+diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
+index 3b3ffd4..1a85ba9 100644
+--- a/arch/mips/mm/init.c
++++ b/arch/mips/mm/init.c
+@@ -207,21 +207,21 @@ void copy_user_highpage(struct page *to, struct page *from,
  {
  	void *vfrom, *vto;
  
 -	vto = kmap_atomic(to, KM_USER1);
 +	vto = kmap_atomic(to);
- 
- 	if (boot_cpu_data.dcache.n_aliases && page_mapped(from) &&
- 	    test_bit(PG_dcache_clean, &from->flags)) {
-@@ -103,16 +103,16 @@ void copy_user_highpage(struct page *to, struct page *from,
+ 	if (cpu_has_dc_aliases &&
+ 	    page_mapped(from) && !Page_dcache_dirty(from)) {
+ 		vfrom = kmap_coherent(from, vaddr);
  		copy_page(vto, vfrom);
- 		kunmap_coherent(vfrom);
+ 		kunmap_coherent();
  	} else {
 -		vfrom = kmap_atomic(from, KM_USER0);
 +		vfrom = kmap_atomic(from);
@@ -71,33 +74,14 @@ index 5a580ea..616966a 100644
 -		kunmap_atomic(vfrom, KM_USER0);
 +		kunmap_atomic(vfrom);
  	}
- 
- 	if (pages_do_alias((unsigned long)vto, vaddr & PAGE_MASK) ||
- 	    (vma->vm_flags & VM_EXEC))
- 		__flush_purge_region(vto, PAGE_SIZE);
- 
+ 	if ((!cpu_has_ic_fills_f_dc) ||
+ 	    pages_do_alias((unsigned long)vto, vaddr & PAGE_MASK))
+ 		flush_data_cache_page((unsigned long)vto);
 -	kunmap_atomic(vto, KM_USER1);
 +	kunmap_atomic(vto);
  	/* Make sure this page is cleared on other CPU's too before using it */
  	smp_wmb();
  }
-@@ -120,14 +120,14 @@ EXPORT_SYMBOL(copy_user_highpage);
- 
- void clear_user_highpage(struct page *page, unsigned long vaddr)
- {
--	void *kaddr = kmap_atomic(page, KM_USER0);
-+	void *kaddr = kmap_atomic(page);
- 
- 	clear_page(kaddr);
- 
- 	if (pages_do_alias((unsigned long)kaddr, vaddr & PAGE_MASK))
- 		__flush_purge_region(kaddr, PAGE_SIZE);
- 
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- }
- EXPORT_SYMBOL(clear_user_highpage);
- 
 -- 
 1.7.7.6
 
