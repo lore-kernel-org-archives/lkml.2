@@ -1,38 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573Ab2BJRpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:45:47 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39131 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751397Ab2BJRpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:45:46 -0500
-Message-ID: <1328895943.14197.1.camel@joe2Laptop>
-Subject: Re: [PATCH] scripts/coccinelle/misc/boolinit.cocci: semantic patch
- for bool issues
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        bruce.w.allan@intel.com, rusty@rustcorp.com.au
-Date: Fri, 10 Feb 2012 09:45:43 -0800
-In-Reply-To: <1328893887-28932-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1328893887-28932-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1759612Ab2BJRqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:46:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61566 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759554Ab2BJRqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:46:06 -0500
+Message-ID: <4F3557D9.7000408@redhat.com>
+Date: Fri, 10 Feb 2012 17:46:01 +0000
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Denys Vlasenko <vda.linux@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] ptrace: remove PTRACE_SEIZE_DEVEL bit
+References: <1328884991-23889-1-git-send-email-vda.linux@googlemail.com> <1328884991-23889-2-git-send-email-vda.linux@googlemail.com> <1328884991-23889-3-git-send-email-vda.linux@googlemail.com> <1328884991-23889-4-git-send-email-vda.linux@googlemail.com> <1328884991-23889-5-git-send-email-vda.linux@googlemail.com> <1328884991-23889-6-git-send-email-vda.linux@googlemail.com> <20120210172427.GE8908@redhat.com>
+In-Reply-To: <20120210172427.GE8908@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-10 at 18:11 +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi,
 
-Thanks Julia.  It seems to work well.
+Do new auto-attached clones still generate SIGSTOP, or has than been fixed already?
 
-Someone could run this with:
-
-$ make coccicheck COCCI=scripts/coccinelle/misc/boolinit.cocci
-
+-- 
+Pedro Alves
