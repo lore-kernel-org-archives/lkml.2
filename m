@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874Ab2BJXFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:05:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932812Ab2BJWnh (ORCPT
+	id S932662Ab2BJWnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:43:35 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932774Ab2BJWnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:43:37 -0500
+	Fri, 10 Feb 2012 17:43:25 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222950.729037851@clark.kroah.org>
+Message-Id: <20120210222952.352208385@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:23 -0800
+Date: Fri, 10 Feb 2012 14:30:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Brown <davidb@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [patch 64/86] iommu/msm: Fix error handling in msm_iommu_unmap()
+        alan@lxorguk.ukuu.org.uk, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [patch 82/86] zcache: Set SWIZ_BITS to 8 to reduce tmem bucket lock contention.
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-commit 05df1f3c2afaef5672627f2b7095f0d4c4dbc3a0 upstream.
+commit e8b4553457e78bcff90f70a31212a40a8fd4f0db upstream.
 
-Error handling in msm_iommu_unmap() is broken. On some error
-conditions retval is set to a non-zero value which causes
-the function to return 'len' at the end. This hides the
-error from the user. Zero should be returned in those error
-cases.
+SWIZ_BITS > 8 results in a much larger number of "tmem_obj"
+allocations, likely one per page-placed-in-frontswap.  The
+tmem_obj is not huge (roughly 100 bytes), but it is large
+enough to add a not-insignificant memory overhead to zcache.
 
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Acked-by: David Brown <davidb@codeaurora.org>
+The SWIZ_BITS=8  will get roughly the same lock contention
+without the space wastage.
+
+The effect of SWIZ_BITS can be thought of as "2^SWIZ_BITS is
+the number of unique oids that be generated" (This concept is
+limited to frontswap's use of tmem).
+
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/msm_iommu.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/staging/zcache/zcache-main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/msm_iommu.c
-+++ b/drivers/iommu/msm_iommu.c
-@@ -481,23 +481,19 @@ static int msm_iommu_unmap(struct iommu_
- 
- 	priv = domain->priv;
- 
--	if (!priv) {
--		ret = -ENODEV;
-+	if (!priv)
- 		goto fail;
--	}
- 
- 	fl_table = priv->pgtable;
- 
- 	if (len != SZ_16M && len != SZ_1M &&
- 	    len != SZ_64K && len != SZ_4K) {
- 		pr_debug("Bad length: %d\n", len);
--		ret = -EINVAL;
- 		goto fail;
- 	}
- 
- 	if (!fl_table) {
- 		pr_debug("Null page table\n");
--		ret = -EINVAL;
- 		goto fail;
- 	}
- 
-@@ -506,7 +502,6 @@ static int msm_iommu_unmap(struct iommu_
- 
- 	if (*fl_pte == 0) {
- 		pr_debug("First level PTE is 0\n");
--		ret = -ENODEV;
- 		goto fail;
- 	}
- 
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1782,9 +1782,9 @@ static int zcache_frontswap_poolid = -1;
+  * Swizzling increases objects per swaptype, increasing tmem concurrency
+  * for heavy swaploads.  Later, larger nr_cpus -> larger SWIZ_BITS
+  * Setting SWIZ_BITS to 27 basically reconstructs the swap entry from
+- * frontswap_get_page()
++ * frontswap_get_page(), but has side-effects. Hence using 8.
+  */
+-#define SWIZ_BITS		27
++#define SWIZ_BITS		8
+ #define SWIZ_MASK		((1 << SWIZ_BITS) - 1)
+ #define _oswiz(_type, _ind)	((_type << SWIZ_BITS) | (_ind & SWIZ_MASK))
+ #define iswiz(_ind)		(_ind >> SWIZ_BITS)
 
 
