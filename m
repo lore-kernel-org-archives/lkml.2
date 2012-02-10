@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759330Ab2BJNtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:49:20 -0500
-Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:40803 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757937Ab2BJNtT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:49:19 -0500
+	id S1759347Ab2BJNuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:50:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53772 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab2BJNuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 08:50:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120210134646.GB4998@infradead.org>
-References: <20120209103016.GA1999@quad>
-	<20120209144844.GA4998@infradead.org>
-	<CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com>
-	<20120210134646.GB4998@infradead.org>
-Date: Fri, 10 Feb 2012 14:49:17 +0100
-Message-ID: <CABPqkBSuSmnGB2J53kvwJYcUndC5RRC76w_kzZjSCX49n_iyFg@mail.gmail.com>
-Subject: Re: [PATCH] perf: add sanity check on addr in symbol__inc_addr_samples()
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu
+In-Reply-To: <CA+55aFzePmV8st-PaQeO_eS05CUWQePDoQsXdd=HaiLffz+wxw@mail.gmail.com>
+References: <20120209154819.32070.93358.stgit@warthog.procyon.org.uk>
+	<1328804920.6099.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CA+55aFxHdFa4otDWJg4f+8sKEP3MBZqKBQCnH0Q8LXYtpdt1EA@mail.gmail.com>
+	<CA+55aFyw1n=Bz3vi73RD5R13HyWLaVyPZc_z5rR7nGPzvs-BOw@mail.gmail.com>
+	<7095.1328809567@redhat.com>
+	<CA+55aFw5z85wuU8xJ_YFp0QB653yAGPOqeGXhJLbdj9ogpHqOA@mail.gmail.com>
+	<8689.1328810841@redhat.com>
+	<CA+55aFwxTe6+zng6OnK_oHBxwLsX+Z7wD45d=XLTGSL+6aoh9g@mail.gmail.com>
+	<21276.1328813456@redhat.com>
+	<CA+55aFzePmV8st-PaQeO_eS05CUWQePDoQsXdd=HaiLffz+wxw@mail.gmail.com>
+Date: Fri, 10 Feb 2012 15:50:02 +0200
+Message-ID: <CACVxJT9Z5On2hzZ68qVuj1XM79UzM_ECN81e34p0Y0+V9CLU_w@mail.gmail.com>
+Subject: Re: [PATCH] Reduce the number of expensive division instructions done
+ by _parse_integer()
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 2:46 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Thu, Feb 09, 2012 at 03:53:14PM +0100, Stephane Eranian escreveu:
->> On Thu, Feb 9, 2012 at 3:48 PM, Arnaldo Carvalho de Melo
->> <acme@redhat.com> wrote:
->> > Em Thu, Feb 09, 2012 at 11:30:16AM +0100, Stephane Eranian escreveu:
->> >>
->> >> Check the value of addr against the bounds of the symbol.
->> >> This is needed given we compute an offset:
->> >>       offset = addr - sym->start
->> >>
->> >> And we don't want the offset to become negative.
->> >
->> > I'll try and add a debug option to show the backtrace and values of
->> > addr, sym, etc, so that we can fix the real problem.
->
->> > I.e. this function shouldn't be receiving any such invalid addresses, as
->> > the symbol lookup was done, the symbol was found to be this one, then
->> > why it would be out of bounds at this point?!
->
->> I tend to agree with you on this. But then I don't see why the first test
->> was there.
->
-> Its wrong as well, we should leave it there, together with the new test,
-> but as:
->
->        BUG_ON(addr >= sym->end || addr < sym->start)
->
-Fine with me. It makes more sense.
+On Thu, Feb 9, 2012 at 10:14 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-> - Arnaldo
->
->> > - Arnaldo
->> >
->> >> Signed-off-by: Stephane Eranian <eranian@google.com>
->> >>
->> >> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
->> >> index 011ed26..8248d80 100644
->> >> --- a/tools/perf/util/annotate.c
->> >> +++ b/tools/perf/util/annotate.c
->> >> @@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
->> >>
->> >>       pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
->> >>
->> >> -     if (addr >= sym->end)
->> >> +     if (addr >= sym->end || addr < sym->start)
->> >>               return 0;
->> >>
->> >>       offset = addr - sym->start;
+Ugh, I'm late to the party.
+
+> Because quite frankly, I think we only support bases 8/10/16 in the
+> kernel, and if you really have some case where this all is expensive,
+> it might be better to simply have three different functions for the
+> three bases. That would turn the multiplies into constants too, and
+> also simplify the character tests.
+
+base 2 is used to sort of autolimit input to 0/1 characters.
+
+> That said, I can't really see how this could ever be all that hot a
+> function. Did you ever see it in a profile, or was this all just from
+> looking at the code?
+
+That's why there was no such check from the beginning -- not
+performance critical.
+We could maintain small table from which digit overflow can happen,
+but since this is already committed...
+
+There is CONFIG_TEST_KSTRTOX, does it still passes?
