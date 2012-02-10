@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab2BJMAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 07:00:12 -0500
-Received: from smtp-out-160.synserver.de ([212.40.185.160]:1037 "EHLO
-	smtp-out-156.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754750Ab2BJMAK (ORCPT
+	id S1758697Ab2BJMFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 07:05:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54596 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab2BJMFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 07:00:10 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11921
-Message-ID: <4F350716.9050407@metafoo.de>
-Date: Fri, 10 Feb 2012 13:01:26 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regmap: Support for caching in reg_raw_write()
-References: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 10 Feb 2012 07:05:16 -0500
+Message-ID: <1328875492.2695.1.camel@phoenix>
+Subject: [PATCH] drm: Fix kcalloc parameters swapped
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Keith Packard <keithp@keithp.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        dri-devel@lists.freedesktop.org
+Date: Fri, 10 Feb 2012 20:04:52 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 12:32 PM, Laxman Dewangan wrote:
-> Adding support for caching of data into the
-> non-volatile register from the call of reg_raw_write().
-> 
-> This will allow the larger block of data write into multiple
-> register without worrying whether register is cached or not
-> through reg_raw_write().
-> 
+The first parameter should be "number of elements" and the second parameter
+should be "element size".
 
-In my opinion it makes more sense to introduce a regmap_bulk_write function
-for this. regmap_raw_write was not really meant to write registers but
-rather binary blobs, like firmware. Also this keeps things consistent with
-the read part of the regmap API.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpu/drm/gma500/intel_gmbus.c |    2 +-
+ drivers/gpu/drm/i915/intel_i2c.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/base/regmap/regmap.c |   25 ++++++++++++++++++++-----
->  1 files changed, 20 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> index 80129c0..e5986ab 100644
-> --- a/drivers/base/regmap/regmap.c
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -323,6 +323,25 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
->  			if (!map->writeable_reg(map->dev, reg + i))
->  				return -EINVAL;
->  
-> +	if (!map->cache_bypass && map->format.parse_val) {
-> +		int val_bytes = map->format.val_bytes;
-> +		unsigned int ival;
-> +		for (i = 0; i < val_len / map->format.val_bytes; i++) {
-> +			memcpy(map->work_buf, val + (i * val_bytes), val_bytes);
-> +			ival = map->format.parse_val(map->work_buf);
-> +			ret = regcache_write(map, reg + i, ival);
-> +			if (ret) {
-> +				dev_warn(map->dev,
-> +					"Error in caching of register\n");
-> +				return ret;
-> +			}
-> +		}
-> +		if (map->cache_only) {
-> +			map->cache_dirty = true;
-> +			return 0;
-> +		}
-> +	}
-> +
->  	map->format.format_reg(map->work_buf, reg);
->  
->  	u8[0] |= map->write_flag_mask;
-> @@ -373,7 +392,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
->  	int ret;
->  	BUG_ON(!map->format.format_write && !map->format.format_val);
->  
-> -	if (!map->cache_bypass) {
-> +	if (!map->cache_bypass && map->format.format_write) {
->  		ret = regcache_write(map, reg, val);
->  		if (ret != 0)
->  			return ret;
-> @@ -450,12 +469,8 @@ EXPORT_SYMBOL_GPL(regmap_write);
->  int regmap_raw_write(struct regmap *map, unsigned int reg,
->  		     const void *val, size_t val_len)
->  {
-> -	size_t val_count = val_len / map->format.val_bytes;
->  	int ret;
->  
-> -	WARN_ON(!regmap_volatile_range(map, reg, val_count) &&
-> -		map->cache_type != REGCACHE_NONE);
-> -
->  	mutex_lock(&map->lock);
->  
->  	ret = _regmap_raw_write(map, reg, val, val_len);
+diff --git a/drivers/gpu/drm/gma500/intel_gmbus.c b/drivers/gpu/drm/gma500/intel_gmbus.c
+index 147584a..9db9052 100644
+--- a/drivers/gpu/drm/gma500/intel_gmbus.c
++++ b/drivers/gpu/drm/gma500/intel_gmbus.c
+@@ -395,7 +395,7 @@ int gma_intel_setup_gmbus(struct drm_device *dev)
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	int ret, i;
+ 
+-	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus), GMBUS_NUM_PORTS,
++	dev_priv->gmbus = kcalloc(GMBUS_NUM_PORTS, sizeof(struct intel_gmbus),
+ 				  GFP_KERNEL);
+ 	if (dev_priv->gmbus == NULL)
+ 		return -ENOMEM;
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index 7fa4f64..03573e0 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -375,7 +375,7 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int ret, i;
+ 
+-	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus), GMBUS_NUM_PORTS,
++	dev_priv->gmbus = kcalloc(GMBUS_NUM_PORTS, sizeof(struct intel_gmbus),
+ 				  GFP_KERNEL);
+ 	if (dev_priv->gmbus == NULL)
+ 		return -ENOMEM;
+-- 
+1.7.5.4
+
+
 
