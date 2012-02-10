@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab2BJUgL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:36:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37223 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab2BJUgK (ORCPT
+	id S932476Ab2BJUht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:37:49 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53318 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045Ab2BJUhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:36:10 -0500
-Subject: Re: WARNING: at arch/x86/kernel/smp.c:119
- native_smp_send_reschedule+0x25/0x43()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
-        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        x86 <x86@kernel.org>, Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-In-Reply-To: <20120210203117.GI5650@redhat.com>
-References: <1328751082.5611.6.camel@lappy>
-	 <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
-	 <CA+1xoqfYPYi2godgsgmnX7z7GQL+spNmMZhpdGU4UqfYGTB06g@mail.gmail.com>
-	 <4F34EC35.7010109@linux.vnet.ibm.com> <1328900283.25989.45.camel@laptop>
-	 <1328900633.25989.47.camel@laptop> <20120210200250.GG5650@redhat.com>
-	 <1328905121.25989.52.camel@laptop>  <20120210203117.GI5650@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 10 Feb 2012 21:36:03 +0100
-Message-ID: <1328906163.25989.59.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Feb 2012 15:37:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120210201850.GA26892@m.redhat.com>
+References: <1328873119-21553-1-git-send-email-jolsa@redhat.com>
+ <1328895795.25989.29.camel@laptop> <CA+55aFxgPXjGh0GSHaUGm6-Pfdjjk=PAP7HMuZHcFGE92VutUQ@mail.gmail.com>
+ <20120210192714.GE4998@infradead.org> <20120210194426.GA17650@elte.hu> <20120210201850.GA26892@m.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 10 Feb 2012 12:37:28 -0800
+X-Google-Sender-Auth: WuQEi5QvcN4rXZIO7sTzrPSN6WQ
+Message-ID: <CA+55aFzhenNyPUzAVpXhuxfVpAuowY+OcvPGyfg8_o9NN4SDtw@mail.gmail.com>
+Subject: Re: [RFC 0/5] kernel: backtrace unwind support
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Jan Blunck <jblunck@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-10 at 15:31 -0500, Don Zickus wrote:
-> So my second patch which I will eventually post will just skip the WARN_ON
-> if the system is going down.  Not sure if that is the proper way to address
-> this problem or change all of the stop_this_cpu code to use a different
-> bitmask than the cpu_online bitmask (but then you run the risk of a stuck
-> IPI I guess if the cpu is halted without notifying anyone). 
+On Fri, Feb 10, 2012 at 12:18 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>
+> yep, looks interesting.. not sure about the mathematical proof though ;)
 
-Yeah, the async hard kill of all cpus is bound to make problems.. what
-I'm wondering is, why is this in the normal shutdown path and not
-specific to a hard panic?
+Well, I can already say what the old code did horribly horribly wrong:
 
-Trying to make this work is just not going to be pretty, and in the
-panic case we really don't care much.
+ - *all* stack accesses need to go through a validation function, they
+can never *ever* just try to access the stack.
 
+    The validation function really needs to really check the full
+range of the stack area, not something random.
+
+ - all dwarf information accesses need to similarly validate the
+access, and accept that sometimes the dwarf info is simply missing or
+actively wrong.
+
+Basically, by the time a fault happens, EVERY SINGLE PIECE OF DATA YOU
+ACCESS needs to be thought of as untrusted. Because it really is. We
+took some kind of kernel fault, there clearly is a bug somewhere. The
+old unwinder thing just had the approach that "my code is perfect, and
+I can trust the unwind data", which was fundamentally incorrect and
+wrong.
+
+The code needs to be really *obviously* correct and really crazy anal
+at the same time. And it's *hard* to write careful code in a way that
+makes it obvious too.
+
+It's triply hard to do it when you start off from code from user space
+written by people who simply don't care and don't even have the same
+kinds of issues we do in the kernel.
+
+The code we have now isn't exactly pretty either, but it has two
+*huge* advantages:
+
+ - it's tested in real life and thus largely trusted
+
+ - it's pretty simple, and it does have a lot of stack validation.
+
+                    Linus
