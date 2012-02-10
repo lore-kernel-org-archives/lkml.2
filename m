@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab2BJSCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:02:31 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62918 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab2BJSCa (ORCPT
+	id S1759717Ab2BJSCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:02:35 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43021 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2BJSCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:02:30 -0500
-Date: Fri, 10 Feb 2012 10:00:37 -0800
+	Fri, 10 Feb 2012 13:02:32 -0500
+Date: Fri, 10 Feb 2012 10:02:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: Staging: bcm: Don't leak 'pstAddIndication' in
- CmHost.c::StoreCmControlResponseMessage()
-Message-ID: <20120210180037.GA588@kroah.com>
-References: <alpine.LNX.2.00.1201242338500.27508@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1201242346380.27508@swampdragon.chaosbits.net>
- <20120209175217.GA13959@kroah.com>
- <alpine.LNX.2.00.1202092329110.32491@swampdragon.chaosbits.net>
+To: "K. Y. Srinivasan" <kys@microsoft.com>, jbottomley@parallels.com
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+ the staging area
+Message-ID: <20120210180212.GA605@kroah.com>
+References: <1328825688-4337-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1202092329110.32491@swampdragon.chaosbits.net>
+In-Reply-To: <1328825688-4337-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 11:33:25PM +0100, Jesper Juhl wrote:
-> From: Jesper Juhl <jj@codesealer.com>
+On Thu, Feb 09, 2012 at 02:14:48PM -0800, K. Y. Srinivasan wrote:
+> The storage driver (storvsc_drv.c) handles all block storage devices
+> assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> staging tree for a while and this patch moves it out of the staging area.
 > 
-> We allocate memory for 'pstAddIndication' with kmalloc() in
-> drivers/staging/bcm/CmHost.c::StoreCmControlResponseMessage() and then
-> neglect to free it on a number of exit paths from that function.
+> James was willing to apply this patch during the 3.3-rc phase and a decision
+> was taken to defer this to 3.4 since Greg had queued up a bunch of storvsc
+> patches for 3.4. Now that Greg has applied all of the pending storvsc patches,
+> I am sending this patch to move this driver out of staging. Based on James'
+> recommendation, this patch gets rid of the unneeded files in the staging/hv
+> directory.
 > 
-> This could probably be resolved cleaner/nicer, but this file needs a
-> serious overhaul in any case, so I opted for just fixing the problem
-> as directly as I could and then we can clean it up generally
-> later... This at least makes it stop bleeding..
-> 
-> Signed-off-by: Jesper Juhl <jj@codesealer.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/scsi/Kconfig                       |    7 +++++++
+>  drivers/scsi/Makefile                      |    3 +++
+>  drivers/{staging/hv => scsi}/storvsc_drv.c |    0
+>  drivers/staging/Kconfig                    |    2 --
+>  drivers/staging/Makefile                   |    1 -
+>  drivers/staging/hv/Kconfig                 |    5 -----
+>  drivers/staging/hv/Makefile                |    3 ---
+>  drivers/staging/hv/TODO                    |    5 -----
+>  8 files changed, 10 insertions(+), 16 deletions(-)
+>  rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
+>  delete mode 100644 drivers/staging/hv/Kconfig
+>  delete mode 100644 drivers/staging/hv/Makefile
+>  delete mode 100644 drivers/staging/hv/TODO
 
-Odd, didn't I already apply this patch?
+James, can I add your Acked-by: for this patch?
 
-confused,
+thanks,
 
 greg k-h
