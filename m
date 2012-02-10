@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab2BJRFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:05:22 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:54175
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757966Ab2BJRFU (ORCPT
+	id S1759400Ab2BJRFf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:05:35 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:53852
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757857Ab2BJRFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:05:20 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZ6SSL-02-8HA-02
+	Fri, 10 Feb 2012 12:05:22 -0500
+X-SpamScore: 3
+X-BigFish: VPS3(zz853kzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZ6SSO-01-1NQ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 0/2 v2] Fix perf-tool crashes when kvm guest is running
-Date: Fri, 10 Feb 2012 18:05:03 +0100
-Message-ID: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
+        Jason Wang <jasowang@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 2/2] perf-tool: Change perf_guest default back to false
+Date: Fri, 10 Feb 2012 18:05:05 +0100
+Message-ID: <1328893505-4115-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
+References: <1328893505-4115-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -29,21 +31,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Setting perf_guest to true by default makes no sense because
+the perf subcommands can not setup guest symbol information
+and thus not process and guest samples. The only exception
+is perf-kvm which changes the perf_guest value on its own.
+So change the default for perf_guest back to false.
 
-here are the fixes I promised. These patches should fix the crashes
-David and Jason have seen by making sure no sample is processed when
-ther is no valid machine object for it. The second patch also changes
-the perf_guest default back to false.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ tools/perf/util/util.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-v1->v2:
-
-* Introduced counter for unprocessable samples
-* Added ui warnings when unprocessable samples are found
-
-Regards,
-
-        Joerg
-
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 8131410..fb25d13 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -6,7 +6,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ bool perf_host  = true;
+-bool perf_guest = true;
++bool perf_guest = false;
+ 
+ void event_attr_init(struct perf_event_attr *attr)
+ {
+-- 
+1.7.5.4
 
 
