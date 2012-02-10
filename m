@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab2BJXQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:16:22 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760617Ab2BJWmA (ORCPT
+	id S1760876Ab2BJXQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:16:40 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36393 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932560Ab2BJXQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:42:00 -0500
+	Fri, 10 Feb 2012 18:16:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuEFAE6kNU95LD+bgWdsb2JhbABDrnd7IwEBFiYngXIBAQU6HCMQCAMOCi4UJQMhE7p9E4sIKDAQAgQHAgcHCwQBCwENAQQRA4NkBQITAQENAQIBCgEEBQODVASVL5J5
+Date: Sat, 11 Feb 2012 10:16:33 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Eric Sandeen <sandeen@sandeen.net>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        mpatocka@redhat.com
+Subject: Re: [PATCH 1/2] vfs: Provide function to get superblock and wait for
+ it to thaw
+Message-ID: <20120210231633.GH12836@dastard>
+References: <1328654267-18855-1-git-send-email-jack@suse.cz>
+ <1328654267-18855-2-git-send-email-jack@suse.cz>
+ <20120208232049.GC7479@dastard>
+ <20120208232705.GF1696@quack.suse.cz>
+ <20120208234703.GG1696@quack.suse.cz>
+ <4F33F640.7040508@sandeen.net>
+ <20120210094858.GC10509@quack.suse.cz>
 MIME-Version: 1.0
-Message-Id: <20120210222948.840691913@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: [patch 43/86] drm/i915: Fix TV Out refresh rate.
-In-Reply-To: <20120210223514.GA24190@kroah.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120210094858.GC10509@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Feb 10, 2012 at 10:48:58AM +0100, Jan Kara wrote:
+> On Thu 09-02-12 10:37:20, Eric Sandeen wrote:
+> > would "wait_for_thaw" vs. "thaw" be any clearer?  Nitpicky I guess but the
+> > meaning of "thawed" isn't immediately clear here.  If it's already thawed?  If
+> > we want to wait for it it to be thawed?  You can figure it out from the callers
+> > but maybe a comment or a different name might help.  No big deal.
+>   How about "wait_thaw". That should be explicit enough...
 
-------------------
+IMO, wait_for_thaw is much easier to read (i.e. better english ;) and
+hence the code documents itself better. There's no reason to skimp
+on characters here - it's not a heavily used variable....
 
-From: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Cheers,
 
-commit 23bd15ec662344dc10e9918fdd0dbc58bc71526d upstream.
-
-TV Out refresh rate was half of the specification for almost all modes.
-Due to this reason pixel clock was so low for some modes causing flickering screen.
-
-Signed-off-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/intel_tv.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -417,7 +417,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name		= "NTSC-M",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 3.580MHz */
-@@ -460,7 +460,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name		= "NTSC-443",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 4.43MHz */
-@@ -502,7 +502,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name		= "NTSC-J",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 
-@@ -545,7 +545,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name		= "PAL-M",
- 		.clock		= 108000,
--		.refresh	= 29970,
-+		.refresh	= 59940,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 
-@@ -589,7 +589,7 @@ static const struct tv_mode tv_modes[] =
- 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
- 		.name	    = "PAL-N",
- 		.clock		= 108000,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 
-@@ -634,7 +634,7 @@ static const struct tv_mode tv_modes[] =
- 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
- 		.name	    = "PAL",
- 		.clock		= 108000,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample	= TV_OVERSAMPLE_8X,
- 		.component_only = 0,
- 
-@@ -821,7 +821,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name       = "1080i@50Hz",
- 		.clock		= 148800,
--		.refresh	= 25000,
-+		.refresh	= 50000,
- 		.oversample     = TV_OVERSAMPLE_2X,
- 		.component_only = 1,
- 
-@@ -847,7 +847,7 @@ static const struct tv_mode tv_modes[] =
- 	{
- 		.name       = "1080i@60Hz",
- 		.clock		= 148800,
--		.refresh	= 30000,
-+		.refresh	= 60000,
- 		.oversample     = TV_OVERSAMPLE_2X,
- 		.component_only = 1,
- 
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
