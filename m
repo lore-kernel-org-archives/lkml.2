@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab2BJU4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:56:25 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59274 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab2BJU4Y convert rfc822-to-8bit (ORCPT
+	id S932554Ab2BJU4t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:56:49 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:54749 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759090Ab2BJU4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:56:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120210125258.55c1f339@jbarnes-desktop>
-References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
-	<1328424908-6385-5-git-send-email-yinghai@kernel.org>
-	<20120208043517.GD8930@ram-ThinkPad-T61>
-	<CAE9FiQUdRLmc-_hHWtaz=8QZiu4Ma6ZY7zavByJnwMDTBQLtzg@mail.gmail.com>
-	<20120208050119.GE8930@ram-ThinkPad-T61>
-	<CAE9FiQUYg8V8RSeh+xiWYxEfSxwEhp9KRXAjVkyhT94Enkqc3Q@mail.gmail.com>
-	<20120210125258.55c1f339@jbarnes-desktop>
-Date: Fri, 10 Feb 2012 12:56:23 -0800
-X-Google-Sender-Auth: OezAWgmt14-BBlWKD2khHEDbfUg
-Message-ID: <CAE9FiQUhqEqJaNf2ya_JmQNMrNpPtx8W=nJWUQ=EwkWTXfYUHw@mail.gmail.com>
-Subject: Re: [PATCH 4/9] PCI: Fix cardbus bridge resources as optional size handling
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
+	Fri, 10 Feb 2012 15:56:47 -0500
+Date: Fri, 10 Feb 2012 12:56:44 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
 Cc: Ram Pai <linuxram@us.ibm.com>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 7/9] PCI: Make pci bridge reallocating enabled/disabled
+Message-ID: <20120210125644.7521a0d8@jbarnes-desktop>
+In-Reply-To: <1328424908-6385-8-git-send-email-yinghai@kernel.org>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+	<1328424908-6385-8-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/k3TtHVE.zN/B2otFIctClFh"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 12:52 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+--Sig_/k3TtHVE.zN/B2otFIctClFh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> > ACK. Ok. got it. This looks correct.
->>
->> Good, So we have
->>
->> Acked-by: Ram Pai <linuxram@us.ibm.com>
->> Tested-by: Dominik Brodowski <linux@dominikbrodowski.net>
->>
->> Hope Jesse will not miss to add them
->
-> Yeah looks fine.  I'd like to see an ack from Dominik on 5/9 as well
-> though.  Can you include the acks and tested-bys when you re-post 3-9
-> with bug references and any other comments included?
+On Sat,  4 Feb 2012 22:55:06 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-sure. Will send them updated acks and etc.
+> Let the user could enable and disable with pci=3Drealloc=3Don or pci=3Dre=
+alloc=3Doff
+>=20
+> Also
+> 1. move variable and functions near the place they are used.
+> 2. change macro to function
+> 3. change related functions and variable to static and _init
+> 4. update parameter description accordingly.
+>=20
+> -v2: still honor pci=3Drealloc, and treat it as pci=3Drealloc=3Don
+>      also use enum instead of ...
+>=20
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  Documentation/kernel-parameters.txt |    8 ++++++--
+>  drivers/pci/pci.c                   |    4 +++-
+>  drivers/pci/pci.h                   |    2 +-
+>  drivers/pci/setup-bus.c             |   33 ++++++++++++++++++++++++++---=
+----
+>  4 files changed, 36 insertions(+), 11 deletions(-)
+>=20
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-p=
+arameters.txt
+> index 033d4e6..e11e5dd 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2109,8 +2109,12 @@ bytes respectively. Such letter suffixes can also =
+be entirely omitted.
+>  				the default.
+>  				off: Turn ECRC off
+>  				on: Turn ECRC on.
+> -		realloc		reallocate PCI resources if allocations done by BIOS
+> -				are erroneous.
+> +		realloc=3D	Enable/disable reallocating PCI bridge resources
+> +				if allocations done by BIOS are too small to fit
+> +				resources required by children devices.
+> +				off: Turn realloc off
+> +				on: Turn realloc on
+> +		realloc		same as realloc=3Don
 
-Yinghai
+"too small to accommodate resources required by all child devices"
+
+Looks good otherwise.
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/k3TtHVE.zN/B2otFIctClFh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNYSMAAoJEIEoDkX4Qk9hKRoQAIRSbIaOKoIECRJqRG2TIwEg
+PtHBuO9/CrtyIuQwGzcu73/1ZCg3qjiyrEAl1SasV2dhG9/ns2HaWzYM1jG4L6sr
+3N4f85nMpc28497kp+zcw+k00S7uFRASml/va0+lEmhVdVPuclqvtd/1F0oIVQOj
+Qadi55BtKlPN4IU08LhKXhSw3cCNq+JYWa7q1uAC6s65qOmQgrnxia7U903LYzqE
+NkCrq6TWw4TErSOZmm5Da2Af8OyVuyZ2bqFEM7FscC6osDviCkYhMANLOtqiDddY
+0rN++1VxqOJP7WM03Oxnpd/Nf4mLuxAq5nxVhTh+phuZWlF8PQGDZBvcrNjc0vpb
+qsJ/arzvPzDAd6CieQMQxx2FrvGywTIGSmP8tAZJtL+MRuvMKiirkLAOCkpJ2LTn
+WpJ/Rl+9EGijlD8kFPJ2I6YBcfx3y9iF/b075IdAxMRqlyJZaFAB1eZIBwlyoBbk
+Hqa8oJEiTkfc45M+ybaX+nVV+CMCeDK4LuX5oMLyOtMX+hfIso3wdAUj04xlDVvY
+WzABEzf9axVi0DaNUZ1vzRDHhF96h+BMPPlAzsvZ3ulY09lGyPsA9U6QvxE1ZGGh
+UNek48HltYMlPcTt7CBR3I3o7+OAfAtijhArlECLfbJcFlQqz53eYLs0iKu/EML0
+08L5os9i8nckgZrNtQHK
+=72Pc
+-----END PGP SIGNATURE-----
+
+--Sig_/k3TtHVE.zN/B2otFIctClFh--
