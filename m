@@ -1,215 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab2BJRLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:11:36 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:59776 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab2BJRLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:11:34 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        bruce.w.allan@intel.com, joe@perches.com, rusty@rustcorp.com.au
-Subject: [PATCH] scripts/coccinelle/misc/boolinit.cocci: semantic patch for bool issues
-Date: Fri, 10 Feb 2012 18:11:27 +0100
-Message-Id: <1328893887-28932-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1758124Ab2BJRQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:16:51 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59550 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754268Ab2BJRQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 12:16:50 -0500
+Date: Fri, 10 Feb 2012 18:17:01 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Yufeng Shen <miletus@chromium.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: Fix race condition in accessing GMBUS
+Message-ID: <20120210171701.GC4311@phenom.ffwll.local>
+Mail-Followup-To: Yufeng Shen <miletus@chromium.org>,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Feb 09, 2012 at 05:14:57PM -0500, Yufeng Shen wrote:
+> GMBUS has several ports and each has it's own corresponding
+> I2C adpater. When multiple I2C adapters call gmbus_xfer() at
+> the same time there is a race condition in using the underlying
+> GMBUS controller. Fixing this by adding a mutex lock when calling
+> gmbus_xfer().
+> 
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> ---
+>  drivers/gpu/drm/i915/i915_drv.h  |    2 ++
+>  drivers/gpu/drm/i915/intel_i2c.c |   21 ++++++++++++++++-----
+>  2 files changed, 18 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+> index 9689ca3..d0f826e 100644
+> --- a/drivers/gpu/drm/i915/i915_drv.h
+> +++ b/drivers/gpu/drm/i915/i915_drv.h
+> @@ -733,6 +733,8 @@ typedef struct drm_i915_private {
+>  	u8 corr;
+>  	spinlock_t *mchdev_lock;
+>  
+> +	struct mutex gmbus_mutex;
+> +
+>  	enum no_fbc_reason no_fbc_reason;
+>  
+>  	struct drm_mm_node *compressed_fb;
+> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+> index d30cccc..24fafdc 100644
+> --- a/drivers/gpu/drm/i915/intel_i2c.c
+> +++ b/drivers/gpu/drm/i915/intel_i2c.c
+> @@ -233,11 +233,16 @@ gmbus_xfer(struct i2c_adapter *adapter,
+>  					       struct intel_gmbus,
+>  					       adapter);
+>  	struct drm_i915_private *dev_priv = adapter->algo_data;
+> -	int i, reg_offset;
+> +	int i, reg_offset, ret;
+>  
+> -	if (bus->force_bit)
+> -		return intel_i2c_quirk_xfer(dev_priv,
+> +	mutex_lock(&dev_priv->gmbus_mutex);
+> +
+> +	if (bus->force_bit) {
+> +		ret = intel_i2c_quirk_xfer(dev_priv,
+>  					    bus->force_bit, msgs, num);
+> +		mutex_unlock(&dev_priv->gmbus_mutex);
+> +		return ret;
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+The usual code pattern is to have
 
----
- scripts/coccinelle/misc/boolinit.cocci |  178 +++++++++++++++++++++++++++++++++
- 1 file changed, 178 insertions(+)
+out:
+	mutex_unlock(mutex)
 
-diff --git a/scripts/coccinelle/misc/boolinit.cocci b/scripts/coccinelle/misc/boolinit.cocci
-new file mode 100644
-index 0000000..b7edfdb
---- /dev/null
-+++ b/scripts/coccinelle/misc/boolinit.cocci
-@@ -0,0 +1,178 @@
-+/// Bool initializations should use true and false.  Bool tests don't need
-+/// comparisons.  Based on contributions from Joe Perches, Rusty Russell
-+/// and Bruce W Allan.
-+///
-+// Confidence: High
-+// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
-+// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Options: -include_headers
-+
-+virtual patch
-+virtual context
-+virtual org
-+virtual report
-+
-+@depends on patch@
-+bool t;
-+symbol true;
-+symbol false;
-+@@
-+
-+(
-+- t == true
-++ t
-+|
-+- true == t
-++ t
-+|
-+- t != true
-++ !t
-+|
-+- true != t
-++ !t
-+|
-+- t == false
-++ !t
-+|
-+- false == t
-++ !t
-+|
-+- t != false
-++ t
-+|
-+- false != t
-++ t
-+)
-+
-+@depends on patch disable is_zero, isnt_zero@
-+bool t;
-+@@
-+
-+(
-+- t == 1
-++ t
-+|
-+- t != 1
-++ !t
-+|
-+- t == 0
-++ !t
-+|
-+- t != 0
-++ t
-+)
-+
-+@depends on patch@
-+bool b;
-+@@
-+(
-+ b =
-+- 0
-++ false
-+|
-+ b =
-+- 1
-++ true
-+)
-+
-+// ---------------------------------------------------------------------
-+
-+@r1 depends on !patch@
-+bool t;
-+position p;
-+@@
-+
-+(
-+* t@p == true
-+|
-+* true == t@p
-+|
-+* t@p != true
-+|
-+* true != t@p
-+|
-+* t@p == false
-+|
-+* false == t@p
-+|
-+* t@p != false
-+|
-+* false != t@p
-+)
-+
-+@r2 depends on !patch disable is_zero, isnt_zero@
-+bool t;
-+position p;
-+@@
-+
-+(
-+* t@p == 1
-+|
-+* t@p != 1
-+|
-+* t@p == 0
-+|
-+* t@p != 0
-+)
-+
-+@r3 depends on !patch@
-+bool b;
-+position p1,p2;
-+constant c;
-+@@
-+(
-+*b@p1 = 0
-+|
-+*b@p1 = 1
-+|
-+*b@p2 = c
-+)
-+
-+@script:python depends on org@
-+p << r1.p;
-+@@
-+
-+cocci.print_main("WARNING: Comparison to bool",p)
-+
-+@script:python depends on org@
-+p << r2.p;
-+@@
-+
-+cocci.print_main("ERROR: Comparison of bool to 0/1",p)
-+
-+@script:python depends on org@
-+p1 << r3.p1;
-+@@
-+
-+cocci.print_main("ERROR: Assignment of bool to 0/1",p1)
-+
-+@script:python depends on org@
-+p2 << r3.p2;
-+@@
-+
-+cocci.print_main("ERROR: Assignment of bool to non-0/1 constant",p2)
-+
-+@script:python depends on report@
-+p << r1.p;
-+@@
-+
-+coccilib.report.print_report(p[0],"WARNING: Comparison to bool")
-+
-+@script:python depends on report@
-+p << r2.p;
-+@@
-+
-+coccilib.report.print_report(p[0],"ERROR: Comparison of bool to 0/1")
-+
-+@script:python depends on report@
-+p1 << r3.p1;
-+@@
-+
-+coccilib.report.print_report(p1[0],"ERROR: Assignment of bool to 0/1")
-+
-+@script:python depends on report@
-+p2 << r3.p2;
-+@@
-+
-+coccilib.report.print_report(p2[0],"ERROR: Assignment of bool to non-0/1 constant")
+	return ret;
 
+add the end of the function and
+
+	ret = retval;
+	goto out;
+
+on all exit paths. This way it's clearer to see that all locks (or other
+resources) get properly unlocked and unref'ed. Can you please adjust your
+patch accordingly?
+
+Otherwise the patch looks good.
+
+Thanks, Daniel
+
+> +	}
+>  
+>  	reg_offset = HAS_PCH_SPLIT(dev_priv->dev) ? PCH_GMBUS0 - GMBUS0 : 0;
+>  
+> @@ -321,6 +326,7 @@ done:
+>  	 * start of the next xfer, till then let it sleep.
+>  	 */
+>  	I915_WRITE(GMBUS0 + reg_offset, 0);
+> +	mutex_unlock(&dev_priv->gmbus_mutex);
+>  	return i;
+>  
+>  timeout:
+> @@ -331,9 +337,12 @@ timeout:
+>  	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
+>  	bus->force_bit = intel_gpio_create(dev_priv, bus->reg0 & 0xff);
+>  	if (!bus->force_bit)
+> -		return -ENOMEM;
+> +		ret = -ENOMEM;
+> +	else
+> +		ret = intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
+>  
+> -	return intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
+> +	mutex_unlock(&dev_priv->gmbus_mutex);
+> +	return ret;
+>  }
+>  
+>  static u32 gmbus_func(struct i2c_adapter *adapter)
+> @@ -380,6 +389,8 @@ int intel_setup_gmbus(struct drm_device *dev)
+>  	if (dev_priv->gmbus == NULL)
+>  		return -ENOMEM;
+>  
+> +	mutex_init(&dev_priv->gmbus_mutex);
+> +
+>  	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
+>  		struct intel_gmbus *bus = &dev_priv->gmbus[i];
+>  
+> -- 
+> 1.7.3.1
+> 
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
