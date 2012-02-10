@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761168Ab2BJXgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:36:52 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59233 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761110Ab2BJXgu convert rfc822-to-8bit (ORCPT
+	id S932570Ab2BJXkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:40:55 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42624 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab2BJXky convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 18:36:50 -0500
+	Fri, 10 Feb 2012 18:40:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120210162134.GA2723@r65073-Latitude-D630>
-References: <1328612075-5825-1-git-send-email-b32955@freescale.com>
-	<1328612075-5825-2-git-send-email-b32955@freescale.com>
-	<20120210162134.GA2723@r65073-Latitude-D630>
-Date: Sat, 11 Feb 2012 07:36:50 +0800
-Message-ID: <CAMiH66EP6UFDYkguzfSFgysDzVREPZ8P1x29TkYvQ+Cuvz-4hg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] mxs-dma : move the mxs dma.h to a more common place
-From: Huang Shijie <shijie8@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Huang Shijie <b32955@freescale.com>, vinod.koul@intel.com,
-        artem.bityutskiy@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        LW@karo-electronics.de, alsa-devel@alsa-project.org,
-        b29396@freescale.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120210125150.3353237c@jbarnes-desktop>
+References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
+	<1328425088-6562-2-git-send-email-yinghai@kernel.org>
+	<CAErSpo4HJH+3EQAWowyVxZFa5jVy1EOo=SoybJqqcjhVdo0nzw@mail.gmail.com>
+	<CAE9FiQXeRGXE2RCe5S1iOE=QY37wauM=WUevjXWkMqMOjV3t7A@mail.gmail.com>
+	<20120210125150.3353237c@jbarnes-desktop>
+Date: Fri, 10 Feb 2012 15:40:53 -0800
+X-Google-Sender-Auth: iwkLtEfqRmPf2qI30xg0axcb790
+Message-ID: <CAE9FiQXvzHM4a=u5PDbRkKEo5EC8c7VaZZgQ8wyTjveegf=7dA@mail.gmail.com>
+Subject: Re: [PATCH 01/24] PCI: Add iobusn_resource
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-
-On Sat, Feb 11, 2012 at 12:21 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Tue, Feb 07, 2012 at 06:54:34PM +0800, Huang Shijie wrote:
->> Move the header to a more common place.
->> The mxs dma engine is not only used in mx23/mx28, but also used
->> in mx50/mx6q.  It will also be used in the future chips.
+On Fri, Feb 10, 2012 at 12:51 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Mon, 6 Feb 2012 10:55:14 -0800
+> Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> On Mon, Feb 6, 2012 at 10:48 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >> +struct resource iobusn_resource = {
+>> >> + � � � .name � = "PCI busn",
+>> >> + � � � .start �= 0,
+>> >> + � � � .end � �= 0xffffff,
+>> >> + � � � .flags �= IORESOURCE_BUS,
+>> >> +};
+>> >
+>> > I'm not sure this should be global. �iomem_resource and
+>> > ioport_resource *are* really global, because they refer to processor
+>> > address space that is the same for everybody. �But PCI bus numbers are
+>> > specific to PCI. �Some machines don't have PCI at all, and there are
+>> > different bus architectures to which this doesn't apply.
 >>
->> Rename it to mxs-dma.h
+>> that does not hurt them.
+>
+> Yes but it's superfluous and confusing if you're porting to a new arch
+> or looking at changes in generic code that may affect you.
+>
+>> > The 0-0xffffff range is misleading because it includes both the domain
+>> > and the bus number, and it's meaningless to allocate ranges that cross
+>> > domain boundaries. �For example, [bus 0x0000f0-0x000120] includes bus
+>> > numbers from domain 0000 and domain 0001, which doesn't make any sense
+>> > because a bus can only be in one domain.
 >>
->> change mxs-dma driver, mxs-mmc driver, gpmi-nand driver, mxs-saif driver
->> to the new header file.
+>> allocation code will make sure it will be cross the boundary for domain.
+>
+> But that means everyone reading it will do a double take, have to dig
+> into the implementation, and only then say "ah yeah ok it looks
+> correct" rather than it being obvious from the fact that the resource
+> is tracked on a per-domain basis.
+>
+>> > I think it would make more sense to keep this bus number resource in a
+>> > per-host bridge structure. �Then we wouldn't need to include the
+>> > domain number at all because the host bridge determines the domain.
 >>
->> Signed-off-by: Huang Shijie <b32955@freescale.com>
->> ---
->>  drivers/dma/mxs-dma.c                              |    2 +-
->>  drivers/mmc/host/mxs-mmc.c                         |    2 +-
->>  drivers/mtd/nand/gpmi-nand/gpmi-nand.h             |    2 +-
->>  .../include/mach/dma.h => include/linux/mxs-dma.h  |    0
->>  sound/soc/mxs/mxs-pcm.c                            |    2 +-
->>  sound/soc/mxs/mxs-pcm.h                            |    2 +-
->>  sound/soc/mxs/mxs-saif.c                           |    2 +-
->>  7 files changed, 6 insertions(+), 6 deletions(-)
->>  rename arch/arm/mach-mxs/include/mach/dma.h => include/linux/mxs-dma.h (100%)
+>> not sure. insert the all busn_res of all peer root buses into one
+>> global iobusn_resource
+>> looks more simple.
 >
-> I suggested you rename it include/linux/fsl/mxs-dma.h [1].  It seems
-> you are ignoring the comment.  Can you explain why it's not a
-> reasonable suggestion?
+> In what sense? �Simpler in the sense of your current implementation,
+> but not simpler at all to someone just reading the code...
 
-For gpmi-nand.h is placed in include/linux/mtd/ directory, so i think
-it's better to place the mxs-dma.h
-to similar include/linux/dma/ directory, but the directory does not exit.
+ok, will check if i could drop iobusn_resource.
 
-If i place it at include/linux/fsl/mxs-dma.h , i have to create a new
-folder, I am not sure i have the right
-to do so. But i can try it in the next version.
-
-thanks a lot.
-
-
-
->
-> And Wolfram and Mark told you that you need to Cc subsystem maintainers
-> to collect their acks [2].  But you are still not Ccing Mark Brown and
-> Chris Ball for sound/soc/ and drivers/mmc changes.  So you are not
-> listening.
-
-ok, i will CC them in next version.  I　really did not know to whom I　should cc .
-
-BR
-Huang Shijie
-
->
-> Regards,
-> Shawn
->
-> [1] http://article.gmane.org/gmane.linux.kernel.mmc/12301
-> [2] http://article.gmane.org/gmane.linux.alsa.devel/93751
+Yinghai
