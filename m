@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab2BJNKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:10:41 -0500
-Received: from nm19-vm0.bullet.mail.ird.yahoo.com ([77.238.189.92]:30485 "HELO
-	nm19-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758757Ab2BJNKj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:10:39 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 637575.72083.bm@omp1031.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=xZYgX10wtzSI8DfUv9wfdym08WW+HBj6wTYXGUxqHL9Z8e3jWIa3MaekxYe9m52Ss2CuQ0REfdp5fUS4bOFCmS/ig7TUxP2QrP0eTlznP/AbOH5kCqs0kzCXHgsQtxJ+eGm/Dux3nEJ0nx5T2EvOfkQ3EK9dDFQXxO0cQOWz/b0=;
-X-YMail-OSG: qlcUMm4VM1mQKlJGGwi18LtGLBN7PEe4waOFkHfQhcIqlRV
- lfHEwvt86tiMqY55.lV75t5BK34xMhogRNm366VGsLnVSsAw.fei.0oCjL0P
- 7B5bTm3MxXpMJd3BAlyyQRApdABBik0VzyYyerVOFXD6r09e9lBKBTYLPYHB
- ZgQvpUKcnL7d7say9FRyuLCGBaL6YzpX_fu27lfFIZZXB8DjZWhcZ4a8RP6o
- NpVRo0mBDaClIm1FnDZFDuOm9twvQXEpkhdV3MCSrMl0bi39lBw.3tRT2Hb0
- K3swbDGgtVychA8u0fCtmwZjWRpnGfFGuJOPGIr9A0Yy8A_cjkEcAUzcx8NB
- ZPL18e4bi66ivZIUgkDR00cTqZ0F_AU8WyauDcYpxySmbmglEayxkRdPubVn
- Qy4ie2PygocgCaWmCD6BjL6.3UtMVnVDcH2VyPVOAVw9sawfwsDimg6w-
-X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.116.338427
-Message-ID: <1328879437.80871.YahooMailClassic@web29006.mail.ird.yahoo.com>
-Date: Fri, 10 Feb 2012 13:10:37 +0000 (GMT)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: No /dev/root with devtmpfs?
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120210090425.GA3997@tugrik.mns.mnsspb.ru>
+	id S1759231Ab2BJNLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:11:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53199 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758703Ab2BJNL3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 08:11:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CACVxJT-+ycJmCZCOiuKaBbxCcnkgygfRtkeke06nb9DvPrT=kg@mail.gmail.com>
+References: <20120207141155.GA16184@elgon.mountain>
+	<4F323388.7040902@kernel.dk>
+	<20120208142513.4db2493a.akpm@linux-foundation.org>
+	<4F33BF05.208@gmail.com>
+	<CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
+	<4F33C7D7.1060801@kernel.dk>
+	<32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
+	<4F33CEAE.60400@gmail.com>
+	<CACVxJT-+ycJmCZCOiuKaBbxCcnkgygfRtkeke06nb9DvPrT=kg@mail.gmail.com>
+Date: Fri, 10 Feb 2012 15:11:28 +0200
+Message-ID: <CACVxJT9gf0NkAuWWe02Q59HbjRB2WAJLJiRrrrFy5a46+po0eQ@mail.gmail.com>
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 10/2/12, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> > Could you simply use /etc/fstab to identify the root
-> partition?
-> 
-> Unfortunately no, because /etc/fstab can't know where the
-> card will be
-> inserted to boot this time - i.e. either in compactflash
-> slot on
-> motherboard, or through usb via cardreader. So root has to
-> be determined
-> at runtime.
-> 
-> Personally I'm ok with no /dev/root symlink as long as there
-> is another
-> way to detect root blkdev reliably. And I'm still confised
-> what's the
-> rationale about why this can't be done for modern
-> filesysems.
+On Fri, Feb 10, 2012 at 4:09 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> On Thu, Feb 9, 2012 at 4:48 PM, Xi Wang <xi.wang@gmail.com> wrote:
+>> -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+>> +static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
+>>  {
+>>        if (size != 0 && n > ULONG_MAX / size)
+>>                return NULL;
+>> -       return __kmalloc(n * size, flags | __GFP_ZERO);
+>> +       return __kmalloc(n * size, flags);
+>> +}
+>
+> It should be named kaalloc(), I think.
+> Why it is ULONG_MAX, when size_t is used?
 
-Here's another suggestion: /proc/cmdline
-
-The bootloader might pass the root partition to the kernel via the
-"root=" kernel parameter; these can be read at /proc/cmdline.
-For example, on an HP iPAQ hx4700: root=/dev/mtdblock2
-
+Also, it could be written more "robust" against people who will make
+sizeof() the first argument with __builtin_constant_p().
