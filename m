@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174Ab2BJWuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:50:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51143 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999Ab2BJWuB (ORCPT
+	id S1754512Ab2BJWz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:55:29 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55384 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933074Ab2BJWuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:50:01 -0500
+	Fri, 10 Feb 2012 17:50:04 -0500
 MIME-Version: 1.0
-Message-Id: <20120210224850.893611277@clark.kroah.org>
+Message-Id: <20120210224852.068792395@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:47:40 -0800
+Date: Fri, 10 Feb 2012 14:47:53 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jack Morgenstein <jackm@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Ira Weiny <weiny2@llnl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [01/21] IB/mlx4: pass SMP vendor-specific attribute MADs to firmware
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [14/21] Staging: android: binder: Dont call dump_stack in binder_vma_open
 In-Reply-To: <20120210224858.GA30752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,87 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@mellanox.com>
+From: Arve Hjønnevåg <arve@android.com>
 
-commit a6f7feae6d19e84253918d88b04153af09d3a243 upstream.
+commit 3c1b86f17068cf6476fb2d022b9c8b44dedea2e5 upstream.
 
-In the current code, vendor-specific MADs (e.g with the FDR-10
-attribute) are silently dropped by the driver, resulting in timeouts
-at the sending side and inability to query/configure the relevant
-feature.  However, the ConnectX firmware is able to handle such MADs.
-For unsupported attributes, the firmware returns a GET_RESPONSE MAD
-containing an error status.
+If user-space partially unmaps the driver, binder_vma_open
+would dump the kernel stack. This is not a kernel bug however
+and will be treated as if the whole area was unmapped once
+binder_vma_close gets called.
 
-For example, for a FDR-10 node with LID 11:
-
-    # ibstat mlx4_0 1
-
-    CA: 'mlx4_0'
-    Port 1:
-    State: Active
-    Physical state: LinkUp
-    Rate: 40 (FDR10)
-    Base lid: 11
-    LMC: 0
-    SM lid: 24
-    Capability mask: 0x02514868
-    Port GUID: 0x0002c903002e65d1
-    Link layer: InfiniBand
-
-Extended Port Query (EPI) vendor mad timeouts before the patch:
-
-    # smpquery MEPI 11 -d
-
-    ibwarn: [4196] smp_query_via: attr 0xff90 mod 0x0 route Lid 11
-    ibwarn: [4196] _do_madrpc: retry 1 (timeout 1000 ms)
-    ibwarn: [4196] _do_madrpc: retry 2 (timeout 1000 ms)
-    ibwarn: [4196] _do_madrpc: timeout after 3 retries, 3000 ms
-    ibwarn: [4196] mad_rpc: _do_madrpc failed; dport (Lid 11)
-    smpquery: iberror: [pid 4196] main: failed: operation EPI: ext port info query failed
-
-EPI query works OK with the patch:
-
-    # smpquery MEPI 11 -d
-
-    ibwarn: [6548] smp_query_via: attr 0xff90 mod 0x0 route Lid 11
-    ibwarn: [6548] mad_rpc: data offs 64 sz 64
-    mad data
-    0000 0000 0000 0001 0000 0001 0000 0001
-    0000 0000 0000 0000 0000 0000 0000 0000
-    0000 0000 0000 0000 0000 0000 0000 0000
-    0000 0000 0000 0000 0000 0000 0000 0000
-    # Ext Port info: Lid 11 port 0
-    StateChangeEnable:...............0x00
-    LinkSpeedSupported:..............0x01
-    LinkSpeedEnabled:................0x01
-    LinkSpeedActive:.................0x01
-
-Signed-off-by: Jack Morgenstein <jackm@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Acked-by: Ira Weiny <weiny2@llnl.gov>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx4/mad.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/staging/android/binder.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/infiniband/hw/mlx4/mad.c
-+++ b/drivers/infiniband/hw/mlx4/mad.c
-@@ -252,12 +252,9 @@ int mlx4_ib_process_mad(struct ib_device
- 			return IB_MAD_RESULT_SUCCESS;
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2741,7 +2741,6 @@ static void binder_vma_open(struct vm_ar
+ 		     proc->pid, vma->vm_start, vma->vm_end,
+ 		     (vma->vm_end - vma->vm_start) / SZ_1K, vma->vm_flags,
+ 		     (unsigned long)pgprot_val(vma->vm_page_prot));
+-	dump_stack();
+ }
  
- 		/*
--		 * Don't process SMInfo queries or vendor-specific
--		 * MADs -- the SMA can't handle them.
-+		 * Don't process SMInfo queries -- the SMA can't handle them.
- 		 */
--		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO ||
--		    ((in_mad->mad_hdr.attr_id & IB_SMP_ATTR_VENDOR_MASK) ==
--		     IB_SMP_ATTR_VENDOR_MASK))
-+		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO)
- 			return IB_MAD_RESULT_SUCCESS;
- 	} else if (in_mad->mad_hdr.mgmt_class == IB_MGMT_CLASS_PERF_MGMT ||
- 		   in_mad->mad_hdr.mgmt_class == MLX4_IB_VENDOR_CLASS1   ||
+ static void binder_vma_close(struct vm_area_struct *vma)
 
 
