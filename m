@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab2BJPDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:03:50 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:33619 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2BJPDt (ORCPT
+	id S1751432Ab2BJPF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:05:58 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:40365 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab2BJPF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:03:49 -0500
-X-IronPort-AV: E=Sophos;i="4.73,396,1325462400"; 
-   d="scan'208";a="10624809"
-Message-ID: <1328886226.6133.271.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/cpu: Make VCPU hotplug code online CPUs
- properly.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Fri, 10 Feb 2012 15:03:46 +0000
-In-Reply-To: <1328885033-8450-2-git-send-email-konrad.wilk@oracle.com>
-References: <1328885033-8450-1-git-send-email-konrad.wilk@oracle.com>
-	 <1328885033-8450-2-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
+	Fri, 10 Feb 2012 10:05:56 -0500
+Subject: dracut: ordering of modules
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: initramfs@vger.kernel.org
+Cc: Harald Hoyer <harald@redhat.com>, linux-kernel@vger.kernel.org,
+        Roberto Sassu <roberto.sassu@polito.it>
+Date: Fri, 10 Feb 2012 10:01:55 -0500
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+Message-ID: <1328886121.2472.19.camel@falcor>
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021015-5518-0000-0000-00000223B1A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-10 at 14:43 +0000, Konrad Rzeszutek Wilk wrote:
-> Offlining CPUs works. Onlining does not work anymore and it looks
-> like we were missing a cpu_up() call in the hotplug bring up path.
+Hi Harald,
 
-Wasn't this a deliberate decision as part of the pvops upstreaming to be
-consistent with native cpu hotplug? After hotplugging a CPU
-administrator action is needed to actually online it.
+Originally, 98integrity/ima-policy-load.sh didn't start executing before
+98selinux/selinux-loadpolicy.sh finished, but unfortunately it now does.
 
-http://xen.1045712.n5.nabble.com/cpu-down-but-no-cpu-up-in-drivers-xen-cpu-hotplug-c-td2545244.html
+inst_hook pre-pivot 50 "$moddir/selinux-loadpolicy.sh"
+inst_hook pre-pivot 62 "$moddir/ima-policy-load.sh"
 
-The fix is to add a udev rule:
-http://wiki.xen.org/wiki/Paravirt_Linux_CPU_Hotplug
+As the IMA policy could be dependent on LSM runtime info, this is a
+problem.
 
-Ian.
+[   10.040574] type=1805 audit(1328865524.387:2): action="dont_measure" fsmagic="0x9fa0" res=0
+[   10.040663] type=1805 audit(1328865524.387:3): action="dont_appraise" fsmagic="0x9fa0" res=0
+[   10.040729] type=1805 audit(1328865524.387:4): action="dont_measure" fsmagic="0x62656572" res=0
+[   10.040792] type=1805 audit(1328865524.387:5): action="dont_appraise" fsmagic="0x62656572" res=0
+[   10.040857] type=1805 audit(1328865524.387:6): action="dont_measure" fsmagic="0x64626720" res=0
+[   10.040921] type=1805 audit(1328865524.387:7): action="dont_appraise" fsmagic="0x64626720" res=0
+[   10.040985] type=1805 audit(1328865524.387:8): action="dont_measure" fsmagic="0x01021994" res=0
+[   10.041047] type=1805 audit(1328865524.387:9): action="dont_appraise" fsmagic="0x01021994" res=0
+[   10.041113] type=1805 audit(1328865524.387:10): action="dont_measure" fsmagic="0x73636673" res=0
+[   10.041177] type=1805 audit(1328865524.387:11): action="dont_appraise" fsmagic="0x73636673" res=0
+[   11.898956] SELinux:  Completing initialization.
 
+I've tried adding a depend for selinux, but it doesn't seem to resolve
+the problem, nor does delaying 98integrity to later.  Any suggestions
+would be appreciated.
+
+thanks,
+
+Mimi
 
