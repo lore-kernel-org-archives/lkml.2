@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760237Ab2BJVFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 16:05:40 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:50409 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760158Ab2BJVFi (ORCPT
+	id S1760204Ab2BJVGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 16:06:13 -0500
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:44304 "EHLO
+	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760158Ab2BJVGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 16:05:38 -0500
-X-IronPort-AV: E=Sophos;i="4.73,398,1325458800"; 
-   d="scan'208";a="143782818"
-Date: Fri, 10 Feb 2012 22:05:36 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Julia Lawall <julia@diku.dk>,
-        kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        bruce.w.allan@intel.com, joe@perches.com
-Subject: Re: [PATCH v2] scripts/coccinelle/misc/boolinit.cocci: semantic
- patch for bool issues
-In-Reply-To: <874nuye7aa.fsf@rustcorp.com.au>
-Message-ID: <alpine.DEB.2.02.1202102205240.1967@hadrien>
-References: <1328905355-30874-1-git-send-email-Julia.Lawall@lip6.fr> <874nuye7aa.fsf@rustcorp.com.au>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Fri, 10 Feb 2012 16:06:11 -0500
+Subject: [PATCH] locks: export device name
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Fri, 10 Feb 2012 22:06:07 +0100
+Message-ID: <1328907967.3138.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Davidlohr Bueso <dave@gnu.org>
+
+The lslk(8) program has not been maintained for over a decade and has recently been rewritten as lslocks(8).
+It will be available for the next 2.22 release, in a couple of months. This is a good opportunity to delete
+that nasty WE_CAN_BREAK_LSLK_NOW and start exporting the device name instead of the maj:min numbers.
+
+For backward compatibility the new version can be in charge of checking older kernel versions and parsing the old
+output if necessary.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ fs/locks.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 637694b..2b01907 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2199,15 +2199,8 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+ 			       : (fl->fl_type & F_WRLCK) ? "WRITE" : "READ ");
+ 	}
+ 	if (inode) {
+-#ifdef WE_CAN_BREAK_LSLK_NOW
+ 		seq_printf(f, "%d %s:%ld ", fl_pid,
+ 				inode->i_sb->s_id, inode->i_ino);
+-#else
+-		/* userspace relies on this representation of dev_t ;-( */
+-		seq_printf(f, "%d %02x:%02x:%ld ", fl_pid,
+-				MAJOR(inode->i_sb->s_dev),
+-				MINOR(inode->i_sb->s_dev), inode->i_ino);
+-#endif
+ 	} else {
+ 		seq_printf(f, "%d <none>:0 ", fl_pid);
+ 	}
+-- 
+1.7.4.1
 
 
-On Sat, 11 Feb 2012, Rusty Russell wrote:
 
-> On Fri, 10 Feb 2012 21:22:35 +0100, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
->> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> FWIW:
-> Reviewed-by: Rusty Russell <rusty@rustcorp.com.au>
->
->> +coccilib.report.print_report(p2[0],"WARNING: Assignment of bool to non-0/1 constant")
->
-> IMHO, this one should be an error!
-
-OK, I've changed that one.
-
-julia
