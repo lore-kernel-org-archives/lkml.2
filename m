@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab2BJWp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:45:26 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933049Ab2BJWpU (ORCPT
+	id S933110Ab2BJWtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:49:08 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933098Ab2BJWp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:45:20 -0500
+	Fri, 10 Feb 2012 17:45:26 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223444.478174922@clark.kroah.org>
+Message-Id: <20120210223442.316718842@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:52 -0800
+Date: Fri, 10 Feb 2012 14:33:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Timo Juhani Lindfors <timo.lindfors@iki.fi>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [patch 48/55] usb: gadget: zero: fix bug in loopback autoresume handling
+        alan@lxorguk.ukuu.org.uk, Chanho Min <chanho.min@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 23/55] sched/rt: Fix task stack corruption under __ARCH_WANT_INTERRUPTS_ON_CTXSW
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+From: Chanho Min <chanho0207@gmail.com>
 
-commit 683da59d7b8ae04891636d4b59893cd4e9b0b7e5 upstream.
+commit cb297a3e433dbdcf7ad81e0564e7b804c941ff0d upstream.
 
-ab943a2e125b (USB: gadget: gadget zero uses new suspend/resume hooks)
-introduced a copy-paste error where f_loopback.c writes to a variable
-declared in f_sourcesink.c. This prevents one from creating gadgets
-that only have a loopback function.
+This issue happens under the following conditions:
 
-Signed-off-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+ 1. preemption is off
+ 2. __ARCH_WANT_INTERRUPTS_ON_CTXSW is defined
+ 3. RT scheduling class
+ 4. SMP system
+
+Sequence is as follows:
+
+ 1.suppose current task is A. start schedule()
+ 2.task A is enqueued pushable task at the entry of schedule()
+   __schedule
+    prev = rq->curr;
+    ...
+    put_prev_task
+     put_prev_task_rt
+      enqueue_pushable_task
+ 4.pick the task B as next task.
+   next = pick_next_task(rq);
+ 3.rq->curr set to task B and context_switch is started.
+   rq->curr = next;
+ 4.At the entry of context_swtich, release this cpu's rq->lock.
+   context_switch
+    prepare_task_switch
+     prepare_lock_switch
+      raw_spin_unlock_irq(&rq->lock);
+ 5.Shortly after rq->lock is released, interrupt is occurred and start IRQ context
+ 6.try_to_wake_up() which called by ISR acquires rq->lock
+    try_to_wake_up
+     ttwu_remote
+      rq = __task_rq_lock(p)
+      ttwu_do_wakeup(rq, p, wake_flags);
+        task_woken_rt
+ 7.push_rt_task picks the task A which is enqueued before.
+   task_woken_rt
+    push_rt_tasks(rq)
+     next_task = pick_next_pushable_task(rq)
+ 8.At find_lock_lowest_rq(), If double_lock_balance() returns 0,
+   lowest_rq can be the remote rq.
+  (But,If preemption is on, double_lock_balance always return 1 and it
+   does't happen.)
+   push_rt_task
+    find_lock_lowest_rq
+     if (double_lock_balance(rq, lowest_rq))..
+ 9.find_lock_lowest_rq return the available rq. task A is migrated to
+   the remote cpu/rq.
+   push_rt_task
+    ...
+    deactivate_task(rq, next_task, 0);
+    set_task_cpu(next_task, lowest_rq->cpu);
+    activate_task(lowest_rq, next_task, 0);
+ 10. But, task A is on irq context at this cpu.
+     So, task A is scheduled by two cpus at the same time until restore from IRQ.
+     Task A's stack is corrupted.
+
+To fix it, don't migrate an RT task if it's still running.
+
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_loopback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched_rt.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/gadget/f_loopback.c
-+++ b/drivers/usb/gadget/f_loopback.c
-@@ -373,7 +373,7 @@ int __init loopback_add(struct usb_compo
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1390,6 +1390,11 @@ static int push_rt_task(struct rq *rq)
+ 	if (!next_task)
+ 		return 0;
  
- 	/* support autoresume for remote wakeup testing */
- 	if (autoresume)
--		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
-+		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
- 
- 	/* support OTG systems */
- 	if (gadget_is_otg(cdev->gadget)) {
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++       if (unlikely(task_running(rq, next_task)))
++               return 0;
++#endif
++
+ retry:
+ 	if (unlikely(next_task == rq->curr)) {
+ 		WARN_ON(1);
 
 
