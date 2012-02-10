@@ -1,68 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab2BJUVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:21:16 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33928 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932337Ab2BJUVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:21:15 -0500
-Date: Fri, 10 Feb 2012 20:21:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Liam Girdwood <lrg@ti.com>, kernel-janitors@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
-Message-ID: <20120210202112.GA12644@opensource.wolfsonmicro.com>
-References: <1328861821-3380-1-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <1328861821-3380-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932459Ab2BJUWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:22:44 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:49585 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932337Ab2BJUWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:22:42 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        bruce.w.allan@intel.com, joe@perches.com, rusty@rustcorp.com.au
+Subject: [PATCH v2] scripts/coccinelle/misc/boolinit.cocci: semantic patch for bool issues
+Date: Fri, 10 Feb 2012 21:22:35 +0100
+Message-Id: <1328905355-30874-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-On Fri, Feb 10, 2012 at 09:17:01AM +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> The various devm_ functions allocate memory that is released when a driver
-> detaches.  This patch uses these functions for data that is allocated in
-> the probe function of a platform device and is only freed in the remove
-> function.
+---
+ERROR's changed to WARNING
 
-Applied, thanks for your persistence!
+ scripts/coccinelle/misc/boolinit.cocci |  178 +++++++++++++++++++++++++++++++++
+ 1 file changed, 178 insertions(+)
 
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/scripts/coccinelle/misc/boolinit.cocci b/scripts/coccinelle/misc/boolinit.cocci
+new file mode 100644
+index 0000000..b7edfdb
+--- /dev/null
++++ b/scripts/coccinelle/misc/boolinit.cocci
+@@ -0,0 +1,178 @@
++/// Bool initializations should use true and false.  Bool tests don't need
++/// comparisons.  Based on contributions from Joe Perches, Rusty Russell
++/// and Bruce W Allan.
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Options: -include_headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@depends on patch@
++bool t;
++symbol true;
++symbol false;
++@@
++
++(
++- t == true
+++ t
++|
++- true == t
+++ t
++|
++- t != true
+++ !t
++|
++- true != t
+++ !t
++|
++- t == false
+++ !t
++|
++- false == t
+++ !t
++|
++- t != false
+++ t
++|
++- false != t
+++ t
++)
++
++@depends on patch disable is_zero, isnt_zero@
++bool t;
++@@
++
++(
++- t == 1
+++ t
++|
++- t != 1
+++ !t
++|
++- t == 0
+++ !t
++|
++- t != 0
+++ t
++)
++
++@depends on patch@
++bool b;
++@@
++(
++ b =
++- 0
+++ false
++|
++ b =
++- 1
+++ true
++)
++
++// ---------------------------------------------------------------------
++
++@r1 depends on !patch@
++bool t;
++position p;
++@@
++
++(
++* t@p == true
++|
++* true == t@p
++|
++* t@p != true
++|
++* true != t@p
++|
++* t@p == false
++|
++* false == t@p
++|
++* t@p != false
++|
++* false != t@p
++)
++
++@r2 depends on !patch disable is_zero, isnt_zero@
++bool t;
++position p;
++@@
++
++(
++* t@p == 1
++|
++* t@p != 1
++|
++* t@p == 0
++|
++* t@p != 0
++)
++
++@r3 depends on !patch@
++bool b;
++position p1,p2;
++constant c;
++@@
++(
++*b@p1 = 0
++|
++*b@p1 = 1
++|
++*b@p2 = c
++)
++
++@script:python depends on org@
++p << r1.p;
++@@
++
++cocci.print_main("WARNING: Comparison to bool",p)
++
++@script:python depends on org@
++p << r2.p;
++@@
++
++cocci.print_main("WARNING: Comparison of bool to 0/1",p)
++
++@script:python depends on org@
++p1 << r3.p1;
++@@
++
++cocci.print_main("WARNING: Assignment of bool to 0/1",p1)
++
++@script:python depends on org@
++p2 << r3.p2;
++@@
++
++cocci.print_main("WARNING: Assignment of bool to non-0/1 constant",p2)
++
++@script:python depends on report@
++p << r1.p;
++@@
++
++coccilib.report.print_report(p[0],"WARNING: Comparison to bool")
++
++@script:python depends on report@
++p << r2.p;
++@@
++
++coccilib.report.print_report(p[0],"WARNING: Comparison of bool to 0/1")
++
++@script:python depends on report@
++p1 << r3.p1;
++@@
++
++coccilib.report.print_report(p1[0],"WARNING: Assignment of bool to 0/1")
++
++@script:python depends on report@
++p2 << r3.p2;
++@@
++
++coccilib.report.print_report(p2[0],"WARNING: Assignment of bool to non-0/1 constant")
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPNXwtAAoJEBus8iNuMP3dLF0P/0rPStcBUNZBPaxXPKytGpeM
-DnNu/g1j0gp2xsFk5BpK97CeXTBBRLXwvC7z2Rej9d3UKK/GthkkDwg/KmusAtkJ
-qcgbSjziv7HF7beTHh+QaAHrriCgM8IZjA2K+GrFhngY8j6ep/pINqOvvvGadDy6
-4VM5mgNqv71cBDSUuXhTgO1ufhvrqSs9XWWi6jLZsSw4lhU8JUbyxKGm7o+Y25XL
-MkgkWGKeVHnl0X1OqeGMuW5IgNN7AI5PEc3Wfq2vZUsIndEnelLW64F82kcO0NeE
-NgeeZnO/hPzEnuwr5o8RynlRjZ1xfakEB2I57p+zEmL8wmNVAnl16JHrOM+QqWg8
-TjMb1nd62u1Z+xTCNDXUde1+/zRlxvT2ELTGLlxWwPClC9ZaRddDKkMgJPF6bxk4
-GWt86bzRZHoo8pRFokC08GHlMz+RA7sXm4VFhBZt03/MCPvdS/MzK/rNzo4GNNrK
-RuSJlSn/ofWZTc+/egx/urb4bgRAX7VAz/e3xdTVHU65TSs5om9LzAqtPRDVINt7
-SLImbAMtgIhZj3x32Map7UxAnxYb1qi2UGPbMZcTAKDAfrlbUVNOeYC6okE7KW/O
-fZjeFruuJBICMbqS8u/9XRJLWcj8nThEAfdYuwTxkvndBFLdqcV+wBxZtp0uqNDO
-yZngN9EPFWc2g1ucSyY8
-=waBX
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
