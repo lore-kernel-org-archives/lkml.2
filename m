@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074Ab2BJPmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:42:43 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:42911
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753005Ab2BJPmm (ORCPT
+	id S1757229Ab2BJPog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:44:36 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:52520 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758167Ab2BJPof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:42:42 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: wim@iguana.be, linux-watchdog@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] watchdog: Fix typo in Kconfig
-Date: Sat, 11 Feb 2012 00:42:16 +0900
-Message-Id: <1328888536-3872-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 10 Feb 2012 10:44:35 -0500
+Date: Fri, 10 Feb 2012 15:44:23 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dzickus@redhat.com, vgoyal@redhat.com, seiji.aguchi@hds.com
+Subject: Re: [PATCH] kmsg_dump: Don't run on non-error paths by default
+Message-ID: <20120210154423.GA31977@srcf.ucam.org>
+References: <1328886693-20670-1-git-send-email-mjg@redhat.com>
+ <4F353964.1000405@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F353964.1000405@fastmail.fm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "overidden" to "overridden" in
-drivers/watchdog/Kconfig
+Sigh. Is there any way to get git send-email to warn when you have a 
+dirty tree?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/watchdog/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 877b107..df9e8f0 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1098,7 +1098,7 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
- 	  For Freescale Book-E processors, this is a number between 0 and 63.
- 	  For other Book-E processors, this is a number between 0 and 3.
- 
--	  The value can be overidden by the wdt_period command-line parameter.
-+	  The value can be overridden by the wdt_period command-line parameter.
- 
- # PPC64 Architecture
- 
 -- 
-1.7.6.5
-
+Matthew Garrett | mjg59@srcf.ucam.org
