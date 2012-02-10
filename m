@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571Ab2BJRck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 12:32:40 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17584 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab2BJRcg (ORCPT
+	id S1759626Ab2BJRcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 12:32:53 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:12028 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab2BJRct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 12:32:36 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Fri, 10 Feb 2012 18:32:15 +0100
+	Fri, 10 Feb 2012 12:32:49 -0500
+Date: Fri, 10 Feb 2012 18:32:25 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv21 00/16] Contiguous Memory Allocator
+Subject: [PATCHv21 10/16] mm: Serialize access to min_free_kbytes
+In-reply-to: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
         linaro-mm-sig@lists.linaro.org
@@ -30,129 +28,71 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1328895151-5196-11-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.8.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Mel Gorman <mgorman@suse.de>
 
-This is yet another quick update on CMA patches (this should be the last
-one, really). We fixed minor bug which might cause incorrect operation
-of memory compaction code as well as merged some simple updates to
-memory reclaim function called by alloc_contig_range. 
+There is a race between the min_free_kbytes sysctl, memory hotplug
+and transparent hugepage support enablement.  Memory hotplug uses a
+zonelists_mutex to avoid a race when building zonelists. Reuse it to
+serialise watermark updates.
 
-I really hope that this will be a last iteration of this series.
+[a.p.zijlstra@chello.nl: Older patch fixed the race with spinlock]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ mm/page_alloc.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-Links to previous versions of the patchset:
-v20: <http://www.spinics.net/lists/linux-mm/msg29145.html>
-v19: <http://www.spinics.net/lists/linux-mm/msg29145.html>
-v18: <http://www.spinics.net/lists/linux-mm/msg28125.html>
-v17: <http://www.spinics.net/lists/arm-kernel/msg148499.html>
-v16: <http://www.spinics.net/lists/linux-mm/msg25066.html>
-v15: <http://www.spinics.net/lists/linux-mm/msg23365.html>
-v14: <http://www.spinics.net/lists/linux-media/msg36536.html>
-v13: (internal, intentionally not released)
-v12: <http://www.spinics.net/lists/linux-media/msg35674.html>
-v11: <http://www.spinics.net/lists/linux-mm/msg21868.html>
-v10: <http://www.spinics.net/lists/linux-mm/msg20761.html>
- v9: <http://article.gmane.org/gmane.linux.kernel.mm/60787>
- v8: <http://article.gmane.org/gmane.linux.kernel.mm/56855>
- v7: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
- v6: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
- v5: (intentionally left out as CMA v5 was identical to CMA v4)
- v4: <http://article.gmane.org/gmane.linux.kernel.mm/52010>
- v3: <http://article.gmane.org/gmane.linux.kernel.mm/51573>
- v2: <http://article.gmane.org/gmane.linux.kernel.mm/50986>
- v1: <http://article.gmane.org/gmane.linux.kernel.mm/50669>
-
-
-Changelog:
-
-v21:
-    1. Fixed incorrect check which broke memory compaction code
-
-    2. Fixed hacky and racy min_free_kbytes handling
-
-    3. Added serialization patch to watermark calculation
-
-    4. Fixed typos here and there in the comments
-
-v20 and earlier - see previous patchsets.
-
-
-Patches in this patchset:
-
-Marek Szyprowski (6):
-  mm: extract reclaim code from __alloc_pages_direct_reclaim()
-  mm: trigger page reclaim in alloc_contig_range() to stabilise
-    watermarks
-  drivers: add Contiguous Memory Allocator
-  X86: integrate CMA with DMA-mapping subsystem
-  ARM: integrate CMA with DMA-mapping subsystem
-  ARM: Samsung: use CMA for 2 memory banks for s5p-mfc device
-
-Mel Gorman (1):
-  mm: Serialize access to min_free_kbytes
-
-Michal Nazarewicz (9):
-  mm: page_alloc: remove trailing whitespace
-  mm: compaction: introduce isolate_migratepages_range()
-  mm: compaction: introduce map_pages()
-  mm: compaction: introduce isolate_freepages_range()
-  mm: compaction: export some of the functions
-  mm: page_alloc: introduce alloc_contig_range()
-  mm: page_alloc: change fallbacks array handling
-  mm: mmzone: MIGRATE_CMA migration type added
-  mm: page_isolation: MIGRATE_CMA isolation functions added
-
- Documentation/kernel-parameters.txt   |    9 +
- arch/Kconfig                          |    3 +
- arch/arm/Kconfig                      |    2 +
- arch/arm/include/asm/dma-contiguous.h |   16 ++
- arch/arm/include/asm/mach/map.h       |    1 +
- arch/arm/kernel/setup.c               |    9 +-
- arch/arm/mm/dma-mapping.c             |  368 ++++++++++++++++++++++++------
- arch/arm/mm/init.c                    |   24 ++-
- arch/arm/mm/mm.h                      |    3 +
- arch/arm/mm/mmu.c                     |   31 ++-
- arch/arm/plat-s5p/dev-mfc.c           |   51 +----
- arch/x86/Kconfig                      |    1 +
- arch/x86/include/asm/dma-contiguous.h |   13 +
- arch/x86/include/asm/dma-mapping.h    |    4 +
- arch/x86/kernel/pci-dma.c             |   18 ++-
- arch/x86/kernel/pci-nommu.c           |    8 +-
- arch/x86/kernel/setup.c               |    2 +
- drivers/base/Kconfig                  |   89 +++++++
- drivers/base/Makefile                 |    1 +
- drivers/base/dma-contiguous.c         |  403 +++++++++++++++++++++++++++++++
- include/asm-generic/dma-contiguous.h  |   27 ++
- include/linux/device.h                |    4 +
- include/linux/dma-contiguous.h        |  110 +++++++++
- include/linux/gfp.h                   |   12 +
- include/linux/mmzone.h                |   47 +++-
- include/linux/page-isolation.h        |   18 +-
- mm/Kconfig                            |    2 +-
- mm/Makefile                           |    3 +-
- mm/compaction.c                       |  418 +++++++++++++++++++++------------
- mm/internal.h                         |   33 +++
- mm/memory-failure.c                   |    2 +-
- mm/memory_hotplug.c                   |    6 +-
- mm/page_alloc.c                       |  413 ++++++++++++++++++++++++++++----
- mm/page_isolation.c                   |   15 +-
- mm/vmstat.c                           |    3 +
- 35 files changed, 1794 insertions(+), 375 deletions(-)
- create mode 100644 arch/arm/include/asm/dma-contiguous.h
- create mode 100644 arch/x86/include/asm/dma-contiguous.h
- create mode 100644 drivers/base/dma-contiguous.c
- create mode 100644 include/asm-generic/dma-contiguous.h
- create mode 100644 include/linux/dma-contiguous.h
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7d9f36e..06c66b5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4976,14 +4976,7 @@ static void setup_per_zone_lowmem_reserve(void)
+ 	calculate_totalreserve_pages();
+ }
+ 
+-/**
+- * setup_per_zone_wmarks - called when min_free_kbytes changes
+- * or when memory is hot-{added|removed}
+- *
+- * Ensures that the watermark[min,low,high] values for each zone are set
+- * correctly with respect to min_free_kbytes.
+- */
+-void setup_per_zone_wmarks(void)
++static void __setup_per_zone_wmarks(void)
+ {
+ 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
+ 	unsigned long lowmem_pages = 0;
+@@ -5038,6 +5031,20 @@ void setup_per_zone_wmarks(void)
+ 	calculate_totalreserve_pages();
+ }
+ 
++/**
++ * setup_per_zone_wmarks - called when min_free_kbytes changes
++ * or when memory is hot-{added|removed}
++ *
++ * Ensures that the watermark[min,low,high] values for each zone are set
++ * correctly with respect to min_free_kbytes.
++ */
++void setup_per_zone_wmarks(void)
++{
++	mutex_lock(&zonelists_mutex);
++	__setup_per_zone_wmarks();
++	mutex_unlock(&zonelists_mutex);
++}
++
+ /*
+  * The inactive anon list should be small enough that the VM never has to
+  * do too much work, but large enough that each inactive page has a chance
 -- 
 1.7.1.569.g6f426
 
