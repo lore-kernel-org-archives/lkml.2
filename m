@@ -1,180 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab2BJAb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:31:27 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48216 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757427Ab2BJAb0 (ORCPT
+	id S1758736Ab2BJAhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:37:33 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48275 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757427Ab2BJAhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:31:26 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TRgVYD6ZyiEA:10 a=Ui_akPBQcr4A:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=Yy02Jf9F3dnwX-l911kA:9 a=W4U9aiZ7t310g3ragXYA:7 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.81.36.228
-Date: Thu, 09 Feb 2012 18:31:24 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: chunkeey@web.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org
-Subject: [RFC/RFT] p43pci: Convert driver to use asynchronous firmware
- loading
-Message-ID: <4f34655c.Miv2CfcWropq+dhw%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.5 7/5/10
+	Thu, 9 Feb 2012 19:37:32 -0500
+Message-ID: <4F3466C7.7030804@gmail.com>
+Date: Thu, 09 Feb 2012 17:37:27 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stephane Eranian <eranian@google.com>, acme@redhat.com
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com
+Subject: Re: [PATCH v6 16/18] perf: enable reading of perf.data files from
+ different ABI rev
+References: <1328826068-11713-1-git-send-email-eranian@google.com> <1328826068-11713-17-git-send-email-eranian@google.com>
+In-Reply-To: <1328826068-11713-17-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers that load firmware from their probe routine have problems with the
-latest versions of udev as they get timeouts while waiting for user
-space to start. The problem is fixed by using request_firmware_nowait()
-and delaying the start of mac80211 until the firmware is loaded.
 
-To prevent the possibility of the driver being unloaded while the firmware
-loading callback is still active, a completion queue entry is used.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+On 02/09/2012 03:21 PM, Stephane Eranian wrote:
+> This patch allows perf to process perf.data files generated
+> using an ABI that has a different perf_event_attr struct size, i.e.,
+> a different ABI version.
+> 
+> The perf_event_attr can be extended, yet perf needs to cope with
+> older perf.data files. Similarly, perf must be able to cope with
+> a perf.data file which is using a newer version of the ABI than
+> what it knows about.
+> 
+> This patch adds read_attr(), a routine that reads a perf_event_attr
+> struct from a file incrementally based on its advertised size. If
+> the on-file struct is smaller than what perf knows, then the extra
+> fields are zeroed. If the on-file struct is bigger, then perf only
+> uses what it knows about, the rest is skipped.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-This conversion of p54pci to use asynchronous firmware loading is based
-on the method used in p54usb. As I do not have the hardware, it is only
-compile tested. I would appreciate any feedback from people that have the
-hardware.
+Acked-by: David Ahern <dsahern@gmail.com>
 
-Larry
----
-
-Index: wireless-testing-new/drivers/net/wireless/p54/p54pci.c
-===================================================================
---- wireless-testing-new.orig/drivers/net/wireless/p54/p54pci.c
-+++ wireless-testing-new/drivers/net/wireless/p54/p54pci.c
-@@ -488,6 +488,69 @@ static int p54p_open(struct ieee80211_hw
- 	return 0;
- }
- 
-+static void p54_start_ops(struct ieee80211_hw *dev)
-+{
-+	struct p54p_priv *priv = dev->priv;
-+	int err;
-+
-+	err = p54p_open(dev);
-+	if (err) {
-+		dev_err(&priv->pdev->dev, "Failed in p54p_open\n");
-+		return;
-+	}
-+	err = p54_read_eeprom(dev);
-+	p54p_stop(dev);
-+	if (err) {
-+		dev_err(&priv->pdev->dev, "Failed in p54p_read_eeprom\n");
-+		return;
-+	}
-+
-+	err = p54_register_common(dev, &priv->pdev->dev);
-+	if (err) {
-+		dev_err(&priv->pdev->dev,
-+			"Failed in p54_register_common\n");
-+		return;
-+	}
-+}
-+
-+static void p54p_load_firmware_cb2(const struct firmware *firmware,
-+				  void *context)
-+{
-+	struct ieee80211_hw *dev = context;
-+	struct p54p_priv *priv = dev->priv;
-+
-+	if (!firmware) {
-+		/* alternate firmware not found */
-+		dev_err(&priv->pdev->dev, "Firmware loading failed\n");
-+		return;
-+	}
-+	complete(&priv->fw_loaded);
-+	priv->firmware = firmware;
-+	p54_start_ops(dev);
-+}
-+
-+static void p54p_load_firmware_cb(const struct firmware *firmware,
-+				  void *context)
-+{
-+	struct ieee80211_hw *dev = context;
-+	struct p54p_priv *priv = dev->priv;
-+	int err;
-+
-+	if (!firmware) {
-+		/* Primary firmware not found - try for alternate file */
-+		dev_info(&priv->pdev->dev, "Loading firmware file isl3886");
-+		err = request_firmware_nowait(THIS_MODULE, 1,
-+					      "isl3886",
-+					      &priv->pdev->dev, GFP_KERNEL, dev,
-+					      p54p_load_firmware_cb2);
-+		if (err)
-+			return;
-+	}
-+	complete(&priv->fw_loaded);
-+	priv->firmware = firmware;
-+	p54_start_ops(dev);
-+}
-+
- static int __devinit p54p_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *id)
- {
-@@ -561,28 +624,15 @@ static int __devinit p54p_probe(struct p
- 	spin_lock_init(&priv->lock);
- 	tasklet_init(&priv->tasklet, p54p_tasklet, (unsigned long)dev);
- 
--	err = request_firmware(&priv->firmware, "isl3886pci",
--			       &priv->pdev->dev);
-+	init_completion(&priv->fw_loaded);
-+	dev_info(&priv->pdev->dev, "Loading firmware file isl3886pci\n");
-+	err = request_firmware_nowait(THIS_MODULE, 1, "isl3886pci",
-+				      &pdev->dev, GFP_KERNEL, dev,
-+				      p54p_load_firmware_cb);
- 	if (err) {
--		dev_err(&pdev->dev, "Cannot find firmware (isl3886pci)\n");
--		err = request_firmware(&priv->firmware, "isl3886",
--				       &priv->pdev->dev);
--		if (err)
--			goto err_free_common;
--	}
--
--	err = p54p_open(dev);
--	if (err)
--		goto err_free_common;
--	err = p54_read_eeprom(dev);
--	p54p_stop(dev);
--	if (err)
-+		dev_err(&pdev->dev, "Cannot load firmware (isl3886pci)\n");
- 		goto err_free_common;
--
--	err = p54_register_common(dev, &pdev->dev);
--	if (err)
--		goto err_free_common;
--
-+	}
- 	return 0;
- 
-  err_free_common:
-@@ -612,8 +662,9 @@ static void __devexit p54p_remove(struct
- 	if (!dev)
- 		return;
- 
--	p54_unregister_common(dev);
- 	priv = dev->priv;
-+	wait_for_completion(&priv->fw_loaded);
-+	p54_unregister_common(dev);
- 	release_firmware(priv->firmware);
- 	pci_free_consistent(pdev, sizeof(*priv->ring_control),
- 			    priv->ring_control, priv->ring_control_dma);
-Index: wireless-testing-new/drivers/net/wireless/p54/p54pci.h
-===================================================================
---- wireless-testing-new.orig/drivers/net/wireless/p54/p54pci.h
-+++ wireless-testing-new/drivers/net/wireless/p54/p54pci.h
-@@ -105,6 +105,7 @@ struct p54p_priv {
- 	struct sk_buff *tx_buf_data[32];
- 	struct sk_buff *tx_buf_mgmt[4];
- 	struct completion boot_comp;
-+	struct completion fw_loaded;
- };
- 
- #endif /* P54USB_H */
