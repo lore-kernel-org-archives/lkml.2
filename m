@@ -1,135 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078Ab2BJLMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 06:12:18 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:34802 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab2BJLMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 06:12:15 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of the staging area
-Thread-Index: AQHM52VkUL8chIbTFkGkSHe4oNGmRZY1g0MAgAAEEgCAAAGKgP//fYTQgACIkgCAAGsaEA==
-Date: Fri, 10 Feb 2012 11:12:09 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B70CEB6@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
-	 <20120209200404.GA8816@kroah.com>
-	 <1328818718.2944.20.camel@dabdike.int.hansenpartnership.com>
-	 <20120209202409.GA22365@kroah.com>
-	 <6E21E5352C11B742B20C142EB499E0481B70CB38@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.22]
-Content-Type: text/plain; charset="utf-8"
+	id S1759082Ab2BJLTT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 06:19:19 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52606 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754606Ab2BJLTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 06:19:17 -0500
+Date: Fri, 10 Feb 2012 11:19:13 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
+        "'Rob Clark'" <rob.clark@linaro.org>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>
+Subject: Re: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range()
+ to stabilize watermarks
+Message-ID: <20120210111913.GP5796@csn.ul.ie>
+References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
+ <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com>
+ <20120203140428.GG5796@csn.ul.ie>
+ <000001cce674$64bb67e0$2e3237a0$%szyprowski@samsung.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <000001cce674$64bb67e0$2e3237a0$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1ABCPKt017381
 
-
-
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Thursday, February 09, 2012 3:46 PM
-> To: KY Srinivasan
-> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
-> staging area
+On Wed, Feb 08, 2012 at 04:14:46PM +0100, Marek Szyprowski wrote:
+> > > <SNIP>
+> > > +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
+> > > +{
+> > > +	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> > > +	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
+> > > +	int did_some_progress = 0;
+> > > +	int order = 1;
+> > > +	unsigned long watermark;
+> > > +
+> > > +	/*
+> > > +	 * Increase level of watermarks to force kswapd do his job
+> > > +	 * to stabilize at new watermark level.
+> > > +	 */
+> > > +	min_free_kbytes += count * PAGE_SIZE / 1024;
+> > 
+> > There is a risk of overflow here although it is incredibly
+> > small. Still, a potentially nicer way of doing this was
+> > 
+> > count << (PAGE_SHIFT - 10)
+> > 
+> > > +	setup_per_zone_wmarks();
+> > > +
+> > 
+> > Nothing prevents two or more processes updating the wmarks at the same
+> > time which is racy and unpredictable. Today it is not much of a problem
+> > but CMA makes this path hotter than it was and you may see weirdness
+> > if two processes are updating zonelists at the same time. Swap-over-NFS
+> > actually starts with a patch that serialises setup_per_zone_wmarks()
+> > 
+> > You also potentially have a BIG problem here if this happens
+> > 
+> > min_free_kbytes = 32768
+> > Process a: min_free_kbytes  += 65536
+> > Process a: start direct reclaim
+> > echo 16374 > /proc/sys/vm/min_free_kbytes
+> > Process a: exit direct_reclaim
+> > Process a: min_free_kbytes -= 65536
+> > 
+> > min_free_kbytes now wraps negative and the machine hangs.
+> > 
+> > The damage is confined to CMA though so I am not going to lose sleep
+> > over it but you might want to consider at least preventing parallel
+> > updates to min_free_kbytes from proc.
 > 
-> On Thu, 2012-02-09 at 20:43 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Thursday, February 09, 2012 3:24 PM
-> > > To: James Bottomley
-> > > Cc: KY Srinivasan; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
-> > > scsi@vger.kernel.org
-> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> the
-> > > staging area
-> > >
-> > > On Thu, Feb 09, 2012 at 02:18:38PM -0600, James Bottomley wrote:
-> > > > On Thu, 2012-02-09 at 12:04 -0800, Greg KH wrote:
-> > > > > On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
-> > > > > > The storage driver (storvsc_drv.c) handles all block storage devices
-> > > > > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
-> > > > > > staging tree for a while and this patch moves it out of the staging area.
-> > > > > > As per Greg's recommendation, this patch makes no changes to the
-> > > staging/hv
-> > > > > > directory. Once the driver moves out of staging, we will cleanup the
-> > > > > > staging/hv directory.
-> > > > > >
-> > > > > > James was willing to apply this patch during the 3.3-rc phase and a
-> decision
-> > > > > > was taken to defer this to 3.4 since Greg had queued up a bunch of
-> storvsc
-> > > > > > patches for 3.4. Now that Greg has applied all of the pending storvsc
-> > > patches,
-> > > > > > I am re-sending this patch to move this driver out of staging.
-> > > > > >
-> > > > > >
-> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > > > ---
-> > > > > >  drivers/scsi/Kconfig       |    7 +
-> > > > > >  drivers/scsi/Makefile      |    3 +
-> > > > > >  drivers/scsi/storvsc_drv.c | 1548
-> > > ++++++++++++++++++++++++++++++++++++++++++++
-> > > > > >  3 files changed, 1558 insertions(+), 0 deletions(-)
-> > > > > >  create mode 100644 drivers/scsi/storvsc_drv.c
-> > > > >
-> > > > > James, any objection to me applying this to the staging-next tree, and
-> > > > > at the same time, deleting this version of the driver from the
-> > > > > drivers/staging/hv/ directory?
-> > > >
-> > > > Well, yes, it has the same build failure as the previous one and that
-> > > > will make it non bisectable.
-> > >
-> > > Ah, that would make things a bit difficult, KY, please test your
-> > > patches...
-> >
-> > Greg,
-> >
-> > I pulled down your staging tree earlier today that had all the storvsc patches
-> that you
-> > checked in yesterday, applied this patch and built it (successfully).
+> Right. This approach was definitely too hacky. What do you think about replacing 
+> it with the following code (I assume that setup_per_zone_wmarks() serialization 
+> patch will be merged anyway so I skipped it here):
 > 
-> You're leaving remnants in staging.
+
+It's part of a larger series and the rest of that series is
+controversial. That single patch can be split out obviously so feel free
+to add it to your series and stick your Signed-off-by on the end of it.
+
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 82f4fa5..bb9ae41 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -371,6 +371,13 @@ struct zone {
+>         /* see spanned/present_pages for more description */
+>         seqlock_t               span_seqlock;
+>  #endif
+> +#ifdef CONFIG_CMA
+> +       /*
+> +        * CMA needs to increase watermark levels during the allocation
+> +        * process to make sure that the system is not starved.
+> +        */
+> +       unsigned long           min_cma_pages;
+> +#endif
+>         struct free_area        free_area[MAX_ORDER];
 > 
-> Move the damn thing and pull the config options from staging when you
-> put them in SCSI.
+>  #ifndef CONFIG_SPARSEMEM
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 824fb37..1ca52f0 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5044,6 +5044,11 @@ void setup_per_zone_wmarks(void)
+> 
+>                 zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
+>                 zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
+> +#ifdef CONFIG_CMA
+> +               zone->watermark[WMARK_MIN] += zone->min_cma_pages;
+> +               zone->watermark[WMARK_LOW] += zone->min_cma_pages;
+> +               zone->watermark[WMARK_HIGH] += zone->min_cma_pages;
+> +#endif
+>                 setup_zone_migrate_reserve(zone);
+>                 spin_unlock_irqrestore(&zone->lock, flags);
+>         }
 
-James,
+This is better in that it is not vunerable to parallel updates of
+min_free_kbytes. It would be slightly tidier to introduce something
+like cma_wmark_pages() that returns min_cma_pages if CONFIG_CMA and 0
+otherwise. Use the helper to get right of this ifdef CONFIG_CMA within
+setup_per_zone_wmarks().
 
-I have sent out a revised patch that does exactly what you are suggesting here.
-If this is what you were looking for please ACK it.
+You'll still have the problem of kswapd not taking CMA pages properly into
+account when deciding whether to reclaim or not though.
 
-Regards,
-
-K. Y
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Mel Gorman
+SUSE Labs
