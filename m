@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760575Ab2BJWlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:21 -0500
+	id S1754880Ab2BJWlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:41:32 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024Ab2BJWlS (ORCPT
+	with ESMTP id S1754531Ab2BJWl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:18 -0500
+	Fri, 10 Feb 2012 17:41:27 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222947.455374815@clark.kroah.org>
+Message-Id: <20120210222945.389907445@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:46 -0800
+Date: Fri, 10 Feb 2012 14:29:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Sadler <dsadler@us.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Louis Alex Eisner <leisner@cs.ucsd.edu>,
-        Hugh Dickins <hughd@google.com>
-Subject: [patch 27/86] mm/filemap_xip.c: fix race condition in xip_file_fault()
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [patch 04/86] ALSA: hda - Apply 0x0f-VREF fix to all ASUS laptops with ALC861/660
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,55 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Carsten Otte <carsteno@de.ibm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 99f02ef1f18631eb0a4e0ea0a3d56878dbcb4b90 upstream.
+commit 31150f2327cbb66363f38e13ca1be973d2f9203a upstream.
 
-Fix a race condition that shows in conjunction with xip_file_fault() when
-two threads of the same user process fault on the same memory page.
+It turned out that other ASUS laptops require the similar fix to
+enable the VREF on the pin 0x0f for the secret output amp, not only
+ASUS A6Rp.  Moreover, it's required even when the pin is being used
+as the output.  Thus, writing a fixed value doesn't work always.
 
-In this case, the race winner will install the page table entry and the
-unlucky loser will cause an oops: xip_file_fault calls vm_insert_pfn (via
-vm_insert_mixed) which drops out at this check:
+This patch applies the VREF-fix for all ASUS laptops with ALC861/660
+in a fixup function that checks the current value and turns on only
+the VREF value no matter whether input or output direction is set.
 
-	retval = -EBUSY;
-	if (!pte_none(*pte))
-		goto out_unlock;
+The automute function is modified as well to keep the pin VREF upon
+muting/unmuting via pin-control; otherwise the pin VREF is reset at
+plugging/unplugging a jack.
 
-The resulting -EBUSY return value will trigger a BUG_ON() in
-xip_file_fault.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42588
 
-This fix simply considers the fault as fixed in this case, because the
-race winner has successfully installed the pte.
-
-[akpm@linux-foundation.org: use conventional (and consistent) comment layout]
-Reported-by: David Sadler <dsadler@us.ibm.com>
-Signed-off-by: Carsten Otte <cotte@de.ibm.com>
-Reported-by: Louis Alex Eisner <leisner@cs.ucsd.edu>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/filemap_xip.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |   43 ++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 35 insertions(+), 8 deletions(-)
 
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -263,7 +263,12 @@ found:
- 							xip_pfn);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
--		BUG_ON(err);
-+		/*
-+		 * err == -EBUSY is fine, we've raced against another thread
-+		 * that faulted-in the same page
-+		 */
-+		if (err != -EBUSY)
-+			BUG_ON(err);
- 		return VM_FAULT_NOPAGE;
- 	} else {
- 		int err, ret = VM_FAULT_OOM;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -176,6 +176,7 @@ struct alc_spec {
+ 	unsigned int detect_lo:1;	/* Line-out detection enabled */
+ 	unsigned int automute_speaker_possible:1; /* there are speakers and either LO or HP */
+ 	unsigned int automute_lo_possible:1;	  /* there are line outs and HP */
++	unsigned int keep_vref_in_automute:1; /* Don't clear VREF in automute */
+ 
+ 	/* other flags */
+ 	unsigned int no_analog :1; /* digital I/O only */
+@@ -519,13 +520,24 @@ static void do_automute(struct hda_codec
+ 
+ 	for (i = 0; i < num_pins; i++) {
+ 		hda_nid_t nid = pins[i];
++		unsigned int val;
+ 		if (!nid)
+ 			break;
+ 		switch (spec->automute_mode) {
+ 		case ALC_AUTOMUTE_PIN:
++			/* don't reset VREF value in case it's controlling
++			 * the amp (see alc861_fixup_asus_amp_vref_0f())
++			 */
++			if (spec->keep_vref_in_automute) {
++				val = snd_hda_codec_read(codec, nid, 0,
++					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++				val &= ~PIN_HP;
++			} else
++				val = 0;
++			val |= pin_bits;
+ 			snd_hda_codec_write(codec, nid, 0,
+ 					    AC_VERB_SET_PIN_WIDGET_CONTROL,
+-					    pin_bits);
++					    val);
+ 			break;
+ 		case ALC_AUTOMUTE_AMP:
+ 			snd_hda_codec_amp_stereo(codec, nid, HDA_OUTPUT, 0,
+@@ -5225,6 +5237,25 @@ enum {
+ 	PINFIX_ASUS_A6RP,
+ };
+ 
++/* On some laptops, VREF of pin 0x0f is abused for controlling the main amp */
++static void alc861_fixup_asus_amp_vref_0f(struct hda_codec *codec,
++			const struct alc_fixup *fix, int action)
++{
++	struct alc_spec *spec = codec->spec;
++	unsigned int val;
++
++	if (action != ALC_FIXUP_ACT_INIT)
++		return;
++	val = snd_hda_codec_read(codec, 0x0f, 0,
++				 AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
++	if (!(val & (AC_PINCTL_IN_EN | AC_PINCTL_OUT_EN)))
++		val |= AC_PINCTL_IN_EN;
++	val |= AC_PINCTL_VREF_50;
++	snd_hda_codec_write(codec, 0x0f, 0,
++			    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
++	spec->keep_vref_in_automute = 1;
++}
++
+ static const struct alc_fixup alc861_fixups[] = {
+ 	[PINFIX_FSC_AMILO_PI1505] = {
+ 		.type = ALC_FIXUP_PINS,
+@@ -5235,17 +5266,13 @@ static const struct alc_fixup alc861_fix
+ 		}
+ 	},
+ 	[PINFIX_ASUS_A6RP] = {
+-		.type = ALC_FIXUP_VERBS,
+-		.v.verbs = (const struct hda_verb[]) {
+-			/* node 0x0f VREF seems controlling the master output */
+-			{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_VREF50 },
+-			{ }
+-		},
++		.type = ALC_FIXUP_FUNC,
++		.v.func = alc861_fixup_asus_amp_vref_0f,
+ 	},
+ };
+ 
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
+-	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", PINFIX_ASUS_A6RP),
++	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", PINFIX_ASUS_A6RP),
+ 	SND_PCI_QUIRK(0x1584, 0x2b01, "Haier W18", PINFIX_ASUS_A6RP),
+ 	SND_PCI_QUIRK(0x1734, 0x10c7, "FSC Amilo Pi1505", PINFIX_FSC_AMILO_PI1505),
+ 	{}
 
 
