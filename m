@@ -1,68 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2BJHko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 02:40:44 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52862 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab2BJHkn (ORCPT
+	id S1755239Ab2BJIDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 03:03:37 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54234 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab2BJIDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 02:40:43 -0500
+	Fri, 10 Feb 2012 03:03:36 -0500
+Message-ID: <4F34CEF5.6020103@kernel.dk>
+Date: Fri, 10 Feb 2012 09:01:57 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 9 Feb 2012 23:40:22 -0800
-Message-ID: <CALCETrVWBdp2yyuZ54osq_QQ0a8NKUfOk8stxtuiFWq76FO7JQ@mail.gmail.com>
-Subject: Do the x86 kernel entry points need an xabort on TSX cpus?
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Simon Arlott <simon@fire.lp0.eu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: bsg_unregister_queue attempts to remove "bsg" sysfs link that
+ doesn't exist
+References: <4F32E0F8.4080203@simon.arlott.org.uk> <20120209152402.cdaf1b55.akpm@linux-foundation.org> <4F347119.5070706@panasas.com>
+In-Reply-To: <4F347119.5070706@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just read the Intel TSX reference (Chapter 8 of the current
-Instruction Set Extensions
-Programming Reference).  It says, in Section 8.3.8.1:
+On 02/10/2012 02:21 AM, Boaz Harrosh wrote:
+> On 02/10/2012 01:24 AM, Andrew Morton wrote:
+>> (cc's added)
+>>
+>> Kernel version appears to be 3.3-rc2.  
+>>
+>> On Wed, 08 Feb 2012 20:54:16 +0000
+>> Simon Arlott <simon@fire.lp0.eu> wrote:
+>>
+>>> I unplugged two hard drives and this happened:
+>>> [168525.975223] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
+>>> [168527.976303] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
+>>> [168530.879028]  end_device-8:2: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 13, phy 7,sas_addr 0xde5c3f3bbc9bae8f
+>>> [168530.879034]  phy-8:7: mptsas: ioc0: delete phy 7, phy-obj (0xffff88027582b800)
+>>> [168530.879045]  port-8:2: mptsas: ioc0: delete port 2, sas_addr (0xde5c3f3bbc9bae8f)
+>>> [168530.879525] sd 8:0:2:0: [sdh] Synchronizing SCSI cache
+>>> [168530.879581] sd 8:0:2:0: [sdh]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
+>>> [168530.879651] scsi target8:0:2: mptsas: ioc0: delete device: fw_channel 0, fw_id 13, phy 7, sas_addr 0xde5c3f3bbc9bae8f
+>>> [168530.879706] ------------[ cut here ]------------
+>>> [168530.879715] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
+>>> [168530.879717] Hardware name: empty
+>>> [168530.879719] sysfs: can not remove 'bsg', no directory
+>>> [168530.879721] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
+>>> [168530.879757] Pid: 1578, comm: kworker/u:7 Tainted: G       A     3.3.0-rc2+ #00119-gd8e94fc-dirty
+>>> [168530.879761] Call Trace:
+>>> [168530.879770]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
+>>> [168530.879774]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
+>>> [168530.879778]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
+>>> [168530.879782]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
+>>> [168530.879788]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
+>>> [168530.879795]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
+>>> [168530.879798]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
+>>> [168530.879801]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
+>>> [168530.879806]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
+>>> [168530.879810]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
+>>> [168530.879816]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
+>>> [168530.879820]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
+>>> [168530.879824]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
+>>> [168530.879829]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
+>>> [168530.879832]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
+>>> [168530.879836]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
+>>> [168530.879839]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
+>>> [168530.879844]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
+>>> [168530.879847]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
+>>> [168530.879852]  [<ffffffff81056796>] kthread+0x96/0xa0
+>>> [168530.879858]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
+>>> [168530.879862]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
+>>> [168530.879866]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
+>>> [168530.879869] ---[ end trace b116d5a791652b31 ]---
+>>> [168532.879048]  end_device-8:1: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 12, phy 6,sas_addr 0xde5c3f3cc395aa8e
+>>> [168532.879054]  phy-8:6: mptsas: ioc0: delete phy 6, phy-obj (0xffff88027582b000)
+>>> [168532.879065]  port-8:1: mptsas: ioc0: delete port 1, sas_addr (0xde5c3f3cc395aa8e)
+>>> [168532.879580] sd 8:0:1:0: [sdg] Synchronizing SCSI cache
+>>> [168532.879692] sd 8:0:1:0: [sdg]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
+>>> [168532.879877] scsi target8:0:1: mptsas: ioc0: delete device: fw_channel 0, fw_id 12, phy 6, sas_addr 0xde5c3f3cc395aa8e
+>>> [168532.879999] ------------[ cut here ]------------
+>>> [168532.880033] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
+>>> [168532.880038] Hardware name: empty
+>>> [168532.880042] sysfs: can not remove 'bsg', no directory
+>>> [168532.880045] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
+>>> [168532.880108] Pid: 1578, comm: kworker/u:7 Tainted: G       AW    3.3.0-rc2+ #00119-gd8e94fc-dirty
+>>> [168532.880115] Call Trace:
+>>> [168532.880128]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
+>>> [168532.880136]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
+>>> [168532.880143]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
+>>> [168532.880152]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
+>>> [168532.880160]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
+>>> [168532.880171]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
+>>> [168532.880177]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
+>>> [168532.880183]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
+>>> [168532.880192]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
+>>> [168532.880218]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
+>>> [168532.880227]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
+>>> [168532.880234]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
+>>> [168532.880241]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
+>>> [168532.880250]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
+>>> [168532.880256]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
+>>> [168532.880264]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
+>>> [168532.880270]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
+>>> [168532.880279]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
+>>> [168532.880285]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
+>>> [168532.880293]  [<ffffffff81056796>] kthread+0x96/0xa0
+>>> [168532.880303]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
+>>> [168532.880316]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
+>>> [168532.880329]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
+>>> [168532.880336] ---[ end trace b116d5a791652b32 ]---
+>>
+> 
+> It might be the same as the other reports see a fix here:
+> https://lkml.org/lkml/2012/2/8/246
+> 
+> See thread: device removal causes "sysfs: can not remove 'bsg', no directory"
 
-In addition, in some implementations, the following instructions may
-always cause
-transactional aborts. These instructions are not expected to be commonly used
-inside typical transactional regions. However, programmers must not
-rely on these
-instructions to force a transactional abort, since whether they cause
-transactional
-aborts is implementation dependent.
+Fix has been queued up for a few days, it'll go out today.
 
-[...]
+-- 
+Jens Axboe
 
- - Ring transitions: SYSENTER, SYSCALL, SYSEXIT, and SYSRET.
-
-I suspect that many bits of the kernel expect that things they do
-won't unhappen.  For example, it could be fun to do:
-
-int devrandom = open("/dev/random", O_RDONLY);
-unsigned int abort_code = _xbegin();
-
-if (abort_code & 1) {
-  printf("Your next random byte is %d\n", (int)(abort_code >> 24));
-} else if (abort_code != 0) {
-  printf("Attack failed\n");
-} else {
-  char r;
-  read(devrandom, &r, 1);
-  _xabort(r);
-}
-
-[This won't compile because _xabort requires an immediate argument.
-Fixing that is easy with assembler tricks.]
-
-So... do all of the syscall entries (and maybe even the page fault
-handler) need explicit xabort instructions?  Or is the manual (or my
-understanding of it) wrong?
-
-(The manual also says that IO instructions and sti might not abort.
-That seems surprising.)
-
---Andy
-
-P.S.  Aside from this issue, TSX seems really neat.  I can even think
-of some single-threaded uses for it.
