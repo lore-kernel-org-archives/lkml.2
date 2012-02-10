@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760224Ab2BJVNC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 16:13:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42730 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab2BJVNA (ORCPT
+	id S1760230Ab2BJVTi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 16:19:38 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47004 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758959Ab2BJVTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 16:13:00 -0500
-Date: Fri, 10 Feb 2012 13:12:55 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in disk event polling
-Message-ID: <20120210211255.GK19392@google.com>
-References: <20120210204652.GJ19392@google.com>
- <Pine.LNX.4.44L0.1202101557280.1281-100000@iolanthe.rowland.org>
+	Fri, 10 Feb 2012 16:19:36 -0500
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: "Indan Zupancic" <indan@nul.nu>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+Date: Fri, 10 Feb 2012 22:19:29 +0100
+User-Agent: KMail/1.8.2
+Cc: "Jamie Lokier" <jamie@shareable.org>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>, "Andrew Lutomirski" <luto@mit.edu>,
+        "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        "Roland McGrath" <mcgrathr@chromium.org>
+References: <20120210020255.GA8333@jl-vm1.vm.bytemark.co.uk> <281b99af510eb77040272903245f0256.squirrel@webmail.greenhost.nl>
+In-Reply-To: <281b99af510eb77040272903245f0256.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1202101557280.1281-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201202102219.29423.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
-
-On Fri, Feb 10, 2012 at 04:03:51PM -0500, Alan Stern wrote:
-> None of those resets above should have occurred.  They are the result
-> of trying to recover from the failure of a TEST UNIT READY command.
-
-Thanks for the log.  Yeah, I was just thinking about libata and
-wondering why it would break that badly.
-
-> > > I have verified that changing all occurrences of system_nrt_wq in 
-> > > block/genhd.c to system_freezable_wq fixes the bug.  However this may 
-> > > not be the way you want to solve it; you may prefer to have a freezable 
-> > > non-reentrant work queue.
-> > 
-> > Please feel free to send out a patch to fix the issue. :)
+On Friday 10 February 2012 04:37, Indan Zupancic wrote:
+> > I read somewhere about a bug report where syscall-exit was seen after
+> > attach, but I don't remember where now.
 > 
-> Is there a real reason for using system_nrt_wq?  Are you okay with just
-> switching over to system_freezable_wq?
+> Well, if you attach at a random moment you can get a syscall-exit first,
+> I guess. I suppose you have to wait till you get the SIGSTOP notification
+> before you can be sure that the next syscall event will be an entry one.
 
-I think it should be nrt.  It assumes that no one else is running it
-concurrently; otherwise, multiple CPUs could jump into
-disk->fops->check_events() concurrently which can be pretty ugly.
-
-Thanks.
+No. After PTRACE_ATTACH, next reported waitpid result will be either
+a ptrace-stop of signal-delivery-stop variety,
+or death (WIFEXITED/WIFSIGNALED). Syscall exit notification
+is not possible (modulo kernel bugs). For one, syscall entry/exit
+notifications must be explicitly requested by PTRACE_SYSCALL, which
+wasn't yet done!
 
 -- 
-tejun
+vda
