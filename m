@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759038Ab2BJP4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:56:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35946 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758193Ab2BJP4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:56:43 -0500
-Message-ID: <4F353D65.7070705@zytor.com>
-Date: Fri, 10 Feb 2012 07:53:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1759470Ab2BJP6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:58:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58875 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759165Ab2BJP6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 10:58:34 -0500
+Date: Fri, 10 Feb 2012 15:58:32 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1] regmap: Support for caching in reg_raw_write()
+Message-ID: <20120210155831.GE6472@opensource.wolfsonmicro.com>
+References: <1328873572-12603-1-git-send-email-ldewangan@nvidia.com>
+ <4F350716.9050407@metafoo.de>
+ <20120210121405.GD6472@opensource.wolfsonmicro.com>
+ <4F350E8C.6030907@metafoo.de>
 MIME-Version: 1.0
-To: Indan Zupancic <indan@nul.nu>
-CC: "H.J. Lu" <hjl.tools@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
-        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>
-Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
-References: <20120116183730.GB21112@redhat.com>    <CA+55aFzk6OOHoQ_e3pPQNUGN80tjXT7vYTNaRjXbWiQUnNRiTA@mail.gmail.com>    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>    <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>    <4F3007AD.50307@zytor.com>    <c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>    <4F33110D.3050904@zytor.com>    <13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>    <4F334B8C.2050005@zytor.com>    <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>    <b3f79ce8b30e2985723eec1a3337317e.squirrel@webmail.greenhost.nl>    <4F346FB0.9070203@zytor.com>    <19ac5d5293110612dc17c514bc7e1ccd.squirrel@webmail.greenhost.nl> <cc95fcf4b1c28ee6f73e373d04593634.squirrel@webmail.greenhost.nl>
-In-Reply-To: <cc95fcf4b1c28ee6f73e373d04593634.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
+Content-Disposition: inline
+In-Reply-To: <4F350E8C.6030907@metafoo.de>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2012 11:42 PM, Indan Zupancic wrote:>
-> Patch implementing this below. It uses bit 3 for task mode and bit 5
-> for syscall mode. Those bits are only valid if VIF is set. It increases
-> the kernel size by around 50 bytes, 6 for a 32-bit kernel.
->
-> Any objections?
 
-#include <stdnak.h>
+--jTMWTj4UTAEmbWeb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	-hpa
+On Fri, Feb 10, 2012 at 01:33:16PM +0100, Lars-Peter Clausen wrote:
 
+> regmap_write doesn't always go the raw_write path. Also with this approach
+
+We can ignore the non-byte formats as a wart for this; they're cut out
+of this area of the subsystem functionality and just get single register
+write operatons with single register cache access.
+
+> we end up formatting the value into the raw format, only to parse it again
+> in the next step.
+
+Yes, like I say there's room for optimisation.  For 8 bit values there
+would be win from working out that we don't need to do anything at all,=20
+though I doubt it's ever going to be performance critical.
+
+> Furthermore I don't think it makes sense to cache raw values as the cache
+> operates on a register level, not on a byte level.
+
+The entire API operates on registers really.  The only reason
+raw_write() takes a length is because it's what most of the users are
+actually likely to have to hand, trying to write to less than a register
+isn't particularly sensible.
+
+--jTMWTj4UTAEmbWeb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNT6hAAoJEBus8iNuMP3dwzAP/jjYUfmdwK6t8vT5IFM/44R1
+A31gkR/fSIT2ShQxrQ2RyuIVPuGGAJIDMIA+R/syvzdwramZolImhmtH2969pZiv
+1UuCRsptaOqiR+y45kGp1WzNadZ4uhkPnA10vr3L/GSuEnhr2YJ/h8KsV075dKCr
+8W/UWB8+fwQ+5+qWATiHtao4/ikDtWuoLdgLzUvCH4LVGaQnUuxaOJaBIo7vRTq8
+ay5JEZqXOtxCUkeIN+JA3+28R0jIl89hvkrmO4bDPFLhirowMKjJ6UY6pqPAANDQ
+9K4ThyWuG7JL64gbt/lSX67hXKI+6cABcxkeP9bU7uQ5BVs2TWz7uzQdxORWTibh
+kYj4Pzwgehpmw96jmp7GM6iLiDYe1UHgQTzPwmLdmgkvSfnPuMPw5i1IwjxtKMV6
+TWwtf9wD3+0jxEWPV+QITzgq/WFZE8TfN2uwlRsBrhEKvLh1fhnyWl35TVKqGVuU
+8PG6G4zRuRAQXsy4MeYUbkgP8dS1QUrMdzUfO4EmbUCx4FkIkPAMjZzTHArna382
+YMsVHfhK2ytLYFH6TSTVSTV5jjmAvVGnNbyomYaW8kJ4mL7YHkiyfVqJ0I52Bwh2
+GCY4f+Z1liir3w6NkXevjeYhGYDSCjO1O2TUaxEWCbIUOFGbWSWLOYRDCkkzgOOH
+wQuIfakNRb0vu5bjUhi0
+=g/X5
+-----END PGP SIGNATURE-----
+
+--jTMWTj4UTAEmbWeb--
