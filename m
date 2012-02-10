@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab2BJE6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 23:58:14 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55900 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab2BJE6N (ORCPT
+	id S1758818Ab2BJE6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 23:58:50 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9653 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758585Ab2BJE6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 23:58:13 -0500
-Date: Fri, 10 Feb 2012 15:58:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20120210155800.ccef418fd5c2f2b87a5d6315@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_Feb_2012_15_58_00_+1100_Npx+O5=Z/WniRGL2"
+	Thu, 9 Feb 2012 23:58:38 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 09 Feb 2012 20:58:25 -0800
+Message-ID: <4F34A3EF.3070207@nvidia.com>
+Date: Thu, 09 Feb 2012 20:58:23 -0800
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Barry Song <21cnbao@gmail.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 0/3] pinctrl: move the core per-device handlers to core
+References: <1328814050-22715-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1328814050-22715-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Feb_2012_15_58_00_+1100_Npx+O5=Z/WniRGL2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/09/2012 11:00 AM, Linus Walleij wrote:
+> After discussing with some people involved with pin control, we agreed
+> that it will just cause trouble to have separate handles for pin muxing
+> and pin configuration in callers - they will definately want to set all
+> pin aspects regarding muxing and other configuration with one single
+> call.
+> 
+> These three patches take the first step in this transformation by moving
+> the per-device handles over to core code, and renaming all related
+> functions with the pinctrl_* prefix.
 
-Hi Greg,
+The series,
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-drivers/staging/ramster/ramster_o2net.c: In function 'ramster_remote_async_=
-get_request_handler':
-drivers/staging/ramster/ramster_o2net.c:91:2: error: implicit declaration o=
-f function 'o2net_force_data_magic' [-Werror=3Dimplicit-function-declaratio=
-n]
-drivers/staging/ramster/ramster_o2net.c: In function 'ramster_remote_put':
-drivers/staging/ramster/ramster_o2net.c:250:2: error: implicit declaration =
-of function 'o2net_nn_from_num' [-Werror=3Dimplicit-function-declaration]
-drivers/staging/ramster/zcache-main.c:40:64: fatal error: ../zram/xvmalloc.=
-h: No such file or directory
+Note that this series will cause some compile breakage in the series I
+previously posted to add a pinctrl-tegra driver and convert mach-tegra
+to use it. The following patches in that series should still be OK:
 
-Caused by commits ba351b02ab11 ("staging: ramster: local compression +
-tmem") and 14a3cd58dd4f ("staging: ramster: ramster-specific new files").
+pinctrl: add a driver for NVIDIA Tegra
+ARM: tegra: Select PINCTRL Kconfig variables
 
-I have used the version of the staging tree from next-20120209 for today.
+... so you can still go ahead and apply those, but the following will be
+broken:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ARM: tegra: Switch to new pinctrl driver
+ARM: tegra: Remove pre-pinctrl pinmux driver
 
---Signature=_Fri__10_Feb_2012_15_58_00_+1100_Npx+O5=Z/WniRGL2
-Content-Type: application/pgp-signature
+also the separately posted:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ARM: tegra: Add pinmux board file for Cardhu
 
-iQIcBAEBCAAGBQJPNKPYAAoJEECxmPOUX5FET90P/1QnaDZZblLQultoeIbYF6bi
-diiuVjHDoVPyi5nom5zxkUX0yQBnbIrmnBjjb8Kub59ofuWdBz5h6jGohafkFI9V
-ob1KIpknN8CYlADsVbXdA2b6iHHNdsTDeLZ9B0hPYzdy3zMlcjGcV4dZiQdRSf+f
-jhHhHqJmpzCnkY1bzzUgMg7c/eP3iBQOfjuJjc88sNA1MGGpLLZ0Awi/PiHXstrL
-7mhuAKQ81uq9aJl4AJ/z7Dt8lcjZMdtQqWKFz2hxuqFvkTi8Mfi39NKxtMoT3T98
-6jpMyCP93n+AxVsMSzepMN9PAv9n91ye0UYOt60Lh8b9pJnimPyiLsPjIKGFUqm9
-QLuZpCohcYzNnLg/q91SLvF6ft+y8cApLvUCTywT2BF35QavqALSdXsWWAoTqoGd
-0Jg1y4iEqlhhs6cMaFlIgwk47ZrIALaCENSUO8RwvAKJvSoa9eTO4XVsl/WlUeWz
-Hg8RstjafKqgFyBEAwEFToxRkqykQMElwDyNe5kVS7jXFwL20lMSL+vpTCISGCCy
-NB6YWfOdVhVB7iqc47LuXpm71ZLaFCz+dYiDQjtKzbl3ZCD10OAhX0UegWq08pJ6
-lpkzDyuEp5bQJRKKs+shRSxl9cYdS2nuhTJlwC7bEFjD4OKqlmUpvFUUUVSX1HaO
-zRsFk6XGMganKGkd3qqM
-=WNaL
------END PGP SIGNATURE-----
+I'll probably hold off reposting those last 3; with any luck they'll be
+eclipsed by my implementing full DT binding support in the near future,
+given our consensus on that topic following discussion at Linaro Connect.
 
---Signature=_Fri__10_Feb_2012_15_58_00_+1100_Npx+O5=Z/WniRGL2--
+-- 
+nvpublic
