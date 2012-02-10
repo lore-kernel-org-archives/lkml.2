@@ -1,166 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2BJPgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 10:36:53 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:58002 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab2BJPgu (ORCPT
+	id S1757599Ab2BJPiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 10:38:07 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18684 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811Ab2BJPiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 10:36:50 -0500
-Date: Fri, 10 Feb 2012 16:36:43 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 11/15] mm: trigger page reclaim in alloc_contig_range() to
- stabilize watermarks
-In-reply-to: <20120210111913.GP5796@csn.ul.ie>
-To: "'Mel Gorman'" <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
-        "'Rob Clark'" <rob.clark@linaro.org>,
-        "'Ohad Ben-Cohen'" <ohad@wizery.com>
-Message-id: <00d101cce809$cabaa100$602fe300$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Aczn5dX0TfX7tw7ORjaWXpBe8m2N/wAI43Cw
-References: <1328271538-14502-1-git-send-email-m.szyprowski@samsung.com>
- <1328271538-14502-12-git-send-email-m.szyprowski@samsung.com>
- <20120203140428.GG5796@csn.ul.ie>
- <000001cce674$64bb67e0$2e3237a0$%szyprowski@samsung.com>
- <20120210111913.GP5796@csn.ul.ie>
+	Fri, 10 Feb 2012 10:38:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: rostedt@goodmis.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [PATCH] x86 fixes for 3.3 impacting distros (v1).
+Date: Fri, 10 Feb 2012 10:34:50 -0500
+Message-Id: <1328888091-9692-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4F3539CC.00B6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The attached patch fixes RH BZ #742032, #787403, and #745574
+and touch x86 subsystem.
 
-On Friday, February 10, 2012 12:19 PM Mel Gorman wrote:
+The patch description gives a very good overview of the problem and
+one solution. The one solution it chooses is not the most architecturally
+sound but it does not cause performance degradation. If this your
+first time reading this, please read the patch first and then come back to
+this cover letter as I've some perf numbers and more detailed explanation here.
 
-> On Wed, Feb 08, 2012 at 04:14:46PM +0100, Marek Szyprowski wrote:
-> > > > <SNIP>
-> > > > +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
-> > > > +{
-> > > > +	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-> > > > +	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
-> > > > +	int did_some_progress = 0;
-> > > > +	int order = 1;
-> > > > +	unsigned long watermark;
-> > > > +
-> > > > +	/*
-> > > > +	 * Increase level of watermarks to force kswapd do his job
-> > > > +	 * to stabilize at new watermark level.
-> > > > +	 */
-> > > > +	min_free_kbytes += count * PAGE_SIZE / 1024;
-> > >
-> > > There is a risk of overflow here although it is incredibly
-> > > small. Still, a potentially nicer way of doing this was
-> > >
-> > > count << (PAGE_SHIFT - 10)
-> > >
-> > > > +	setup_per_zone_wmarks();
-> > > > +
-> > >
-> > > Nothing prevents two or more processes updating the wmarks at the same
-> > > time which is racy and unpredictable. Today it is not much of a problem
-> > > but CMA makes this path hotter than it was and you may see weirdness
-> > > if two processes are updating zonelists at the same time. Swap-over-NFS
-> > > actually starts with a patch that serialises setup_per_zone_wmarks()
-> > >
-> > > You also potentially have a BIG problem here if this happens
-> > >
-> > > min_free_kbytes = 32768
-> > > Process a: min_free_kbytes  += 65536
-> > > Process a: start direct reclaim
-> > > echo 16374 > /proc/sys/vm/min_free_kbytes
-> > > Process a: exit direct_reclaim
-> > > Process a: min_free_kbytes -= 65536
-> > >
-> > > min_free_kbytes now wraps negative and the machine hangs.
-> > >
-> > > The damage is confined to CMA though so I am not going to lose sleep
-> > > over it but you might want to consider at least preventing parallel
-> > > updates to min_free_kbytes from proc.
-> >
-> > Right. This approach was definitely too hacky. What do you think about replacing
-> > it with the following code (I assume that setup_per_zone_wmarks() serialization
-> > patch will be merged anyway so I skipped it here):
-> >
-> 
-> It's part of a larger series and the rest of that series is
-> controversial. That single patch can be split out obviously so feel free
-> to add it to your series and stick your Signed-off-by on the end of it.
+A bit of overview of the __page_change_attr_set_clr:
 
-Ok, I will grab it from that series.
+Its purpose is to change page attributes from one type to another.
+It is important to understand that the entrance that code:
+__page_change_attr_set_clr is guarded by cpa_lock spin-lock - which makes
+that whole code be single threaded.
 
-> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > index 82f4fa5..bb9ae41 100644
-> > --- a/include/linux/mmzone.h
-> > +++ b/include/linux/mmzone.h
-> > @@ -371,6 +371,13 @@ struct zone {
-> >         /* see spanned/present_pages for more description */
-> >         seqlock_t               span_seqlock;
-> >  #endif
-> > +#ifdef CONFIG_CMA
-> > +       /*
-> > +        * CMA needs to increase watermark levels during the allocation
-> > +        * process to make sure that the system is not starved.
-> > +        */
-> > +       unsigned long           min_cma_pages;
-> > +#endif
-> >         struct free_area        free_area[MAX_ORDER];
-> >
-> >  #ifndef CONFIG_SPARSEMEM
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 824fb37..1ca52f0 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -5044,6 +5044,11 @@ void setup_per_zone_wmarks(void)
-> >
-> >                 zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
-> >                 zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
-> > +#ifdef CONFIG_CMA
-> > +               zone->watermark[WMARK_MIN] += zone->min_cma_pages;
-> > +               zone->watermark[WMARK_LOW] += zone->min_cma_pages;
-> > +               zone->watermark[WMARK_HIGH] += zone->min_cma_pages;
-> > +#endif
-> >                 setup_zone_migrate_reserve(zone);
-> >                 spin_unlock_irqrestore(&zone->lock, flags);
-> >         }
-> 
-> This is better in that it is not vunerable to parallel updates of
-> min_free_kbytes. It would be slightly tidier to introduce something
-> like cma_wmark_pages() that returns min_cma_pages if CONFIG_CMA and 0
-> otherwise. Use the helper to get right of this ifdef CONFIG_CMA within
-> setup_per_zone_wmarks().
+Albeit it seems that if debug mode is turned on, it can run in parallel. The
+effect of using the posted patch is that __page_change_attr_set_clr() will be
+affected when we change caching attributes on 4KB pages and/or the NX flag.
 
-Thanks for the hint. I will submit this change soon.
- 
-> You'll still have the problem of kswapd not taking CMA pages properly into
-> account when deciding whether to reclaim or not though.
+The execution of __page_change_attr_set_clr is concentrated in
+(looked for ioremap_* and set_pages_*):
+ - during bootup ("Write protecting the ..")
+ - suspend/resume and graphic adapters evicting their buffers from the card
+   to RAM (which is usually done during suspend but can be done via the
+   'evict' attribute in debugfs)
+ - when setting the memory for the cursor (AGP cards using i8xx chipset) -
+   done during bootup and startup of Xserver.
+ - setting up memory for Intel GTT scratch (i9xx) page (done during bootup)
+ - payload (purgatory code) for kexec (done during kexec -l).
+ - ioremap_* during PCI devices load - InfiniBand and video cards like to use
+   ioremap_wc.
+ - Intel, radeon, nouveau running into memory pressure and evicting pages from
+   their GEM/TTM pool (once an hour or so if compiling a lot with only 4GB).
 
-This will only affect CMA clients, I hope we can fix this later once the patches
-get merged. I would really like to get it into v3.4, what means that it should be
-tested in next asap.
+These are the cases I found when running on baremetal (and Xen) using a normal
+Fedora Core 16 distro.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+The alternate solution to the problem I am trying to solve, which is much
+more architecturally sound (but has some perf disadvantages) is to wrap
+the pte_flags with paravirt call everywhere. For that these patches two patches:
+http://darnok.org/results/baseline_pte_flags_pte_attrs/0001-x86-paravirt-xen-Introduce-pte_flags.patch
+http://darnok.org/results/baseline_pte_flags_pte_attrs/0002-x86-paravirt-xen-Optimize-pte_flags-by-marking-it-as.patch
+
+make the pte_flags function (after bootup and patching with alternative asm)
+look as so:
+
+   48 89 f8             	mov    %rdi,%rax
+   66 66 66 90          	data32 data32 xchg %ax,%ax
+
+[the 66 66 .. is 'nop']. Looks good right? Well, it does work very well on Intel
+(used an i3 2100), but on AMD A8-3850 it hits a performance wall - that I found out
+is a result of CONFIG_FUNCTION_TRACER (too many nops??) being compiled in (but the tracer
+is set to the default 'nop'). If I disable that specific config option the numbers
+are the same as the baseline (with CONFIG_FUNCTION_TRACER disabled) on the AMD box.
+Interestingly enough I only see these on AMD machines - not on the Intel ones.
+
+The benchmarks (kernbench 5 times) were carried out using a Fedora Core 16 .config in
+single-mode bootup with the swap disk enabled.
+
+I ran some benchmarks (kernbench) under an i3 2100 and AMD A8-3850 and
+the results are in:
+
+https://docs.google.com/spreadsheet/ccc?key=0Aj5ukWh4htwMdHBOaUJzckRrNTdtN0FZcm5pLXNCbWc
+and
+https://docs.google.com/spreadsheet/ccc?key=0Aj5ukWh4htwMdDJLRTZGbDB0S0Eta0FHd0lkZThOM0E
+
+respectively (all aggregated with raw data and pictures is in
+http://darnok.org/results/baseline_pte_flags_pte_attrs/)
+
+The interesting thing is that on Intel i3 2100 it does not matter which solution
+is chosen - just to make sure I also ran it on 32 logical CPU SandyBridge beast and it just
+breezed through this with no trouble. On AMD A8-3850 it stumbles when using the non-posted
+version - wrapping the pte_flags with paravirt everywhere. Even if the code is optimized so
+that it ends up looking as so:
+
+        pushq   %rax,%rdi	[the pte]
+        mov     %rdi,%rax       [the paravirt ident patching - used to be callq]
+        nop
+        nop
+        nop
+        nop
+	[and here the check for !pgprot_val(cpa->mask_clr) happens]
+        movq    16(%rbx), %rdi          [cpa->mask_clr -> rdi]
+        notq    %rdi
+        andq    %rax, %rdi
+
+vs where there was none of this (that is a virgin 3.2-rc4):
+
+        ...
+	[and here the check for !pgprot_val(cpa->mask_clr) happens]
+        movq    16(%rbx), %rdi          [cpa->mask_clr -> rdi]
+        notq    %rdi
+        andq    %rax, %rdi
+
+[The full .S annotate outputs, are at http://darnok.org/results/baseline_pte_flags_pte_attrs/]
+
+So on AMD if I use the posted patch  - where I wrap the pte_flags in just one specific place
+(__page_change_attr_set_clr) - the degradation disappears.
+
+I called that case the pte_attrs in the benchmarks numbers. It could be that the
+AMD degradation is due to insertion of improper nops in the 'callq *pv_mmu_ops+104' space
+but not sure. [edit: That was my original thinking but after some more runs it looks
+to be due to whatever CONFIG_FUNCTION_TRACER introduces]
+
+The posted patch (pte_attrs), introduces three extra operations
+(http://darnok.org/results/baseline_pte_flags_pte_attrs/baseline-vs-pte_attrs.diff)
+
+        call    pte_val         [this calls mcount and does the pvops call (which gets patched over)]
+        movq    %r14, %rdi      [used for pte_pfn call right after the next movq]
+        movq    %rax, -144(%rbp)[save our new pte flag value on stack]
+
+        [.. call pte_pfn - which the original code did as well]
+
+Performance wise it was on par (on in one case faster?) than baseline (v3.2-rc4 virgin).
+This is on Intel and AMD.
+
+Naturally if the "# CONFIG_PARAVIRT is not set", the assembler code is _exactly_ the same
+as before this patch (no surprise since it ends up becoming native_pte_flags)
+and the performance is on par.
 
 
