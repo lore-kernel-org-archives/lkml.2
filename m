@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab2BJAHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:07:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49256 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758669Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:01:37 -0500
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 09/31] i5400_edac: Convert it to report memory with the new location
-Date: Thu,  9 Feb 2012 22:01:08 -0200
-Message-Id: <1328832090-9166-10-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1758792Ab2BJAIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:08:25 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60073 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758700Ab2BJAIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:08:22 -0500
+Date: Thu, 09 Feb 2012 19:08:15 -0500 (EST)
+Message-Id: <20120209.190815.1793020340808993229.davem@davemloft.net>
+To: paul.gortmaker@windriver.com
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: 8250 move broke the build on sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120209234818.GA814@windriver.com>
+References: <4F344A85.4070005@windriver.com>
+	<20120209.174817.1772850235758472350.davem@davemloft.net>
+	<20120209234818.GA814@windriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 09 Feb 2012 16:08:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On this driver, the memory controller supports only FB-DIMMs.
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 9 Feb 2012 18:48:19 -0500
 
-The memory controller hierarchy here has 3 layers bellow the
-memory controller:
-	- two branches;
-	- each branch has two channels;
-	- each channel can select up to 4 DIMM's via the
-FB-DIMM AMB (Advanced Memory Buffer) chip.
+>>From 1b0bc62a6583e319f8b764ac34f799b916656590 Mon Sep 17 00:00:00 2001
+> From: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Date: Thu, 9 Feb 2012 18:09:35 -0500
+> Subject: [PATCH] sparc: rename drivers/tty/serial/suncore.h ->
+>  include/linux/sunserialcore.h
+> 
+> There are multiple users of this file from different source
+> paths now, and rather than have ../ paths in include statements,
+> just move the file to the linux header dir.
+> 
+> Suggested-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-As EDAC currently limits memory controllers to 2 hierarchy
-levels, on this patch, both branches and channels are grouped
-together.
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i5400_edac.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index 74d6ec34..92af805 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -1137,6 +1137,7 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 	int csrow_megs;
- 	int channel;
- 	int csrow;
-+	struct dimm_info *dimm;
- 
- 	pvt = mci->pvt_info;
- 
-@@ -1145,6 +1146,9 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 
- 	empty = 1;		/* Assume NO memory */
- 
-+	dimm = mci->dimms;
-+	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (csrow = 0; csrow < max_csrows; csrow++) {
- 		p_csrow = &mci->csrows[csrow];
- 
-@@ -1163,6 +1167,9 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 		p_csrow->page_mask = 0xFFF;
- 
- 		p_csrow->grain = 8;
-+		p_csrow->dtype = MTR_DRAM_WIDTH(mtr) ? DEV_X8 : DEV_X4;
-+		p_csrow->mtype = MEM_RDDR2;
-+		p_csrow->edac_mode = EDAC_SECDED;
- 
- 		csrow_megs = 0;
- 		for (channel = 0; channel < pvt->maxch; channel++)
-@@ -1170,16 +1177,10 @@ static int i5400_init_csrows(struct mem_ctl_info *mci)
- 
- 		p_csrow->nr_pages = csrow_megs << 8;
- 
--		/* Assume DDR2 for now */
--		p_csrow->mtype = MEM_FB_DDR2;
--
--		/* ask what device type on this row */
--		if (MTR_DRAM_WIDTH(mtr))
--			p_csrow->dtype = DEV_X8;
--		else
--			p_csrow->dtype = DEV_X4;
--
--		p_csrow->edac_mode = EDAC_S8ECD8ED;
-+		dimm->location.mc_channel = channel;
-+		dimm->location.mc_dimm_number = csrow / pvt->maxch;
-+		mci->nr_dimms++;
-+		dimm++;
- 
- 		empty = 0;
- 	}
--- 
-1.7.8
-
+Acked-by: David S. Miller <davem@davemloft.net>
