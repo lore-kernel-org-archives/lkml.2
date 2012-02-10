@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759750Ab2BJSWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:22:19 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:49305 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759375Ab2BJSWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:22:17 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Fri, 10 Feb 2012 19:10:40 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv19 00/15] Contiguous Memory Allocator
-In-reply-to: <20120127162624.40cba14e.akpm@linux-foundation.org>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>
-Message-id: <00d901cce81f$4c3edc40$e4bc94c0$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AczdU3pAui1fAVAUTbaWWqgIvm1VewKyICnA
-References: <1327568457-27734-1-git-send-email-m.szyprowski@samsung.com>
- <201201261531.40551.arnd@arndb.de>
- <20120127162624.40cba14e.akpm@linux-foundation.org>
+	id S1759766Ab2BJSXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:23:07 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:41057 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759724Ab2BJSXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 13:23:04 -0500
+Message-ID: <4F356055.2000203@linux.vnet.ibm.com>
+Date: Fri, 10 Feb 2012 12:22:13 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: build failure after merge of the staging tree
+References: <20120210155800.ccef418fd5c2f2b87a5d6315@canb.auug.org.au> <20120210052947.GA2068@kroah.com> <80f07411-179e-4fe9-b591-32fbcaac414b@default> <20120210174359.GB5128@kroah.com>
+In-Reply-To: <20120210174359.GB5128@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021018-9360-0000-0000-0000035B8A16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-On Saturday, January 28, 2012 1:26 AM Andrew Morton wrote:
-
-> These patches don't seem to have as many acked-bys and reviewed-bys as
-> I'd expect.  Given the scope and duration of this, it would be useful
-> to gather these up.  But please ensure they are real ones - people
-> sometimes like to ack things without showing much sign of having
-> actually read them.
+On 02/10/2012 11:43 AM, Greg KH wrote:
+> On Fri, Feb 10, 2012 at 09:21:46AM -0800, Dan Magenheimer wrote:
+>>> From: Greg KH [mailto:greg@kroah.com]
+>>> Subject: Re: linux-next: build failure after merge of the staging tree
+>>>
+>>> On Fri, Feb 10, 2012 at 03:58:00PM +1100, Stephen Rothwell wrote:
+>>>> Hi Greg,
+>>>>
+>>>> After merging the staging tree, today's linux-next build (x86_64
+>>>> allmodconfig) failed like this:
+>>>>
+>>>> drivers/staging/ramster/ramster_o2net.c: In function 'ramster_remote_async_get_request_handler':
+>>>> drivers/staging/ramster/ramster_o2net.c:91:2: error: implicit declaration of function
+>>> 'o2net_force_data_magic' [-Werror=implicit-function-declaration]
+>>>> drivers/staging/ramster/ramster_o2net.c: In function 'ramster_remote_put':
+>>>> drivers/staging/ramster/ramster_o2net.c:250:2: error: implicit declaration of function
+>>> 'o2net_nn_from_num' [-Werror=implicit-function-declaration]
+>>>> drivers/staging/ramster/zcache-main.c:40:64: fatal error: ../zram/xvmalloc.h: No such file or
+>>> directory
+>>>>
+>>>> Caused by commits ba351b02ab11 ("staging: ramster: local compression +
+>>>> tmem") and 14a3cd58dd4f ("staging: ramster: ramster-specific new files").
+>>>>
+>>>> I have used the version of the staging tree from next-20120209 for today.
+>>>
+>>> Ugh, I wonder why it builds here, very odd.
+>>>
+>>> Dan, care to send me a patch to fix this?
+>>
+>>>> drivers/staging/ramster/zcache-main.c:40:64: fatal error: ../zram/xvmalloc.h: No such
+>>
+>> Hmmm... it appears that Seth's zsmalloc patch for drivers/staging/zcache
+>> removed xvmalloc.[ch] from drivers/staging/zram while drivers/staging/ramster
+>> is still depending on it. :-(  I hadn't planned for both ramster
+>> and zsmalloc-replacing-xvmalloc to be merged at the same time... I guess
+>> this is exactly the kind of problem linux-next is designed to wring out!
+>>
+>> Greg, FOR NOW, PLEASE JUST REVERT the ramster patchset from staging-next.
+>> I am working on a v5 anyway and will roll in a copy of the xvmalloc.[ch]
+>> code into it for now and, since Seth's patch should be in linux-next
+>> by the time I am done (hopefully next week), I can test build ramster v5
+>> with linux-next to ensure all the above problems are resolved before
+>> resubmitting.
+>>
+>> (Seth, I could also switch ramster v5 to depend on zsmalloc instead of
+>> xvmalloc, but since I've done all my ramster testing on xvmalloc,
+>> I think I would prefer to make that transition later.)
+>>
+>> Sorry, Stephen and Greg, for the hassle!
 > 
-> Also there is the supreme tag: "Tested-by:.".  Ohad (at least) has been
-> testing the code.  Let's mention that.
-> 
-> 
-> The patches do seem to have been going round in ever-decreasing circles
-> lately and I think we have decided to merge them (yes?) so we may as well
-> get on and do that and sort out remaining issues in-tree.
+> Ok, now reverted, what a mess...
 
-It looks that the CMA patch series reached the final version - I've just 
-posted version 21 a few minutes ago. Most of the patches got acks from either 
-Mel or Arnd and the remaining few needs only minor tweaking, but they affect
-only CMA users, which we hope to fix once the series is merged. That's why I
-would like to ask You to merge these patches to Your tree and finally give
-them a try in linux-next kernel.
+Sounds like the ramster has been reverted already, but the removal
+of xvmalloc was done in its own commit (from staging-next):
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+b154ff05e1b0d749231a71896c90e38657f8e675 staging: zram: remove xvmalloc
 
+If you revert just this commit, that should restore the xvmalloc files.
 
+Of course this doesn't resolve the "implicit declaration of function"
+errors.
+
+--
+Seth
 
