@@ -1,135 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab2BJSOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:14:23 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:59324 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab2BJSOU convert rfc822-to-8bit (ORCPT
+	id S1759683Ab2BJSOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:14:44 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61426 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759615Ab2BJSOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:14:20 -0500
-Date: Fri, 10 Feb 2012 13:14:06 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH v5 4/5] hwmon: add MAX197 support
-Message-ID: <20120210131406.28c3a00b@v0nbox>
-In-Reply-To: <20120210161538.GB1060@ericsson.com>
-References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1328132138.2261.116.camel@groeck-laptop>
-	<20120206151507.73a23eb8@v0nbox>
-	<1328561164.2261.258.camel@groeck-laptop>
-	<20120210110755.4914b332@v0nbox>
-	<20120210161538.GB1060@ericsson.com>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Feb 2012 13:14:43 -0500
+Date: Fri, 10 Feb 2012 10:11:16 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] usb: add missing Kconfig UWB select to USB_WHCI_HCD and
+ USB_HWA_HCD
+Message-ID: <20120210181116.GA19806@kroah.com>
+References: <1328857675.7327.8.camel@marge.simpson.net>
+ <4F3541AE.50807@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3541AE.50807@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Fri, 10 Feb 2012 08:15:38 -0800,
-Guenter Roeck <guenter.roeck@ericsson.com> a écrit :
-
-> Vivien,
+On Fri, Feb 10, 2012 at 08:11:26AM -0800, Randy Dunlap wrote:
+> On 02/09/2012 11:07 PM, Mike Galbraith wrote:
+> > usb: add missing Kconfig UWB select to USB_WHCI_HCD and USB_HWA_HCD
+> > 
+> > cripts/kconfig/conf --oldconfig Kconfig
+> > warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
+> > warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
+> > warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
+> > warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
+> > 
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
 > 
-> On Fri, Feb 10, 2012 at 11:07:55AM -0500, Vivien Didelot wrote:
-> > Hi,
-> > 
-> > On Mon, 6 Feb 2012 12:46:04 -0800,
-> > Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> > 
-> > > On Mon, 2012-02-06 at 15:15 -0500, Vivien Didelot wrote:
-> > > [ ... ]
-> > > > 
-> > > > BTW, about the TS-5500 ADC part, is a platform ts5500_adc.c
-> > > > file the better solution, or should the device be declared in
-> > > > the ts5500.c platform code?
-> > > > 
-> > > I would suggest to declare it in the ts5500.c platform code. That
-> > > seems to be the common approach as far as I can see.
-> > > 
-> > > platform_add_devices() works pretty well for this. It saves you
-> > > from having to call platform_device_register() for each device
-> > > separately. Obviously that only works if all devices are declared
-> > > in a single file.
-> > 
-> > As the LED is registered using the leds_class, I think
-> > platform_add_devices() couldn't be used here.
-> > 
-> > Lots of platform codes don't check the returned
-> > value of platform_add_devices(). Should we care about a LED or ADC
-> > registration failure (is the following snippet OK?)?
-> > 
-> >     static int __init ts5500_init(void)
-> >     {
-> >     [...]
-> >         pdev = platform_device_register_simple("ts5500", -1, NULL,
-> > 0); if (IS_ERR(pdev)) {
-> >                 ret = PTR_ERR(pdev);
-> >                 goto release_mem;
-> >         }
-> >         platform_set_drvdata(pdev, ts5500);
-> >     
-> >         ret = sysfs_create_group(&pdev->dev.kobj,
-> >                                  &ts5500_attr_group);
-> >         if (ret)
-> >                 goto release_pdev;
-> >     
-> >         led_classdev_register(&pdev->dev, &ts5500_led_cdev);
-> >         if (ts5500->adc) {
-> >                 ts5500_adc_pdev.dev.parent = &pdev->dev;
-> >                 platform_device_register(&ts5500_adc_pdev);
-> >         }
-> >     
-> I didn't look at other code, but personally I try to be consistent.
-> Why do you check the return value from
-> platform_device_register_simple() above, but not the return code from
-> platform_device_register() ? That does not seem to be very consistent
-> to me.
+> I have 2 patches in linux-next that fix the UWB/WUSB problems by using "depends on"
+> instead...
 
-I check the platform_device_register_simple() returned value because it
-is the platform itself, while the others are on-board devices. I
-thought that it is not a big deal if their registrations failed but the
-platform registration succeeded. Maybe I'm wrong and I should check
-everything.
+Yes, this should all now be resolved, Mike can you verify this please?
 
-Thanks,
-Vivien.
+thanks,
 
-> 
-> Thanks,
-> Guenter
-> 
-> >         return 0;
-> >     
-> >         release_pdev:
-> >                 platform_device_unregister(pdev);
-> >         release_mem:
-> >                 kfree(ts5500);
-> >     
-> >                 return ret;
-> >     }
-> >     device_initcall(ts5500_init);
-> > 
-> > 
-> > Thanks,
-> > 
-> > 
-> > -- 
-> > Vivien Didelot
-> > Savoir-faire Linux Inc.
-> > Tel: (514) 276-5468 #149
-
-
-
--- 
-Vivien Didelot
-Savoir-faire Linux Inc.
-Tel: (514) 276-5468 #149
+greg k-h
