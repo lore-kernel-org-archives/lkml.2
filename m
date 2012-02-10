@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab2BJUht (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:37:49 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53318 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab2BJUhs (ORCPT
+	id S932497Ab2BJUjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:39:06 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42912 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab2BJUjE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:37:48 -0500
+	Fri, 10 Feb 2012 15:39:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120210201850.GA26892@m.redhat.com>
-References: <1328873119-21553-1-git-send-email-jolsa@redhat.com>
- <1328895795.25989.29.camel@laptop> <CA+55aFxgPXjGh0GSHaUGm6-Pfdjjk=PAP7HMuZHcFGE92VutUQ@mail.gmail.com>
- <20120210192714.GE4998@infradead.org> <20120210194426.GA17650@elte.hu> <20120210201850.GA26892@m.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 10 Feb 2012 12:37:28 -0800
-X-Google-Sender-Auth: WuQEi5QvcN4rXZIO7sTzrPSN6WQ
-Message-ID: <CA+55aFzhenNyPUzAVpXhuxfVpAuowY+OcvPGyfg8_o9NN4SDtw@mail.gmail.com>
-Subject: Re: [RFC 0/5] kernel: backtrace unwind support
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Jan Blunck <jblunck@suse.de>
+X-Originating-IP: [89.138.49.59]
+In-Reply-To: <1328905759.25989.57.camel@laptop>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	<1327591185.2446.102.camel@twins>
+	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	<20120201170443.GE6731@somewhere.redhat.com>
+	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+	<4F2AAEB9.9070302@tilera.com>
+	<CAOtvUMfE3xpwmRKnFPTsstr3SuUG7SnpWn5eomEQzkap4_nfrg@mail.gmail.com>
+	<1328899148.25989.38.camel@laptop>
+	<CAOtvUMfZ-sfTd-WTV=+RcerTk6ejC2mmjrMGg8KkdMR=RaV+CA@mail.gmail.com>
+	<1328905759.25989.57.camel@laptop>
+Date: Fri, 10 Feb 2012 22:39:02 +0200
+Message-ID: <CAOtvUMeaL8-9wYYrC-05P95ZcYHnV5as0bjjv9gJSHKN+EFz0w@mail.gmail.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 12:18 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+On Fri, Feb 10, 2012 at 10:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2012-02-10 at 22:13 +0200, Gilad Ben-Yossef wrote:
+>> My current understanding is that if I have a real time task and wish it
+>> have a deterministic performance time, you should call mlockall() to lock
+>> the program data and text into physical memory so that  a  less often taken
+>> branch or access to a new data region will not result in a page fault.
+>>
+>> You still have to worry about TLB misses on non hardware page table
+>> walk architecture, but at least everything is in the  page tables
+>>
+>> If there is a better way to do this? I'm always happy to learn new
+>> ways to do things. :-)
 >
-> yep, looks interesting.. not sure about the mathematical proof though ;)
+> A rt application usually consists of a lot of non-rt parts and a usually
+> relatively small rt part. Using mlockall() pins the entire application
+> into memory, which while on the safe side is very often entirely too
+> much.
+>
+> The alternative method is to only mlock the text and data used by the rt
+> part. You need to be aware of what text runs in your rt part anyway,
+> since you need to make sure it is in fact deterministic code.
+>
+> One of the ways of achieving this is using a special linker section for
+> your vetted rt code and mlock()'ing only that text section.
+>
+> On thread creation, provide a custom allocated (and mlock()'ed) stack
+> etc..
+>
+> Basically, if you can't tell a-priory what code is part of your rt part,
+> you don't have an rt part ;-)
+>
 
-Well, I can already say what the old code did horribly horribly wrong:
+That I can totally agree with.
 
- - *all* stack accesses need to go through a validation function, they
-can never *ever* just try to access the stack.
+I guess mlockall() is still useful as a kind of hack for lazy people,
+although if you say that this kind of laziness does not really mix
+well with real
+time programming I will tend to agree... :-)
 
-    The validation function really needs to really check the full
-range of the stack area, not something random.
+Gilad
 
- - all dwarf information accesses need to similarly validate the
-access, and accept that sometimes the dwarf info is simply missing or
-actively wrong.
 
-Basically, by the time a fault happens, EVERY SINGLE PIECE OF DATA YOU
-ACCESS needs to be thought of as untrusted. Because it really is. We
-took some kind of kernel fault, there clearly is a bug somewhere. The
-old unwinder thing just had the approach that "my code is perfect, and
-I can trust the unwind data", which was fundamentally incorrect and
-wrong.
 
-The code needs to be really *obviously* correct and really crazy anal
-at the same time. And it's *hard* to write careful code in a way that
-makes it obvious too.
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
-It's triply hard to do it when you start off from code from user space
-written by people who simply don't care and don't even have the same
-kinds of issues we do in the kernel.
-
-The code we have now isn't exactly pretty either, but it has two
-*huge* advantages:
-
- - it's tested in real life and thus largely trusted
-
- - it's pretty simple, and it does have a lot of stack validation.
-
-                    Linus
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
