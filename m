@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab2BJWoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:44:44 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736Ab2BJWol (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:41 -0500
+	id S932986Ab2BJXAF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:00:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38722 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760773Ab2BJW76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 17:59:58 -0500
+Message-ID: <4F35A0A6.8020600@zytor.com>
+Date: Fri, 10 Feb 2012 14:56:38 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Message-Id: <20120210223441.219445978@clark.kroah.org>
-User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oleg Nesterov <oleg@redhat.com>
-Subject: [patch 10/55] proc: mem_release() should check mm != NULL
-In-Reply-To: <20120210223500.GA24178@kroah.com>
+To: Indan Zupancic <indan@nul.nu>
+CC: "H.J. Lu" <hjl.tools@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Jamie Lokier <jamie@shareable.org>,
+        Andrew Lutomirski <luto@mit.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        Roland McGrath <mcgrathr@chromium.org>
+Subject: Re: Compat 32-bit syscall entry from 64-bit task!?
+References: <20120116183730.GB21112@redhat.com>    <fd4ccb42a25876131e411299d24d9151.squirrel@webmail.greenhost.nl>    <CA+55aFzcSVmdDj9Lh_gdbz1OzHyEm6ZrGPBDAJnywm2LF_eVyg@mail.gmail.com>    <CA+55aFwMd8MMrcfG5f0zg=qjrBzUhgY1HgJx6QFcnpMQsW1PNg@mail.gmail.com>    <dac05d1da093cb86e2f654fbfe66dfce.squirrel@webmail.greenhost.nl>    <4F3007AD.50307@zytor.com>    <c85c91a49cc62132ad1ddb97748c26b9.squirrel@webmail.greenhost.nl>    <4F33110D.3050904@zytor.com>    <13c2c571244c71c2ba87451987805eed.squirrel@webmail.greenhost.nl>    <4F334B8C.2050005@zytor.com>    <CAMe9rOrf-DrgdwsnpX7pa=h1p9qSpqa9fwJAQJvjSzgR9MAB_w@mail.gmail.com>    <b3f79ce8b30e2985723eec1a3337317e.squirrel@webmail.greenhost.nl>    <4F346FB0.9070203@zytor.com>    <19ac5d5293110612dc17c514bc7e1ccd.squirrel@webmail.greenhost.nl>    <cc95fcf4b1c28ee6f73e373d04593634.squirrel@webmail.greenhost.nl>    <4F353D65.7070705@zytor.com> <d4b1bf80e0ecde82ed2595026e3f6ba7.squirrel@webmail.greenhost.nl>
+In-Reply-To: <d4b1bf80e0ecde82ed2595026e3f6ba7.squirrel@webmail.greenhost.nl>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 02/10/2012 02:42 PM, Indan Zupancic wrote:
+>> #include <stdnak.h>
+> 
+> Could you please elaborate? Is it just the stealing of eflags bits that
+> irks you or are there technical problems too?
 
-------------------
+Yes, I will not accept that unless it gets ok'd by the architecture
+people, which may take a long time.
 
-From: Oleg Nesterov <oleg@redhat.com>
+> I understand some people would prefer a new regset, but that would force
+> everyone to use PTRACE_GETREGSET instead of whatever they are using now.
+> The problem with that is that not all archs support PTRACE_GETREGSET, so
+> the user space ptrace code needs to use different ptrace calls depending
+> on the architecture for no good reason. If PEEK_USER works then it's less
+> of a problem, then it's one extra ptrace call compared to the eflag way
+> if PTRACE_GETREGS is used. If this new info is exposed with a special
+> regset instead of being appended to normal regs then one extra ptrace
+> call per system call event needs to be done. You can as well add special
+> x86 ptrace requests then.
 
-commit 71879d3cb3dd8f2dfdefb252775c1b3ea04a3dd4 upstream.
+Seriously... if you're mucking with registers on this level, youan
+architecture dependency is not a big deal, and perhaps it's a good sign
+that the laggard architectures need to catch up.  If multiple ptrace
+requests is a problem, then perhaps this is a good sign that we need a
+single way to get multiple regsets in a single request?
 
-mem_release() can hit mm == NULL, add the necessary check.
+> Or is the main advantage of using a regset that it shows up in coredumps?
+> That would merit the extra effort at least.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+That is another plus, which is significant, too.  The final advantage is
+expandability.
 
----
- fs/proc/base.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	-hpa
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -886,8 +886,8 @@ loff_t mem_lseek(struct file *file, loff
- static int mem_release(struct inode *inode, struct file *file)
- {
- 	struct mm_struct *mm = file->private_data;
--
--	mmput(mm);
-+	if (mm)
-+		mmput(mm);
- 	return 0;
- }
- 
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
