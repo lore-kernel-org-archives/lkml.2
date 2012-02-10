@@ -1,127 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2BJIDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 03:03:37 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54234 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab2BJIDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 03:03:36 -0500
-Message-ID: <4F34CEF5.6020103@kernel.dk>
-Date: Fri, 10 Feb 2012 09:01:57 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Simon Arlott <simon@fire.lp0.eu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: bsg_unregister_queue attempts to remove "bsg" sysfs link that
- doesn't exist
-References: <4F32E0F8.4080203@simon.arlott.org.uk> <20120209152402.cdaf1b55.akpm@linux-foundation.org> <4F347119.5070706@panasas.com>
-In-Reply-To: <4F347119.5070706@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758408Ab2BJIRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 03:17:11 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:44609 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755043Ab2BJIRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 03:17:10 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sound/soc/mxs/mxs-saif.c: use devm_ functions
+Date: Fri, 10 Feb 2012 09:17:01 +0100
+Message-Id: <1328861821-3380-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 02:21 AM, Boaz Harrosh wrote:
-> On 02/10/2012 01:24 AM, Andrew Morton wrote:
->> (cc's added)
->>
->> Kernel version appears to be 3.3-rc2.  
->>
->> On Wed, 08 Feb 2012 20:54:16 +0000
->> Simon Arlott <simon@fire.lp0.eu> wrote:
->>
->>> I unplugged two hard drives and this happened:
->>> [168525.975223] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
->>> [168527.976303] mptbase: ioc0: LogInfo(0x31110d00): Originator={PL}, Code={Reset}, SubCode(0x0d00) cb_idx mptbase_reply
->>> [168530.879028]  end_device-8:2: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 13, phy 7,sas_addr 0xde5c3f3bbc9bae8f
->>> [168530.879034]  phy-8:7: mptsas: ioc0: delete phy 7, phy-obj (0xffff88027582b800)
->>> [168530.879045]  port-8:2: mptsas: ioc0: delete port 2, sas_addr (0xde5c3f3bbc9bae8f)
->>> [168530.879525] sd 8:0:2:0: [sdh] Synchronizing SCSI cache
->>> [168530.879581] sd 8:0:2:0: [sdh]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
->>> [168530.879651] scsi target8:0:2: mptsas: ioc0: delete device: fw_channel 0, fw_id 13, phy 7, sas_addr 0xde5c3f3bbc9bae8f
->>> [168530.879706] ------------[ cut here ]------------
->>> [168530.879715] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
->>> [168530.879717] Hardware name: empty
->>> [168530.879719] sysfs: can not remove 'bsg', no directory
->>> [168530.879721] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
->>> [168530.879757] Pid: 1578, comm: kworker/u:7 Tainted: G       A     3.3.0-rc2+ #00119-gd8e94fc-dirty
->>> [168530.879761] Call Trace:
->>> [168530.879770]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
->>> [168530.879774]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
->>> [168530.879778]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
->>> [168530.879782]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
->>> [168530.879788]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
->>> [168530.879795]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
->>> [168530.879798]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
->>> [168530.879801]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
->>> [168530.879806]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
->>> [168530.879810]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
->>> [168530.879816]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
->>> [168530.879820]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
->>> [168530.879824]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
->>> [168530.879829]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
->>> [168530.879832]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
->>> [168530.879836]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
->>> [168530.879839]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
->>> [168530.879844]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
->>> [168530.879847]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
->>> [168530.879852]  [<ffffffff81056796>] kthread+0x96/0xa0
->>> [168530.879858]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
->>> [168530.879862]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
->>> [168530.879866]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
->>> [168530.879869] ---[ end trace b116d5a791652b31 ]---
->>> [168532.879048]  end_device-8:1: mptsas: ioc0: removing sata device: fw_channel 0, fw_id 12, phy 6,sas_addr 0xde5c3f3cc395aa8e
->>> [168532.879054]  phy-8:6: mptsas: ioc0: delete phy 6, phy-obj (0xffff88027582b000)
->>> [168532.879065]  port-8:1: mptsas: ioc0: delete port 1, sas_addr (0xde5c3f3cc395aa8e)
->>> [168532.879580] sd 8:0:1:0: [sdg] Synchronizing SCSI cache
->>> [168532.879692] sd 8:0:1:0: [sdg]  Result: hostbyte=DID_NO_CONNECT driverbyte=DRIVER_OK
->>> [168532.879877] scsi target8:0:1: mptsas: ioc0: delete device: fw_channel 0, fw_id 12, phy 6, sas_addr 0xde5c3f3cc395aa8e
->>> [168532.879999] ------------[ cut here ]------------
->>> [168532.880033] WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x9c/0xb0()
->>> [168532.880038] Hardware name: empty
->>> [168532.880042] sysfs: can not remove 'bsg', no directory
->>> [168532.880045] Modules linked in: zaurus cdc_ether usbnet bnep rfcomm bridge stp fuse ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT iptable_filter nf_defrag_ipv6 xt_state ip6t_REJECT iptable_mangle xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip6_tables ip_tables x_tables btusb bluetooth crc16
->>> [168532.880108] Pid: 1578, comm: kworker/u:7 Tainted: G       AW    3.3.0-rc2+ #00119-gd8e94fc-dirty
->>> [168532.880115] Call Trace:
->>> [168532.880128]  [<ffffffff8103a29a>] warn_slowpath_common+0x7a/0xb0
->>> [168532.880136]  [<ffffffff8103a371>] warn_slowpath_fmt+0x41/0x50
->>> [168532.880143]  [<ffffffff81154fbc>] sysfs_hash_and_remove+0x9c/0xb0
->>> [168532.880152]  [<ffffffff81157a01>] sysfs_remove_link+0x21/0x30
->>> [168532.880160]  [<ffffffff81274bb7>] bsg_unregister_queue+0x47/0xa0
->>> [168532.880171]  [<ffffffff813fdc20>] sas_rphy_free+0xa0/0xd0
->>> [168532.880177]  [<ffffffff813fe9e9>] sas_rphy_delete+0x19/0x20
->>> [168532.880183]  [<ffffffff813fea15>] sas_port_delete+0x25/0x130
->>> [168532.880192]  [<ffffffff814581c3>] mptsas_del_end_device+0x183/0x1c0
->>> [168532.880218]  [<ffffffff8145aedc>] mptsas_hotplug_work+0x1ec/0x6a0
->>> [168532.880227]  [<ffffffff810698e5>] ? idle_balance+0xf5/0x150
->>> [168532.880234]  [<ffffffff81061779>] ? finish_task_switch+0x49/0xd0
->>> [168532.880241]  [<ffffffff8145c183>] mptsas_firmware_event_work+0xa63/0xca0
->>> [168532.880250]  [<ffffffff81046cf7>] ? lock_timer_base+0x37/0x70
->>> [168532.880256]  [<ffffffff8145b720>] ? mptsas_send_ir2_event+0x110/0x110
->>> [168532.880264]  [<ffffffff8104fd67>] process_one_work+0x117/0x3c0
->>> [168532.880270]  [<ffffffff81050382>] worker_thread+0x172/0x3e0
->>> [168532.880279]  [<ffffffff8105e651>] ? __wake_up_common+0x51/0x80
->>> [168532.880285]  [<ffffffff81050210>] ? manage_workers+0x200/0x200
->>> [168532.880293]  [<ffffffff81056796>] kthread+0x96/0xa0
->>> [168532.880303]  [<ffffffff816d01d4>] kernel_thread_helper+0x4/0x10
->>> [168532.880316]  [<ffffffff81056700>] ? kthread_freezable_should_stop+0x60/0x60
->>> [168532.880329]  [<ffffffff816d01d0>] ? gs_change+0xb/0xb
->>> [168532.880336] ---[ end trace b116d5a791652b32 ]---
->>
-> 
-> It might be the same as the other reports see a fix here:
-> https://lkml.org/lkml/2012/2/8/246
-> 
-> See thread: device removal causes "sysfs: can not remove 'bsg', no directory"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Fix has been queued up for a few days, it'll go out today.
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses these functions for data that is allocated in
+the probe function of a platform device and is only freed in the remove
+function.
 
--- 
-Jens Axboe
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+patch against
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git from the
+branch for-3.4
+
+ sound/soc/mxs/mxs-saif.c |   51 ++++++++++-------------------------------------
+ 1 file changed, 11 insertions(+), 40 deletions(-)
+
+diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
+index f204dba..12be05b 100644
+--- a/sound/soc/mxs/mxs-saif.c
++++ b/sound/soc/mxs/mxs-saif.c
+@@ -630,7 +630,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 	if (pdev->id >= ARRAY_SIZE(mxs_saif))
+ 		return -EINVAL;
+ 
+-	saif = kzalloc(sizeof(*saif), GFP_KERNEL);
++	saif = devm_kzalloc(&pdev->dev, sizeof(*saif), GFP_KERNEL);
+ 	if (!saif)
+ 		return -ENOMEM;
+ 
+@@ -655,29 +655,16 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 		ret = PTR_ERR(saif->clk);
+ 		dev_err(&pdev->dev, "Cannot get the clock: %d\n",
+ 			ret);
+-		goto failed_clk;
++		return ret;
+ 	}
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!iores) {
+-		ret = -ENODEV;
+-		dev_err(&pdev->dev, "failed to get io resource: %d\n",
+-			ret);
+-		goto failed_get_resource;
+-	}
+ 
+-	if (!request_mem_region(iores->start, resource_size(iores),
+-				"mxs-saif")) {
+-		dev_err(&pdev->dev, "request_mem_region failed\n");
+-		ret = -EBUSY;
+-		goto failed_get_resource;
+-	}
+-
+-	saif->base = ioremap(iores->start, resource_size(iores));
++	saif->base = devm_request_and_ioremap(&pdev->dev, iores);
+ 	if (!saif->base) {
+ 		dev_err(&pdev->dev, "ioremap failed\n");
+ 		ret = -ENODEV;
+-		goto failed_ioremap;
++		goto failed_get_resource;
+ 	}
+ 
+ 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+@@ -685,7 +672,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		dev_err(&pdev->dev, "failed to get dma resource: %d\n",
+ 			ret);
+-		goto failed_ioremap;
++		goto failed_get_resource;
+ 	}
+ 	saif->dma_param.chan_num = dmares->start;
+ 
+@@ -694,14 +681,15 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 		ret = saif->irq;
+ 		dev_err(&pdev->dev, "failed to get irq resource: %d\n",
+ 			ret);
+-		goto failed_get_irq1;
++		goto failed_get_resource;
+ 	}
+ 
+ 	saif->dev = &pdev->dev;
+-	ret = request_irq(saif->irq, mxs_saif_irq, 0, "mxs-saif", saif);
++	ret = devm_request_irq(&pdev->dev, saif->irq, mxs_saif_irq, 0,
++			       "mxs-saif", saif);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to request irq\n");
+-		goto failed_get_irq1;
++		goto failed_get_resource;
+ 	}
+ 
+ 	saif->dma_param.chan_irq = platform_get_irq(pdev, 1);
+@@ -709,7 +697,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 		ret = saif->dma_param.chan_irq;
+ 		dev_err(&pdev->dev, "failed to get dma irq resource: %d\n",
+ 			ret);
+-		goto failed_get_irq2;
++		goto failed_get_resource;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, saif);
+@@ -717,7 +705,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 	ret = snd_soc_register_dai(&pdev->dev, &mxs_saif_dai);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "register DAI failed\n");
+-		goto failed_register;
++		goto failed_get_resource;
+ 	}
+ 
+ 	saif->soc_platform_pdev = platform_device_alloc(
+@@ -740,36 +728,19 @@ failed_pdev_add:
+ 	platform_device_put(saif->soc_platform_pdev);
+ failed_pdev_alloc:
+ 	snd_soc_unregister_dai(&pdev->dev);
+-failed_register:
+-failed_get_irq2:
+-	free_irq(saif->irq, saif);
+-failed_get_irq1:
+-	iounmap(saif->base);
+-failed_ioremap:
+-	release_mem_region(iores->start, resource_size(iores));
+ failed_get_resource:
+ 	clk_put(saif->clk);
+-failed_clk:
+-	kfree(saif);
+ 
+ 	return ret;
+ }
+ 
+ static int __devexit mxs_saif_remove(struct platform_device *pdev)
+ {
+-	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	struct mxs_saif *saif = platform_get_drvdata(pdev);
+ 
+ 	platform_device_unregister(saif->soc_platform_pdev);
+-
+ 	snd_soc_unregister_dai(&pdev->dev);
+-
+-	iounmap(saif->base);
+-	release_mem_region(res->start, resource_size(res));
+-	free_irq(saif->irq, saif);
+-
+ 	clk_put(saif->clk);
+-	kfree(saif);
+ 
+ 	return 0;
+ }
 
