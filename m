@@ -1,254 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836Ab2BJAJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:09:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758521Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:01:37 -0500
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 06/31] edac: Add per dimm's sysfs nodes
-Date: Thu,  9 Feb 2012 22:01:05 -0200
-Message-Id: <1328832090-9166-7-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1758705Ab2BJANM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:13:12 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64094 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab2BJANK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Feb 2012 19:13:10 -0500
+Message-ID: <4F346111.1040506@gmail.com>
+Date: Thu, 09 Feb 2012 17:13:05 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Subject: Re: Hmm.. WARN_ON_ONCE(cpuc->enabled)
+References: <CA+55aFyXyfYd+_NJ8kLYz-bk7Qt0SLHu4t7RN1PCQptt75RGXQ@mail.gmail.com>
+In-Reply-To: <CA+55aFyXyfYd+_NJ8kLYz-bk7Qt0SLHu4t7RN1PCQptt75RGXQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of just exporting a per-csrow dimm directories, add
-a pure per-dimm attributes. This will help to better map
-the DIMM properties, when csrow info is not available.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/edac_mc_sysfs.c |  172 +++++++++++++++++++++++++++++++++++++++++-
- include/linux/edac.h         |    2 +
- 2 files changed, 173 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index a439bed..54b24cb 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -415,6 +415,156 @@ err_out:
- 	return err;
- }
- 
-+/* dimm specific attribute structure */
-+struct dimmdev_attribute {
-+	struct attribute attr;
-+	 ssize_t(*show) (struct dimm_info *, char *);
-+	 ssize_t(*store) (struct dimm_info *, const char *, size_t);
-+};
-+
-+#define DIMMDEV_ATTR(_name,_mode,_show,_store)	\
-+static struct dimmdev_attribute attr_##_name = {			\
-+	.attr = {.name = __stringify(_name), .mode = _mode },	\
-+	.show   = _show,					\
-+	.store  = _store,					\
-+};
-+
-+#define to_dimm(k) container_of(k, struct dimm_info, kobj)
-+#define to_dimmdev_attr(a) container_of(a, struct dimmdev_attribute, attr)
-+
-+/* Set of show/store higher level functions for default dimm attributes */
-+static ssize_t dimmdev_show(struct kobject *kobj,
-+			struct attribute *attr, char *buffer)
-+{
-+	struct dimm_info *dimm = to_dimm(kobj);
-+	struct dimmdev_attribute *dimmdev_attr = to_dimmdev_attr(attr);
-+
-+	if (dimmdev_attr->show)
-+		return dimmdev_attr->show(dimm, buffer);
-+	return -EIO;
-+}
-+
-+static ssize_t dimmdev_store(struct kobject *kobj, struct attribute *attr,
-+			const char *buffer, size_t count)
-+{
-+	struct dimm_info *dimm = to_dimm(kobj);
-+	struct dimmdev_attribute *dimmdev_attr = to_dimmdev_attr(attr);
-+
-+	if (dimmdev_attr->store)
-+		return dimmdev_attr->store(dimm,
-+					buffer,
-+					count);
-+	return -EIO;
-+}
-+
-+static const struct sysfs_ops dimmfs_ops = {
-+	.show = dimmdev_show,
-+	.store = dimmdev_store
-+};
-+
-+/* show/store functions for DIMM Label attributes */
-+static ssize_t dimmdev_location_show(struct dimm_info *dimm, char *data)
-+{
-+	if (dimm->mci->dimm_loc_type == DIMM_LOC_CSROW)
-+		return sprintf(data, "csrow %d, channel %d\n",
-+			       dimm->location.csrow,
-+			       dimm->location.csrow_channel);
-+	else
-+		return sprintf(data, "channel %d, dimm %d\n",
-+			       dimm->location.mc_channel,
-+			       dimm->location.mc_dimm_number);
-+}
-+
-+static ssize_t dimmdev_label_show(struct dimm_info *dimm, char *data)
-+{
-+	/* if field has not been initialized, there is nothing to send */
-+	if (!dimm->label[0])
-+		return 0;
-+
-+	return snprintf(data, EDAC_MC_LABEL_LEN, "%s\n", dimm->label);
-+}
-+
-+static ssize_t dimmdev_label_store(struct dimm_info *dimm,
-+					const char *data,
-+					size_t count)
-+{
-+	ssize_t max_size = 0;
-+
-+	max_size = min((ssize_t) count, (ssize_t) EDAC_MC_LABEL_LEN - 1);
-+	strncpy(dimm->label, data, max_size);
-+	dimm->label[max_size] = '\0';
-+
-+	return max_size;
-+}
-+
-+/* default cwrow<id>/attribute files */
-+DIMMDEV_ATTR(label, S_IRUGO | S_IWUSR, dimmdev_label_show, dimmdev_label_store);
-+DIMMDEV_ATTR(location, S_IRUGO, dimmdev_location_show, NULL);
-+
-+/* default attributes of the DIMM<id> object */
-+static struct dimmdev_attribute *default_dimm_attr[] = {
-+	&attr_label,
-+	&attr_location,
-+	NULL,
-+};
-+
-+/* No memory to release for this kobj */
-+static void edac_dimm_instance_release(struct kobject *kobj)
-+{
-+	struct mem_ctl_info *mci;
-+	struct dimm_info *cs;
-+
-+	debugf1("%s()\n", __func__);
-+
-+	cs = container_of(kobj, struct dimm_info, kobj);
-+	mci = cs->mci;
-+
-+	kobject_put(&mci->edac_mci_kobj);
-+}
-+
-+/* the kobj_type instance for a DIMM */
-+static struct kobj_type ktype_dimm = {
-+	.release = edac_dimm_instance_release,
-+	.sysfs_ops = &dimmfs_ops,
-+	.default_attrs = (struct attribute **)default_dimm_attr,
-+};
-+/* Create a CSROW object under specifed edac_mc_device */
-+static int edac_create_dimm_object(struct mem_ctl_info *mci,
-+					struct dimm_info *dimm, int index)
-+{
-+	struct kobject *kobj_mci = &mci->edac_mci_kobj;
-+	struct kobject *kobj;
-+	int err;
-+
-+	/* generate ..../edac/mc/mc<id>/dimm<index>   */
-+	memset(&dimm->kobj, 0, sizeof(dimm->kobj));
-+	dimm->mci = mci;	/* include container up link */
-+
-+	/* bump the mci instance's kobject's ref count */
-+	kobj = kobject_get(&mci->edac_mci_kobj);
-+	if (!kobj) {
-+		err = -ENODEV;
-+		goto err_out;
-+	}
-+
-+	/* Instanstiate the dimm object */
-+	err = kobject_init_and_add(&dimm->kobj, &ktype_dimm, kobj_mci,
-+				   "dimm%d", index);
-+	if (err)
-+		goto err_release_top_kobj;
-+
-+	kobject_uevent(&dimm->kobj, KOBJ_ADD);
-+	return 0;
-+
-+	/* error unwind stack */
-+err_release_top_kobj:
-+	kobject_put(&mci->edac_mci_kobj);
-+
-+err_out:
-+	return err;
-+}
-+
-+
- /* default sysfs methods and data structures for the main MCI kobject */
- 
- static ssize_t mci_reset_counters_store(struct mem_ctl_info *mci,
-@@ -905,7 +1055,7 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
-  */
- int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- {
--	int i;
-+	int i, j;
- 	int err;
- 	struct csrow_info *csrow;
- 	struct kobject *kobj_mci = &mci->edac_mci_kobj;
-@@ -952,8 +1102,24 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 		}
- 	}
- 
-+	/*
-+	 * Make directories for each DIMM object under the mc<id> kobject
-+	 */
-+	for (j = 0; j < mci->nr_dimms; j++) {
-+		err = edac_create_dimm_object(mci, &mci->dimms[j] , j);
-+		if (err) {
-+			debugf1("%s() failure: create dimm %d obj\n",
-+				__func__, j);
-+			goto fail2;
-+		}
-+	}
-+
- 	return 0;
- 
-+fail2:
-+	for (j--; j >= 0; j--)
-+		kobject_put(&mci->dimms[i].kobj);
-+
- 	/* CSROW error: backout what has already been registered,  */
- fail1:
- 	for (i--; i >= 0; i--) {
-@@ -984,6 +1150,10 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- 
- 	/* remove all csrow kobjects */
- 	debugf4("%s()  unregister this mci kobj\n", __func__);
-+	for (i = 0; i < mci->nr_dimms; i++) {
-+		debugf0("%s()  unreg dimm-%d\n", __func__, i);
-+		kobject_put(&mci->dimms[i].kobj);
-+	}
- 	for (i = 0; i < mci->nr_csrows; i++) {
- 		if (mci->csrows[i].nr_pages > 0) {
- 			debugf0("%s()  unreg csrow-%d\n", __func__, i);
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 9f4deed..027e478 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -268,6 +268,8 @@ struct dimm_info {
- 			unsigned csrow_channel;
- 		};
- 	} location;
-+	struct kobject kobj;		/* sysfs kobject for this csrow */
-+	struct mem_ctl_info *mci;	/* the parent */
- };
- 
- struct csrow_channel_info {
--- 
-1.7.8
+On 02/09/2012 04:46 PM, Linus Torvalds wrote:
+> Ok, so I get the appended on my Core i5 when I did a "perf record -f
+> -e cycles:pp make -j" on the kernel build.
+> 
+> What's up, guys? I haven't tried that particular perf run in a while,
+> so it might have been going on for quite some time.
 
+Perhaps already fixed by
+https://lkml.org/lkml/2012/2/4/42
+
+It's not in your tree; but in tip/urgent.
+
+David
+
+> 
+>                              Linus
+> 
+> ---
+> 
+>  WARNING: at arch/x86/kernel/cpu/perf_event_intel_ds.c:442
+> intel_pmu_pebs_enable+0x89/0xa0()
+>  Hardware name: System Product Name
+>  Pid: 12994, comm: perf Not tainted 3.3.0-rc3-00001-g690d137f448d #34
+>  Call Trace:
+>   <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
+>   [<ffffffff8105c1d4>] ? load_balance+0xc4/0x860
+>   [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
+>   [<ffffffff81013f59>] intel_pmu_pebs_enable+0x89/0xa0
+>   [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
+>   [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
+>   [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
+>   [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
+>   [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
+>   [<ffffffff81055856>] scheduler_tick+0xc6/0x100
+>   [<ffffffff8103b649>] update_process_times+0x69/0x80
+>   [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
+>   [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
+>   [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
+>   [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
+>   [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
+>   <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
+>   [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
+>   [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
+>   [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
+>   [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
+>   [<ffffffff8110834f>] ? __getblk+0x1f/0x280
+>   [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
+>   [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
+>   [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
+>   [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
+>   [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
+>   [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
+>   [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
+>   [<ffffffff810e4280>] inode_permission+0x40/0xd0
+>   [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
+>   [<ffffffff810e7807>] path_openat+0xb7/0x430
+>   [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
+>   [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
+>   [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
+>   [<ffffffff810df7dd>] open_exec+0x2d/0xf0
+>   [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
+>   [<ffffffff810e0b26>] do_execve+0x16/0x20
+>   [<ffffffff8100aba5>] sys_execve+0x45/0x70
+>   [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
+>  ---[ end trace 55816fcc72df1997 ]---
+>  ------------[ cut here ]------------
+>  WARNING: at arch/x86/kernel/cpu/perf_event_intel_lbr.c:75
+> intel_pmu_lbr_enable+0x92/0xa0()
+>  Hardware name: System Product Name
+>  Pid: 12994, comm: perf Tainted: G        W    3.3.0-rc3-00001-g690d137f448d #34
+>  Call Trace:
+>   <IRQ>  [<ffffffff8102f205>] warn_slowpath_common+0x75/0xb0
+>   [<ffffffff8102f305>] warn_slowpath_null+0x15/0x20
+>   [<ffffffff81012e32>] intel_pmu_lbr_enable+0x92/0xa0
+>   [<ffffffff81013f38>] intel_pmu_pebs_enable+0x68/0xa0
+>   [<ffffffff81014614>] intel_pmu_enable_event+0xf4/0x190
+>   [<ffffffff81010f33>] x86_pmu_start+0x83/0x110
+>   [<ffffffff81098336>] perf_adjust_freq_unthr_context+0x106/0x170
+>   [<ffffffff810985a0>] perf_event_task_tick+0x200/0x2c0
+>   [<ffffffff8106a5d0>] ? tick_nohz_handler+0xf0/0xf0
+>   [<ffffffff81055856>] scheduler_tick+0xc6/0x100
+>   [<ffffffff8103b649>] update_process_times+0x69/0x80
+>   [<ffffffff8106a62f>] tick_sched_timer+0x5f/0xb0
+>   [<ffffffff8104dcd5>] __run_hrtimer.clone.31+0x55/0x110
+>   [<ffffffff8104e6ff>] hrtimer_interrupt+0xdf/0x210
+>   [<ffffffff8101c744>] smp_apic_timer_interrupt+0x64/0xa0
+>   [<ffffffff816a264b>] apic_timer_interrupt+0x6b/0x70
+>   <EOI>  [<ffffffff8109d8df>] ? find_get_page+0x6f/0xc0
+>   [<ffffffff8128c114>] ? avtab_search_node+0x74/0x90
+>   [<ffffffff810a8b23>] ? mark_page_accessed+0x43/0x50
+>   [<ffffffff8129744d>] cond_compute_av+0x2d/0xd0
+>   [<ffffffff81293922>] context_struct_compute_av+0x1f2/0x420
+>   [<ffffffff8110834f>] ? __getblk+0x1f/0x280
+>   [<ffffffff81294265>] security_compute_av+0xf5/0x2c0
+>   [<ffffffff8127eeec>] avc_has_perm_noaudit+0xfc/0x3a0
+>   [<ffffffff811058ec>] ? ll_rw_block+0x2c/0xb0
+>   [<ffffffff8127f1d6>] avc_has_perm_flags+0x46/0xa0
+>   [<ffffffff81284801>] inode_has_perm.clone.39+0x21/0x30
+>   [<ffffffff8128525a>] selinux_inode_permission+0xaa/0x100
+>   [<ffffffff8127cc97>] security_inode_permission+0x17/0x20
+>   [<ffffffff810e4280>] inode_permission+0x40/0xd0
+>   [<ffffffff810e566f>] link_path_walk+0x6f/0x8f0
+>   [<ffffffff810e7807>] path_openat+0xb7/0x430
+>   [<ffffffff810e7bc4>] do_filp_open+0x44/0xa0
+>   [<ffffffff810b15ee>] ? kmemdup+0x3e/0x50
+>   [<ffffffff8128245a>] ? selinux_cred_prepare+0x1a/0x40
+>   [<ffffffff810df7dd>] open_exec+0x2d/0xf0
+>   [<ffffffff810e08d1>] do_execve_common.clone.36+0x1f1/0x430
+>   [<ffffffff810e0b26>] do_execve+0x16/0x20
+>   [<ffffffff8100aba5>] sys_execve+0x45/0x70
+>   [<ffffffff816a1fec>] stub_execve+0x6c/0xc0
+>  ---[ end trace 55816fcc72df1998 ]---
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
