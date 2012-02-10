@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760430Ab2BJWMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:12:20 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47848 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760284Ab2BJWLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:11:06 -0500
-From: Richard Weinberger <richard@nod.at>
-To: netfilter-devel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, jengelh@medozas.de, rostedt@goodmis.org,
-        pablo@netfilter.org, basti@b-bl.de,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/4] ring_buffer: Export for_each_buffer_cpu()
-Date: Fri, 10 Feb 2012 23:10:54 +0100
-Message-Id: <1328911856-19260-5-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1328911856-19260-1-git-send-email-richard@nod.at>
-References: <1328911856-19260-1-git-send-email-richard@nod.at>
+	id S1760436Ab2BJWMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:12:41 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58049 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760420Ab2BJWMT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 17:12:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQXeNGP3zj2PhWK_Gcnwr9Qsn6LZ74TL2OA2RrztLaewvg@mail.gmail.com>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+ <1328424908-6385-4-git-send-email-yinghai@kernel.org> <20120210124614.5006563e@jbarnes-desktop>
+ <CAE9FiQXeNGP3zj2PhWK_Gcnwr9Qsn6LZ74TL2OA2RrztLaewvg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 10 Feb 2012 14:11:58 -0800
+Message-ID: <CAErSpo7oxTDdB3CJZuG+=xsZanOc76xdnMYDPsfaP-CSsmGxiQ@mail.gmail.com>
+Subject: Re: [PATCH 3/9] PCI: Disable cardbus bridge MEM1 pref CTL
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make ring_buffer usable to other modules
-for_each_buffer_cpu() needs to be exported.
+On Fri, Feb 10, 2012 at 12:54 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Feb 10, 2012 at 12:46 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>> On Sat,  4 Feb 2012 22:55:02 -0800
+>> Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>> Some BIOS enable both pref for MEM0 and MEM1.
+>>>
+>>> but we assume MEM1 is non-pref...
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> ---
+>>>  drivers/pci/setup-bus.c |    8 ++++++++
+>>>  1 files changed, 8 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+>>> index 090217a..d5897c3 100644
+>>> --- a/drivers/pci/setup-bus.c
+>>> +++ b/drivers/pci/setup-bus.c
+>>> @@ -914,6 +914,14 @@ static void pci_bus_size_cardbus(struct pci_bus *bus,
+>>>       if (realloc_head)
+>>>               add_to_list(realloc_head, bridge, b_res+1, pci_cardbus_io_size, 0 /* dont care */);
+>>>
+>>> +     /* MEM1 must not be pref mmio */
+>>> +     pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+>>> +     if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM1) {
+>>> +             ctrl &= ~PCI_CB_BRIDGE_CTL_PREFETCH_MEM1;
+>>> +             pci_write_config_word(bridge, PCI_CB_BRIDGE_CONTROL, ctrl);
+>>> +             pci_read_config_word(bridge, PCI_CB_BRIDGE_CONTROL, &ctrl);
+>>> +     }
+>>> +
+>>>       /*
+>>>        * Check whether prefetchable memory is supported
+>>>        * by this bridge.
+>>
+>> Does this actually fix any bugs?
+>
+> at least, one of laptop have this problem.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ring_buffer.h |    5 +++++
- kernel/trace/ring_buffer.c  |    7 +++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+Rogério Brito's Clevo M5X0JE laptop seems to boot with both CardBus
+mem apertures set to prefetchable.  I think there's evidence of this
+in one of the video boot logs Rogério mentioned in this thread:
+https://lkml.org/lkml/2012/1/6/343 because I noticed the same thing
+and fixed a nearby bug in lspci.
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 67be037..5c1c29f 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -185,4 +185,9 @@ enum ring_buffer_flags {
- 	RB_FL_OVERWRITE		= 1 << 0,
- };
- 
-+cpumask_var_t *ring_buffer_mask(struct ring_buffer *buffer);
-+
-+#define for_each_buffer_cpu(buffer, cpu) \
-+	for_each_cpu(cpu, *(ring_buffer_mask(buffer)))
-+
- #endif /* _LINUX_RING_BUFFER_H */
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index f5b7b5c..a4117c5 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -348,6 +348,7 @@ void *ring_buffer_event_data(struct ring_buffer_event *event)
- }
- EXPORT_SYMBOL_GPL(ring_buffer_event_data);
- 
-+#undef for_each_buffer_cpu
- #define for_each_buffer_cpu(buffer, cpu)		\
- 	for_each_cpu(cpu, buffer->cpumask)
- 
-@@ -4139,3 +4140,9 @@ static int rb_cpu_notify(struct notifier_block *self,
- 	return NOTIFY_OK;
- }
- #endif
-+
-+cpumask_var_t *ring_buffer_mask(struct ring_buffer *buffer)
-+{
-+	return &buffer->cpumask;
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_mask);
--- 
-1.7.7.3
+I looked for it, but didn't find it.  I think it would be useful if
+Yinghai could locate it, transcribe it into a bugzilla report, and
+mention the bugzilla URL in this commit log.
 
+I think Rogério did try the patch, but I don't know whether he
+observed different behavior.  I think it *does* fix a bug; it's just
+that his box has more serious problems that we haven't figured out
+yet.
+
+Bjorn
