@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab2BJUbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:31:24 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:49687 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753045Ab2BJUbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:31:22 -0500
-Date: Fri, 10 Feb 2012 15:31:20 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>
-cc: Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Bug in disk event polling
-Message-ID: <Pine.LNX.4.44L0.1202101519020.1281-100000@iolanthe.rowland.org>
+	id S932495Ab2BJUbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:31:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045Ab2BJUbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 15:31:40 -0500
+Date: Fri, 10 Feb 2012 15:31:17 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>,
+        kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        x86 <x86@kernel.org>, Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: WARNING: at arch/x86/kernel/smp.c:119
+ native_smp_send_reschedule+0x25/0x43()
+Message-ID: <20120210203117.GI5650@redhat.com>
+References: <1328751082.5611.6.camel@lappy>
+ <CA+5PVA6HNqYv7kw3Oq_+05LwrXwtnNnZDkntcrncT2OmGXDd=w@mail.gmail.com>
+ <CA+1xoqfYPYi2godgsgmnX7z7GQL+spNmMZhpdGU4UqfYGTB06g@mail.gmail.com>
+ <4F34EC35.7010109@linux.vnet.ibm.com>
+ <1328900283.25989.45.camel@laptop>
+ <1328900633.25989.47.camel@laptop>
+ <20120210200250.GG5650@redhat.com>
+ <1328905121.25989.52.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328905121.25989.52.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun:
+On Fri, Feb 10, 2012 at 09:18:41PM +0100, Peter Zijlstra wrote:
+> On Fri, 2012-02-10 at 15:02 -0500, Don Zickus wrote:
+> > I also ran into the same problem you did and hacked up another patch that
+> > checked a global atomic variable that let the system know we were shutting
+> > down and not to do the WARN_ON (the global is already created for the NMI
+> > case now). 
+> 
+> system_state seems like that thing.. 
 
-Don't ask me why this hasn't shown up earlier...  There's a big fat bug 
-in the implementation of disk event polling.
+except it doesn't seem to have a PANIC state, though we could add one I
+suppose.
 
-The polling is done using the system_nrt_wq work queue, which isn't
-freezable.  As a result, polling continues while the system is
-preparing for suspend or hibernation.
+The thing is even if you reverted my changes:
 
-Obviously I/O to suspended devices doesn't work well.  Somewhat less 
-obviously, error recovery for the failed I/O attempts can interfere 
-with normal system resume.
+e58d429 x86, reboot: Fix typo in nmi reboot path
+bda6263 x86, NMI: Add knob to disable using NMI IPIs to stop cpus
+3603a25 x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus
 
-You can see this for yourself easily enough by suspending or
-hibernating while a USB flash drive is plugged in.  You don't even need
-to go through the full suspend procedure; the first two stages are
-enough (echo devices >/sys/power/pm_test).  Check the system log
-afterward; most likely you'll find the flash drive got errors and had
-to be unregistered and re-enumerated.
+I think you still run into the same problem because the reschedule code
+changed.
 
-I have verified that changing all occurrences of system_nrt_wq in 
-block/genhd.c to system_freezable_wq fixes the bug.  However this may 
-not be the way you want to solve it; you may prefer to have a freezable 
-non-reentrant work queue.
+So my second patch which I will eventually post will just skip the WARN_ON
+if the system is going down.  Not sure if that is the proper way to address
+this problem or change all of the stop_this_cpu code to use a different
+bitmask than the cpu_online bitmask (but then you run the risk of a stuck
+IPI I guess if the cpu is halted without notifying anyone).
 
-Alan Stern
-
+Cheers,
+Don
+ 
