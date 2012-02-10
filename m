@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759231Ab2BJNLa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 08:11:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53199 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758703Ab2BJNL3 convert rfc822-to-8bit (ORCPT
+	id S1759230Ab2BJNOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 08:14:39 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:48160 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab2BJNOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 08:11:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACVxJT-+ycJmCZCOiuKaBbxCcnkgygfRtkeke06nb9DvPrT=kg@mail.gmail.com>
-References: <20120207141155.GA16184@elgon.mountain>
-	<4F323388.7040902@kernel.dk>
-	<20120208142513.4db2493a.akpm@linux-foundation.org>
-	<4F33BF05.208@gmail.com>
-	<CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
-	<4F33C7D7.1060801@kernel.dk>
-	<32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
-	<4F33CEAE.60400@gmail.com>
-	<CACVxJT-+ycJmCZCOiuKaBbxCcnkgygfRtkeke06nb9DvPrT=kg@mail.gmail.com>
-Date: Fri, 10 Feb 2012 15:11:28 +0200
-Message-ID: <CACVxJT9gf0NkAuWWe02Q59HbjRB2WAJLJiRrrrFy5a46+po0eQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Feb 2012 08:14:38 -0500
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Feb 2012 08:14:38 EST
+Subject: Re: mm/slab.c: remove effectively dead code from kmem_cache_create
+From: Pekka Enberg <penberg@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: daniel.santos@pobox.com, Daniel Santos <danielfsantos@att.net>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120209143924.886e0ff6.akpm@linux-foundation.org>
+References: <4F334897.5010405@att.net>
+	 <20120209143924.886e0ff6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 10 Feb 2012 15:06:41 +0200
+Message-ID: <1328879201.13624.52.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 4:09 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> On Thu, Feb 9, 2012 at 4:48 PM, Xi Wang <xi.wang@gmail.com> wrote:
->> -static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
->> +static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
->>  {
->>        if (size != 0 && n > ULONG_MAX / size)
->>                return NULL;
->> -       return __kmalloc(n * size, flags | __GFP_ZERO);
->> +       return __kmalloc(n * size, flags);
->> +}
->
-> It should be named kaalloc(), I think.
-> Why it is ULONG_MAX, when size_t is used?
+On Thu, 2012-02-09 at 14:39 -0800, Andrew Morton wrote:
+> kmem_cache_create() is called extremely rarely, so the performance
+> benefit here is negligible.
+> 
+> We could presumably avoid two of those ifdefs by defining SLAB_RED_ZONE
+> and SLAB_STORE_USER to be zero if !defined(DEBUG).  Personally I think
+> that's a bit too subtle and would prefer the explicit ifdefs.
+> 
+> In my x86_64 allnoconfig build the patch reduces slab.o's text size
+> from 12859 bytes to 12812.  I'll let Pekka decide if that's worth it ;)
 
-Also, it could be written more "robust" against people who will make
-sizeof() the first argument with __builtin_constant_p().
+The text savings are worth it but I'd really prefer to see
+include/linux/slab.h patched to define debugging flags as zero for
+non-CONFIG_SLAB_DEBUG and let GCC eliminate the dead code for us.
+
+			Pekka
+
