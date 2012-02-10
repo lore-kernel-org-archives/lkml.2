@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab2BJAHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:07:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52241 "EHLO mx1.redhat.com"
+	id S1758763Ab2BJAHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:07:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758536Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758658Ab2BJABh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Feb 2012 19:01:37 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 07/31] edac: Prepare to push down to drivers the filling of the dimm_info
-Date: Thu,  9 Feb 2012 22:01:06 -0200
-Message-Id: <1328832090-9166-8-git-send-email-mchehab@redhat.com>
+Subject: [PATCH v3 08/31] edac: Better describe the memory concepts The memory terms changed along the time, since when EDAC were originally written: new concepts were introduced, and some things have different meanings, depending on the memory architecture. Better define those terms, and better describe each supported memory type.
+Date: Thu,  9 Feb 2012 22:01:07 -0200
+Message-Id: <1328832090-9166-9-git-send-email-mchehab@redhat.com>
 In-Reply-To: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
 References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,143 +20,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several data that it is currently stored per csrow will be
-pushed into the dimm themselves. Due to that, the mci->dimms
-filling will need to happen inside the drivers.
-
-Prepare for that, by initializing the dimm fields during mci
-alloc. With this change, the changes at the drivers will be
-smaller, as they won't need to touch at the fields they don't
-currently initialize.
-
-No functional changes.
+No functional changes. Just comments were touched.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_mc.c      |   43 ++++++++++++++++++++-----------------------
- drivers/edac/i5100_edac.c   |    1 +
- drivers/edac/i7core_edac.c  |    1 +
- drivers/edac/i82975x_edac.c |    1 +
- drivers/edac/sb_edac.c      |    1 +
- 5 files changed, 24 insertions(+), 23 deletions(-)
+ include/linux/edac.h |  176 ++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 134 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 93ef044..37dca79 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -214,6 +214,24 @@ struct mem_ctl_info *edac_mc_alloc(unsigned sz_pvt, unsigned nr_csrows,
- 		}
- 	}
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 027e478..0f700e3 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -72,25 +72,91 @@ enum hw_event_mc_err_type {
+ 	HW_EVENT_ERR_FATAL,
+ };
  
-+	/*
-+	 * By default, assumes that a per-csrow arrangement will be used,
-+	 * as most drivers are based on such assumption.
-+	 */
-+	if (!mci->nr_dimms) {
-+		mci->dimm_loc_type = DIMM_LOC_CSROW;
-+		dimm = mci->dimms;
-+		for (row = 0; row < mci->nr_csrows; row++) {
-+			for (chn = 0; chn < mci->csrows[row].nr_channels; chn++) {
-+				mci->csrows[row].channels[chn].dimm = dimm;
-+				dimm->location.csrow = row;
-+				dimm->location.csrow_channel = chn;
-+				dimm++;
-+				mci->nr_dimms++;
-+			}
-+		}
-+	}
-+
- 	mci->op_state = OP_ALLOC;
- 	INIT_LIST_HEAD(&mci->grp_kobj_list);
+-/* memory types */
++/**
++ * enum mem_type - memory types
++ *
++ * @MEM_EMPTY		Empty csrow
++ * @MEM_RESERVED:	Reserved csrow type
++ * @MEM_UNKNOWN:	Unknown csrow type
++ * @MEM_FPM:		Fast page mode
++ *			An old asyncronous memory technology, encapsulated as
++ *			SIMM, popularly used between 1987-1995.
++ * @MEM_EDO:		Extended data out
++ *			Asynchronous memory technology used on early Pentium's
++ *			(1995-1998).
++ * @MEM_BEDO:		Burst Extended data out
++ *			EDO memories with performance improvement gains.
++ * @MEM_SDR:		Single data rate SDRAM
++ *			First types of syncronous ram specified by JEDEC
++ *			popular between 1998-2002. The JEDEC standards defined
++ *			3 types of sticks: PC66, PC100 and PC133. There were
++ *			also some non-official overclocked sticks like PC150
++ *			and PC166.
++ *			There are 3 pins for chip select: Pins 0 and 2 are
++ *			for rank 0; pins 1 and 3 are for rank 1, if the memory
++ *			is dual-rank.
++ * @MEM_RDR:		Registered single data rate SDRAM
++ * @MEM_DDR:		Double data rate SDRAM, used between 2002 and 2005.
++ *			The JEDEC standards defined sticks PC1600, PC2100,
++ *			PC2700 and PC3200. Non-official overclocked sticks
++ *			also exists.
++ *			On DDR memories, there are one or two channels. A
++ *			single-channel mode means that one x72 ECC dimm is
++ *			accessed, in order to provide 64 bits of data. On
++ *			dual-channel mode, two dimm's are used simultaneously,
++ *			in order to provide a 128 bits of data. The "cschannel"
++ *			concept used on EDAC refers to such channel type.
++ * @MEM_RDDR:		Registered Double data rate SDRAM
++ *			This is a variant of the DDR memories.
++ *			A registered memory has a buffer inside it, hiding
++ *			part of the memory details to the memory controller.
++ * @MEM_RMBS:		Rambus DRAM
++ *			Rambus uses a high-speed multi-drop serial bus to
++ *			communicate with each RDRAM chip, used on some
++ *			machines between 2000-2002 (Pentium III and IV).
++ * @MEM_DDR2:		DDR2 RAM, as described at JEDEC JESD79-2F.
++ *			Those memories are labed as "PC2-" instead of "PC" to
++ *			differenciate from DDR.
++ * @MEM_FB_DDR2:	Fully-Buffered DDR2, as described at JEDEC Std No. 205
++ *			and JESD206.
++ *			A FB-DIMM channel consists of 14 unidirectional signal
++ *			pairs (Northbound path) from the memories to the MC
++ *			and 10 unidirectional signal pairs (Southbond path)
++ *			from the MC to the DIMM's.
++ *			those memories are x72 ECC DIMMs. Up to 8 DIMMs can
++ *			be connected per channel. When used with 128 bits,
++ *			two channels are needed. The grouping of those two
++ *			channels is called "branch".
++ * @MEM_RDDR2:		Registered DDR2 RAM
++ *			This is a variant of the DDR2 memories.
++ * @MEM_XDR:		Rambus XDR
++ *			It is an evolution of the original RAMBUS memories,
++ *			created to compete with DDR2. Weren't used on any
++ *			x86 arch, but cell_edac PPC memory controller uses it.
++ * @MEM_DDR3:		DDR3 RAM
++ *			Those memories are labed as "PC3-" to differenciate
++ *			from DDR and DDR2.
++ * @MEM_RDDR3:		Registered DDR3 RAM
++ *			This is a variant of the DDR3 memories.
++ */
+ enum mem_type {
+-	MEM_EMPTY = 0,		/* Empty csrow */
+-	MEM_RESERVED,		/* Reserved csrow type */
+-	MEM_UNKNOWN,		/* Unknown csrow type */
+-	MEM_FPM,		/* Fast page mode */
+-	MEM_EDO,		/* Extended data out */
+-	MEM_BEDO,		/* Burst Extended data out */
+-	MEM_SDR,		/* Single data rate SDRAM */
+-	MEM_RDR,		/* Registered single data rate SDRAM */
+-	MEM_DDR,		/* Double data rate SDRAM */
+-	MEM_RDDR,		/* Registered Double data rate SDRAM */
+-	MEM_RMBS,		/* Rambus DRAM */
+-	MEM_DDR2,		/* DDR2 RAM */
+-	MEM_FB_DDR2,		/* fully buffered DDR2 */
+-	MEM_RDDR2,		/* Registered DDR2 RAM */
+-	MEM_XDR,		/* Rambus XDR */
+-	MEM_DDR3,		/* DDR3 RAM */
+-	MEM_RDDR3,		/* Registered DDR3 RAM */
++	MEM_EMPTY = 0,
++	MEM_RESERVED,
++	MEM_UNKNOWN,
++	MEM_FPM,
++	MEM_EDO,
++	MEM_BEDO,
++	MEM_SDR,
++	MEM_RDR,
++	MEM_DDR,
++	MEM_RDDR,
++	MEM_RMBS,
++	MEM_DDR2,
++	MEM_FB_DDR2,
++	MEM_RDDR2,
++	MEM_XDR,
++	MEM_DDR3,
++	MEM_RDDR3,
+ };
  
-@@ -512,37 +530,16 @@ EXPORT_SYMBOL(edac_mc_find);
- /* FIXME - should a warning be printed if no error detection? correction? */
- int edac_mc_add_mc(struct mem_ctl_info *mci)
- {
--	int i, j;
--	struct dimm_info *dimm;
--
- 	debugf0("%s()\n", __func__);
+ #define MEM_FLAG_EMPTY		BIT(MEM_EMPTY)
+@@ -168,8 +234,9 @@ enum scrub_type {
+ #define OP_OFFLINE		0x300
  
--	/*
--	 * If nr_dimms is not filled, that means that the driver itself
--	 * were not converted to use the new struct, or that the driver
--	 * is for a csrow-based device.
--	 * Fill the dimms accordingly.
--	 */
--	if (!mci->nr_dimms) {
--		mci->dimm_loc_type = DIMM_LOC_CSROW;
--		dimm = mci->dimms;
--		for (i = 0; i < mci->nr_csrows; i++) {
--			for (j = 0; j < mci->csrows[i].nr_channels; j++) {
--				mci->csrows[i].channels[j].dimm = dimm;
--				dimm->location.csrow = i;
--				dimm->location.csrow_channel = j;
--				dimm++;
--				mci->nr_dimms++;
--			}
--		}
--	}
- #ifdef CONFIG_EDAC_DEBUG
- 	if (edac_debug_level >= 3)
- 		edac_mc_dump_mci(mci);
- 
- 	if (edac_debug_level >= 4) {
--
-+		int i;
- 		for (i = 0; i < mci->nr_csrows; i++) {
-+			int j;
- 			edac_mc_dump_csrow(&mci->csrows[i]);
- 			for (j = 0; j < mci->csrows[i].nr_channels; j++)
- 				edac_mc_dump_channel(&mci->csrows[i].
-diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-index 302e43b..52939ca 100644
---- a/drivers/edac/i5100_edac.c
-+++ b/drivers/edac/i5100_edac.c
-@@ -852,6 +852,7 @@ static void __devinit i5100_init_csrows(struct mem_ctl_info *mci)
- 
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (i = 0; i < mci->nr_csrows; i++) {
- 		const unsigned long npages = i5100_npages(mci, i);
- 		const unsigned chan = i5100_csrow_to_chan(mci, i);
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 4819df8..d6dd9bf 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -641,6 +641,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (i = 0; i < NUM_CHANS; i++) {
- 		u32 data, dimm_dod[3], value[8];
- 
-diff --git a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
-index 4a4026e..47f023e 100644
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -379,6 +379,7 @@ static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 
- 	mci->dimm_loc_type = DIMM_LOC_CSROW;
- 	dimm = mci->dimms;
-+	mci->nr_dimms = 0;
- 	for (index = 0; index < mci->nr_csrows; index++) {
- 		csrow = &mci->csrows[index];
- 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 34fa898..43fc65e 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -614,6 +614,7 @@ static int get_dimm_config(struct mem_ctl_info *mci)
- 
- 	dimm = mci->dimms;
- 	mci->dimm_loc_type = DIMM_LOC_MC_CHANNEL;
-+	mci->nr_dimms = 0;
- 	for (i = 0; i < NUM_CHANNELS; i++) {
- 		u32 mtr;
- 
+ /*
+- * There are several things to be aware of that aren't at all obvious:
++ * Concepts used at the EDAC subsystem
+  *
++ * There are several things to be aware of that aren't at all obvious:
+  *
+  * SOCKETS, SOCKET SETS, BANKS, ROWS, CHIP-SELECT ROWS, CHANNELS, etc..
+  *
+@@ -178,36 +245,61 @@ enum scrub_type {
+  * creating a common ground for discussion, terms and their definitions
+  * will be established.
+  *
+- * Memory devices:	The individual chip on a memory stick.  These devices
+- *			commonly output 4 and 8 bits each.  Grouping several
+- *			of these in parallel provides 64 bits which is common
+- *			for a memory stick.
++ * Memory devices:	The individual DRAM chips on a memory stick.  These
++ *			devices commonly output 4 and 8 bits each (x4, x8).
++ *			Grouping several of these in parallel provides the
++ *			number of bits that the memory controller expects:
++ *			typically 72 bits, in order to provide 64 bits of ECC
++ *			corrected data.
+  *
+  * Memory Stick:	A printed circuit board that aggregates multiple
+- *			memory devices in parallel.  This is the atomic
+- *			memory component that is purchaseable by Joe consumer
+- *			and loaded into a memory socket.
++ *			memory devices in parallel.  In general, this is the
++ *			First replaceable unit (FRU) that the final consumer
++ *			cares to replace. It is typically encapsulated as DIMMs
+  *
+  * Socket:		A physical connector on the motherboard that accepts
+  *			a single memory stick.
+  *
+- * Csrow-channel:	Set of memory devices on a memory stick that must be
+- *			grouped in parallel with one or more additional
+- *			channels from other memory sticks.  This parallel
+- *			grouping of the output from multiple channels are
+- *			necessary for the smallest granularity of memory access.
+- *			Some memory controllers are capable of single channel -
+- *			which means that memory sticks can be loaded
+- *			individually.  Other memory controllers are only
+- *			capable of dual channel - which means that memory
+- *			sticks must be loaded as pairs (see "socket set").
++ * Branch:		The highest hierarchy on a Fully-Buffered DIMM memory
++ *			controller. Typically, it contains two channels.
++ *			Two channels at the same branch can be used in single
++ *			mode or in lockstep mode.
++ *			When lockstep is enabled, the cache line is higher,
++ *			but it generally brings some performance penalty.
++ *			Also, it is generally not possible to point to just one
++ *			memory stick when an error occurs, as the error
++ *			correction code is calculated using two dimms instead
++ *			of one. Due to that, it is capable of correcting more
++ *			errors than on single mode.
++ *
++ * Channel:		A memory controller channel, responsible to communicate
++ *			with a group of DIMM's. Each channel has its own
++ *			independent control (command) and data bus, and can
++ *			be used independently or grouped.
++ *
++ * Single-channel:	The data accessed by the memory controller is contained
++ *			into one dimm only. E. g. if the data is 64 bits-wide,
++ *			the data flows to the CPU using one 64 bits parallel
++ *			access.
++ *			Typically used with SDR, DDR, DDR2 and DDR3 memories.
++ *			FB-DIMM and RAMBUS use a different concept for channel,
++ *			so this concept doesn't apply there.
++ *
++ * Double-channel:	The data size accessed by the memory controller is
++ *			contained into two dimms accessed at the same time.
++ *			E. g. if the DIMM is 64 bits-wide, the data flows to
++ *			the CPU using a 128 bits parallel access.
++ *			Typically used with SDR, DDR, DDR2 and DDR3 memories.
++ *			FB-DIMM and RAMBUS uses a different concept for channel,
++ *			so this concept doesn't apply there.
+  *
+- * Chip-select row:	All of the memory devices that are selected together.
+- *			for a single, minimum grain of memory access.
+- *			This selects all of the parallel memory devices across
+- *			all of the parallel channels.  Common chip-select rows
+- *			for single channel are 64 bits, for dual channel 128
+- *			bits.
++ * Chip-select row:	This is the name of the memory controller signal used
++ *			to select the DRAM chips to be used. It may not be
++ *			visible by the memory controller, as some memory buffer
++ *			chip may be responsible to control it.
++ *			On devices where it is visible, it controls the DIMM
++ *			(or the DIMM pair, in dual-channel mode) that is
++ *			accessed by the memory controller.
+  *
+  * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memory.
+  *			Motherboards commonly drive two chip-select pins to
 -- 
 1.7.8
 
