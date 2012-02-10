@@ -1,72 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab2BJLKj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 06:10:39 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33415 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab2BJLKh (ORCPT
+	id S1759078Ab2BJLMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 06:12:18 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:34802 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab2BJLMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 06:10:37 -0500
-Date: Fri, 10 Feb 2012 11:10:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Liam Girdwood <lrg@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/3] ASoC: twl6040: Remove dependency on twl4030 from
- Kconfig
-Message-ID: <20120210111035.GD3056@opensource.wolfsonmicro.com>
-References: <1328868018-24668-1-git-send-email-peter.ujfalusi@ti.com>
- <1328868018-24668-4-git-send-email-peter.ujfalusi@ti.com>
+	Fri, 10 Feb 2012 06:12:15 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM52VkUL8chIbTFkGkSHe4oNGmRZY1g0MAgAAEEgCAAAGKgP//fYTQgACIkgCAAGsaEA==
+Date: Fri, 10 Feb 2012 11:12:09 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B70CEB6@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1328817851-13435-1-git-send-email-kys@microsoft.com>
+	 <20120209200404.GA8816@kroah.com>
+	 <1328818718.2944.20.camel@dabdike.int.hansenpartnership.com>
+	 <20120209202409.GA22365@kroah.com>
+	 <6E21E5352C11B742B20C142EB499E0481B70CB38@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1328820356.2944.24.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.22]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
-Content-Disposition: inline
-In-Reply-To: <1328868018-24668-4-git-send-email-peter.ujfalusi@ti.com>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1ABCPKt017381
 
 
---tsOsTdHNUZQcU9Ye
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Feb 10, 2012 at 12:00:18PM +0200, Peter Ujfalusi wrote:
-> twl6040 no longer needs twl4030.
->=20
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Thursday, February 09, 2012 3:46 PM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> On Thu, 2012-02-09 at 20:43 +0000, KY Srinivasan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Thursday, February 09, 2012 3:24 PM
+> > > To: James Bottomley
+> > > Cc: KY Srinivasan; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> > > scsi@vger.kernel.org
+> > > Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
+> the
+> > > staging area
+> > >
+> > > On Thu, Feb 09, 2012 at 02:18:38PM -0600, James Bottomley wrote:
+> > > > On Thu, 2012-02-09 at 12:04 -0800, Greg KH wrote:
+> > > > > On Thu, Feb 09, 2012 at 12:04:11PM -0800, K. Y. Srinivasan wrote:
+> > > > > > The storage driver (storvsc_drv.c) handles all block storage devices
+> > > > > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> > > > > > staging tree for a while and this patch moves it out of the staging area.
+> > > > > > As per Greg's recommendation, this patch makes no changes to the
+> > > staging/hv
+> > > > > > directory. Once the driver moves out of staging, we will cleanup the
+> > > > > > staging/hv directory.
+> > > > > >
+> > > > > > James was willing to apply this patch during the 3.3-rc phase and a
+> decision
+> > > > > > was taken to defer this to 3.4 since Greg had queued up a bunch of
+> storvsc
+> > > > > > patches for 3.4. Now that Greg has applied all of the pending storvsc
+> > > patches,
+> > > > > > I am re-sending this patch to move this driver out of staging.
+> > > > > >
+> > > > > >
+> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > > ---
+> > > > > >  drivers/scsi/Kconfig       |    7 +
+> > > > > >  drivers/scsi/Makefile      |    3 +
+> > > > > >  drivers/scsi/storvsc_drv.c | 1548
+> > > ++++++++++++++++++++++++++++++++++++++++++++
+> > > > > >  3 files changed, 1558 insertions(+), 0 deletions(-)
+> > > > > >  create mode 100644 drivers/scsi/storvsc_drv.c
+> > > > >
+> > > > > James, any objection to me applying this to the staging-next tree, and
+> > > > > at the same time, deleting this version of the driver from the
+> > > > > drivers/staging/hv/ directory?
+> > > >
+> > > > Well, yes, it has the same build failure as the previous one and that
+> > > > will make it non bisectable.
+> > >
+> > > Ah, that would make things a bit difficult, KY, please test your
+> > > patches...
+> >
+> > Greg,
+> >
+> > I pulled down your staging tree earlier today that had all the storvsc patches
+> that you
+> > checked in yesterday, applied this patch and built it (successfully).
+> 
+> You're leaving remnants in staging.
+> 
+> Move the damn thing and pull the config options from staging when you
+> put them in SCSI.
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+James,
 
-This should go via whatever path the first two patches go.
+I have sent out a revised patch that does exactly what you are suggesting here.
+If this is what you were looking for please ACK it.
 
---tsOsTdHNUZQcU9Ye
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+K. Y
 
-iQIcBAEBAgAGBQJPNPskAAoJEBus8iNuMP3dWhUP/j833HfDyb3ugioLFPhn8DcI
-wSbdZXaNFM0X53zgGsRZ5oE0WhrWJOpVoR3EA+6ITPKLsjw2q8TPp9hkxwjjJzPZ
-SbaEbDX5BHNKieuqwQfU439t0DogvPJW83UjdhRrSHAOG+BXbLOBLjfuXokIuEOE
-ULp7qILEab8BKv3JTmZSoYR3wt+ZsBzDMvw2T8+lHtpRfG3F/YaQgkshxSrABQv2
-jUcVqDGOQtzR7mGl90BJQn8lFql7JSuIakcX6uiGN4cXln6j6PLiGLQIwXRr35Fn
-f7GiZdItJWyYgl1FKiZ4OUltGmSaTo1B8TNxH4tOQmAm5mkr0cgCq8cupH8pZ+wl
-rJrClaLXKp0/F7mrd13Q9kkyVlrJi/gQ53yvUX7r8nwrZHXCThqciNsr1eMK6ULt
-FndKibhLUGYlY0csSO087hz2XpF7JCg4g19aVOos9Sfo4B76fA3IdHv8csDM9sFc
-/ZMTnmtJtKYVlcG5C4/GQRvQJJRhHnt9aRwkk/Ofz+eer43KvnGuq6Jq4/4yE/xU
-862acfsXH+HBpG7ipvm7V3ILEXBkPESJLI/a/iY/NJYzwTi3qEs813GXJWpVPZCZ
-jxeDNlZrBTwzUCGexCw4NwQKdmYHkirhoh1s2Rgl2/dEWZ+aIygqQLGUWxb51HwR
-8IIcvVkEBbclD6ee/mVV
-=z156
------END PGP SIGNATURE-----
-
---tsOsTdHNUZQcU9Ye--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
