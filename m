@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760428Ab2BJWlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab2BJWlc (ORCPT
+	id S1760603Ab2BJWln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:41:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760411Ab2BJWlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:32 -0500
+	Fri, 10 Feb 2012 17:41:36 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222945.579516164@clark.kroah.org>
+Message-Id: <20120210222945.848673791@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:25 -0800
+Date: Fri, 10 Feb 2012 14:29:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 06/86] ALSA: hda - Allow analog low-current mode when dynamic power-control is on
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [patch 09/86] ASoC: wm_hubs: Enable line out VMID buffer for single ended line outputs
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,102 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit e9d010c2e8f03952e67a6fd8aed0f0dc92084ccc upstream.
+commit 77231abe55433aa17eca712718745275853fa66d upstream.
 
-VIA codecs have several different power-saving features, and one of
-them is the analog low-current mode.  But it turned out that the ALC
-mode causes pop-noises at each on/off time on some machines.  As a
-quick workaround, disable the ALC when another power-saving feature,
-the dynamic pin power-control, is turned off, too, since the dynamic
-power-control is already exposed as a mixer enum element so that user
-can turn it on/off freely.
+For optimal performance the single ended line outputs require that the
+line output VMID buffer be enabled.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=741128
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_via.c |   27 +++++++++++++++++++++------
- 1 file changed, 21 insertions(+), 6 deletions(-)
+ sound/soc/codecs/wm_hubs.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -198,6 +198,9 @@ struct via_spec {
- 	unsigned int no_pin_power_ctl;
- 	enum VIA_HDA_CODEC codec_type;
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -614,6 +614,8 @@ SND_SOC_DAPM_INPUT("IN2RP:VXRP"),
+ SND_SOC_DAPM_MICBIAS("MICBIAS2", WM8993_POWER_MANAGEMENT_1, 5, 0),
+ SND_SOC_DAPM_MICBIAS("MICBIAS1", WM8993_POWER_MANAGEMENT_1, 4, 0),
  
-+	/* analog low-power control */
-+	bool alc_mode;
++SND_SOC_DAPM_SUPPLY("LINEOUT_VMID_BUF", WM8993_ANTIPOP1, 7, 0, NULL, 0),
 +
- 	/* smart51 setup */
- 	unsigned int smart51_nums;
- 	hda_nid_t smart51_pins[2];
-@@ -748,6 +751,7 @@ static int via_pin_power_ctl_put(struct
- 		return 0;
- 	spec->no_pin_power_ctl = val;
- 	set_widgets_power_state(codec);
-+	analog_low_current_mode(codec);
- 	return 1;
- }
+ SND_SOC_DAPM_MIXER("IN1L PGA", WM8993_POWER_MANAGEMENT_2, 6, 0,
+ 		   in1l_pga, ARRAY_SIZE(in1l_pga)),
+ SND_SOC_DAPM_MIXER("IN1R PGA", WM8993_POWER_MANAGEMENT_2, 4, 0,
+@@ -832,9 +834,11 @@ static const struct snd_soc_dapm_route l
+ };
  
-@@ -1035,13 +1039,19 @@ static bool is_aa_path_mute(struct hda_c
- }
+ static const struct snd_soc_dapm_route lineout1_se_routes[] = {
++	{ "LINEOUT1N Mixer", NULL, "LINEOUT_VMID_BUF" },
+ 	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output PGA" },
+ 	{ "LINEOUT1N Mixer", "Right Output Switch", "Right Output PGA" },
  
- /* enter/exit analog low-current mode */
--static void analog_low_current_mode(struct hda_codec *codec)
-+static void __analog_low_current_mode(struct hda_codec *codec, bool force)
- {
- 	struct via_spec *spec = codec->spec;
- 	bool enable;
- 	unsigned int verb, parm;
++	{ "LINEOUT1P Mixer", NULL, "LINEOUT_VMID_BUF" },
+ 	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output PGA" },
  
--	enable = is_aa_path_mute(codec) && !spec->opened_streams;
-+	if (spec->no_pin_power_ctl)
-+		enable = false;
-+	else
-+		enable = is_aa_path_mute(codec) && !spec->opened_streams;
-+	if (enable == spec->alc_mode && !force)
-+		return;
-+	spec->alc_mode = enable;
+ 	{ "LINEOUT1N Driver", NULL, "LINEOUT1N Mixer" },
+@@ -851,9 +855,11 @@ static const struct snd_soc_dapm_route l
+ };
  
- 	/* decide low current mode's verb & parameter */
- 	switch (spec->codec_type) {
-@@ -1073,6 +1083,11 @@ static void analog_low_current_mode(stru
- 	snd_hda_codec_write(codec, codec->afg, 0, verb, parm);
- }
+ static const struct snd_soc_dapm_route lineout2_se_routes[] = {
++	{ "LINEOUT2N Mixer", NULL, "LINEOUT_VMID_BUF" },
+ 	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output PGA" },
+ 	{ "LINEOUT2N Mixer", "Right Output Switch", "Right Output PGA" },
  
-+static void analog_low_current_mode(struct hda_codec *codec)
-+{
-+	return __analog_low_current_mode(codec, false);
-+}
-+
- /*
-  * generic initialization of ADC, input mixers and output mixers
-  */
-@@ -1498,10 +1513,6 @@ static int via_build_controls(struct hda
- 			return err;
- 	}
++	{ "LINEOUT2P Mixer", NULL, "LINEOUT_VMID_BUF" },
+ 	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output PGA" },
  
--	/* init power states */
--	set_widgets_power_state(codec);
--	analog_low_current_mode(codec);
--
- 	via_free_kctls(codec); /* no longer needed */
- 	return 0;
- }
-@@ -2771,6 +2782,10 @@ static int via_init(struct hda_codec *co
- 	for (i = 0; i < spec->num_iverbs; i++)
- 		snd_hda_sequence_write(codec, spec->init_verbs[i]);
- 
-+	/* init power states */
-+	set_widgets_power_state(codec);
-+	__analog_low_current_mode(codec, true);
-+
- 	via_auto_init_multi_out(codec);
- 	via_auto_init_hp_out(codec);
- 	via_auto_init_speaker_out(codec);
+ 	{ "LINEOUT2N Driver", NULL, "LINEOUT2N Mixer" },
 
 
