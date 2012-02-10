@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab2BJWnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:43:15 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932733Ab2BJWnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932734Ab2BJWnJ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 10 Feb 2012 17:43:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab2BJWnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 17:43:04 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222951.691176377@clark.kroah.org>
+Message-Id: <20120210222951.527112442@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:34 -0800
+Date: Fri, 10 Feb 2012 14:30:32 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [patch 75/86] staging: r8712u: Add new Sitecom UsB ID
+        alan@lxorguk.ukuu.org.uk, Jakub Schmidtke <sjakub@gmail.com>,
+        "Kevin A. Granade" <kevin.granade@gmail.com>,
+        Pekka Paalanen <pq@iki.fi>
+Subject: [patch 73/86] Staging: asus_oled: fix image processing
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Pekka Paalanen <pq@iki.fi>
 
-commit 1793bf1deddc8ce25dc41925d5dbe64536c841b6 upstream.
+commit 635032cb397b396241372fa0ff36ae758e658b23 upstream.
 
-Add USB ID for SITECOM WLA-1000 V1 001 WLAN
+Programming an image was broken, because odev->buf_offs was not advanced
+for val == 0 in append_values(). This regression was introduced in:
 
-Reported-and-tested-by: Roland Gruber <post@rolandgruber.de>
-Reported-and-tested-by: Dario Lucia <dario.lucia@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+ commit 1ff12a4aa354bed093a0240d5e6347b1e27601bc
+ Author: Kevin A. Granade <kevin.granade@gmail.com>
+ Date:   Sat Sep 5 01:03:39 2009 -0500
+
+     Staging: asus_oled: Cleaned up checkpatch issues.
+
+Fix the image processing by special-casing val == 0.
+
+I have tested this change on an Asus G50V laptop only.
+
+Cc: Jakub Schmidtke <sjakub@gmail.com>
+Cc: Kevin A. Granade <kevin.granade@gmail.com>
+Signed-off-by: Pekka Paalanen <pq@iki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/usb_intf.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/asus_oled/asus_oled.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -89,6 +89,7 @@ static struct usb_device_id rtl871x_usb_
- 	{USB_DEVICE(0x0DF6, 0x0045)},
- 	{USB_DEVICE(0x0DF6, 0x0059)}, /* 11n mode disable */
- 	{USB_DEVICE(0x0DF6, 0x004B)},
-+	{USB_DEVICE(0x0DF6, 0x005B)},
- 	{USB_DEVICE(0x0DF6, 0x005D)},
- 	{USB_DEVICE(0x0DF6, 0x0063)},
- 	/* Sweex */
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -355,7 +355,14 @@ static void send_data(struct asus_oled_d
+ 
+ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
+ {
+-	while (count-- > 0 && val) {
++	odev->last_val = val;
++
++	if (val == 0) {
++		odev->buf_offs += count;
++		return 0;
++	}
++
++	while (count-- > 0) {
+ 		size_t x = odev->buf_offs % odev->width;
+ 		size_t y = odev->buf_offs / odev->width;
+ 		size_t i;
+@@ -406,7 +413,6 @@ static int append_values(struct asus_ole
+ 			;
+ 		}
+ 
+-		odev->last_val = val;
+ 		odev->buf_offs++;
+ 	}
+ 
 
 
