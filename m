@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab2BJSdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 13:33:05 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46038 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759874Ab2BJSdB (ORCPT
+	id S1759892Ab2BJSdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 13:33:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38686 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759727Ab2BJSdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 13:33:01 -0500
-Message-ID: <4F3562AC.5090701@linux.vnet.ibm.com>
-Date: Fri, 10 Feb 2012 13:32:12 -0500
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, Dan.Morav@nuvoton.com, KC@nuvoton.com,
-        Dan Morav <dmorav@nuvoton.com>
-Subject: Re: [PATCH 1/2] TPM: Nuvoton I2C driver
-References: <y> <1328620014-9369-2-git-send-email-srajiv@linux.vnet.ibm.com>
-In-Reply-To: <1328620014-9369-2-git-send-email-srajiv@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 10 Feb 2012 13:33:51 -0500
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+In-Reply-To: <4F2AAEB9.9070302@tilera.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	 <1327591185.2446.102.camel@twins>
+	 <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	 <20120201170443.GE6731@somewhere.redhat.com>
+	 <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+	 <4F2AAEB9.9070302@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 10 Feb 2012 19:33:36 +0100
+Message-ID: <1328898816.25989.33.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021018-2398-0000-0000-0000041E24E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2012 08:06 AM, Rajiv Andrade wrote:
-> From: Dan.Morav@nuvoton.com<Dan.Morav@nuvoton.com>
->
-> Below are the additions for WPCT301/NPCT501 Nuvoton Technology
-> TPM with I2C interface device driver. This driver uses Linux I2C
-> bus driver to interface with the I2C bus and Linux TPM driver (tpm.ko),
-> to export the standard Linux TPM interface. This driver requires an
-> I2C bus driver and TPM driver (tpm.ko) to be loaded prior to its loading.
-> This driver tested on Linux kernel version 3.3 on an x86 based platform.
->
-> Signed-off-by: Dan Morav<dmorav@nuvoton.com>
-> Signed-off-by: Rajiv Andrade<srajiv@linux.vnet.ibm.com>
-[...]
-> +
->   endif # TCG_TPM
-> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> index ea3a1e0..064669a 100644
-> --- a/drivers/char/tpm/Makefile
-> +++ b/drivers/char/tpm/Makefile
-> @@ -9,3 +9,4 @@ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
->   obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
->   obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
->   obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-> +obj-$(CONFIG_TCG_NUVOTON_I2C) += tpm_nuvoton_i2c.o
-> diff --git a/drivers/char/tpm/tpm_nuvoton_i2c.c b/drivers/char/tpm/tpm_nuvoton_i2c.c
-> new file mode 100644
-> index 0000000..daf0d49
-> --- /dev/null
-> +++ b/drivers/char/tpm/tpm_nuvoton_i2c.c
-> @@ -0,0 +1,718 @@
-> +/******************************************************************************
-> + * Nuvoton TPM I2C Device Driver Interface for WPCT301/NPCT501,
-> + * based on the TCG TPM Interface Spec version 1.2.
-> + * Specifications at www.trustedcomputinggroup.org
+On Thu, 2012-02-02 at 10:41 -0500, Chris Metcalf wrote:
+> At Tilera we have been supporting a "dataplane" mode (aka Zero Overhead
+> Linux - the marketing name).  This is configured on a per-cpu basis, and in
+> addition to setting isolcpus for those nodes, also suppresses various
+> things that might otherwise run (soft lockup detection, vmstat work,
+> etc.).  
 
-Since it's implemented following non-proprietary specs, would this 
-driver qualify as the generic tpm_i2c driver or is there anything 
-besides the device-id,vendor-id + firmware work-around in the driver 
-specific to this particular device implementation.
+See that's wrong.. it starts being wrong by depending on cpuisol and
+goes from there.
 
-Regards,
-    Stefan
+> The claim is that you need to specify these kinds of things
+> per-core since it's not always possible for the kernel to know that you
+> really don't want the scheduler or any other interrupt source to touch the
+> core, as opposed to the case where you just happen to have a single process
+> scheduled on the core and you don't mind occasional interrupts.
+
+Right, so that claim is proven false I think.
+
+>   But
+> there's definitely appeal in having the kernel do it adaptively too,
+> particularly if it can be made to work just as well as configuring it
+> statically. 
+
+I see no reason why it shouldn't work as well or even better.
 
