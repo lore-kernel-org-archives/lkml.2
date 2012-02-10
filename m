@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab2BJWl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:41:26 -0500
+	id S1760575Ab2BJWlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:41:21 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760405Ab2BJWlQ (ORCPT
+	with ESMTP id S1755024Ab2BJWlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:41:16 -0500
+	Fri, 10 Feb 2012 17:41:18 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222947.372369414@clark.kroah.org>
+Message-Id: <20120210222947.455374815@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:29:45 -0800
+Date: Fri, 10 Feb 2012 14:29:46 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nikolaus Voss <n.voss@weinmann.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [patch 26/86] at_hdmac: bugfix for enabling channel irq
+        alan@lxorguk.ukuu.org.uk, David Sadler <dsadler@us.ibm.com>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Louis Alex Eisner <leisner@cs.ucsd.edu>,
+        Hugh Dickins <hughd@google.com>
+Subject: [patch 27/86] mm/filemap_xip.c: fix race condition in xip_file_fault()
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,88 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolaus Voss <n.voss@weinmann.de>
+From: Carsten Otte <carsteno@de.ibm.com>
 
-commit bda3a47c886664e86ee14eb79e9072b9e341f575 upstream.
+commit 99f02ef1f18631eb0a4e0ea0a3d56878dbcb4b90 upstream.
 
-commit 463894705e4089d0ff69e7d877312d496ac70e5b deleted redundant
-chan_id and chancnt initialization in dma drivers as this is done
-in dma_async_device_register().
+Fix a race condition that shows in conjunction with xip_file_fault() when
+two threads of the same user process fault on the same memory page.
 
-However, atc_enable_irq() relied on chan_id set before registering
-the device, what left only channel 0 functional for this driver.
+In this case, the race winner will install the page table entry and the
+unlucky loser will cause an oops: xip_file_fault calls vm_insert_pfn (via
+vm_insert_mixed) which drops out at this check:
 
-This patch introduces atc_enable/disable_chan_irq() as a variant
-of atc_enable/disable_irq() with the channel as explicit argument.
+	retval = -EBUSY;
+	if (!pte_none(*pte))
+		goto out_unlock;
 
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+The resulting -EBUSY return value will trigger a BUG_ON() in
+xip_file_fault.
+
+This fix simply considers the fault as fixed in this case, because the
+race winner has successfully installed the pte.
+
+[akpm@linux-foundation.org: use conventional (and consistent) comment layout]
+Reported-by: David Sadler <dsadler@us.ibm.com>
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Reported-by: Louis Alex Eisner <leisner@cs.ucsd.edu>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/at_hdmac.c      |    4 ++--
- drivers/dma/at_hdmac_regs.h |   17 ++++++++---------
- 2 files changed, 10 insertions(+), 11 deletions(-)
+ mm/filemap_xip.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -1286,7 +1286,7 @@ static int __init at_dma_probe(struct pl
- 
- 		tasklet_init(&atchan->tasklet, atc_tasklet,
- 				(unsigned long)atchan);
--		atc_enable_irq(atchan);
-+		atc_enable_chan_irq(atdma, i);
- 	}
- 
- 	/* set base routines */
-@@ -1353,7 +1353,7 @@ static int __exit at_dma_remove(struct p
- 		struct at_dma_chan	*atchan = to_at_dma_chan(chan);
- 
- 		/* Disable interrupts */
--		atc_disable_irq(atchan);
-+		atc_disable_chan_irq(atdma, chan->chan_id);
- 		tasklet_disable(&atchan->tasklet);
- 
- 		tasklet_kill(&atchan->tasklet);
---- a/drivers/dma/at_hdmac_regs.h
-+++ b/drivers/dma/at_hdmac_regs.h
-@@ -326,28 +326,27 @@ static void atc_dump_lli(struct at_dma_c
- }
- 
- 
--static void atc_setup_irq(struct at_dma_chan *atchan, int on)
-+static void atc_setup_irq(struct at_dma *atdma, int chan_id, int on)
- {
--	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
--	u32		ebci;
-+	u32 ebci;
- 
- 	/* enable interrupts on buffer transfer completion & error */
--	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
--		| AT_DMA_ERR(atchan->chan_common.chan_id);
-+	ebci =    AT_DMA_BTC(chan_id)
-+		| AT_DMA_ERR(chan_id);
- 	if (on)
- 		dma_writel(atdma, EBCIER, ebci);
- 	else
- 		dma_writel(atdma, EBCIDR, ebci);
- }
- 
--static inline void atc_enable_irq(struct at_dma_chan *atchan)
-+static void atc_enable_chan_irq(struct at_dma *atdma, int chan_id)
- {
--	atc_setup_irq(atchan, 1);
-+	atc_setup_irq(atdma, chan_id, 1);
- }
- 
--static inline void atc_disable_irq(struct at_dma_chan *atchan)
-+static void atc_disable_chan_irq(struct at_dma *atdma, int chan_id)
- {
--	atc_setup_irq(atchan, 0);
-+	atc_setup_irq(atdma, chan_id, 0);
- }
- 
- 
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -263,7 +263,12 @@ found:
+ 							xip_pfn);
+ 		if (err == -ENOMEM)
+ 			return VM_FAULT_OOM;
+-		BUG_ON(err);
++		/*
++		 * err == -EBUSY is fine, we've raced against another thread
++		 * that faulted-in the same page
++		 */
++		if (err != -EBUSY)
++			BUG_ON(err);
+ 		return VM_FAULT_NOPAGE;
+ 	} else {
+ 		int err, ret = VM_FAULT_OOM;
 
 
