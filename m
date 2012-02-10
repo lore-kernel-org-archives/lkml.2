@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759990Ab2BJTkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 14:40:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab2BJTkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 14:40:24 -0500
-Date: Fri, 10 Feb 2012 17:39:32 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Jan Blunck <jblunck@suse.de>
-Subject: Re: [RFC 0/5] kernel: backtrace unwind support
-Message-ID: <20120210193932.GF4998@infradead.org>
-References: <1328873119-21553-1-git-send-email-jolsa@redhat.com> <1328895795.25989.29.camel@laptop> <CA+55aFxgPXjGh0GSHaUGm6-Pfdjjk=PAP7HMuZHcFGE92VutUQ@mail.gmail.com> <20120210192714.GE4998@infradead.org> <CA+55aFx9wxNkiW7QSLAmo+cAOOUjZef6a8xBfw88Wn+Nd9viNQ@mail.gmail.com>
+	id S1760013Ab2BJTky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 14:40:54 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52324 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab2BJTkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 14:40:52 -0500
+Message-ID: <4F3572C1.1060703@redhat.com>
+Date: Fri, 10 Feb 2012 20:40:49 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx9wxNkiW7QSLAmo+cAOOUjZef6a8xBfw88Wn+Nd9viNQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Nelson, Doug" <doug.nelson@intel.com>
+CC: Matthew Wilcox <willy@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: scsi_id: sending ioctl 2285 to a partition
+References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com> <20120209210039.GB14342@linux.intel.com> <4F34D292.4080404@redhat.com> <4F3552A4.70902@intel.com>
+In-Reply-To: <4F3552A4.70902@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Feb 10, 2012 at 11:32:42AM -0800, Linus Torvalds escreveu:
-> On Fri, Feb 10, 2012 at 11:27 AM, Arnaldo Carvalho de Melo
-> > "Vote for --fno-omit-frame-pointer! One register is a cheap price to pay
-> > for not going insane!"
-> >
-> > /me goes back to non political things.
-> 
-> Even with -fomit-frame-pointer (which seems to be a big deal on Atom
-> in particular)
+On 02/10/2012 06:23 PM, Nelson, Doug wrote:
+>> # scsi devices
+>> KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
+>> IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
+>> ENV{ID_BUS}="scsi"
+>
+> The rule I had was not excluding partitions.   I'll fix that and try again.
 
-Nah, on such register starved arches we just do what we do today: try to
-figure out bogus addresses and bail out.
+So was it a custom rule, or it came with the distro?
 
-- Arnaldo
+Paolo
