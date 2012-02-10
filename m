@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2BJWma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 17:42:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932593Ab2BJWm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932592Ab2BJWm1 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 10 Feb 2012 17:42:27 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab2BJWmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 17:42:22 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222949.748033534@clark.kroah.org>
+Message-Id: <20120210222949.660791768@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:12 -0800
+Date: Fri, 10 Feb 2012 14:30:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, <jrepac@yahoo.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [patch 53/86] iscsi-target: Fix reject release handling in iscsit_free_cmd()
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Nick Bowler <nbowler@elliptictech.com>, Dave Jones <davej@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        Peter Zijlstra <peterz@infradead.org>, Alan Cox <alan@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [patch 52/86] lockdep, bug: Exclude TAINT_OOT_MODULE from disabling lock debugging
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,76 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit c1ce4bd56f2846de55043374598fd929ad3b711b upstream.
+commit 9ec84acee1e221d99dc33237bff5e82839d10cc0 upstream.
 
-This patch addresses a bug where iscsit_free_cmd() was incorrectly calling
-iscsit_release_cmd() for ISCSI_OP_REJECT because iscsi_add_reject*() will
-overwrite the original iscsi_cmd->iscsi_opcode assignment.  This bug was
-introduced with the following commit:
+We do want to allow lock debugging for GPL-compatible modules
+that are not (yet) built in-tree.  This was disabled as a
+side-effect of commit 2449b8ba0745327c5fa49a8d9acffe03b2eded69
+('module,bug: Add TAINT_OOT_MODULE flag for modules not built
+in-tree').  Lock debug warnings now include taint flags, so
+kernel developers should still be able to deflect warnings
+caused by out-of-tree modules.
 
-commit 0be67f2ed8f577d2c72d917928394c5885fa9134
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Sun Oct 9 01:48:14 2011 -0700
+The TAINT_PROPRIETARY_MODULE flag for non-GPL-compatible modules
+will still disable lock debugging.
 
-    iscsi-target: Remove SCF_SE_LUN_CMD flag abuses
-
-and was manifesting itself as list corruption with the following:
-
-[  131.191092] ------------[ cut here ]------------
-[  131.191092] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[  131.191092] Hardware name: VMware Virtual Platform
-[  131.191092] list_del corruption. prev->next should be ffff880022d3c100, but was 6b6b6b6b6b6b6b6b
-[  131.191092] Modules linked in: tcm_vhost ib_srpt ib_cm ib_sa ib_mad ib_core tcm_qla2xxx qla2xxx tcm_loop tcm_fc libfc scsi_transport_fc crc32c iscsi_target_mod target_core_stgt scsi_tgt target_core_pscsi target_core_file target_core_iblock target_core_mod configfs ipv6 iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi sr_mod cdrom sd_mod e1000 ata_piix libata mptspi mptscsih mptbase [last unloaded: scsi_wait_scan]
-[  131.191092] Pid: 2250, comm: iscsi_ttx Tainted: G        W    3.2.0-rc4+ #42
-[  131.191092] Call Trace:
-[  131.191092]  [<ffffffff8103b553>] warn_slowpath_common+0x80/0x98
-[  131.191092]  [<ffffffff8103b5ff>] warn_slowpath_fmt+0x41/0x43
-[  131.191092]  [<ffffffff811d0279>] __list_del_entry+0x8d/0x98
-[  131.191092]  [<ffffffffa01395c9>] transport_lun_remove_cmd+0x9b/0xb7 [target_core_mod]
-[  131.191092]  [<ffffffffa013a55c>] transport_generic_free_cmd+0x5d/0x71 [target_core_mod]
-[  131.191092]  [<ffffffffa01a012b>] iscsit_free_cmd+0x1e/0x27 [iscsi_target_mod]
-[  131.191092]  [<ffffffffa01a13be>] iscsit_close_connection+0x14d/0x5b2 [iscsi_target_mod]
-[  131.191092]  [<ffffffffa0196a0c>] iscsit_take_action_for_connection_exit+0xdb/0xe0 [iscsi_target_mod]
-[  131.191092]  [<ffffffffa01a55d4>] iscsi_target_tx_thread+0x15cb/0x1608 [iscsi_target_mod]
-[  131.191092]  [<ffffffff8103609a>] ? check_preempt_wakeup+0x121/0x185
-[  131.191092]  [<ffffffff81030801>] ? __dequeue_entity+0x2e/0x33
-[  131.191092]  [<ffffffffa01a4009>] ? iscsit_send_text_rsp+0x25f/0x25f [iscsi_target_mod]
-[  131.191092]  [<ffffffffa01a4009>] ? iscsit_send_text_rsp+0x25f/0x25f [iscsi_target_mod]
-[  131.191092]  [<ffffffff8138f706>] ? schedule+0x55/0x57
-[  131.191092]  [<ffffffff81056c7d>] kthread+0x7d/0x85
-[  131.191092]  [<ffffffff81399534>] kernel_thread_helper+0x4/0x10
-[  131.191092]  [<ffffffff81056c00>] ? kthread_worker_fn+0x16d/0x16d
-[  131.191092]  [<ffffffff81399530>] ? gs_change+0x13/0x13
-
-Reported-by: <jrepac@yahoo.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Debian kernel maintainers <debian-kernel@lists.debian.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/1323268258.18450.11.camel@deadeye
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_util.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/panic.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -851,6 +851,17 @@ void iscsit_free_cmd(struct iscsi_cmd *c
- 	case ISCSI_OP_SCSI_TMFUNC:
- 		transport_generic_free_cmd(&cmd->se_cmd, 1);
- 		break;
-+	case ISCSI_OP_REJECT:
-+		/*
-+		 * Handle special case for REJECT when iscsi_add_reject*() has
-+		 * overwritten the original iscsi_opcode assignment, and the
-+		 * associated cmd->se_cmd needs to be released.
-+		 */
-+		if (cmd->se_cmd.se_tfo != NULL) {
-+			transport_generic_free_cmd(&cmd->se_cmd, 1);
-+			break;
-+		}
-+		/* Fall-through */
- 	default:
- 		iscsit_release_cmd(cmd);
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -237,11 +237,12 @@ void add_taint(unsigned flag)
+ 	 * Can't trust the integrity of the kernel anymore.
+ 	 * We don't call directly debug_locks_off() because the issue
+ 	 * is not necessarily serious enough to set oops_in_progress to 1
+-	 * Also we want to keep up lockdep for staging development and
+-	 * post-warning case.
++	 * Also we want to keep up lockdep for staging/out-of-tree
++	 * development and post-warning case.
+ 	 */
+ 	switch (flag) {
+ 	case TAINT_CRAP:
++	case TAINT_OOT_MODULE:
+ 	case TAINT_WARN:
+ 	case TAINT_FIRMWARE_WORKAROUND:
  		break;
 
 
