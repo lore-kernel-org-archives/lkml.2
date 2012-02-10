@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab2BJFxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:53:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44135 "EHLO mx1.redhat.com"
+	id S932449Ab2BJFpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:45:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52284 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932472Ab2BJFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:45:43 -0500
+	id S932110Ab2BJFpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:45:19 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 36/60] jbd2: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:57 +0800
-Message-Id: <1328852421-19678-37-git-send-email-amwang@redhat.com>
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>,
+        ecryptfs@vger.kernel.org
+Subject: [PATCH 29/60] ecryptfs: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:50 +0800
+Message-Id: <1328852421-19678-30-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,93 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- fs/jbd2/commit.c      |    4 ++--
- fs/jbd2/journal.c     |   12 ++++++------
- fs/jbd2/transaction.c |    4 ++--
- 3 files changed, 10 insertions(+), 10 deletions(-)
+ fs/ecryptfs/mmap.c       |    4 ++--
+ fs/ecryptfs/read_write.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 5069b84..c067a8c 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -286,10 +286,10 @@ static __u32 jbd2_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
- 	char *addr;
- 	__u32 checksum;
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index 10ec695..a46b3a8 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -150,7 +150,7 @@ ecryptfs_copy_up_encrypted_with_header(struct page *page,
+ 			/* This is a header extent */
+ 			char *page_virt;
  
--	addr = kmap_atomic(page, KM_USER0);
-+	addr = kmap_atomic(page);
- 	checksum = crc32_be(crc32_sum,
- 		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
--	kunmap_atomic(addr, KM_USER0);
-+	kunmap_atomic(addr);
- 
- 	return checksum;
- }
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index c0a5f9f..5ff8940 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -345,7 +345,7 @@ repeat:
- 		new_offset = offset_in_page(jh2bh(jh_in)->b_data);
- 	}
- 
--	mapped_data = kmap_atomic(new_page, KM_USER0);
-+	mapped_data = kmap_atomic(new_page);
- 	/*
- 	 * Fire data frozen trigger if data already wasn't frozen.  Do this
- 	 * before checking for escaping, as the trigger may modify the magic
-@@ -364,7 +364,7 @@ repeat:
- 		need_copy_out = 1;
- 		do_escape = 1;
- 	}
--	kunmap_atomic(mapped_data, KM_USER0);
-+	kunmap_atomic(mapped_data);
- 
- 	/*
- 	 * Do we need to do a data copy?
-@@ -385,9 +385,9 @@ repeat:
+-			page_virt = kmap_atomic(page, KM_USER0);
++			page_virt = kmap_atomic(page);
+ 			memset(page_virt, 0, PAGE_CACHE_SIZE);
+ 			/* TODO: Support more than one header extent */
+ 			if (view_extent_num == 0) {
+@@ -163,7 +163,7 @@ ecryptfs_copy_up_encrypted_with_header(struct page *page,
+ 							       crypt_stat,
+ 							       &written);
+ 			}
+-			kunmap_atomic(page_virt, KM_USER0);
++			kunmap_atomic(page_virt);
+ 			flush_dcache_page(page);
+ 			if (rc) {
+ 				printk(KERN_ERR "%s: Error reading xattr "
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index 5c0106f..b2a34a1 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -156,7 +156,7 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char *data, loff_t offset,
+ 			       ecryptfs_page_idx, rc);
+ 			goto out;
  		}
- 
- 		jh_in->b_frozen_data = tmp;
--		mapped_data = kmap_atomic(new_page, KM_USER0);
-+		mapped_data = kmap_atomic(new_page);
- 		memcpy(tmp, mapped_data + new_offset, jh2bh(jh_in)->b_size);
--		kunmap_atomic(mapped_data, KM_USER0);
-+		kunmap_atomic(mapped_data);
- 
- 		new_page = virt_to_page(tmp);
- 		new_offset = offset_in_page(tmp);
-@@ -406,9 +406,9 @@ repeat:
- 	 * copying, we can finally do so.
- 	 */
- 	if (do_escape) {
--		mapped_data = kmap_atomic(new_page, KM_USER0);
-+		mapped_data = kmap_atomic(new_page);
- 		*((unsigned int *)(mapped_data + new_offset)) = 0;
--		kunmap_atomic(mapped_data, KM_USER0);
-+		kunmap_atomic(mapped_data);
- 	}
- 
- 	set_bh_page(new_bh, new_page, new_offset);
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 35ae096..e5aba56 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -783,12 +783,12 @@ done:
- 			    "Possible IO failure.\n");
- 		page = jh2bh(jh)->b_page;
- 		offset = offset_in_page(jh2bh(jh)->b_data);
--		source = kmap_atomic(page, KM_USER0);
-+		source = kmap_atomic(page);
- 		/* Fire data frozen trigger just before we copy the data */
- 		jbd2_buffer_frozen_trigger(jh, source + offset,
- 					   jh->b_triggers);
- 		memcpy(jh->b_frozen_data, source+offset, jh2bh(jh)->b_size);
--		kunmap_atomic(source, KM_USER0);
-+		kunmap_atomic(source);
+-		ecryptfs_page_virt = kmap_atomic(ecryptfs_page, KM_USER0);
++		ecryptfs_page_virt = kmap_atomic(ecryptfs_page);
  
  		/*
- 		 * Now that the frozen data is saved off, we need to store
+ 		 * pos: where we're now writing, offset: where the request was
+@@ -179,7 +179,7 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char *data, loff_t offset,
+ 			       (data + data_offset), num_bytes);
+ 			data_offset += num_bytes;
+ 		}
+-		kunmap_atomic(ecryptfs_page_virt, KM_USER0);
++		kunmap_atomic(ecryptfs_page_virt);
+ 		flush_dcache_page(ecryptfs_page);
+ 		SetPageUptodate(ecryptfs_page);
+ 		unlock_page(ecryptfs_page);
 -- 
 1.7.7.6
 
