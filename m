@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab2BJXC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:02:26 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42369 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760678Ab2BJWoZ (ORCPT
+	id S932925Ab2BJWoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 17:44:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35084 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932904Ab2BJWoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:44:25 -0500
+	Fri, 10 Feb 2012 17:44:15 -0500
 MIME-Version: 1.0
-Message-Id: <20120210223442.065291973@clark.kroah.org>
+Message-Id: <20120210223441.826892740@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:33:24 -0800
+Date: Fri, 10 Feb 2012 14:33:21 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [patch 20/55] drm/radeon: Set DESKTOP_HEIGHT register to the framebuffer (not mode) height.
+        alan@lxorguk.ukuu.org.uk, Nikolaus Voss <n.voss@weinmann.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [patch 17/55] at_hdmac: bugfix for enabling channel irq
 In-Reply-To: <20120210223500.GA24178@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,49 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+From: Nikolaus Voss <n.voss@weinmann.de>
 
-commit 1b61925061660009f5b8047f93c5297e04541273 upstream.
+commit bda3a47c886664e86ee14eb79e9072b9e341f575 upstream.
 
-The value of this register is transferred to the V_COUNTER register at the
-beginning of vertical blank. V_COUNTER is the reference for VLINE waits and
-goes from VIEWPORT_Y_START to VIEWPORT_Y_START+VIEWPORT_HEIGHT during scanout,
-so if VIEWPORT_Y_START is not 0, V_COUNTER actually went backwards at the
-beginning of vertical blank, and VLINE waits excluding the whole scanout area
-could never finish (possibly only if VIEWPORT_Y_START is larger than the length
-of vertical blank in scanlines). Setting DESKTOP_HEIGHT to the framebuffer
-height should prevent this for any kind of VLINE wait.
+commit 463894705e4089d0ff69e7d877312d496ac70e5b deleted redundant
+chan_id and chancnt initialization in dma drivers as this is done
+in dma_async_device_register().
 
-Fixes https://bugs.freedesktop.org/show_bug.cgi?id=45329 .
+However, atc_enable_irq() relied on chan_id set before registering
+the device, what left only channel 0 functional for this driver.
 
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This patch introduces atc_enable/disable_chan_irq() as a variant
+of atc_enable/disable_irq() with the channel as explicit argument.
+
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/at_hdmac.c      |    4 ++--
+ drivers/dma/at_hdmac_regs.h |   17 ++++++++---------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1173,7 +1173,7 @@ static int dce4_crtc_do_set_base(struct
- 	WREG32(EVERGREEN_GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1279,7 +1279,7 @@ static int __init at_dma_probe(struct pl
  
- 	WREG32(EVERGREEN_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
--	       crtc->mode.vdisplay);
-+	       target_fb->height);
- 	x &= ~3;
- 	y &= ~1;
- 	WREG32(EVERGREEN_VIEWPORT_START + radeon_crtc->crtc_offset,
-@@ -1342,7 +1342,7 @@ static int avivo_crtc_do_set_base(struct
- 	WREG32(AVIVO_D1GRPH_ENABLE + radeon_crtc->crtc_offset, 1);
+ 		tasklet_init(&atchan->tasklet, atc_tasklet,
+ 				(unsigned long)atchan);
+-		atc_enable_irq(atchan);
++		atc_enable_chan_irq(atdma, i);
+ 	}
  
- 	WREG32(AVIVO_D1MODE_DESKTOP_HEIGHT + radeon_crtc->crtc_offset,
--	       crtc->mode.vdisplay);
-+	       target_fb->height);
- 	x &= ~3;
- 	y &= ~1;
- 	WREG32(AVIVO_D1MODE_VIEWPORT_START + radeon_crtc->crtc_offset,
+ 	/* set base routines */
+@@ -1348,7 +1348,7 @@ static int __exit at_dma_remove(struct p
+ 		struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 
+ 		/* Disable interrupts */
+-		atc_disable_irq(atchan);
++		atc_disable_chan_irq(atdma, chan->chan_id);
+ 		tasklet_disable(&atchan->tasklet);
+ 
+ 		tasklet_kill(&atchan->tasklet);
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -319,28 +319,27 @@ static void atc_dump_lli(struct at_dma_c
+ }
+ 
+ 
+-static void atc_setup_irq(struct at_dma_chan *atchan, int on)
++static void atc_setup_irq(struct at_dma *atdma, int chan_id, int on)
+ {
+-	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
+-	u32		ebci;
++	u32 ebci;
+ 
+ 	/* enable interrupts on buffer transfer completion & error */
+-	ebci =    AT_DMA_BTC(atchan->chan_common.chan_id)
+-		| AT_DMA_ERR(atchan->chan_common.chan_id);
++	ebci =    AT_DMA_BTC(chan_id)
++		| AT_DMA_ERR(chan_id);
+ 	if (on)
+ 		dma_writel(atdma, EBCIER, ebci);
+ 	else
+ 		dma_writel(atdma, EBCIDR, ebci);
+ }
+ 
+-static inline void atc_enable_irq(struct at_dma_chan *atchan)
++static void atc_enable_chan_irq(struct at_dma *atdma, int chan_id)
+ {
+-	atc_setup_irq(atchan, 1);
++	atc_setup_irq(atdma, chan_id, 1);
+ }
+ 
+-static inline void atc_disable_irq(struct at_dma_chan *atchan)
++static void atc_disable_chan_irq(struct at_dma *atdma, int chan_id)
+ {
+-	atc_setup_irq(atchan, 0);
++	atc_setup_irq(atdma, chan_id, 0);
+ }
+ 
+ 
 
 
