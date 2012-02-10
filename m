@@ -1,91 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760149Ab2BJUN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:13:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39826 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760043Ab2BJUNY convert rfc822-to-8bit (ORCPT
+	id S1760127Ab2BJUQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:16:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59294 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758575Ab2BJUQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:13:24 -0500
+	Fri, 10 Feb 2012 15:16:12 -0500
+Date: Fri, 10 Feb 2012 14:16:06 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>,
+        ecryptfs@vger.kernel.org
+Subject: Re: [PATCH 29/60] ecryptfs: remove the second argument of
+ k[un]map_atomic()
+Message-ID: <20120210201605.GC15606@boyd>
+References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
+ <1328852421-19678-30-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [89.138.49.59]
-In-Reply-To: <1328899148.25989.38.camel@laptop>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327591185.2446.102.camel@twins>
-	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
-	<20120201170443.GE6731@somewhere.redhat.com>
-	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
-	<4F2AAEB9.9070302@tilera.com>
-	<CAOtvUMfE3xpwmRKnFPTsstr3SuUG7SnpWn5eomEQzkap4_nfrg@mail.gmail.com>
-	<1328899148.25989.38.camel@laptop>
-Date: Fri, 10 Feb 2012 22:13:23 +0200
-Message-ID: <CAOtvUMfZ-sfTd-WTV=+RcerTk6ejC2mmjrMGg8KkdMR=RaV+CA@mail.gmail.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="sHrvAb52M6C8blB9"
+Content-Disposition: inline
+In-Reply-To: <1328852421-19678-30-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 8:39 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Sun, 2012-02-05 at 13:46 +0200, Gilad Ben-Yossef wrote:
->> > /*
->> >  * Cause all memory mappings to be populated in the page table.
->> >  * Specifying this when entering dataplane mode ensures that no future
->> >  * page fault events will occur to cause interrupts into the Linux
->> >  * kernel, as long as no new mappings are installed by mmap(), etc.
->> >  * Note that since the hardware TLB is of finite size, there will
->> >  * still be the potential for TLB misses that the hypervisor handles,
->> >  * either via its software TLB cache (fast path) or by walking the
->> >  * kernel page tables (slow path), so touching large amounts of memory
->> >  * will still incur hypervisor interrupt overhead.
->> >  */
->> > #define DP_POPULATE     0x8
->>
->> hmm... I've probably missed something, but doesn't this replicate
->> mlockall (MCL_CURRENT|MCL_FUTURE) ?
->
-> Never use mlockall() its a sign you're doing it wrong, also his comment
-> seems to imply MCL_FUTURE isn't required.
->
 
+--sHrvAb52M6C8blB9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My current understanding is that if I have a real time task and wish it
-have a deterministic performance time, you should call mlockall() to lock
-the program data and text into physical memory so that  a  less often taken
-branch or access to a new data region will not result in a page fault.
+On 2012-02-10 13:39:50, Cong Wang wrote:
+> Signed-off-by: Cong Wang <amwang@redhat.com>
 
-You still have to worry about TLB misses on non hardware page table
-walk architecture, but at least everything is in the  page tables
+Thanks - Looks good to me.
 
-If there is a better way to do this? I'm always happy to learn new
-ways to do things. :-)
+I'm not sure if you want me to pick this up or if you want to continue
+to keep track of the entire pile of patches. Either way, I went ahead
+and pushed it to
+git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git#next
 
+Tyler
 
-Thanks,
-Gilad
+> ---
+>  fs/ecryptfs/mmap.c       |    4 ++--
+>  fs/ecryptfs/read_write.c |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+> index 10ec695..a46b3a8 100644
+> --- a/fs/ecryptfs/mmap.c
+> +++ b/fs/ecryptfs/mmap.c
+> @@ -150,7 +150,7 @@ ecryptfs_copy_up_encrypted_with_header(struct page *p=
+age,
+>  			/* This is a header extent */
+>  			char *page_virt;
+> =20
+> -			page_virt =3D kmap_atomic(page, KM_USER0);
+> +			page_virt =3D kmap_atomic(page);
+>  			memset(page_virt, 0, PAGE_CACHE_SIZE);
+>  			/* TODO: Support more than one header extent */
+>  			if (view_extent_num =3D=3D 0) {
+> @@ -163,7 +163,7 @@ ecryptfs_copy_up_encrypted_with_header(struct page *p=
+age,
+>  							       crypt_stat,
+>  							       &written);
+>  			}
+> -			kunmap_atomic(page_virt, KM_USER0);
+> +			kunmap_atomic(page_virt);
+>  			flush_dcache_page(page);
+>  			if (rc) {
+>  				printk(KERN_ERR "%s: Error reading xattr "
+> diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+> index 5c0106f..b2a34a1 100644
+> --- a/fs/ecryptfs/read_write.c
+> +++ b/fs/ecryptfs/read_write.c
+> @@ -156,7 +156,7 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char=
+ *data, loff_t offset,
+>  			       ecryptfs_page_idx, rc);
+>  			goto out;
+>  		}
+> -		ecryptfs_page_virt =3D kmap_atomic(ecryptfs_page, KM_USER0);
+> +		ecryptfs_page_virt =3D kmap_atomic(ecryptfs_page);
+> =20
+>  		/*
+>  		 * pos: where we're now writing, offset: where the request was
+> @@ -179,7 +179,7 @@ int ecryptfs_write(struct inode *ecryptfs_inode, char=
+ *data, loff_t offset,
+>  			       (data + data_offset), num_bytes);
+>  			data_offset +=3D num_bytes;
+>  		}
+> -		kunmap_atomic(ecryptfs_page_virt, KM_USER0);
+> +		kunmap_atomic(ecryptfs_page_virt);
+>  		flush_dcache_page(ecryptfs_page);
+>  		SetPageUptodate(ecryptfs_page);
+>  		unlock_page(ecryptfs_page);
+> --=20
+> 1.7.7.6
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe ecryptfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+--sHrvAb52M6C8blB9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJPNXsFAAoJENaSAD2qAscK23UP/1dn27t6G6VNBhJORlDCEmRD
+mG7rO4BGLMHS76Hukg5cwmhOUb1BVrxfZL5/8aJ8eDqiVpPMtlsxxZ1LKtHPU9V6
+BxD65oVwoTMV8mI1PZpbne8lRZPXi31IENUi50Po/UzLfqqiSJh2fuo1p+me3+zV
+q82ZCfdgW1xvvieCglbeY4i7IZdnn7fWPBqUPbbs0MtBhYER4zpRRM0wgNr6J/mE
+2+mdLYzjczRTRiCsMpT3eze7TPqYC2UcsT/WW3UxFN96ej9XF67YAFcEZ6NvXGpc
+em6ocnGKQKmkStUi6gjsb/uG0axBdPOaQqg57BB7zL8oBkdTqgWYjbQ5YIb17pWl
+X1Th5cyor9WfLgpEO09jUHXeRLxLcXLfRLA+19o4qh4yNxOrPH/SUNbaLecgeD13
+CMtnQL7Ko2YhkNfWpLHMbql0hVrKFXqpYF6dnQMK2r2pUWLsiMCm7kfnxsM8Rb/b
+v1lJyA0hAtleozwPKc93p9Z5eRLZoknFn11/xQJqtAFjkvXrDnn2xUjtqTgwJZcM
+zfZbrOLLWApmf0D5jl1f5u+Aj70hFAKz44foQuYe1VvFxd8pFkUB+qnSmjOnHBkn
+zYLOgVpyBUExm8Kh6+xXHQdzChI2hgguMFmksySlq62eajjNHOWKw0RwgMFaLdhn
+6zP/Csug8aj77EEHWnQ7
+=qw8c
+-----END PGP SIGNATURE-----
+
+--sHrvAb52M6C8blB9--
