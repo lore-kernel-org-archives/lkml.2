@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab2BJXFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:05:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45193 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632Ab2BJWnm (ORCPT
+	id S932874Ab2BJXFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 18:05:37 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab2BJWnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 17:43:42 -0500
+	Fri, 10 Feb 2012 17:43:37 -0500
 MIME-Version: 1.0
-Message-Id: <20120210222950.899105629@clark.kroah.org>
+Message-Id: <20120210222950.729037851@clark.kroah.org>
 User-Agent: quilt/0.51-15.1
-Date: Fri, 10 Feb 2012 14:30:25 -0800
+Date: Fri, 10 Feb 2012 14:30:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [patch 66/86] mm: fix UP THP spin_is_locked BUGs
+        alan@lxorguk.ukuu.org.uk, David Brown <davidb@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [patch 64/86] iommu/msm: Fix error handling in msm_iommu_unmap()
 In-Reply-To: <20120210223514.GA24190@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit b9980cdcf2524c5fe15d8cbae9c97b3ed6385563 upstream.
+commit 05df1f3c2afaef5672627f2b7095f0d4c4dbc3a0 upstream.
 
-Fix CONFIG_TRANSPARENT_HUGEPAGE=y CONFIG_SMP=n CONFIG_DEBUG_VM=y
-CONFIG_DEBUG_SPINLOCK=n kernel: spin_is_locked() is then always false,
-and so triggers some BUGs in Transparent HugePage codepaths.
+Error handling in msm_iommu_unmap() is broken. On some error
+conditions retval is set to a non-zero value which causes
+the function to return 'len' at the end. This hides the
+error from the user. Zero should be returned in those error
+cases.
 
-asm-generic/bug.h mentions this problem, and provides a WARN_ON_SMP(x);
-but being too lazy to add VM_BUG_ON_SMP, BUG_ON_SMP, WARN_ON_SMP_ONCE,
-VM_WARN_ON_SMP_ONCE, just test NR_CPUS != 1 in the existing VM_BUG_ONs.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Acked-by: David Brown <davidb@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    4 ++--
- mm/swap.c        |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/iommu/msm_iommu.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2064,7 +2064,7 @@ static void collect_mm_slot(struct mm_sl
- {
- 	struct mm_struct *mm = mm_slot->mm;
+--- a/drivers/iommu/msm_iommu.c
++++ b/drivers/iommu/msm_iommu.c
+@@ -481,23 +481,19 @@ static int msm_iommu_unmap(struct iommu_
  
--	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
+ 	priv = domain->priv;
  
- 	if (khugepaged_test_exit(mm)) {
- 		/* free mm_slot */
-@@ -2094,7 +2094,7 @@ static unsigned int khugepaged_scan_mm_s
- 	int progress = 0;
+-	if (!priv) {
+-		ret = -ENODEV;
++	if (!priv)
+ 		goto fail;
+-	}
  
- 	VM_BUG_ON(!pages);
--	VM_BUG_ON(!spin_is_locked(&khugepaged_mm_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
+ 	fl_table = priv->pgtable;
  
- 	if (khugepaged_scan.mm_slot)
- 		mm_slot = khugepaged_scan.mm_slot;
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -667,7 +667,7 @@ void lru_add_page_tail(struct zone* zone
- 	VM_BUG_ON(!PageHead(page));
- 	VM_BUG_ON(PageCompound(page_tail));
- 	VM_BUG_ON(PageLRU(page_tail));
--	VM_BUG_ON(!spin_is_locked(&zone->lru_lock));
-+	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&zone->lru_lock));
+ 	if (len != SZ_16M && len != SZ_1M &&
+ 	    len != SZ_64K && len != SZ_4K) {
+ 		pr_debug("Bad length: %d\n", len);
+-		ret = -EINVAL;
+ 		goto fail;
+ 	}
  
- 	SetPageLRU(page_tail);
+ 	if (!fl_table) {
+ 		pr_debug("Null page table\n");
+-		ret = -EINVAL;
+ 		goto fail;
+ 	}
+ 
+@@ -506,7 +502,6 @@ static int msm_iommu_unmap(struct iommu_
+ 
+ 	if (*fl_pte == 0) {
+ 		pr_debug("First level PTE is 0\n");
+-		ret = -ENODEV;
+ 		goto fail;
+ 	}
  
 
 
