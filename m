@@ -1,86 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758412Ab2BJGfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 01:35:36 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:51478 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2BJGff (ORCPT
+	id S1758298Ab2BJGkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 01:40:33 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:21835 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab2BJGkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 01:35:35 -0500
-Message-ID: <20276.47790.447816.701234@ipc1.ka-ro>
-Date: Fri, 10 Feb 2012 07:35:26 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] pinctrl: changes hog mechanism to be self-referential
-In-Reply-To: <1328834868-25030-1-git-send-email-linus.walleij@linaro.org>
-References: <1328834868-25030-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
+	Fri, 10 Feb 2012 01:40:31 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-bd-4f34bbdda236
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
+Subject: [PATCH v5 0/5] Introduce External Connector Class (extcon)
+Date: Fri, 10 Feb 2012 15:40:33 +0900
+Message-id: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij writes:
-> Instead of a specific boolean field to indicate if a map entry shall
-> be hogged, treat self-reference as an indication of desired hogging.
-> This drops one field off the map struct and has a nice Douglas R.
-> Hofstadter-feel to it.
-> 
-> Suggested-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  Documentation/pinctrl.txt       |    8 ++++----
->  drivers/pinctrl/core.c          |    6 ++----
->  include/linux/pinctrl/machine.h |   18 ++++++------------
->  3 files changed, 12 insertions(+), 20 deletions(-)
-> 
-> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-> index 2e71323..acb9078 100644
-> --- a/Documentation/pinctrl.txt
-> +++ b/Documentation/pinctrl.txt
-> @@ -989,21 +989,21 @@ is registered. This means that the core will attempt to call pinctrl_get() and
->  pinctrl_enable() on it immediately after the pin control device has been
->  registered.
->  
-> -This is enabled by simply setting the .hog_on_boot field in the map to true,
-> -like this:
-> +This is enabled by simply setting the .dev_name field in the map to the name
-> +of the pin controller itself, like this:
->  
->  {
->  	.name = "POWERMAP"
->  	.ctrl_dev_name = "pinctrl-foo",
->  	.function = "power_func",
-> -	.hog_on_boot = true,
-> +	.dev_name = "pinctrl-foo",
->  },
->  
->  Since it may be common to request the core to hog a few always-applicable
->  mux settings on the primary pin controller, there is a convenience macro for
->  this:
->  
-> -PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "power_func")
-> +PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "pinctrl-foo". "power_func")
-                                                    ^
-Shouldn't this be a comma rather than a period?
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-Lothar Waßmann
+An example is a 4-pin (or more pins?) analog audio connector
+(usually referred as "3.5-pi" jacks). It can be implemented with the 5/5
+patch, "adc-jack", supplied with information about IRQ, a method to get
+ADC values, and ADC value ranges. With a 4-pin 3.5-pi port and adc-jack
+driver with proper ADC configurations, the following modes may be
+detected: "standard mono cable", "standard stereo cable",
+"standard stereo + remote cable", "standard stereo + mic + remote cable",
+"standard stereo + different-spec mic + remote cable", and such.
+Note that for 4-pin cables with mic and remote, there are multiple
+standards (at least Samsung and Apple use different configurations for
+those 4-pin earphones although the pins looks exactly same.)
+and they often can be distinguished with ADC values.
+
+Although we may have simply given different "cable id" for "stereo" and
+"stereo + mic". However, for those userspace processes or other device
+drivers that are interested only in "stereo" part of possible combinations,
+having seperated mode/id for "stereo" and "mic" is more desirable.
+For example, if we do not have multistate capabilities, those who want
+to know "stereo" is attached or not should monitor everything:
+"standard stereo cable", "standard stereo + remove cable",
+"standard stereo + mic + remote cable", and others. However, with
+multistate capabilities, they only need to monitor the bit associated
+with "standard stero".
+
+For another example, when MAX8997-MUIC detects a Charger cable insertion,
+another device driver (such as MAX8903 charger, MAX8997 charger, Charger
+Manager, or board file) needs to set charger current limit accordingly
+and when MAX8997-MUIC detects a HDMI cable insertion, multimedia device
+drivers need to do some operations accordingly.
+
+
+This patchset supports the usage of notifier for passing such information
+between device drivers.
+
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
+
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
+
+Summary of changes from v4 patchset
+- Bugfixes after testing at Exynos4412 boards with userspace processes
+- Added adc-jack to support 3.5-pi jack and other ADC-based cable detection
+ports.
+
+Summary of changes from v3 patchset
+- Bugfixes after testing at Exynos4412 boards.
+
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
+
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
+
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
+
+MyungJoo Ham (4):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
+  Extcon: adc-jack driver to support 3.5 pi or simliar devices
+
+ Documentation/ABI/testing/sysfs-class-extcon |   75 +++
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/extcon/Kconfig                       |   27 +
+ drivers/extcon/Makefile                      |    7 +
+ drivers/extcon/adc_jack.c                    |  188 ++++++++
+ drivers/extcon/extcon_class.c                |  652 ++++++++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                 |  173 +++++++
+ include/linux/extcon.h                       |  307 ++++++++++++
+ include/linux/extcon/adc_jack.h              |  107 +++++
+ 10 files changed, 1539 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/adc_jack.c
+ create mode 100644 drivers/extcon/extcon_class.c
+ create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
+ create mode 100644 include/linux/extcon/adc_jack.h
+
 -- 
-___________________________________________________________
+1.7.4.1
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
