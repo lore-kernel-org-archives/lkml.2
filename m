@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab2BJUjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 15:39:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42912 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab2BJUjE convert rfc822-to-8bit (ORCPT
+	id S932530Ab2BJUjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 15:39:33 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:45444 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932420Ab2BJUjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 15:39:04 -0500
-MIME-Version: 1.0
-X-Originating-IP: [89.138.49.59]
-In-Reply-To: <1328905759.25989.57.camel@laptop>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327591185.2446.102.camel@twins>
-	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
-	<20120201170443.GE6731@somewhere.redhat.com>
-	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
-	<4F2AAEB9.9070302@tilera.com>
-	<CAOtvUMfE3xpwmRKnFPTsstr3SuUG7SnpWn5eomEQzkap4_nfrg@mail.gmail.com>
-	<1328899148.25989.38.camel@laptop>
-	<CAOtvUMfZ-sfTd-WTV=+RcerTk6ejC2mmjrMGg8KkdMR=RaV+CA@mail.gmail.com>
-	<1328905759.25989.57.camel@laptop>
-Date: Fri, 10 Feb 2012 22:39:02 +0200
-Message-ID: <CAOtvUMeaL8-9wYYrC-05P95ZcYHnV5as0bjjv9gJSHKN+EFz0w@mail.gmail.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Feb 2012 15:39:31 -0500
+Date: Fri, 10 Feb 2012 12:39:29 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] PCI: Fix /sys warning when sriov enabled card is
+ hot removed
+Message-ID: <20120210123929.61fe8ac4@jbarnes-desktop>
+In-Reply-To: <1328424908-6385-3-git-send-email-yinghai@kernel.org>
+References: <1328424908-6385-1-git-send-email-yinghai@kernel.org>
+	<1328424908-6385-3-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/6IQlFvg_EPB2Iirxyle1AOW"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 10:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2012-02-10 at 22:13 +0200, Gilad Ben-Yossef wrote:
->> My current understanding is that if I have a real time task and wish it
->> have a deterministic performance time, you should call mlockall() to lock
->> the program data and text into physical memory so that  a  less often taken
->> branch or access to a new data region will not result in a page fault.
->>
->> You still have to worry about TLB misses on non hardware page table
->> walk architecture, but at least everything is in the  page tables
->>
->> If there is a better way to do this? I'm always happy to learn new
->> ways to do things. :-)
->
-> A rt application usually consists of a lot of non-rt parts and a usually
-> relatively small rt part. Using mlockall() pins the entire application
-> into memory, which while on the safe side is very often entirely too
-> much.
->
-> The alternative method is to only mlock the text and data used by the rt
-> part. You need to be aware of what text runs in your rt part anyway,
-> since you need to make sure it is in fact deterministic code.
->
-> One of the ways of achieving this is using a special linker section for
-> your vetted rt code and mlock()'ing only that text section.
->
-> On thread creation, provide a custom allocated (and mlock()'ed) stack
-> etc..
->
-> Basically, if you can't tell a-priory what code is part of your rt part,
-> you don't have an rt part ;-)
->
+--Sig_/6IQlFvg_EPB2Iirxyle1AOW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That I can totally agree with.
+On Sat,  4 Feb 2012 22:55:01 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-I guess mlockall() is still useful as a kind of hack for lazy people,
-although if you say that this kind of laziness does not really mix
-well with real
-time programming I will tend to agree... :-)
+> During recent strick checking about sysfs_remove from Eric.
+> it will spit more bitter warning.
+>=20
+> For SRIOV hotplug, we are calling pci_stop_dev() for VF at first.
+> (after we update pci_stop_bus_devices).
+>=20
+> that pci_stop_dev will calling device_unregiste for that VF, so that dire=
+ctory
+> in VF is removed already.
+>=20
+> We double checking if that VF dir in /sys is there, before try removing t=
+hat
+>  physfn link.
+>=20
+> Signed-of-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/iov.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index 0321fa3..dfc7d65 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -173,7 +173,12 @@ static void virtfn_remove(struct pci_dev *dev, int i=
+d, int reset)
+> =20
+>  	sprintf(buf, "virtfn%u", id);
+>  	sysfs_remove_link(&dev->dev.kobj, buf);
+> -	sysfs_remove_link(&virtfn->dev.kobj, "physfn");
+> +	/*
+> +	 * pci_stop_dev() could be called for this virtfn before already
+> +	 *  so directory for the virtfn is removed before.
+> +	 */
+> +	if (virtfn->dev.kobj.sd)
+> +		sysfs_remove_link(&virtfn->dev.kobj, "physfn");
+> =20
+>  	mutex_lock(&iov->dev->sriov->lock);
+>  	pci_remove_bus_device(virtfn);
 
-Gilad
+Cleaned up the commit & comment text a bit and put into -next.  Please
+check it out.
 
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/6IQlFvg_EPB2Iirxyle1AOW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+iQIcBAEBAgAGBQJPNYCBAAoJEIEoDkX4Qk9hkJEP/Ax4RE0IWNSTZ23/ZsBxgR/1
+7piNYIHKx9bzCCveWYdlA685CeK6VRArFrdHm31NKAf+3vPmXCW5tcGI2gqk18RH
+ERNKbhgWnzWA59d5QgC3kM0D563IKedk+7v/68FHlDDOva8C+ppsv6ZHV7DPqgmq
+MsY9zeHhWgW9OsRHoJVjRo0BtAoks4HPB5+8qlLbfjg6HHfoXYQx+x9C97Qxh67C
+w5orVnNze0EyGZZ87UChO/ac9N1YVwTbd9mpV86iSfqh4Xr/GepRPLET9p+k8wTb
+AQuuC5DBipM17rm3d4RhE8sMmscTSj63hmchEh7nFOz9G7nZPtP7yJhbEG34C2z2
+wpQVuTl3OFSv4OrtaWkWSotyg9ZWJsHnxdDGc7lLsnvPiKhZXifjgAlygB34a3Ch
+aUheugeOA4G1BUsCnrzlOXwDY3g0EQGvBnTkYBz7rpfkEMLrKh4uTp1ZptnNPqmV
+R91MyOhUxJUOgPsYg6qjzD8E7nxszEZZsbJdHm3cJ3Yfce2QhiV4R012Rn/rTE5y
+7C7u/PGkLlTdLj8EajjCgy5ltu9F1WEseOmN9Kvyipebus/SpiDetQE5m6aO+VCV
+UbDE79E8BkdDsNXHrimSuVBdk752GesE+TWMOsso7wfyt3dx3l4UlyzbbXqe0bDi
+cEBqy37I4dvE58Ok8KiN
+=EE5E
+-----END PGP SIGNATURE-----
+
+--Sig_/6IQlFvg_EPB2Iirxyle1AOW--
