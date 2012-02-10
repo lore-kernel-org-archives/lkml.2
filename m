@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab2BJOSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 09:18:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59079 "EHLO mx1.redhat.com"
+	id S1759282Ab2BJOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 09:20:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32306 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205Ab2BJOSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 09:18:02 -0500
-Message-ID: <4F35270F.1020402@redhat.com>
-Date: Fri, 10 Feb 2012 12:17:51 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757235Ab2BJOU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 09:20:28 -0500
+Date: Fri, 10 Feb 2012 12:20:15 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Sorin Dumitru <dumitru.sorin87@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, mingo@elte.hu
+Subject: Re: [PATCH] perf: add sanity check on addr in
+	symbol__inc_addr_samples()
+Message-ID: <20120210142015.GC4998@infradead.org>
+References: <20120209103016.GA1999@quad> <20120209144844.GA4998@infradead.org> <CABPqkBRdbn+UasvWgVco-NZ_LasFeG+7bLzTDVcQO-e6J+AW-Q@mail.gmail.com> <CAB6DaTONEDguW5ivSfSD+vUsKw+6--Z9H2V_LTBYaf_Qf_Jajg@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 01/31] events/hw_event: Create a Hardware Events Report
- Mecanism (HERM)
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com> <1328832090-9166-2-git-send-email-mchehab@redhat.com> <20120210134115.GC16783@aftab>
-In-Reply-To: <20120210134115.GC16783@aftab>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAB6DaTONEDguW5ivSfSD+vUsKw+6--Z9H2V_LTBYaf_Qf_Jajg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 10-02-2012 11:41, Borislav Petkov escreveu:
-> On Thu, Feb 09, 2012 at 10:01:00PM -0200, Mauro Carvalho Chehab wrote:
->> In order to provide a proper hardware event subsystem, let's
->> encapsulate hardware events into a common trace facility, and
->> make both edac and mce drivers to use it. After that, common
->> facilities can be moved into a new core for hardware events
->> reporting subsystem. This patch is the first of a series, and just
->> touches at mce.
-> 
-> I think it would work too if you had only one event:
-> 
-> * trace_hw_error(...)
-> 
-> which would have as an argument a string describing it, like
-> "Uncorrected Memory Read Error", "Memory Read Error (out of range)" "TLB
-> Multimatch Error" etc., followed by the rest of the error info.
-> 
-> Currently, you're introducing at least 5 trace_* calls _only_ for memory
-> errors. What about the remaining couples of tens of errors which haven't
-> been addressed yet?
+Em Thu, Feb 09, 2012 at 05:06:57PM +0200, Sorin Dumitru escreveu:
+> On Thu, Feb 9, 2012 at 4:53 PM, Stephane Eranian <eranian@google.com> wrote:
+> > On Thu, Feb 9, 2012 at 3:48 PM, Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> >> Em Thu, Feb 09, 2012 at 11:30:16AM +0100, Stephane Eranian escreveu:
 
-Good point.
+> >>> Check the value of addr against the bounds of the symbol.
+> >>> This is needed given we compute an offset:
+> >>>       offset = addr - sym->start
 
-The way I see it is that:
+> >>> And we don't want the offset to become negative.
 
-- a non-memory related, non-parsed MCE event would generate a "mce_record" trace
-	(we need an additional patch to disable it when the error is parsed.
-	 I'll address it after finishing the tests with a few other platforms);
+> >> I'll try and add a debug option to show the backtrace and values of
+> >> addr, sym, etc, so that we can fix the real problem.
 
-As more MCE parsers are added at the core, the situations where such event will
-be generated will reduce, and will eventually disappear in long term.
+> >> I.e. this function shouldn't be receiving any such invalid addresses, as
+> >> the symbol lookup was done, the symbol was found to be this one, then
+> >> why it would be out of bounds at this point?!
 
-- a non-x86 event (or a x86 event for a memory controller that is not addressed
-by MCE events) will use a "mc_error";
+> > I tend to agree with you on this. But then I don't see why the first test
+> > was there.
+ 
+> I reported the same problem a couple of weeks ago. From what i can
+> tell the problem is in perf_event__process_sample.
 
-- a x86 event generated via MCE will use a "mc_error_mce".
+> When calling perf_event__process_sample, we set al->sym based on
+> al->address.
 
-There are two special events defined when there's a memory error _and_ a driver
-bug:
+> The symbol in the hist_entry is set to the one from al but in the call
+> to perf_top__record_precise_ip we pass in the address from the event
+> struct which is sometimes different than the one in the al structure.
 
-	"mc_out_of_range_mce" and "mc_out_of_range".
+> When this situation occurs, when calculating the offset in
+> symbol__inc_addr_samples, because addr is not in the symbol
+> [start,end] range, we get a very big value which causes the segfault
+> when we use it to index something. I've sent a patch that works for
+> me, but i don't know if it's the right solution at [1].
+ 
+> [1] https://lkml.org/lkml/2012/1/29/59
 
-While the name of them and one of the parameters are memory-controller specific,
-it should be easy to make it generic enough to be used by other types of errors.
+Sorry for not having followed up on that one, now I'm trying to check if
+it is valid but:
 
-The previous EDAC logic were to generate an out of range printk and return. With
-the changes I made, it is possible to let the EDAC to provide the information
-parsed, just discarding the bad parsed value. That's the approach I took, as the
-other information there may be useful. By taking such approach, the MCE information
-will be shown by the "mc_error_mce" trace. So, we can remove the "mc_out_of_range_mce"
-without loosing any information.
+1. addr_location is set by perf_event__preprocess_sample that will call
+   several routines that will figure out if the DSO symtab is loaded,
+   load it if not, deal with prelinking, etc.
 
-In any case, we can't merge the *_mce with the non-mce variant, as the mce.h header
-is arch specific and doesn't exist on PPC and tilera architectures.
+2. so at the end of this symbol resolution al.addr will point to the
+   result of:
 
-So, the only event that we can actually remove is "mc_out_of_range_mce", if we let
-the core generate two events for badly parsed error events. What do you think?
+	al->map->map_ip(al->map, event->ip.ip)
 
-Regards,
-Mauro
+3. in perf_top__record_precise_ip we'll use:
 
+        he->ms.map->map_ip(he->ms.map, event->ip.ip)
 
+And:
 
-> 
-> Thanks.
-> 
+	he->ms.map == al->map
 
+	So yeah, we can, as a worthwhile simplification, just pass
+al.addr to perf_top__record_precise_ip as in your patch, but then we
+need to remove the call to he->ms.map->map_ip.
+
+	This extra call is harmless for identity mapped DSOs, as it
+boils down to:
+
+u64 identity__map_ip(struct map *map __used, u64 ip)
+{               
+        return ip;
+} 
+
+	But if the DSO uses:
+
+u64 map__map_ip(struct map *map, u64 ip)
+{                    
+        return ip - map->start + map->pgoff;
+} 
+
+	Then we would be mapping the IP possibly to a negative one.
+
+	So we need to revisit the details of your case and the one
+Stephane (or Roberto) experienced, i.e. what kind of DSO? Prelinked?
+etc.
+
+- Arnaldo
