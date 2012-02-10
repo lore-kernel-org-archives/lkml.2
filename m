@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab2BJFps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:45:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12543 "EHLO mx1.redhat.com"
+	id S932525Ab2BJFwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:52:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38804 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932391Ab2BJFpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 00:45:44 -0500
+	id S932459Ab2BJFpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 00:45:50 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andy Grover <agrover@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Kiran Patil <kiran.patil@intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
-Subject: [PATCH 25/60] target: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:39:46 +0800
-Message-Id: <1328852421-19678-26-git-send-email-amwang@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>
+Subject: [PATCH 38/60] minix: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:39:59 +0800
+Message-Id: <1328852421-19678-39-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,70 +20,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/target/target_core_transport.c |    4 ++--
- drivers/target/tcm_fc/tfc_io.c         |   10 ++++------
- 2 files changed, 6 insertions(+), 8 deletions(-)
+ fs/minix/dir.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 58cea07..58c12d7 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2344,7 +2344,7 @@ static void transport_xor_callback(struct se_cmd *cmd)
- 
- 	offset = 0;
- 	for_each_sg(cmd->t_bidi_data_sg, sg, cmd->t_bidi_data_nents, count) {
--		addr = kmap_atomic(sg_page(sg), KM_USER0);
-+		addr = kmap_atomic(sg_page(sg));
- 		if (!addr)
- 			goto out;
- 
-@@ -2352,7 +2352,7 @@ static void transport_xor_callback(struct se_cmd *cmd)
- 			*(addr + sg->offset + i) ^= *(buf + offset + i);
- 
- 		offset += sg->length;
--		kunmap_atomic(addr, KM_USER0);
-+		kunmap_atomic(addr);
+diff --git a/fs/minix/dir.c b/fs/minix/dir.c
+index 085a926..685b2d9 100644
+--- a/fs/minix/dir.c
++++ b/fs/minix/dir.c
+@@ -335,7 +335,7 @@ int minix_make_empty(struct inode *inode, struct inode *dir)
+ 		goto fail;
  	}
  
- out:
-diff --git a/drivers/target/tcm_fc/tfc_io.c b/drivers/target/tcm_fc/tfc_io.c
-index d8cabc2..2b693ee 100644
---- a/drivers/target/tcm_fc/tfc_io.c
-+++ b/drivers/target/tcm_fc/tfc_io.c
-@@ -146,14 +146,13 @@ int ft_queue_data_in(struct se_cmd *se_cmd)
- 					PAGE_SIZE << compound_order(page);
- 		} else {
- 			BUG_ON(!page);
--			from = kmap_atomic(page + (mem_off >> PAGE_SHIFT),
--					   KM_SOFTIRQ0);
-+			from = kmap_atomic(page + (mem_off >> PAGE_SHIFT));
- 			page_addr = from;
- 			from += mem_off & ~PAGE_MASK;
- 			tlen = min(tlen, (size_t)(PAGE_SIZE -
- 						(mem_off & ~PAGE_MASK)));
- 			memcpy(to, from, tlen);
--			kunmap_atomic(page_addr, KM_SOFTIRQ0);
-+			kunmap_atomic(page_addr);
- 			to += tlen;
- 		}
+-	kaddr = kmap_atomic(page, KM_USER0);
++	kaddr = kmap_atomic(page);
+ 	memset(kaddr, 0, PAGE_CACHE_SIZE);
  
-@@ -291,14 +290,13 @@ void ft_recv_write_data(struct ft_cmd *cmd, struct fc_frame *fp)
+ 	if (sbi->s_version == MINIX_V3) {
+@@ -355,7 +355,7 @@ int minix_make_empty(struct inode *inode, struct inode *dir)
+ 		de->inode = dir->i_ino;
+ 		strcpy(de->name, "..");
+ 	}
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
  
- 		tlen = min(mem_len, frame_len);
- 
--		to = kmap_atomic(page + (mem_off >> PAGE_SHIFT),
--				 KM_SOFTIRQ0);
-+		to = kmap_atomic(page + (mem_off >> PAGE_SHIFT));
- 		page_addr = to;
- 		to += mem_off & ~PAGE_MASK;
- 		tlen = min(tlen, (size_t)(PAGE_SIZE -
- 					  (mem_off & ~PAGE_MASK)));
- 		memcpy(to, from, tlen);
--		kunmap_atomic(page_addr, KM_SOFTIRQ0);
-+		kunmap_atomic(page_addr);
- 
- 		from += tlen;
- 		frame_len -= tlen;
+ 	err = dir_commit_chunk(page, 0, 2 * sbi->s_dirsize);
+ fail:
 -- 
 1.7.7.6
 
