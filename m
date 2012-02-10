@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2BJFq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 00:46:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12897 "EHLO mx1.redhat.com"
+	id S932631Ab2BJFqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 00:46:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59912 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932579Ab2BJFqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932577Ab2BJFqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Feb 2012 00:46:15 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Cong Wang <amwang@redhat.com>,
-        reiserfs-devel@vger.kernel.org
-Subject: [PATCH 43/60] reiserfs: remove the second argument of k[un]map_atomic()
-Date: Fri, 10 Feb 2012 13:40:04 +0800
-Message-Id: <1328852421-19678-44-git-send-email-amwang@redhat.com>
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH 42/60] ocfs2: remove the second argument of k[un]map_atomic()
+Date: Fri, 10 Feb 2012 13:40:03 +0800
+Message-Id: <1328852421-19678-43-git-send-email-amwang@redhat.com>
 In-Reply-To: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- fs/reiserfs/stree.c           |    4 ++--
- fs/reiserfs/tail_conversion.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ fs/ocfs2/aops.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
-index 313d39d..77df82f 100644
---- a/fs/reiserfs/stree.c
-+++ b/fs/reiserfs/stree.c
-@@ -1284,12 +1284,12 @@ int reiserfs_delete_item(struct reiserfs_transaction_handle *th,
- 		 ** -clm
- 		 */
- 
--		data = kmap_atomic(un_bh->b_page, KM_USER0);
-+		data = kmap_atomic(un_bh->b_page);
- 		off = ((le_ih_k_offset(&s_ih) - 1) & (PAGE_CACHE_SIZE - 1));
- 		memcpy(data + off,
- 		       B_I_PITEM(PATH_PLAST_BUFFER(path), &s_ih),
- 		       ret_value);
--		kunmap_atomic(data, KM_USER0);
-+		kunmap_atomic(data);
- 	}
- 	/* Perform balancing after all resources have been collected at once. */
- 	do_balance(&s_del_balance, NULL, NULL, M_DELETE);
-diff --git a/fs/reiserfs/tail_conversion.c b/fs/reiserfs/tail_conversion.c
-index d7f6e51..8f546bd 100644
---- a/fs/reiserfs/tail_conversion.c
-+++ b/fs/reiserfs/tail_conversion.c
-@@ -128,9 +128,9 @@ int direct2indirect(struct reiserfs_transaction_handle *th, struct inode *inode,
- 	if (up_to_date_bh) {
- 		unsigned pgoff =
- 		    (tail_offset + total_tail - 1) & (PAGE_CACHE_SIZE - 1);
--		char *kaddr = kmap_atomic(up_to_date_bh->b_page, KM_USER0);
-+		char *kaddr = kmap_atomic(up_to_date_bh->b_page);
- 		memset(kaddr + pgoff, 0, blk_size - total_tail);
--		kunmap_atomic(kaddr, KM_USER0);
-+		kunmap_atomic(kaddr);
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 78b68af..6577432 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -102,7 +102,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
+ 		 * copy, the data is still good. */
+ 		if (buffer_jbd(buffer_cache_bh)
+ 		    && ocfs2_inode_is_new(inode)) {
+-			kaddr = kmap_atomic(bh_result->b_page, KM_USER0);
++			kaddr = kmap_atomic(bh_result->b_page);
+ 			if (!kaddr) {
+ 				mlog(ML_ERROR, "couldn't kmap!\n");
+ 				goto bail;
+@@ -110,7 +110,7 @@ static int ocfs2_symlink_get_block(struct inode *inode, sector_t iblock,
+ 			memcpy(kaddr + (bh_result->b_size * iblock),
+ 			       buffer_cache_bh->b_data,
+ 			       bh_result->b_size);
+-			kunmap_atomic(kaddr, KM_USER0);
++			kunmap_atomic(kaddr);
+ 			set_buffer_uptodate(bh_result);
+ 		}
+ 		brelse(buffer_cache_bh);
+@@ -236,13 +236,13 @@ int ocfs2_read_inline_data(struct inode *inode, struct page *page,
+ 		return -EROFS;
  	}
  
- 	REISERFS_I(inode)->i_first_direct_byte = U32_MAX;
+-	kaddr = kmap_atomic(page, KM_USER0);
++	kaddr = kmap_atomic(page);
+ 	if (size)
+ 		memcpy(kaddr, di->id2.i_data.id_data, size);
+ 	/* Clear the remaining part of the page */
+ 	memset(kaddr + size, 0, PAGE_CACHE_SIZE - size);
+ 	flush_dcache_page(page);
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
+ 
+ 	SetPageUptodate(page);
+ 
+@@ -689,7 +689,7 @@ static void ocfs2_clear_page_regions(struct page *page,
+ 
+ 	ocfs2_figure_cluster_boundaries(osb, cpos, &cluster_start, &cluster_end);
+ 
+-	kaddr = kmap_atomic(page, KM_USER0);
++	kaddr = kmap_atomic(page);
+ 
+ 	if (from || to) {
+ 		if (from > cluster_start)
+@@ -700,7 +700,7 @@ static void ocfs2_clear_page_regions(struct page *page,
+ 		memset(kaddr + cluster_start, 0, cluster_end - cluster_start);
+ 	}
+ 
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
+ }
+ 
+ /*
+@@ -1981,9 +1981,9 @@ static void ocfs2_write_end_inline(struct inode *inode, loff_t pos,
+ 		}
+ 	}
+ 
+-	kaddr = kmap_atomic(wc->w_target_page, KM_USER0);
++	kaddr = kmap_atomic(wc->w_target_page);
+ 	memcpy(di->id2.i_data.id_data + pos, kaddr + pos, *copied);
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
+ 
+ 	trace_ocfs2_write_end_inline(
+ 	     (unsigned long long)OCFS2_I(inode)->ip_blkno,
 -- 
 1.7.7.6
 
