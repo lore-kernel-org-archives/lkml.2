@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab2BJQSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 11:18:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62614 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab2BJQSD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 11:18:03 -0500
+	id S1759539Ab2BJQSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 11:18:18 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:36111 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754568Ab2BJQSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 11:18:15 -0500
+Date: Fri, 10 Feb 2012 08:15:38 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH v5 4/5] hwmon: add MAX197 support
+Message-ID: <20120210161538.GB1060@ericsson.com>
+References: <1328130344-18836-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1328130344-18836-5-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1328132138.2261.116.camel@groeck-laptop>
+ <20120206151507.73a23eb8@v0nbox>
+ <1328561164.2261.258.camel@groeck-laptop>
+ <20120210110755.4914b332@v0nbox>
 MIME-Version: 1.0
-In-Reply-To: <15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
-References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-	<m2pqdr2tyq.fsf@bob.laptop.org>
-	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
-	<4F30E19B.9020503@intel.com>
-	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
-	<4F310529.4020101@intel.com>
-	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
-	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
-	<CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
-	<CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
-	<4F31B789.9020509@samsung.com>
-	<CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
-	<15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
-Date: Sat, 11 Feb 2012 00:18:03 +0800
-Message-ID: <CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
-Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Philip Rakity <prakity@marvell.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "arindam.nath@amd.com" <arindam.nath@amd.com>,
-        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120210110755.4914b332@v0nbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 3:09 AM, Philip Rakity <prakity@marvell.com> wrote:
->
->
-> Jeff,
->
-> I think the sdhci.c clock setting code was changed a while ago.   Maybe revert that mod and see what happens.
->
-> The card is a 24MHz which is rather slow so I would be surprised if that was it.
-> The other option is the force enable the High Speed bit in the  controller (used when speed is 25MHz or faster).  Will give the system more time (in theory) to work.
+Vivien,
 
-That's a good point to start looking. I poked around and by setting
-host->ios.clock to 10000000 instead of 25000000, read from a 16GB card
-is no longer giving any error.
-
-I still don't dare to do any write. Already burn one 16GB SD and not
-ready to trash another. I asked earlier but haven't got any reply as
-to how to recover an SD that says "No medium found". Any chance of
-recovering it?
-
-Here's what I did. If set too low (1000000) or too high (25000000),
-random errors appeared.
-
---- linux/drivers/mmc/core/core.c.org   2012-02-10 23:57:49.000000000 +0800
-+++ linux/drivers/mmc/core/core.c       2012-02-10 23:53:59.000000000 +0800
-@@ -881,7 +881,7 @@
-        if (hz > host->f_max)
-                hz = host->f_max;
-
--       host->ios.clock = hz;
-+       host->ios.clock = 10000000;
-        mmc_set_ios(host);
- }
-
-
+On Fri, Feb 10, 2012 at 11:07:55AM -0500, Vivien Didelot wrote:
+> Hi,
+> 
+> On Mon, 6 Feb 2012 12:46:04 -0800,
+> Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> 
+> > On Mon, 2012-02-06 at 15:15 -0500, Vivien Didelot wrote:
+> > [ ... ]
+> > > 
+> > > BTW, about the TS-5500 ADC part, is a platform ts5500_adc.c file the
+> > > better solution, or should the device be declared in the ts5500.c
+> > > platform code?
+> > > 
+> > I would suggest to declare it in the ts5500.c platform code. That
+> > seems to be the common approach as far as I can see.
+> > 
+> > platform_add_devices() works pretty well for this. It saves you from
+> > having to call platform_device_register() for each device separately.
+> > Obviously that only works if all devices are declared in a single
+> > file.
+> 
+> As the LED is registered using the leds_class, I think
+> platform_add_devices() couldn't be used here.
+> 
+> Lots of platform codes don't check the returned
+> value of platform_add_devices(). Should we care about a LED or ADC
+> registration failure (is the following snippet OK?)?
+> 
+>     static int __init ts5500_init(void)
+>     {
+>     [...]
+>         pdev = platform_device_register_simple("ts5500", -1, NULL, 0); 
+>         if (IS_ERR(pdev)) {
+>                 ret = PTR_ERR(pdev);
+>                 goto release_mem;
+>         }
+>         platform_set_drvdata(pdev, ts5500);
+>     
+>         ret = sysfs_create_group(&pdev->dev.kobj,
+>                                  &ts5500_attr_group);
+>         if (ret)
+>                 goto release_pdev;
+>     
+>         led_classdev_register(&pdev->dev, &ts5500_led_cdev);
+>         if (ts5500->adc) {
+>                 ts5500_adc_pdev.dev.parent = &pdev->dev;
+>                 platform_device_register(&ts5500_adc_pdev);
+>         }
+>     
+I didn't look at other code, but personally I try to be consistent.
+Why do you check the return value from platform_device_register_simple() above,
+but not the return code from platform_device_register() ?
+That does not seem to be very consistent to me.
 
 Thanks,
-Jeff
+Guenter
+
+>         return 0;
+>     
+>         release_pdev:
+>                 platform_device_unregister(pdev);
+>         release_mem:
+>                 kfree(ts5500);
+>     
+>                 return ret;
+>     }
+>     device_initcall(ts5500_init);
+> 
+> 
+> Thanks,
+> 
+> 
+> -- 
+> Vivien Didelot
+> Savoir-faire Linux Inc.
+> Tel: (514) 276-5468 #149
