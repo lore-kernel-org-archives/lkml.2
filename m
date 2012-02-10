@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab2BJAvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Feb 2012 19:51:43 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:48070 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752843Ab2BJAvm (ORCPT
+	id S1758822Ab2BJAwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Feb 2012 19:52:09 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38738 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758786Ab2BJAwD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Feb 2012 19:51:42 -0500
-Date: Thu, 9 Feb 2012 19:51:39 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: [RELEASE] LTTng 2.0 prerelease bundle 20120209
-Message-ID: <20120210005139.GB10613@Krystal>
+	Thu, 9 Feb 2012 19:52:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:49:12 up 443 days,  5:52,  1 user,  load average: 0.01, 0.08,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1328776366-6881-1-git-send-email-alexander.stein@systec-electronic.com>
+References: <1328776366-6881-1-git-send-email-alexander.stein@systec-electronic.com>
+Date: Fri, 10 Feb 2012 09:52:03 +0900
+Message-ID: <CANKRQniXxZbY5Bs90v+xsU3PRU6JntXF53Vv0Yhx0Lyhn3fq6g@mail.gmail.com>
+Subject: Re: [PATCH] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce
+ wait time
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
+2012/2/9 Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+>
+>        if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+>                return 0;
+>
 
-You can get a the current release "bundle" (recommanded set of packages)
-at the following URL:
+If this patch will be accepted,
+this code also looks redundant code.
 
-http://lttng.org/bundles/
-
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-(please refer to the README files for installation instructions and
-lttng-tools doc/quickstart.txt for usage information)
-
-Key Features:
-
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches,
-- Tracepoints, detailed syscall tracing (fast strace replacement),
-  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
-  probing (kprobes) and function call/return tracing (kretprobes support),
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
-- Integrated interface for both kernel and userspace tracing,
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+thanks,
+tomoya
