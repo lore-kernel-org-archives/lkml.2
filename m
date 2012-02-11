@@ -1,103 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab2BKJvR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 04:51:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:36293 "EHLO mga14.intel.com"
+	id S1755138Ab2BKJvW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 04:51:22 -0500
+Received: from mga14.intel.com ([143.182.124.37]:49297 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754318Ab2BKJvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 04:51:09 -0500
+	id S1754749Ab2BKJvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 04:51:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105714183"
-Message-Id: <20120211043326.371113915@intel.com>
+   d="scan'208";a="105714199"
+Message-Id: <20120211043326.026695186@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sat, 11 Feb 2012 12:31:47 +0800
+Date: Sat, 11 Feb 2012 12:31:45 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jan Kara <jack@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Wu Fengguang <fengguang.wu@intel.com>
 cc: Linux Memory Management List <linux-mm@kvack.org>,
         <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/9] readahead: dont do start-of-file readahead after lseek()
+Subject: [PATCH 5/9] readahead: add vfs/readahead tracing event
 References: <20120211043140.108656864@intel.com>
-Content-Disposition: inline; filename=readahead-lseek.patch
+Content-Disposition: inline; filename=readahead-tracer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some applications (eg. blkid, id3tool etc.) seek around the file
-to get information. For example, blkid does
+This is very useful for verifying whether the readahead algorithms are
+working to the expectation.
 
-	     seek to	0
-	     read	1024
-	     seek to	1536
-	     read	16384
+Example output:
 
-The start-of-file readahead heuristic is wrong for them, whose
-access pattern can be identified by lseek() calls.
+# echo 1 > /debug/tracing/events/vfs/readahead/enable
+# cp test-file /dev/null
+# cat /debug/tracing/trace  # trimmed output
+pattern=initial bdi=0:16 ino=100177 req=0+2 ra=0+4-2 async=0 actual=4
+pattern=subsequent bdi=0:16 ino=100177 req=2+2 ra=4+8-8 async=1 actual=8
+pattern=subsequent bdi=0:16 ino=100177 req=4+2 ra=12+16-16 async=1 actual=16
+pattern=subsequent bdi=0:16 ino=100177 req=12+2 ra=28+32-32 async=1 actual=32
+pattern=subsequent bdi=0:16 ino=100177 req=28+2 ra=60+60-60 async=1 actual=24
+pattern=subsequent bdi=0:16 ino=100177 req=60+2 ra=120+60-60 async=1 actual=0
 
-So test-and-set a READAHEAD_LSEEK flag on lseek() and don't
-do start-of-file readahead on seeing it. Proposed by Linus.
-
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Jan Kara <jack@suse.cz>
 Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/read_write.c    |    3 +++
- include/linux/fs.h |    1 +
- mm/readahead.c     |    4 ++++
- 3 files changed, 8 insertions(+)
+ fs/Makefile                |    1 
+ fs/trace.c                 |    2 
+ include/trace/events/vfs.h |   77 +++++++++++++++++++++++++++++++++++
+ mm/readahead.c             |   24 ++++++++++
+ 4 files changed, 104 insertions(+)
 
---- linux-next.orig/mm/readahead.c	2012-02-11 12:30:59.000000000 +0800
-+++ linux-next/mm/readahead.c	2012-02-11 12:31:05.000000000 +0800
-@@ -485,6 +485,7 @@ unsigned long ra_submit(struct file_ra_s
- 			ra->pattern, ra->start, ra->size, ra->async_size,
- 			actual);
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-next/include/trace/events/vfs.h	2012-01-25 15:57:52.000000000 +0800
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vfs
++
++#if !defined(_TRACE_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_VFS_H
++
++#include <linux/fs.h>
++#include <linux/blkdev.h>
++#include <linux/backing-dev.h>
++#include <linux/tracepoint.h>
++
++#define READAHEAD_PATTERNS						   \
++			{ RA_PATTERN_INITIAL,		"initial"	}, \
++			{ RA_PATTERN_SUBSEQUENT,	"subsequent"	}, \
++			{ RA_PATTERN_CONTEXT,		"context"	}, \
++			{ RA_PATTERN_MMAP_AROUND,	"around"	}, \
++			{ RA_PATTERN_FADVISE,		"fadvise"	}, \
++			{ RA_PATTERN_OVERSIZE,		"oversize"	}, \
++			{ RA_PATTERN_RANDOM,		"random"	}, \
++			{ RA_PATTERN_ALL,		"all"		}
++
++TRACE_EVENT(readahead,
++	TP_PROTO(struct address_space *mapping,
++		 pgoff_t offset,
++		 unsigned long req_size,
++		 enum readahead_pattern pattern,
++		 pgoff_t start,
++		 unsigned long size,
++		 unsigned long async_size,
++		 unsigned int actual),
++
++	TP_ARGS(mapping, offset, req_size, pattern, start, size, async_size,
++		actual),
++
++	TP_STRUCT__entry(
++		__array(char,		bdi, 32)
++		__field(ino_t,		ino)
++		__field(pgoff_t,	offset)
++		__field(unsigned long,	req_size)
++		__field(unsigned int,	pattern)
++		__field(pgoff_t,	start)
++		__field(unsigned int,	size)
++		__field(unsigned int,	async_size)
++		__field(unsigned int,	actual)
++	),
++
++	TP_fast_assign(
++		strncpy(__entry->bdi,
++			dev_name(mapping->backing_dev_info->dev), 32);
++		__entry->ino		= mapping->host->i_ino;
++		__entry->offset		= offset;
++		__entry->req_size	= req_size;
++		__entry->pattern	= pattern;
++		__entry->start		= start;
++		__entry->size		= size;
++		__entry->async_size	= async_size;
++		__entry->actual		= actual;
++	),
++
++	TP_printk("pattern=%s bdi=%s ino=%lu "
++		  "req=%lu+%lu ra=%lu+%d-%d async=%d actual=%d",
++			__print_symbolic(__entry->pattern, READAHEAD_PATTERNS),
++			__entry->bdi,
++			__entry->ino,
++			__entry->offset,
++			__entry->req_size,
++			__entry->start,
++			__entry->size,
++			__entry->async_size,
++			__entry->start > __entry->offset,
++			__entry->actual)
++);
++
++#endif /* _TRACE_VFS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+--- linux-next.orig/mm/readahead.c	2012-01-25 15:57:52.000000000 +0800
++++ linux-next/mm/readahead.c	2012-01-25 15:57:52.000000000 +0800
+@@ -17,6 +17,7 @@
+ #include <linux/task_io_accounting_ops.h>
+ #include <linux/pagevec.h>
+ #include <linux/pagemap.h>
++#include <trace/events/vfs.h>
  
-+	ra->lseek = 0;
+ /*
+  * Initialise a struct file's readahead state.  Assumes that the caller has
+@@ -32,6 +33,21 @@ EXPORT_SYMBOL_GPL(file_ra_state_init);
+ 
+ #define list_to_page(head) (list_entry((head)->prev, struct page, lru))
+ 
++static inline void readahead_event(struct address_space *mapping,
++				   pgoff_t offset,
++				   unsigned long req_size,
++				   bool for_mmap,
++				   bool for_metadata,
++				   enum readahead_pattern pattern,
++				   pgoff_t start,
++				   unsigned long size,
++				   unsigned long async_size,
++				   int actual)
++{
++	trace_readahead(mapping, offset, req_size,
++			pattern, start, size, async_size, actual);
++}
++
+ /*
+  * see if a page needs releasing upon read_cache_pages() failure
+  * - the caller of read_cache_pages() may have set PG_private or PG_fscache
+@@ -228,6 +244,9 @@ int force_page_cache_readahead(struct ad
+ 			ret = err;
+ 			break;
+ 		}
++		readahead_event(mapping, offset, nr_to_read, 0, 0,
++				RA_PATTERN_FADVISE, offset, this_chunk, 0,
++				err);
+ 		ret += err;
+ 		offset += this_chunk;
+ 		nr_to_read -= this_chunk;
+@@ -259,6 +278,11 @@ unsigned long ra_submit(struct file_ra_s
+ 	actual = __do_page_cache_readahead(mapping, filp,
+ 					ra->start, ra->size, ra->async_size);
+ 
++	readahead_event(mapping, offset, req_size,
++			ra->for_mmap, ra->for_metadata,
++			ra->pattern, ra->start, ra->size, ra->async_size,
++			actual);
++
  	ra->for_mmap = 0;
  	ra->for_metadata = 0;
  	return actual;
-@@ -636,6 +637,8 @@ ondemand_readahead(struct address_space 
- 	 * start of file
- 	 */
- 	if (!offset) {
-+		if (ra->lseek && req_size < max)
-+			goto random_read;
- 		ra->pattern = RA_PATTERN_INITIAL;
- 		goto initial_readahead;
- 	}
-@@ -701,6 +704,7 @@ ondemand_readahead(struct address_space 
- 	if (try_context_readahead(mapping, ra, offset, req_size, max))
- 		goto readit;
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-next/fs/trace.c	2012-01-25 15:57:52.000000000 +0800
+@@ -0,0 +1,2 @@
++#define CREATE_TRACE_POINTS
++#include <trace/events/vfs.h>
+--- linux-next.orig/fs/Makefile	2012-01-25 15:57:46.000000000 +0800
++++ linux-next/fs/Makefile	2012-01-25 15:57:52.000000000 +0800
+@@ -50,6 +50,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
+ obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
  
-+random_read:
- 	/*
- 	 * standalone, small random read
- 	 */
---- linux-next.orig/fs/read_write.c	2012-02-11 12:30:59.000000000 +0800
-+++ linux-next/fs/read_write.c	2012-02-11 12:31:05.000000000 +0800
-@@ -47,6 +47,9 @@ static loff_t lseek_execute(struct file 
- 		file->f_pos = offset;
- 		file->f_version = 0;
- 	}
-+
-+	file->f_ra.lseek = 1;
-+
- 	return offset;
- }
+ obj-$(CONFIG_FHANDLE)		+= fhandle.o
++obj-$(CONFIG_TRACEPOINTS)	+= trace.o
  
---- linux-next.orig/include/linux/fs.h	2012-02-11 12:30:59.000000000 +0800
-+++ linux-next/include/linux/fs.h	2012-02-11 12:31:05.000000000 +0800
-@@ -956,6 +956,7 @@ struct file_ra_state {
- 	u8 pattern;			/* one of RA_PATTERN_* */
- 	unsigned int for_mmap:1;	/* readahead for mmap accesses */
- 	unsigned int for_metadata:1;	/* readahead for meta data */
-+	unsigned int lseek:1;		/* this read has a leading lseek */
+ obj-y				+= quota/
  
- 	loff_t prev_pos;		/* Cache last read() position */
- };
 
 
