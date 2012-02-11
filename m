@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2BKDJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 22:09:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43289 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab2BKDJb (ORCPT
+	id S1754984Ab2BKDPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 22:15:10 -0500
+Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:51523
+	"EHLO l.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab2BKDPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 22:09:31 -0500
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venki Pallipadi <venki@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
-	 <1328901567.25989.51.camel@laptop>
-	 <CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 11 Feb 2012 04:09:21 +0100
-Message-ID: <1328929761.2476.9.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Fri, 10 Feb 2012 22:15:08 -0500
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Feb 2012 22:15:08 EST
+Message-ID: <4F35DB79.6070104@chelsio.com>
+Date: Fri, 10 Feb 2012 19:07:37 -0800
+From: Divy Le Ray <divy@chelsio.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        nhorman@tuxdriver.com
+Subject: pull request: linux-firmware: update cxgb* firmwares
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-10 at 18:11 -0800, Venki Pallipadi wrote:
+Hi David,
 
-> OK. Moving most of this into arch code will be cleaner. But, Yong
-> mentioned in this thread that he was looking to do something similar
-> on MIPS. So, we may end up with some code duplication though..
+Can you please pull from the following URL?
+      git://git.chelsio.net/pub/git/linux-firmware.git for-david
 
-If there's significant duplication you can always move a few helpers
-into lib/, but I think we shouldn't let this get outside of the PIC and
-idle code (both clearly arch specific), all we're doing is optimizing
-the IPI delivery, conceptually we're still sending one.
+It contains the following commits:
+03cadf2 linux-firmware: update cxgb3 driver firmware to revision 7.12.0
+235dfaf linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
+e2ea873 linux-firmware: remove current t4fw.bin
+
+The following changes since commit 15888a2eab052ac3d3f49334e4f6f05f347a516e:
+
+   bnx2x: Adding FW 7.0.29.0 (2011-10-24 16:31:44 +0200)
+
+are available in the git repository at:
+   git://git.chelsio.net/pub/git/linux-firmware.git for-david
+
+Divy Le Ray (3):
+       linux-firmware: remove current t4fw.bin
+       linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
+       linux-firmware: update cxgb3 driver firmware to revision 7.12.0
+
+  WHENCE                  |    3 ++-
+  cxgb3/t3fw-7.12.0.bin   |  Bin 0 ->  31812 bytes
+  cxgb4/t4fw-1.4.16.0.bin |  Bin 0 ->  298496 bytes
+  cxgb4/t4fw.bin          |  Bin 241664 ->  0 bytes
+  4 files changed, 2 insertions(+), 1 deletions(-)
+  create mode 100755 cxgb3/t3fw-7.12.0.bin
+  create mode 100644 cxgb4/t4fw-1.4.16.0.bin
+  delete mode 100644 cxgb4/t4fw.bin
+
+
+Cheers,
+Divy
+
 
 
