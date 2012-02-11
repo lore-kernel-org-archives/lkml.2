@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab2BKWz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 17:55:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56473 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754505Ab2BKWz6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 17:55:58 -0500
-Message-ID: <1329000959.325.56.camel@deadeye>
-Subject: [PATCH 5/5] powernow-k7: Fix CPU family number
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, Thomas Renninger <trenn@suse.de>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org
-Date: Sat, 11 Feb 2012 22:55:59 +0000
-In-Reply-To: <1329000256.325.48.camel@deadeye>
-References: <1329000256.325.48.camel@deadeye>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754876Ab2BKXCo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 18:02:44 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48082 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab2BKXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 18:02:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c static
+Date: Sun, 12 Feb 2012 00:04:48 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <201202120003.20879.rjw@sisk.pl>
+In-Reply-To: <201202120003.20879.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202120004.48991.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fa8031aefec0cf7ea6c2387c93610d99d9659aa2 ('cpufreq: Add support
-for x86 cpuinfo auto loading v4') seems to have inadvertently changed
-the matched CPU family number from 6 to 7.  Change it back.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+The enter_state() function in kernel/power/suspend.c should be
+static and state_store() in kernel/power/suspend.c should call
+pm_suspend() instead of it, so make that happen (which also reduces
+code duplication related to suspend statistics).
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/cpufreq/powernow-k7.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/power/main.c    |    6 +-----
+ kernel/power/power.h   |    2 --
+ kernel/power/suspend.c |    2 +-
+ 3 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
-index 501d167..cf7e1ee 100644
---- a/drivers/cpufreq/powernow-k7.c
-+++ b/drivers/cpufreq/powernow-k7.c
-@@ -112,7 +112,7 @@ static int check_fsb(unsigned int fsbspeed)
- }
+Index: linux/kernel/power/main.c
+===================================================================
+--- linux.orig/kernel/power/main.c
++++ linux/kernel/power/main.c
+@@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
+ #ifdef CONFIG_SUSPEND
+ 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+ 		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+-			break;
+-	}
+-	if (state < PM_SUSPEND_MAX && *s) {
+-		error = enter_state(state);
+-		suspend_stats_update(error);
++			error = pm_suspend(state);
+ 	}
+ #endif
  
- static const struct x86_cpu_id powernow_k7_cpuids[] = {
--	{ X86_VENDOR_AMD, 7, },
-+	{ X86_VENDOR_AMD, 6, },
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, powernow_k7_cpuids);
--- 
-1.7.9
-
+Index: linux/kernel/power/power.h
+===================================================================
+--- linux.orig/kernel/power/power.h
++++ linux/kernel/power/power.h
+@@ -177,13 +177,11 @@ extern const char *const pm_states[];
+ 
+ extern bool valid_state(suspend_state_t state);
+ extern int suspend_devices_and_enter(suspend_state_t state);
+-extern int enter_state(suspend_state_t state);
+ #else /* !CONFIG_SUSPEND */
+ static inline int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	return -ENOSYS;
+ }
+-static inline int enter_state(suspend_state_t state) { return -ENOSYS; }
+ static inline bool valid_state(suspend_state_t state) { return false; }
+ #endif /* !CONFIG_SUSPEND */
+ 
+Index: linux/kernel/power/suspend.c
+===================================================================
+--- linux.orig/kernel/power/suspend.c
++++ linux/kernel/power/suspend.c
+@@ -272,7 +272,7 @@ static void suspend_finish(void)
+  * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
+  * system enter the given sleep state and clean up after wakeup.
+  */
+-int enter_state(suspend_state_t state)
++static int enter_state(suspend_state_t state)
+ {
+ 	int error;
+ 
 
