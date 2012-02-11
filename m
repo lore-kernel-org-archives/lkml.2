@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab2BKVr7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 16:47:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47731 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750836Ab2BKVr6 (ORCPT
+	id S1754538Ab2BKWo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 17:44:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56332 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211Ab2BKWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 16:47:58 -0500
-Date: Sat, 11 Feb 2012 21:47:55 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: gregkh@linuxfoundation.org, lars@metafoo.de, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V3 2/2] regmap: add regmap_bulk_write() for register write
-Message-ID: <20120211214754.GF31887@opensource.wolfsonmicro.com>
-References: <1328889628-13151-1-git-send-email-ldewangan@nvidia.com>
- <1328889628-13151-2-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XaUbO9McV5wPQijU"
-Content-Disposition: inline
-In-Reply-To: <1328889628-13151-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Slow day.  Practice crawling.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 11 Feb 2012 17:44:27 -0500
+Message-ID: <1329000256.325.48.camel@deadeye>
+Subject: [PATCH 0/5] Clean up x86 CPU auto-loading
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, Thomas Renninger <trenn@suse.de>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-pm@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org
+Date: Sat, 11 Feb 2012 22:44:16 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-hlG/ip2dduj/cPnUc1lM"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XaUbO9McV5wPQijU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-hlG/ip2dduj/cPnUc1lM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, Feb 10, 2012 at 09:30:28PM +0530, Laxman Dewangan wrote:
+This series fixes a number of apparent bugs in the recent changes to
+enable auto-loading by x86 CPU ID.
 
-> +		/* No formatting is require if val_byte is 1 */
-> +		if (val_bytes == 1)
-> +			wval = (void *)val;
-> +		else {
+Ben.
 
-Please don't combine branches with and without braces.
+Ben Hutchings (5):
+  x86/cpu: Fix overrun check in arch_print_cpu_modalias()
+  x86/cpu: Clean up modalias feature matching
+  intel_idle: Fix ID for Nehalem-EX Xeon in device ID table
+  intel_idle: Revert change of auto_demotion_flags for Nehalem
+  powernow-k7: Fix CPU family number
 
-> +			wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
-> +			if (!wval) {
-> +				mutex_unlock(&map->lock);
-> +				dev_err(map->dev,
-> +					"Error in memory allocation\n");
-> +				return -ENOMEM;
+ arch/x86/kernel/cpu/match.c   |    5 ++---
+ drivers/cpufreq/powernow-k7.c |    2 +-
+ drivers/idle/intel_idle.c     |   12 ++++--------
+ scripts/mod/file2alias.c      |    5 +++--
+ 4 files changed, 10 insertions(+), 14 deletions(-)
 
-As a style thing a goto error pattern is clearer for stuff like this -
-there's so many branches that it's complex to keep track of the
-unwinding.
+--=20
+1.7.9
 
---XaUbO9McV5wPQijU
+
+
+--=-hlG/ip2dduj/cPnUc1lM
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPNtx5AAoJEBus8iNuMP3dGwkP/05UHp/6mjkf8naAO6w9jNiY
-SqXJV6zqyYGp0tWyz4vWHPpfWYIbiZyfF61ZJCOSk1elVyr7DLJTxTKiT/viuJmi
-/hafkqW0z/CK7oFKfxgddAO3UvMlXObEXlh8TF4qEdZzOY04l/xJzL09RfKNrNaR
-NcRBz2DZ/0BA9HFqfCb09FsZ3nuQEqY2HgOGWXKkb6YJ9SR315vChzaPkHUSDzcf
-B7gLzLgf2g4rkKecy9aXAQVWQJrjuEyW1PnUFOYmNf4Hjr8aFCPxnGH+lD4qR8qD
-cKdSdhfVAzyehreY53xP9uiFSRLkywAk5lWCJYGxGOWbj1K7b+irE2WfZjlARBwu
-os6CeVH8eRoy1OlKmas/P9SrJD30SRnlxIvhoKWAqiH7E2YQmZMOwKU3zHWAxDyh
-N7v2Nb4RwTfsVcbh8xMq6XSuCIE27t6ZN0zXFRCtoXmsNeOYmyLzutfhRVi7VO9A
-ted9e6t4h0I6m21GENPna8kTPYLSShKNxineyiLa6V+pyVeLKMJnWprqEezb7Qi4
-h82+0rXABAlz4naPaUOw9izUQQXUArzuFtLUBsUAo0CTyHC005XYDMbatKbMPTcK
-9miul462WN527szgL1b38RWJmgfihiam/zCSI05DC8EkSzs2bkfajP3hWqT6AAKE
-wxfnYKb7vh7BQfcm1/Iv
-=D9xs
+iQIVAwUATzbvQOe/yOyVhhEJAQq82hAA1ZDowaciAZ2MLM/WEMRsvGLyP5EhvkDu
+rWSb8UQQ/klTIqjYiJM4M0TVOfro+RqR5zojJJX0ZrjEUg0h8V5sfXctgREvFGWB
+zO2PlJVmBKgVo2uXl9pEXbc5DIo2nqp2+BkNLnVZo8oLbXfjXCCIsHrERGOvZ678
+rqXDAVqxalK3tVHmkKAJak45K7ZslmNkvFCJJgKlSGFUDCbO50v1rM1r1fmoP5cI
+fvjVQW0dN8adxCpedOh6bPLr7oZGf9rug82xBTDqKB3RzV5fA/byrKAzKbymPw3E
+YCw+/BrSt/5Ej6eFuytTLgJdiTJ4LHiQv+89JNxLOjaXgrivaZfbtB3PoExa4dJg
+dppNakwGHVce5SQnffihWy/b0rPlUFWey+vTrQSpTIrgAF/Pyg1VugUWVzg/EVDH
+6OWC2OIVKqT4OrrMjX9jgQ4aeQUmZMOXFHruTHG03xqDyBxolQS4CxwGBmaVMO8D
+U9525bgG27BUmYqKmwXgAq+vqzitcNcGi7NFp/Kfth/LkzXrGdKkqlvfVM8OlLEM
+ZRWN/9rFzxxAxkKsgap+f9bJuAJicyotkSEBZxFXsIhaQUVh+CNjrP1+XDEh7sTw
+TOhJaZJgTN5XA0TGANhL9obweY2LXk92rfUuQ16BlXCVCL+JKil4vaS/qLiy0rw1
+TLW7E4oJqDQ=
+=6Pck
 -----END PGP SIGNATURE-----
 
---XaUbO9McV5wPQijU--
+--=-hlG/ip2dduj/cPnUc1lM--
