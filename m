@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2BKPrd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 10:47:33 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49543 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab2BKPra (ORCPT
+	id S1757775Ab2BKPrs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 10:47:48 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:35590 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755159Ab2BKPrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 10:47:30 -0500
-Message-ID: <1328975240.5661.31.camel@edumazet-laptop>
-Subject: Re: [RFC PATCH v2] compat: poll() in 32-bit applications does not
- handle negative timeout values properly on 64-bit kernels
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Josh Hunt <johunt@akamai.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        arnd@arndb.de, linux-arch@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 11 Feb 2012 16:47:20 +0100
-In-Reply-To: <4F3602A9.3060206@akamai.com>
-References: <4F3602A9.3060206@akamai.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sat, 11 Feb 2012 10:47:32 -0500
+X-Sasl-enc: ginZVdNoVnQN1HUHHgGe6TdeHSEJ90s5fVqI9OdL2QEc 1328975250
+Message-ID: <4F368D6F.90702@ladisch.de>
+Date: Sat, 11 Feb 2012 16:46:55 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Chris Boot <bootc@bootc.net>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] firewire-sbp2: Ignore SBP-2 targets on the local
+ node
+References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>	<1328881314-26544-1-git-send-email-bootc@bootc.net>	<1328881314-26544-3-git-send-email-bootc@bootc.net> <20120211122832.25f00d59@stein> <4F365C01.6000807@ladisch.de> <4F365FA8.40600@bootc.net>
+In-Reply-To: <4F365FA8.40600@bootc.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 10 février 2012 à 23:54 -0600, Josh Hunt a écrit :
-> We have hit an issue where our 32-bit applications using poll() and
-> passing in a value of -1 for the timeout value return after ~49 days
-> (2^32 msec), instead of waiting indefinitely. I've instrumented the
-> kernel and found we are hitting the case where poll() believes we've
-> passed in a positive number and thus creates a timespec, etc. I've
-> implemented compat_sys_poll() to sign-extend the timeout value and
-> resolve the issue.
-> 
-> There was an almost identical patch submitted last year, but for
-> whatever reason did not make it in:
-> https://lkml.org/lkml/2011/9/18/19
+Chris Boot wrote:
+> On 11/02/2012 12:16, Clemens Ladisch wrote:
+>> Stefan Richter wrote:
+>>> On Feb 10 Chris Boot wrote:
+>>>> +    /* ignore targets on the local node */
+>>>> +    if (device->node == device->card->local_node) {
+>>>> +        dev_set_drvdata(&unit->device, NULL);
+>>>> +        return 0;
+>>>> +    }
+>>>
+>>> But I do wonder:  Shouldn't this be implemented by returning from the
+>>> driver probe method with an error? If so, which errno should be returned?
+>>
+>> -ENODEV or -ENXIO.
+>
+> Perhaps,
 
-Probably because Thomas Meyer didnt answer to patch reviewers, and not
-enough people cared.
+It's what really_probe() in drivers/base/dd.c requires:
 
-By the way, an inline patch is better, as stated in
-Documentation/SubmittingPatches
+	if (ret != -ENODEV && ret != -ENXIO) {
+		/* driver matched but the probe failed */
+		printk(KERN_WARNING
+		       "%s: probe of %s failed with error %d\n",
+		       drv->name, dev_name(dev), ret);
+	} else {
+		pr_debug("%s: probe of %s rejects match %d\n",
+		       drv->name, dev_name(dev), ret);
+	}
 
-Anyway, its time to fix this bug...
+> but the meaning of those isn't quite what is happening here. We aren't
+> saying the device doesn't exist or is inaccessible, just that we don't
+> want to talk to it...
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+ENODEV does not mean "no device" but "no _such_ device".
 
 
-
+Regards,
+Clemens
