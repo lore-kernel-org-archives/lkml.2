@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2BKG4f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 01:56:35 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45485 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751190Ab2BKG4e (ORCPT
+	id S1753704Ab2BKHka (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 02:40:30 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47981 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab2BKHkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 01:56:34 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19xWdYff8NxuUitOS+DjHvywhNEKymfQlBzwOmZ62
-	vqedN4hPWvIlIk
-Message-ID: <1328943389.7340.29.camel@marge.simpson.net>
-Subject: Re: [RFC][PATCH] sched: Optimize cgroup pick_next_task_fair
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>, Venkatesh Pallipadi <venki@google.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 11 Feb 2012 07:56:29 +0100
-In-Reply-To: <1328936700.2476.17.camel@laptop>
-References: <1328936700.2476.17.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sat, 11 Feb 2012 02:40:02 -0500
+Date: Sat, 11 Feb 2012 08:39:49 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: Re: clock_getres() and real resolution
+Message-ID: <20120211073947.GA2446@netboy.at.omicron.at>
+References: <4F32A347.4090703@linaro.org>
+ <20120209051218.GC2211@netboy.at.omicron.at>
+ <4F33910D.2030409@linaro.org>
+ <20120209184019.GA2217@netboy.at.omicron.at>
+ <4F341F40.3020806@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F341F40.3020806@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-02-11 at 06:05 +0100, Peter Zijlstra wrote: 
-> Since commit 2f36825b1 ("sched: Next buddy hint on sleep and preempt
-> path") it is likely we pick a new task from the same cgroup, doing a put
-> and then set on all intermediate entities is a waste of time, so try to
-> avoid this.
+On Thu, Feb 09, 2012 at 11:32:16AM -0800, Dmitry Antipov wrote:
+> On 02/09/2012 10:40 AM, Richard Cochran wrote:
+> 
+> >I thought this list was about Linux kernel development, but now it
+> >seems to be about Sun's old bugs.
+> 
+> This Sun (probably) has ~100000x more accurate hrtimers than it's said,
+> and it's a bug. My panda board (with 32K timer enabled) has ~30000x
+> less accurate hrtimers than it's said, and it's not a bug. Great.
 
-Good idea, we need to lose some weight.
+If I understand you correctly, what you are looking for is a way to
+get a promise from the OS regarding a real time deadlines, right?
+But that is a different question than the timer unit resolution:
 
-> XXX check put_prev_task()'s update_rq_clock() magic..
+Q: What is the finest timer duration that I may request?
+A: One nanosecond (answer by getres).
 
-I made that even more lovable ;-)
+Q: What kind of real time deadline will my system provide?
+A: Nobody knows for sure.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d7c4322..7c1cfa6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3175,6 +3175,7 @@ need_resched:
- 		} else {
- 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
- 			prev->on_rq = 0;
-+			rq->skip_clock_update = 1;
- 
- 			/*
- 			 * If a worker went to sleep, notify and ask workqueue
-@@ -3200,9 +3201,9 @@ need_resched:
- 	put_prev_task(rq, prev);
- 	next = pick_next_task(rq);
- 	clear_tsk_need_resched(prev);
--	rq->skip_clock_update = 0;
- 
- 	if (likely(prev != next)) {
-+		rq->skip_clock_update = 0;
- 		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
-@@ -3220,6 +3221,7 @@ need_resched:
- 		raw_spin_unlock_irq(&rq->lock);
- 
- 	post_schedule(rq);
-+	rq->skip_clock_update = 0;
- 
- 	preempt_enable_no_resched();
- 	if (need_resched())
+Just because the OS claims timer resolution X does mean that your
+application can assume, "okay, I'll just set my periodic task at
+duration X and the OS will take care of the rest." The only thing the
+user can count on is that the timer expiration will not come _before_
+the deadline. The nanosleep man page puts its like this:
 
-> Compile tested only.. inspired by pjt's fast switch stories.
+   If the interval specified in req is not an exact multiple of the
+   granularity underlying clock (see time(7)), then the interval will
+   be rounded up to the next multiple.  Furthermore, after the sleep
+   completes, there may still be a delay before the CPU becomes free
+   to once again execute the calling thread.
 
-I was looking forward to seeing those fast switch patches, nice spot to
-cut lard.
+I agree that getres does not provide very useful information. Under
+Linux, it merely indicates the present of high resolution timer
+support.
 
-> Not-quite-signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The practical solution to what you are asking for is overall system
+testing tuning, and this is unfortunately manual labor.
 
-I'll see if I can give it some runtime.
-
--Mike
-
+Richard
