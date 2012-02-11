@@ -1,116 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761256Ab2BKENW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 23:13:22 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:16411 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758656Ab2BKEHA (ORCPT
+	id S1761273Ab2BKET4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 23:19:56 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:49066 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758866Ab2BKETy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 23:07:00 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/22] PCI: Add busn_res operation functions
-Date: Fri, 10 Feb 2012 20:06:05 -0800
-Message-Id: <1328933185-15154-3-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
-References: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F35E95B.0022,ss=1,re=0.000,fgs=0
+	Fri, 10 Feb 2012 23:19:54 -0500
+Message-ID: <4F35EC3C.5090305@linux.vnet.ibm.com>
+Date: Sat, 11 Feb 2012 09:49:08 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / Sleep: Remove unnecessary label from suspend_freeze_processes()
+References: <201202110035.32993.rjw@sisk.pl>
+In-Reply-To: <201202110035.32993.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021104-2674-0000-0000-0000034DE9AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will use them insert/update busn res in pci_bus
+On 02/11/2012 05:05 AM, Rafael J. Wysocki wrote:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/probe.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h |    3 +++
- 2 files changed, 50 insertions(+), 0 deletions(-)
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> The Finish label in suspend_freeze_processes() is in fact necessary
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index a114173..480670f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1622,6 +1622,53 @@ err_out:
- 	return NULL;
- }
- 
-+void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-+{
-+	struct resource *res = &b->busn_res;
-+	struct resource *parent_res;
-+	int ret;
-+
-+	res->start = bus;
-+	res->end = bus_max;
-+	res->flags = IORESOURCE_BUS;
-+
-+	/* no parent for root bus' busn_res */
-+	if (!pci_is_root_bus(b)) {
-+		parent_res = &b->parent->busn_res;
-+
-+		ret = insert_resource(parent_res, res);
-+
-+		dev_printk(KERN_DEBUG, &b->dev,
-+			"busn_res: %pR %s inserted under %pR\n",
-+			res, ret ? "can not be" : "is", parent_res);
-+	} else
-+		dev_printk(KERN_DEBUG, &b->dev,
-+			"busn_res: %pR for root bus\n",
-+			res);
-+}
-+
-+void pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
-+{
-+	struct resource *res = &b->busn_res;
-+	struct resource old_res = *res;
-+
-+	res->end = bus_max;
-+	dev_printk(KERN_DEBUG, &b->dev,
-+			"busn_res: %pR end updated to %pR\n",
-+			&old_res, res);
-+}
-+
-+void pci_bus_release_busn_res(struct pci_bus *b)
-+{
-+	struct resource *res = &b->busn_res;
-+	int ret;
-+
-+	ret = release_resource(res);
-+	dev_printk(KERN_DEBUG, &b->dev,
-+			"busn_res: %pR %s released\n",
-+			res, ret ? "can not be" : "is");
-+}
-+
- struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
- 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
- {
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 94ad468..3da935c 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -665,6 +665,9 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 				    struct pci_ops *ops, void *sysdata,
- 				    struct list_head *resources);
-+void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
-+void pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
-+void pci_bus_release_busn_res(struct pci_bus *b);
- struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
- 					     struct pci_ops *ops, void *sysdata,
- 					     struct list_head *resources);
--- 
-1.7.7
+
+s/necessary/unnecessary
+
+> and makes the function look more complicated that it really is, so
+
+
+s/that/than
+
+> remove it (along with a few empty lines).
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+> 
+
+
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Regards,
+Srivatsa S. Bhat
+
+> The patch is on top of linux-pm/pm-sleep.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+>  kernel/power/power.h |    5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+> 
+> Index: linux/kernel/power/power.h
+> ===================================================================
+> --- linux.orig/kernel/power/power.h
+> +++ linux/kernel/power/power.h
+> @@ -234,16 +234,14 @@ static inline int suspend_freeze_process
+>  	int error;
+> 
+>  	error = freeze_processes();
+> -
+>  	/*
+>  	 * freeze_processes() automatically thaws every task if freezing
+>  	 * fails. So we need not do anything extra upon error.
+>  	 */
+>  	if (error)
+> -		goto Finish;
+> +		return error;
+> 
+>  	error = freeze_kernel_threads();
+> -
+>  	/*
+>  	 * freeze_kernel_threads() thaws only kernel threads upon freezing
+>  	 * failure. So we have to thaw the userspace tasks ourselves.
+> @@ -251,7 +249,6 @@ static inline int suspend_freeze_process
+>  	if (error)
+>  		thaw_processes();
+> 
+> - Finish:
+>  	return error;
+>  }
+> 
+> 
 
