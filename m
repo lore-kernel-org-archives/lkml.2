@@ -1,336 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab2BKGFT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 01:05:19 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47960 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab2BKGFS (ORCPT
+	id S1753105Ab2BKGTP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 01:19:15 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19546 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab2BKGTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 01:05:18 -0500
-Date: Fri, 10 Feb 2012 22:05:11 -0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, eric.miao@linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v4 1/2] mfd: Add anatop mfd driver
-Message-ID: <20120211060510.GB2198@r65073-Latitude-D630>
-References: <1324980994-18462-1-git-send-email-paul.liu@linaro.org>
- <1328734286-30091-1-git-send-email-paul.liu@linaro.org>
+	Sat, 11 Feb 2012 01:19:14 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 10 Feb 2012 22:19:01 -0800
+Message-ID: <4F360853.3050402@nvidia.com>
+Date: Fri, 10 Feb 2012 22:18:59 -0800
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328734286-30091-1-git-send-email-paul.liu@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Barry Song <21cnbao@gmail.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 0/3] pinctrl: move the core per-device handlers to core
+References: <1328814050-22715-1-git-send-email-linus.walleij@linaro.org> <4F34A3EF.3070207@nvidia.com> <CACRpkdZ0kTXLAfdsfMjeZZX4W-fx5zyEdeGboKCmKSzCaMVw_A@mail.gmail.com>
+In-Reply-To: <CACRpkdZ0kTXLAfdsfMjeZZX4W-fx5zyEdeGboKCmKSzCaMVw_A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 04:51:25AM +0800, Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On 02/10/2012 12:51 PM, Linus Walleij wrote:
+> On Fri, Feb 10, 2012 at 5:58 AM, Stephen Warren <swarren@nvidia.com> wrote:
 > 
-> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
-> Anatop provides regulators and thermal.
-> This driver handles the address space and the operation of the mfd device.
+>>> These three patches take the first step in this transformation by moving
+>>> the per-device handles over to core code, and renaming all related
+>>> functions with the pinctrl_* prefix.
+>>
+>> The series,
+>> Acked-by: Stephen Warren <swarren@nvidia.com>
 > 
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  drivers/mfd/Kconfig        |    6 ++
->  drivers/mfd/Makefile       |    1 +
->  drivers/mfd/anatop-mfd.c   |  152 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/anatop.h |   39 +++++++++++
->  4 files changed, 198 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/mfd/anatop-mfd.c
->  create mode 100644 include/linux/mfd/anatop.h
+> Thanks, I've managed to push this to -next with the v2 version of
+> [2/3] and the hog patch.
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index cd13e9f..4f71627 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -830,6 +830,12 @@ config MFD_INTEL_MSIC
->  	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
->  	  devices used in Intel Medfield platforms.
->  
-> +config MFD_ANATOP
-> +        bool "Support for Anatop"
-> +	depends on SOC_IMX6Q
-> +	help
-> +	  Select this option to enable Anatop MFD driver.
-> +
->  endmenu
->  endif
->  
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index b953bab..8e11060 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -112,3 +112,4 @@ obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
->  obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
->  obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
->  obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
-> +obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
-> diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-> new file mode 100644
-> index 0000000..58c6054
-> --- /dev/null
-> +++ b/drivers/mfd/anatop-mfd.c
-> @@ -0,0 +1,152 @@
-> +/*
-> + * Anatop MFD driver
-> + *
-> + * Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> + * Copyright (C) 2012 Linaro
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *   (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License along
-> + *  with this program; if not, write to the Free Software Foundation, Inc.,
-> + *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + *
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_address.h>
-> +#include <linux/mfd/anatop.h>
-> +
-> +static u32 anatop_read(struct anatop *adata, u32 addr, int bit_shift, int bits)
-> +{
-> +	u32 val;
-> +	int mask;
-
-Nit: it may be nice to put a blank line here.
-
-> +	if (bits == 32)
-> +		mask = 0xff;
-
-Shouldn't it be ~0?
-
-> +	else
-> +		mask = (1 << bits) - 1;
-> +
-> +	val = ioread32(adata->ioreg+addr);
-
-Why not just readl()?  Nit: put space before and after '+'.
-
-> +	val = (val >> bit_shift) & mask;
-
-Nit: it may be nice to put a blank line here.
-
-> +	return val;
-> +}
-> +
-> +static void anatop_write(struct anatop *adata, u32 addr, int bit_shift,
-> +			 int bits, u32 data)
-> +{
-> +	u32 val;
-> +	int mask;
-> +	if (bits == 32)
-> +		mask = 0xff;
-> +	else
-> +		mask = (1 << bits) - 1;
-> +
-> +	val = ioread32(adata->ioreg+addr) & ~(mask << bit_shift);
-> +	iowrite32((data << bit_shift) | val, adata->ioreg);
-
-Same comments on anatop_read apply on anatop_write here.
-
-> +}
-> +
-> +static const struct of_device_id of_anatop_regulator_match[] = {
-
-A better naming of of_anatop_regulator_match, since it covers not only
-regulator but also thermal as below?
-
-> +	{
-> +		.compatible = "fsl,anatop-regulator",
-> +	},
-
-Nit: since you only have one line here, it could be just:
-
-	{ .compatible = "fsl,anatop-regulator", },
-
-> +	{
-> +		.compatible = "fsl,anatop-thermal",
-> +	},
-> +	{ },
-> +};
-> +
-> +static int of_anatop_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *np = dev->of_node;
-> +	u64 ofaddr;
-> +	u64 ofsize;
-> +	void *ioreg;
-> +	struct anatop *drvdata;
-> +	int ret = 0;
-> +	const __be32 *rval;
-> +
----
-> +	rval = of_get_address(np, 0, &ofsize, NULL);
-> +	if (rval)
-> +		ofaddr = be32_to_cpu(*rval);
-> +	else
-> +		return -EINVAL;
-> +
-> +	ioreg = ioremap(ofaddr, ofsize);
----
-
-Above lines can just be of_iomap(np, 0);
-
-> +	if (!ioreg)
-> +		return -EINVAL;
-> +	drvdata = devm_kzalloc(dev, sizeof(struct anatop), GFP_KERNEL);
-> +	if (!drvdata)
-> +		return -EINVAL;
-> +	drvdata->ioreg = ioreg;
-> +	drvdata->read = anatop_read;
-> +	drvdata->write = anatop_write;
-> +	platform_set_drvdata(pdev, drvdata);
-> +	of_platform_bus_probe(np, of_anatop_regulator_match, dev);
-
-Nit: it may be nice to put a blank line here.
-
-> +	return ret;
-
-The 'ret' is used nowhere, so the above line can just be:
-
-	return 0;
-
-> +}
-> +
-> +static int of_anatop_remove(struct platform_device *pdev)
-> +{
-
-Nothing to do here?  At least iounmap?
-
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id of_anatop_match[] = {
-> +	{
-> +		.compatible = "fsl,imx6q-anatop",
-> +	},
-
-	{ .compatible = "fsl,imx6q-anatop", },
-
-> +	{ },
-> +};
-> +
-> +static struct platform_driver anatop_of_driver = {
-> +	.driver = {
-> +		.name = "anatop-mfd",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = of_anatop_match,
-> +	},
-> +	.probe		= of_anatop_probe,
-> +	.remove		= of_anatop_remove,
-> +};
-> +
-> +static int __init anatop_init(void)
-> +{
-> +	int ret;
-> +	ret = platform_driver_register(&anatop_of_driver);
-> +	return ret;
-
-	return platform_driver_register(&anatop_of_driver);
-
-> +}
-> +
-> +static void __exit anatop_exit(void)
-> +{
-> +	platform_driver_unregister(&anatop_of_driver);
-> +}
-> +
-> +postcore_initcall(anatop_init);
-> +module_exit(anatop_exit);
-> +
-> +MODULE_AUTHOR("Ying-Chun Liu (PaulLiu)");
-
-Missing your email address here.
-
-> +MODULE_DESCRIPTION("ANATOP MFD driver");
-> +MODULE_LICENSE("GPL");
-
-"GPL v2" for better?
-
-> diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
-> new file mode 100644
-> index 0000000..4425538
-> --- /dev/null
-> +++ b/include/linux/mfd/anatop.h
-> @@ -0,0 +1,39 @@
-> +/*
-> + * anatop.h - Anatop MFD driver
-> + *
-> + *  Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
-
-It would nice to use a consistent email address through the patch.
-
-Regards,
-Shawn
-
-> + *  Copyright (C) 2012 Linaro
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#ifndef __LINUX_MFD_ANATOP_H
-> +#define __LINUX_MFD_ANATOP_H
-> +
-> +/**
-> + * anatop - MFD data
-> + * @ioreg: ioremap register
-> + * @read: function to read bits from the device
-> + * @write: function to write bits to the device
-> + */
-> +struct anatop {
-> +	void *ioreg;
-> +	u32 (*read) (struct anatop *adata, u32 addr, int bit_shift, int bits);
-> +	void (*write) (struct anatop *adata, u32 addr, int bit_shift,
-> +		       int bits, u32 data);
-> +
-> +};
-> +
-> +#endif /*  __LINUX_MFD_ANATOP_H */
-> -- 
-> 1.7.8.3
+>> Note that this series will cause some compile breakage in the series I
+>> previously posted to add a pinctrl-tegra driver and convert mach-tegra
+>> to use it. The following patches in that series should still be OK:
+>>
+>> pinctrl: add a driver for NVIDIA Tegra
+>> ARM: tegra: Select PINCTRL Kconfig variables
+>>
+>> ... so you can still go ahead and apply those, but the following will be
+>> broken:
+>>
+>> ARM: tegra: Switch to new pinctrl driver
+>> ARM: tegra: Remove pre-pinctrl pinmux driver
+>>
+>> also the separately posted:
+>>
+>> ARM: tegra: Add pinmux board file for Cardhu
+>>
+>> I'll probably hold off reposting those last 3; with any luck they'll be
+>> eclipsed by my implementing full DT binding support in the near future,
+>> given our consensus on that topic following discussion at Linaro Connect.
 > 
+> OK, alternatively I could remove these for the time being, or I
+> can fix up the mess I created if you prefer, by just adding
+> a patch on top, so it gets changed over no matter if the
+> DT stuff gets sorted out for this merge window?
+
+I'll probably want to rework the 3 patches your changes break anyway (in
+order to completely remove use of board-*-pinmux.c when booting from DT,
+once I write the DT code) and so you may as well not apply them, just
+the driver itself. It'll save some churn.
+
+-- 
+nvpublic
