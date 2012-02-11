@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab2BKIj1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 03:39:27 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61449 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab2BKIj0 (ORCPT
+	id S1754262Ab2BKJOd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 04:14:33 -0500
+Received: from smtp1.infomaniak.ch ([84.16.68.89]:55089 "EHLO
+	smtp1.infomaniak.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab2BKJOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 03:39:26 -0500
-Message-ID: <4F362938.5090705@redhat.com>
-Date: Sat, 11 Feb 2012 09:39:20 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Sat, 11 Feb 2012 04:14:30 -0500
+X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Feb 2012 04:14:29 EST
+Message-ID: <4F362F4B.4060903@brownhat.org>
+Date: Sat, 11 Feb 2012 10:05:15 +0100
+From: Daniele Venzano <venza@brownhat.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-To: "Nelson, Doug" <doug.nelson@intel.com>
-CC: Matthew Wilcox <willy@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: scsi_id: sending ioctl 2285 to a partition
-References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com> <20120209210039.GB14342@linux.intel.com> <4F34D292.4080404@redhat.com> <4F3552A4.70902@intel.com> <4F3572C1.1060703@redhat.com> <4F35746A.1090109@intel.com> <4F3584AF.6030601@redhat.com> <4F35AC75.5090703@intel.com>
-In-Reply-To: <4F35AC75.5090703@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 24/50] sis900: use dev_hw_addr_random() instead of random_ether_addr()
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-25-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1328735457-29986-25-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2012 12:47 AM, Nelson, Doug wrote:
->
-> Here's what I had in 20-local.rules
->
-> KERNEL=="sd*", BUS=="scsi", PROGRAM="scsi_id --whitelisted -d
-> $tempnode", ENV{ID_BUS}="scsi"
->
-> BUS=="scsi", RESULT=="3500151795924153d", NAME="disk-r1e1-d1s%n",
-> GROUP:="dba", OWNER:="oracle"
-> BUS=="scsi", RESULT=="35001517959269241", NAME="disk-r1e1-d2s%n",
-> GROUP:="dba", OWNER:="oracle"
-> BUS=="scsi", RESULT=="3500151795926930d", NAME="disk-r1e1-d3s%n",
-> GROUP:="dba", OWNER:="oracle"
->
+Il 08.02.2012 22:10, Danny Kukawka ha scritto:
 
-Thanks.  I think we could fix scsi_id to strip a partition number and 
-print itself a warning if passed a partition number.
+> Use dev_hw_addr_random() instead of calling random_ether_addr()
+> to set addr_assign_type correctly to NET_ADDR_RANDOM.
 
-That said, the above rules alone would have failed with latest udev due 
-to the use of BUS= (removed in udev 174).
+Acked-by: Daniele Venzano <venza@brownhat.org>
 
-Paolo
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/net/ethernet/sis/sis900.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
+> index c8efc70..cbd0343 100644
+> --- a/drivers/net/ethernet/sis/sis900.c
+> +++ b/drivers/net/ethernet/sis/sis900.c
+> @@ -527,7 +527,7 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
+>  		ret = sis900_get_mac_addr(pci_dev, net_dev);
+>  
+>  	if (!ret || !is_valid_ether_addr(net_dev->dev_addr)) {
+> -		random_ether_addr(net_dev->dev_addr);
+> +		dev_hw_addr_random(net_dev, net_dev->dev_addr);
+>  		printk(KERN_WARNING "%s: Unreadable or invalid MAC address,"
+>  				"using random generated one\n", dev_name);
+>  	}
+
+
