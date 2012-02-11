@@ -1,34 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab2BKNkG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 08:40:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35091 "EHLO mx2.mail.elte.hu"
+	id S1758696Ab2BKNtI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 08:49:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43247 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754945Ab2BKNkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 08:40:04 -0500
-Date: Sat, 11 Feb 2012 14:39:29 +0100
+	id S1755174Ab2BKNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 08:49:07 -0500
+Date: Sat, 11 Feb 2012 14:48:47 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, paul@paulmenage.org,
-        rjw@sisk.pl, tj@kernel.org, frank.rowand@am.sony.com, pjt@google.com,
-        tglx@linutronix.de, lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
- related to cpusets
-Message-ID: <20120211133929.GB28098@elte.hu>
-References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
- <1328671335.2482.72.camel@laptop>
- <4F32174E.2050207@linux.vnet.ibm.com>
- <20120209075701.GE18387@elte.hu>
- <4F3386E9.7090606@linux.vnet.ibm.com>
- <20120209151158.GA22489@elte.hu>
- <1328889127.25989.14.camel@laptop>
+To: Jesper Krogh <jesper@krogh.cc>
+Cc: linux-kernel@vger.kernel.org, jk@novozymes.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        herrmann.der.user@googlemail.com
+Subject: Re: Memory issues with Opteron 6220
+Message-ID: <20120211134847.GD28098@elte.hu>
+References: <20120208143741.GB28486@otto.nzcorp.net>
+ <20120209083315.GA19380@elte.hu>
+ <4F343582.7080007@krogh.cc>
+ <4F3535E7.4000007@krogh.cc>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328889127.25989.14.camel@laptop>
+In-Reply-To: <4F3535E7.4000007@krogh.cc>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -43,41 +38,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+* Jesper Krogh <jesper@krogh.cc> wrote:
 
-> On Thu, 2012-02-09 at 16:11 +0100, Ingo Molnar wrote:
+> [...]
 > 
-> > > My understanding of the code is that when a CPU is taken 
-> > > offline, it is removed from all the cpusets and then the 
-> > > scan_for_empty_cpusets() function is run to move tasks from 
-> > > empty cpusets to their parent cpusets.
-> > 
-> > Why is that done that way? offlining a CPU should be an 
-> > invariant as far as cpusets are concerned.
-> 
-> Can't, tasks need to run someplace. There's two choices, add a 
-> still online cpu to the now empty cpuset or move the tasks to 
-> a parent that still has online cpus.
-> 
-> Both are destructive.
+> I would admit that we could have saved a significant of 
+> time/fustration if dmesg had revealed a message that it was 
+> the overcommit limits being hit and thus knocking off the 
+> processes.
 
-You aren't thinking hard enough ;-) There's several solutions 
-off the top of my mind:
-
-1) refuse the "impossible" offlining of the CPU, with a clear 
-   enough error to make it actionable
-
-2) offer a 'forced' offlinign of a CPU that will SIGTERM all 
-   tasks that are on the now offline CPU and can only be there.
-
-3) offer a 'nice' offlining variant that moves all orphan tasks
-   to their or any other well-defined fallback CPU.
-
-4) *allow* 'impossible' cpusets and just run them on CPU#0 or 
-   any other natural approximation. Don't touch the cpuset!
-
-All of these would be exception mechanisms with no need to do 
-anything at hot-replug time.
+It would be helpful if you could enhance the printk in such a 
+way, and if you tested it with your workload that triggers it - 
+and send us the resulting patch. Having more information in the 
+dmesg is never bad.
 
 Thanks,
 
