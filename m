@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761273Ab2BKET4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 23:19:56 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:49066 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758866Ab2BKETy (ORCPT
+	id S1759143Ab2BKE1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 23:27:12 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33597 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab2BKE1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 23:19:54 -0500
-Message-ID: <4F35EC3C.5090305@linux.vnet.ibm.com>
-Date: Sat, 11 Feb 2012 09:49:08 +0530
+	Fri, 10 Feb 2012 23:27:09 -0500
+Message-ID: <4F35EE11.5010202@linux.vnet.ibm.com>
+Date: Sat, 11 Feb 2012 09:56:57 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM / Sleep: Remove unnecessary label from suspend_freeze_processes()
-References: <201202110035.32993.rjw@sisk.pl>
-In-Reply-To: <201202110035.32993.rjw@sisk.pl>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+        paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        paul@paulmenage.org, tj@kernel.org, frank.rowand@am.sony.com,
+        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
+        prashanth@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling related
+ to cpusets
+References: <Pine.LNX.4.44L0.1202101647440.1179-100000@iolanthe.rowland.org> <201202102339.02702.rjw@sisk.pl> <1328926042.2476.3.camel@laptop>
+In-Reply-To: <1328926042.2476.3.camel@laptop>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12021104-2674-0000-0000-0000034DE9AA
+x-cbid: 12021104-2000-0000-0000-00000660749C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2012 05:05 AM, Rafael J. Wysocki wrote:
+On 02/11/2012 07:37 AM, Peter Zijlstra wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+> On Fri, 2012-02-10 at 23:39 +0100, Rafael J. Wysocki wrote:
+>>
+>>> I don't see why not.  Presumably no CPUs will be added or removed while 
+>>> the system is asleep.
+>>
+>> ACPI explicitly forbids that level of hardware reconfiguration in a sleep
+>> state (even in S4), AFAICS.  Still, people may try to do that ... 
 > 
-> The Finish label in suspend_freeze_processes() is in fact necessary
-
-
-s/necessary/unnecessary
-
-> and makes the function look more complicated that it really is, so
-
-
-s/that/than
-
-> remove it (along with a few empty lines).
+> I'm ok with breaking that :-) If its really really important to someone
+> we (him most likely) could fix it by detecting the topology changed over
+> the suspend and do a fixup. Assuming it actually gets that far.
 > 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
+> Srivatsa, wanna give this (the proposal to not modify cpusets on
+> CPU_TASKS_FROZEN) a try?
 > 
 
 
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Sure! After you pointed out that CPU Hotplug is destructive in general and
+hence it is not a good idea to put back online CPUs to cpusets, the next
+thing I thought of trying was a special case handling for suspend/resume
+alone, IOW, not calling the cpuset update upon CPU_TASKS_FROZEN.
+
+So, yes, I'll write up a patch for that and post it soon :-)
 
 Regards,
 Srivatsa S. Bhat
-
-> The patch is on top of linux-pm/pm-sleep.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
->  kernel/power/power.h |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> Index: linux/kernel/power/power.h
-> ===================================================================
-> --- linux.orig/kernel/power/power.h
-> +++ linux/kernel/power/power.h
-> @@ -234,16 +234,14 @@ static inline int suspend_freeze_process
->  	int error;
-> 
->  	error = freeze_processes();
-> -
->  	/*
->  	 * freeze_processes() automatically thaws every task if freezing
->  	 * fails. So we need not do anything extra upon error.
->  	 */
->  	if (error)
-> -		goto Finish;
-> +		return error;
-> 
->  	error = freeze_kernel_threads();
-> -
->  	/*
->  	 * freeze_kernel_threads() thaws only kernel threads upon freezing
->  	 * failure. So we have to thaw the userspace tasks ourselves.
-> @@ -251,7 +249,6 @@ static inline int suspend_freeze_process
->  	if (error)
->  		thaw_processes();
-> 
-> - Finish:
->  	return error;
->  }
-> 
-> 
 
