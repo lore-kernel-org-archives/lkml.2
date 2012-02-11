@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab2BKTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 14:04:59 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:46756 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2BKTE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 14:04:58 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <haveblue@us.ibm.com>,
-        linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        St?phane Graber <stgraber@ubuntu.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>
-Subject: Re: prevent containers from turning host filesystem readonly
-References: <20120211031939.GA4772@sergelap>
-	<20120211033732.GK23916@ZenIV.linux.org.uk>
-	<20120211040722.GA5891@sergelap>
-Date: Sat, 11 Feb 2012 11:07:46 -0800
-In-Reply-To: <20120211040722.GA5891@sergelap> (Serge Hallyn's message of "Fri,
-	10 Feb 2012 22:07:22 -0600")
-Message-ID: <m1zkcp2np9.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754854Ab2BKTIK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 14:08:10 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:42695 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753990Ab2BKTII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 14:08:08 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: OT question on top/htop/etc system monitors
+Date: Sat, 11 Feb 2012 14:08:06 -0500
+User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+JPARbnTztlYn7PeqaKsINazFrqnZ5GPA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202111408.06101.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serge Hallyn <serge.hallyn@canonical.com> writes:
+Greetings all;
 
-> Quoting Al Viro (viro@ZenIV.linux.org.uk):
->> On Fri, Feb 10, 2012 at 09:19:39PM -0600, Serge Hallyn wrote:
->> > When a container shuts down, it likes to do 'mount -o remount,ro /'.
->> > That sets the superblock's readonly flag, not the mount's.  So unless
->> > the mount action fails for some reason (i.e. a file is held open on
->> > the fs), if the container's rootfs is just a directory on the host's
->> > fs, the host fs will be marked readonly.
->> > 
->> > Thanks to Dave Hansen for pointing out how simple the fix can be.  If
->> > the devices cgroup denies the mounting task write access to the
->> > underlying superblock (as it usually does when the container's root fs
->> > is on a block device shared with the host), then it do_remount_sb should
->> > deny the right to change mount flags as well.
->> > 
->> > This patch adds that check.
->> > 
->> > Note that another possibility would be to have the LSM step in.  We
->> > can't catch this (as is) at the LSM level because security_remount_sb
->> > doesn't get the mount flags, so we can't distinguish
->> > 	mount -o remount,ro
->> > from
->> > 	mount --bind -o remount,ro.
->> > Sending the flags to that hook would probably be a good idea in addition
->> > to this patch, but I haven't done it here.
->> 
->> NAK.  This is just plain wrong - what about the filesystems that are not
->
-> BTW, sorry - the patch clearly should've taken non-bdevs into account, but
-> I accept that wouldn't have been enough to evade a NAK.
->
->> bdev-backed or, as e.g. btrfs, sit on more than one device?
->
-> btrfs is actually one of my main motivators - to quickly snapshot containers
-> with btrfs means that the containers all share one fs, but that means one
-> container can mark them all ro.
+Users of the RTAI facility to run certain processes on a cpu core that has 
+been isolated by the boot parameter 'isolcpus=n' command need to be able to 
+confirm that the process so launched is indeed using x% of that cpu core.
 
-Serge let me respectfully suggest that getting the user namespace done
-will deal with this issue nicely.
+There doesn't appear to be any facility in such as htop, to actually 
+determine this usage.  In fact, if we taskset the whole linuxcnc (was emc 
+till the lawyers wrote) gkrellm is the only utility that does show any 
+usage of that isolated core.  Then of course its quite high because every 
+thread in the program is running on that core.
 
-In the simple case you simply won't be root so remount will just be
-denied.
+Is the monitoring of an isolcpus defined core even possible?
 
-When/if we allow a limited form of unprivileged mounts in a user
-namespace your user won't have mounted the filesystem so you should not
-have the privilege to call remount on the filesystem.
+And if possible, could it be added to htop so it displays the core that the 
+RTAI threads are running on?
 
-I think I will have a set of patches ready for serious scrutiny in
-the next week or so.  So we aren't talking impossible pie in the sky
-distance to see this happen.
+It would sure give us another tool to help optimize this application.
 
-Eric
+Thanks and Cheers, Gene
+-- 
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+My web page: <http://coyoteden.dyndns-free.com:85/gene>
+We totally deny the allegations, and we're trying to identify the 
+allegators.
