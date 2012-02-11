@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab2BKTIe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 14:08:34 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:51142 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751335Ab2BKTId (ORCPT
+	id S1754904Ab2BKTeq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 14:34:46 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:43704 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2BKTep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 14:08:33 -0500
-Message-ID: <4F36BC92.2000105@xenotime.net>
-Date: Sat, 11 Feb 2012 11:08:02 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sat, 11 Feb 2012 14:34:45 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
+Date: Sat, 11 Feb 2012 20:37:07 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>
+References: <Pine.LNX.4.44L0.1202061007570.1525-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202061007570.1525-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] usb: add missing Kconfig UWB select to USB_WHCI_HCD and
- USB_HWA_HCD
-References: <1328857675.7327.8.camel@marge.simpson.net>	 <4F3541AE.50807@xenotime.net> <20120210181116.GA19806@kroah.com> <1328939004.7340.21.camel@marge.simpson.net>
-In-Reply-To: <1328939004.7340.21.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201202112037.07173.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 09:43 PM, Mike Galbraith wrote:
-> On Fri, 2012-02-10 at 10:11 -0800, Greg Kroah-Hartman wrote: 
->> On Fri, Feb 10, 2012 at 08:11:26AM -0800, Randy Dunlap wrote:
->>> On 02/09/2012 11:07 PM, Mike Galbraith wrote:
->>>> usb: add missing Kconfig UWB select to USB_WHCI_HCD and USB_HWA_HCD
->>>>
->>>> cripts/kconfig/conf --oldconfig Kconfig
->>>> warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
->>>> warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
->>>> warning: (USB_WHCI_HCD && USB_HWA_HCD) selects USB_WUSB which has unmet direct dependencies (USB_SUPPORT && EXPERIMENTAL && USB && PCI && UWB)
->>>> warning: (USB_WHCI_HCD) selects UWB_WHCI which has unmet direct dependencies (UWB && PCI)
->>>>
->>>> Signed-off-by: Mike Galbraith <efault@gmx.de>
->>>
->>> I have 2 patches in linux-next that fix the UWB/WUSB problems by using "depends on"
->>> instead...
->>
->> Yes, this should all now be resolved, Mike can you verify this please?
+Am Montag, 6. Februar 2012, 16:13:37 schrieb Alan Stern:
+> On Mon, 6 Feb 2012, Huang Ying wrote:
 > 
-> Nah, Randy surely did, and it would be hard to mess it up ;-)
+> > SSD becomes more and more popular, this makes it possible to put disk into
+> > low power state more often.  And request based runtime PM for scsi disk is
+> > more useful than open/close based one because disk is normally mounted at
+> > most time.
 
-Hah.  It took me two simple patches to get it right AFAIK.  :(
+Yes.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > One known issue, because SCSI TEST_UNIT_READY will be put into request
+> > queue every 2 seconds by default, this makes it hard for disk to sleep.
+> > Maybe we can implement check_events callback in some other way?
+> > 
+> > [RFC 1/5] pm, runtime, Add resume notifier
+> > [RFC 2/5] scsi, pm, rename scsi_autopm_get/put_xxx to
+> > [RFC 3/5] scsi, pm, add pm_runtime_get/put in scsi request
+> > [RFC 4/5] scsi, pm, use autosuspend for scsi runtime PM
+> > [RFC 5/5] scsi, sd, pm, request based runtime PM support
+> 
+> Your whole approach is at the wrong level.  Runtime PM between I/O 
+> requests for block devices should be implemented in the block layer, 
+> not in the SCSI layer.
+
+I must disagree. The block layer has no more information than the SCSI
+layer and lacks everything the lower layers know.
+
+> It also is much more difficult than your patches would indicate.  For 
+> example, some USB card readers indicate a media change every time they 
+> resume; therefore they must not be suspended while the device file is 
+> open.
+
+Actually they must not be suspended while they contain a medium,
+lest you drive the GUI and the user mad.
+ 
+> Another difficulty arises because some drivers need to send SCSI 
+> commands (such as SYNCHRONIZE CACHE) _while_ suspending or resuming.
+
+It seems to me that most of these difficulties go away if we strictly
+differentiate between host adapter and disks.
+
+First, the sr driver cannot really suspend a disk. It can spin down a disk,
+but that is not the same thing as suspending, because the disk is still
+functional. It may just return special sense codes. The sr driver just
+prepares devices for suspension.
+It is true, that the sr driver probably does have a few conditions under
+which a device should not be suspended (eg. error handling) but it
+lacks positive knowledge about when we may suspend.
+
+The same is also true for any higher layer.
+
+The problem of needing to do IO for suspension goes away if we
+treat the disk as always suspendable and use an active command
+as a condition for not suspending the storage device as opposed to the disk
+the problem goes away.
+
+	Regards
+		Oliver
