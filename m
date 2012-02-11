@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab2BKOri (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 09:47:38 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45630 "EHLO mx2.mail.elte.hu"
+	id S1758820Ab2BKOuN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 09:50:13 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48094 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977Ab2BKOrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 09:47:37 -0500
-Date: Sat, 11 Feb 2012 15:47:28 +0100
+	id S1754323Ab2BKOuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 09:50:11 -0500
+Date: Sat, 11 Feb 2012 15:50:03 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [RFC PATCH] x86, intel_mid: ADC management
-Message-ID: <20120211144728.GB497@elte.hu>
-References: <20120207164428.3524.77036.stgit@bob.linux.org.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, soc: Fix fallout from the previous changes
+Message-ID: <20120211145003.GC497@elte.hu>
+References: <20120209141517.26563.45774.stgit@bob.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120207164428.3524.77036.stgit@bob.linux.org.uk>
+In-Reply-To: <20120209141517.26563.45774.stgit@bob.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,9 +35,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > From: Alan Cox <alan@linux.intel.com>
 > 
-> This is a fold up of the following ported to 3.3
+> The PCI fixups get executed based upon whether they are linked in. We need
+> to avoid executing them if we boot a dual SoC/PC type kernel on a PC class
+> system.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+>  arch/x86/pci/mrst.c |   12 +++++++++++-
+>  1 files changed, 11 insertions(+), 1 deletions(-)
 
-Looks sane at first glance - wanna submit it?
+This would be for Jesse's PCI tree I think.
 
 Thanks,
 
