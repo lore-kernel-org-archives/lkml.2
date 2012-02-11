@@ -1,183 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab2BKXYe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 18:24:34 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48142 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505Ab2BKXYb convert rfc822-to-8bit (ORCPT
+	id S1755140Ab2BKX1p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 18:27:45 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49723 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab2BKX1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 18:24:31 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: Re: [PATCH] Input: Add ioctl to block suspend while event queue is not empty.
-Date: Sun, 12 Feb 2012 00:28:23 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-References: <1327112659-31145-1-git-send-email-arve@android.com>
-In-Reply-To: <1327112659-31145-1-git-send-email-arve@android.com>
+	Sat, 11 Feb 2012 18:27:44 -0500
+Date: Sat, 11 Feb 2012 23:27:40 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: hexagon: signal handling bugs
+Message-ID: <20120211232740.GM23916@ZenIV.linux.org.uk>
+References: <20110817163457.878854582@codeaurora.org>
+ <20110817163521.165013232@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202120028.23364.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817163521.165013232@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+	1) unless I'm seriously misreading hexagon vm_entry.S, once we'd
+called do_notify_resume, we do *not* recheck if there's more work to
+be done.  In particular, if we'd got more signals pending - e.g. from
+SIGSEGV we'd got while trying to set a sigframe up.  That's not a good
+thing for a lot of reasons.  Note that once that is fixed, you'll need
+to make sure that restart logics is applied only *once* - not for subsequent
+sigframes.
 
-On Saturday, January 21, 2012, Arve Hjønnevåg wrote:
-> Add an ioctl, EVIOCSSUSPENDBLOCK, to block suspend while the event
-> queue is not empty. This allows userspace code to process input
-> events while the device appears to be asleep.
+	2) sigreturn should *NOT* be restartable at all, or you'll get
+a lot of hard-to-reproduce fun.  AFAICS, the right thing to do would
+be to set ->syscall_nr to something negative, not __NR_rt_sigreturn in there
+(and return regs->r00 instead of 0, to avoid the check in do_trap0).
+Reason: suppose you have e.g. a loop that runs through different values in
+r00.  No syscalls in it.  A signal comes and gets treated on the way
+out of kernel after the next e.g. timer interrupt.  We save the values
+of registers into a sigframe and go into the handler.  Another signal
+comes; the next time we reach the kernel is when we get to rt_sigreturn().
+There we
+	* have registers restored from on-stack sigframe
+	* have ->syscall_nr set to __NR_rt_sigreturn
+	* hit handle_signal() on the way out
+	* check ->r00; note that this is the value we have just restored
+from sigframe.  If it happens to be -ERESTARTNOHAND, silently replace it
+with -EINTR.  And eventually return to clueless userland.
+Result: if timer interrupt happens when the userland loop goes through
+-ERESTARTNOHAND, the value of r00 is clobbered upon return from signal handler.
+Fun debugging that kind of bugs: priceless...
 
-I have two questions to start with, if you don't mind:
+	3) on sigreturn we need to set current->restart_block.fn; hexagon
+doesn't do that.
 
-(1) Does Android user space use an analogous interface right now or is it
-    a prototype?
+	4) altstack can overflow; you don't check that.  See
+commit 83bd01024b1fdfc41d9b758e5669e80fca72df66
+Author: Roland McGrath <roland@redhat.com>
+Date:   Wed Jan 30 13:30:06 2008 +0100
+for an analog.
 
-(2) What exactly are the use cases for it (ie. what problem does it address
-    that cannot be addressed in a different way)?
+	5) try_to_freeze() has no business being called in do_signal();
+let get_signal_to_deliver() handle that.
 
-Rafael
-
-> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-> ---
->  drivers/input/evdev.c |   63 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/input.h |    3 ++
->  2 files changed, 66 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 76457d5..e212757 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -43,6 +43,7 @@ struct evdev_client {
->  	unsigned int tail;
->  	unsigned int packet_head; /* [future] position of the first element of next packet */
->  	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-> +	struct wakeup_source *wakeup_source;
->  	struct fasync_struct *fasync;
->  	struct evdev *evdev;
->  	struct list_head node;
-> @@ -75,10 +76,14 @@ static void evdev_pass_event(struct evdev_client *client,
->  		client->buffer[client->tail].value = 0;
->  
->  		client->packet_head = client->tail;
-> +		if (client->wakeup_source)
-> +			__pm_relax(client->wakeup_source);
->  	}
->  
->  	if (event->type == EV_SYN && event->code == SYN_REPORT) {
->  		client->packet_head = client->head;
-> +		if (client->wakeup_source)
-> +			__pm_stay_awake(client->wakeup_source);
->  		kill_fasync(&client->fasync, SIGIO, POLL_IN);
->  	}
->  
-> @@ -255,6 +260,10 @@ static int evdev_release(struct inode *inode, struct file *file)
->  	mutex_unlock(&evdev->mutex);
->  
->  	evdev_detach_client(evdev, client);
-> +	if (client->wakeup_source) {
-> +		__pm_relax(client->wakeup_source);
-> +		wakeup_source_unregister(client->wakeup_source);
-> +	}
->  	kfree(client);
->  
->  	evdev_close_device(evdev);
-> @@ -373,6 +382,9 @@ static int evdev_fetch_next_event(struct evdev_client *client,
->  	if (have_event) {
->  		*event = client->buffer[client->tail++];
->  		client->tail &= client->bufsize - 1;
-> +		if (client->wakeup_source &&
-> +		    client->packet_head == client->tail)
-> +			__pm_relax(client->wakeup_source);
->  	}
->  
->  	spin_unlock_irq(&client->buffer_lock);
-> @@ -623,6 +635,48 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
->  	return input_set_keycode(dev, &ke);
->  }
->  
-> +static int evdev_enable_suspend_block(struct evdev *evdev,
-> +				      struct evdev_client *client)
-> +{
-> +	struct wakeup_source *ws;
-> +	char name[28];
-> +
-> +	if (client->wakeup_source)
-> +		return 0;
-> +
-> +	snprintf(name, sizeof(name), "%s-%d",
-> +		 dev_name(&evdev->dev), task_tgid_vnr(current));
-> +
-> +	ws = wakeup_source_register(name);
-> +	if (!ws)
-> +		return -ENOMEM;
-> +
-> +	spin_lock_irq(&client->buffer_lock);
-> +	client->wakeup_source = ws;
-> +	if (client->packet_head != client->tail)
-> +		__pm_stay_awake(client->wakeup_source);
-> +	spin_unlock_irq(&client->buffer_lock);
-> +	return 0;
-> +}
-> +
-> +static int evdev_disable_suspend_block(struct evdev *evdev,
-> +				       struct evdev_client *client)
-> +{
-> +	struct wakeup_source *ws;
-> +
-> +	spin_lock_irq(&client->buffer_lock);
-> +	ws = client->wakeup_source;
-> +	client->wakeup_source = NULL;
-> +	spin_unlock_irq(&client->buffer_lock);
-> +
-> +	if (ws) {
-> +		__pm_relax(ws);
-> +		wakeup_source_unregister(ws);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  			   void __user *p, int compat_mode)
->  {
-> @@ -696,6 +750,15 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  
->  	case EVIOCSKEYCODE_V2:
->  		return evdev_handle_set_keycode_v2(dev, p);
-> +
-> +	case EVIOCGSUSPENDBLOCK:
-> +		return put_user(!!client->wakeup_source, ip);
-> +
-> +	case EVIOCSSUSPENDBLOCK:
-> +		if (p)
-> +			return evdev_enable_suspend_block(evdev, client);
-> +		else
-> +			return evdev_disable_suspend_block(evdev, client);
->  	}
->  
->  	size = _IOC_SIZE(cmd);
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index 3862e32..daf0177 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -129,6 +129,9 @@ struct input_keymap_entry {
->  
->  #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
->  
-> +#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
-> +#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
-> +
->  /*
->   * Device properties and quirks
->   */
-> 
-
+I don't have any access to hardware *or* cross-toolchain, so all I can do
+here is RTFS and review.  For #2..#5 I would not be afraid to post untested
+patches (they are essentially trivial), but #1 is well beyond my arrogance
+threshold - messing in assembler glue on an architecture I don't know *and*
+can't test...  Sorry.
