@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab2BKL24 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 06:28:56 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52438 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757197Ab2BKL2z (ORCPT
+	id S1758008Ab2BKLfS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 06:35:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44468 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754777Ab2BKLfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 06:28:55 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 11 Feb 2012 12:28:32 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/3] firewire-sbp2: Ignore SBP-2 targets on the local
- node
-Message-ID: <20120211122832.25f00d59@stein>
-In-Reply-To: <1328881314-26544-3-git-send-email-bootc@bootc.net>
-References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
-	<1328881314-26544-1-git-send-email-bootc@bootc.net>
-	<1328881314-26544-3-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 11 Feb 2012 06:35:16 -0500
+Message-ID: <4F36526B.7070809@kernel.dk>
+Date: Sat, 11 Feb 2012 12:35:07 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Shaohua Li <shli@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
+References: <CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com> <CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com> <20120208162925.GA19392@google.com> <CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com> <20120209175948.GE19392@google.com> <CA+55aFzVmb_DfPPDyeON9X2KAii79g=NszPi+k9jrNLdQS7+4g@mail.gmail.com> <20120209192431.GF19392@google.com> <20120209234844.GG19392@google.com> <CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com> <CANejiEVBd6eu8LwmhbMvQqMW4LqUh6F-5psyW0dVYU06WEJqBQ@mail.gmail.com> <20120211021724.GO19392@google.com>
+In-Reply-To: <20120211021724.GO19392@google.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 10 Chris Boot wrote:
-> The firewire-sbp2 module tries to login to an SBP-2/3 target even when
-> it is running on the local node, which fails because of the inability to
-> fetch data from DMA mapped regions using firewire transactions on the
-> local node. It also doesn't make much sense to have the initiator and
-> target on the same node, so this patch prevents this behaviour.
+On 2012-02-11 03:17, Tejun Heo wrote:
+> Hello,
 > 
-> Signed-off-by: Chris Boot <bootc@bootc.net>
-> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> ---
->  drivers/firewire/sbp2.c |   19 +++++++++++++++++--
->  1 files changed, 17 insertions(+), 2 deletions(-)
+> On Fri, Feb 10, 2012 at 04:48:49PM +0800, Shaohua Li wrote:
+>>>> Can you please test the following one?  It's probably the simplest
+>>>> version w/o RCU and wq deferring.  RCUfying isn't too bad but I'm
+>>>> still a bit hesitant because RCU coverage needs to be extended to
+>>>> request_queue via conditional synchronize_rcu() in queue exit path
+>>>> (can't enforce delayed RCU free on request_queues and unconditional
+>>>> synchronize_rcu() may cause excessive delay during boot for certain
+>>>> configurations).  It now can be done in the block core layer proper so
+>>>> it shouldn't be as bad tho.  If this too flops, I'll get to that.
+>>> doesn't work.
+>> I added trace in the schedule_work code path of put_io_context, which
+>> runs very rare. So it's not lock contention for sure.
+>> Sounds the only difference between the good/bad cases is the good
+>> case runs with rcu_lock_read/rcu_read_unlock. I also checked slab
+>> info, the cfq related slab doesn't use too many memory, unlikely
+>> because rcu latency uses too many memory.
 > 
-> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-> index ed5bbbf..1572a79 100644
-> --- a/drivers/firewire/sbp2.c
-> +++ b/drivers/firewire/sbp2.c
-> @@ -1138,6 +1138,12 @@ static int sbp2_probe(struct device *dev)
->  	struct Scsi_Host *shost;
->  	u32 model, firmware_revision;
->  
-> +	/* ignore targets on the local node */
-> +	if (device->node == device->card->local_node) {
-> +		dev_set_drvdata(&unit->device, NULL);
-> +		return 0;
-> +	}
-> +
->  	if (dma_get_max_seg_size(device->card->device) > SBP2_MAX_SEG_SIZE)
->  		BUG_ON(dma_set_max_seg_size(device->card->device,
->  					    SBP2_MAX_SEG_SIZE));
-> @@ -1204,6 +1210,10 @@ static void sbp2_update(struct fw_unit *unit)
->  	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
->  	struct sbp2_logical_unit *lu;
->  
-> +	/* no drvdata means a target on a local node; ignoring */
-> +	if (!tgt)
-> +		return;
-> +
->  	fw_device_enable_phys_dma(fw_parent_device(unit));
->  
->  	/*
-> @@ -1223,10 +1233,15 @@ static int sbp2_remove(struct device *dev)
->  	struct fw_device *device = fw_parent_device(unit);
->  	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
->  	struct sbp2_logical_unit *lu, *next;
-> -	struct Scsi_Host *shost =
-> -		container_of((void *)tgt, struct Scsi_Host, hostdata[0]);
-> +	struct Scsi_Host *shost;
->  	struct scsi_device *sdev;
->  
-> +	/* no drvdata means a target on a local node; ignoring */
-> +	if (!tgt)
-> +		return 0;
-> +
-> +	shost = container_of((void *)tgt, struct Scsi_Host, hostdata[0]);
-> +
->  	/* prevent deadlocks */
->  	sbp2_unblock(tgt);
->  
+> Yeah, that makes much more sense.  It just isn't hot enough path for
+> this sort of micro locking changes to matter.  I think the problem is
+> that, after the change, the cfqq aren't being expired immediately on
+> task exit.  ie. While moving the cic destruction to release path, I
+> accidentally removed exit notification to cfq.  I'll come up with a
+> fix.
 
-In the long run, we might want to support target and initiator set up to
-reside on the same node and talking to each other via loopback, if
-somebody really needs it and if it can be done with reasonably little
-effort.  Until then, the patch is fine with me WRT what it accomplishes.
+Was just thinking about that last night, the missing slice expire on
+task exit makes a LOT more sense than changed locking.
 
-But I do wonder:  Shouldn't this be implemented by returning from the
-driver probe method with an error?  If so, which errno should be
-returned?  (Cc'ing driver core maintainer for this question.)
+I'm pushing off what I have to Linus today, since I'll be gone skiing
+next week. I will check email regularly and be able to apply patches and
+so forth, just a heads up on availability.
+
 -- 
-Stefan Richter
--=====-===-- --=- -=-==
-http://arcgraph.de/sr/
+Jens Axboe
+
