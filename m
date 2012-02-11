@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2BKTpQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 14:45:16 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:52756 "EHLO
+	id S1753938Ab2BKTpO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 14:45:14 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:52751 "EHLO
 	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab2BKToW (ORCPT
+	with ESMTP id S1750848Ab2BKToW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 Feb 2012 14:44:22 -0500
 From: Chris Boot <bootc@bootc.net>
@@ -12,9 +12,9 @@ To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
         nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
         Chris Boot <bootc@bootc.net>
-Subject: [PATCH 04/13] firewire-sbp-target: Add sbp_base.h header
-Date: Sat, 11 Feb 2012 19:44:03 +0000
-Message-Id: <1328989452-20921-5-git-send-email-bootc@bootc.net>
+Subject: [PATCH 05/13] firewire-sbp-target: Add sbp_configfs.c
+Date: Sat, 11 Feb 2012 19:44:04 +0000
+Message-Id: <1328989452-20921-6-git-send-email-bootc@bootc.net>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1328989452-20921-1-git-send-email-bootc@bootc.net>
 References: <4E4BD560.4010806@bootc.net>
@@ -23,10 +23,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This header contains defines and structures that are common to many of
-the modules of the target code. This includes SBP-2 protocol structures
-and constants as well as a few structs for setting up the target, LUN
-login information and session setup.
+This is used to glue the target framework's configfs code to the target
+code, and what is used to create targets and link them to LUNs to
+export. The code to create the FireWire unit directory to advertise
+targets on the FireWire bus is also in here.
 
 Signed-off-by: Chris Boot <bootc@bootc.net>
 Cc: Andy Grover <agrover@redhat.com>
@@ -34,211 +34,774 @@ Cc: Clemens Ladisch <clemens@ladisch.de>
 Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
 Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/target/sbp/sbp_base.h |  196 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 196 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/sbp/sbp_base.h
+ drivers/target/sbp/sbp_configfs.c |  759 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 759 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/sbp/sbp_configfs.c
 
-diff --git a/drivers/target/sbp/sbp_base.h b/drivers/target/sbp/sbp_base.h
+diff --git a/drivers/target/sbp/sbp_configfs.c b/drivers/target/sbp/sbp_configfs.c
 new file mode 100644
-index 0000000..629ae1a
+index 0000000..530d1d7
 --- /dev/null
-+++ b/drivers/target/sbp/sbp_base.h
-@@ -0,0 +1,196 @@
++++ b/drivers/target/sbp/sbp_configfs.c
+@@ -0,0 +1,759 @@
++/*
++ * SBP2 target driver (SCSI over IEEE1394 in target mode)
++ *
++ * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ */
 +
-+#define SBP_VERSION  "v0.1"
-+#define SBP_NAMELEN 32
++#define KMSG_COMPONENT "sbp_target"
++#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
 +
-+#define SBP_ORB_FETCH_SIZE	8
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/version.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/kthread.h>
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/configfs.h>
++#include <linux/ctype.h>
++#include <linux/firewire.h>
 +
-+#define MANAGEMENT_AGENT_STATE_IDLE	0
-+#define MANAGEMENT_AGENT_STATE_BUSY	1
++#include <asm/unaligned.h>
 +
-+#define ORB_NOTIFY(v)			(((v) >> 31) & 0x01)
-+#define ORB_REQUEST_FORMAT(v)		(((v) >> 29) & 0x03)
++#include <target/target_core_base.h>
++#include <target/target_core_backend.h>
++#include <target/target_core_fabric.h>
++#include <target/target_core_configfs.h>
++#include <target/target_core_fabric_configfs.h>
++#include <target/configfs_macros.h>
 +
-+#define MANAGEMENT_ORB_FUNCTION(v)	(((v) >> 16) & 0x0f)
++#include "sbp_base.h"
++#include "sbp_fabric.h"
++#include "sbp_management_agent.h"
++#include "sbp_proto.h"
 +
-+#define MANAGEMENT_ORB_FUNCTION_LOGIN			0x0
-+#define MANAGEMENT_ORB_FUNCTION_QUERY_LOGINS		0x1
-+#define MANAGEMENT_ORB_FUNCTION_RECONNECT		0x3
-+#define MANAGEMENT_ORB_FUNCTION_SET_PASSWORD		0x4
-+#define MANAGEMENT_ORB_FUNCTION_LOGOUT			0x7
-+#define MANAGEMENT_ORB_FUNCTION_ABORT_TASK		0xb
-+#define MANAGEMENT_ORB_FUNCTION_ABORT_TASK_SET		0xc
-+#define MANAGEMENT_ORB_FUNCTION_LOGICAL_UNIT_RESET	0xe
-+#define MANAGEMENT_ORB_FUNCTION_TARGET_RESET		0xf
++/* Local pointer to allocated TCM configfs fabric module */
++struct target_fabric_configfs *sbp_fabric_configfs;
 +
-+#define LOGIN_ORB_EXCLUSIVE(v)		(((v) >> 28) &   0x01)
-+#define LOGIN_ORB_RESERVED(v)		(((v) >> 24) &   0x0f)
-+#define LOGIN_ORB_RECONNECT(v)		(((v) >> 20) &   0x0f)
-+#define LOGIN_ORB_LUN(v)		(((v) >>  0) & 0xffff)
-+#define LOGIN_ORB_PASSWORD_LENGTH(v)	(((v) >> 16) & 0xffff)
-+#define LOGIN_ORB_RESPONSE_LENGTH(v)	(((v) >>  0) & 0xffff)
-+
-+#define RECONNECT_ORB_LOGIN_ID(v)	(((v) >>  0) & 0xffff)
-+#define LOGOUT_ORB_LOGIN_ID(v)		(((v) >>  0) & 0xffff)
-+
-+#define CMDBLK_ORB_DIRECTION(v)		(((v) >> 27) &   0x01)
-+#define CMDBLK_ORB_SPEED(v)		(((v) >> 24) &   0x07)
-+#define CMDBLK_ORB_MAX_PAYLOAD(v)	(((v) >> 20) &   0x0f)
-+#define CMDBLK_ORB_PG_TBL_PRESENT(v)	(((v) >> 19) &   0x01)
-+#define CMDBLK_ORB_PG_SIZE(v)		(((v) >> 16) &   0x07)
-+#define CMDBLK_ORB_DATA_SIZE(v)		(((v) >>  0) & 0xffff)
-+
-+#define STATUS_BLOCK_SRC(v)		(((v) &   0x03) << 30)
-+#define STATUS_BLOCK_RESP(v)		(((v) &   0x03) << 28)
-+#define STATUS_BLOCK_DEAD(v)		(((v) ? 1 : 0)  << 27)
-+#define STATUS_BLOCK_LEN(v)		(((v) &   0x07) << 24)
-+#define STATUS_BLOCK_SBP_STATUS(v)	(((v) &   0xff) << 16)
-+#define STATUS_BLOCK_ORB_OFFSET_HIGH(v)	(((v) & 0xffff) <<  0)
-+
-+#define STATUS_SRC_ORB_CONTINUING	0
-+#define STATUS_SRC_ORB_FINISHED		1
-+#define STATUS_SRC_UNSOLICITED		2
-+
-+#define STATUS_RESP_REQUEST_COMPLETE	0
-+#define STATUS_RESP_TRANSPORT_FAILURE	1
-+#define STATUS_RESP_ILLEGAL_REQUEST	2
-+#define STATUS_RESP_VENDOR_DEPENDENT	3
-+
-+#define SBP_STATUS_OK			0
-+#define SBP_STATUS_REQ_TYPE_NOTSUPP	1
-+#define SBP_STATUS_SPEED_NOTSUPP	2
-+#define SBP_STATUS_PAGE_SIZE_NOTSUPP	3
-+#define SBP_STATUS_ACCESS_DENIED	4
-+#define SBP_STATUS_LUN_NOTSUPP		5
-+#define SBP_STATUS_PAYLOAD_TOO_SMALL	6
-+/* 7 is reserved */
-+#define SBP_STATUS_RESOURCES_UNAVAIL	8
-+#define SBP_STATUS_FUNCTION_REJECTED	9
-+#define SBP_STATUS_LOGIN_ID_UNKNOWN	10
-+#define SBP_STATUS_DUMMY_ORB_COMPLETE	11
-+#define SBP_STATUS_REQUEST_ABORTED	12
-+#define SBP_STATUS_UNSPECIFIED_ERROR	0xff
-+
-+#define AGENT_STATE_RESET	0
-+#define AGENT_STATE_ACTIVE	1
-+#define AGENT_STATE_SUSPENDED	2
-+#define AGENT_STATE_DEAD	3
-+
-+struct sbp2_pointer {
-+	__be32 high;
-+	__be32 low;
++static const u32 sbp_unit_directory_template[] = {
++	0x1200609e, /* unit_specifier_id: NCITS/T10 */
++	0x13010483, /* unit_sw_version: 1155D Rev 4 */
++	0x3800609e, /* command_set_specifier_id: NCITS/T10 */
++	0x390104d8, /* command_set: SPC-2 */
++	0x3b000000, /* command_set_revision: 0 */
++	0x3c000001, /* firmware_revision: 1 */
 +};
 +
-+struct sbp_command_block_orb {
-+	struct sbp2_pointer next_orb;
-+	struct sbp2_pointer data_descriptor;
-+	__be32 misc;
-+	u8 command_block[12];
-+};
++static int sbp_update_unit_directory(struct sbp_tport *tport)
++{
++	struct sbp_lun *lun;
++	int num_luns = 0, num_entries, idx = 0, mgt_agt_addr, ret;
++	u32 *data;
 +
-+struct sbp_page_table_entry {
-+	__be16 segment_length;
-+	__be16 segment_base_hi;
-+	__be32 segment_base_lo;
-+};
++	/* unregister existing descriptor */
++	if (tport->unit_directory.data) {
++		fw_core_remove_descriptor(&tport->unit_directory);
++		kfree(tport->unit_directory.data);
++		tport->unit_directory.data = NULL;
++	}
 +
-+struct sbp_management_orb {
-+	struct sbp2_pointer ptr1;
-+	struct sbp2_pointer ptr2;
-+	__be32 misc;
-+	__be32 length;
-+	struct sbp2_pointer status_fifo;
-+};
++	if (!tport->enable || !tport->tpg)
++		return 0;
 +
-+struct sbp_status_block {
-+	__be32 status;
-+	__be32 orb_low;
-+	u8 data[24];
-+};
++	/* count how many LUNs to publish */
++	list_for_each_entry(lun, &tport->tpg->lun_list, link)
++		num_luns++;
 +
-+struct sbp_login_response_block {
-+	__be32 misc;
-+	struct sbp2_pointer command_block_agent;
-+	__be32 reconnect_hold;
-+};
++	/*
++	 * Number of entries in the final unit directory:
++	 *  - all of those in the template
++	 *  - management_agent
++	 *  - unit_characteristics
++	 *  - reconnect_timeout
++	 *  - unit unique ID
++	 *  - one for each LUN
++	 *
++	 *  MUST NOT include leaf or sub-directory entries
++	 */
++	num_entries = ARRAY_SIZE(sbp_unit_directory_template) + 4 + num_luns;
 +
-+struct sbp_login_descriptor {
-+	struct sbp_session *sess;
-+	struct list_head link;
++	if (tport->directory_id != -1)
++		num_entries++;
 +
-+	struct se_lun *lun;
++	/* allocate num_entries + 4 for the header and unique ID leaf */
++	data = kcalloc((num_entries + 4), sizeof(u32), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
 +
-+	u64 status_fifo_addr;
-+	int exclusive;
-+	u16 login_id;
-+	atomic_t unsolicited_status_enable;
++	/* directory_length */
++	data[idx++] = num_entries << 16;
 +
-+	struct sbp_target_agent *tgt_agt;
-+};
++	/* directory_id */
++	if (tport->directory_id != -1)
++		data[idx++] = (CSR_DIRECTORY_ID << 24) | tport->directory_id;
 +
-+struct sbp_session {
-+	struct se_session *se_sess;
-+	struct list_head login_list;
-+	struct delayed_work maint_work;
++	/* directory template */
++	memcpy(&data[idx], sbp_unit_directory_template,
++			sizeof(sbp_unit_directory_template));
++	idx += ARRAY_SIZE(sbp_unit_directory_template);
 +
-+	u64 guid; /* login_owner_EUI_64 */
-+	int node_id; /* login_owner_ID */
++	/* management_agent */
++	mgt_agt_addr = (tport->mgt_agt->handler.offset - CSR_REGISTER_BASE) / 4;
++	data[idx++] = 0x54000000 | (mgt_agt_addr & 0x00ffffff);
 +
-+	struct fw_card *card;
-+	int generation;
-+	int speed;
++	/* unit_characteristics */
++	data[idx++] = 0x3a000000 |
++		(((tport->mgt_orb_timeout * 2) << 8) & 0xff00) |
++		SBP_ORB_FETCH_SIZE;
 +
-+	int reconnect_hold;
-+	u64 reconnect_expires;
-+};
++	/* reconnect_timeout */
++	data[idx++] = 0x3d000000 | (tport->max_reconnect_timeout & 0xffff);
 +
-+struct sbp_nacl {
-+	/* Initiator EUI-64 */
-+	u64 guid;
-+	/* ASCII formatted GUID for SBP Initiator port */
-+	char iport_name[SBP_NAMELEN];
-+	/* Returned by sbp_make_nodeacl() */
-+	struct se_node_acl se_node_acl;
-+};
++	/* unit unique ID (leaf is just after LUNs) */
++	data[idx++] = 0x8d000000 | (num_luns + 1);
 +
-+struct sbp_lun {
-+	struct list_head link;
-+	struct se_lun *se_lun;
-+};
++	/* LUNs */
++	list_for_each_entry(lun, &tport->tpg->lun_list, link) {
++		struct se_lun *se_lun = lun->se_lun;
++		struct se_device *dev = se_lun->lun_se_dev;
++		int type = dev->transport->get_device_type(dev);
 +
-+struct sbp_tpg {
-+	/* Target portal group tag for TCM */
-+	u16 tport_tpgt;
-+	/* Pointer back to sbp_tport */
-+	struct sbp_tport *tport;
-+	/* Returned by sbp_make_tpg() */
-+	struct se_portal_group se_tpg;
++		/* logical_unit_number */
++		data[idx++] = 0x14000000 |
++			((type << 16) & 0x1f0000) |
++			(se_lun->unpacked_lun & 0xffff);
++	}
 +
-+	struct list_head lun_list;
-+};
++	/* unit unique ID leaf */
++	data[idx++] = 2 << 16;
++	data[idx++] = tport->guid >> 32;
++	data[idx++] = tport->guid;
 +
-+struct sbp_tport {
-+	/* Target Unit Identifier (EUI-64) */
-+	u64 guid;
-+	/* Target port name */
-+	char tport_name[SBP_NAMELEN];
-+	/* Returned by sbp_make_tport() */
-+	struct se_wwn tport_wwn;
++	tport->unit_directory.length = idx;
++	tport->unit_directory.key = (CSR_DIRECTORY | CSR_UNIT) << 24;
++	tport->unit_directory.data = data;
++
++	ret = fw_core_add_descriptor(&tport->unit_directory);
++	if (ret < 0) {
++		kfree(tport->unit_directory.data);
++		tport->unit_directory.data = NULL;
++	}
++
++	return ret;
++}
++
++static ssize_t sbp_parse_wwn(const char *name, u64 *wwn, int strict)
++{
++	const char *cp;
++	char c, nibble;
++	int pos = 0, err;
++
++	*wwn = 0;
++	for (cp = name; cp < &name[SBP_NAMELEN - 1]; cp++) {
++		c = *cp;
++		if (c == '\n' && cp[1] == '\0')
++			continue;
++		if (c == '\0') {
++			err = 2;
++			if (pos != 16)
++				goto fail;
++			return cp - name;
++		}
++		err = 3;
++		if (isdigit(c))
++			nibble = c - '0';
++		else if (isxdigit(c) && (islower(c) || !strict))
++			nibble = tolower(c) - 'a' + 10;
++		else
++			goto fail;
++		*wwn = (*wwn << 4) | nibble;
++		pos++;
++	}
++	err = 4;
++fail:
++	printk(KERN_INFO "err %u len %zu pos %u\n",
++			err, cp - name, pos);
++	return -1;
++}
++
++static ssize_t sbp_format_wwn(char *buf, size_t len, u64 wwn)
++{
++	return snprintf(buf, len, "%016llx", wwn);
++}
++
++static struct se_node_acl *sbp_make_nodeacl(
++		struct se_portal_group *se_tpg,
++		struct config_group *group,
++		const char *name)
++{
++	struct se_node_acl *se_nacl, *se_nacl_new;
++	struct sbp_nacl *nacl;
++	u64 guid = 0;
++	u32 nexus_depth = 1;
++
++	pr_info("sbp_make_nodeacl: %s\n", name);
++
++	if (sbp_parse_wwn(name, &guid, 1) < 0)
++		return ERR_PTR(-EINVAL);
++
++	se_nacl_new = sbp_alloc_fabric_acl(se_tpg);
++	if (!se_nacl_new)
++		return ERR_PTR(-ENOMEM);
++
++	/*
++	 * se_nacl_new may be released by core_tpg_add_initiator_node_acl()
++	 * when converting a NodeACL from demo mode -> explict
++	 */
++	se_nacl = core_tpg_add_initiator_node_acl(se_tpg, se_nacl_new,
++			name, nexus_depth);
++	if (IS_ERR(se_nacl)) {
++		sbp_release_fabric_acl(se_tpg, se_nacl_new);
++		return se_nacl;
++	}
++
++	/*
++	 * Locate our struct sbp_nacl and set the FC Nport WWPN
++	 */
++	nacl = container_of(se_nacl, struct sbp_nacl, se_node_acl);
++	nacl->guid = guid;
++	sbp_format_wwn(nacl->iport_name, SBP_NAMELEN, guid);
++
++	return se_nacl;
++}
++
++static void sbp_drop_nodeacl(struct se_node_acl *se_acl)
++{
++	struct sbp_nacl *nacl =
++		container_of(se_acl, struct sbp_nacl, se_node_acl);
++
++	core_tpg_del_initiator_node_acl(se_acl->se_tpg, se_acl, 1);
++	kfree(nacl);
++}
++
++static int sbp_post_link_lun(
++		struct se_portal_group *se_tpg,
++		struct se_lun *se_lun)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_lun *lun;
++
++	pr_info("sbp_post_link_lun: LUN %d\n", se_lun->unpacked_lun);
++
++	lun = kmalloc(sizeof(*lun), GFP_KERNEL);
++	if (!lun)
++		return -ENOMEM;
++
++	lun->se_lun = se_lun;
++	list_add_tail(&lun->link, &tpg->lun_list);
++
++	return sbp_update_unit_directory(tpg->tport);
++}
++
++static void sbp_pre_unlink_lun(
++		struct se_portal_group *se_tpg,
++		struct se_lun *se_lun)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	struct sbp_lun *lun;
++	int ret;
++
++	pr_info("sbp_pre_unlink_lun: LUN %d\n", se_lun->unpacked_lun);
++
++	list_for_each_entry(lun, &tpg->lun_list, link) {
++		if (lun->se_lun == se_lun)
++			break;
++	}
++
++	BUG_ON(lun == NULL);
++
++	list_del(&lun->link);
++	kfree(lun);
++
++	if (list_empty(&tpg->lun_list))
++		tport->enable = 0;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		pr_err("unlink LUN: failed to update unit directory\n");
++}
++
++static struct se_portal_group *sbp_make_tpg(
++		struct se_wwn *wwn,
++		struct config_group *group,
++		const char *name)
++{
++	struct sbp_tport *tport =
++		container_of(wwn, struct sbp_tport, tport_wwn);
 +
 +	struct sbp_tpg *tpg;
++	unsigned long tpgt;
++	int ret;
 +
-+	/* FireWire unit directory */
-+	struct fw_descriptor unit_directory;
++	if (strstr(name, "tpgt_") != name)
++		return ERR_PTR(-EINVAL);
++	if (kstrtoul(name + 5, 10, &tpgt) || tpgt > UINT_MAX)
++		return ERR_PTR(-EINVAL);
 +
-+	/* SBP Management Agent */
-+	struct sbp_management_agent *mgt_agt;
++	if (tport->tpg) {
++		pr_err("Only one TPG per Unit is possible.\n");
++		return ERR_PTR(-EBUSY);
++	}
 +
-+	/* Parameters */
-+	int enable;
-+	s32 directory_id;
-+	int mgt_orb_timeout;
-+	int max_reconnect_timeout;
-+	int max_logins_per_lun;
++	tpg = kzalloc(sizeof(*tpg), GFP_KERNEL);
++	if (!tpg) {
++		pr_err("Unable to allocate struct sbp_tpg\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	tpg->tport = tport;
++	tpg->tport_tpgt = tpgt;
++	tport->tpg = tpg;
++
++	/* default attribute values */
++	tport->enable = 0;
++	tport->directory_id = -1;
++	tport->mgt_orb_timeout = 15;
++	tport->max_reconnect_timeout = 5;
++	tport->max_logins_per_lun = 1;
++
++	INIT_LIST_HEAD(&tpg->lun_list);
++
++	tport->mgt_agt = sbp_management_agent_register(tport);
++	if (IS_ERR(tport->mgt_agt)) {
++		ret = PTR_ERR(tport->mgt_agt);
++		kfree(tpg);
++		return ERR_PTR(ret);
++	}
++
++	ret = core_tpg_register(&sbp_fabric_configfs->tf_ops, wwn,
++			&tpg->se_tpg, (void *)tpg,
++			TRANSPORT_TPG_TYPE_NORMAL);
++	if (ret < 0) {
++		sbp_management_agent_unregister(tport->mgt_agt);
++		kfree(tpg);
++		return ERR_PTR(ret);
++	}
++
++	return &tpg->se_tpg;
++}
++
++static void sbp_drop_tpg(struct se_portal_group *se_tpg)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++
++	core_tpg_deregister(se_tpg);
++	sbp_management_agent_unregister(tport->mgt_agt);
++	tport->tpg = NULL;
++	kfree(tpg);
++}
++
++static struct se_wwn *sbp_make_tport(
++		struct target_fabric_configfs *tf,
++		struct config_group *group,
++		const char *name)
++{
++	struct sbp_tport *tport;
++	u64 guid = 0;
++
++	pr_info("sbp_make_tport: %s\n", name);
++
++	if (sbp_parse_wwn(name, &guid, 1) < 0)
++		return ERR_PTR(-EINVAL);
++
++	tport = kzalloc(sizeof(*tport), GFP_KERNEL);
++	if (!tport) {
++		pr_err("Unable to allocate struct sbp_tport\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	tport->guid = guid;
++	sbp_format_wwn(tport->tport_name, SBP_NAMELEN, guid);
++
++	return &tport->tport_wwn;
++}
++
++static void sbp_drop_tport(struct se_wwn *wwn)
++{
++	struct sbp_tport *tport =
++		container_of(wwn, struct sbp_tport, tport_wwn);
++
++	kfree(tport);
++}
++
++static ssize_t sbp_wwn_show_attr_version(
++		struct target_fabric_configfs *tf,
++		char *page)
++{
++	return sprintf(page, "FireWire SBP fabric module %s\n", SBP_VERSION);
++}
++
++TF_WWN_ATTR_RO(sbp, version);
++
++static struct configfs_attribute *sbp_wwn_attrs[] = {
++	&sbp_wwn_version.attr,
++	NULL,
 +};
 +
-+extern struct target_fabric_configfs *sbp_fabric_configfs;
++
++static ssize_t sbp_tpg_show_directory_id(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++
++	if (tport->directory_id == -1)
++		return sprintf(page, "implicit\n");
++	else
++		return sprintf(page, "%06x\n", tport->directory_id);
++}
++
++static ssize_t sbp_tpg_store_directory_id(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++
++	if (tport->enable) {
++		pr_err("Cannot change the directory_id on an active target.\n");
++		return -EBUSY;
++	}
++
++	if (strstr(page, "implicit") == page) {
++		tport->directory_id = -1;
++	} else {
++		if (kstrtoul(page, 16, &val) < 0)
++			return -EINVAL;
++		if (val > 0xffffff)
++			return -EINVAL;
++
++		tport->directory_id = val;
++	}
++
++	return count;
++}
++
++static ssize_t sbp_tpg_show_enable(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->enable);
++}
++
++static ssize_t sbp_tpg_store_enable(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val != 0) && (val != 1))
++		return -EINVAL;
++
++	if (tport->enable == val)
++		return count;
++
++	if (val) {
++		if (list_empty(&tpg->lun_list)) {
++			pr_err("Cannot enable a target with no LUNs!\n");
++			return -EINVAL;
++		}
++	} else {
++		/* FIXME: force-shutdown sessions instead */
++		if (!list_empty(&se_tpg->tpg_sess_list))
++			return -EBUSY;
++	}
++
++	tport->enable = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0) {
++		pr_err("Could not update Config ROM\n");
++		return ret;
++	}
++
++	return count;
++}
++
++TF_TPG_BASE_ATTR(sbp, directory_id, S_IRUGO | S_IWUSR);
++TF_TPG_BASE_ATTR(sbp, enable, S_IRUGO | S_IWUSR);
++
++static struct configfs_attribute *sbp_tpg_base_attrs[] = {
++	&sbp_tpg_directory_id.attr,
++	&sbp_tpg_enable.attr,
++	NULL,
++};
++
++static ssize_t sbp_tpg_attrib_show_mgt_orb_timeout(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->mgt_orb_timeout);
++}
++
++static ssize_t sbp_tpg_attrib_store_mgt_orb_timeout(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 127))
++		return -EINVAL;
++
++	if (tport->mgt_orb_timeout == val)
++		return count;
++
++	tport->mgt_orb_timeout = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static ssize_t sbp_tpg_attrib_show_max_reconnect_timeout(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->max_reconnect_timeout);
++}
++
++static ssize_t sbp_tpg_attrib_store_max_reconnect_timeout(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++	int ret;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 32767))
++		return -EINVAL;
++
++	if (tport->max_reconnect_timeout == val)
++		return count;
++
++	tport->max_reconnect_timeout = val;
++
++	ret = sbp_update_unit_directory(tport);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static ssize_t sbp_tpg_attrib_show_max_logins_per_lun(
++		struct se_portal_group *se_tpg,
++		char *page)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	return sprintf(page, "%d\n", tport->max_logins_per_lun);
++}
++
++static ssize_t sbp_tpg_attrib_store_max_logins_per_lun(
++		struct se_portal_group *se_tpg,
++		const char *page,
++		size_t count)
++{
++	struct sbp_tpg *tpg = container_of(se_tpg, struct sbp_tpg, se_tpg);
++	struct sbp_tport *tport = tpg->tport;
++	unsigned long val;
++
++	if (kstrtoul(page, 0, &val) < 0)
++		return -EINVAL;
++	if ((val < 1) || (val > 127))
++		return -EINVAL;
++
++	/* XXX: also check against current count? */
++
++	tport->max_logins_per_lun = val;
++
++	return count;
++}
++
++TF_TPG_ATTRIB_ATTR(sbp, mgt_orb_timeout, S_IRUGO | S_IWUSR);
++TF_TPG_ATTRIB_ATTR(sbp, max_reconnect_timeout, S_IRUGO | S_IWUSR);
++TF_TPG_ATTRIB_ATTR(sbp, max_logins_per_lun, S_IRUGO | S_IWUSR);
++
++static struct configfs_attribute *sbp_tpg_attrib_attrs[] = {
++	&sbp_tpg_attrib_mgt_orb_timeout.attr,
++	&sbp_tpg_attrib_max_reconnect_timeout.attr,
++	&sbp_tpg_attrib_max_logins_per_lun.attr,
++	NULL,
++};
++
++static struct target_core_fabric_ops sbp_ops = {
++	.get_fabric_name		= sbp_get_fabric_name,
++	.get_fabric_proto_ident		= sbp_get_fabric_proto_ident,
++	.tpg_get_wwn			= sbp_get_fabric_wwn,
++	.tpg_get_tag			= sbp_get_tag,
++	.tpg_get_default_depth		= sbp_get_default_depth,
++	.tpg_get_pr_transport_id	= sbp_get_pr_transport_id,
++	.tpg_get_pr_transport_id_len	= sbp_get_pr_transport_id_len,
++	.tpg_parse_pr_out_transport_id	= sbp_parse_pr_out_transport_id,
++	.tpg_check_demo_mode		= sbp_check_true,
++	.tpg_check_demo_mode_cache	= sbp_check_true,
++	.tpg_check_demo_mode_write_protect = sbp_check_false,
++	.tpg_check_prod_mode_write_protect = sbp_check_false,
++	.tpg_alloc_fabric_acl		= sbp_alloc_fabric_acl,
++	.tpg_release_fabric_acl		= sbp_release_fabric_acl,
++	.tpg_get_inst_index		= sbp_tpg_get_inst_index,
++	.new_cmd_map			= sbp_new_cmd,
++	.release_cmd			= sbp_release_cmd,
++	.shutdown_session		= sbp_shutdown_session,
++	.close_session			= sbp_close_session,
++	.stop_session			= sbp_stop_session,
++	.fall_back_to_erl0		= sbp_reset_nexus,
++	.sess_logged_in			= sbp_sess_logged_in,
++	.sess_get_index			= sbp_sess_get_index,
++	.sess_get_initiator_sid		= NULL,
++	.write_pending			= sbp_write_pending,
++	.write_pending_status		= sbp_write_pending_status,
++	.set_default_node_attributes	= sbp_set_default_node_attrs,
++	.get_task_tag			= sbp_get_task_tag,
++	.get_cmd_state			= sbp_get_cmd_state,
++	.queue_data_in			= sbp_queue_data_in,
++	.queue_status			= sbp_queue_status,
++	.queue_tm_rsp			= sbp_queue_tm_rsp,
++	.get_fabric_sense_len		= sbp_get_fabric_sense_len,
++	.set_fabric_sense_len		= sbp_set_fabric_sense_len,
++	.is_state_remove		= sbp_is_state_remove,
++	.check_stop_free		= sbp_check_stop_free,
++
++	.fabric_make_wwn		= sbp_make_tport,
++	.fabric_drop_wwn		= sbp_drop_tport,
++	.fabric_make_tpg		= sbp_make_tpg,
++	.fabric_drop_tpg		= sbp_drop_tpg,
++	.fabric_post_link		= sbp_post_link_lun,
++	.fabric_pre_unlink		= sbp_pre_unlink_lun,
++	.fabric_make_np			= NULL,
++	.fabric_drop_np			= NULL,
++	.fabric_make_nodeacl		= sbp_make_nodeacl,
++	.fabric_drop_nodeacl		= sbp_drop_nodeacl,
++};
++
++static int sbp_register_configfs(void)
++{
++	struct target_fabric_configfs *fabric;
++	int ret;
++
++	pr_info("FireWire SBP fabric module %s\n", SBP_VERSION);
++
++	/*
++	 * Register the top level struct config_item_type with TCM core
++	 */
++	fabric = target_fabric_configfs_init(THIS_MODULE, "sbp");
++	if (!fabric) {
++		pr_err("target_fabric_configfs_init() failed\n");
++		return -ENOMEM;
++	}
++
++	/*
++	 * Setup fabric->tf_ops from our local sbp_ops
++	 */
++	fabric->tf_ops = sbp_ops;
++
++	/*
++	 * Setup default attribute lists for various fabric->tf_cit_tmpl
++	 */
++	TF_CIT_TMPL(fabric)->tfc_wwn_cit.ct_attrs = sbp_wwn_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_base_cit.ct_attrs = sbp_tpg_base_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_attrib_cit.ct_attrs = sbp_tpg_attrib_attrs;
++	TF_CIT_TMPL(fabric)->tfc_tpg_param_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_np_base_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_base_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_attrib_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_auth_cit.ct_attrs = NULL;
++	TF_CIT_TMPL(fabric)->tfc_tpg_nacl_param_cit.ct_attrs = NULL;
++
++	/*
++	 * Register the fabric for use within TCM
++	 */
++	ret = target_fabric_configfs_register(fabric);
++	if (ret < 0) {
++		pr_err("target_fabric_configfs_register() failed for SBP\n");
++		return ret;
++	}
++
++	/*
++	 * Setup our local pointer to *fabric
++	 */
++	sbp_fabric_configfs = fabric;
++
++	pr_info("SBP[0] - Set fabric -> sbp_fabric_configfs\n");
++	return 0;
++};
++
++static void sbp_deregister_configfs(void)
++{
++	if (!sbp_fabric_configfs)
++		return;
++
++	target_fabric_configfs_deregister(sbp_fabric_configfs);
++	sbp_fabric_configfs = NULL;
++	pr_info("SBP[0] - Cleared sbp_fabric_configfs\n");
++};
++
++static int __init sbp_init(void)
++{
++	int ret;
++
++	ret = sbp_register_configfs();
++	if (ret < 0)
++		return ret;
++
++	return 0;
++};
++
++static void sbp_exit(void)
++{
++	sbp_deregister_configfs();
++};
++
++MODULE_DESCRIPTION("FireWire SBP fabric driver");
++MODULE_LICENSE("GPL");
++module_init(sbp_init);
++module_exit(sbp_exit);
 +
 -- 
 1.7.9
