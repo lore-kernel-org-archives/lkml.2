@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab2BKBK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 20:10:58 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:38873 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491Ab2BKBK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 20:10:56 -0500
-Date: Fri, 10 Feb 2012 20:10:50 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "stable@kernel.org" <stable@kernel.org>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ext4: do not reference pa_inode from group_pa
-Message-ID: <20120211011050.GA10370@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	"stable@kernel.org" <stable@kernel.org>,
-	Yongqiang Yang <xiaoqiangnk@gmail.com>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20120208033950.GA20491@localhost>
+	id S1758474Ab2BKBws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 20:52:48 -0500
+Received: from hermes7.mail.easynet.fr ([212.180.1.43]:34659 "EHLO
+	hermes7.mail.easynet.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab2BKBwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 20:52:47 -0500
+Message-ID: <20120211025218.601324ztoyziirio@webmail.easynet.fr>
+Date: Sat, 11 Feb 2012 02:52:18 +0100
+From: "MRS. ASEHUI YUPING" <asehuip392@hotmail.com>
+Reply-to: asehui7w@hotmail.com
+To: undisclosed-recipients:;
+Subject: Late Mr. Eric Morgan $21.5m.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20120208033950.GA20491@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 08, 2012 at 11:39:50AM +0800, Wu Fengguang wrote:
-> commit 60e07cf515e541ea3e13b888d273c9b19a2ad9dd upstream.
-> 
-> From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-> 
-> pa_inode in group_pa is set NULL in ext4_mb_new_group_pa, so
-> pa_inode should be not referenced.
-> 
-> Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-> Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-I agree this should go into the stable kernel; it was an oversight
-that I didn't add a cc: stable@vger.kernel.org
 
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+-- 
+Dear Friend,
+It s about a customer that came to S.C.Bank HK
+to engage in Private Banking services: The
+customer had a financial portfolio of  $21.5m
+USD  and this I help turned over in the purchase
+of securities in the capital markets. I was the
+bank adviser assisting the customer in the
+management of the fund. I have proposal for you
+as a matter of urgency to late Mr. Eric Morgan
+from United Kingdom, who died along with his
+wife and only daughter in event of terrorist
+attack on 11th September, 2001 in the world trade
+center. My proposition is this, I am prepared to
+place you in a position and instruct my Bank to
+release the deposit to you as the closest
+surviving relation. If you find yourself able
+to work with me in this transaction and do contact
+via my private E-mail: asehui7w@hotmail.com
+If you give me positive signals, I will initiate
+this process towards conclusion.
 
-							- Ted
+Mrs.Asehui Yuping.
+
+
+
