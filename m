@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab2BKNGV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 08:06:21 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53082 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab2BKNGU (ORCPT
+	id S1758400Ab2BKNRX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 08:17:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39411 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754649Ab2BKNRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 08:06:20 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 11 Feb 2012 14:06:05 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/3] firewire-sbp2: Take into account Unit_Unique_ID
-Message-ID: <20120211140605.0501e039@stein>
-In-Reply-To: <4F365E75.2030302@bootc.net>
-References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
-	<1328881314-26544-1-git-send-email-bootc@bootc.net>
-	<1328881314-26544-2-git-send-email-bootc@bootc.net>
-	<20120211121250.5e2fe781@stein>
-	<4F365E75.2030302@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Feb 2012 08:17:22 -0500
+Date: Sat, 11 Feb 2012 13:17:19 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, eric.miao@linaro.org,
+        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH v4 2/2] Regulator: Add Anatop regulator driver
+Message-ID: <20120211131718.GA31887@opensource.wolfsonmicro.com>
+References: <1324980994-18462-1-git-send-email-paul.liu@linaro.org>
+ <1328734286-30091-1-git-send-email-paul.liu@linaro.org>
+ <1328734286-30091-2-git-send-email-paul.liu@linaro.org>
+ <20120211063637.GC2198@r65073-Latitude-D630>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+In-Reply-To: <20120211063637.GC2198@r65073-Latitude-D630>
+X-Cookie: Slow day.  Practice crawling.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 11 Chris Boot wrote:
-> On 11/02/2012 11:12, Stefan Richter wrote:
-> > On Feb 10 Chris Boot wrote:
-> >> +	if ((leaf[0]&  0xffff0000) != 0x00020000)
-> >> +		return -EINVAL;
-> >
-> > This could be relaxed to "if (leaf[0]<  0x00020000)", but the stricter
-> > check is fine too.
-> 
-> Well the standard does say the length must be exactly 2 rather than just 
-> defining it a leaf node that contains an EUI-64. But I did not realise 
-> various firmware gets things quite so wrong sometimes...
 
-I expect firmware writers to get length == 2 right, but we need to
-protect ourselves against very dumb mistakes or malicious input of course.
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Whether the length field is 2 or not could be totally ignored by
-firewire-sbp2 just like we ignore the block CRC, except that we need to
-catch the corner case of a bogus Config ROM where the descriptor leaf
-overlaps the 1 kB ROM size limit, or that it is placed right at the end of
-the ROM but is shorter than 2 quadlets.
+On Fri, Feb 10, 2012 at 10:36:38PM -0800, Shawn Guo wrote:
+> On Thu, Feb 09, 2012 at 04:51:26AM +0800, Ying-Chun Liu (PaulLiu) wrote:
 
-core-device.c::read_config_rom() already catches the cases of blocks
-overlapping the end of the ROM but merely handles them by overwriting the
-block length by 0.  Higher-level code which reads a descriptor block or
-directory block in the Config ROM cache is required to respect the length
-field of the block.  We could simplify this for upper layer code by
-overwriting the pointer to the block instead of the header of the block,
-like it is done already with pointers to blocks outside of the ROM.
+> > +	rval = of_get_property(np, "min-voltage", NULL);
+> > +	if (rval)
+> > +		sreg->rdata->min_voltage = be32_to_cpu(*rval);
+> > +	rval = of_get_property(np, "max-voltage", NULL);
+> > +	if (rval)
+> > +		sreg->rdata->max_voltage = be32_to_cpu(*rval);
 
-Anyway; if the length of an alleged EUI-64 descriptor leaf is greater than
-2, I agree that there is little reason to look at the rest of the
-descriptor; it would likely contain garbage too.
--- 
-Stefan Richter
--=====-===-- --=- -=-==
-http://arcgraph.de/sr/
+> We need a sensible binding document to understand those.  But at least,
+> shouldn't min-voltage and max-voltage be retrieved as the common
+> regulator binding documented in
+> Documentation/devicetree/bindings/regulator/regulator.txt?
+
+Normally this would be a bad idea as the set of voltages that can safely
+be used on a given board might differ from those which are supported by
+the device.  However in this case you might be OK as this is all
+internal to the SoC and so presumably won't vary from board to board.
+
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNmpXAAoJEBus8iNuMP3dXuQQAJ2XQ05dvcWJteVKkB6e2xC3
+pJGjYxPQR3MQi0Avn5m8hE7RPqDnQTkeTmHjaMdezwzkZHM0Aypr67cW7LUKLHbC
+8jRdKxeKHwrG9I9IoRpKF0D/osLjFWTgy8+Vw2RlA85sGmDZdDCjoXbl2g6midZq
+1vTu2A17yzejTWR7ZEEj/HJdM/ETb0k6adg6aXGQpnuhBaqteOeeIjmxSy5tpkCv
+By+g//vSFMSWbMzgKBVFl5d+9q/UNx1dgmYLLNTrk7FWVeGU7Rj8x4g5ZPSWXzID
+a4sJ1lpQsuv3Ebc0anuFUDQIz1Huen+6WK9Ziy18yfdmfkbGsGjBEDqXBmwbvVt7
+/SgSEy/wj8zdu85lKxHhN3kOFF0x5FShTYFss1b040cGUiS9p/ihMge2aeC6mufJ
+7qZQ/hU9bjgK22JHLvieTCzQgAx7TXRp4BeOnjmo3gTqH0HhQuJ8jK3H5Buv9E7M
+a2EMOZfCjsIR+BVpFGM9q0NlkCL5rtxxQyceX9KfrHcxW24gLm9cHebb5ZcaUljj
+HbMye9ZIjobK0oMx1LLNO5h/gEJ5g5M2ZWH8ExlW1REFaw3A3lJK/x1Se9hVymwL
+DW87+i96VqMaR5Rim/Qj/9X0YVcgHNgJWZlEylhfvOHf+MiYOO12PDu8wx2kOzEc
+Vffl4TCmo2RJiXTtBQ+y
+=vjNY
+-----END PGP SIGNATURE-----
+
+--3MwIy2ne0vdjdPXF--
