@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab2BKBA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 20:00:59 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34756 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab2BKBA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 20:00:57 -0500
-Message-ID: <1328922048.2787.1.camel@phoenix>
-Subject: [PATCH] staging:iio:dac: Fix kcalloc parameters swapped
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Date: Sat, 11 Feb 2012 09:00:48 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758533Ab2BKBK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 20:10:58 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:38873 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754491Ab2BKBK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Feb 2012 20:10:56 -0500
+Date: Fri, 10 Feb 2012 20:10:50 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "stable@kernel.org" <stable@kernel.org>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ext4: do not reference pa_inode from group_pa
+Message-ID: <20120211011050.GA10370@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	"stable@kernel.org" <stable@kernel.org>,
+	Yongqiang Yang <xiaoqiangnk@gmail.com>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120208033950.GA20491@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120208033950.GA20491@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first parameter should be "number of elements" and the second parameter
-should be "element size".
+On Wed, Feb 08, 2012 at 11:39:50AM +0800, Wu Fengguang wrote:
+> commit 60e07cf515e541ea3e13b888d273c9b19a2ad9dd upstream.
+> 
+> From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+> 
+> pa_inode in group_pa is set NULL in ext4_mb_new_group_pa, so
+> pa_inode should be not referenced.
+> 
+> Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+> Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/staging/iio/dac/ad5360.c |    4 ++--
- drivers/staging/iio/dac/ad5380.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+I agree this should go into the stable kernel; it was an oversight
+that I didn't add a cc: stable@vger.kernel.org
 
-diff --git a/drivers/staging/iio/dac/ad5360.c b/drivers/staging/iio/dac/ad5360.c
-index 710b256..cec3693 100644
---- a/drivers/staging/iio/dac/ad5360.c
-+++ b/drivers/staging/iio/dac/ad5360.c
-@@ -439,8 +439,8 @@ static int __devinit ad5360_alloc_channels(struct iio_dev *indio_dev)
- 	struct iio_chan_spec *channels;
- 	unsigned int i;
- 
--	channels = kcalloc(sizeof(struct iio_chan_spec),
--			st->chip_info->num_channels, GFP_KERNEL);
-+	channels = kcalloc(st->chip_info->num_channels,
-+			   sizeof(struct iio_chan_spec), GFP_KERNEL);
- 
- 	if (!channels)
- 		return -ENOMEM;
-diff --git a/drivers/staging/iio/dac/ad5380.c b/drivers/staging/iio/dac/ad5380.c
-index eff97ae0..4c50716 100644
---- a/drivers/staging/iio/dac/ad5380.c
-+++ b/drivers/staging/iio/dac/ad5380.c
-@@ -363,8 +363,8 @@ static int __devinit ad5380_alloc_channels(struct iio_dev *indio_dev)
- 	struct iio_chan_spec *channels;
- 	unsigned int i;
- 
--	channels = kcalloc(sizeof(struct iio_chan_spec),
--			st->chip_info->num_channels, GFP_KERNEL);
-+	channels = kcalloc(st->chip_info->num_channels,
-+			   sizeof(struct iio_chan_spec), GFP_KERNEL);
- 
- 	if (!channels)
- 		return -ENOMEM;
--- 
-1.7.5.4
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 
-
-
+							- Ted
