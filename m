@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2BKVcd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 16:32:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48029 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592Ab2BKVcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 16:32:32 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM / Sleep: Remove unnecessary label from suspend_freeze_processes()
-Date: Sat, 11 Feb 2012 22:36:20 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201202110035.32993.rjw@sisk.pl> <4F35EC3C.5090305@linux.vnet.ibm.com>
-In-Reply-To: <4F35EC3C.5090305@linux.vnet.ibm.com>
+	id S1754355Ab2BKVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 16:47:59 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47731 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750836Ab2BKVr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 16:47:58 -0500
+Date: Sat, 11 Feb 2012 21:47:55 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, lars@metafoo.de, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V3 2/2] regmap: add regmap_bulk_write() for register write
+Message-ID: <20120211214754.GF31887@opensource.wolfsonmicro.com>
+References: <1328889628-13151-1-git-send-email-ldewangan@nvidia.com>
+ <1328889628-13151-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202112236.20760.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XaUbO9McV5wPQijU"
+Content-Disposition: inline
+In-Reply-To: <1328889628-13151-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Slow day.  Practice crawling.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 11, 2012, Srivatsa S. Bhat wrote:
-> On 02/11/2012 05:05 AM, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > The Finish label in suspend_freeze_processes() is in fact necessary
-> 
-> 
-> s/necessary/unnecessary
-> 
-> > and makes the function look more complicated that it really is, so
-> 
-> 
-> s/that/than
-> 
-> > remove it (along with a few empty lines).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> > 
-> 
-> 
-> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Well, thanks for the fixes!
+--XaUbO9McV5wPQijU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Rafael
+On Fri, Feb 10, 2012 at 09:30:28PM +0530, Laxman Dewangan wrote:
 
+> +		/* No formatting is require if val_byte is 1 */
+> +		if (val_bytes == 1)
+> +			wval = (void *)val;
+> +		else {
 
-> > The patch is on top of linux-pm/pm-sleep.
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > ---
-> >  kernel/power/power.h |    5 +----
-> >  1 file changed, 1 insertion(+), 4 deletions(-)
-> > 
-> > Index: linux/kernel/power/power.h
-> > ===================================================================
-> > --- linux.orig/kernel/power/power.h
-> > +++ linux/kernel/power/power.h
-> > @@ -234,16 +234,14 @@ static inline int suspend_freeze_process
-> >  	int error;
-> > 
-> >  	error = freeze_processes();
-> > -
-> >  	/*
-> >  	 * freeze_processes() automatically thaws every task if freezing
-> >  	 * fails. So we need not do anything extra upon error.
-> >  	 */
-> >  	if (error)
-> > -		goto Finish;
-> > +		return error;
-> > 
-> >  	error = freeze_kernel_threads();
-> > -
-> >  	/*
-> >  	 * freeze_kernel_threads() thaws only kernel threads upon freezing
-> >  	 * failure. So we have to thaw the userspace tasks ourselves.
-> > @@ -251,7 +249,6 @@ static inline int suspend_freeze_process
-> >  	if (error)
-> >  		thaw_processes();
-> > 
-> > - Finish:
-> >  	return error;
-> >  }
-> > 
-> > 
-> 
-> 
-> 
+Please don't combine branches with and without braces.
 
+> +			wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+> +			if (!wval) {
+> +				mutex_unlock(&map->lock);
+> +				dev_err(map->dev,
+> +					"Error in memory allocation\n");
+> +				return -ENOMEM;
+
+As a style thing a goto error pattern is clearer for stuff like this -
+there's so many branches that it's complex to keep track of the
+unwinding.
+
+--XaUbO9McV5wPQijU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPNtx5AAoJEBus8iNuMP3dGwkP/05UHp/6mjkf8naAO6w9jNiY
+SqXJV6zqyYGp0tWyz4vWHPpfWYIbiZyfF61ZJCOSk1elVyr7DLJTxTKiT/viuJmi
+/hafkqW0z/CK7oFKfxgddAO3UvMlXObEXlh8TF4qEdZzOY04l/xJzL09RfKNrNaR
+NcRBz2DZ/0BA9HFqfCb09FsZ3nuQEqY2HgOGWXKkb6YJ9SR315vChzaPkHUSDzcf
+B7gLzLgf2g4rkKecy9aXAQVWQJrjuEyW1PnUFOYmNf4Hjr8aFCPxnGH+lD4qR8qD
+cKdSdhfVAzyehreY53xP9uiFSRLkywAk5lWCJYGxGOWbj1K7b+irE2WfZjlARBwu
+os6CeVH8eRoy1OlKmas/P9SrJD30SRnlxIvhoKWAqiH7E2YQmZMOwKU3zHWAxDyh
+N7v2Nb4RwTfsVcbh8xMq6XSuCIE27t6ZN0zXFRCtoXmsNeOYmyLzutfhRVi7VO9A
+ted9e6t4h0I6m21GENPna8kTPYLSShKNxineyiLa6V+pyVeLKMJnWprqEezb7Qi4
+h82+0rXABAlz4naPaUOw9izUQQXUArzuFtLUBsUAo0CTyHC005XYDMbatKbMPTcK
+9miul462WN527szgL1b38RWJmgfihiam/zCSI05DC8EkSzs2bkfajP3hWqT6AAKE
+wxfnYKb7vh7BQfcm1/Iv
+=D9xs
+-----END PGP SIGNATURE-----
+
+--XaUbO9McV5wPQijU--
