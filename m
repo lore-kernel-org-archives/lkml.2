@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2BKJOd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 04:14:33 -0500
-Received: from smtp1.infomaniak.ch ([84.16.68.89]:55089 "EHLO
-	smtp1.infomaniak.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab2BKJOa (ORCPT
+	id S1754361Ab2BKJo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 04:44:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40643 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab2BKJox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 04:14:30 -0500
-X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Feb 2012 04:14:29 EST
-Message-ID: <4F362F4B.4060903@brownhat.org>
-Date: Sat, 11 Feb 2012 10:05:15 +0100
-From: Daniele Venzano <venza@brownhat.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Sat, 11 Feb 2012 04:44:53 -0500
+Date: Sat, 11 Feb 2012 09:44:44 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] asm/types.h: All architectures use int-ll64.h in
+ kernelspace
+Message-ID: <20120211094444.GL23916@ZenIV.linux.org.uk>
+References: <alpine.DEB.2.00.1108132152050.18053@ayla.of.borg>
+ <1665974.2LGtkbyJmJ@wuerfel>
 MIME-Version: 1.0
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 24/50] sis900: use dev_hw_addr_random() instead of random_ether_addr()
-References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-25-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1328735457-29986-25-git-send-email-danny.kukawka@bisect.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1665974.2LGtkbyJmJ@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08.02.2012 22:10, Danny Kukawka ha scritto:
-
-> Use dev_hw_addr_random() instead of calling random_ether_addr()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
-
-Acked-by: Daniele Venzano <venza@brownhat.org>
-
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-> ---
->  drivers/net/ethernet/sis/sis900.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Sat, Aug 13, 2011 at 11:25:59PM +0200, Arnd Bergmann wrote:
+> On Saturday 13 August 2011 21:53:43 Geert Uytterhoeven wrote:
+> > Now all 64-bit architectures have been converted to int-ll64.h, we can
+> > deprecate int-l64.h in kernelspace:
+> >   - Add a check to prevent new architectures from using int-l64.h in
+> >     kernelspace,
+> >   - Update documentation, as the casts to (unsigned) long long are no longer
+> >     needed.
+> > 
+> > For backwards compatibility, alpha, ia64, mips, and powerpc still use
+> > int-l64.h in userspace.
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > For the documentation parts:
+> > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
-> index c8efc70..cbd0343 100644
-> --- a/drivers/net/ethernet/sis/sis900.c
-> +++ b/drivers/net/ethernet/sis/sis900.c
-> @@ -527,7 +527,7 @@ static int __devinit sis900_probe(struct pci_dev *pci_dev,
->  		ret = sis900_get_mac_addr(pci_dev, net_dev);
->  
->  	if (!ret || !is_valid_ether_addr(net_dev->dev_addr)) {
-> -		random_ether_addr(net_dev->dev_addr);
-> +		dev_hw_addr_random(net_dev, net_dev->dev_addr);
->  		printk(KERN_WARNING "%s: Unreadable or invalid MAC address,"
->  				"using random generated one\n", dev_name);
->  	}
+> I believe that Al Viro is working on a patch to unify all umode_t definitions
+> so that it becomes unsigned short everywhere. Once that is done,
+> asm-generic/int-ll64.h can become asm-generic/types.h and all architectures
+> can use that.
 
+Umm...  That has happened and yes, asm-generic/types.h is currently
+equivalent to asm-generic/int-ll64.h.  What exactly are you planning
+to do?  Just rename the latter to the former and do search-and-replace
+over the tree?  We still have places that pull int-l64.h, albeit only
+!__KERNEL__ ones (i.e. everything under #ifdef __KERNEL__ in there
+seems to be killable)...
 
+AFAICS, for quite a few of those guys we can simply add bitsperlong.h
+and add types.h to generic-y; is that the plan?
