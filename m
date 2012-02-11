@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab2BKBws (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 20:52:48 -0500
-Received: from hermes7.mail.easynet.fr ([212.180.1.43]:34659 "EHLO
-	hermes7.mail.easynet.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab2BKBwr (ORCPT
+	id S1758664Ab2BKCHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 21:07:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35267 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab2BKCHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 20:52:47 -0500
-Message-ID: <20120211025218.601324ztoyziirio@webmail.easynet.fr>
-Date: Sat, 11 Feb 2012 02:52:18 +0100
-From: "MRS. ASEHUI YUPING" <asehuip392@hotmail.com>
-Reply-to: asehui7w@hotmail.com
-To: undisclosed-recipients:;
-Subject: Late Mr. Eric Morgan $21.5m.
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	Fri, 10 Feb 2012 21:07:46 -0500
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@elte.hu>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        paul@paulmenage.org, tj@kernel.org, frank.rowand@am.sony.com,
+        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
+        prashanth@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+In-Reply-To: <201202102339.02702.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1202101647440.1179-100000@iolanthe.rowland.org>
+	 <201202102339.02702.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 11 Feb 2012 03:07:22 +0100
+Message-ID: <1328926042.2476.3.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-02-10 at 23:39 +0100, Rafael J. Wysocki wrote:
+> 
+> > I don't see why not.  Presumably no CPUs will be added or removed while 
+> > the system is asleep.
+> 
+> ACPI explicitly forbids that level of hardware reconfiguration in a sleep
+> state (even in S4), AFAICS.  Still, people may try to do that ... 
 
+I'm ok with breaking that :-) If its really really important to someone
+we (him most likely) could fix it by detecting the topology changed over
+the suspend and do a fixup. Assuming it actually gets that far.
 
--- 
-Dear Friend,
-It s about a customer that came to S.C.Bank HK
-to engage in Private Banking services: The
-customer had a financial portfolio of  $21.5m
-USD  and this I help turned over in the purchase
-of securities in the capital markets. I was the
-bank adviser assisting the customer in the
-management of the fund. I have proposal for you
-as a matter of urgency to late Mr. Eric Morgan
-from United Kingdom, who died along with his
-wife and only daughter in event of terrorist
-attack on 11th September, 2001 in the world trade
-center. My proposition is this, I am prepared to
-place you in a position and instruct my Bank to
-release the deposit to you as the closest
-surviving relation. If you find yourself able
-to work with me in this transaction and do contact
-via my private E-mail: asehui7w@hotmail.com
-If you give me positive signals, I will initiate
-this process towards conclusion.
-
-Mrs.Asehui Yuping.
-
+Srivatsa, wanna give this (the proposal to not modify cpusets on
+CPU_TASKS_FROZEN) a try?
 
 
