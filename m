@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab2BKMWb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 07:22:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51045 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab2BKMWa (ORCPT
+	id S1758294Ab2BKM0e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 07:26:34 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:51589 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab2BKM0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 07:22:30 -0500
+	Sat, 11 Feb 2012 07:26:33 -0500
+Message-ID: <4F365E75.2030302@bootc.net>
+Date: Sat, 11 Feb 2012 12:26:29 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120210164529.44e5e7db@pyramind.ukuu.org.uk>
-References: <20120210134929.12442.59041.stgit@bob.linux.org.uk>
-	<20120210135253.12442.95497.stgit@bob.linux.org.uk>
-	<CAJd=RBAYtrQZBB3LHX=9xFru=r1XAuZrm1kL1siMKvBmCuuO9A@mail.gmail.com>
-	<20120210164529.44e5e7db@pyramind.ukuu.org.uk>
-Date: Sat, 11 Feb 2012 20:22:28 +0800
-Message-ID: <CAJd=RBCWCinPwnqeXwm5P0zecbe3o1T+10xNSttfvYMN0feu0Q@mail.gmail.com>
-Subject: Re: [PATCH 3/6] sep: Add interfaces for the new functions
-From: Hillf Danton <dhillf@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org, mark.a.allyn@intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/3] firewire-sbp2: Take into account Unit_Unique_ID
+References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net> <1328881314-26544-1-git-send-email-bootc@bootc.net> <1328881314-26544-2-git-send-email-bootc@bootc.net> <20120211121250.5e2fe781@stein>
+In-Reply-To: <20120211121250.5e2fe781@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1BCMc8W025072
 
-On Sat, Feb 11, 2012 at 12:45 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 10 Feb 2012 21:53:50 +0800
-> Hillf Danton <dhillf@gmail.com> wrote:
+On 11/02/2012 11:12, Stefan Richter wrote:
+> On Feb 10 Chris Boot wrote:
+>> If the target's unit directory contains a Unit_Unique_ID entry, we
+>> should use that as the target's GUID for identification purposes. The
+>> SBP-2 standards document says:
+>>
+>> "Although the node unique ID (EUI-64) present in the bus information
+>> block is sufficient to uniquely identify nodes attached to Serial Bus,
+>> it is insufficient to identify a target when a vendor implements a
+>> device with multiple Serial Bus node connections. In this case initiator
+>> software requires information by which a particular target may be
+>> uniquely identified, regardless of the Serial Bus access path used."
+>>
+>> [ IEEE T10 P1155D Revision 4, Section 7.6 (page 51) ] and
+>> [ IEEE T10 P1467D Revision 5, Section 7.9 (page 74) ]
+>>
+>> Signed-off-by: Chris Boot<bootc@bootc.net>
+>> Cc: Stefan Richter<stefanr@s5r6.in-berlin.de>
+>> ---
+>>   drivers/firewire/sbp2.c |   17 +++++++++++++++++
+>>   1 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+>> index 80e95aa..ed5bbbf 100644
+>> --- a/drivers/firewire/sbp2.c
+>> +++ b/drivers/firewire/sbp2.c
+>> @@ -211,6 +211,7 @@ static struct fw_device *target_device(struct sbp2_target *tgt)
+>>   #define SBP2_CSR_UNIT_CHARACTERISTICS	0x3a
+>>   #define SBP2_CSR_FIRMWARE_REVISION	0x3c
+>>   #define SBP2_CSR_LOGICAL_UNIT_NUMBER	0x14
+>> +#define SBP2_CSR_UNIT_UNIQUE_ID		0x8d
+>>   #define SBP2_CSR_LOGICAL_UNIT_DIRECTORY	0xd4
+>>
+>>   /* Management orb opcodes */
+>> @@ -997,6 +998,17 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+>>   	return 0;
+>>   }
+>>
+>> +static int sbp2_get_unit_unique_id(struct sbp2_target *tgt,
+>> +				    const u32 *leaf)
+>> +{
+>> +	if ((leaf[0]&  0xffff0000) != 0x00020000)
+>> +		return -EINVAL;
 >
-> Sorry don't see what you are pointing out. It might help if you posted
-> just the small bit in question ?
+> This could be relaxed to "if (leaf[0]<  0x00020000)", but the stricter
+> check is fine too.
 
-Hello Alan
+Well the standard does say the length must be exactly 2 rather than just 
+defining it a leaf node that contains an EUI-64. But I did not realise 
+various firmware gets things quite so wrong sometimes...
 
->                if (1 == test_bit(SEP_LEGACY_SENDMSG_DONE_OFFSET,
->                                  &call_status->status)) {
-> -                       dev_dbg(&sep->pdev->dev,
-> -                               "[PID%d] dcb preparation needed before send msg\n",
-> +                       dev_warn(&sep->pdev->dev,
-> +                               "[PID%d] dcb prep needed before send msg\n",
->                                current->pid);
->                        error = -EPROTO;
-
-Here error is assigned with -EPROTO,
-
->                        goto end_function;
->                }
+>> +
+>> +	tgt->guid = (u64)leaf[1]<<  32 | leaf[2];
+>> +
+>> +	return 0;
+>> +}
+>> +
+>>   static int sbp2_scan_logical_unit_dir(struct sbp2_target *tgt,
+>>   				      const u32 *directory)
+>>   {
+>> @@ -1048,6 +1060,11 @@ static int sbp2_scan_unit_dir(struct sbp2_target *tgt, const u32 *directory,
+>>   				return -ENOMEM;
+>>   			break;
+>>
+>> +		case SBP2_CSR_UNIT_UNIQUE_ID:
+>> +			if (sbp2_get_unit_unique_id(tgt, ci.p - 1 + value)<  0)
+>> +				return -EINVAL;
+>> +			break;
+>> +
+>>   		case SBP2_CSR_LOGICAL_UNIT_DIRECTORY:
+>>   			/* Adjust for the increment in the iterator */
+>>   			if (sbp2_scan_logical_unit_dir(tgt, ci.p - 1 + value)<  0)
 >
->                if (!arg) {
-> -                       dev_dbg(&sep->pdev->dev,
-> -                               "[PID%d] dcb prep null arg\n", current->pid);
-> -                       error = -EINVAL;
-> +                       dev_warn(&sep->pdev->dev,
-> +                               "[PID%d] dcb null arg\n", current->pid);
-> +                       error = EINVAL;
+> The error return here is wrong.  Garbage in a non-essential part of the
+> Config ROM is no reason to refuse to work with a device.  It is too common
+> for firmware to have various bogus values in there.  For instance, we
+> never check the CRC of a Config ROM block because wrongly calculated CRCs
+> or even zero CRC is quite commonly seen with otherwise correct Config ROMs.
 
-why is EINVAL used then instead of -EINVAL?
+Wow. I didn't expect things to get so bad. :-( I guess in this case we 
+simply ignore the return value, which would have the effect of not 
+setting the GUID.
 
-Is this error case anything special from the above?
-I guess it is typo.
+> And there is another problem with the patch:  In fringe cases, we might
+> now create more than one scsi_device instances with the same ieee1394_id
+> sysfs attribute value.   Those cases are:
+>   1. There are two targets present which expose the same, hence non-unique
+>      and thus standards-violating Unit_Unique_ID. Or
+>   2. There is a single target connected through more than one link, it has
+>      got a Unit_Unique_ID, and either
+>       2.a  it accepts concurrent login despite firewire-sbp2 demanding an
+>            exclusive login (which is its default mode), or
+>       2.b  firewire-sbp2 is configured to work in concurrent login mode and
+>            the target grants concurrent logins.
+>
+> We do not need to care for case 1.  It cannot be distinguished from case
+> 2, and we already do not care for the case that there are two or more
+> nodes with a non-unique Node_Unique_ID.  Devices with the latter bug exist
+> but are rare, judging from historical discussion on linux1394-devel.
+>
+> Case 2.a is highly unlikely, and I think we should not worry about that
+> either.
+>
+> Should we do something about case 2.b?  Where in the Linux SCSI
+> initiator stack is multipathing handled --- in transport layer drivers or
+> higher up?  (Cc'ing LSML for this question.)
 
-Good weekend
-Hillf
+I believe multipathing is handled by multipathd, which uses devmapper to 
+handle the actual data flow. Multipathd itself works out which LUNs it 
+can see over multiple paths (using multiple /dev/sdX devices) and just 
+creates the devmapper mappings as necessary. I'm not even convinced 
+multipathd would care about the SBP-2 target port identifier, preferring 
+instead to use the WWN on the LUN.
 
->                        goto end_function;
->                }
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+HTH,
+Chris
+
+-- 
+Chris Boot
+bootc@bootc.net
