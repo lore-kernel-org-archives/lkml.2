@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761190Ab2BKEJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 23:09:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:60288 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760799Ab2BKEH2 (ORCPT
+	id S1760773Ab2BKEH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 23:07:26 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26986 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760528Ab2BKEHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 23:07:28 -0500
-Date: Fri, 10 Feb 2012 22:07:22 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>,
+	Fri, 10 Feb 2012 23:07:17 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dave Hansen <haveblue@us.ibm.com>,
-        linux-security-module@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        St?phane Graber <stgraber@ubuntu.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>
-Subject: Re: prevent containers from turning host filesystem readonly
-Message-ID: <20120211040722.GA5891@sergelap>
-References: <20120211031939.GA4772@sergelap>
- <20120211033732.GK23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120211033732.GK23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 07/22] PCI, powerpc: Register busn_res for root buses
+Date: Fri, 10 Feb 2012 20:06:10 -0800
+Message-Id: <1328933185-15154-8-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
+References: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F35E966.0080,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Al Viro (viro@ZenIV.linux.org.uk):
-> On Fri, Feb 10, 2012 at 09:19:39PM -0600, Serge Hallyn wrote:
-> > When a container shuts down, it likes to do 'mount -o remount,ro /'.
-> > That sets the superblock's readonly flag, not the mount's.  So unless
-> > the mount action fails for some reason (i.e. a file is held open on
-> > the fs), if the container's rootfs is just a directory on the host's
-> > fs, the host fs will be marked readonly.
-> > 
-> > Thanks to Dave Hansen for pointing out how simple the fix can be.  If
-> > the devices cgroup denies the mounting task write access to the
-> > underlying superblock (as it usually does when the container's root fs
-> > is on a block device shared with the host), then it do_remount_sb should
-> > deny the right to change mount flags as well.
-> > 
-> > This patch adds that check.
-> > 
-> > Note that another possibility would be to have the LSM step in.  We
-> > can't catch this (as is) at the LSM level because security_remount_sb
-> > doesn't get the mount flags, so we can't distinguish
-> > 	mount -o remount,ro
-> > from
-> > 	mount --bind -o remount,ro.
-> > Sending the flags to that hook would probably be a good idea in addition
-> > to this patch, but I haven't done it here.
-> 
-> NAK.  This is just plain wrong - what about the filesystems that are not
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+---
+ arch/powerpc/kernel/pci-common.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-BTW, sorry - the patch clearly should've taken non-bdevs into account, but
-I accept that wouldn't have been enough to evade a NAK.
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index cce98d7..501f29b 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1732,6 +1732,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 	bus->secondary = hose->first_busno;
+ 	hose->bus = bus;
+ 
++	pci_bus_insert_busn_res(bus, hose->first_busno, hose->last_busno);
++
+ 	/* Get probe mode and perform scan */
+ 	mode = PCI_PROBE_NORMAL;
+ 	if (node && ppc_md.pci_probe_mode)
+@@ -1742,8 +1744,11 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		of_scan_bus(node, bus);
+ 	}
+ 
+-	if (mode == PCI_PROBE_NORMAL)
++	if (mode == PCI_PROBE_NORMAL) {
++		pci_bus_update_busn_res_end(bus, 255);
+ 		hose->last_busno = bus->subordinate = pci_scan_child_bus(bus);
++		pci_bus_update_busn_res_end(bus, bus->subordinate);
++	}
+ 
+ 	/* Platform gets a chance to do some global fixups before
+ 	 * we proceed to resource allocation
+-- 
+1.7.7
 
-> bdev-backed or, as e.g. btrfs, sit on more than one device?
-
-btrfs is actually one of my main motivators - to quickly snapshot containers
-with btrfs means that the containers all share one fs, but that means one
-container can mark them all ro.
-
-> <comments about inadequacy of cgroup as an API censored - far too unprintable>
-
--serge
