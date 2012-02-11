@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab2BKTo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 14:44:57 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:52719 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2BKToV (ORCPT
+	id S1751871Ab2BKTwY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 14:52:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:56179 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab2BKTwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 14:44:21 -0500
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH 03/13] firewire-sbp-target: Add Kconfig, Makefile and TODO
-Date: Sat, 11 Feb 2012 19:44:02 +0000
-Message-Id: <1328989452-20921-4-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1328989452-20921-1-git-send-email-bootc@bootc.net>
-References: <4E4BD560.4010806@bootc.net>
- <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	Sat, 11 Feb 2012 14:52:23 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Santosh Y <santoshsy@gmail.com>
+Subject: Re: [PATCH 1/4] [SCSI] ufshcd: UFS Host controller driver
+Date: Sat, 11 Feb 2012 19:52:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Girish K S <girish.shivananjappa@linaro.org>,
+        Vinayak Holikatti <vinholikatti@gmail.com>,
+        James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, saugata.das@linaro.org,
+        venkat@linaro.org, vishak.g@samsung.com, k.rajesh@samsung.com,
+        yejin.moon@samsung.com, Sree kumar <sreekumar.c@samsung.com>
+References: <1328158649-4137-1-git-send-email-vinholikatti@gmail.com> <CAGxe1ZGDy-MWetg_rki2ms1Yy0dn4WqfrJgK+wPrucojyt-fHw@mail.gmail.com> <CALMYJDtCc_M8dOna1wfeLai1Fjj3NfcnJb7AcFNgMdvGQtuamA@mail.gmail.com>
+In-Reply-To: <CALMYJDtCc_M8dOna1wfeLai1Fjj3NfcnJb7AcFNgMdvGQtuamA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202111952.08745.arnd@arndb.de>
+X-Provags-ID: V02:K0:sosMvhDl0D3cAqRTHJe2npKSvUlkerA6P8R2Ge0j/Bd
+ VF9VEXwRL66erQ1tox6aitKoBLULIKJmJYw3WHPCN3U6grJO0A
+ /oPpdit7PHkpe/hjxbGv8Dz+JKNYEyUH2HnoiBLKz8e85CLS2d
+ 2x3zRjyg/hmMX5WTPnNKkai1MYnqwgs6LXH/PEmMhXR/CS6hf/
+ VlSMUtlPEqmJtjdyN+zw3bUHZICm4IULM/6ChlFtLtFgsjZp4R
+ iQP6Zd5VKrC5hYijbrOBSAeT5zKvb7mdrUe4bWmX+nWr9A7oE3
+ 3FmwKBewIQgH+E9382PdobX2T07PZckDW5l9XZ6RsqQpDH4Gd+
+ KTGIVaEnSsdprszSRKiM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
-as a SCSI transport. This module uses the SCSI Target framework to
-expose LUNs to other machines attached to a FireWire bus, in effect
-acting as a FireWire hard disk similar to FireWire Target Disk mode on
-older Apple computers.
+On Friday 10 February 2012, Santosh Y wrote:
+> > UFS host controller specification Section 7.2.1, step 11,  mentions
+> > that the aggregation control register should be set if run/stop bit is
+> > not enabled.
+> > But In this case the run/ stop bit is set above before configuring the
+> > aggregation register. Please check for the same in other places from
+> > where it is called.
+> >
+> 
+> The spec mentions, (Section 7.2.1, step 11)
+> "UTRIACR initialization may be executed at any time when the Run/Stop
+> register (UTRLRSR)
+> is not enabled or when no requests are outstanding."
+> 
+> At this point in the code, during execution, there will not be any
+> outstanding requests.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/target/sbp/Kconfig  |   14 ++++++++++++++
- drivers/target/sbp/Makefile |   13 +++++++++++++
- drivers/target/sbp/TODO     |    7 +++++++
- 3 files changed, 34 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/sbp/Kconfig
- create mode 100644 drivers/target/sbp/Makefile
- create mode 100644 drivers/target/sbp/TODO
+One meta-comment: When you reply on a long email like this, please
+make sure you only quote the minimum amount of lines from the original
+email to give enough context for your comment. Otherwise it becomes
+much more time consuming to read your reply and readers might miss
+your contribution in the middle of a long quote.
 
-diff --git a/drivers/target/sbp/Kconfig b/drivers/target/sbp/Kconfig
-new file mode 100644
-index 0000000..8544010
---- /dev/null
-+++ b/drivers/target/sbp/Kconfig
-@@ -0,0 +1,14 @@
-+
-+config FIREWIRE_SBP_TARGET
-+	tristate "FireWire SBP-2 fabric module"
-+	depends on TARGET_CORE && CONFIGFS_FS && FIREWIRE && EXPERIMENTAL
-+	default n
-+	help
-+	  Say Y or M here to enable SCSI target functionality over FireWire.
-+	  This enables you to expose SCSI devices to other nodes on the FireWire
-+	  bus, for example hard disks. Similar to FireWire Target Disk mode on
-+	  older Apple computers.
-+
-+	  To compile this driver as a module, say M here: The module will be
-+	  called firewire-sbp-target.
-+
-diff --git a/drivers/target/sbp/Makefile b/drivers/target/sbp/Makefile
-new file mode 100644
-index 0000000..3a3e155
---- /dev/null
-+++ b/drivers/target/sbp/Makefile
-@@ -0,0 +1,13 @@
-+
-+firewire-sbp-target-y += \
-+	sbp_configfs.o \
-+	sbp_fabric.o \
-+	sbp_login.o \
-+	sbp_management_agent.o \
-+	sbp_proto.o \
-+	sbp_scsi_cmnd.o \
-+	sbp_target_agent.o \
-+	sbp_util.o
-+
-+obj-$(CONFIG_FIREWIRE_SBP_TARGET) += firewire-sbp-target.o
-+
-diff --git a/drivers/target/sbp/TODO b/drivers/target/sbp/TODO
-new file mode 100644
-index 0000000..eaec1c9
---- /dev/null
-+++ b/drivers/target/sbp/TODO
-@@ -0,0 +1,7 @@
-+* Force-terminate sessions when disabling targets
-+* Ability to have several SCSI commands in-flight (TCQ?)
-+* Retry failed FireWire transactions a few times with exponential backoff
-+* Take into account the page_size field for transfers and/or page tables
-+* Handle descriptor format sense data
-+* Implement QUERY LOGINS management ORB
-+* Implement TASK MANAGEMENT functionality
--- 
-1.7.9
-
+	Arnd
