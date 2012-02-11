@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab2BKMIt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 07:08:49 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60954 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab2BKMIs convert rfc822-to-8bit (ORCPT
+	id S1758016Ab2BKMLS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 07:11:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab2BKMLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 07:08:48 -0500
+	Sat, 11 Feb 2012 07:11:16 -0500
+Message-ID: <4F365ADF.7060102@kernel.dk>
+Date: Sat, 11 Feb 2012 13:11:11 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Date: Sat, 11 Feb 2012 13:08:47 +0100
-Message-ID: <CAM8FrK++W4ScR-htTDXeA7iniz9LTXB_29yzhDNfOu5=VLC+mQ@mail.gmail.com>
-Subject: Internal timers in deep sleep
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block fixes for 3.3-rc
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello there,
+Hi Linus,
 
-I am currently working with an embedded system based on a OMAP-L138.
-We are developing a Software Defined Radio (SDR) which is sending and
-recieveing data in a slot-based scheme.
-Power management is a really important subject in our application,
-therefore we want to put the CPU into deepsleep (suspend to RAM) as
-much as we can.
-In short, this deepsleep-mode stops all the PLLs and put the SDRAM
-into self-refresh.
+Time to push off some of the pending items. I really wanted to wait until
+we had the regression nailed, but alas it's not quite there yet. But I'm
+very confident that it's "just" a missing expire on exit, so fix from
+Tejun should be fairly trivial. I'm headed out for a week on the slopes.
 
-Since all the the PLLs is stopped in deepsleep-mode, we loose all time
-perception. This is a problem since our rx/tx scheme is slot-based and
-if we don't know the time then we don't know when we should
-listen/transmit.
-To solve this, we have implemented a timer in a FPGA that still ticks
-when the CPU is sleeping. This timer also work as an alarm-clock, e.g.
-we can set a time when it should wake us up from deepsleep.
-When going into deepsleep, the driver that communicates with the FPGA
-set a wake-up alarm and then it calls pm_suspend(PM_SUSPEND_MEM).
+- Killing the barrier part of mtip32xx. It doesn't really support
+  barriers, and it doesn't need them (writes are fully ordered).
 
-Our application is also time-critical so we want to go to/from
-deepsleep as fast as possible.
-For some quick measurements, we have seen that it takes about 70ms to
-go up from deepsleep.
+- A few fixes from Dan Carpenter, preventing overflows of integer
+  multiplication.
 
+- A fixup for loop, fixing a previous commit that didn't quite solve the
+  partial read problem from Dave Young.
 
-Now to the questions!
-1a.
-When we are going into deepsleep, all internal timers used by the
-kernel itself and other applications will be frozen and delayed. Do
-you think this disorder will cause any problem?
-Of cause, this can be seen as a stupid question, it all depends on our
-application, but if you have any personal experience about this, so
-please feel free to mention how the reasoning went.
+- A bio integer overflow fix from Kent Overstreet.
 
-1b.
-Should I  take care of the internal timers (make the FPGA to wake up
-on those too)? Do you know any good functions that exposes a list with
-all timers?
-I guess there must be a function that gives you the timer that expires
-next but I have not found it.
-Is the timer_list and htimers handled the same way? I guess the
-htimers is not jiffie-based?
+- Improvement/fix of the door "keep locked" part of the cdrom shared
+  code from Paolo Benzini.
 
-1c.
-Should I adjust some internal variables (e.g. jiffies) when waking up?
+- A few cfq fixes from Shaohua Li.
 
-2.
-Is it possible to speed up the time it takes to go to/from deepsleep?
-The pm_suspend() does a lot of things, eg. freeze processes, suspend
-drivers and so on.
-Of cause, those functions is not there for fun, but is some more
-important than others...?
+- A fix for bsg sysfs warning when removing a file it did not create
+  from Stanislaw Gruszka.
 
-Thanks in advance
+- Two fixes for floppy from Vivek, preventing a crash.
 
-Med vänliga hälsningar / Best regards
-Marcus Folkesson
+- A few block core fixes from Tejun. One killing the over-optimized ioc
+  exit path, cleaning that up nicely. Two others fixing an oops on
+  elevator switch, due to calling into the scheduler merge check code
+  without holding the queue lock.
+
+Please pull!
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+Asai Thambi S P (1):
+      mtip32xx: removed the irrelevant argument of mtip_hw_submit_io() and the unused member of struct driver_data
+
+Dan Carpenter (2):
+      cdrom: use copy_to_user() without the underscores
+      relay: prevent integer overflow in relay_open()
+
+Dave Young (1):
+      loop: zero fill bio instead of return -EIO for partial read
+
+Kent Overstreet (1):
+      bio: don't overflow in bio_get_nr_vecs()
+
+Paolo Bonzini (1):
+      cdrom: move shared static to cdrom_device_info
+
+Shaohua Li (3):
+      block,cfq: change code order
+      block: fix NULL icq_cache reference
+      block: fix ioc locking warning
+
+Stanislaw Gruszka (1):
+      bsg: fix sysfs link remove warning
+
+Tejun Heo (4):
+      block: strip out locking optimization in put_io_context()
+      block: separate out blk_rq_merge_ok() and blk_try_merge() from elevator functions
+      block: don't call elevator callbacks for plug merges
+      block: fix lockdep warning on io_context release put_io_context()
+
+Vivek Goyal (2):
+      floppy: Cleanup disk->queue before caling put_disk() if add_disk() was never called
+      floppy: Fix a crash during rmmod
+
+ block/blk-cgroup.c                |    2 +-
+ block/blk-core.c                  |   33 ++++++-----
+ block/blk-ioc.c                   |  111 ++++++++----------------------------
+ block/blk-merge.c                 |   37 ++++++++++++
+ block/blk.h                       |    2 +
+ block/bsg.c                       |    3 +-
+ block/cfq-iosched.c               |   24 +++-----
+ block/elevator.c                  |   55 +-----------------
+ drivers/block/floppy.c            |   17 +++++-
+ drivers/block/loop.c              |   24 ++++----
+ drivers/block/mtip32xx/mtip32xx.c |   11 ++--
+ drivers/block/mtip32xx/mtip32xx.h |    5 --
+ drivers/cdrom/cdrom.c             |   20 ++-----
+ fs/bio.c                          |   10 +--
+ fs/ioprio.c                       |    2 +-
+ include/linux/blkdev.h            |    3 -
+ include/linux/cdrom.h             |    3 +-
+ include/linux/elevator.h          |    9 +---
+ include/linux/iocontext.h         |    5 +-
+ kernel/fork.c                     |    2 +-
+ kernel/relay.c                    |   10 +++-
+ 21 files changed, 155 insertions(+), 233 deletions(-)
+
+-- 
+Jens Axboe
+
