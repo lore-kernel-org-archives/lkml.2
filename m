@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760858Ab2BKEHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 23:07:31 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:16520 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760476Ab2BKEH2 (ORCPT
+	id S1760803Ab2BKEHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 23:07:38 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27036 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760859Ab2BKEHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 23:07:28 -0500
+	Fri, 10 Feb 2012 23:07:31 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -18,84 +18,103 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/22] PCI: Double checking setting for bus register and bus struct.
-Date: Fri, 10 Feb 2012 20:06:19 -0800
-Message-Id: <1328933185-15154-17-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 18/22] PCI, sys: Use device_type and attr_groups with pci dev
+Date: Fri, 10 Feb 2012 20:06:21 -0800
+Message-Id: <1328933185-15154-19-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
 References: <1328933185-15154-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F35E976.005D,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4F35E97B.00E0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User could use setpci change bridge's bus register. that could make value of register
-and struct is out of sync.
-User later will use rescan to see the devices is moving.
+We want to create rescan in sys only for pci bridge instead of all pci dev.
 
-In the rescaning, we need to double check the range and remove the old struct at first.
+We could use attribute_groups/is_visible method to do that.
 
-to make thing working user may need have script to remove children devices under bridge
-at first, and then use setpci update bus register and then rescan.
+Now pci dev does not use device type yet. So add pci_dev_type to take
+attr_groups with it.
+
+Add pci_dev_bridge_attrs_are_visible() to control attr_bridge_group only create
+attr for bridge.
+
+This is the framework related change, later could attr to bridge_attr_group,
+to make those attr only show up on pci bridge device.
+
+Also We could add more attr groups with is_visible to reduce messness in
+	pci_create_sysfs_dev_files. ( at least for boot_vga one )
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
+ drivers/pci/pci-sysfs.c |   30 ++++++++++++++++++++++++++++++
+ drivers/pci/pci.h       |    1 +
+ drivers/pci/probe.c     |    1 +
+ 3 files changed, 32 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index d972303..124e826 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -1335,3 +1335,33 @@ static int __init pci_sysfs_init(void)
+ }
+ 
+ late_initcall(pci_sysfs_init);
++
++static struct attribute *pci_dev_bridge_attrs[] = {
++	NULL,
++};
++
++static umode_t pci_dev_bridge_attrs_are_visible(struct kobject *kobj,
++						struct attribute *a, int n)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct pci_dev *pdev = to_pci_dev(dev);
++
++	if (!pdev->subordinate)
++		return 0;
++
++	return a->mode;
++}
++
++static struct attribute_group pci_dev_bridge_attr_group = {
++	.attrs = pci_dev_bridge_attrs,
++	.is_visible = pci_dev_bridge_attrs_are_visible,
++};
++
++static const struct attribute_group *pci_dev_attr_groups[] = {
++	&pci_dev_bridge_attr_group,
++	NULL,
++};
++
++struct device_type pci_dev_type = {
++	.groups = pci_dev_attr_groups,
++};
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index f862a5a..8d17a1c 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -161,6 +161,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+ }
+ extern struct device_attribute pci_dev_attrs[];
+ extern struct device_attribute pcibus_dev_attrs[];
++extern struct device_type pci_dev_type;
+ #ifdef CONFIG_HOTPLUG
+ extern struct bus_attribute pci_bus_attrs[];
+ #else
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 346dc22..009946a 100644
+index 009946a..b24fa1f 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -814,6 +814,46 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 	    (primary != bus->number || secondary <= bus->number))
- 		broken = 1;
- 
-+	if (!pass && dev->subordinate) {
-+		child = dev->subordinate;
-+		/*
-+		 * User could change bus register in bridge manually with
-+		 * setpci and rescan. So double check the setting, and remove
-+		 * old structs.  Don't set broken yet, let following check
-+		 * to see if the new setting good.
-+		 */
-+		if (primary != child->primary ||
-+		    secondary != child->secondary ||
-+		    subordinate != child->subordinate) {
-+			dev_info(&dev->dev,
-+				"someone changed bus register from pri:%02x, sec:%02x, sub:%02x to pri:%02x, sec:%02x, sub:%02x\n",
-+				child->primary, child->secondary, child->subordinate,
-+				primary, secondary, subordinate);
-+			if (!list_empty(&dev->subordinate->devices)) {
-+				u32 old_buses;
-+
-+				dev_info(&dev->dev,
-+				 "but children devices are not removed manually before that.\n");
-+				/*
-+				 * Try best to remove left children devices
-+				 * but we need to set bus register back, otherwise
-+				 * We can not access children device and stop them
-+				 */
-+				old_buses = (buses & 0xff000000)
-+				   | ((unsigned int)(child->primary)     <<  0)
-+				   | ((unsigned int)(child->secondary)   <<  8)
-+				   | ((unsigned int)(child->subordinate) << 16);
-+				pci_write_config_dword(dev, PCI_PRIMARY_BUS,
-+							 old_buses);
-+				pci_remove_behind_bridge(dev);
-+				pci_write_config_dword(dev, PCI_PRIMARY_BUS,
-+							 buses);
-+			}
-+			pci_remove_bus(dev->subordinate);
-+			dev->subordinate = NULL;
-+		}
-+	}
-+
- 	/* more strict checking */
- 	if (!pass && !broken && !dev->subordinate)
- 		broken = pci_bridge_check_busn_broken(bus, dev,
+@@ -1100,6 +1100,7 @@ int pci_setup_device(struct pci_dev *dev)
+ 	dev->sysdata = dev->bus->sysdata;
+ 	dev->dev.parent = dev->bus->bridge;
+ 	dev->dev.bus = &pci_bus_type;
++	dev->dev.type = &pci_dev_type;
+ 	dev->hdr_type = hdr_type & 0x7f;
+ 	dev->multifunction = !!(hdr_type & 0x80);
+ 	dev->error_state = pci_channel_io_normal;
 -- 
 1.7.7
 
