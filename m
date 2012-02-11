@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2BKJx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 04:53:27 -0500
-Received: from mga14.intel.com ([143.182.124.37]:32463 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab2BKJvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 04:51:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105714170"
-Message-Id: <20120211043325.331352920@intel.com>
-User-Agent: quilt/0.48-1
-Date: Sat, 11 Feb 2012 12:31:41 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/9] readahead: make context readahead more conservative
-References: <20120211043140.108656864@intel.com>
-Content-Disposition: inline; filename=readahead-context-tt
+	id S1754749Ab2BKKTF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 05:19:05 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38838 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370Ab2BKKTC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 05:19:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F32B776.6070007@gmail.com>
+References: <20120116163106.GC7180@jl-vm1.vm.bytemark.co.uk>
+	<1326776095-2629-1-git-send-email-siddhesh.poyarekar@gmail.com>
+	<CAAHN_R2g9zaujw30+zLf91AGDHNqE6HDc8Z4yJbrzgJcJYFkXg@mail.gmail.com>
+	<4F2B02BC.8010308@gmail.com>
+	<CAAHN_R0O7a+RX7BDfas3+vC+mnQpp0h3y4bBa1u4T-Jt=S9J_w@mail.gmail.com>
+	<CAHGf_=qA6EFue2-mNUg9udWV4xSx86XQsnyGV07hfZOUx6_egw@mail.gmail.com>
+	<CAAHN_R0+ExGcdpLM7KwC_KsPOemVOiRrmyWcowiu5_cWW3BPLQ@mail.gmail.com>
+	<CAAHN_R0N=3J4=VqvDsGB=_2Ln9yKBjOevW2=_UAMBK1pGepqvA@mail.gmail.com>
+	<4F32B776.6070007@gmail.com>
+Date: Sat, 11 Feb 2012 15:49:01 +0530
+Message-ID: <CAAHN_R1=87w+NFXPA5MGER8wLR4LwOv-2_eG-d+Fe=+j08FKYQ@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Jamie Lokier <jamie@shareable.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to prevent negatively impact moderately dense random reads on SSD.
+On Wed, Feb 8, 2012 at 11:27 PM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+> Now, we are using some bit saving hack. example,
+>
+> 1) use ifdef
+>
+> #ifndef CONFIG_TRANSPARENT_HUGEPAGE
+> #define VM_MAPPED_COPY 0x01000000      /* T if mapped copy of data (nommu
+> mmap) */
+> #else
+> #define VM_HUGEPAGE    0x01000000      /* MADV_HUGEPAGE marked this vma */
+> #endif
+>
+> 2) use bit combination
+>
+> #define VM_STACK_INCOMPLETE_SETUP      (VM_RAND_READ | VM_SEQ_READ)
+>
+>
+> Maybe you can take a similar way. And of course, you can ban some useless
+> flag
+> bits.
 
-Transaction-Per-Second numbers provided by Taobao:
+I found the thread in which Linus rejected the idea of expanding vm_flags:
 
-		QPS	case
-		-------------------------------------------------------
-		7536	disable context readahead totally
-w/ patch:	7129	slower size rampup and start RA on the 3rd read
-		6717	slower size rampup
-w/o patch:	5581	unmodified context readahead
+https://lkml.org/lkml/2011/11/10/522
 
-Before, readahead will be started whenever reading page N+1 when it
-happen to read N recently. After patch, we'll only start readahead
-when *three* random reads happen to access pages N, N+1, N+2. The
-probability of this happening is extremely low for pure random reads,
-unless they are very dense, which actually deserves some readahead.
+and based on that, I don't think I can justify the need for a new flag
+for this patch since it is purely for display purposes and has nothing
+to do with the actual treatment of the vma. So I figured out another
+way to identify a thread stack without changing the way the vma
+properties (I should have done this in the first place I think) which
+is by checking if the vma contains the stack pointer of the task.
 
-Also start with a smaller readahead window. The impact to interleaved
-sequential reads should be small, because for a long run stream, the
-the small readahead window rampup phase is negletable.
+With this change:
 
-The context readahead actually benefits clustered random reads on HDD
-whose seek cost is pretty high.  However as SSD is increasingly used for
-random read workloads it's better for the context readahead to
-concentrate on interleaved sequential reads.
+/proc/pid/task/tid/maps: will only mark the stack that the task uses
 
-Tested-by: Tao Ma <tm@tao.ma>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/readahead.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+/proc/pid/maps: will mark all stacks. This path will be slower since
+it will iterate through the entire thread group for each vma.
 
---- linux-next.orig/mm/readahead.c	2012-01-25 15:57:47.000000000 +0800
-+++ linux-next/mm/readahead.c	2012-01-25 15:57:49.000000000 +0800
-@@ -369,10 +369,10 @@ static int try_context_readahead(struct 
- 	size = count_history_pages(mapping, ra, offset, max);
- 
- 	/*
--	 * no history pages:
-+	 * not enough history pages:
- 	 * it could be a random read
- 	 */
--	if (!size)
-+	if (size <= req_size)
- 		return 0;
- 
- 	/*
-@@ -383,8 +383,8 @@ static int try_context_readahead(struct 
- 		size *= 2;
- 
- 	ra->start = offset;
--	ra->size = get_init_ra_size(size + req_size, max);
--	ra->async_size = ra->size;
-+	ra->size = min(size + req_size, max);
-+	ra->async_size = 1;
- 
- 	return 1;
- }
+I'll test this and attach a new version of the patch.
 
+Regards,
+Siddhesh
 
+-- 
+Siddhesh Poyarekar
+http://siddhesh.in
