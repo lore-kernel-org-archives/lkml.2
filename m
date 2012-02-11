@@ -1,64 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760700Ab2BKAX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 19:23:56 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56469 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2BKAXy (ORCPT
+	id S1760759Ab2BKAdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 19:33:41 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54273 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab2BKAdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 19:23:54 -0500
-Date: Fri, 10 Feb 2012 16:23:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in disk event polling
-Message-ID: <20120211002349.GN19392@google.com>
-References: <20120210211255.GK19392@google.com>
- <Pine.LNX.4.44L0.1202101631180.1179-100000@iolanthe.rowland.org>
+	Fri, 10 Feb 2012 19:33:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1202101631180.1179-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120210200503.GX1426@atomide.com>
+References: <20120203205049.4089.74610.stgit@kaulin.local>
+	<20120203205508.4089.35304.stgit@kaulin.local>
+	<20120204175903.GF1426@atomide.com>
+	<CAA+hA=Tux3P0RyaB=vG7UeycTt8z4nX9dBicpjB7tQ+xzwoSDQ@mail.gmail.com>
+	<20120210200503.GX1426@atomide.com>
+Date: Fri, 10 Feb 2012 16:33:38 -0800
+Message-ID: <CAA+hA=Qa_3vXvgNMRuDjw93Wb3fGNOM1EqmvYVQO5CN9w2FA3A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: Add simple pinmux driver using device tree data
+From: Dong Aisheng <dongas86@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Barry Song <21cnbao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Tony,
 
-On Fri, Feb 10, 2012 at 04:44:48PM -0500, Alan Stern wrote:
-> > I think it should be nrt.  It assumes that no one else is running it
-> > concurrently; otherwise, multiple CPUs could jump into
-> > disk->fops->check_events() concurrently which can be pretty ugly.
-> 
-> Come to mention it, how can a single work item ever run on more than
-> one CPU concurrently?  Are you concerned about cases where some other 
-> thread requeues the work item while it is executing?
+On Fri, Feb 10, 2012 at 12:05:03PM -0800, Tony Lindgren wrote:
+> Hi Dong,
+>
+> * Dong Aisheng <dongas86@gmail.com> [120207 17:22]:
+> > On 2/4/12, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > The most difference may be the function enable due to hw difference.
+> > But i see that for DT case, it seems function and group creation may
+> > also be a problem.
+>
+> What all do you see as a problem with group creation? Just the
+> naming?
+I said from different SoC's pointer of view.
+Not only naming, but also if group and function created in driver or dt file
+and their map parsing.
 
-Yeah, there are multiple paths which may queue the work item.  For
-polling work, it definitely was possible but maybe locking changes
-afterwards removed that.  Even then, it would be better to use nrt wq
-as bug caused that way would be very difficult to track down.
+> > > + sprintf(name, "%lx",
+> > > +         (unsigned long)smux->res->start + offset);
+> > > + pin->name = name;
+> > I'm wondering how about other people do not want the reg address to be PIN name?
+> > It's less meaningful.
+>
+> How about try adding optional pinctrl-simple,pin-name entry that you
+> can add to each mux entry?
+>
+Put it in pinctrl device node?
+Then how do we name each pin?
+And for IMX, currently we name all pins in driver.
+I still can not find a good reason that i should name all pins in dt file.
+Yes, we indeed have such a case.
+For IMX, some special pins mux still need a setting called 'select input' which
+is controlled in other registers.
+But a rough idea in my mind that may choose different way to fix this issue.
+It's a little like:
+pinctrl_usdhc4: pinconfig-usdhc4 {
+       mux =
+               <MX6Q_SD4_CMD  0 SELECT_INPUT>
+               <MX6Q_SD4_CLK  0 0>
+               <MX6Q_SD4_DAT0 1 0>
+               <MX6Q_SD4_DAT1 1 0>
+               <MX6Q_SD4_DAT2 1 SELECT_INPUT>
+               <MX6Q_SD4_DAT3 1 0>
+               <MX6Q_SD4_DAT4 1 0>
+               <MX6Q_SD4_DAT5 1 0>
+               <MX6Q_SD4_DAT6 1 0>
+               <MX6Q_SD4_DAT7 1 0>;
+}
+This format would not make the dts writer to take too much care of
+register address
+and value. For this case, the #pinmux-cells would be <3>;
+It is a little different from OMAP.
 
-> The problem is that these async threads generally aren't freezable.  
-> They will continue to run and do I/O while a system goes through a
-> sleep transition.  How should this be handled?
+For your proposal, I'm afraid it is a little too much depend on the SoC register
+layout. We need to find a flexible enough way to cover all possible
+register layout
+difference for all SoCs.
+(Considering one register controls multi muxs?)
 
-I think it would be better to use wq for most kthreads.  A lot of them
-aren't strictly correct in the way they deal with
-kthread_should_stop() and freezing.  kthread in general simply seems
-way too difficult to use correctly.
+> Note that for more complex mapping you may want to add a hardware
+> specific .data entry that corresponds to the compatible flag, let's
+> say for conf range offset to mux range offset.
+>
+> > > +         res = smux_rename_function(function, np->full_name);
+> > A little unclear for rename here.
+> > Can we find a better way?
+>
+> You might want to play with parsing optional names from .dts file.
+> I don't need the names and they slow down the parsing. For the names,
+> we can show them with userspace tools using debugfs.
+>
+> For reference, this is what I get under debugfs function entry
+> after the rename:
+>
+> function: /ocp/serial@0x48020000, groups = [ pinconfig-uart3 ]
+>
+The name looks reasonable to me.
 
-> kthread_run() can be adjusted on a case-by-case basis, by inserting
-> calls to set_freezable() and try_to_freeze() at the appropriate places.  
-> But what about async_schedule()?
+> > > +static int __init smux_parse_one_pinctrl_entry(struct smux_device *smux,
+> > > +                                           struct device_node *np)
+> > > +{
+> > > +   int count = 0;
+> > > +
+> > > +   do {
+>
+> ...
+>
+> > > + } while (++count);
+> > This 'while' is for what? Define multi pinctrl properties?
+>
+> Yes each client device might request multiple muxes, let's say
+> two pingroups from two different pinctrl driver instances.
+>
+You mean like this?
+serial@48020000 {
+      pinctrl = <&pmx_uart3_x>;
+      pinctrl = <&pmx_uart3_y>;
+};
 
-Given the stuff async is used for, maybe just make all async execution
-freezable?
+Did i misunderstand?
+I still can not understand why need this.
+The pinctrl properly in device node can support multi pinmuxs .
+serial@48020000 {
+      pinctrl = <&pmx_uart3_x &pmx_uart3_y>;
+It's good to me that the consensus we reached at Linaro Connect is much like
+my proposal in above URL. :)
 
-Thanks.
+> > > + val = of_get_property(pdev->dev.of_node,
+> > > +                         "pinctrl-simple,function-off", &len);
+> > > + if (!val || len != 4) {
+> > > +         dev_err(smux->dev, "function off mode not specified\n");
+> > > +         ret = -EINVAL;
+> > How about other SoCs not support function off mode?
+>
+> Maybe disable should not do anything if function-off is not specified?
+>
+IIRC currently pinctrl must need a disable function, if that, yes.
+However i think we may change it in the future that make .disable function
+optinal.
 
--- 
-tejun
+> > > +free:
+> > > + devm_kfree(smux->dev, smux);
+> > > +
+> > For devm_* routines, do you still need this error checking?
+> > IIRC, the resource will be automatically released if probe failed.
+>
+> I guess, are there some recommendations somewhere for that?
+I don't know where it is.
+I just checked the code before.
+You can see really_probe in drivers/base/dd.c.
+
+Regards
+Dong Aisheng
