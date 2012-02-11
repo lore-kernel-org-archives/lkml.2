@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab2BKNRX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 08:17:23 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39411 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754649Ab2BKNRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 08:17:22 -0500
-Date: Sat, 11 Feb 2012 13:17:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, eric.miao@linaro.org,
-        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v4 2/2] Regulator: Add Anatop regulator driver
-Message-ID: <20120211131718.GA31887@opensource.wolfsonmicro.com>
-References: <1324980994-18462-1-git-send-email-paul.liu@linaro.org>
- <1328734286-30091-1-git-send-email-paul.liu@linaro.org>
- <1328734286-30091-2-git-send-email-paul.liu@linaro.org>
- <20120211063637.GC2198@r65073-Latitude-D630>
+	id S1758167Ab2BKNkG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 08:40:06 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35091 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754945Ab2BKNkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Feb 2012 08:40:04 -0500
+Date: Sat, 11 Feb 2012 14:39:29 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, paul@paulmenage.org,
+        rjw@sisk.pl, tj@kernel.org, frank.rowand@am.sony.com, pjt@google.com,
+        tglx@linutronix.de, lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+Message-ID: <20120211133929.GB28098@elte.hu>
+References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
+ <1328671335.2482.72.camel@laptop>
+ <4F32174E.2050207@linux.vnet.ibm.com>
+ <20120209075701.GE18387@elte.hu>
+ <4F3386E9.7090606@linux.vnet.ibm.com>
+ <20120209151158.GA22489@elte.hu>
+ <1328889127.25989.14.camel@laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120211063637.GC2198@r65073-Latitude-D630>
-X-Cookie: Slow day.  Practice crawling.
+In-Reply-To: <1328889127.25989.14.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-On Fri, Feb 10, 2012 at 10:36:38PM -0800, Shawn Guo wrote:
-> On Thu, Feb 09, 2012 at 04:51:26AM +0800, Ying-Chun Liu (PaulLiu) wrote:
+> On Thu, 2012-02-09 at 16:11 +0100, Ingo Molnar wrote:
+> 
+> > > My understanding of the code is that when a CPU is taken 
+> > > offline, it is removed from all the cpusets and then the 
+> > > scan_for_empty_cpusets() function is run to move tasks from 
+> > > empty cpusets to their parent cpusets.
+> > 
+> > Why is that done that way? offlining a CPU should be an 
+> > invariant as far as cpusets are concerned.
+> 
+> Can't, tasks need to run someplace. There's two choices, add a 
+> still online cpu to the now empty cpuset or move the tasks to 
+> a parent that still has online cpus.
+> 
+> Both are destructive.
 
-> > +	rval = of_get_property(np, "min-voltage", NULL);
-> > +	if (rval)
-> > +		sreg->rdata->min_voltage = be32_to_cpu(*rval);
-> > +	rval = of_get_property(np, "max-voltage", NULL);
-> > +	if (rval)
-> > +		sreg->rdata->max_voltage = be32_to_cpu(*rval);
+You aren't thinking hard enough ;-) There's several solutions 
+off the top of my mind:
 
-> We need a sensible binding document to understand those.  But at least,
-> shouldn't min-voltage and max-voltage be retrieved as the common
-> regulator binding documented in
-> Documentation/devicetree/bindings/regulator/regulator.txt?
+1) refuse the "impossible" offlining of the CPU, with a clear 
+   enough error to make it actionable
 
-Normally this would be a bad idea as the set of voltages that can safely
-be used on a given board might differ from those which are supported by
-the device.  However in this case you might be OK as this is all
-internal to the SoC and so presumably won't vary from board to board.
+2) offer a 'forced' offlinign of a CPU that will SIGTERM all 
+   tasks that are on the now offline CPU and can only be there.
 
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+3) offer a 'nice' offlining variant that moves all orphan tasks
+   to their or any other well-defined fallback CPU.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+4) *allow* 'impossible' cpusets and just run them on CPU#0 or 
+   any other natural approximation. Don't touch the cpuset!
 
-iQIcBAEBAgAGBQJPNmpXAAoJEBus8iNuMP3dXuQQAJ2XQ05dvcWJteVKkB6e2xC3
-pJGjYxPQR3MQi0Avn5m8hE7RPqDnQTkeTmHjaMdezwzkZHM0Aypr67cW7LUKLHbC
-8jRdKxeKHwrG9I9IoRpKF0D/osLjFWTgy8+Vw2RlA85sGmDZdDCjoXbl2g6midZq
-1vTu2A17yzejTWR7ZEEj/HJdM/ETb0k6adg6aXGQpnuhBaqteOeeIjmxSy5tpkCv
-By+g//vSFMSWbMzgKBVFl5d+9q/UNx1dgmYLLNTrk7FWVeGU7Rj8x4g5ZPSWXzID
-a4sJ1lpQsuv3Ebc0anuFUDQIz1Huen+6WK9Ziy18yfdmfkbGsGjBEDqXBmwbvVt7
-/SgSEy/wj8zdu85lKxHhN3kOFF0x5FShTYFss1b040cGUiS9p/ihMge2aeC6mufJ
-7qZQ/hU9bjgK22JHLvieTCzQgAx7TXRp4BeOnjmo3gTqH0HhQuJ8jK3H5Buv9E7M
-a2EMOZfCjsIR+BVpFGM9q0NlkCL5rtxxQyceX9KfrHcxW24gLm9cHebb5ZcaUljj
-HbMye9ZIjobK0oMx1LLNO5h/gEJ5g5M2ZWH8ExlW1REFaw3A3lJK/x1Se9hVymwL
-DW87+i96VqMaR5Rim/Qj/9X0YVcgHNgJWZlEylhfvOHf+MiYOO12PDu8wx2kOzEc
-Vffl4TCmo2RJiXTtBQ+y
-=vjNY
------END PGP SIGNATURE-----
+All of these would be exception mechanisms with no need to do 
+anything at hot-replug time.
 
---3MwIy2ne0vdjdPXF--
+Thanks,
+
+	Ingo
