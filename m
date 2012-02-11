@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab2BKCRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 21:17:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55145 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab2BKCRa (ORCPT
+	id S1758904Ab2BKC2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 21:28:13 -0500
+Received: from pecan.exetel.com.au ([220.233.0.17]:60677 "EHLO
+	smtp.po.exetel.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754079Ab2BKC2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 21:17:30 -0500
-Date: Fri, 10 Feb 2012 18:17:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Shaohua Li <shli@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] block: strip out locking optimization in
- put_io_context()
-Message-ID: <20120211021724.GO19392@google.com>
-References: <CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
- <CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
- <20120208162925.GA19392@google.com>
- <CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
- <20120209175948.GE19392@google.com>
- <CA+55aFzVmb_DfPPDyeON9X2KAii79g=NszPi+k9jrNLdQS7+4g@mail.gmail.com>
- <20120209192431.GF19392@google.com>
- <20120209234844.GG19392@google.com>
- <CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com>
- <CANejiEVBd6eu8LwmhbMvQqMW4LqUh6F-5psyW0dVYU06WEJqBQ@mail.gmail.com>
+	Fri, 10 Feb 2012 21:28:12 -0500
+Message-ID: <4F35D22E.3000303@exemail.com.au>
+Date: Sat, 11 Feb 2012 13:27:58 +1100
+From: Padfoot <padfoot@exemail.com.au>
+Reply-To: padfoot@exemail.com.au
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120205 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANejiEVBd6eu8LwmhbMvQqMW4LqUh6F-5psyW0dVYU06WEJqBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: [DEVICE SUPPORT] Atheros 0cf3:e019
+References: <4F35B0A1.5090705@exemail.com.au>
+In-Reply-To: <4F35B0A1.5090705@exemail.com.au>
+X-Forwarded-Message-Id: <4F35B0A1.5090705@exemail.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Fri, Feb 10, 2012 at 04:48:49PM +0800, Shaohua Li wrote:
-> >> Can you please test the following one?  It's probably the simplest
-> >> version w/o RCU and wq deferring.  RCUfying isn't too bad but I'm
-> >> still a bit hesitant because RCU coverage needs to be extended to
-> >> request_queue via conditional synchronize_rcu() in queue exit path
-> >> (can't enforce delayed RCU free on request_queues and unconditional
-> >> synchronize_rcu() may cause excessive delay during boot for certain
-> >> configurations).  It now can be done in the block core layer proper so
-> >> it shouldn't be as bad tho.  If this too flops, I'll get to that.
-> > doesn't work.
-> I added trace in the schedule_work code path of put_io_context, which
-> runs very rare. So it's not lock contention for sure.
-> Sounds the only difference between the good/bad cases is the good
-> case runs with rcu_lock_read/rcu_read_unlock. I also checked slab
-> info, the cfq related slab doesn't use too many memory, unlikely
-> because rcu latency uses too many memory.
+Apologies for posting twice. Please see the below email sent to 
+linux-bluetooth list on 2 Feb. Yet to receive a response. Most likely 
+the bluetooth team are flat out with other issues ATM.
 
-Yeah, that makes much more sense.  It just isn't hot enough path for
-this sort of micro locking changes to matter.  I think the problem is
-that, after the change, the cfqq aren't being expired immediately on
-task exit.  ie. While moving the cic destruction to release path, I
-accidentally removed exit notification to cfq.  I'll come up with a
-fix.
+Hopefully someone here may be able to assist.
 
-Thank you!
+Thanks.
+Lachlan.
 
--- 
-tejun
+-------- Original Message --------
+Subject: 	[DEVICE SUPPORT] Atheros 0cf3:e019
+Date: 	Thu, 02 Feb 2012 19:34:20 +1100
+From: 	Padfoot <padfoot@exemail.com.au>
+Reply-To: 	padfoot@exemail.com.au
+To: 	linux-bluetooth@vger.kernel.org
+
+
+
+Hi,
+
+I am trying to find out the state of support in the linux bluetooth
+stack for devices reporting as Atheros VID 0cf3 PID e019.
+
+I am using Arch Linux binary kernel 3.2.2 64 bit.
+
+The device is recognised and appropriate modules loaded without error,
+yet trying to access bluetooth I am told no adapter is present.
+
+Output of lsmod | grep ath
+$ lsmod | grep ath
+ath9k                  87343  0
+ath9k_common            2096  1 ath9k
+ath9k_hw              347282  2 ath9k_common,ath9k
+ath                    14802  3 ath9k_hw,ath9k_common,ath9k
+mac80211              228367  1 ath9k
+cfg80211              172260  3 mac80211,ath,ath9k
+
+Output of lsmod | grep bt
+]$ lsmod | grep bt
+btusb                  11385  1
+bluetooth             151999  13 btusb,bnep,rfcomm
+usbcore               146241  9
+ehci_hcd,ohci_hcd,usbhid,usb_storage,ums_realtek,uvcvideo,uas,btusb
+
+Output of lsusb -v
+Bus 005 Device 003: ID 0cf3:e019 Atheros Communications, Inc.
+Device Descriptor:
+   bLength                18
+   bDescriptorType         1
+   bcdUSB               1.10
+   bDeviceClass          224 Wireless
+   bDeviceSubClass         1 Radio Frequency
+   bDeviceProtocol         1 Bluetooth
+   bMaxPacketSize0        64
+   idVendor           0x0cf3 Atheros Communications, Inc.
+   idProduct          0xe019
+   bcdDevice            0.01
+   iManufacturer           0
+   iProduct                0
+   iSerial                 0
+   bNumConfigurations      1
+
+Thanks.
+Lachlan.
+
