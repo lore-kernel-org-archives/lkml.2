@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab2BKLNH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 06:13:07 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52376 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727Ab2BKLNE (ORCPT
+	id S1755227Ab2BKLS4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 06:18:56 -0500
+Received: from nm15-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.252]:44925
+	"HELO nm15-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754344Ab2BKLSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 06:13:04 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 11 Feb 2012 12:12:50 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 1/3] firewire-sbp2: Take into account Unit_Unique_ID
-Message-ID: <20120211121250.5e2fe781@stein>
-In-Reply-To: <1328881314-26544-2-git-send-email-bootc@bootc.net>
-References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
-	<1328881314-26544-1-git-send-email-bootc@bootc.net>
-	<1328881314-26544-2-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 11 Feb 2012 06:18:55 -0500
+X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Feb 2012 06:18:54 EST
+X-Yahoo-Newman-Id: 975661.11833.bm@smtp139.mail.ukl.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6ALRAvYVM1knuX8tnDOYCgspoUX.Ne0EknfIZH40ch6Ql.j
+ eGEX70unBI0PvE29ZaF5q.TTbrIVn6sAMXFB5b2prHRrMhgGGb5LSRX.pBp1
+ wvyt_moSrcqndFP31zZ0Yx3DXx8MVauJPpdmj8gxfCPNuiBpCI5YF3jccTW5
+ JyZHQP5GM3OqVEzKdEKp8mny59sEpi39fjMbaagLeflzitmYqZWdefL4D4Ed
+ spBAARpzcQZBGdGL4UYPiCmADfetxZIaPXzE0zoRsJGnwGdguXoKiIaMXf2j
+ y.1TUrLB36vx2rHppklBivvrF4B6b0H9EDEdfgP_2sX.1ZEsHv0Mvws5DJxg
+ MuhtxPaFvwnX2hkO39Rj3ak2vcs5topM.i5bct5Td2yyo8Ap8Jc_MlACW51J
+ 8Zw--
+X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
+From: Marek Lindner <lindner_marek@yahoo.de>
+To: b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [B.A.T.M.A.N.] [PATCH 40/50] batman-adv: use dev_hw_addr_random() instead of random_ether_addr()
+Date: Sat, 11 Feb 2012 19:12:11 +0800
+User-Agent: KMail/1.13.7 (Linux/3.0.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Danny Kukawka <danny.kukawka@bisect.de>, netdev@vger.kernel.org,
+        Danny Kukawka <dkukawka@suse.de>, linux-kernel@vger.kernel.org,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        "David S. Miller" <davem@davemloft.net>
+References: <1328735457-29986-1-git-send-email-danny.kukawka@bisect.de> <1328735457-29986-41-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1328735457-29986-41-git-send-email-danny.kukawka@bisect.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202111912.12522.lindner_marek@yahoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 10 Chris Boot wrote:
-> If the target's unit directory contains a Unit_Unique_ID entry, we
-> should use that as the target's GUID for identification purposes. The
-> SBP-2 standards document says:
+On Thursday, February 09, 2012 05:10:47 Danny Kukawka wrote:
+> Use dev_hw_addr_random() instead of calling random_ether_addr()
+> to set addr_assign_type correctly to NET_ADDR_RANDOM.
 > 
-> "Although the node unique ID (EUI-64) present in the bus information
-> block is sufficient to uniquely identify nodes attached to Serial Bus,
-> it is insufficient to identify a target when a vendor implements a
-> device with multiple Serial Bus node connections. In this case initiator
-> software requires information by which a particular target may be
-> uniquely identified, regardless of the Serial Bus access path used."
-> 
-> [ IEEE T10 P1155D Revision 4, Section 7.6 (page 51) ] and
-> [ IEEE T10 P1467D Revision 5, Section 7.9 (page 74) ]
-> 
-> Signed-off-by: Chris Boot <bootc@bootc.net>
-> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> ---
->  drivers/firewire/sbp2.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-> index 80e95aa..ed5bbbf 100644
-> --- a/drivers/firewire/sbp2.c
-> +++ b/drivers/firewire/sbp2.c
-> @@ -211,6 +211,7 @@ static struct fw_device *target_device(struct sbp2_target *tgt)
->  #define SBP2_CSR_UNIT_CHARACTERISTICS	0x3a
->  #define SBP2_CSR_FIRMWARE_REVISION	0x3c
->  #define SBP2_CSR_LOGICAL_UNIT_NUMBER	0x14
-> +#define SBP2_CSR_UNIT_UNIQUE_ID		0x8d
->  #define SBP2_CSR_LOGICAL_UNIT_DIRECTORY	0xd4
->  
->  /* Management orb opcodes */
-> @@ -997,6 +998,17 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
->  	return 0;
->  }
->  
-> +static int sbp2_get_unit_unique_id(struct sbp2_target *tgt,
-> +				    const u32 *leaf)
-> +{
-> +	if ((leaf[0] & 0xffff0000) != 0x00020000)
-> +		return -EINVAL;
+> Reset the state to NET_ADDR_PERM as soon as the MAC get
+> changed via .ndo_set_mac_address.
 
-This could be relaxed to "if (leaf[0] < 0x00020000)", but the stricter
-check is fine too.
+Applied (with minor modification) in revision 910ccac.
 
-> +
-> +	tgt->guid = (u64)leaf[1] << 32 | leaf[2];
-> +
-> +	return 0;
-> +}
-> +
->  static int sbp2_scan_logical_unit_dir(struct sbp2_target *tgt,
->  				      const u32 *directory)
->  {
-> @@ -1048,6 +1060,11 @@ static int sbp2_scan_unit_dir(struct sbp2_target *tgt, const u32 *directory,
->  				return -ENOMEM;
->  			break;
->  
-> +		case SBP2_CSR_UNIT_UNIQUE_ID:
-> +			if (sbp2_get_unit_unique_id(tgt, ci.p - 1 + value) < 0)
-> +				return -EINVAL;
-> +			break;
-> +
->  		case SBP2_CSR_LOGICAL_UNIT_DIRECTORY:
->  			/* Adjust for the increment in the iterator */
->  			if (sbp2_scan_logical_unit_dir(tgt, ci.p - 1 + value) < 0)
-
-The error return here is wrong.  Garbage in a non-essential part of the
-Config ROM is no reason to refuse to work with a device.  It is too common
-for firmware to have various bogus values in there.  For instance, we
-never check the CRC of a Config ROM block because wrongly calculated CRCs
-or even zero CRC is quite commonly seen with otherwise correct Config ROMs.
-
-And there is another problem with the patch:  In fringe cases, we might
-now create more than one scsi_device instances with the same ieee1394_id
-sysfs attribute value.  Those cases are:
- 1. There are two targets present which expose the same, hence non-unique
-    and thus standards-violating Unit_Unique_ID. Or
- 2. There is a single target connected through more than one link, it has
-    got a Unit_Unique_ID, and either
-     2.a  it accepts concurrent login despite firewire-sbp2 demanding an
-          exclusive login (which is its default mode), or
-     2.b  firewire-sbp2 is configured to work in concurrent login mode and
-          the target grants concurrent logins.
-
-We do not need to care for case 1.  It cannot be distinguished from case
-2, and we already do not care for the case that there are two or more
-nodes with a non-unique Node_Unique_ID.  Devices with the latter bug exist
-but are rare, judging from historical discussion on linux1394-devel.
-
-Case 2.a is highly unlikely, and I think we should not worry about that
-either.
-
-Should we do something about case 2.b?  Where in the Linux SCSI
-initiator stack is multipathing handled --- in transport layer drivers or
-higher up?  (Cc'ing LSML for this question.)
--- 
-Stefan Richter
--=====-===-- --=- -=-==
-http://arcgraph.de/sr/
+Thanks,
+Marek
