@@ -1,129 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761140Ab2BJXvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Feb 2012 18:51:54 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35190 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753709Ab2BJXvw (ORCPT
+	id S1754745Ab2BKACT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Feb 2012 19:02:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35779 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab2BKACR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Feb 2012 18:51:52 -0500
-Date: Fri, 10 Feb 2012 15:51:45 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] PCI / PM: Disable wakeup during shutdown for devices
- not enabled to wake up
-Message-ID: <20120210155145.74aafa88@jbarnes-desktop>
-In-Reply-To: <201202102340.29644.rjw@sisk.pl>
-References: <201202070050.35931.rjw@sisk.pl>
-	<20120210123407.7087d6a4@jbarnes-desktop>
-	<201202102340.29644.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/j+A.+vQ7juseHx1+48YA8dR"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 10 Feb 2012 19:02:17 -0500
+MIME-Version: 1.0
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, Venki Pallipadi <venki@google.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
+Date: Fri, 10 Feb 2012 16:02:05 -0800
+Message-Id: <1328918525-7309-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/j+A.+vQ7juseHx1+48YA8dR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
+ARM, move "noirqtime=" option to common debugging code.
+For a bit of backward compatibility, X86-specific option
+"tsc=noirqtime" is preserved, but issues a warning.
 
-On Fri, 10 Feb 2012 23:40:29 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Suggested-by: Yong Zhang <yong.zhang0@gmail.com>
+Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Acked-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+---
+ Documentation/kernel-parameters.txt |    9 +++++----
+ arch/arm/kernel/sched_clock.c       |    2 ++
+ arch/x86/Kconfig                    |   11 -----------
+ arch/x86/kernel/tsc.c               |   12 ++++++------
+ include/linux/sched.h               |   17 ++++++++++-------
+ kernel/sched/core.c                 |   20 +++++++++++---------
+ lib/Kconfig.debug                   |   12 ++++++++++++
+ 7 files changed, 46 insertions(+), 37 deletions(-)
 
-> On Friday, February 10, 2012, Jesse Barnes wrote:
-> > On Tue, 7 Feb 2012 00:50:35 +0100
-> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> >=20
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > >=20
-> > > If a PCI device is enabled to generate wakeup signals (PME) when put
-> > > into a low-power state by runtime PM, it will be still enabled to
-> > > generate those signals after the system shutdown, unless its driver's
-> > > .shutdown() callback takes care of the wakeup signals generation
-> > > setting.  Moreover, there are devices that are not enabled to wake
-> > > up the system and that are configured by runtime PM to generate
-> > > wakeup signals so that (runtime) remote wakeup works with them.
-> > > Those devices should be reconfigured during system shutdown so that
-> > > they don't generate wakeup signals, but at least some drivers don't
-> > > do that.  However, that very well may be done by the PCI core so
-> > > that drivers don't have to worry about it.  For this reason, modify
-> > > pci_device_shutdown() to disable the generation of wakeup events for
-> > > devices not supposed to wake up the system.
-> > >=20
-> > > References: https://bugzilla.kernel.org/show_bug.cgi?id=3D37952
-> > > Reported-and-tested-by: Kamil Iskra <kamil.54002@iskra.name>
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
-> > >  drivers/pci/pci-driver.c |   10 ++++++++++
-> > >  1 file changed, 10 insertions(+)
-> > >=20
-> > > Index: linux/drivers/pci/pci-driver.c
-> > > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > > --- linux.orig/drivers/pci/pci-driver.c
-> > > +++ linux/drivers/pci/pci-driver.c
-> > > @@ -430,6 +430,16 @@ static void pci_device_shutdown(struct d
-> > >  		drv->shutdown(pci_dev);
-> > >  	pci_msi_shutdown(pci_dev);
-> > >  	pci_msix_shutdown(pci_dev);
-> > > +
-> > > +	/*
-> > > +	 * Devices may be enabled to wake up by runtime PM, but they need n=
-ot
-> > > +	 * be supposed to wake up the system from its "power off" state (e.=
-g.
-> > > +	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
-> > > +	 * supposed to wake up the system at this point.  The state argument
-> > > +	 * will be ignored by pci_enable_wake().
-> > > +	 */
-> > > +	if (!device_may_wakeup(dev))
-> > > +		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
-> > >  }
-> > > =20
-> > >  #ifdef CONFIG_PM
-> > >=20
-> >=20
-> > So where do we end up setting the right wakeup state for devices we
-> > actually *do* want to wake the system from S5?  Presumably later in the
-> > shutdown sequence?
->=20
-> Yes, in general.  However, device_may_wakeup(dev) has to return true for =
-those
-> devices, so they aren't affected by this change.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 033d4e6..a5da255 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1790,6 +1790,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	noirqdebug	[X86-32] Disables the code which attempts to detect and
+ 			disable unhandled interrupt sources.
+ 
++	noirqtime	[X86,ARM] Run time disables IRQ_TIME_ACCOUNTING and
++			eliminates the timestamping on irq/softirq entry/exit.
++
+ 	no_timer_check	[X86,APIC] Disables the code which tests for
+ 			broken timer IRQ sources.
+ 
+@@ -2636,10 +2639,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			as the stability checks done at bootup.	Used to enable
+ 			high-resolution timer mode on older hardware, and in
+ 			virtualized environment.
+-			[x86] noirqtime: Do not use TSC to do irq accounting.
+-			Used to run time disable IRQ_TIME_ACCOUNTING on any
+-			platforms where RDTSC is slow and this accounting
+-			can add overhead.
++			[x86] noirqtime: obsoleted by "noirqtime" generic option,
++			see it's documentation for details.
+ 
+ 	turbografx.map[2|3]=	[HW,JOY]
+ 			TurboGraFX parallel port interface
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index 5416c7c..30b5f89 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -144,6 +144,8 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+ 	 */
+ 	cd.epoch_ns = 0;
+ 
++	enable_sched_clock_irqtime();
++
+ 	pr_debug("Registered %pF as sched_clock source\n", read);
+ }
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..4759676 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -805,17 +805,6 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
+ 
+-config IRQ_TIME_ACCOUNTING
+-	bool "Fine granularity task level IRQ time accounting"
+-	default n
+-	---help---
+-	  Select this option to enable fine granularity task irq time
+-	  accounting. This is done by reading a timestamp on each
+-	  transitions between softirq and hardirq state, so there can be a
+-	  small performance impact.
+-
+-	  If in doubt, say N here.
+-
+ source "kernel/Kconfig.preempt"
+ 
+ config X86_UP_APIC
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..f1b2b63 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
+ 
+ __setup("notsc", notsc_setup);
+ 
+-static int no_sched_irq_time;
+-
+ static int __init tsc_setup(char *str)
+ {
+ 	if (!strcmp(str, "reliable"))
+ 		tsc_clocksource_reliable = 1;
+-	if (!strncmp(str, "noirqtime", 9))
+-		no_sched_irq_time = 1;
++	if (!strncmp(str, "noirqtime", 9)) {
++		printk(KERN_WARNING "tsc: tsc=noirqtime is "
++		       "obsolete, use noirqtime instead\n");
++		disable_sched_clock_irqtime();
++	}
+ 	return 1;
+ }
+ 
+@@ -978,8 +979,7 @@ void __init tsc_init(void)
+ 	/* now allow native_sched_clock() to use rdtsc */
+ 	tsc_disabled = 0;
+ 
+-	if (!no_sched_irq_time)
+-		enable_sched_clock_irqtime();
++	enable_sched_clock_irqtime();
+ 
+ 	lpj = ((u64)tsc_khz * 1000);
+ 	do_div(lpj, HZ);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..9b13f79 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1961,13 +1961,16 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+ #endif
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+-/*
+- * An i/f to runtime opt-in for irq time accounting based off of sched_clock.
+- * The reason for this explicit opt-in is not to have perf penalty with
+- * slow sched_clocks.
+- */
+-extern void enable_sched_clock_irqtime(void);
+-extern void disable_sched_clock_irqtime(void);
++extern int sched_clock_irqtime;
++static inline void enable_sched_clock_irqtime(void)
++{
++	if (sched_clock_irqtime == -1)
++		sched_clock_irqtime = 1;
++}
++static inline void disable_sched_clock_irqtime(void)
++{
++	sched_clock_irqtime = 0;
++}
+ #else
+ static inline void enable_sched_clock_irqtime(void) {}
+ static inline void disable_sched_clock_irqtime(void) {}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5255c9d..a7ec043 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -757,18 +757,20 @@ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+ static DEFINE_PER_CPU(u64, cpu_softirq_time);
+ 
+ static DEFINE_PER_CPU(u64, irq_start_time);
+-static int sched_clock_irqtime;
+ 
+-void enable_sched_clock_irqtime(void)
+-{
+-	sched_clock_irqtime = 1;
+-}
++/* -1 if not initialized, 0 if disabled with "noirqtime" kernel option
++ * or after unstable clock was detected, 1 if enabled and active.
++ */
++int sched_clock_irqtime = -1;
+ 
+-void disable_sched_clock_irqtime(void)
++static int __init irqtime_setup(char *str)
+ {
+ 	sched_clock_irqtime = 0;
++	return 1;
+ }
+ 
++__setup("noirqtime", irqtime_setup);
++
+ #ifndef CONFIG_64BIT
+ static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
+ 
+@@ -822,7 +824,7 @@ void account_system_vtime(struct task_struct *curr)
+ 	s64 delta;
+ 	int cpu;
+ 
+-	if (!sched_clock_irqtime)
++	if (sched_clock_irqtime < 1)
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -2853,7 +2855,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+ 	struct rq *rq = this_rq();
+ 
+-	if (sched_clock_irqtime) {
++	if (sched_clock_irqtime > 0) {
+ 		irqtime_account_process_tick(p, user_tick, rq);
+ 		return;
+ 	}
+@@ -2887,7 +2889,7 @@ void account_steal_ticks(unsigned long ticks)
+ void account_idle_ticks(unsigned long ticks)
+ {
+ 
+-	if (sched_clock_irqtime) {
++	if (sched_clock_irqtime > 0) {
+ 		irqtime_account_idle_ticks(ticks);
+ 		return;
+ 	}
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 8745ac7..236e814 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -299,6 +299,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
+ 
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	depends on X86 || ARM
++	default n
++	---help---
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there can be a
++	  small performance impact.
++
++	  If in doubt, say N here.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
+-- 
+1.7.7.6
 
-Ok thanks Rafael, applied.  Now to do a little testing...
-
-Thanks,
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/j+A.+vQ7juseHx1+48YA8dR
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPNa2RAAoJEIEoDkX4Qk9h3DUP+gPi3lXHOGiAp0R0H0aTJY5v
-YMNqzcV11cdw1D5q03NtrQmIdAw8QIB7BBoy6pY2n9AsTB4VCbHn1Y1R1H2JJur+
-2eKnTASdAe5wbJSQ+LB30Y6zeU8yl6MeX2em58L7sZjnZCVkda5VmdTeQeMRs6oi
-EXQuOrs1pAs2UoXtrBs7W/H0eJMBkLP7PjnciNI9waaoiXA4VMy6p/0AcBzCdcK5
-EV7EhL/s1BjFq1GkA0Z7owHRhTyXXpyLdDGpDFNaHImB26gyq2GSPjSKgYdOqW+S
-KmteEG3vSQQgnGgdlGGtN1zulCXrP4h19uxP1cSGzexiH2+QeLF3ccaGgOftD0Vv
-s2MPQa1OeKnt8Adu9fz3QqYI33J3dLMPigwViEv05N7hDhYVC5txUnVno/a3joHd
-UdmxDDxrjBaQEYyzzfYVMFSV2KPeSseFfYwh2REylR/5NXeFglxxYI7tJ/eB5swV
-FGS3FWyuCJip91ftWFzoVyAeEy5uXX+N8Mbg6GT5hitiXfNIAK0QbX5VXArg2yN/
-gdB9ss505hIJ5238KUO7Qny1KcMOJX3waaMdw1IA9FRJ1UBHcNGL33Xy7Gp4rOlM
-EQTlR6yDYVT5LeyulYgYBZo0aW18szMncsR5zV8jMk2DP41IEmEtdpxo20B2hzBG
-IxSFOLeleb9rJ6F5RzbY
-=N2dB
------END PGP SIGNATURE-----
-
---Sig_/j+A.+vQ7juseHx1+48YA8dR--
