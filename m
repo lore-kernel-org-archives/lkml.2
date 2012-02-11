@@ -1,45 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2BKLHr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 06:07:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51027 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab2BKLHq convert rfc822-to-8bit (ORCPT
+	id S1754959Ab2BKLNH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 06:13:07 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52376 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab2BKLNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 06:07:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F34D292.4080404@redhat.com>
-References: <20120209202938.GA14342@linux.intel.com> <CA+55aFw1=2SR3CtDU_1F_9QJ8OpdGyRRWMbrbvT+COpLWMNO+A@mail.gmail.com>
- <20120209210039.GB14342@linux.intel.com> <4F34D292.4080404@redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sat, 11 Feb 2012 12:07:26 +0100
-Message-ID: <CAPXgP109Pk_sJFx3KmLM8ehJBodM3N+bAkCBrX6N0JbYL6331w@mail.gmail.com>
-Subject: Re: scsi_id: sending ioctl 2285 to a partition
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Doug Nelson <doug.nelson@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 11 Feb 2012 06:13:04 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 11 Feb 2012 12:12:50 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/3] firewire-sbp2: Take into account Unit_Unique_ID
+Message-ID: <20120211121250.5e2fe781@stein>
+In-Reply-To: <1328881314-26544-2-git-send-email-bootc@bootc.net>
+References: <EE1CAC85-DF0C-4C21-B2BD-446C481C938F@bootc.net>
+	<1328881314-26544-1-git-send-email-bootc@bootc.net>
+	<1328881314-26544-2-git-send-email-bootc@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 09:17, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> On 02/09/2012 10:00 PM, Matthew Wilcox wrote:
+On Feb 10 Chris Boot wrote:
+> If the target's unit directory contains a Unit_Unique_ID entry, we
+> should use that as the target's GUID for identification purposes. The
+> SBP-2 standards document says:
+> 
+> "Although the node unique ID (EUI-64) present in the bus information
+> block is sufficient to uniquely identify nodes attached to Serial Bus,
+> it is insufficient to identify a target when a vendor implements a
+> device with multiple Serial Bus node connections. In this case initiator
+> software requires information by which a particular target may be
+> uniquely identified, regardless of the Serial Bus access path used."
+> 
+> [ IEEE T10 P1155D Revision 4, Section 7.6 (page 51) ] and
+> [ IEEE T10 P1467D Revision 5, Section 7.9 (page 74) ]
+> 
+> Signed-off-by: Chris Boot <bootc@bootc.net>
+> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> ---
+>  drivers/firewire/sbp2.c |   17 +++++++++++++++++
+>  1 files changed, 17 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+> index 80e95aa..ed5bbbf 100644
+> --- a/drivers/firewire/sbp2.c
+> +++ b/drivers/firewire/sbp2.c
+> @@ -211,6 +211,7 @@ static struct fw_device *target_device(struct sbp2_target *tgt)
+>  #define SBP2_CSR_UNIT_CHARACTERISTICS	0x3a
+>  #define SBP2_CSR_FIRMWARE_REVISION	0x3c
+>  #define SBP2_CSR_LOGICAL_UNIT_NUMBER	0x14
+> +#define SBP2_CSR_UNIT_UNIQUE_ID		0x8d
+>  #define SBP2_CSR_LOGICAL_UNIT_DIRECTORY	0xd4
+>  
+>  /* Management orb opcodes */
+> @@ -997,6 +998,17 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+>  	return 0;
+>  }
+>  
+> +static int sbp2_get_unit_unique_id(struct sbp2_target *tgt,
+> +				    const u32 *leaf)
+> +{
+> +	if ((leaf[0] & 0xffff0000) != 0x00020000)
+> +		return -EINVAL;
 
->> I'm pretty sure it's doing it as root ... it'll be run by udev, after all.
->
-> What does the rule look like?  Here it is like this:
->
-> # scsi devices
-> KERNEL=="sd*[!0-9]|sr*", ENV{ID_SERIAL}!="?*",
-> IMPORT{program}="scsi_id --export --whitelisted -d $tempnode",
-> ENV{ID_BUS}="scsi"
->
-> which should exclude partitions, and indeed I don't see any such message.  I
-> also have this rule:
+This could be relaxed to "if (leaf[0] < 0x00020000)", but the stricter
+check is fine too.
 
-I don't think "sd*[!0-9]" matches partition devices.
+> +
+> +	tgt->guid = (u64)leaf[1] << 32 | leaf[2];
+> +
+> +	return 0;
+> +}
+> +
+>  static int sbp2_scan_logical_unit_dir(struct sbp2_target *tgt,
+>  				      const u32 *directory)
+>  {
+> @@ -1048,6 +1060,11 @@ static int sbp2_scan_unit_dir(struct sbp2_target *tgt, const u32 *directory,
+>  				return -ENOMEM;
+>  			break;
+>  
+> +		case SBP2_CSR_UNIT_UNIQUE_ID:
+> +			if (sbp2_get_unit_unique_id(tgt, ci.p - 1 + value) < 0)
+> +				return -EINVAL;
+> +			break;
+> +
+>  		case SBP2_CSR_LOGICAL_UNIT_DIRECTORY:
+>  			/* Adjust for the increment in the iterator */
+>  			if (sbp2_scan_logical_unit_dir(tgt, ci.p - 1 + value) < 0)
 
-Kay
+The error return here is wrong.  Garbage in a non-essential part of the
+Config ROM is no reason to refuse to work with a device.  It is too common
+for firmware to have various bogus values in there.  For instance, we
+never check the CRC of a Config ROM block because wrongly calculated CRCs
+or even zero CRC is quite commonly seen with otherwise correct Config ROMs.
+
+And there is another problem with the patch:  In fringe cases, we might
+now create more than one scsi_device instances with the same ieee1394_id
+sysfs attribute value.  Those cases are:
+ 1. There are two targets present which expose the same, hence non-unique
+    and thus standards-violating Unit_Unique_ID. Or
+ 2. There is a single target connected through more than one link, it has
+    got a Unit_Unique_ID, and either
+     2.a  it accepts concurrent login despite firewire-sbp2 demanding an
+          exclusive login (which is its default mode), or
+     2.b  firewire-sbp2 is configured to work in concurrent login mode and
+          the target grants concurrent logins.
+
+We do not need to care for case 1.  It cannot be distinguished from case
+2, and we already do not care for the case that there are two or more
+nodes with a non-unique Node_Unique_ID.  Devices with the latter bug exist
+but are rare, judging from historical discussion on linux1394-devel.
+
+Case 2.a is highly unlikely, and I think we should not worry about that
+either.
+
+Should we do something about case 2.b?  Where in the Linux SCSI
+initiator stack is multipathing handled --- in transport layer drivers or
+higher up?  (Cc'ing LSML for this question.)
+-- 
+Stefan Richter
+-=====-===-- --=- -=-==
+http://arcgraph.de/sr/
