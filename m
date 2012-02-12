@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2BLV0N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:26:13 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1755903Ab2BLV21 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:28:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48744 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab2BLV0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:26:10 -0500
-Message-ID: <4F382E6E.4060201@nod.at>
-Date: Sun, 12 Feb 2012 22:26:06 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	id S1755848Ab2BLV2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:28:25 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Date: Sun, 12 Feb 2012 22:32:12 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        Greg KH <greg@linuxfoundation.org>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <201202100144.11123.rjw@sisk.pl> <20120212020507.GD18742@gs62>
+In-Reply-To: <20120212020507.GD18742@gs62>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] um: Cleanup headers files
-References: <20120130192552.GL23916@ZenIV.linux.org.uk> <1328311063-17630-1-git-send-email-richard@nod.at> <20120204001431.GY23916@ZenIV.linux.org.uk> <4F2C7F7A.1090605@nod.at> <20120212202728.GR23916@ZenIV.linux.org.uk> <4F3828BD.7070809@nod.at> <20120212212003.GU23916@ZenIV.linux.org.uk>
-In-Reply-To: <20120212212003.GU23916@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202122232.12541.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.02.2012 22:20, schrieb Al Viro:
-> On Sun, Feb 12, 2012 at 10:01:49PM +0100, Richard Weinberger wrote:
->> Am 12.02.2012 21:27, schrieb Al Viro:
->>>> So, I pulled your work and merged it into my shiny new UML tree:
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git
->>>
->>> Hmm...  I would really, really recommend you to clean the git history in that
->>> tree up.  As it is, you have
->>> 	* merge of that branch from um-headers
->>> 	* um: Switch to large mcmodel on x86_64
->>> 	* um: Serve io_remap_pfn_range()
->>> 	* 205 merges from Linus, from mid-April to late January.
->>> 	* mismerge from Linus on April 14; the diff between the result
->>
->> Okay, I'll create a new tree. This one is definitely screwed.
->> Sorry for the inconvenience.
->
-> Just create a new branch in the old one, populate it, verify that the
-> tree is what you want it to be, switch to your regular branch,
-> git reset --hard<the branch you've just built>, then git push --force
-> It's not worse than removal of old tree and replacing it with new one,
-> and it's less work...
+On Sunday, February 12, 2012, mark gross wrote:
+> On Fri, Feb 10, 2012 at 01:44:10AM +0100, Rafael J. Wysocki wrote:
+[...]
+> > I'd like us and Android to use the same low-level data structures for power
+> > management and the same API eventually, at least for drivers.  This is not
+> > the case at the moment and it's actively hurting us as a project quite a bit.
+> > If Android needs to add patches on top of whatever we have to get the desired
+> > functionality, I'm fine with that, as long as they don't require drivers to use
+> > APIs that are incompatible with the mainline.  Insisting that Android should
+> > use a user-space-based autosleep implementation wouldn't help at all, because
+> > realistically this isn't going to happen.
+> 
+> why not?  I don't think having the PMS explicitly acknowledge a wake
+> event is a big ask at all.
 
-It looks like my master branch is screwed. :⨪\
-Anyway, I'll fix it!
+I'd like to hear what the Android people think about that, but somehow it seems
+to me they won't like it. :-)
 
 Thanks,
-//richard
+Rafael
