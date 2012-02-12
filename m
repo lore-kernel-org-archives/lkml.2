@@ -1,146 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab2BLNcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 08:32:08 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65360 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab2BLNcG convert rfc822-to-8bit (ORCPT
+	id S1754612Ab2BLNht (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 08:37:49 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:52368
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753909Ab2BLNhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 08:32:06 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: balbi@ti.com
-Subject: Re: Possible circular locking dependency (3.3-rc2)
-Date: Sun, 12 Feb 2012 14:31:54 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc2; KDE/4.6.5; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-References: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202121431.54917.maciej.rutecki@gmail.com>
+	Sun, 12 Feb 2012 08:37:48 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: isdn@linux-pingi.de, netdev@vger.kernel.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] mISDN: Fix typo in dsp_core.c
+Date: Sun, 12 Feb 2012 22:37:06 +0900
+Message-Id: <1329053826-1635-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 8 lutego 2012 o 13:41:48 Felipe Balbi wrote:
-> Hi guys,
-> 
-> I have just triggered the folllowing:
-> 
-> [   84.860321] ======================================================
-> [   84.860321] [ INFO: possible circular locking dependency detected ]
-> [   84.860321] 3.3.0-rc2-00026-ge4e8a39 #474 Not tainted
-> [   84.860321] -------------------------------------------------------
-> [   84.860321] bash/949 is trying to acquire lock:
-> [   84.860321]  (sysfs_lock){+.+.+.}, at: [<c0275358>]
-> gpio_value_store+0x24/0xcc [   84.860321]
-> [   84.860321] but task is already holding lock:
-> [   84.860321]  (s_active#22){++++.+}, at: [<c016996c>]
-> sysfs_write_file+0xdc/0x184 [   84.911468]
-> [   84.911468] which lock already depends on the new lock.
-> [   84.911468]
-> [   84.920043]
-> [   84.920043] the existing dependency chain (in reverse order) is:
-> [   84.920043]
-> [   84.927886] -> #1 (s_active#22){++++.+}:
-> [   84.927886]        [<c008f640>] check_prevs_add+0xdc/0x150
-> [   84.927886]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-> [   84.927886]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-> [   84.951660]        [<c0091838>] lock_acquire+0x98/0x100
-> [   84.951660]        [<c016a8e8>] sysfs_deactivate+0xb0/0x100
-> [   84.962982]        [<c016b1b4>] sysfs_addrm_finish+0x2c/0x6c
-> [   84.962982]        [<c016b8bc>] sysfs_remove_dir+0x84/0x98
-> [   84.962982]        [<c02590d8>] kobject_del+0x10/0x78
-> [   84.974670]        [<c02c29e8>] device_del+0x140/0x170
-> [   84.974670]        [<c02c2a24>] device_unregister+0xc/0x18
-> [   84.985382]        [<c0276894>] gpio_unexport+0xbc/0xdc
-> [   84.985382]        [<c02768c8>] gpio_free+0x14/0xfc
-> [   85.001708]        [<c0276a28>] unexport_store+0x78/0x8c
-> [   85.001708]        [<c02c5af8>] class_attr_store+0x18/0x24
-> [   85.007293]        [<c0169990>] sysfs_write_file+0x100/0x184
-> [   85.018981]        [<c0109d48>] vfs_write+0xb4/0x148
-> [   85.018981]        [<c0109fd0>] sys_write+0x40/0x70
-> [   85.018981]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-> [   85.035003]
-> [   85.035003] -> #0 (sysfs_lock){+.+.+.}:
-> [   85.035003]        [<c008f54c>] check_prev_add+0x680/0x698
-> [   85.035003]        [<c008f640>] check_prevs_add+0xdc/0x150
-> [   85.052093]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-> [   85.052093]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-> [   85.052093]        [<c0091838>] lock_acquire+0x98/0x100
-> [   85.069885]        [<c047e280>] mutex_lock_nested+0x3c/0x2f4
-> [   85.069885]        [<c0275358>] gpio_value_store+0x24/0xcc
-> [   85.069885]        [<c02c18dc>] dev_attr_store+0x18/0x24
-> [   85.087158]        [<c0169990>] sysfs_write_file+0x100/0x184
-> [   85.087158]        [<c0109d48>] vfs_write+0xb4/0x148
-> [   85.098297]        [<c0109fd0>] sys_write+0x40/0x70
-> [   85.098297]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-> [   85.109069]
-> [   85.109069] other info that might help us debug this:
-> [   85.109069]
-> [   85.117462]  Possible unsafe locking scenario:
-> [   85.117462]
-> [   85.117462]        CPU0                    CPU1
-> [   85.128417]        ----                    ----
-> [   85.128417]   lock(s_active#22);
-> [   85.128417]                                lock(sysfs_lock);
-> [   85.128417]                                lock(s_active#22);
-> [   85.142486]   lock(sysfs_lock);
-> [   85.151794]
-> [   85.151794]  *** DEADLOCK ***
-> [   85.151794]
-> [   85.151794] 2 locks held by bash/949:
-> [   85.158020]  #0:  (&buffer->mutex){+.+.+.}, at: [<c01698b8>]
-> sysfs_write_file+0x28/0x184 [   85.170349]  #1:  (s_active#22){++++.+},
-> at: [<c016996c>] sysfs_write_file+0xdc/0x184 [   85.170349]
-> [   85.178588] stack backtrace:
-> [   85.178588] [<c001b824>] (unwind_backtrace+0x0/0xf0) from [<c008de64>]
-> (print_circular_bug+0x100/0x114) [   85.193023] [<c008de64>]
-> (print_circular_bug+0x100/0x114) from [<c008f54c>]
-> (check_prev_add+0x680/0x698) [   85.193023] [<c008f54c>]
-> (check_prev_add+0x680/0x698) from [<c008f640>]
-> (check_prevs_add+0xdc/0x150) [   85.212524] [<c008f640>]
-> (check_prevs_add+0xdc/0x150) from [<c008fc18>]
-> (validate_chain.clone.24+0x564/0x694) [   85.212524] [<c008fc18>]
-> (validate_chain.clone.24+0x564/0x694) from [<c0090cdc>]
-> (__lock_acquire+0x49c/0x980) [   85.233306] [<c0090cdc>]
-> (__lock_acquire+0x49c/0x980) from [<c0091838>] (lock_acquire+0x98/0x100) [
->   85.233306] [<c0091838>] (lock_acquire+0x98/0x100) from [<c047e280>]
-> (mutex_lock_nested+0x3c/0x2f4) [   85.242614] [<c047e280>]
-> (mutex_lock_nested+0x3c/0x2f4) from [<c0275358>]
-> (gpio_value_store+0x24/0xcc) [   85.261840] [<c0275358>]
-> (gpio_value_store+0x24/0xcc) from [<c02c18dc>] (dev_attr_store+0x18/0x24)
-> [   85.261840] [<c02c18dc>] (dev_attr_store+0x18/0x24) from [<c0169990>]
-> (sysfs_write_file+0x100/0x184) [   85.271240] [<c0169990>]
-> (sysfs_write_file+0x100/0x184) from [<c0109d48>] (vfs_write+0xb4/0x148) [ 
->  85.290008] [<c0109d48>] (vfs_write+0xb4/0x148) from [<c0109fd0>]
-> (sys_write+0x40/0x70) [   85.298400] [<c0109fd0>] (sys_write+0x40/0x70)
-> from [<c0013cc0>] (ret_fast_syscall+0x0/0x3c) -bash: echo: write error:
-> Operation not permitted
-> 
-> the way to trigger is:
-> 
-> 
-> root@legolas:~# cd /sys/class/gpio/
-> root@legolas:/sys/class/gpio# echo 2 > export
-> root@legolas:/sys/class/gpio# echo 2 > unexport
-> root@legolas:/sys/class/gpio# echo 2 > export
-> root@legolas:/sys/class/gpio# cd gpio2/
-> root@legolas:/sys/class/gpio/gpio2# echo 1 > value
+Correct spelling "modul" to "module" in
+drivers/isdn/mISDN/dsp_core.c
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42761
-for your bug/regression report, please add your address to the CC list in 
-there, thanks!
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/isdn/mISDN/dsp_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/isdn/mISDN/dsp_core.c b/drivers/isdn/mISDN/dsp_core.c
+index 0c41553..742f9f4 100644
+--- a/drivers/isdn/mISDN/dsp_core.c
++++ b/drivers/isdn/mISDN/dsp_core.c
+@@ -1119,7 +1119,7 @@ static int __init dsp_init(void)
+ 	int err;
+ 	int tics;
+ 
+-	printk(KERN_INFO "DSP modul %s\n", mISDN_dsp_revision);
++	printk(KERN_INFO "DSP module %s\n", mISDN_dsp_revision);
+ 
+ 	dsp_options = options;
+ 	dsp_debug = debug;
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+1.7.6.5
+
