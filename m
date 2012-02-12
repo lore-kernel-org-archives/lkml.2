@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2BLRh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 12:37:29 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21784 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab2BLRh2 (ORCPT
+	id S1755617Ab2BLRlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 12:41:42 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:53622 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab2BLRlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 12:37:28 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v2] x86: Fix show_msr= debug print out
-Date: Sun, 12 Feb 2012 09:36:50 -0800
-Message-Id: <1329068210-8150-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090209.4F37F8C5.0024,ss=1,re=0.000,fgs=0
+	Sun, 12 Feb 2012 12:41:40 -0500
+Date: Sun, 12 Feb 2012 09:41:33 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tony.luck@intel.com,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        marcos.mage@gmail.com, prasad@linux.vnet.ibm.com
+Subject: Re: [PATCH] x86, mce: Fix rcu splat in drain_mce_log_buffer()
+Message-ID: <20120212174133.GL3737@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120111142213.16610.85866.stgit@srivatsabhat.in.ibm.com>
+ <20120111161153.GA2925@linux.vnet.ibm.com>
+ <4F102353.1040109@linux.vnet.ibm.com>
+ <20120113214435.GC2909@linux.vnet.ibm.com>
+ <20120206161802.GC31237@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206161802.GC31237@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021217-3352-0000-0000-00000291DE89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found show_msr=n is broken when try to ask user to get debug info
-about broken mtrr. (setting are different between cpus)
+On Mon, Feb 06, 2012 at 05:18:02PM +0100, Borislav Petkov wrote:
+> On Fri, Jan 13, 2012 at 01:44:35PM -0800, Paul E. McKenney wrote:
+> > Looks good to me, but I do need to defer to people who know this code
+> > better than do I.  The key thing that (from what I can see) makes
+> > rcu_dereference() unnecessary is that the smp_rmb() used in conjunction
+> > with polling the .finished field takes care of ordering.
+> 
+> Right, this was me trying hard not to screw up touching mcelog.next,
+> thus trying to use the rcu_dereference_index_check() primitive without
+> thinking it through too much. But you're right, I'm polling the
+> ->finished field 4 times (totally arbitrary, btw) which should suffice
+> while the mce_log() routine above writes those entries.
+> 
+> Although, the question still remains, since mce_log() accesses
+> mcelog.next through the rcu_dereference_index_check() primitive,
+> shouldn't I do it the same way?
 
-Originally we call print_cpu_msr from print_cpu_info(), but
+I don't claim to be an mce_log() expert, but when I looked it over,
+I didn't see a need for rcu_dereference_index_check().  Unless I am
+confused (quite possible), the memory barriers are sufficient.
 
-| commit 2eaad1fddd7450a48ad464229775f97fbfe8af36
-| Author: Mike Travis <travis@sgi.com>
-| Date:   Thu Dec 10 17:19:36 2009 -0800
-|
-|    x86: Limit the number of processor bootup messages
+The rcu_read_lock() and rcu_read_unlock() seem to be needed to avoid
+premature freeing, though.
 
-just remove whole print_cpu_info calling for all APs. So show_msr=n
-stop working now.
+							Thanx, Paul
 
-Try to put back calling of print_cpu_msr, and it will only print msr
-when user specify show_msr=n
-
--v2: Fix one typo found by Ingo.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/include/asm/processor.h |    1 +
- arch/x86/kernel/cpu/common.c     |   12 +++++-------
- arch/x86/kernel/smpboot.c        |    5 +++--
- 3 files changed, 9 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/arch/x86/include/asm/processor.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/processor.h
-+++ linux-2.6/arch/x86/include/asm/processor.h
-@@ -162,6 +162,7 @@ extern void early_cpu_init(void);
- extern void identify_boot_cpu(void);
- extern void identify_secondary_cpu(struct cpuinfo_x86 *);
- extern void print_cpu_info(struct cpuinfo_x86 *);
-+void print_cpu_msr(struct cpuinfo_x86 *);
- extern void init_scattered_cpuid_features(struct cpuinfo_x86 *c);
- extern unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c);
- extern unsigned short num_cache_leaves;
-Index: linux-2.6/arch/x86/kernel/cpu/common.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/common.c
-+++ linux-2.6/arch/x86/kernel/cpu/common.c
-@@ -933,7 +933,7 @@ static const struct msr_range msr_range_
- 	{ 0xc0011000, 0xc001103b},
- };
- 
--static void __cpuinit print_cpu_msr(void)
-+static void __cpuinit __print_cpu_msr(void)
- {
- 	unsigned index_min, index_max;
- 	unsigned index;
-@@ -996,14 +996,12 @@ void __cpuinit print_cpu_info(struct cpu
- 		printk(KERN_CONT " stepping %02x\n", c->x86_mask);
- 	else
- 		printk(KERN_CONT "\n");
-+}
- 
--#ifdef CONFIG_SMP
-+void __cpuinit print_cpu_msr(struct cpuinfo_x86 *c)
-+{
- 	if (c->cpu_index < show_msr)
--		print_cpu_msr();
--#else
--	if (show_msr)
--		print_cpu_msr();
--#endif
-+		__print_cpu_msr();
- }
- 
- static __init int setup_disablecpuid(char *arg)
-Index: linux-2.6/arch/x86/kernel/smpboot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/smpboot.c
-+++ linux-2.6/arch/x86/kernel/smpboot.c
-@@ -791,9 +791,10 @@ do_rest:
- 			schedule();
- 		}
- 
--		if (cpumask_test_cpu(cpu, cpu_callin_mask))
-+		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
-+			print_cpu_msr(&cpu_data(cpu));
- 			pr_debug("CPU%d: has booted.\n", cpu);
--		else {
-+		} else {
- 			boot_error = 1;
- 			if (*(volatile u32 *)TRAMPOLINE_SYM(trampoline_status)
- 			    == 0xA5A5A5A5)
