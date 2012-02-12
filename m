@@ -1,149 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2BLMyg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 07:54:36 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45424 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647Ab2BLMyf convert rfc822-to-8bit (ORCPT
+	id S1754064Ab2BLNBO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 08:01:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33534 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab2BLNBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 07:54:35 -0500
+	Sun, 12 Feb 2012 08:01:13 -0500
+Message-ID: <4F37B815.8060701@suse.cz>
+Date: Sun, 12 Feb 2012 14:01:09 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120129 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
-References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
-	<1328832993-23228-2-git-send-email-john.stultz@linaro.org>
-	<CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
-Date: Sun, 12 Feb 2012 13:54:35 +0100
-Message-ID: <CAO6Zf6D11ZiZtNs8ksRAGeNBGwb4QLXu8_F___mYAeNtNvKapw@mail.gmail.com>
-Subject: Fwd: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Richard Weinberger <richard@nod.at>
+CC: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, gregkh@linuxfoundation.org,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] um: Use tty_port
+References: <1329006070-4275-1-git-send-email-richard@nod.at> <4F3706C4.2070102@nod.at>
+In-Reply-To: <4F3706C4.2070102@nod.at>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ resent to lkml in 'plain-text' format ]
+On 02/12/2012 01:24 AM, Richard Weinberger wrote:
+>> @@ -228,92 +238,6 @@ void line_set_termios(struct tty_struct *tty, struct ktermios * old)
+>>  	/* nothing */
+>>  }
+>>  
+>> -static const struct {
+>> -	int  cmd;
+>> -	char *level;
+>> -	char *name;
+>> -} tty_ioctls[] = {
+>> -	/* don't print these, they flood the log ... */
+>> -	{ TCGETS,      NULL,       "TCGETS"      },
+>> -	{ TCSETS,      NULL,       "TCSETS"      },
+>> -	{ TCSETSW,     NULL,       "TCSETSW"     },
+>> -	{ TCFLSH,      NULL,       "TCFLSH"      },
+>> -	{ TCSBRK,      NULL,       "TCSBRK"      },
+>> -
+>> -	/* general tty stuff */
+>> -	{ TCSETSF,     KERN_DEBUG, "TCSETSF"     },
+>> -	{ TCGETA,      KERN_DEBUG, "TCGETA"      },
+>> -	{ TIOCMGET,    KERN_DEBUG, "TIOCMGET"    },
+>> -	{ TCSBRKP,     KERN_DEBUG, "TCSBRKP"     },
+>> -	{ TIOCMSET,    KERN_DEBUG, "TIOCMSET"    },
+>> -
+>> -	/* linux-specific ones */
+>> -	{ TIOCLINUX,   KERN_INFO,  "TIOCLINUX"   },
+>> -	{ KDGKBMODE,   KERN_INFO,  "KDGKBMODE"   },
+>> -	{ KDGKBTYPE,   KERN_INFO,  "KDGKBTYPE"   },
+>> -	{ KDSIGACCEPT, KERN_INFO,  "KDSIGACCEPT" },
+>> -};
+>> -
+>> -int line_ioctl(struct tty_struct *tty, unsigned int cmd,
+>> -				unsigned long arg)
+>> -{
+>> -	int ret;
+>> -	int i;
+>> -
+>> -	ret = 0;
+>> -	switch(cmd) {
+>> -#ifdef TIOCGETP
+>> -	case TIOCGETP:
+>> -	case TIOCSETP:
+>> -	case TIOCSETN:
+>> -#endif
+>> -#ifdef TIOCGETC
+>> -	case TIOCGETC:
+>> -	case TIOCSETC:
+>> -#endif
+>> -#ifdef TIOCGLTC
+>> -	case TIOCGLTC:
+>> -	case TIOCSLTC:
+>> -#endif
+>> -	/* Note: these are out of date as we now have TCGETS2 etc but this
+>> -	   whole lot should probably go away */
+>> -	case TCGETS:
+>> -	case TCSETSF:
+>> -	case TCSETSW:
+>> -	case TCSETS:
+>> -	case TCGETA:
+>> -	case TCSETAF:
+>> -	case TCSETAW:
+>> -	case TCSETA:
+>> -	case TCXONC:
+>> -	case TCFLSH:
+>> -	case TIOCOUTQ:
+>> -	case TIOCINQ:
+>> -	case TIOCGLCKTRMIOS:
+>> -	case TIOCSLCKTRMIOS:
+>> -	case TIOCPKT:
+>> -	case TIOCGSOFTCAR:
+>> -	case TIOCSSOFTCAR:
+>> -		return -ENOIOCTLCMD;
+>> -#if 0
+>> -	case TCwhatever:
+>> -		/* do something */
+>> -		break;
+>> -#endif
+>> -	default:
+>> -		for (i = 0; i < ARRAY_SIZE(tty_ioctls); i++)
+>> -			if (cmd == tty_ioctls[i].cmd)
+>> -				break;
+>> -		if (i == ARRAY_SIZE(tty_ioctls)) {
+>> -			printk(KERN_ERR "%s: %s: unknown ioctl: 0x%x\n",
+>> -			       __func__, tty->name, cmd);
+>> -		}
+>> -		ret = -ENOIOCTLCMD;
+>> -		break;
+>> -	}
+>> -	return ret;
+>> -}
+>> -
+>>  void line_throttle(struct tty_struct *tty)
+>>  {
+>>  	struct line *line = tty->driver_data;
+>> @@ -343,7 +267,7 @@ static irqreturn_t line_write_interrupt(int irq, void *data)
+>>  {
+>>  	struct chan *chan = data;
+>>  	struct line *line = chan->line;
+>> -	struct tty_struct *tty = line->tty;
+>> +	struct tty_struct *tty = tty_port_tty_get(&line->port);
+>>  	int err;
+>>  
+>>  	/*
+>> @@ -354,6 +278,9 @@ static irqreturn_t line_write_interrupt(int irq, void *data)
+>>  	spin_lock(&line->lock);
+>>  	err = flush_buffer(line);
+>>  	if (err == 0) {
+>> +		tty_kref_put(tty);
+>> +
+>> +		spin_unlock(&line->lock);
 
-On 10 February 2012 01:16, John Stultz <john.stultz@linaro.org> wrote:
+This and the ioctl change above fullfils the subject of the patch in no
+way. Do this fix and the cleanup above separately, please.
 
-[ ... ]
+>> @@ -404,27 +334,27 @@ int line_setup_irq(int fd, int input, int output, struct line *line, void *data)
+>>   * first open or last close.  Otherwise, open and close just return.
+>>   */
+>>  
+>> -int line_open(struct line *lines, struct tty_struct *tty)
+>> +int line_open(struct tty_struct *tty, struct file *filp)
+>>  {
+>> -	struct line *line = &lines[tty->index];
+>> -	int err = -ENODEV;
+>> +	struct line *line = tty->driver_data;
+>> +	return tty_port_open(&line->port, tty, filp);
+>> +}
+>>  
+>> -	spin_lock(&line->count_lock);
+>> -	if (!line->valid)
+>> -		goto out_unlock;
+>> +int line_install(struct tty_driver *driver, struct tty_struct *tty, struct line *line)
 
-> --- /dev/null
-> +++ b/mm/volatile.c
-> @@ -0,0 +1,314 @@
-> +/* mm/volatile.c
-> + *
-> [ ... ]
->
-> +
-> +#define range_on_lru(range) (!(range)->purged)
-> +
-> +
-> +static inline void volatile_range_shrink(struct volatile_range *range,
-> +                               pgoff_t start_index, pgoff_t end_index)
-> +{
-> +       size_t pre = range_size(range);
-> +
-> +       range->range_node.start = start_index;
-> +       range->range_node.end = end_index;
-> +
+As it stands, it should be tty_port->ops->activate, not
+tty->ops->install. Yes, you can still set driver_data and check for
+multiple opens in install. Then use also tty_standard_install.
 
+>> +{
+>> +	int ret = tty_init_termios(tty);
+>>  
+>> -	err = 0;
+>> -	if (line->count++)
+>> -		goto out_unlock;
+>> +	if (ret)
+>> +		return ret;
+>>  
+>> -	BUG_ON(tty->driver_data);
+>> +	tty_driver_kref_get(driver);
+>> +	tty->count++;
+>>  	tty->driver_data = line;
+>> -	line->tty = tty;
+>> +	driver->ttys[tty->index] = tty;
+>>  
+>> -	spin_unlock(&line->count_lock);
+>> -	err = enable_chan(line);
+>> -	if (err) /* line_close() will be called by our caller */
+>> -		return err;
+>> +	ret = enable_chan(line);
+>> +	if (ret)
+>> +		return ret;
+>>  
+>>  	INIT_DELAYED_WORK(&line->task, line_timer_cb);
+>>  
+>> @@ -437,48 +367,36 @@ int line_open(struct line *lines, struct tty_struct *tty)
+>>  			 &tty->winsize.ws_col);
+>>  
+>>  	return 0;
+>> -
+>> -out_unlock:
+>> -	spin_unlock(&line->count_lock);
+>> -	return err;
+>>  }
+...
+>> +void line_close(struct tty_struct *tty, struct file * filp)
+>> +{
+>> +	struct line *line = tty->driver_data;
+>> +
+>> +	if (!line)
+>> +		return;
 
-I guess, here we get a whole range of races with volatile_shrink(),
-which may see inconsistent (in-the-middle-of-update) ranges (e.g.
-.start and .end).
+Unless you set tty->driver_data to NULL somewhere, this can never
+happen. If you do, why -- this tends to be racy?
 
+>> +	tty_port_close(&line->port, tty, filp);
+>> +}
+...
+>> --- a/arch/um/drivers/ssl.c
+>> +++ b/arch/um/drivers/ssl.c
+>> @@ -92,6 +92,7 @@ static int ssl_remove(int n, char **error_out)
+>>  			   error_out);
+>>  }
+>>  
+>> +#if 0
 
->
-> +       if (range_on_lru(range)) {
+Hmm, remove unused code instead.
 
+>>  static int ssl_open(struct tty_struct *tty, struct file *filp)
+>>  {
+>>  	int err = line_open(serial_lines, tty);
+...
+>> @@ -124,8 +124,16 @@ void ssl_hangup(struct tty_struct *tty)
+>>  }
+>>  #endif
+>>  
+>> +static int ssl_install(struct tty_driver *driver, struct tty_struct *tty)
+>> +{
+>> +	if (tty->index < NR_PORTS)
 
-here volatile_shrink() runs and sets range->purge to 1, then calls
-__lru_del() => lru_count gets updated.
+Do you register more than NR_PORTS when allocating tty_driver? If not,
+this test is always true. But presumably you won't need this hook anyway.
 
->
-> +               mutex_lock(&volatile_lru_mutex);
-> +               lru_count -= pre - range_size(range);
-> +               mutex_unlock(&volatile_lru_mutex);
+>> +		return line_install(driver, tty, &serial_lines[tty->index]);
+>> +	else
+>> +		return -ENODEV;
+>> +}
 
-
-and then lru_count gets updated once more - for the same 'range' object.
-
-
->
-> +       }
-> +}
-
-
->
-> [ ... ]
-
-
->
->
-> +static int volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
-> +{
-> +       struct volatile_range *range, *next;
-> +       unsigned long nr_to_scan = sc->nr_to_scan;
-> +       const gfp_t gfp_mask = sc->gfp_mask;
-> +
-> +       /* We might recurse into filesystem code, so bail out if necessary */
-> +       if (nr_to_scan && !(gfp_mask & __GFP_FS))
-> +               return -1;
-> +       if (!nr_to_scan)
-> +               return lru_count;
-
-
-So it's u64 -> int here, which is possibly 32 bits and signed. Can't
-it lead to inconsistent results on 32bit platforms?
-
->
-> +
-> +       mutex_lock(&volatile_lru_mutex);
-> +       list_for_each_entry_safe(range, next, &volatile_lru_list, lru) {
-> +               struct inode *inode = range->mapping->host;
-> +               loff_t start, end;
-> +
-> +
-> +               start = range->range_node.start * PAGE_SIZE;
-> +               end = (range->range_node.end + 1) * PAGE_SIZE - 1;
-
-
-PAGE_CACHE_SHIFT was used in fadvise() to calculate .start and .end
-indexes, and here we use PAGE_SIZE to get back to 'normal' addresses.
-Isn't it inconsistent at the very least?
-
->
-> +
-> +               /*
-> +                * XXX - calling vmtruncate_range from a shrinker causes
-> +                * lockdep warnings. Revisit this!
-> +                */
-> +               vmtruncate_range(inode, start, end);
-> +               range->purged = 1;
-> +               __lru_del(range);
-> +
-> +               nr_to_scan -= range_size(range);
-
-
-hmm, unsigned long -= u64
-
->
-> +               if (nr_to_scan <= 0)
-
-
-nr_to_scan is "unsigned long" :-))
-
-[ ... ]
-
-> +arch_initcall(volatile_init);
-> --
-> 1.7.3.2.146.gca209
->
-
---
-
--- Dmitry
+thanks,
+-- 
+js
+suse labs
