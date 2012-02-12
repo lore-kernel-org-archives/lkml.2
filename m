@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2BLRox (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 12:44:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54456 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab2BLRov (ORCPT
+	id S1755675Ab2BLRsY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 12:48:24 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:53680 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755571Ab2BLRsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 12:44:51 -0500
+	Sun, 12 Feb 2012 12:48:23 -0500
+Date: Sun, 12 Feb 2012 12:48:22 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in disk event polling
+In-Reply-To: <20120211002349.GN19392@google.com>
+Message-ID: <Pine.LNX.4.44L0.1202121216060.18114-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAH=dYrE9EOudkk0mYwFpjgMM-kJ9bwFoDDJFrcWPwRG9NJM-uA@mail.gmail.com>
-References: <CAH=dYrHhttmRjkVuo9QvJ5_Uqd+BJGCJJkaMw8153RW1SFv9dA@mail.gmail.com>
-	<4F2316C7.9030202@canonical.com>
-	<CAH=dYrF-71hTkxS1qpohT_Ja_XKEVwMyVT5ZXg2FZjK4c2Fyig@mail.gmail.com>
-	<CAH=dYrE9EOudkk0mYwFpjgMM-kJ9bwFoDDJFrcWPwRG9NJM-uA@mail.gmail.com>
-Date: Sun, 12 Feb 2012 12:44:50 -0500
-Message-ID: <CAH=dYrFs+Ty2XxWvv6y-OMi6stT-tYR7nL20+2fyQLV3RgseKQ@mail.gmail.com>
-Subject: Re: firmware loading failure for AR3011 (0cf3:3000 or 0cf3:3005 ?)
-From: Andres Cimmarusti <acimmarusti@gmail.com>
-To: "James M. Leddy" <james.leddy@canonical.com>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Nieder <jrnieder@gmail.com>, 641749@bugs.debian.org,
-        info@linuxcertified.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe I have finally narrowed down the problem. It lies in the
-'libmtp-runtime' package with the command 'mtp-probe' (only present in
-wheezy or newer).
+On Fri, 10 Feb 2012, Tejun Heo wrote:
 
-I'm not sure what this is doing to my system, but when the package
-mentioned is installed, it "messes" up my atheros bluetooth device so
-that the kernel/udev cannot load the firmware into it.
+> Hello,
+> 
+> On Fri, Feb 10, 2012 at 04:44:48PM -0500, Alan Stern wrote:
+> > > I think it should be nrt.  It assumes that no one else is running it
+> > > concurrently; otherwise, multiple CPUs could jump into
+> > > disk->fops->check_events() concurrently which can be pretty ugly.
+> > 
+> > Come to mention it, how can a single work item ever run on more than
+> > one CPU concurrently?  Are you concerned about cases where some other 
+> > thread requeues the work item while it is executing?
+> 
+> Yeah, there are multiple paths which may queue the work item.  For
+> polling work, it definitely was possible but maybe locking changes
+> afterwards removed that.  Even then, it would be better to use nrt wq
+> as bug caused that way would be very difficult to track down.
 
-As soon as I uninstalled this package and thus caused the boot process
-to throw some errors about missing mtp-probe command, my bluetooth
-module was correctly loaded and the led turned on.
+Okay, I'll create a new workqueue for this purpose.
 
->> Inexplicably yesterday's (and the day before) Debian testing snapshot
->> seems to have the problem fixed!
 
-I guess this snapshot that I tested earlier didn't have that package installed
+> > The problem is that these async threads generally aren't freezable.  
+> > They will continue to run and do I/O while a system goes through a
+> > sleep transition.  How should this be handled?
+> 
+> I think it would be better to use wq for most kthreads.  A lot of them
+> aren't strictly correct in the way they deal with
+> kthread_should_stop() and freezing.  kthread in general simply seems
+> way too difficult to use correctly.
 
-I found out about this completely by chance. For whatever reason, on
-my second upgrade to wheezy 'apt-get dist-upgrade' didn't pull
-'libmtp-runtime' and my bluetooth module just worked.
+Maybe so, but getting rid of it at this point would be a big change.  
+Also, kthreads were originally considered more suitable for tasks that
+would need to run for a long time; is this no longer true?
 
-I tried to get the bootlog messages so I can send this info, but even
-with bootlogd enabled these messages happen too early on the boot
-process to be logged in /var/log/boot.
+> > kthread_run() can be adjusted on a case-by-case basis, by inserting
+> > calls to set_freezable() and try_to_freeze() at the appropriate places.  
+> > But what about async_schedule()?
+> 
+> Given the stuff async is used for, maybe just make all async execution
+> freezable?
 
-I feel this is not necessarily a kernel bug anymore (all kernels
-tested work fine 3.0.x, 3.1.x, 3.2.x and even 3.3.0-rc3). But the
-experts will know better.
+That probably won't work.  What if a driver relies on async thread
+execution to carry out its I/O?
 
-This is definitely progress!
+As another example, sd_probe() calls async_schedule(sd_probe_async,...)
+to handle the long-running parts of probing a SCSI disk.  In turn,
+sd_remove() calls async_synchronize_full() to insure that probing is
+over before the device is unbound from sd.
 
-Cheers
+What happens if a hot-unpluggable disk drive is unplugged while the
+system is asleep?  It's entirely possible that the bus subsystem's
+resume routine would see the device was gone and would try to 
+unregister it.  Then sd_remove would wait for the async thread 
+to finish, which would never happen because the thread would be frozen 
+and wouldn't be thawed until all the resume routines had finished.
 
-Andres
+In this case, the proper solution is to have the SCSI prepare method 
+call async_synchronize_full().  Other cases will require other 
+solutions.
 
-PS: please forward the info to other bug reports I don't have access
-to, like Red Hat / Fedora and Ubuntu. Additional testing is needed.
+Alan Stern
+
