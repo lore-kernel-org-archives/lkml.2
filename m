@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687Ab2BLUQX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 15:16:23 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33610 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753929Ab2BLUQV (ORCPT
+	id S1755741Ab2BLUWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 15:22:19 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35295 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754573Ab2BLUWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 15:16:21 -0500
-Message-ID: <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Hoff <christian.hoff@de.ibm.com>, BORNTRAE@linux.vnet.ibm.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au
-Date: Sun, 12 Feb 2012 14:16:17 -0600
-In-Reply-To: <4F3390FB.80107@redhat.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
-	 <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>
-	 <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>
-	 <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-	 <4F313526.2050907@redhat.com>
-	 <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
-	 <4F3390FB.80107@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Sun, 12 Feb 2012 15:22:18 -0500
+Message-ID: <4F381F6C.1030908@gmail.com>
+Date: Sun, 12 Feb 2012 14:22:04 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Dong Aisheng <dong.aisheng@linaro.org>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 1/1] dt: add of_get_child_count helper function
+References: <1328980929-5423-1-git-send-email-dong.aisheng@linaro.org>
+In-Reply-To: <1328980929-5423-1-git-send-email-dong.aisheng@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-09 at 10:25 +0100, Paolo Bonzini wrote:
-> On 02/08/2012 02:37 PM, Christian Hoff wrote:
-> > Again, I have already done much testing with virtio-scsi and can confirm
-> > that the code is working flawlessly. In my opinion, virtio-scsi is a
-> > worthwhile addition to virtio-block and should be considered for inclusion
-> > into mainline kernel code.
+On 02/11/2012 11:22 AM, Dong Aisheng wrote:
+> Currently most code to get child count in kernel are almost same,
+> add a helper to implement this function for dt to use.
 > 
-> Thank you very much!
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Rob Herring <rob.herring@calxeda.com>
 > 
-> James, will you include virtio-scsi in 3.4?
+> ---
+> Hi Rob,
+> 
+> Since my imx pinctrl driver series still depends on the pinctrl core dt
+> binding patch which is still not in mainline, i'd like this pure dt patch
+> go separately first in case others want to use.
+> 
 
-Well, no-one's yet answered the question I had about why.  virtio-scsi
-seems to be a basic duplication of virtio-blk except that it seems to
-fix some problems virtio-blk has.  Namely queue parameter discover,
-which virtio-blk doesn't seem to do.  There may also be a reason to cut
-the stack lower down.  Error handling is most often cited for this, but
-no-one's satisfactorily explaned why it's better to do error handling in
-the guest instead of the host.
+Applied for 3.4.
 
-Could someone please explain to me why you can't simply fix virtio-blk?
-Or would virtio-blk maintainers give a reason why they're unwilling to
-have it fixed?
+Rob
 
-This isn't a "no" by the way: we have absolutely hideous virtual drivers
-for other virtualisation systems in SCSI which should also have been in
-block, except that's not the way the various virt people think, so I'm
-willing to extend KVM the same courtesy ... I'd just really like to know
-that the virtio-blk situation is intractable before I do.
-
-James
-
+> changes v2->v3:
+>  Addressed some people's comments:
+>  * do not use assignment as expression
+>  * return 0 for non-dt case
+> 
+> Changes v1->v2:
+>  * change the name from of_get_child_number to of_get_child_count
+> ---
+>  include/linux/of.h |   16 ++++++++++++++++
+>  1 files changed, 16 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index a75a831..ae242ef 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -195,6 +195,17 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
+>  	for (child = of_get_next_child(parent, NULL); child != NULL; \
+>  	     child = of_get_next_child(parent, child))
+>  
+> +static inline int of_get_child_count(const struct device_node *np)
+> +{
+> +	struct device_node *child = NULL;
+> +	int num = 0;
+> +
+> +	while ((child = of_get_next_child(np, child)) != NULL)
+> +		num++;
+> +
+> +	return num;
+> +}
+> +
+>  extern struct device_node *of_find_node_with_property(
+>  	struct device_node *from, const char *prop_name);
+>  #define for_each_node_with_property(dn, prop_name) \
+> @@ -268,6 +279,11 @@ static inline bool of_have_populated_dt(void)
+>  #define for_each_child_of_node(parent, child) \
+>  	while (0)
+>  
+> +static inline int of_get_child_count(const struct device_node *np)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline int of_device_is_compatible(const struct device_node *device,
+>  					  const char *name)
+>  {
 
