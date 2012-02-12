@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139Ab2BLHQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 02:16:10 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43193 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab2BLHQI convert rfc822-to-8bit (ORCPT
+	id S1751401Ab2BLIvW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 03:51:22 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12140 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab2BLIvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 02:16:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
-Date: Sun, 12 Feb 2012 15:16:07 +0800
-Message-ID: <CAJd=RBBQFuxUC4XvS7OaajzKq1Xh0yRjY62PaceWprob26N9QA@mail.gmail.com>
-Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
-From: Hillf Danton <dhillf@gmail.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 12 Feb 2012 03:51:21 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 12 Feb 2012 00:51:20 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
+        lars@metafoo.de, linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V4 2/2] regmap: add regmap_bulk_write() for register write
+Date: Sun, 12 Feb 2012 14:19:16 +0530
+Message-Id: <1329036556-15408-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrea
+The bulk_write() supports the data transfer to multi
+register which takes the data into cpu_endianness format
+and does formatting of data to device format before
+sending to device.
+The transfer can be completed in single transfer or multiple
+transfer based on data formatting.
 
-On Sun, Feb 12, 2012 at 8:21 AM, Andrea Righi <andrea@betterlinux.com> wrote:
-[...]
->  - Some of the routines to implement the generic interval tree has been taken
->   from the x86 PAT code, that uses interval trees to keep track of PAT ranges
->   (in the future it would be interesting to convert also the x86 PAT code to
->   use the generic interval tree implementation).
->
-Perhaps the tree implemented in this work could also be used in tracking
-regions in mm/hugetlb.c.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1: 
+- Change commit message.
+- Byte swapping in input data packet.
+Changes from V2: 
+- Remove formatting if val_byte is 1.
+- Allocating proper size of memory for val_byte != 1
+Changes from V3:
+- Stylish fixes.
 
-Thanks
-Hillf
+ drivers/base/regmap/regmap.c |   62 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |    2 +
+ 2 files changed, 64 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index ba92217..39be1b3 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -482,6 +482,68 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
+ 
++/*
++ * regmap_bulk_write(): Write multiple registers to the device
++ *
++ * @map: Register map to write to
++ * @reg: First register to be write from
++ * @val: Block of data to be written, in native register size for device
++ * @val_count: Number of registers to write
++ *
++ * This function is intended to be used for writing a large block of
++ * data to be device either in single transfer or multiple transfer.
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++		     size_t val_count)
++{
++	int ret = 0, i;
++	unsigned int ival;
++	size_t val_bytes = map->format.val_bytes;
++
++	mutex_lock(&map->lock);
++
++	if (map->format.parse_val) {
++		void *wval;
++		/* No formatting is require if val_byte is 1 */
++		if (val_bytes == 1) {
++			wval = (void *)val;
++		} else {
++			wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
++			if (!wval) {
++				ret = -ENOMEM;
++				dev_err(map->dev,
++					"Error in memory allocation\n");
++				goto out;
++			}
++			for (i = 0; i < val_count * val_bytes; i += val_bytes)
++				map->format.parse_val(wval + i);
++		}
++		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
++
++		if (val_bytes != 1)
++			kfree(wval);
++	} else {
++		for (i = 0; i < val_count; i++) {
++			memcpy(&ival, val + (i * val_bytes), val_bytes);
++			ret = _regmap_write(map, reg + i, ival);
++			if (ret) {
++				dev_err(map->dev,
++				    "Error in register %u write, ret %d\n",
++						reg + i, ret);
++				break;
++			}
++		}
++	}
++
++out:
++	mutex_unlock(&map->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_bulk_write);
++
+ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 			    unsigned int val_len)
+ {
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a6ed6e6..0925e24 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -135,6 +135,8 @@ int regmap_reinit_cache(struct regmap *map,
+ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
+ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 		     const void *val, size_t val_len);
++int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
++			size_t val_count);
+ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
+ int regmap_raw_read(struct regmap *map, unsigned int reg,
+ 		    void *val, size_t val_len);
+-- 
+1.7.1.1
+
