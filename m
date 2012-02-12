@@ -1,110 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2BLMsc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 07:48:32 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:54824 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2BLMsa (ORCPT
+	id S1754016Ab2BLMyg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 07:54:36 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45424 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab2BLMyf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 07:48:30 -0500
-Date: Sun, 12 Feb 2012 13:48:25 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 01/31] events/hw_event: Create a Hardware Events
- Report Mecanism (HERM)
-Message-ID: <20120212124825.GC32467@aftab>
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
- <1328832090-9166-2-git-send-email-mchehab@redhat.com>
- <20120210134115.GC16783@aftab>
- <4F35270F.1020402@redhat.com>
+	Sun, 12 Feb 2012 07:54:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F35270F.1020402@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
+References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+	<1328832993-23228-2-git-send-email-john.stultz@linaro.org>
+	<CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
+Date: Sun, 12 Feb 2012 13:54:35 +0100
+Message-ID: <CAO6Zf6D11ZiZtNs8ksRAGeNBGwb4QLXu8_F___mYAeNtNvKapw@mail.gmail.com>
+Subject: Fwd: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 12:17:51PM -0200, Mauro Carvalho Chehab wrote:
-> Em 10-02-2012 11:41, Borislav Petkov escreveu:
-> > On Thu, Feb 09, 2012 at 10:01:00PM -0200, Mauro Carvalho Chehab wrote:
-> >> In order to provide a proper hardware event subsystem, let's
-> >> encapsulate hardware events into a common trace facility, and
-> >> make both edac and mce drivers to use it. After that, common
-> >> facilities can be moved into a new core for hardware events
-> >> reporting subsystem. This patch is the first of a series, and just
-> >> touches at mce.
-> > 
-> > I think it would work too if you had only one event:
-> > 
-> > * trace_hw_error(...)
-> > 
-> > which would have as an argument a string describing it, like
-> > "Uncorrected Memory Read Error", "Memory Read Error (out of range)" "TLB
-> > Multimatch Error" etc., followed by the rest of the error info.
-> > 
-> > Currently, you're introducing at least 5 trace_* calls _only_ for memory
-> > errors. What about the remaining couples of tens of errors which haven't
-> > been addressed yet?
-> 
-> Good point.
-> 
-> The way I see it is that:
-> 
-> - a non-memory related, non-parsed MCE event would generate a "mce_record" trace
-> 	(we need an additional patch to disable it when the error is parsed.
-> 	 I'll address it after finishing the tests with a few other platforms);
-> 
-> As more MCE parsers are added at the core, the situations where such event will
-> be generated will reduce, and will eventually disappear in long term.
-> 
-> - a non-x86 event (or a x86 event for a memory controller that is not addressed
-> by MCE events) will use a "mc_error";
-> 
-> - a x86 event generated via MCE will use a "mc_error_mce".
-> 
-> There are two special events defined when there's a memory error _and_ a driver
-> bug:
-> 
-> 	"mc_out_of_range_mce" and "mc_out_of_range".
-> 
-> While the name of them and one of the parameters are memory-controller specific,
-> it should be easy to make it generic enough to be used by other types of errors.
-> 
-> The previous EDAC logic were to generate an out of range printk and return. With
-> the changes I made, it is possible to let the EDAC to provide the information
-> parsed, just discarding the bad parsed value. That's the approach I took, as the
-> other information there may be useful. By taking such approach, the MCE information
-> will be shown by the "mc_error_mce" trace. So, we can remove the "mc_out_of_range_mce"
-> without loosing any information.
-> 
-> In any case, we can't merge the *_mce with the non-mce variant, as the mce.h header
-> is arch specific and doesn't exist on PPC and tilera architectures.
-> 
-> So, the only event that we can actually remove is "mc_out_of_range_mce", if we let
-> the core generate two events for badly parsed error events. What do you think?
+[ resent to lkml in 'plain-text' format ]
 
-As I said already, error messages from the drivers should be something
-very seldom so they don't need a special trace event.
+On 10 February 2012 01:16, John Stultz <john.stultz@linaro.org> wrote:
 
-But most importantly, _ALL_ hw errors could use a single
-trace_hw_error() macro which has a single string argument containing all
-the required error info as a string since the error format is different
-based on the error type. In any case, memory errors are not special! As
-I said also before, we cannot have a trace-call for every error type
-which adds additional information or which might generate an error while
-producing that error info.
+[ ... ]
 
--- 
-Regards/Gruss,
-Boris.
+> --- /dev/null
+> +++ b/mm/volatile.c
+> @@ -0,0 +1,314 @@
+> +/* mm/volatile.c
+> + *
+> [ ... ]
+>
+> +
+> +#define range_on_lru(range) (!(range)->purged)
+> +
+> +
+> +static inline void volatile_range_shrink(struct volatile_range *range,
+> +                               pgoff_t start_index, pgoff_t end_index)
+> +{
+> +       size_t pre = range_size(range);
+> +
+> +       range->range_node.start = start_index;
+> +       range->range_node.end = end_index;
+> +
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
+I guess, here we get a whole range of races with volatile_shrink(),
+which may see inconsistent (in-the-middle-of-update) ranges (e.g.
+.start and .end).
+
+
+>
+> +       if (range_on_lru(range)) {
+
+
+here volatile_shrink() runs and sets range->purge to 1, then calls
+__lru_del() => lru_count gets updated.
+
+>
+> +               mutex_lock(&volatile_lru_mutex);
+> +               lru_count -= pre - range_size(range);
+> +               mutex_unlock(&volatile_lru_mutex);
+
+
+and then lru_count gets updated once more - for the same 'range' object.
+
+
+>
+> +       }
+> +}
+
+
+>
+> [ ... ]
+
+
+>
+>
+> +static int volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
+> +{
+> +       struct volatile_range *range, *next;
+> +       unsigned long nr_to_scan = sc->nr_to_scan;
+> +       const gfp_t gfp_mask = sc->gfp_mask;
+> +
+> +       /* We might recurse into filesystem code, so bail out if necessary */
+> +       if (nr_to_scan && !(gfp_mask & __GFP_FS))
+> +               return -1;
+> +       if (!nr_to_scan)
+> +               return lru_count;
+
+
+So it's u64 -> int here, which is possibly 32 bits and signed. Can't
+it lead to inconsistent results on 32bit platforms?
+
+>
+> +
+> +       mutex_lock(&volatile_lru_mutex);
+> +       list_for_each_entry_safe(range, next, &volatile_lru_list, lru) {
+> +               struct inode *inode = range->mapping->host;
+> +               loff_t start, end;
+> +
+> +
+> +               start = range->range_node.start * PAGE_SIZE;
+> +               end = (range->range_node.end + 1) * PAGE_SIZE - 1;
+
+
+PAGE_CACHE_SHIFT was used in fadvise() to calculate .start and .end
+indexes, and here we use PAGE_SIZE to get back to 'normal' addresses.
+Isn't it inconsistent at the very least?
+
+>
+> +
+> +               /*
+> +                * XXX - calling vmtruncate_range from a shrinker causes
+> +                * lockdep warnings. Revisit this!
+> +                */
+> +               vmtruncate_range(inode, start, end);
+> +               range->purged = 1;
+> +               __lru_del(range);
+> +
+> +               nr_to_scan -= range_size(range);
+
+
+hmm, unsigned long -= u64
+
+>
+> +               if (nr_to_scan <= 0)
+
+
+nr_to_scan is "unsigned long" :-))
+
+[ ... ]
+
+> +arch_initcall(volatile_init);
+> --
+> 1.7.3.2.146.gca209
+>
+
+--
+
+-- Dmitry
