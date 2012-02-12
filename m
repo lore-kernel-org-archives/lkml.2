@@ -1,141 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2BLVUx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:20:53 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48691 "EHLO ogre.sisk.pl"
+	id S1755859Ab2BLVWb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:22:31 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48704 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab2BLVU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:20:26 -0500
+	id S1754873Ab2BLVWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:22:30 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c static
-Date: Sun, 12 Feb 2012 22:24:14 +0100
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: Bug in disk event polling
+Date: Sun, 12 Feb 2012 22:26:21 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <201202120003.20879.rjw@sisk.pl> <201202120004.48991.rjw@sisk.pl> <4F37D1AF.5070700@linux.vnet.ibm.com>
-In-Reply-To: <4F37D1AF.5070700@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "Linux-pm mailing list" <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1202121216060.18114-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202121216060.18114-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202122224.14640.rjw@sisk.pl>
+Message-Id: <201202122226.22082.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 12, 2012, Srivatsa S. Bhat wrote:
-> On 02/12/2012 04:34 AM, Rafael J. Wysocki wrote:
+On Sunday, February 12, 2012, Alan Stern wrote:
+> On Fri, 10 Feb 2012, Tejun Heo wrote:
 > 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Hello,
 > > 
-> > The enter_state() function in kernel/power/suspend.c should be
-> > static and state_store() in kernel/power/suspend.c should call
-> > pm_suspend() instead of it, so make that happen (which also reduces
-> > code duplication related to suspend statistics).
+> > On Fri, Feb 10, 2012 at 04:44:48PM -0500, Alan Stern wrote:
+> > > > I think it should be nrt.  It assumes that no one else is running it
+> > > > concurrently; otherwise, multiple CPUs could jump into
+> > > > disk->fops->check_events() concurrently which can be pretty ugly.
+> > > 
+> > > Come to mention it, how can a single work item ever run on more than
+> > > one CPU concurrently?  Are you concerned about cases where some other 
+> > > thread requeues the work item while it is executing?
 > > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  kernel/power/main.c    |    6 +-----
-> >  kernel/power/power.h   |    2 --
-> >  kernel/power/suspend.c |    2 +-
-> >  3 files changed, 2 insertions(+), 8 deletions(-)
-> > 
-> > Index: linux/kernel/power/main.c
-> > ===================================================================
-> > --- linux.orig/kernel/power/main.c
-> > +++ linux/kernel/power/main.c
-> > @@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
-> >  #ifdef CONFIG_SUSPEND
-> >  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
-> >  		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-> > -			break;
-> > -	}
-> > -	if (state < PM_SUSPEND_MAX && *s) {
-> > -		error = enter_state(state);
-> > -		suspend_stats_update(error);
-> > +			error = pm_suspend(state);
+> > Yeah, there are multiple paths which may queue the work item.  For
+> > polling work, it definitely was possible but maybe locking changes
+> > afterwards removed that.  Even then, it would be better to use nrt wq
+> > as bug caused that way would be very difficult to track down.
+> 
+> Okay, I'll create a new workqueue for this purpose.
 > 
 > 
-> This code will not stop after calling pm_suspend(). It will try more iterations
-> in the for loop right?
+> > > The problem is that these async threads generally aren't freezable.  
+> > > They will continue to run and do I/O while a system goes through a
+> > > sleep transition.  How should this be handled?
+> > 
+> > I think it would be better to use wq for most kthreads.  A lot of them
+> > aren't strictly correct in the way they deal with
+> > kthread_should_stop() and freezing.  kthread in general simply seems
+> > way too difficult to use correctly.
+> 
+> Maybe so, but getting rid of it at this point would be a big change.  
+> Also, kthreads were originally considered more suitable for tasks that
+> would need to run for a long time; is this no longer true?
+> 
+> > > kthread_run() can be adjusted on a case-by-case basis, by inserting
+> > > calls to set_freezable() and try_to_freeze() at the appropriate places.  
+> > > But what about async_schedule()?
+> > 
+> > Given the stuff async is used for, maybe just make all async execution
+> > freezable?
+> 
+> That probably won't work.  What if a driver relies on async thread
+> execution to carry out its I/O?
 
-Well, only one string in pm_states[] can be matched at a time, but I agree that
-it doesn't make sense to continue the loop after we've found a match.
+Well, we use async in the suspend code itself. :-)
 
-> We can probably keep the 'for' loop as it is, and just replace the 'if' block
-> following the 'for' loop by: error = pm_suspend(state);
-
-I think the patch below is correct.
+> As another example, sd_probe() calls async_schedule(sd_probe_async,...)
+> to handle the long-running parts of probing a SCSI disk.  In turn,
+> sd_remove() calls async_synchronize_full() to insure that probing is
+> over before the device is unbound from sd.
+> 
+> What happens if a hot-unpluggable disk drive is unplugged while the
+> system is asleep?  It's entirely possible that the bus subsystem's
+> resume routine would see the device was gone and would try to 
+> unregister it.  Then sd_remove would wait for the async thread 
+> to finish, which would never happen because the thread would be frozen 
+> and wouldn't be thawed until all the resume routines had finished.
+> 
+> In this case, the proper solution is to have the SCSI prepare method 
+> call async_synchronize_full().  Other cases will require other 
+> solutions.
 
 Thanks,
 Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Sleep: Make enter_state() in kernel/power/suspend.c static
-
-The enter_state() function in kernel/power/suspend.c should be
-static and state_store() in kernel/power/suspend.c should call
-pm_suspend() instead of it, so make that happen (which also reduces
-code duplication related to suspend statistics).
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- kernel/power/main.c    |    8 +++-----
- kernel/power/power.h   |    2 --
- kernel/power/suspend.c |    2 +-
- 3 files changed, 4 insertions(+), 8 deletions(-)
-
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -291,12 +291,10 @@ static ssize_t state_store(struct kobjec
- 
- #ifdef CONFIG_SUSPEND
- 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
--		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-+		if (*s && len == strlen(*s) && !strncmp(buf, *s, len)) {
-+			error = pm_suspend(state);
- 			break;
--	}
--	if (state < PM_SUSPEND_MAX && *s) {
--		error = enter_state(state);
--		suspend_stats_update(error);
-+		}
- 	}
- #endif
- 
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -177,13 +177,11 @@ extern const char *const pm_states[];
- 
- extern bool valid_state(suspend_state_t state);
- extern int suspend_devices_and_enter(suspend_state_t state);
--extern int enter_state(suspend_state_t state);
- #else /* !CONFIG_SUSPEND */
- static inline int suspend_devices_and_enter(suspend_state_t state)
- {
- 	return -ENOSYS;
- }
--static inline int enter_state(suspend_state_t state) { return -ENOSYS; }
- static inline bool valid_state(suspend_state_t state) { return false; }
- #endif /* !CONFIG_SUSPEND */
- 
-Index: linux/kernel/power/suspend.c
-===================================================================
---- linux.orig/kernel/power/suspend.c
-+++ linux/kernel/power/suspend.c
-@@ -272,7 +272,7 @@ static void suspend_finish(void)
-  * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
-  * system enter the given sleep state and clean up after wakeup.
-  */
--int enter_state(suspend_state_t state)
-+static int enter_state(suspend_state_t state)
- {
- 	int error;
- 
