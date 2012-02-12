@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2BLVXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:23:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48716 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab2BLVXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:23:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: markgross@thegnar.org
-Subject: Re: [PATCH 2/2] PM / QoS: unconditionally build the per-device constraints feature
-Date: Sun, 12 Feb 2012 22:27:39 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Jean Pihet <jean.pihet@newoldbits.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
-        Jean Pihet <j-pihet@ti.com>
-References: <1328603646-2714-1-git-send-email-j-pihet@ti.com> <1328603646-2714-3-git-send-email-j-pihet@ti.com> <20120212020757.GF18742@gs62>
-In-Reply-To: <20120212020757.GF18742@gs62>
+	id S1755882Ab2BLVY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:24:56 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61812 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab2BLVYz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:24:55 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202122227.39949.rjw@sisk.pl>
+From: Olof Johansson <olof@lixom.net>
+To: x86@kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, matt.fleming@intel.com, mjg@redhat.com
+Subject: [PATCH v5 0/5] x86: efi: cleanups and basic 32/64-bit support
+Date: Sun, 12 Feb 2012 13:24:24 -0800
+Message-Id: <1329081869-20779-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.9.209.gb6b3b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 12, 2012, mark gross wrote:
-> why are these two patches?
-> 
-> I think you could squash them into one and it would be just fine.
+This series allows basic booting of a 32-bit kernel on 64-bit EFI and vice
+versa.  It's needed by Chrome OS, and we've been carrying a nasty
+hack to do it that I've cleaned up and made sure it works in both
+directions.
 
-Well, what sense does _device_ PM QoS make without CONFIG_PM?
+Being able to boot an upstream kernel on Chrome OS hardware is helpful for
+hobbyists and others who want to tinker with their Chrome OS machines, but
+it's also very helpful for our kernel developers who want to contribute
+and work close to upstream without carrying out-of-tree base patches.
 
-Rafael
+V4 was tested on Chrome OS for 64-bit EFI 32-bit kernel and with an old
+MacBook for 32-bit EFI, 64-bit kernel.
+
+Note that this is required, but not sufficient, for full platform support for
+EFI in a mixed environment. There is no handling of runtime services, and no
+thunking for going in and out of firmware in a different mode.
 
 
-> On Tue, Feb 07, 2012 at 09:34:06AM +0100, Jean Pihet wrote:
-> > The per-device PM QoS feature depends on CONFIG_PM which depends
-> > on PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
-> > not having these CONFIGs.
-> > 
-> > This patch allows the feature in all cases.
-> > 
-> > Signed-off-by: Jean Pihet <j-pihet@ti.com>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: Mark Gross <markgross@thegnar.org>
-> > ---
-> >  drivers/base/power/Makefile |    3 ++-
-> >  include/linux/pm_qos.h      |   39 ---------------------------------------
-> >  2 files changed, 2 insertions(+), 40 deletions(-)
-> > 
-> > diff --git a/drivers/base/power/Makefile b/drivers/base/power/Makefile
-> > index 2e58ebb..312eb65 100644
-> > --- a/drivers/base/power/Makefile
-> > +++ b/drivers/base/power/Makefile
-> > @@ -1,4 +1,5 @@
-> > -obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o common.o qos.o
-> > +obj-y			+= qos.o
-> > +obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o common.o
-> >  obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
-> >  obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
-> >  obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
-> > diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> > index 105be69..37b017a 100644
-> > --- a/include/linux/pm_qos.h
-> > +++ b/include/linux/pm_qos.h
-> > @@ -77,7 +77,6 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
-> >  int pm_qos_request_active(struct pm_qos_request *req);
-> >  s32 pm_qos_read_value(struct pm_qos_constraints *c);
-> >  
-> > -#ifdef CONFIG_PM
-> >  s32 __dev_pm_qos_read_value(struct device *dev);
-> >  s32 dev_pm_qos_read_value(struct device *dev);
-> >  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
-> > @@ -94,43 +93,5 @@ void dev_pm_qos_constraints_init(struct device *dev);
-> >  void dev_pm_qos_constraints_destroy(struct device *dev);
-> >  int dev_pm_qos_add_ancestor_request(struct device *dev,
-> >  				    struct dev_pm_qos_request *req, s32 value);
-> > -#else
-> > -static inline s32 __dev_pm_qos_read_value(struct device *dev)
-> > -			{ return 0; }
-> > -static inline s32 dev_pm_qos_read_value(struct device *dev)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_add_request(struct device *dev,
-> > -					 struct dev_pm_qos_request *req,
-> > -					 s32 value)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_update_request(struct dev_pm_qos_request *req,
-> > -					    s32 new_value)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_remove_request(struct dev_pm_qos_request *req)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_add_notifier(struct device *dev,
-> > -					  struct notifier_block *notifier)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_remove_notifier(struct device *dev,
-> > -					     struct notifier_block *notifier)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_add_global_notifier(
-> > -					struct notifier_block *notifier)
-> > -			{ return 0; }
-> > -static inline int dev_pm_qos_remove_global_notifier(
-> > -					struct notifier_block *notifier)
-> > -			{ return 0; }
-> > -static inline void dev_pm_qos_constraints_init(struct device *dev)
-> > -{
-> > -	dev->power.power_state = PMSG_ON;
-> > -}
-> > -static inline void dev_pm_qos_constraints_destroy(struct device *dev)
-> > -{
-> > -	dev->power.power_state = PMSG_INVALID;
-> > -}
-> > -static inline int dev_pm_qos_add_ancestor_request(struct device *dev,
-> > -				    struct dev_pm_qos_request *req, s32 value)
-> > -			{ return 0; }
-> > -#endif
-> >  
-> >  #endif
-> 
-> 
+Resend of the last posted version. Matt has acked all but the last
+patch at this point, and Matthew seems to be OK with it as well (see
+http://marc.info/?l=linux-kernel&m=132578786105542).
+
+Please consider for 3.4 merge window. Thanks!
+
+
+-Olof
+
+
+Changelog is:
+
+v5:
+* Addressed review comments from Matt Fleming over some formatting/printk strings
+  as well as some coding style changes.
+* Fixed bug that printed out "runtime not initialized" when it was on non-mixed-wordsize
+  setups.
+
+v4:
+* Removed bogus memdesc warning printout
+* Fixed up printk formatting, removing redundant EFI output
+* Some of the earlier cleanup was accidentally reverted by this patch, fixed.
+* Reworded some messages to not have to line wrap printk strings
+
+v3:
+* Reorganized to a series of patches to make it easier to review, and
+  do some of the cleanups I had left out before.
+
+v2:
+* Added graceful error handling for 32-bit kernel that gets passed
+  EFI data above 4GB.
+* Removed some warnings that were missed in first version.
 
