@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2BLV3A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:29:00 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60513 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2BLV27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:28:59 -0500
-Date: Sun, 12 Feb 2012 21:28:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] um: Cleanup headers files
-Message-ID: <20120212212853.GV23916@ZenIV.linux.org.uk>
-References: <20120130192552.GL23916@ZenIV.linux.org.uk>
- <1328311063-17630-1-git-send-email-richard@nod.at>
- <20120204001431.GY23916@ZenIV.linux.org.uk>
- <4F2C7F7A.1090605@nod.at>
- <20120212202728.GR23916@ZenIV.linux.org.uk>
- <4F3828BD.7070809@nod.at>
- <20120212212003.GU23916@ZenIV.linux.org.uk>
- <4F382E6E.4060201@nod.at>
+	id S1755935Ab2BLVd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:33:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48763 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754696Ab2BLVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:33:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH 1/2] PM / QoS: unconditionally build the feature
+Date: Sun, 12 Feb 2012 22:37:46 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Mark Gross <markgross@thegnar.org>,
+        Venkatesh Pallipadi <venki@google.com>, Jean Pihet <j-pihet@ti.com>
+References: <1328603646-2714-1-git-send-email-j-pihet@ti.com> <1328603646-2714-2-git-send-email-j-pihet@ti.com>
+In-Reply-To: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F382E6E.4060201@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202122237.46237.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 10:26:06PM +0100, Richard Weinberger wrote:
-> Am 12.02.2012 22:20, schrieb Al Viro:
-> >On Sun, Feb 12, 2012 at 10:01:49PM +0100, Richard Weinberger wrote:
-> >>Am 12.02.2012 21:27, schrieb Al Viro:
-> >>>>So, I pulled your work and merged it into my shiny new UML tree:
-> >>>>git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git
-> >>>
-> >>>Hmm...  I would really, really recommend you to clean the git history in that
-> >>>tree up.  As it is, you have
-> >>>	* merge of that branch from um-headers
-> >>>	* um: Switch to large mcmodel on x86_64
-> >>>	* um: Serve io_remap_pfn_range()
-> >>>	* 205 merges from Linus, from mid-April to late January.
-> >>>	* mismerge from Linus on April 14; the diff between the result
-> >>
-> >>Okay, I'll create a new tree. This one is definitely screwed.
-> >>Sorry for the inconvenience.
-> >
-> >Just create a new branch in the old one, populate it, verify that the
-> >tree is what you want it to be, switch to your regular branch,
-> >git reset --hard<the branch you've just built>, then git push --force
-> >It's not worse than removal of old tree and replacing it with new one,
-> >and it's less work...
+On Tuesday, February 07, 2012, Jean Pihet wrote:
+> The PM QoS feature depends on CONFIG_PM which depends on
+> PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
+> not having these CONFIGs.
 > 
-> It looks like my master branch is screwed. :???\
-> Anyway, I'll fix it!
+> This patch allows the feature in all cases.
 
-FWIW, #korg in um-headers.git should be about what you had in #master
-sans that mismerge in intel_pmic_gpio.c and with sane history.  Feel
-free to pick it...
+Since the Venki's patch has been merged in the meantime, can you please
+rebase this on top of the current Linus' tree?
+
+Rafael
+
+
+> Reported-by: Venkatesh Pallipadi <venki@google.com>
+> Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Mark Gross <markgross@thegnar.org>
+> ---
+>  include/linux/pm_qos.h |   29 +----------------------------
+>  kernel/power/Makefile  |    3 ++-
+>  2 files changed, 3 insertions(+), 29 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index e5bbcba..105be69 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -63,7 +63,6 @@ static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
+>  	return req->dev != 0;
+>  }
+>  
+> -#ifdef CONFIG_PM
+>  int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
+>  			 enum pm_qos_req_action action, int value);
+>  void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+> @@ -78,6 +77,7 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
+>  int pm_qos_request_active(struct pm_qos_request *req);
+>  s32 pm_qos_read_value(struct pm_qos_constraints *c);
+>  
+> +#ifdef CONFIG_PM
+>  s32 __dev_pm_qos_read_value(struct device *dev);
+>  s32 dev_pm_qos_read_value(struct device *dev);
+>  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+> @@ -95,33 +95,6 @@ void dev_pm_qos_constraints_destroy(struct device *dev);
+>  int dev_pm_qos_add_ancestor_request(struct device *dev,
+>  				    struct dev_pm_qos_request *req, s32 value);
+>  #else
+> -static inline int pm_qos_update_target(struct pm_qos_constraints *c,
+> -				       struct plist_node *node,
+> -				       enum pm_qos_req_action action,
+> -				       int value)
+> -			{ return 0; }
+> -static inline void pm_qos_add_request(struct pm_qos_request *req,
+> -				      int pm_qos_class, s32 value)
+> -			{ return; }
+> -static inline void pm_qos_update_request(struct pm_qos_request *req,
+> -					 s32 new_value)
+> -			{ return; }
+> -static inline void pm_qos_remove_request(struct pm_qos_request *req)
+> -			{ return; }
+> -
+> -static inline int pm_qos_request(int pm_qos_class)
+> -			{ return 0; }
+> -static inline int pm_qos_add_notifier(int pm_qos_class,
+> -				      struct notifier_block *notifier)
+> -			{ return 0; }
+> -static inline int pm_qos_remove_notifier(int pm_qos_class,
+> -					 struct notifier_block *notifier)
+> -			{ return 0; }
+> -static inline int pm_qos_request_active(struct pm_qos_request *req)
+> -			{ return 0; }
+> -static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+> -			{ return 0; }
+> -
+>  static inline s32 __dev_pm_qos_read_value(struct device *dev)
+>  			{ return 0; }
+>  static inline s32 dev_pm_qos_read_value(struct device *dev)
+> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+> index 07e0e28..66d808e 100644
+> --- a/kernel/power/Makefile
+> +++ b/kernel/power/Makefile
+> @@ -1,7 +1,8 @@
+>  
+>  ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
+>  
+> -obj-$(CONFIG_PM)		+= main.o qos.o
+> +obj-y				+= qos.o
+> +obj-$(CONFIG_PM)		+= main.o
+>  obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
+>  obj-$(CONFIG_FREEZER)		+= process.o
+>  obj-$(CONFIG_SUSPEND)		+= suspend.o
+> 
+
