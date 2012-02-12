@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab2BMV5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:57:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46517 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab2BMV5q convert rfc822-to-8bit (ORCPT
+	id S1756905Ab2BMWCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:02:47 -0500
+Received: from mail.kemdiknas.go.id ([118.98.222.85]:39264 "EHLO
+	mail.kemdikbud.go.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab2BMWCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:57:46 -0500
+	Mon, 13 Feb 2012 17:02:45 -0500
+X-Greylist: delayed 6042 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Feb 2012 17:02:45 EST
+X-DKIM: OpenDKIM Filter v2.2.2 mail.kemdikbud.go.id 0AD69284FC95
+Date: Sun, 12 Feb 2012 07:16:02 +0700 (WIT)
+From: Mr Jackson White <intan.rosalin@kemdikbud.go.id>
+Reply-To: Mr Jackson White <jacksonwhites@live.co.uk>
+Message-ID: <829966650.161632.1329005762921.JavaMail.root@alpha>
+Subject: =?utf-8?Q?Mr.Jackson_Bia=C5=82a_?=
 MIME-Version: 1.0
-In-Reply-To: <4F39763D.3070609@linux.vnet.ibm.com>
-References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
-	<1328055439-9441-1-git-send-email-venki@google.com>
-	<20120201140125.c656df41.akpm@linux-foundation.org>
-	<87d39xj955.fsf@rustcorp.com.au>
-	<CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
-	<4F3971A1.5010305@linux.vnet.ibm.com>
-	<4F39763D.3070609@linux.vnet.ibm.com>
-Date: Mon, 13 Feb 2012 13:57:45 -0800
-Message-ID: <CA+8MBbLR+rcJqe2z9tAt7Oav4wqgZA3k8Te6zcXNOs+zv2wAaA@mail.gmail.com>
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
-From: Tony Luck <tony.luck@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Zimbra 7.1.4_GA_2555 (zclient/7.1.4_GA_2555)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 12:44 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> IOW, what output do you see from the following printk from
-> arch/ia64/kernel/smpboot.c?
->
-> printk(KERN_INFO "Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
-> � � � � (int)num_online_cpus(), bogosum/(500000/HZ), (bogosum/(5000/HZ))%100);
+Mr.Jackson biała
+Mój numer specjalny: +447-035-902-902
+Fax :0862-320-621
 
-That is a complicated question - because linux-next also has patches
-by Arjan that
-change how (when) cpus are brought online. Initially I blamed his
-patches and tried
-reverting them ... and saw the symptom you are wondering about (message said
-"Total of 1 processors", but the BogoMIPs was a number big enough to be all of
-them. Thanks to you, I can now understand why.
+Ja jestem Pan Jackson Harlsden Biały, North West London, England.II pisanie tutaj w moim biurze i będzie bardzo korzystne, us.I odkryto porzucone na ilość funtów brytyjskich 20500000 (dwadzieścia Grand, a 500.000 funtów brytyjskich) ,
 
-Fix will be to stop ia64 from messing directly with cpu_online_map?
+Należący do zmarłego pana Boba OST, niestety stracił życie w katastrofie samolotu Alaska Airlines 261 w dniu 31 stycznia 2000 crash amerykańskich obywateli, a kosztem klientów zagranicznych, w tym żony i córka tylko.
 
--Tony
+Szukam Twojej zgody, aby Twoja najbliższych krewnych / beneficjenta dochodów z tego tytułu, warto 205.000 funtów, a Brytyjczycy w końcu funtów na opłacenie rachunku.
+
+To będzie wypłacana lub procentowy udział 60% i 40%. Zdobyłam mogą być wykorzystywane do wspierania tego argumentu, my wszyscy jesteśmy
+
+niezbędnych dokumentów prawnych.
+
+Odwiedziłem tę stronę, aby dowiedzieć się więcej o tym incydencie.
+
+http://aviation.crosswindlanding.com/accidents/alaska_261.htm
+
+Proszę dostarczyć mi następujące, bo mamy siedem dni, aby uruchomić
+Poprzez.
+To jest bardzo pilne, proszę.
+
+1. Nazwa.
+2. Twój numer telefonu bezpośrednio.
+3. Adres kontaktu.
+4. Wiek.
+5. zawód
+
+Z poważaniem,
+Mr.Jackson biała
+Mój numer specjalny: +447-035-902-902
+Fax :0862-320-621
