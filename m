@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2BLT5m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 14:57:42 -0500
-Received: from smtp-out003.kontent.com ([81.88.40.217]:37448 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab2BLT5k (ORCPT
+	id S1755302Ab2BLUMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 15:12:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42053 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab2BLUMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 14:57:40 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
-Date: Sun, 12 Feb 2012 21:00:05 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>
-References: <Pine.LNX.4.44L0.1202121255400.18114-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1202121255400.18114-100000@netrider.rowland.org>
+	Sun, 12 Feb 2012 15:12:42 -0500
+Date: Sun, 12 Feb 2012 12:12:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: ALPS touchpad no longer recognizing 'taps' as mouseclick in
+ 3.3-rc3
+Message-ID: <20120212201236.GA9389@core.coreip.homeip.net>
+References: <20120212164728.GA19629@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202122100.05349.oliver@neukum.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120212164728.GA19629@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 12. Februar 2012, 19:05:51 schrieb Alan Stern:
-> On Sat, 11 Feb 2012, Oliver Neukum wrote:
+Hi Greg,
+
+On Sun, Feb 12, 2012 at 08:47:28AM -0800, Greg KH wrote:
+> Hi,
 > 
-> > > Your whole approach is at the wrong level.  Runtime PM between I/O 
-> > > requests for block devices should be implemented in the block layer, 
-> > > not in the SCSI layer.
-> > 
-> > I must disagree. The block layer has no more information than the SCSI
-> > layer and lacks everything the lower layers know.
+> This problem has been since 3.3-rc1, but I only now am getting around to
+> reporting it, sorry about that.
 > 
-> But the block layer handles all block devices, not just SCSI ones.  You 
-> would end up duplicating code unnecessarily.
+> In 3.3-rc3, my alps touchpad isn't recognizing a tap on the touchpad as
+> a mouse click.  Is there a new Kconfig option that I need to enable?
 > 
-> What pertinent information is known by the SCSI and lower layers but
-> not the block layer?
-
-It doesn't know what consequences suspending a host controller
-has for the devices attached to it. It simply cannot know because
-that depends on the hardware.
-
-A very good example is the media change problem of the media readers.
-For example an iSCSI virtual host controller can suspend while a command
-is in flight if the network controller used can do remote wakeup well enough.
-
-> > It seems to me that most of these difficulties go away if we strictly
-> > differentiate between host adapter and disks.
+> My /proc/bus/input/devices entry for this thing is:
+> I: Bus=0011 Vendor=0002 Product=0008 Version=7326
+> N: Name="AlpsPS/2 ALPS DualPoint TouchPad"
+> P: Phys=isa0060/serio1/input0
+> S: Sysfs=/devices/platform/i8042/serio1/input/input6
+> U: Uniq=
+> H: Handlers=mouse1 event6 
+> B: PROP=8
+> B: EV=b
+> B: KEY=e420 70000 0 0 0 0
+> B: ABS=260800001000003
 > 
-> To be more precise, you mean "disk drives".  You can suspend a drive,
-> but you can't suspend a disk.
-
-Yes.
- 
-> > It is true, that the sr driver probably does have a few conditions under
-> > which a device should not be suspended (eg. error handling) but it
-> > lacks positive knowledge about when we may suspend.
-> > 
-> > The same is also true for any higher layer.
+> Is there anything else you need me to report to help track this down?
 > 
-> Then what's wrong with handling runtime suspend in the higher layers?
 
-They know some reasons to not suspend, but not all reasons.
- 
-> > The problem of needing to do IO for suspension goes away if we
-> > treat the disk as always suspendable and use an active command
-> > as a condition for not suspending the storage device as opposed to the disk
-> > the problem goes away.
-> 
-> I don't entirely understand.  What's the difference between "the
-> storage device" and "the disk"?
+Please make sure you have xorg-x11-drv-synaptics installed and then
+check if tap to click is enabled in your DE. I think Gnome for some
+reason has it off my default.
 
-The storage device == a USB device that implements the storage class
-the disk == a SCSI disk drive
- 
-> However, using an active command as the condition is not the right 
-> thing to do.  It would use extra energy and slow everything down to 
-> suspend and resume the device between every pair of commands that were 
-> separated by a slight time delay.  There needs to be a timeout.
+Thanks.
 
-Yes, we can use the same heuristics as everywhere.
-command queued -> autopm_get
-command finished -> autopm_put
-
-but for the USB host adapter, not the sr device
-
-> Furthermore, if you use active commands as the condition for 
-> suspending, what do you do when the act of suspending causes a command 
-> to be sent?  It is necessary to distinguish between ordinary commands 
-> and those that are PM-related.
-
-No. This problem goes away if you correctly make the distinction between
-host controller/storage device and the disk drive.
-You use the "active command standard" for the host controller.
-Then you need not care about the commands needed to suspend a disk drive.
-You cannot suspend the host controller while the disk drive is being suspended
-anyway, as the tree constraint prevents it.
-
-For the disk drive you just declare them busy restarting the timeout as a command
-goes down to the hardware. There is an interesting case about what you do if
-the generic layer wants to autosuspend an sr device which has a command queued.
-I propose we catch that case in sr_suspend() and return -EBUSY in
-the autosuspend with command in flight case.
-
-And I admit we will need to special case the stupid card readers.
-
-	Regards
-		Oliver
+-- 
+Dmitry
