@@ -1,182 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2BLNMW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 08:12:22 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647Ab2BLNMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 08:12:21 -0500
-Message-ID: <4F37BAAA.8080207@nod.at>
-Date: Sun, 12 Feb 2012 14:12:10 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754428Ab2BLNcI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 08:32:08 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65360 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab2BLNcG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 08:32:06 -0500
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: balbi@ti.com
+Subject: Re: Possible circular locking dependency (3.3-rc2)
+Date: Sun, 12 Feb 2012 14:31:54 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc2; KDE/4.6.5; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+References: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, gregkh@linuxfoundation.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] um: Use tty_port
-References: <1329006070-4275-1-git-send-email-richard@nod.at> <4F3706C4.2070102@nod.at> <4F37B815.8060701@suse.cz>
-In-Reply-To: <4F37B815.8060701@suse.cz>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCCFA582285830E4546E15885"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202121431.54917.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCCFA582285830E4546E15885
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On środa, 8 lutego 2012 o 13:41:48 Felipe Balbi wrote:
+> Hi guys,
+> 
+> I have just triggered the folllowing:
+> 
+> [   84.860321] ======================================================
+> [   84.860321] [ INFO: possible circular locking dependency detected ]
+> [   84.860321] 3.3.0-rc2-00026-ge4e8a39 #474 Not tainted
+> [   84.860321] -------------------------------------------------------
+> [   84.860321] bash/949 is trying to acquire lock:
+> [   84.860321]  (sysfs_lock){+.+.+.}, at: [<c0275358>]
+> gpio_value_store+0x24/0xcc [   84.860321]
+> [   84.860321] but task is already holding lock:
+> [   84.860321]  (s_active#22){++++.+}, at: [<c016996c>]
+> sysfs_write_file+0xdc/0x184 [   84.911468]
+> [   84.911468] which lock already depends on the new lock.
+> [   84.911468]
+> [   84.920043]
+> [   84.920043] the existing dependency chain (in reverse order) is:
+> [   84.920043]
+> [   84.927886] -> #1 (s_active#22){++++.+}:
+> [   84.927886]        [<c008f640>] check_prevs_add+0xdc/0x150
+> [   84.927886]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
+> [   84.927886]        [<c0090cdc>] __lock_acquire+0x49c/0x980
+> [   84.951660]        [<c0091838>] lock_acquire+0x98/0x100
+> [   84.951660]        [<c016a8e8>] sysfs_deactivate+0xb0/0x100
+> [   84.962982]        [<c016b1b4>] sysfs_addrm_finish+0x2c/0x6c
+> [   84.962982]        [<c016b8bc>] sysfs_remove_dir+0x84/0x98
+> [   84.962982]        [<c02590d8>] kobject_del+0x10/0x78
+> [   84.974670]        [<c02c29e8>] device_del+0x140/0x170
+> [   84.974670]        [<c02c2a24>] device_unregister+0xc/0x18
+> [   84.985382]        [<c0276894>] gpio_unexport+0xbc/0xdc
+> [   84.985382]        [<c02768c8>] gpio_free+0x14/0xfc
+> [   85.001708]        [<c0276a28>] unexport_store+0x78/0x8c
+> [   85.001708]        [<c02c5af8>] class_attr_store+0x18/0x24
+> [   85.007293]        [<c0169990>] sysfs_write_file+0x100/0x184
+> [   85.018981]        [<c0109d48>] vfs_write+0xb4/0x148
+> [   85.018981]        [<c0109fd0>] sys_write+0x40/0x70
+> [   85.018981]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
+> [   85.035003]
+> [   85.035003] -> #0 (sysfs_lock){+.+.+.}:
+> [   85.035003]        [<c008f54c>] check_prev_add+0x680/0x698
+> [   85.035003]        [<c008f640>] check_prevs_add+0xdc/0x150
+> [   85.052093]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
+> [   85.052093]        [<c0090cdc>] __lock_acquire+0x49c/0x980
+> [   85.052093]        [<c0091838>] lock_acquire+0x98/0x100
+> [   85.069885]        [<c047e280>] mutex_lock_nested+0x3c/0x2f4
+> [   85.069885]        [<c0275358>] gpio_value_store+0x24/0xcc
+> [   85.069885]        [<c02c18dc>] dev_attr_store+0x18/0x24
+> [   85.087158]        [<c0169990>] sysfs_write_file+0x100/0x184
+> [   85.087158]        [<c0109d48>] vfs_write+0xb4/0x148
+> [   85.098297]        [<c0109fd0>] sys_write+0x40/0x70
+> [   85.098297]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
+> [   85.109069]
+> [   85.109069] other info that might help us debug this:
+> [   85.109069]
+> [   85.117462]  Possible unsafe locking scenario:
+> [   85.117462]
+> [   85.117462]        CPU0                    CPU1
+> [   85.128417]        ----                    ----
+> [   85.128417]   lock(s_active#22);
+> [   85.128417]                                lock(sysfs_lock);
+> [   85.128417]                                lock(s_active#22);
+> [   85.142486]   lock(sysfs_lock);
+> [   85.151794]
+> [   85.151794]  *** DEADLOCK ***
+> [   85.151794]
+> [   85.151794] 2 locks held by bash/949:
+> [   85.158020]  #0:  (&buffer->mutex){+.+.+.}, at: [<c01698b8>]
+> sysfs_write_file+0x28/0x184 [   85.170349]  #1:  (s_active#22){++++.+},
+> at: [<c016996c>] sysfs_write_file+0xdc/0x184 [   85.170349]
+> [   85.178588] stack backtrace:
+> [   85.178588] [<c001b824>] (unwind_backtrace+0x0/0xf0) from [<c008de64>]
+> (print_circular_bug+0x100/0x114) [   85.193023] [<c008de64>]
+> (print_circular_bug+0x100/0x114) from [<c008f54c>]
+> (check_prev_add+0x680/0x698) [   85.193023] [<c008f54c>]
+> (check_prev_add+0x680/0x698) from [<c008f640>]
+> (check_prevs_add+0xdc/0x150) [   85.212524] [<c008f640>]
+> (check_prevs_add+0xdc/0x150) from [<c008fc18>]
+> (validate_chain.clone.24+0x564/0x694) [   85.212524] [<c008fc18>]
+> (validate_chain.clone.24+0x564/0x694) from [<c0090cdc>]
+> (__lock_acquire+0x49c/0x980) [   85.233306] [<c0090cdc>]
+> (__lock_acquire+0x49c/0x980) from [<c0091838>] (lock_acquire+0x98/0x100) [
+>   85.233306] [<c0091838>] (lock_acquire+0x98/0x100) from [<c047e280>]
+> (mutex_lock_nested+0x3c/0x2f4) [   85.242614] [<c047e280>]
+> (mutex_lock_nested+0x3c/0x2f4) from [<c0275358>]
+> (gpio_value_store+0x24/0xcc) [   85.261840] [<c0275358>]
+> (gpio_value_store+0x24/0xcc) from [<c02c18dc>] (dev_attr_store+0x18/0x24)
+> [   85.261840] [<c02c18dc>] (dev_attr_store+0x18/0x24) from [<c0169990>]
+> (sysfs_write_file+0x100/0x184) [   85.271240] [<c0169990>]
+> (sysfs_write_file+0x100/0x184) from [<c0109d48>] (vfs_write+0xb4/0x148) [ 
+>  85.290008] [<c0109d48>] (vfs_write+0xb4/0x148) from [<c0109fd0>]
+> (sys_write+0x40/0x70) [   85.298400] [<c0109fd0>] (sys_write+0x40/0x70)
+> from [<c0013cc0>] (ret_fast_syscall+0x0/0x3c) -bash: echo: write error:
+> Operation not permitted
+> 
+> the way to trigger is:
+> 
+> 
+> root@legolas:~# cd /sys/class/gpio/
+> root@legolas:/sys/class/gpio# echo 2 > export
+> root@legolas:/sys/class/gpio# echo 2 > unexport
+> root@legolas:/sys/class/gpio# echo 2 > export
+> root@legolas:/sys/class/gpio# cd gpio2/
+> root@legolas:/sys/class/gpio/gpio2# echo 1 > value
 
-Am 12.02.2012 14:01, schrieb Jiri Slaby:
-> This and the ioctl change above fullfils the subject of the patch in no=
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=42761
+for your bug/regression report, please add your address to the CC list in 
+there, thanks!
 
-> way. Do this fix and the cleanup above separately, please.
-
-Fair point.
-
->=20
->>> @@ -404,27 +334,27 @@ int line_setup_irq(int fd, int input, int outpu=
-t, struct line *line, void *data)
->>>   * first open or last close.  Otherwise, open and close just return.=
-
->>>   */
->>> =20
->>> -int line_open(struct line *lines, struct tty_struct *tty)
->>> +int line_open(struct tty_struct *tty, struct file *filp)
->>>  {
->>> -	struct line *line =3D &lines[tty->index];
->>> -	int err =3D -ENODEV;
->>> +	struct line *line =3D tty->driver_data;
->>> +	return tty_port_open(&line->port, tty, filp);
->>> +}
->>> =20
->>> -	spin_lock(&line->count_lock);
->>> -	if (!line->valid)
->>> -		goto out_unlock;
->>> +int line_install(struct tty_driver *driver, struct tty_struct *tty, =
-struct line *line)
->=20
-> As it stands, it should be tty_port->ops->activate, not
-> tty->ops->install. Yes, you can still set driver_data and check for
-> multiple opens in install. Then use also tty_standard_install.
-
-Okay.
-
->>> +{
->>> +	int ret =3D tty_init_termios(tty);
->>> =20
->>> -	err =3D 0;
->>> -	if (line->count++)
->>> -		goto out_unlock;
->>> +	if (ret)
->>> +		return ret;
->>> =20
->>> -	BUG_ON(tty->driver_data);
->>> +	tty_driver_kref_get(driver);
->>> +	tty->count++;
->>>  	tty->driver_data =3D line;
->>> -	line->tty =3D tty;
->>> +	driver->ttys[tty->index] =3D tty;
->>> =20
->>> -	spin_unlock(&line->count_lock);
->>> -	err =3D enable_chan(line);
->>> -	if (err) /* line_close() will be called by our caller */
->>> -		return err;
->>> +	ret =3D enable_chan(line);
->>> +	if (ret)
->>> +		return ret;
->>> =20
->>>  	INIT_DELAYED_WORK(&line->task, line_timer_cb);
->>> =20
->>> @@ -437,48 +367,36 @@ int line_open(struct line *lines, struct tty_st=
-ruct *tty)
->>>  			 &tty->winsize.ws_col);
->>> =20
->>>  	return 0;
->>> -
->>> -out_unlock:
->>> -	spin_unlock(&line->count_lock);
->>> -	return err;
->>>  }
-> ...
->>> +void line_close(struct tty_struct *tty, struct file * filp)
->>> +{
->>> +	struct line *line =3D tty->driver_data;
->>> +
->>> +	if (!line)
->>> +		return;
->=20
-> Unless you set tty->driver_data to NULL somewhere, this can never
-> happen. If you do, why -- this tends to be racy?
-
-The old driver set tty->driver_data to NULL.
-I guess we can remove it.
-
->>> +	tty_port_close(&line->port, tty, filp);
->>> +}
-> ...
->>> --- a/arch/um/drivers/ssl.c
->>> +++ b/arch/um/drivers/ssl.c
->>> @@ -92,6 +92,7 @@ static int ssl_remove(int n, char **error_out)
->>>  			   error_out);
->>>  }
->>> =20
->>> +#if 0
->=20
-> Hmm, remove unused code instead.
-
-Will do.
-
->>>  static int ssl_open(struct tty_struct *tty, struct file *filp)
->>>  {
->>>  	int err =3D line_open(serial_lines, tty);
-> ...
->>> @@ -124,8 +124,16 @@ void ssl_hangup(struct tty_struct *tty)
->>>  }
->>>  #endif
->>> =20
->>> +static int ssl_install(struct tty_driver *driver, struct tty_struct =
-*tty)
->>> +{
->>> +	if (tty->index < NR_PORTS)
->=20
-> Do you register more than NR_PORTS when allocating tty_driver? If not,
-> this test is always true. But presumably you won't need this hook anywa=
-y.
-
-Okay.
-
->>> +		return line_install(driver, tty, &serial_lines[tty->index]);
->>> +	else
->>> +		return -ENODEV;
->>> +}
->=20
-> thanks,
-
-Thanks,
-//richard
-
-
---------------enigCCFA582285830E4546E15885
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPN7quAAoJEN9758yqZn9ef1IH/3HR5gsbPL4nX6/C2ItSzllc
-uvSi46EuPcOIB+3WQt4PqUB3ld0GfBd3ZSozelKonCyGYrqgmDsMD9DdGntQ+iKY
-aFjvTQmmjs+6SBclMz5zf02gkIO1j09GI1NLjvz+grvjTPMJV5iKM+AzxuWaZDPM
-IVZKi++Sx/RiaWGe4CJCxCs9+OASKKapHmqO8KVaXaqbFhvtCGOL3WNa6brPRkUj
-MrotB3g2/fq2/TdePtWoRLXG99HEW1QbBnBGT1NYM2eX02wdwUk1kentAidCqPhV
-GHM7HnanvJcT7ZaK59+75kYYYdFQPeff7dkR+iWnnA3vpwvcZstT34wIUTiZD4Q=
-=6h+9
------END PGP SIGNATURE-----
-
---------------enigCCFA582285830E4546E15885--
+-- 
+Maciej Rutecki
+http://www.mrutecki.pl
