@@ -1,134 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab2BLIvW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 03:51:22 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12140 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab2BLIvV (ORCPT
+	id S1751554Ab2BLJdP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 04:33:15 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45311 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab2BLJdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 03:51:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 12 Feb 2012 00:51:20 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
-        lars@metafoo.de, linux-kernel@vger.kernel.org
-Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V4 2/2] regmap: add regmap_bulk_write() for register write
-Date: Sun, 12 Feb 2012 14:19:16 +0530
-Message-Id: <1329036556-15408-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Sun, 12 Feb 2012 04:33:11 -0500
+Message-ID: <4F37874F.4010107@gmail.com>
+Date: Sun, 12 Feb 2012 17:33:03 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@intel.com>, Chen Gong <gong.chen@linux.intel.com>
+CC: Len Brown <len.brown@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH] acpi/apei/einj: Add extensions to EINJ from rev 5.0 of
+ acpi spec
+References: <1e89d444cd527f11ff9c24ccca741a25cfab3962.1326831060.git.tony.luck@intel.com>
+In-Reply-To: <1e89d444cd527f11ff9c24ccca741a25cfab3962.1326831060.git.tony.luck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bulk_write() supports the data transfer to multi
-register which takes the data into cpu_endianness format
-and does formatting of data to device format before
-sending to device.
-The transfer can be completed in single transfer or multiple
-transfer based on data formatting.
+Hi Tony and Gong,
+	Should we remove the target memory address from the resource list of 
+ACPI5 trigger too? Otherwise we may also encounter resource conflict with ACPI5
+trigger table.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1: 
-- Change commit message.
-- Byte swapping in input data packet.
-Changes from V2: 
-- Remove formatting if val_byte is 1.
-- Allocating proper size of memory for val_byte != 1
-Changes from V3:
-- Stylish fixes.
+@@ -365,7 +365,7 @@ static int __einj_error_trigger(u64 trigger_paddr, u32 type,
+         * This will cause resource conflict with regular memory.  So
+         * remove it from trigger table resources.
+         */
+-       if (param_extension && (type & 0x0038) && param2) {
++       if ((param_extension || acpi5) && (type & 0x0038) && param2) {
+                struct apei_resources addr_resources;
+                apei_resources_init(&addr_resources);
+                trigger_param_region = einj_get_trigger_parameter_region(
+	
+On 01/18/2012 04:10 AM, Tony Luck wrote:
+> @@ -293,12 +386,56 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
+>  	if (rc)
+>  		return rc;
+>  	apei_exec_ctx_set_input(&ctx, type);
+> -	rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
+> -	if (rc)
+> -		return rc;
+> -	if (einj_param) {
+> -		writeq(param1, &einj_param->param1);
+> -		writeq(param2, &einj_param->param2);
+> +	if (acpi5) {
+> +		struct set_error_type_with_address *v5param = einj_param;
+> +
+> +		writel(type, &v5param->type);
+> +		if (type & 0x80000000) {
+> +			switch (vendor_flags) {
+> +			case SETWA_FLAGS_APICID:
+> +				writel(param1, &v5param->apicid);
+> +				break;
+> +			case SETWA_FLAGS_MEM:
+> +				writeq(param1, &v5param->memory_address);
+> +				writeq(param2, &v5param->memory_address_range);
+> +				break;
+> +			case SETWA_FLAGS_PCIE_SBDF:
+> +				writel(param1, &v5param->pcie_sbdf);
+> +				break;
+> +			}
+> +			writel(vendor_flags, &v5param->flags);
+> +		} else {
+> +			switch (type) {
+> +			case ACPI_EINJ_PROCESSOR_CORRECTABLE:
+> +			case ACPI_EINJ_PROCESSOR_UNCORRECTABLE:
+> +			case ACPI_EINJ_PROCESSOR_FATAL:
+> +				writel(param1, &v5param->apicid);
+> +				writel(SETWA_FLAGS_APICID, &v5param->flags);
+> +				break;
+> +			case ACPI_EINJ_MEMORY_CORRECTABLE:
+> +			case ACPI_EINJ_MEMORY_UNCORRECTABLE:
+> +			case ACPI_EINJ_MEMORY_FATAL:
+> +				writeq(param1, &v5param->memory_address);
+> +				writeq(param2, &v5param->memory_address_range);
+> +				writel(SETWA_FLAGS_MEM, &v5param->flags);
+> +				break;
+> +			case ACPI_EINJ_PCIX_CORRECTABLE:
+> +			case ACPI_EINJ_PCIX_UNCORRECTABLE:
+> +			case ACPI_EINJ_PCIX_FATAL:
+> +				writel(param1, &v5param->pcie_sbdf);
+> +				writel(SETWA_FLAGS_PCIE_SBDF, &v5param->flags);
+> +				break;
+> +			}
+> +		}
+I'm a little confused about the ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS command in ACPI5.
+The above code seems like a hard-coded version of 
+apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS).
+Hi Gong, could you please share the ACPI5 version of EINJ table with me? So I could
+get better understanding of the ACPI_EINJ_SET_ERROR_TYPE_WITH_ADDRESS command.
 
- drivers/base/regmap/regmap.c |   62 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h       |    2 +
- 2 files changed, 64 insertions(+), 0 deletions(-)
+> +	} else {
+> +		rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
+> +		if (rc)
+> +			return rc;
+> +		if (einj_param) {
+> +			struct einj_parameter *v4param = einj_param;
+> +			writeq(param1, &v4param->param1);
+> +			writeq(param2, &v4param->param2);
+> +		}
+>  	}
+>  	rc = apei_exec_run(&ctx, ACPI_EINJ_EXECUTE_OPERATION);
+>  	if (rc)
+> @@ -408,15 +545,25 @@ static int error_type_set(void *data, u64 val)
+>  {
+>  	int rc;
+>  	u32 available_error_type = 0;
+> +	u32 tval, vendor;
+> +
+> +	/*
+> +	 * Vendor defined types have 0x80000000 bit set, and
+> +	 * are not enumerated by ACPI_EINJ_GET_ERROR_TYPE
+> +	 */
+> +	vendor = val & 0x80000000;
+> +	tval = val & 0x7fffffff;
+>  
+>  	/* Only one error type can be specified */
+> -	if (val & (val - 1))
+> -		return -EINVAL;
+> -	rc = einj_get_available_error_type(&available_error_type);
+> -	if (rc)
+> -		return rc;
+> -	if (!(val & available_error_type))
+> +	if (tval & (tval - 1))
+The ACPI5 spec doesn't specify the format of vendor specific error type, so would it
+be better to check above condition only if it's a standard error type?
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index ba92217..39be1b3 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -482,6 +482,68 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
- }
- EXPORT_SYMBOL_GPL(regmap_raw_write);
- 
-+/*
-+ * regmap_bulk_write(): Write multiple registers to the device
-+ *
-+ * @map: Register map to write to
-+ * @reg: First register to be write from
-+ * @val: Block of data to be written, in native register size for device
-+ * @val_count: Number of registers to write
-+ *
-+ * This function is intended to be used for writing a large block of
-+ * data to be device either in single transfer or multiple transfer.
-+ *
-+ * A value of zero will be returned on success, a negative errno will
-+ * be returned in error cases.
-+ */
-+int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
-+		     size_t val_count)
-+{
-+	int ret = 0, i;
-+	unsigned int ival;
-+	size_t val_bytes = map->format.val_bytes;
-+
-+	mutex_lock(&map->lock);
-+
-+	if (map->format.parse_val) {
-+		void *wval;
-+		/* No formatting is require if val_byte is 1 */
-+		if (val_bytes == 1) {
-+			wval = (void *)val;
-+		} else {
-+			wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
-+			if (!wval) {
-+				ret = -ENOMEM;
-+				dev_err(map->dev,
-+					"Error in memory allocation\n");
-+				goto out;
-+			}
-+			for (i = 0; i < val_count * val_bytes; i += val_bytes)
-+				map->format.parse_val(wval + i);
-+		}
-+		ret = _regmap_raw_write(map, reg, wval, val_bytes * val_count);
-+
-+		if (val_bytes != 1)
-+			kfree(wval);
-+	} else {
-+		for (i = 0; i < val_count; i++) {
-+			memcpy(&ival, val + (i * val_bytes), val_bytes);
-+			ret = _regmap_write(map, reg + i, ival);
-+			if (ret) {
-+				dev_err(map->dev,
-+				    "Error in register %u write, ret %d\n",
-+						reg + i, ret);
-+				break;
-+			}
-+		}
-+	}
-+
-+out:
-+	mutex_unlock(&map->lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regmap_bulk_write);
-+
- static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
- 			    unsigned int val_len)
- {
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index a6ed6e6..0925e24 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -135,6 +135,8 @@ int regmap_reinit_cache(struct regmap *map,
- int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
- int regmap_raw_write(struct regmap *map, unsigned int reg,
- 		     const void *val, size_t val_len);
-+int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
-+			size_t val_count);
- int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
- int regmap_raw_read(struct regmap *map, unsigned int reg,
- 		    void *val, size_t val_len);
--- 
-1.7.1.1
-
+>  		return -EINVAL;
+> +	if (!vendor) {
+> +		rc = einj_get_available_error_type(&available_error_type);
+> +		if (rc)
+> +			return rc;
+> +		if (!(val & available_error_type))
+> +			return -EINVAL;
+> +	}
+>  	error_type = val;
+>  
+>  	return 0;
