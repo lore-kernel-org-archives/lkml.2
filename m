@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2BLKpd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 05:45:33 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43671 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2BLKpc (ORCPT
+	id S1752195Ab2BLKqQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 05:46:16 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37415 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab2BLKqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 05:45:32 -0500
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, fweisbec@gmail.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf tools: Fix build dependency of perf python extension
-Date: Sun, 12 Feb 2012 19:45:24 +0900
-Message-Id: <1329043524-12470-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.8.2
-In-Reply-To: <20120210142821.GH2526@infradead.org>
-References: <20120210142821.GH2526@infradead.org>
+	Sun, 12 Feb 2012 05:46:15 -0500
+Date: Sun, 12 Feb 2012 10:45:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Myron Stowe <mstowe@redhat.com>
+Cc: Mike Rapoport <mike@compulab.co.il>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "myron.stowe" <myron.stowe@redhat.com>
+Subject: Re: [BUG] Multiple definition of pcibios_max_latency
+Message-ID: <20120212104551.GX889@n2100.arm.linux.org.uk>
+References: <20120204125904.GU889@n2100.arm.linux.org.uk> <1328551157.2264.11.camel@zim.stowe> <20120207085838.GB889@n2100.arm.linux.org.uk> <1328653604.2404.16.camel@zim.stowe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328653604.2404.16.camel@zim.stowe>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf python extention (perf.so) file lacks its dependencies in the
-Makefile so that it cannot be refreshed if one of source files it depends
-is changed. Fix it by putting them in a separate file and processing it in
-both of Makefile and setup.py.
+On Tue, Feb 07, 2012 at 03:26:44PM -0700, Myron Stowe wrote:
+> Mike:
+> 
+> Are you seeing the same failure as Russell, and if so, could you try the
+> following patch and see if it fixes the build?
+> 
+> 
+> linux-arm-kernel:
+> 
+> Any testing, with respect to what Russell encountered, of the various
+> ARM variations/configurations would be much appreciated.  Please provide
+> feedback as to the specific ARM variation/configuration, if it is
+> currently encountering the build issue that Russell is, and if the
+> attached patch fixes the build.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
-Hello, Arnaldo.
+Given the lack of response, I think this should just be submitted so it's
+no longer causing a build regression.
 
-This is my attempt to fix the problem you said. I used a separate file to
-track the dependency and it was used by both Makefile and setup.py. It
-seemed work well for me. Please let me know if I missed something.
-
-Thanks.
-
- tools/perf/Makefile                |    5 ++++-
- tools/perf/util/python-ext-sources |   17 +++++++++++++++++
- tools/perf/util/setup.py           |    8 ++++----
- 3 files changed, 25 insertions(+), 5 deletions(-)
- create mode 100644 tools/perf/util/python-ext-sources
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 64df5de12ca8..8359fa140d2d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -183,7 +183,10 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
--$(OUTPUT)python/perf.so: $(PYRF_OBJS)
-+PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
-+PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
-+
-+$(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
- 	mkdir -p $(OUTPUT)python && \
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-new file mode 100644
-index 000000000000..ff606f482a7c
---- /dev/null
-+++ b/tools/perf/util/python-ext-sources
-@@ -0,0 +1,17 @@
-+#
-+# List of files needed by perf python extention
-+#
-+# Each source file must be placed on its own line so that it can be
-+# processed by Makefile and util/setup.py accordingly.
-+#
-+
-+util/python.c
-+util/ctype.c
-+util/evlist.c
-+util/evsel.c
-+util/cpumap.c
-+util/thread_map.c
-+util/util.c
-+util/xyarray.c
-+util/cgroup.c
-+util/debugfs.c
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 36d4c5619575..d0f9f29cf181 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -24,11 +24,11 @@ cflags += getenv('CFLAGS', '').split()
- build_lib = getenv('PYTHON_EXTBUILD_LIB')
- build_tmp = getenv('PYTHON_EXTBUILD_TMP')
- 
-+ext_sources = [f.strip() for f in file('util/python-ext-sources')
-+				if len(f.strip()) > 0 and f[0] != '#']
-+
- perf = Extension('perf',
--		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
--			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
--			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c',
--			     'util/debugfs.c'],
-+		  sources = ext_sources,
- 		  include_dirs = ['util/include'],
- 		  extra_compile_args = cflags,
-                  )
--- 
-1.7.8.2
-
+> ARM/PCI: Remove ARM's duplicate definition of 'pcibios_max_latency'
+> 
+> From: Myron Stowe <mstowe@redhat.com>
+> 
+> The patch series to re-factor PCI's 'latency timer' setup (re:
+> http://marc.info/?l=linux-kernel&m=131983853831049&w=2) forgot to
+> remove the ARM specific definition of 'pcibios_max_latency' once such
+> had been moved into the pci core resulting in ARM related compile
+> errors -
+>   drivers/built-in.o:(.data+0x230): multiple definition of
+>   `pcibios_max_latency'
+>   arch/arm/common/built-in.o:(.data+0x40c): first defined here
+>   make[1]: *** [vmlinux.o] Error 1
+> 
+> In the series, patch 2/16 (commit 168c8619fd8) converted the ARM
+> specific version of 'pcibios_set_master()' to a non-inlined version.
+> This was done in preperation for hosting it up into PCI's core, which
+> was done in patch 10/16 (commit 96c5590058d) of the series (and
+> where the removal of ARM's 'pcibios_max_latency' was overlooked).
+> 
+> Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> ---
+> 
+>  arch/arm/common/it8152.c |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
+> 
+> 
+> diff --git a/arch/arm/common/it8152.c b/arch/arm/common/it8152.c
+> index d1bcd7b..fb1f1cf 100644
+> --- a/arch/arm/common/it8152.c
+> +++ b/arch/arm/common/it8152.c
+> @@ -320,13 +320,6 @@ err0:
+>  	return -EBUSY;
+>  }
+>  
+> -/*
+> - * If we set up a device for bus mastering, we need to check the latency
+> - * timer as we don't have even crappy BIOSes to set it properly.
+> - * The implementation is from arch/i386/pci/i386.c
+> - */
+> -unsigned int pcibios_max_latency = 255;
+> -
+>  /* ITE bridge requires setting latency timer to avoid early bus access
+>     termination by PCI bus master devices
+>  */
+> 
+> 
+> 
