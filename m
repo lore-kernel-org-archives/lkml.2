@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2BLShc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 13:37:32 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60791 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754264Ab2BLShb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 13:37:31 -0500
+	id S1755757Ab2BLSow (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 13:44:52 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:55288 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab2BLSou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 13:44:50 -0500
+Date: Sun, 12 Feb 2012 19:44:45 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 01/31] events/hw_event: Create a Hardware Events
+ Report Mecanism (HERM)
+Message-ID: <20120212184445.GA2080@aftab>
+References: <1328832090-9166-1-git-send-email-mchehab@redhat.com>
+ <1328832090-9166-2-git-send-email-mchehab@redhat.com>
+ <20120210134115.GC16783@aftab>
+ <4F35270F.1020402@redhat.com>
+ <20120212124825.GC32467@aftab>
+ <4F37F526.8090907@redhat.com>
 MIME-Version: 1.0
-Date: Sun, 12 Feb 2012 12:37:30 -0600
-X-Google-Sender-Auth: 3kIE1-QKlnNpxmQIskaJAIAPhHo
-Message-ID: <CAN_5kQB+BjPc5Sj=a-4B80-6t5D3C4WkvP6bz_BRcMd6LKAzqw@mail.gmail.com>
-Subject: Question about resetting a sampling counter in kernel
-From: heechul Yun <heechul@illinois.edu>
-To: linux-kernel@vger.kernel.org
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F37F526.8090907@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Feb 12, 2012 at 03:21:42PM -0200, Mauro Carvalho Chehab wrote:
+> As I said before, there's just one trace call for memory error events 
+> (hw_event:mc_error) on my second RFC.
 
-I have a question about controlling performance counter in kernel.
+Are you kidding me:
 
-I created a kernel counter which generates an interrupt at every
-10000 cache-misses as shown below.
+$ grep -EriIno "trace_.*\W" patch01.txt
 
-struct perf_event_attr sched_perf_hw_attr = {
-     .type = PERF_TYPE_HARDWARE,
-     .config = PERF_COUNT_HW_CACHE_MISSES,
-     .sample_period = 10000,
-     .size = sizeof(struct perf_event_attr),
-     .pinned = 1,
-     .disbled = 1,
-}
+...
 
-event = perf_event_create_kernel_counter(&sched_perf_hw_attr, cpu,
-       NULL, event_overflow_callback, NULL);
+TRACE_EVENT(mc_corrected_error,
+TRACE_EVENT(mc_uncorrected_error,
+TRACE_EVENT(mc_corrected_error_fbd,
+TRACE_EVENT(mc_uncorrected_error_fbd,
+TRACE_EVENT(mc_out_of_range,
+TRACE_EVENT(mc_corrected_error_no_info,
+TRACE_EVENT(mc_uncorrected_error_no_info,
 
-What I would like to do is to "reset" the counter before the
-overflow interrupt occurs (e.g, reset at 5000th event),
-and then to restart the sampling from 0.
+-- 
+Regards/Gruss,
+Boris.
 
-I found perf_event_enable() and perf_event_disable() only
-start/stop the counting but couln't figure out how to reset the
-sampling as I described above.
-
-I would be really thankful if you explain how I can efficiently reset the
-sampling counter.
-
-Thanks.
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
