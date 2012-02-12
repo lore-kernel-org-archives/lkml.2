@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab2BLRlm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 12:41:42 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53622 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab2BLRlk (ORCPT
+	id S1755630Ab2BLRox (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 12:44:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54456 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab2BLRov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 12:41:40 -0500
-Date: Sun, 12 Feb 2012 09:41:33 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tony.luck@intel.com,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        marcos.mage@gmail.com, prasad@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86, mce: Fix rcu splat in drain_mce_log_buffer()
-Message-ID: <20120212174133.GL3737@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120111142213.16610.85866.stgit@srivatsabhat.in.ibm.com>
- <20120111161153.GA2925@linux.vnet.ibm.com>
- <4F102353.1040109@linux.vnet.ibm.com>
- <20120113214435.GC2909@linux.vnet.ibm.com>
- <20120206161802.GC31237@aftab>
+	Sun, 12 Feb 2012 12:44:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120206161802.GC31237@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021217-3352-0000-0000-00000291DE89
+In-Reply-To: <CAH=dYrE9EOudkk0mYwFpjgMM-kJ9bwFoDDJFrcWPwRG9NJM-uA@mail.gmail.com>
+References: <CAH=dYrHhttmRjkVuo9QvJ5_Uqd+BJGCJJkaMw8153RW1SFv9dA@mail.gmail.com>
+	<4F2316C7.9030202@canonical.com>
+	<CAH=dYrF-71hTkxS1qpohT_Ja_XKEVwMyVT5ZXg2FZjK4c2Fyig@mail.gmail.com>
+	<CAH=dYrE9EOudkk0mYwFpjgMM-kJ9bwFoDDJFrcWPwRG9NJM-uA@mail.gmail.com>
+Date: Sun, 12 Feb 2012 12:44:50 -0500
+Message-ID: <CAH=dYrFs+Ty2XxWvv6y-OMi6stT-tYR7nL20+2fyQLV3RgseKQ@mail.gmail.com>
+Subject: Re: firmware loading failure for AR3011 (0cf3:3000 or 0cf3:3005 ?)
+From: Andres Cimmarusti <acimmarusti@gmail.com>
+To: "James M. Leddy" <james.leddy@canonical.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Nieder <jrnieder@gmail.com>, 641749@bugs.debian.org,
+        info@linuxcertified.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 06, 2012 at 05:18:02PM +0100, Borislav Petkov wrote:
-> On Fri, Jan 13, 2012 at 01:44:35PM -0800, Paul E. McKenney wrote:
-> > Looks good to me, but I do need to defer to people who know this code
-> > better than do I.  The key thing that (from what I can see) makes
-> > rcu_dereference() unnecessary is that the smp_rmb() used in conjunction
-> > with polling the .finished field takes care of ordering.
-> 
-> Right, this was me trying hard not to screw up touching mcelog.next,
-> thus trying to use the rcu_dereference_index_check() primitive without
-> thinking it through too much. But you're right, I'm polling the
-> ->finished field 4 times (totally arbitrary, btw) which should suffice
-> while the mce_log() routine above writes those entries.
-> 
-> Although, the question still remains, since mce_log() accesses
-> mcelog.next through the rcu_dereference_index_check() primitive,
-> shouldn't I do it the same way?
+I believe I have finally narrowed down the problem. It lies in the
+'libmtp-runtime' package with the command 'mtp-probe' (only present in
+wheezy or newer).
 
-I don't claim to be an mce_log() expert, but when I looked it over,
-I didn't see a need for rcu_dereference_index_check().  Unless I am
-confused (quite possible), the memory barriers are sufficient.
+I'm not sure what this is doing to my system, but when the package
+mentioned is installed, it "messes" up my atheros bluetooth device so
+that the kernel/udev cannot load the firmware into it.
 
-The rcu_read_lock() and rcu_read_unlock() seem to be needed to avoid
-premature freeing, though.
+As soon as I uninstalled this package and thus caused the boot process
+to throw some errors about missing mtp-probe command, my bluetooth
+module was correctly loaded and the led turned on.
 
-							Thanx, Paul
+>> Inexplicably yesterday's (and the day before) Debian testing snapshot
+>> seems to have the problem fixed!
 
+I guess this snapshot that I tested earlier didn't have that package installed
+
+I found out about this completely by chance. For whatever reason, on
+my second upgrade to wheezy 'apt-get dist-upgrade' didn't pull
+'libmtp-runtime' and my bluetooth module just worked.
+
+I tried to get the bootlog messages so I can send this info, but even
+with bootlogd enabled these messages happen too early on the boot
+process to be logged in /var/log/boot.
+
+I feel this is not necessarily a kernel bug anymore (all kernels
+tested work fine 3.0.x, 3.1.x, 3.2.x and even 3.3.0-rc3). But the
+experts will know better.
+
+This is definitely progress!
+
+Cheers
+
+Andres
+
+PS: please forward the info to other bug reports I don't have access
+to, like Red Hat / Fedora and Ubuntu. Additional testing is needed.
