@@ -1,175 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab2BLVZB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:25:01 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61812 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab2BLVY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:24:58 -0500
+	id S1755969Ab2BLV0N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:26:13 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755873Ab2BLV0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:26:10 -0500
+Message-ID: <4F382E6E.4060201@nod.at>
+Date: Sun, 12 Feb 2012 22:26:06 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-From: Olof Johansson <olof@lixom.net>
-To: x86@kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, matt.fleming@intel.com, mjg@redhat.com,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH v5 1/5] x86: efi: refactor efi_init() a bit
-Date: Sun, 12 Feb 2012 13:24:25 -0800
-Message-Id: <1329081869-20779-2-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.9.209.gb6b3b
-In-Reply-To: <1329081869-20779-1-git-send-email-olof@lixom.net>
-References: <1329081869-20779-1-git-send-email-olof@lixom.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] um: Cleanup headers files
+References: <20120130192552.GL23916@ZenIV.linux.org.uk> <1328311063-17630-1-git-send-email-richard@nod.at> <20120204001431.GY23916@ZenIV.linux.org.uk> <4F2C7F7A.1090605@nod.at> <20120212202728.GR23916@ZenIV.linux.org.uk> <4F3828BD.7070809@nod.at> <20120212212003.GU23916@ZenIV.linux.org.uk>
+In-Reply-To: <20120212212003.GU23916@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Break out some of the init steps into helper functions.
+Am 12.02.2012 22:20, schrieb Al Viro:
+> On Sun, Feb 12, 2012 at 10:01:49PM +0100, Richard Weinberger wrote:
+>> Am 12.02.2012 21:27, schrieb Al Viro:
+>>>> So, I pulled your work and merged it into my shiny new UML tree:
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git
+>>>
+>>> Hmm...  I would really, really recommend you to clean the git history in that
+>>> tree up.  As it is, you have
+>>> 	* merge of that branch from um-headers
+>>> 	* um: Switch to large mcmodel on x86_64
+>>> 	* um: Serve io_remap_pfn_range()
+>>> 	* 205 merges from Linus, from mid-April to late January.
+>>> 	* mismerge from Linus on April 14; the diff between the result
+>>
+>> Okay, I'll create a new tree. This one is definitely screwed.
+>> Sorry for the inconvenience.
+>
+> Just create a new branch in the old one, populate it, verify that the
+> tree is what you want it to be, switch to your regular branch,
+> git reset --hard<the branch you've just built>, then git push --force
+> It's not worse than removal of old tree and replacing it with new one,
+> and it's less work...
 
-Only change to execution flow is the removal of the warning when the
-kernel memdesc structure differ in size from what firmware specifies
-since it's a bogus warning (it's a valid difference per spec).
+It looks like my master branch is screwed. :⨪\
+Anyway, I'll fix it!
 
-v4:
-* Removed memdesc warning as per above
-
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Acked-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/platform/efi/efi.c |   89 ++++++++++++++++++++++++++-----------------
- 1 files changed, 54 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 264cc6e..fec2b2e 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -436,23 +436,8 @@ static void __init efi_free_boot_services(void)
- 	}
- }
- 
--void __init efi_init(void)
-+static void __init efi_systab_init(void *phys)
- {
--	efi_config_table_t *config_tables;
--	efi_runtime_services_t *runtime;
--	efi_char16_t *c16;
--	char vendor[100] = "unknown";
--	int i = 0;
--	void *tmp;
--
--#ifdef CONFIG_X86_32
--	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
--#else
--	efi_phys.systab = (efi_system_table_t *)
--		(boot_params.efi_info.efi_systab |
--		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
--#endif
--
- 	efi.systab = early_ioremap((unsigned long)efi_phys.systab,
- 				   sizeof(efi_system_table_t));
- 	if (efi.systab == NULL)
-@@ -471,22 +456,12 @@ void __init efi_init(void)
- 		       "%d.%02d, expected 1.00 or greater!\n",
- 		       efi.systab->hdr.revision >> 16,
- 		       efi.systab->hdr.revision & 0xffff);
-+}
- 
--	/*
--	 * Show what we know for posterity
--	 */
--	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
--	if (c16) {
--		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
--			vendor[i] = *c16++;
--		vendor[i] = '\0';
--	} else
--		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
--	early_iounmap(tmp, 2);
--
--	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
--	       efi.systab->hdr.revision >> 16,
--	       efi.systab->hdr.revision & 0xffff, vendor);
-+static void __init efi_config_init(u64 tables, int nr_tables)
-+{
-+	efi_config_table_t *config_tables;
-+	int i;
- 
- 	/*
- 	 * Let's see what config tables the firmware passed to us.
-@@ -533,6 +508,11 @@ void __init efi_init(void)
- 	printk("\n");
- 	early_iounmap(config_tables,
- 			  efi.systab->nr_tables * sizeof(efi_config_table_t));
-+}
-+
-+static void __init efi_runtime_init(void)
-+{
-+	efi_runtime_services_t *runtime;
- 
- 	/*
- 	 * Check out the runtime services table. We need to map
-@@ -561,7 +541,10 @@ void __init efi_init(void)
- 		printk(KERN_ERR "Could not map the EFI runtime service "
- 		       "table!\n");
- 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
-+}
- 
-+static void __init efi_memmap_init(void)
-+{
- 	/* Map the EFI memory map */
- 	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
- 				   memmap.nr_map * memmap.desc_size);
-@@ -569,12 +552,48 @@ void __init efi_init(void)
- 		printk(KERN_ERR "Could not map the EFI memory map!\n");
- 	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
- 
--	if (memmap.desc_size != sizeof(efi_memory_desc_t))
--		printk(KERN_WARNING
--		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
--
- 	if (add_efi_memmap)
- 		do_add_efi_memmap();
-+}
-+
-+void __init efi_init(void)
-+{
-+	efi_char16_t *c16;
-+	char vendor[100] = "unknown";
-+	int i = 0;
-+	void *tmp;
-+
-+#ifdef CONFIG_X86_32
-+	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
-+#else
-+	efi_phys.systab = (efi_system_table_t *)
-+		(boot_params.efi_info.efi_systab |
-+		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
-+#endif
-+
-+	efi_systab_init(efi_phys.systab);
-+
-+	/*
-+	 * Show what we know for posterity
-+	 */
-+	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
-+	if (c16) {
-+		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
-+			vendor[i] = *c16++;
-+		vendor[i] = '\0';
-+	} else
-+		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
-+	early_iounmap(tmp, 2);
-+
-+	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
-+	       efi.systab->hdr.revision >> 16,
-+	       efi.systab->hdr.revision & 0xffff, vendor);
-+
-+	efi_config_init(efi.systab->tables, efi.systab->nr_tables);
-+
-+	efi_runtime_init();
-+
-+	efi_memmap_init();
- 
- #ifdef CONFIG_X86_32
- 	x86_platform.get_wallclock = efi_get_time;
--- 
-1.7.9.209.gb6b3b
-
+Thanks,
+//richard
