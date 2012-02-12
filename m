@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab2BLCIB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 21:08:01 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38345 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab2BLCIA (ORCPT
+	id S1755455Ab2BLCS4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 21:18:56 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48598 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755294Ab2BLCSz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 21:08:00 -0500
-Date: Sat, 11 Feb 2012 18:07:57 -0800
-From: mark gross <markgross@thegnar.org>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Gross <markgross@thegnar.org>,
-        Venkatesh Pallipadi <venki@google.com>, Jean Pihet <j-pihet@ti.com>
-Subject: Re: [PATCH 2/2] PM / QoS: unconditionally build the per-device
- constraints feature
-Message-ID: <20120212020757.GF18742@gs62>
-Reply-To: markgross@thegnar.org
-References: <1328603646-2714-1-git-send-email-j-pihet@ti.com>
- <1328603646-2714-3-git-send-email-j-pihet@ti.com>
+	Sat, 11 Feb 2012 21:18:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328603646-2714-3-git-send-email-j-pihet@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329006252-1684-1-git-send-email-kjwinchester@gmail.com>
+References: <20120211140737.GA26637@elte.hu>
+	<1329006252-1684-1-git-send-email-kjwinchester@gmail.com>
+Date: Sat, 11 Feb 2012 22:18:53 -0400
+Message-ID: <CAELBVzD8eZuxO0KLvZp8VuucoPxBNVsojO1NhC-pvr78Mg1v+w@mail.gmail.com>
+Subject: Re: [PATCH] x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-why are these two patches?
-
-I think you could squash them into one and it would be just fine.
-
---mark
-
-On Tue, Feb 07, 2012 at 09:34:06AM +0100, Jean Pihet wrote:
-> The per-device PM QoS feature depends on CONFIG_PM which depends
-> on PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
-> not having these CONFIGs.
-> 
-> This patch allows the feature in all cases.
-> 
-> Signed-off-by: Jean Pihet <j-pihet@ti.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Mark Gross <markgross@thegnar.org>
+On 11 February 2012 20:24, Kevin Winchester <kjwinchester@gmail.com> wrote:
+> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+> 'struct cpuinfo_x86'") caused the compilation error:
+>
+> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+>
+> by removing an #ifdef CONFIG_SMP around a block containing a reference
+> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
+> cpu_llc_shared_map to be a new field llc_shared_map in struct
+> cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+>
+> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
 > ---
->  drivers/base/power/Makefile |    3 ++-
->  include/linux/pm_qos.h      |   39 ---------------------------------------
->  2 files changed, 2 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/base/power/Makefile b/drivers/base/power/Makefile
-> index 2e58ebb..312eb65 100644
-> --- a/drivers/base/power/Makefile
-> +++ b/drivers/base/power/Makefile
-> @@ -1,4 +1,5 @@
-> -obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o common.o qos.o
-> +obj-y			+= qos.o
-> +obj-$(CONFIG_PM)	+= sysfs.o generic_ops.o common.o
->  obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
->  obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
->  obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index 105be69..37b017a 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -77,7 +77,6 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
->  int pm_qos_request_active(struct pm_qos_request *req);
->  s32 pm_qos_read_value(struct pm_qos_constraints *c);
->  
-> -#ifdef CONFIG_PM
->  s32 __dev_pm_qos_read_value(struct device *dev);
->  s32 dev_pm_qos_read_value(struct device *dev);
->  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
-> @@ -94,43 +93,5 @@ void dev_pm_qos_constraints_init(struct device *dev);
->  void dev_pm_qos_constraints_destroy(struct device *dev);
->  int dev_pm_qos_add_ancestor_request(struct device *dev,
->  				    struct dev_pm_qos_request *req, s32 value);
-> -#else
-> -static inline s32 __dev_pm_qos_read_value(struct device *dev)
-> -			{ return 0; }
-> -static inline s32 dev_pm_qos_read_value(struct device *dev)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_add_request(struct device *dev,
-> -					 struct dev_pm_qos_request *req,
-> -					 s32 value)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_update_request(struct dev_pm_qos_request *req,
-> -					    s32 new_value)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_remove_request(struct dev_pm_qos_request *req)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_add_notifier(struct device *dev,
-> -					  struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_remove_notifier(struct device *dev,
-> -					     struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_add_global_notifier(
-> -					struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline int dev_pm_qos_remove_global_notifier(
-> -					struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline void dev_pm_qos_constraints_init(struct device *dev)
-> -{
-> -	dev->power.power_state = PMSG_ON;
-> -}
-> -static inline void dev_pm_qos_constraints_destroy(struct device *dev)
-> -{
-> -	dev->power.power_state = PMSG_INVALID;
-> -}
-> -static inline int dev_pm_qos_add_ancestor_request(struct device *dev,
-> -				    struct dev_pm_qos_request *req, s32 value)
-> -			{ return 0; }
-> -#endif
->  
->  #endif
-> -- 
-> 1.7.5.4
-> 
+>  arch/x86/include/asm/processor.h      |    1 +
+>  arch/x86/include/asm/smp.h            |    6 ------
+>  arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++--
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c  |    7 ++++---
+>  arch/x86/kernel/smpboot.c             |   15 ++++++---------
+>  arch/x86/xen/smp.c                    |    1 -
+>  6 files changed, 13 insertions(+), 21 deletions(-)
+>
+>
+>  static void impress_friends(void)
+> @@ -1053,7 +1051,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+>        for_each_possible_cpu(i) {
+>                zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
+>                zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
+> -               zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
+>        }
+>        set_cpu_sibling_map(0);
+>
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 041d4fe..a898ed5 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -225,7 +225,6 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+>        for_each_possible_cpu(i) {
+>                zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
+>                zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
+> -               zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
+>        }
+>        set_cpu_sibling_map(0);
+>
+
+I just realized that I took out a couple of allocations here for
+cpu_llc_shared_map, without replacing them.  Am I leaving
+cpuinfo_x86.llc_shared_map unallocated then, and just writing to
+whatever address that field happened to get?
