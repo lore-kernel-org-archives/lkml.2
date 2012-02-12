@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2BLXfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 18:35:12 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48874 "EHLO ogre.sisk.pl"
+	id S1755992Ab2BLXjM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 18:39:12 -0500
+Received: from 1wt.eu ([62.212.114.60]:62390 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755897Ab2BLXfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 18:35:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] PM: Add comment describing relationships between PM callbacks to pm.h
-Date: Mon, 13 Feb 2012 00:39:02 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202130039.02184.rjw@sisk.pl>
+	id S1755897Ab2BLXjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 18:39:10 -0500
+Date: Mon, 13 Feb 2012 00:39:08 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Linux 2.6.27.61
+Message-ID: <20120212233908.GA31079@1wt.eu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+I've just released Linux 2.6.27.61.
 
-The UNIVERSAL_DEV_PM_OPS() macro is slightly misleading, because it
-may suggest that it's a good idea to point runtime PM callback
-pointers to the same routines as system suspend/resume callbacks
-.suspend() and .resume(), which is not the case.  For this reason,
-add a comment to include/linux/pm.h, next to the definition of
-UNIVERSAL_DEV_PM_OPS(), describing how device PM callbacks are
-related to each other.
+It fixed a build regression for i386 introduced in 2.6.27.60. You don't
+need to upgrade if it built fine for you.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- include/linux/pm.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+The patch and changelog will appear soon at the following locations:
+  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/
+  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.61.bz2
+  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.61.xz
+  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/patch-2.6.27.61.gz
+  ftp://ftp.all.kernel.org/pub/linux/kernel/v2.6/longterm/2.6.27/ChangeLog-2.6.27.61
 
-Index: linux/include/linux/pm.h
-===================================================================
---- linux.orig/include/linux/pm.h
-+++ linux/include/linux/pm.h
-@@ -320,6 +320,15 @@ const struct dev_pm_ops name = { \
- /*
-  * Use this for defining a set of PM operations to be used in all situations
-  * (sustem suspend, hibernation or runtime PM).
-+ * NOTE: In general, system suspend callbacks, .suspend() and .resume(), should
-+ * be different from the corresponding runtime PM callbacks, .runtime_suspend(),
-+ * and .runtime_resume(), because .runtime_suspend() always works on an already
-+ * quiescent device, while .suspend() should assume that the device may be doing
-+ * something when it is called (it should ensure that the device will be
-+ * quiescent after it has returned).  Therefore it's better to point the "late"
-+ * suspend and "early" resume callback pointers, .suspend_late() and
-+ * .resume_early(), to the same routines as .runtime_suspend() and
-+ * .runtime_resume(), respectively (and analogously for hibernation).
-  */
- #define UNIVERSAL_DEV_PM_OPS(name, suspend_fn, resume_fn, idle_fn) \
- const struct dev_pm_ops name = { \
+The updated 2.6.27.y git tree can be found at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.27.y
+  http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-2.6.27.y
+
+The tree can be browsed on the gitweb interface:
+  http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=shortlog;h=refs/heads/linux-2.6.27.y
+
+
+  Testing status (build/boot, OK/FAIL, otherwise not tested) :
+
+         ARCH  |         CONFIGURATION
+       --------+-----------------------------------
+               |  allmodconfig     other-config
+        x86_64 |    build:OK            -
+          i386 |    build:OK         boot:OK
+
+Thanks to all reviewers, and to Greg for the final packaging.
+Willy
+
+---------
+ Makefile                 |    2 +-
+ arch/x86/kernel/reboot.c |    8 --------
+ 2 files changed, 1 insertions(+), 9 deletions(-)
+
+Summary of changes from 2.6.27.60 to 2.6.27.61
+==============================================
+Willy Tarreau (2):
+      Revert "x86: Make Dell Latitude E5420 use reboot=pci"
+      Linux 2.6.27.61
+
