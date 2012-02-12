@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2BLVY4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:24:56 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61812 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab2BLVYz (ORCPT
+	id S1755961Ab2BLVZJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:25:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56254 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab2BLVZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:24:55 -0500
+	Sun, 12 Feb 2012 16:25:05 -0500
 MIME-Version: 1.0
 From: Olof Johansson <olof@lixom.net>
 To: x86@kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, matt.fleming@intel.com, mjg@redhat.com
-Subject: [PATCH v5 0/5] x86: efi: cleanups and basic 32/64-bit support
-Date: Sun, 12 Feb 2012 13:24:24 -0800
-Message-Id: <1329081869-20779-1-git-send-email-olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org, matt.fleming@intel.com, mjg@redhat.com,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH v5 3/5] x86: efi: cleanup config table walking
+Date: Sun, 12 Feb 2012 13:24:27 -0800
+Message-Id: <1329081869-20779-4-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.9.209.gb6b3b
+In-Reply-To: <1329081869-20779-1-git-send-email-olof@lixom.net>
+References: <1329081869-20779-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series allows basic booting of a 32-bit kernel on 64-bit EFI and vice
-versa.  It's needed by Chrome OS, and we've been carrying a nasty
-hack to do it that I've cleaned up and made sure it works in both
-directions.
+Trivial cleanup, move guid and table pointers to local copies to
+make the code cleaner.
 
-Being able to boot an upstream kernel on Chrome OS hardware is helpful for
-hobbyists and others who want to tinker with their Chrome OS machines, but
-it's also very helpful for our kernel developers who want to contribute
-and work close to upstream without carrying out-of-tree base patches.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/platform/efi/efi.c |   61 +++++++++++++++++++-----------------------
+ 1 files changed, 28 insertions(+), 33 deletions(-)
 
-V4 was tested on Chrome OS for 64-bit EFI 32-bit kernel and with an old
-MacBook for 32-bit EFI, 64-bit kernel.
-
-Note that this is required, but not sufficient, for full platform support for
-EFI in a mixed environment. There is no handling of runtime services, and no
-thunking for going in and out of firmware in a different mode.
-
-
-Resend of the last posted version. Matt has acked all but the last
-patch at this point, and Matthew seems to be OK with it as well (see
-http://marc.info/?l=linux-kernel&m=132578786105542).
-
-Please consider for 3.4 merge window. Thanks!
-
-
--Olof
-
-
-Changelog is:
-
-v5:
-* Addressed review comments from Matt Fleming over some formatting/printk strings
-  as well as some coding style changes.
-* Fixed bug that printed out "runtime not initialized" when it was on non-mixed-wordsize
-  setups.
-
-v4:
-* Removed bogus memdesc warning printout
-* Fixed up printk formatting, removing redundant EFI output
-* Some of the earlier cleanup was accidentally reverted by this patch, fixed.
-* Reworded some messages to not have to line wrap printk strings
-
-v3:
-* Reorganized to a series of patches to make it easier to review, and
-  do some of the cleanups I had left out before.
-
-v2:
-* Added graceful error handling for 32-bit kernel that gets passed
-  EFI data above 4GB.
-* Removed some warnings that were missed in first version.
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 777de17..05e543d 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -462,53 +462,48 @@ static void __init efi_systab_init(void *phys)
+ static void __init efi_config_init(u64 tables, int nr_tables)
+ {
+ 	efi_config_table_t *config_tables;
+-	int i;
++	int i, sz = sizeof(efi_config_table_t);
+ 
+ 	/*
+ 	 * Let's see what config tables the firmware passed to us.
+ 	 */
+-	config_tables = early_ioremap(
+-		efi.systab->tables,
+-		efi.systab->nr_tables * sizeof(efi_config_table_t));
++	config_tables = early_ioremap(efi.systab->tables,
++				      efi.systab->nr_tables * sz);
+ 	if (config_tables == NULL)
+ 		pr_err("Could not map Configuration table!\n");
+ 
+ 	pr_info("");
+ 	for (i = 0; i < efi.systab->nr_tables; i++) {
+-		if (!efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID)) {
+-			efi.mps = config_tables[i].table;
+-			pr_cont(" MPS=0x%lx ", config_tables[i].table);
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					ACPI_20_TABLE_GUID)) {
+-			efi.acpi20 = config_tables[i].table;
+-			pr_cont(" ACPI 2.0=0x%lx ", config_tables[i].table);
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					ACPI_TABLE_GUID)) {
+-			efi.acpi = config_tables[i].table;
+-			pr_cont(" ACPI=0x%lx ", config_tables[i].table);
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					SMBIOS_TABLE_GUID)) {
+-			efi.smbios = config_tables[i].table;
+-			pr_cont(" SMBIOS=0x%lx ", config_tables[i].table);
++		efi_guid_t guid = config_tables[i].guid;
++		unsigned long table = config_tables[i].table;
++
++		if (!efi_guidcmp(guid, MPS_TABLE_GUID)) {
++			efi.mps = table;
++			pr_cont(" MPS=0x%lx ", table);
++		} else if (!efi_guidcmp(guid, ACPI_20_TABLE_GUID)) {
++			efi.acpi20 = table;
++			pr_cont(" ACPI 2.0=0x%lx ", table);
++		} else if (!efi_guidcmp(guid, ACPI_TABLE_GUID)) {
++			efi.acpi = table;
++			pr_cont(" ACPI=0x%lx ", table);
++		} else if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID)) {
++			efi.smbios = table;
++			pr_cont(" SMBIOS=0x%lx ", table);
+ #ifdef CONFIG_X86_UV
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					UV_SYSTEM_TABLE_GUID)) {
+-			efi.uv_systab = config_tables[i].table;
+-			pr_cont(" UVsystab=0x%lx ", config_tables[i].table);
++		} else if (!efi_guidcmp(guid, UV_SYSTEM_TABLE_GUID)) {
++			efi.uv_systab = table;
++			pr_cont(" UVsystab=0x%lx ", table);
+ #endif
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					HCDP_TABLE_GUID)) {
+-			efi.hcdp = config_tables[i].table;
+-			pr_cont(" HCDP=0x%lx ", config_tables[i].table);
+-		} else if (!efi_guidcmp(config_tables[i].guid,
+-					UGA_IO_PROTOCOL_GUID)) {
+-			efi.uga = config_tables[i].table;
+-			pr_cont(" UGA=0x%lx ", config_tables[i].table);
++		} else if (!efi_guidcmp(guid, HCDP_TABLE_GUID)) {
++			efi.hcdp = table;
++			pr_cont(" HCDP=0x%lx ", table);
++		} else if (!efi_guidcmp(guid, UGA_IO_PROTOCOL_GUID)) {
++			efi.uga = table;
++			pr_cont(" UGA=0x%lx ", table);
+ 		}
+ 	}
+ 	pr_cont("\n");
+-	early_iounmap(config_tables,
+-			  efi.systab->nr_tables * sizeof(efi_config_table_t));
++	early_iounmap(config_tables, efi.systab->nr_tables * sz);
+ }
+ 
+ static void __init efi_runtime_init(void)
+-- 
+1.7.9.209.gb6b3b
 
