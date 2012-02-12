@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2BLVd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 16:33:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48763 "EHLO ogre.sisk.pl"
+	id S1755972Ab2BLVeX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 16:34:23 -0500
+Received: from gate.crashing.org ([63.228.1.57]:41214 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab2BLVd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 16:33:57 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH 1/2] PM / QoS: unconditionally build the feature
-Date: Sun, 12 Feb 2012 22:37:46 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Mark Gross <markgross@thegnar.org>,
-        Venkatesh Pallipadi <venki@google.com>, Jean Pihet <j-pihet@ti.com>
-References: <1328603646-2714-1-git-send-email-j-pihet@ti.com> <1328603646-2714-2-git-send-email-j-pihet@ti.com>
-In-Reply-To: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1755901Ab2BLVeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 16:34:21 -0500
+Message-ID: <1329082390.3019.17.camel@pasglop>
+Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Saravana Kannan <skannan@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
+        Todd Poynor <toddpoynor@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Oleg Nesterov <oleg@redhat.com>,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linaro-kernel@lists.linaro.org, Mike Chan <mike@android.com>,
+        Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kernel-team@android.com, linux-arm-kernel@lists.infradead.org,
+        Arjan Van De Ven <arjan@infradead.org>
+Date: Mon, 13 Feb 2012 08:33:10 +1100
+In-Reply-To: <1328971983.11320.5.camel@laptop>
+References: <20120208013959.GA24535@panacea>
+	 <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com>
+	 <1328736834.2903.33.camel@pasglop> <20120209075106.GB18387@elte.hu>
+	 <4F35DD3E.4020406@codeaurora.org>  <20120211143951.GA24564@sirena.org.uk>
+	 <1328971983.11320.5.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202122237.46237.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 07, 2012, Jean Pihet wrote:
-> The PM QoS feature depends on CONFIG_PM which depends on
-> PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
-> not having these CONFIGs.
+On Sat, 2012-02-11 at 15:53 +0100, Peter Zijlstra wrote:
+> On Sat, 2012-02-11 at 14:39 +0000, Mark Brown wrote:
+> > 
+> > For step downs this isn't such a big deal as we don't often care if the
+> > voltage drops immediately but for step ups it's critical as if the
+> > voltage hasn't ramped before the CPU tries to run at the higher
+> > frequency the CPU will brown out. 
 > 
-> This patch allows the feature in all cases.
-
-Since the Venki's patch has been merged in the meantime, can you please
-rebase this on top of the current Linus' tree?
-
-Rafael
-
-
-> Reported-by: Venkatesh Pallipadi <venki@google.com>
-> Signed-off-by: Jean Pihet <j-pihet@ti.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Mark Gross <markgross@thegnar.org>
-> ---
->  include/linux/pm_qos.h |   29 +----------------------------
->  kernel/power/Makefile  |    3 ++-
->  2 files changed, 3 insertions(+), 29 deletions(-)
+> Why isn't all this done by micro-controllers, software writes a desired
+> state in some machine register (fast), micro-controller sets about
+> making it so in an asynchronous way. If it finds the settings have
+> changed by the time it reached its former goal, goto 1.
 > 
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index e5bbcba..105be69 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -63,7 +63,6 @@ static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
->  	return req->dev != 0;
->  }
->  
-> -#ifdef CONFIG_PM
->  int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
->  			 enum pm_qos_req_action action, int value);
->  void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
-> @@ -78,6 +77,7 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
->  int pm_qos_request_active(struct pm_qos_request *req);
->  s32 pm_qos_read_value(struct pm_qos_constraints *c);
->  
-> +#ifdef CONFIG_PM
->  s32 __dev_pm_qos_read_value(struct device *dev);
->  s32 dev_pm_qos_read_value(struct device *dev);
->  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
-> @@ -95,33 +95,6 @@ void dev_pm_qos_constraints_destroy(struct device *dev);
->  int dev_pm_qos_add_ancestor_request(struct device *dev,
->  				    struct dev_pm_qos_request *req, s32 value);
->  #else
-> -static inline int pm_qos_update_target(struct pm_qos_constraints *c,
-> -				       struct plist_node *node,
-> -				       enum pm_qos_req_action action,
-> -				       int value)
-> -			{ return 0; }
-> -static inline void pm_qos_add_request(struct pm_qos_request *req,
-> -				      int pm_qos_class, s32 value)
-> -			{ return; }
-> -static inline void pm_qos_update_request(struct pm_qos_request *req,
-> -					 s32 new_value)
-> -			{ return; }
-> -static inline void pm_qos_remove_request(struct pm_qos_request *req)
-> -			{ return; }
-> -
-> -static inline int pm_qos_request(int pm_qos_class)
-> -			{ return 0; }
-> -static inline int pm_qos_add_notifier(int pm_qos_class,
-> -				      struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline int pm_qos_remove_notifier(int pm_qos_class,
-> -					 struct notifier_block *notifier)
-> -			{ return 0; }
-> -static inline int pm_qos_request_active(struct pm_qos_request *req)
-> -			{ return 0; }
-> -static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
-> -			{ return 0; }
-> -
->  static inline s32 __dev_pm_qos_read_value(struct device *dev)
->  			{ return 0; }
->  static inline s32 dev_pm_qos_read_value(struct device *dev)
-> diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-> index 07e0e28..66d808e 100644
-> --- a/kernel/power/Makefile
-> +++ b/kernel/power/Makefile
-> @@ -1,7 +1,8 @@
->  
->  ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
->  
-> -obj-$(CONFIG_PM)		+= main.o qos.o
-> +obj-y				+= qos.o
-> +obj-$(CONFIG_PM)		+= main.o
->  obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
->  obj-$(CONFIG_FREEZER)		+= process.o
->  obj-$(CONFIG_SUSPEND)		+= suspend.o
-> 
+> Having to actually wait for this in software is quite ridiculous.
+
+Not necessarily micro-controllers no. Or rather, it's generally done by
+uC (or system controllers) on desktop or server machines, but not on
+embedded (ie. phones) where arguably that's where it is the most
+important :-)
+
+Now often (but not always) the trigger to initiate a change is indeed a
+simple register or register-based gpio, so that's fast. But you also
+often have to wait for a transition to be complete before initiating
+another one, or sychronize between voltage and frequency.
+
+For example, if you are ramping up, you need to up the voltage first,
+then wait for it to reach the nominal value & stabilize, then ramp up
+the frequency. It's not that often automated.
+
+Then there's the case where to communicate with those chips, you have to
+go via a bus such as i2c which requires schedulable contexts.
+
+Cheers,
+Ben.
+
 
