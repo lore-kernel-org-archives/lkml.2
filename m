@@ -1,203 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab2BLAYs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Feb 2012 19:24:48 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64778 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab2BLAYp (ORCPT
+	id S1755368Ab2BLAbV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Feb 2012 19:31:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34416 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab2BLAbU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Feb 2012 19:24:45 -0500
+	Sat, 11 Feb 2012 19:31:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120211140737.GA26637@elte.hu>
+References: <1328209817-18913-1-git-send-email-bp@alien8.de>
+	<20120202193702.GA9502@elliptictech.com>
+	<20120202202427.GA2234@x1.osrc.amd.com>
+	<20120203191801.GA2846@x1.osrc.amd.com>
+	<20120207095746.GH15359@elte.hu>
+	<20120208101956.GA1772@x1.osrc.amd.com>
+	<20120209080648.GI18387@elte.hu>
+	<CAELBVzBAYRYWsO=PpwQhi0=_hejdLaq5Yci8uC_NT12KiFLb4w@mail.gmail.com>
+	<20120211140737.GA26637@elte.hu>
+Date: Sat, 11 Feb 2012 20:31:18 -0400
+Message-ID: <CAELBVzB8kH=H75gtbO=gqopfgwuTG_Lt+4TNZ_fDWDLCWFcVmw@mail.gmail.com>
+Subject: Re: MCE, AMD: Hide smp-only code around CONFIG_SMP
 From: Kevin Winchester <kjwinchester@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
-Date: Sat, 11 Feb 2012 20:24:12 -0400
-Message-Id: <1329006252-1684-1-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <20120211140737.GA26637@elte.hu>
-References: <20120211140737.GA26637@elte.hu>
+Cc: Borislav Petkov <bp@alien8.de>, Nick Bowler <nbowler@elliptictech.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-'struct cpuinfo_x86'") caused the compilation error:
+On 11 February 2012 10:07, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Kevin Winchester <kjwinchester@gmail.com> wrote:
+>
+>> On 9 February 2012 04:06, Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> > * Borislav Petkov <bp@alien8.de> wrote:
+>> >
+>> >> +++ b/arch/x86/include/asm/smp.h
+>> >> @@ -33,8 +33,15 @@ static inline bool cpu_has_ht_siblings(void)
+>> >>
+>> >>  DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
+>> >>  DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
+>> >> -/* cpus sharing the last level cache: */
+>> >> +
+>> >> +#ifdef CONFIG_SMP
+>> >> +/* CPUs sharing the last level cache: */
+>> >>  DECLARE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
+>> >> +#else
+>> >> +static DECLARE_BITMAP(cpu_llc_shared_bits, NR_CPUS) __read_mostly = { [0] = 1UL };
+>> >> +static struct cpumask *const cpu_llc_shared_map = to_cpumask(cpu_llc_shared_bits);
+>> >> +#endif
+>> >
+>> > Why not just expose it like on SMP?
+>> >
+>> > We want to *reduce* the specialness of UP, not increase it - one
+>> > more word of .data and .text does not matter much - UP is
+>> > becoming more and more an oddball, rarely tested config. By the
+>> > time these changes hit any real boxes it will be even more
+>> > oddball.
+>> >
+>>
+>> It seems that cpu_llc_shared_map is actually defined in
+>> arch/x86/kernel/smpboot.c, which is not compiled/linked for UP
+>> builds.
+>>  Is there an equivalent file for UP that could be used
+>> instead, or could the:
+>>
+>> DEFINE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
+>>
+>> be moved to some other file?
+>
+> Yes, it should be moved into struct cpuinfo_x86, and thus we'd
+> remove cpu_llc_shared_map altogether, it would be named
+> cpu->llc_shared_map or so - taking up a single bit (or maybe
+> zero bits) on UP.
 
-mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+I just sent out a patch trying this out.  I built and booted it on SMP
+and UP and didn't see any issues, but I don't have more than my one PC
+on which to test, so I hope I didn't miss anything.  I did notice a
+few other per cpu variables (e.g. cpu_llc_id) that perhaps could
+perhaps use the same treatment.  Where would we want to draw the line
+here?
+>
+>> Generally, it sounds like you might approve of an eventual
+>> merging of the boot paths for SMP and UP.  Is that true?  I
+>> wonder how much work that would be.  That would really reduce
+>> the specialness of UP.
+>
+> I generally approve just about any patch that works and reduces
+> complexity! :-) The boot path is rather ambitious, but if you
+> want to try, feel free ...
+>
 
-by removing an #ifdef CONFIG_SMP around a block containing a reference
-to cpu_llc_shared_map.  Rather than replace the #ifdef, move
-cpu_llc_shared_map to be a new field llc_shared_map in struct
-cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+Yes, having walked through the boot path a little, it does seem rather
+ambitious.  The UP/SMP division seems to be coded right into
+init/main.c, rather than being at the architecture level, so it would
+be hard to make changes without disrupting other arches.
 
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- arch/x86/include/asm/processor.h      |    1 +
- arch/x86/include/asm/smp.h            |    6 ------
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++--
- arch/x86/kernel/cpu/mcheck/mce_amd.c  |    7 ++++---
- arch/x86/kernel/smpboot.c             |   15 ++++++---------
- arch/x86/xen/smp.c                    |    1 -
- 6 files changed, 13 insertions(+), 21 deletions(-)
-
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index aa9088c..50389d2 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -110,6 +110,7 @@ struct cpuinfo_x86 {
- 	/* Index into per_cpu list: */
- 	u16			cpu_index;
- 	u32			microcode;
-+	cpumask_var_t		llc_shared_map;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 0434c40..f7599d0 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -34,7 +34,6 @@ static inline bool cpu_has_ht_siblings(void)
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
- /* cpus sharing the last level cache: */
--DECLARE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
- DECLARE_PER_CPU(u16, cpu_llc_id);
- DECLARE_PER_CPU(int, cpu_number);
- 
-@@ -48,11 +47,6 @@ static inline struct cpumask *cpu_core_mask(int cpu)
- 	return per_cpu(cpu_core_map, cpu);
- }
- 
--static inline struct cpumask *cpu_llc_shared_mask(int cpu)
--{
--	return per_cpu(cpu_llc_shared_map, cpu);
--}
--
- DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
- DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
- #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32)
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 73d08ed..03807f0 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -734,11 +734,11 @@ static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
- 	ret = 0;
- 	if (index == 3) {
- 		ret = 1;
--		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
-+		for_each_cpu(i, c->llc_shared_map) {
- 			if (!per_cpu(ici_cpuid4_info, i))
- 				continue;
- 			this_leaf = CPUID4_INFO_IDX(i, index);
--			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
-+			for_each_cpu(sibling, c->llc_shared_map) {
- 				if (!cpu_online(sibling))
- 					continue;
- 				set_bit(sibling, this_leaf->shared_cpu_map);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 786e76a..56899e1 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -525,11 +525,12 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 	struct threshold_bank *b = NULL;
- 	struct device *dev = mce_device[cpu];
- 	char name[32];
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 
- 	sprintf(name, "threshold_bank%i", bank);
- 
--	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
--		i = cpumask_first(cpu_llc_shared_mask(cpu));
-+	if (c->cpu_core_id && shared_bank[bank]) {	/* symlink */
-+		i = cpumask_first(c->llc_shared_map);
- 
- 		/* first core not up yet */
- 		if (cpu_data(i).cpu_core_id)
-@@ -548,7 +549,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		if (err)
- 			goto out;
- 
--		cpumask_copy(b->cpus, cpu_llc_shared_mask(cpu));
-+		cpumask_copy(b->cpus, c->llc_shared_map);
- 		per_cpu(threshold_banks, cpu)[bank] = b;
- 
- 		goto out;
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 66d250c..2b18365 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -127,8 +127,6 @@ EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
- DEFINE_PER_CPU(cpumask_var_t, cpu_core_map);
- EXPORT_PER_CPU_SYMBOL(cpu_core_map);
- 
--DEFINE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
--
- /* Per CPU bogomips and other parameters */
- DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
- EXPORT_PER_CPU_SYMBOL(cpu_info);
-@@ -337,8 +335,8 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
- 	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
- 	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
- 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
-+	cpumask_set_cpu(cpu1, cpu_data(cpu2).llc_shared_map);
-+	cpumask_set_cpu(cpu2, cpu_data(cpu1).llc_shared_map);
- }
- 
- 
-@@ -367,7 +365,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
- 	}
- 
--	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+	cpumask_set_cpu(cpu, c->llc_shared_map);
- 
- 	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
- 		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
-@@ -378,8 +376,8 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
- 		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
- 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
--			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
-+			cpumask_set_cpu(i, c->llc_shared_map);
-+			cpumask_set_cpu(cpu, cpu_data(i).llc_shared_map);
- 		}
- 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
-@@ -418,7 +416,7 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
- 	    !(cpu_has(c, X86_FEATURE_AMD_DCM)))
- 		return cpu_core_mask(cpu);
- 	else
--		return cpu_llc_shared_mask(cpu);
-+		return c->llc_shared_map;
- }
- 
- static void impress_friends(void)
-@@ -1053,7 +1051,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 	for_each_possible_cpu(i) {
- 		zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
- 		zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
--		zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
- 	}
- 	set_cpu_sibling_map(0);
- 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 041d4fe..a898ed5 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -225,7 +225,6 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- 	for_each_possible_cpu(i) {
- 		zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
- 		zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
--		zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
- 	}
- 	set_cpu_sibling_map(0);
- 
 -- 
-1.7.9
-
+Kevin Winchester
