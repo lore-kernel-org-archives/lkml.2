@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2BLXlq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 18:41:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:33404 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755928Ab2BLXlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 18:41:44 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Hoff <christian.hoff@de.ibm.com>, BORNTRAE@linux.vnet.ibm.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-In-Reply-To: <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com> <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com> <4F3390FB.80107@redhat.com> <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 13 Feb 2012 10:11:03 +1030
-Message-ID: <87vcnbd3hs.fsf@rustcorp.com.au>
+	id S1756032Ab2BLXvn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 18:51:43 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50220 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756007Ab2BLXvl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 18:51:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAE9FiQXrFARy4+ynOTRyEuoyRxTc9qqzUaYJH8e19Wt3JRRxug@mail.gmail.com>
+References: <1328425088-6562-1-git-send-email-yinghai@kernel.org>
+ <1328425088-6562-5-git-send-email-yinghai@kernel.org> <CAErSpo6=t1XtdUMBAn7Ag5XNLS3wKueybfrsUzmht6GL9XSGLQ@mail.gmail.com>
+ <CAE9FiQXrFARy4+ynOTRyEuoyRxTc9qqzUaYJH8e19Wt3JRRxug@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sun, 12 Feb 2012 15:51:20 -0800
+Message-ID: <CAErSpo5_9N-HX3Ja8k04QaS6nss8SAm-NUtuQyHt0t-Dczt8-w@mail.gmail.com>
+Subject: Re: [PATCH 04/24] PCI: Add busn_res operation functions
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Feb 2012 14:16:17 -0600, James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-> On Thu, 2012-02-09 at 10:25 +0100, Paolo Bonzini wrote:
-> > On 02/08/2012 02:37 PM, Christian Hoff wrote:
-> > > Again, I have already done much testing with virtio-scsi and can confirm
-> > > that the code is working flawlessly. In my opinion, virtio-scsi is a
-> > > worthwhile addition to virtio-block and should be considered for inclusion
-> > > into mainline kernel code.
-> > 
-> > Thank you very much!
-> > 
-> > James, will you include virtio-scsi in 3.4?
-> 
-> Well, no-one's yet answered the question I had about why.  virtio-scsi
-> seems to be a basic duplication of virtio-blk except that it seems to
-> fix some problems virtio-blk has.  Namely queue parameter discover,
-> which virtio-blk doesn't seem to do.  There may also be a reason to cut
-> the stack lower down.  Error handling is most often cited for this, but
-> no-one's satisfactorily explaned why it's better to do error handling in
-> the guest instead of the host.
-> 
-> Could someone please explain to me why you can't simply fix virtio-blk?
-> Or would virtio-blk maintainers give a reason why they're unwilling to
-> have it fixed?
+On Mon, Feb 6, 2012 at 12:45 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Feb 6, 2012 at 10:59 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Sat, Feb 4, 2012 at 10:57 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> will use them insert/update busn res in pci_bus
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> ---
+>>>  drivers/pci/probe.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+>>>  include/linux/pci.h |    3 +++
+>>>  2 files changed, 45 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>>> index a114173..8d4de5e 100644
+>>> --- a/drivers/pci/probe.c
+>>> +++ b/drivers/pci/probe.c
+>>> @@ -1622,6 +1622,48 @@ err_out:
+>>>        return NULL;
+>>>  }
+>>>
+>>> +void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
+>>> +{
+>>> +       struct resource *res = &b->busn_res;
+>>> +       struct resource *parent_res = &iobusn_resource;
+>>> +       int ret;
+>>> +
+>>> +       res->start = busn(pci_domain_nr(b), bus);
+>>> +       res->end = busn(pci_domain_nr(b), bus_max);
+>>> +       res->flags = IORESOURCE_BUS;
+>>> +
+>>> +       if (!pci_is_root_bus(b))
+>>> +               parent_res = &b->parent->busn_res;
+>>> +
+>>> +       ret = insert_resource(parent_res, res);
+>>> +
+>>> +       dev_printk(KERN_DEBUG, &b->dev,
+>>> +                       "busn_res: %pR %s inserted under %pR\n",
+>>> +                       res, ret ? "can not be" : "is", parent_res);
+>>> +}
+>>> +
+>>> +void pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
+>>> +{
+>>> +       struct resource *res = &b->busn_res;
+>>> +       struct resource old_res = *res;
+>>> +
+>>> +       res->end = busn_update_bus_nr(res->end, bus_max);
+>>
+>> I think this design is a mistake.  Here's what you're doing:
+>>
+>>  - initialize struct resource (keys are "start" and "end")
+>>  - insert into tree (placed in tree by kernel/resource.c based on
+>> "start" and "end")
+>>  - update "end"
+>>
+>> You "know" in this case that the update is safe because the caller has
+>> validated "bus_max."  But that still breaks the kernel/resource.c
+>> encapsulation.  If we change the kernel/resource.c implementation,
+>> this code might break.
+>
+> the point is: I only want to reuse allocate_resource() to get right position.
+> and the code does not depends to kernel/resource.c much.
+>
+>>
+>> I think it would be better to remove the bus resource from the tree,
+>> change its "end," then re-insert it.
+>
+> how about parent buses that have extended top?
 
-My concern is simple: virtio_blk covers the 99% of cases, with very
-little complexity.  To get that last 1%, we will end up re-specing much
-of SCSI.
-
-Having found someone who understand SCSI and is eager to maintain a
-driver and spec, I am deeply tempted to partition the problem as simple
-== virtio_blk, complex == virtio_scsi.
-
-In fact, it would allow us to tighten the spec on VIRTIO_BLK_T_SCSI_CMD
-to its actual use, which AFAICT is CDROMEJECT (maybe CDROMCLOSETRAY).
-
-Cheers,
-Rusty.
+I don't understand your question.  I assume you mean there's a case
+where remove/update/reinsert doesn't work, but I don't see why that
+would be a problem.  Can you show an example?
