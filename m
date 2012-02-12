@@ -1,91 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2BLTiW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 14:38:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2BLTiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 14:38:21 -0500
-Message-ID: <4F381520.8070504@redhat.com>
-Date: Sun, 12 Feb 2012 17:38:08 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1754912Ab2BLT5m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 14:57:42 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:37448 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2BLT5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 14:57:40 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
+Date: Sun, 12 Feb 2012 21:00:05 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>
+References: <Pine.LNX.4.44L0.1202121255400.18114-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202121255400.18114-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 01/31] events/hw_event: Create a Hardware Events Report
- Mecanism (HERM)
-References: <1328832090-9166-1-git-send-email-mchehab@redhat.com> <1328832090-9166-2-git-send-email-mchehab@redhat.com> <20120210134115.GC16783@aftab> <4F35270F.1020402@redhat.com> <20120212124825.GC32467@aftab> <4F37F526.8090907@redhat.com> <20120212184445.GA2080@aftab>
-In-Reply-To: <20120212184445.GA2080@aftab>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202122100.05349.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 12-02-2012 16:44, Borislav Petkov escreveu:
-> On Sun, Feb 12, 2012 at 03:21:42PM -0200, Mauro Carvalho Chehab wrote:
->> As I said before, there's just one trace call for memory error events 
->> (hw_event:mc_error) on my second RFC.
+Am Sonntag, 12. Februar 2012, 19:05:51 schrieb Alan Stern:
+> On Sat, 11 Feb 2012, Oliver Neukum wrote:
 > 
-> Are you kidding me:
+> > > Your whole approach is at the wrong level.  Runtime PM between I/O 
+> > > requests for block devices should be implemented in the block layer, 
+> > > not in the SCSI layer.
+> > 
+> > I must disagree. The block layer has no more information than the SCSI
+> > layer and lacks everything the lower layers know.
 > 
-> $ grep -EriIno "trace_.*\W" patch01.txt
+> But the block layer handles all block devices, not just SCSI ones.  You 
+> would end up duplicating code unnecessarily.
 > 
-> ...
+> What pertinent information is known by the SCSI and lower layers but
+> not the block layer?
+
+It doesn't know what consequences suspending a host controller
+has for the devices attached to it. It simply cannot know because
+that depends on the hardware.
+
+A very good example is the media change problem of the media readers.
+For example an iSCSI virtual host controller can suspend while a command
+is in flight if the network controller used can do remote wakeup well enough.
+
+> > It seems to me that most of these difficulties go away if we strictly
+> > differentiate between host adapter and disks.
 > 
-> TRACE_EVENT(mc_corrected_error,
-> TRACE_EVENT(mc_uncorrected_error,
-> TRACE_EVENT(mc_corrected_error_fbd,
-> TRACE_EVENT(mc_uncorrected_error_fbd,
-> TRACE_EVENT(mc_out_of_range,
-> TRACE_EVENT(mc_corrected_error_no_info,
-> TRACE_EVENT(mc_uncorrected_error_no_info,
+> To be more precise, you mean "disk drives".  You can suspend a drive,
+> but you can't suspend a disk.
+
+Yes.
+ 
+> > It is true, that the sr driver probably does have a few conditions under
+> > which a device should not be suspended (eg. error handling) but it
+> > lacks positive knowledge about when we may suspend.
+> > 
+> > The same is also true for any higher layer.
 > 
+> Then what's wrong with handling runtime suspend in the higher layers?
 
-Huh?
+They know some reasons to not suspend, but not all reasons.
+ 
+> > The problem of needing to do IO for suspension goes away if we
+> > treat the disk as always suspendable and use an active command
+> > as a condition for not suspending the storage device as opposed to the disk
+> > the problem goes away.
+> 
+> I don't entirely understand.  What's the difference between "the
+> storage device" and "the disk"?
 
-See PATCH v3 03/31:  hw_event: Consolidate uncorrected/corrected error msgs into one
+The storage device == a USB device that implements the storage class
+the disk == a SCSI disk drive
+ 
+> However, using an active command as the condition is not the right 
+> thing to do.  It would use extra energy and slow everything down to 
+> suspend and resume the device between every pair of commands that were 
+> separated by a slight time delay.  There needs to be a timeout.
 
-Those events got merged there into one hardware event and one
-software error event generated due to a hardware trouble
-(mc_out_of_range). 
+Yes, we can use the same heuristics as everywhere.
+command queued -> autopm_get
+command finished -> autopm_put
 
-This patch:
-	[PATCH v3 21/31] hw_event: Add x86 MCE events on it
+but for the USB host adapter, not the sr device
 
-adds the mc_error_mce variant per your request.
+> Furthermore, if you use active commands as the condition for 
+> suspending, what do you do when the act of suspending causes a command 
+> to be sent?  It is necessary to distinguish between ordinary commands 
+> and those that are PM-related.
 
-What is there is:
+No. This problem goes away if you correctly make the distinction between
+host controller/storage device and the disk drive.
+You use the "active command standard" for the host controller.
+Then you need not care about the commands needed to suspend a disk drive.
+You cannot suspend the host controller while the disk drive is being suspended
+anyway, as the tree constraint prevents it.
 
-$ grep TRACE_EVENT include/trace/events/hw_event.h
-TRACE_EVENT(mc_error,
-TRACE_EVENT(mc_out_of_range,
-TRACE_EVENT(mc_error_mce,
-TRACE_EVENT(mc_out_of_range_mce,
+For the disk drive you just declare them busy restarting the timeout as a command
+goes down to the hardware. There is an interesting case about what you do if
+the generic layer wants to autosuspend an sr device which has a command queued.
+I propose we catch that case in sr_suspend() and return -EBUSY in
+the autosuspend with command in flight case.
 
-And what I've said already is that I'll get rid of 
-"mc_out_of_range_mce" in the final version, and convert
-"mc_out_of_range" into a generic event to inform that a hardware
-error occurred but the driver has a bug and weren't able to 
-parse it.
+And I admit we will need to special case the stupid card readers.
 
-I only added:
-	TRACE_EVENT(mc_error_mce,
-per your request to have an arch-specific event with both mce-record
-data and mc_error information.
-
-For me, only this hardware-error event is needed:
-	TRACE_EVENT(mc_error,
-
-Subsequent patches consolidate the drivers to just use one function
-call to EDAC core to report the errors:
-	edac_mc_handle_error()
-
-That function increments the error counts, gets the associated
-label(s) and generate the event. It currently also prints the error
-message, to preserve backward compatibility.
-
-Mauro.
+	Regards
+		Oliver
