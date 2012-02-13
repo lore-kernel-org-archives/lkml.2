@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab2BMJ5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:57:39 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59804 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2BMJ5i convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:57:38 -0500
+	id S1756450Ab2BMJ7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:59:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab2BMJ7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:59:19 -0500
+Message-ID: <4F38DEF0.8010202@redhat.com>
+Date: Mon, 13 Feb 2012 10:59:12 +0100
+From: Harald Hoyer <harald@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-X-Originating-IP: [212.34.73.1]
-In-Reply-To: <1329123803.2336.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
-	<1329123803.2336.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Date: Mon, 13 Feb 2012 10:57:37 +0100
-Message-ID: <CAJafhzS3TMNPsyc_wwjZOf4zNmGD-XdP59qgYgGMx0-SMAnc-w@mail.gmail.com>
-Subject: Re: ixgbe truesize underestimation fix missing?
-From: Christian Brunner <christian@brunner-muc.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: initramfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roberto Sassu <roberto.sassu@polito.it>
+Subject: Re: dracut: ordering of modules
+References: <1328886121.2472.19.camel@falcor>
+In-Reply-To: <1328886121.2472.19.camel@falcor>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/13 Eric Dumazet <eric.dumazet@gmail.com>:
-> Le lundi 13 février 2012 à 09:45 +0100, Christian Brunner a écrit :
->> Back in Oktober, there was a patch by Eric Dumazet for the ixgbe
->> driver to fix the skb truesize underestimation (commit
->> 98130646770db42cd14c44ba0d7f2d0eb8078820). It changed only one line in
->> ixgbe_main.c:
->>
->> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> @@ -1326,7 +1326,7 @@ static bool ixgbe_clean_rx_irq(struct
->> ixgbe_q_vector *q_vector,
->>                         skb->len += upper_len;
->>                         skb->data_len += upper_len;
->> -                       skb->truesize += upper_len;
->> +                       skb->truesize += PAGE_SIZE / 2;
->>                 }                 i++;
->>
->>
->> But when I look at the current code (3.2.5 or 3.3rc), skb->truesize is
->> still increased by the same value as skb->data_len.
->>
->> 1228         skb->data_len += frag_list_size;
->> 1229         skb->truesize += frag_list_size;
->>
->> Is it posible that there was a merge conflict, or am I missing something here?
->
-> Maybe a problem in your local tree ?
->
-> I can see proper fix in current tree.
+Am 10.02.2012 16:01, schrieb Mimi Zohar:
+> Hi Harald,
+> 
+> Originally, 98integrity/ima-policy-load.sh didn't start executing before
+> 98selinux/selinux-loadpolicy.sh finished, but unfortunately it now does.
+> 
+> inst_hook pre-pivot 50 "$moddir/selinux-loadpolicy.sh"
+> inst_hook pre-pivot 62 "$moddir/ima-policy-load.sh"
+> 
+> As the IMA policy could be dependent on LSM runtime info, this is a
+> problem.
+> 
+> [   10.040574] type=1805 audit(1328865524.387:2): action="dont_measure" fsmagic="0x9fa0" res=0
+> [   10.040663] type=1805 audit(1328865524.387:3): action="dont_appraise" fsmagic="0x9fa0" res=0
+> [   10.040729] type=1805 audit(1328865524.387:4): action="dont_measure" fsmagic="0x62656572" res=0
+> [   10.040792] type=1805 audit(1328865524.387:5): action="dont_appraise" fsmagic="0x62656572" res=0
+> [   10.040857] type=1805 audit(1328865524.387:6): action="dont_measure" fsmagic="0x64626720" res=0
+> [   10.040921] type=1805 audit(1328865524.387:7): action="dont_appraise" fsmagic="0x64626720" res=0
+> [   10.040985] type=1805 audit(1328865524.387:8): action="dont_measure" fsmagic="0x01021994" res=0
+> [   10.041047] type=1805 audit(1328865524.387:9): action="dont_appraise" fsmagic="0x01021994" res=0
+> [   10.041113] type=1805 audit(1328865524.387:10): action="dont_measure" fsmagic="0x73636673" res=0
+> [   10.041177] type=1805 audit(1328865524.387:11): action="dont_appraise" fsmagic="0x73636673" res=0
+> [   11.898956] SELinux:  Completing initialization.
+> 
+> I've tried adding a depend for selinux, but it doesn't seem to resolve
+> the problem, nor does delaying 98integrity to later.  Any suggestions
+> would be appreciated.
+> 
+> thanks,
+> 
+> Mimi
+> 
 
-Ahh... Sorry. I Was looking at the wrong place -
-ixgbe_transform_rsc_queue() has code that is quite similar.
+In Fedora the selinux dracut module is disabled by default. You have to enable
+it manually.
 
-This however makes me wonder, why we are using "skb->len" for
-increasing the frag_list_size, as skb->len might be smaller than
-skb->truesize.
+echo 'add_dracutmodules+=" selinux "' >> /etc/dracut.conf.d/99-my.conf
 
-Shouldn't we add a frag_list_truesize counter in ixgbe_transform_rsc_queue() ?
+although, this also should do the thing:
 
-Thanks,
-Christian
+$ git diff modules.d/98integrity/module-setup.sh
+diff --git a/modules.d/98integrity/module-setup.sh
+b/modules.d/98integrity/module-setup.sh
+index 7d5771c..ff1b4aa 100755
+--- a/modules.d/98integrity/module-setup.sh
++++ b/modules.d/98integrity/module-setup.sh
+@@ -7,7 +7,7 @@ check() {
+ }
+
+ depends() {
+-    echo masterkey securityfs
++    echo masterkey securityfs selinux
+     return 0
+ }
+
+
+
+
+
