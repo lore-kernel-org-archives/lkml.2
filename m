@@ -1,115 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2BMMkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:40:12 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35118 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab2BMMkK (ORCPT
+	id S1756292Ab2BMMm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:42:29 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:8344 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639Ab2BMMm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:40:10 -0500
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: dlaor@redhat.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        target-devel <target-devel@vger.kernel.org>
-In-Reply-To: <4F38C27E.7030300@redhat.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
-	 <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>
-	 <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>
-	 <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-	 <4F313526.2050907@redhat.com>
-	 <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
-	 <4F3390FB.80107@redhat.com>
-	 <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-	 <4F38B657.7060405@de.ibm.com>  <4F38C27E.7030300@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Feb 2012 04:40:06 -0800
-Message-ID: <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Feb 2012 07:42:26 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 13 Feb 2012 13:41:55 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 03/14 v3] MIPS: adapt for dma_map_ops changes
+In-reply-to: <4F38E8E1.3070004@mvista.com>
+To: linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Message-id: <1329136915-24824-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.8.3
+References: <4F38E8E1.3070004@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dor, James & Co,
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-On Mon, 2012-02-13 at 09:57 +0200, Dor Laor wrote:
-> On 02/13/2012 09:05 AM, Christian Borntraeger wrote:
-> > On 12/02/12 21:16, James Bottomley wrote:
-> >> Well, no-one's yet answered the question I had about why.
-> >
-> > Just to give one example from a different angle:
-> > In the big datacenters tape libraries are still very important, and lots
-> > of them have a scsi attachement. virtio-blk certainly is not the right
-> > way to handle those. Furthermore it seems even pretty hard to craft
-> > a virtio-tape since most of those libraries have vendor specific library
-> > controls (via sg). We would need to duplicate scsi generic (hint, hint :-)
-> >
-> >> virtio-scsi seems to be a basic duplication of virtio-blk except that it seems to
-> >> fix some problems virtio-blk has.  Namely queue parameter discover,
-> >> which virtio-blk doesn't seem to do.  There may also be a reason to cut
-> >> the stack lower down.  Error handling is most often cited for this, but
-> >> no-one's satisfactorily explaned why it's better to do error handling in
-> >> the guest instead of the host.
-> >>
-> >> Could someone please explain to me why you can't simply fix virtio-blk?
-> >
-> > I dont think that virtio-scsi will replace virtio-blk everywhere. For non-scsi
-> > block devices, image files or logical volumes virtio-blk seems to be the right
-> > approach, I think.
-> 
-> +1
-> 
-> virtio-scsi is superior w.r.t:
->    - Device support: tapes, cdroms, other
+Adapt core MIPS architecture code for dma_map_ops changes: replace
+alloc/free_coherent with generic alloc/free methods.
 
-AFAICT any type of non TYPE_DISK struct scsi_device passthrough is going
-to currently require virtio-scsi in order to work.
+Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+[added missing changes to arch/mips/cavium-octeon/dma-octeon.c,
+ fixed attrs argument in dma-mapping.h]
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/mips/cavium-octeon/dma-octeon.c |   16 ++++++++--------
+ arch/mips/include/asm/dma-mapping.h  |   18 ++++++++++++------
+ arch/mips/mm/dma-default.c           |    8 ++++----
+ 3 files changed, 24 insertions(+), 18 deletions(-)
 
->    - Does guest-host mapped multipath
-
-The logic that comes with target_core_fabric_configfs.c and the native
-target control plane gives a host-side (tcm_vhost) fabric driver generic
-explict/implict ALUA multipath support by default.
-
-I think there are some interesting possibilities for paravirtualized
-ALUA multipath..  8-)
-
->    - Supports plenty of virtual disks mapped to the guest w/o need for a
->      pci slot per each virtio-blk
-
-Ouch, virtio-blk lacks multi-lun per pci slot support..?
-
->    - offload fancy/new/sophisticated scsi commands from the guest to the
->      storage array w/o need for qemu implementation. Example XCOPY.
-> 
-
-...
-
-> There are some more goodies like ability to support windows guest 
-> clustering w/o hacky versions of scsi pass through over virtio-blk.
-> virtio-blk is also a candidate to change the request based towards bio 
-> based implementation, so sticking to it does not buy us too much.
-> 
-
-MSFT cluster guests that require SPC-3 PR support can run today with
-tcm_loop LLD SCSI LUNs + SG_IO/BSG + right megasas QEMU HBA emulation,
-but I do agree this would be better served by virtio-scsi for guests
-that require SPC-3 PR support or passthrough.
-
---nab
-
-
-
-
-
-
+diff --git a/arch/mips/cavium-octeon/dma-octeon.c b/arch/mips/cavium-octeon/dma-octeon.c
+index b6bb92c..df70600 100644
+--- a/arch/mips/cavium-octeon/dma-octeon.c
++++ b/arch/mips/cavium-octeon/dma-octeon.c
+@@ -157,7 +157,7 @@ static void octeon_dma_sync_sg_for_device(struct device *dev,
+ }
+ 
+ static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
+-	dma_addr_t *dma_handle, gfp_t gfp)
++	dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+ {
+ 	void *ret;
+ 
+@@ -184,7 +184,7 @@ static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
+ 	/* Don't invoke OOM killer */
+ 	gfp |= __GFP_NORETRY;
+ 
+-	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
++	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp, attrs);
+ 
+ 	mb();
+ 
+@@ -192,14 +192,14 @@ static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
+ }
+ 
+ static void octeon_dma_free_coherent(struct device *dev, size_t size,
+-	void *vaddr, dma_addr_t dma_handle)
++	void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
+ {
+ 	int order = get_order(size);
+ 
+ 	if (dma_release_from_coherent(dev, order, vaddr))
+ 		return;
+ 
+-	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
++	swiotlb_free_coherent(dev, size, vaddr, dma_handle, attrs);
+ }
+ 
+ static dma_addr_t octeon_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
+@@ -240,8 +240,8 @@ EXPORT_SYMBOL(dma_to_phys);
+ 
+ static struct octeon_dma_map_ops octeon_linear_dma_map_ops = {
+ 	.dma_map_ops = {
+-		.alloc_coherent = octeon_dma_alloc_coherent,
+-		.free_coherent = octeon_dma_free_coherent,
++		.alloc = octeon_dma_alloc_coherent,
++		.free = octeon_dma_free_coherent,
+ 		.map_page = octeon_dma_map_page,
+ 		.unmap_page = swiotlb_unmap_page,
+ 		.map_sg = octeon_dma_map_sg,
+@@ -325,8 +325,8 @@ void __init plat_swiotlb_setup(void)
+ #ifdef CONFIG_PCI
+ static struct octeon_dma_map_ops _octeon_pci_dma_map_ops = {
+ 	.dma_map_ops = {
+-		.alloc_coherent = octeon_dma_alloc_coherent,
+-		.free_coherent = octeon_dma_free_coherent,
++		.alloc = octeon_dma_alloc_coherent,
++		.free = octeon_dma_free_coherent,
+ 		.map_page = octeon_dma_map_page,
+ 		.unmap_page = swiotlb_unmap_page,
+ 		.map_sg = octeon_dma_map_sg,
+diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
+index 7aa37dd..be39a12 100644
+--- a/arch/mips/include/asm/dma-mapping.h
++++ b/arch/mips/include/asm/dma-mapping.h
+@@ -57,25 +57,31 @@ dma_set_mask(struct device *dev, u64 mask)
+ extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ 	       enum dma_data_direction direction);
+ 
+-static inline void *dma_alloc_coherent(struct device *dev, size_t size,
+-				       dma_addr_t *dma_handle, gfp_t gfp)
++#define dma_alloc_coherent(d,s,h,f)	dma_alloc_attrs(d,s,h,f,NULL)
++
++static inline void *dma_alloc_attrs(struct device *dev, size_t size,
++				    dma_addr_t *dma_handle, gfp_t gfp,
++				    struct dma_attrs *attrs)
+ {
+ 	void *ret;
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+ 
+-	ret = ops->alloc_coherent(dev, size, dma_handle, gfp);
++	ret = ops->alloc(dev, size, dma_handle, gfp, attrs);
+ 
+ 	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
+ 
+ 	return ret;
+ }
+ 
+-static inline void dma_free_coherent(struct device *dev, size_t size,
+-				     void *vaddr, dma_addr_t dma_handle)
++#define dma_free_coherent(d,s,c,h) dma_free_attrs(d,s,c,h,NULL)
++
++static inline void dma_free_attrs(struct device *dev, size_t size,
++				  void *vaddr, dma_addr_t dma_handle,
++				  struct dma_attrs *attrs)
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
+ 
+-	ops->free_coherent(dev, size, vaddr, dma_handle);
++	ops->free(dev, size, vaddr, dma_handle, attrs);
+ 
+ 	debug_dma_free_coherent(dev, size, vaddr, dma_handle);
+ }
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 4608491..3fab204 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -98,7 +98,7 @@ void *dma_alloc_noncoherent(struct device *dev, size_t size,
+ EXPORT_SYMBOL(dma_alloc_noncoherent);
+ 
+ static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
+-	dma_addr_t * dma_handle, gfp_t gfp)
++	dma_addr_t * dma_handle, gfp_t gfp, struct dma_attrs *attrs)
+ {
+ 	void *ret;
+ 
+@@ -132,7 +132,7 @@ void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
+ EXPORT_SYMBOL(dma_free_noncoherent);
+ 
+ static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
+-	dma_addr_t dma_handle)
++	dma_addr_t dma_handle, struct dma_attrs *attrs)
+ {
+ 	unsigned long addr = (unsigned long) vaddr;
+ 	int order = get_order(size);
+@@ -323,8 +323,8 @@ void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ EXPORT_SYMBOL(dma_cache_sync);
+ 
+ static struct dma_map_ops mips_default_dma_map_ops = {
+-	.alloc_coherent = mips_dma_alloc_coherent,
+-	.free_coherent = mips_dma_free_coherent,
++	.alloc = mips_dma_alloc_coherent,
++	.free = mips_dma_free_coherent,
+ 	.map_page = mips_dma_map_page,
+ 	.unmap_page = mips_dma_unmap_page,
+ 	.map_sg = mips_dma_map_sg,
+-- 
+1.7.1.569.g6f426
 
