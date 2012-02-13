@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab2BMPtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 10:49:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49912 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab2BMPtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 10:49:09 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c static
-Date: Mon, 13 Feb 2012 16:53:01 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-References: <201202120003.20879.rjw@sisk.pl> <201202131612.26973.rjw@sisk.pl> <4F392D99.7030303@linux.vnet.ibm.com>
-In-Reply-To: <4F392D99.7030303@linux.vnet.ibm.com>
+	id S1757048Ab2BMPxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 10:53:00 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54657 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab2BMPw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 10:52:59 -0500
+Message-ID: <4F3931D6.2090305@gmail.com>
+Date: Mon, 13 Feb 2012 08:52:54 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com> <4F38E091.5070504@linux.vnet.ibm.com>
+In-Reply-To: <4F38E091.5070504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202131653.02013.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
-> On 02/13/2012 08:42 PM, Rafael J. Wysocki wrote:
+
+
+On 02/13/2012 03:06 AM, Xiao Guangrong wrote:
+> On 02/13/2012 01:32 PM, David Ahern wrote:
 > 
-> > On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
-> >> On 02/13/2012 02:54 AM, Rafael J. Wysocki wrote:
-> >>
-> >>> On Sunday, February 12, 2012, Srivatsa S. Bhat wrote:
-> >>>> On 02/12/2012 04:34 AM, Rafael J. Wysocki wrote:
-> >>>>
-> >>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>>>
-> >>>>> The enter_state() function in kernel/power/suspend.c should be
-> >>>>> static and state_store() in kernel/power/suspend.c should call
-> >>>>> pm_suspend() instead of it, so make that happen (which also reduces
-> >>>>> code duplication related to suspend statistics).
-> >>>>>
-> >>>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>>> ---
-> >>>>>  kernel/power/main.c    |    6 +-----
-> >>>>>  kernel/power/power.h   |    2 --
-> >>>>>  kernel/power/suspend.c |    2 +-
-> >>>>>  3 files changed, 2 insertions(+), 8 deletions(-)
-> >>>>>
-> >>>>> Index: linux/kernel/power/main.c
-> >>>>> ===================================================================
-> >>>>> --- linux.orig/kernel/power/main.c
-> >>>>> +++ linux/kernel/power/main.c
-> >>>>> @@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
-> >>>>>  #ifdef CONFIG_SUSPEND
-> >>>>>  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
-> >>>>>  		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-> >>>>> -			break;
-> >>>>> -	}
-> >>>>> -	if (state < PM_SUSPEND_MAX && *s) {
-> >>>>> -		error = enter_state(state);
-> >>>>> -		suspend_stats_update(error);
-> >>>>> +			error = pm_suspend(state);
-> >>>>
-> >>>>
-> >>>> This code will not stop after calling pm_suspend(). It will try more iterations
-> >>>> in the for loop right?
-> >>>
-> >>> Well, only one string in pm_states[] can be matched at a time, but I agree that
-> >>> it doesn't make sense to continue the loop after we've found a match.
-> >>>
-> >>>> We can probably keep the 'for' loop as it is, and just replace the 'if' block
-> >>>> following the 'for' loop by: error = pm_suspend(state);
-> >>>
-> >>> I think the patch below is correct.
-> >>>
-> >>> Thanks,
-> >>> Rafael
-> >>>
-> >>> ---
-> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> Subject: PM / Sleep: Make enter_state() in kernel/power/suspend.c static
-> >>>
-> >>> The enter_state() function in kernel/power/suspend.c should be
-> >>> static and state_store() in kernel/power/suspend.c should call
-> >>> pm_suspend() instead of it, so make that happen (which also reduces
-> >>> code duplication related to suspend statistics).
-> >>>
-> >>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >>> ---
-> >>
-> >>
-> >> Yeah, this version of the patch will work fine.
-> >>
-> >> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > 
-> > Thanks!
-> > 
-> > I wonder if that should be Reviewed-by, tough?  You evidently have reviewed
-> > the patch (actually, all three of them).
-> > 
+>> [sorry for the top post - you would think Android would have a better mail client]
+>>
+>> If the first patch is needed then kvm-events will not work with older, unpatched kernels. That's a big limitation from a perf perpective.
+>>
 > 
 > 
-> Anything is fine :-) It is not very clear to me when to use Reviewed-by and
-> when to use Acked-by.. so I randomly chose one of them.. :-)
-> But please enlighten me as to when to use which one, so that in the future, I
-> can use the right one :-)
+> The first patch is only needed for code compilation, after kvm-events is
+> compiled, you can analyse any kernels. :)
 
-"Acked-by" means, roughly, "I have no objection" or "looks good to me",
-depending on who's saying that, but it doesn't imply that you've had more than
-a cursory look at the patch in question.  "Reviewied-by", in contrast, means
-something like "I have reviewed the patch in detail and haven't found anything
-wrong in it" (which obviously means that you have no objection too, because
-otherwise you'd have found _something_ wrong in the patch).
+understood.
 
-So, "Acked-by" from anyone other than the relevant maintainer is just an
-"I'm for" declaration, while "Reviewied-by" from _anyone_ carries some actual
-weight. 
+Now that I recall perf's way of handling out of tree builds, a couple of
+comments:
 
-Thanks,
-Rafael
+1. you need to add the following to tools/perf/MANIFEST
+arch/x86/include/asm/svm.h
+arch/x86/include/asm/vmx.h
+arch/x86/include/asm/kvm_host.h
+
+2.scripts/checkpatch.pl is an unhappy camper.
+
+I'll take a look at the code and try out the command when I get some time.
+
+David
