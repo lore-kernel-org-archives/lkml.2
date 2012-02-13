@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab2BMNMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:12:40 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60786 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab2BMNMj (ORCPT
+	id S1756642Ab2BMNNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:13:39 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51553 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754111Ab2BMNNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:12:39 -0500
-Message-ID: <1329138752.2982.2.camel@phoenix>
-Subject: [PATCH] drivers/leds/leds-lm3530.c: Move the code setting
- gen_config to one place
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 13 Feb 2012 21:12:32 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 13 Feb 2012 08:13:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120213130005.GB26773@redhat.com>
+References: <4F312492.1040002@de.ibm.com>
+	<OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
+	<4F313526.2050907@redhat.com>
+	<OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
+	<4F3390FB.80107@redhat.com>
+	<1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+	<4F38B657.7060405@de.ibm.com>
+	<4F38C27E.7030300@redhat.com>
+	<1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+	<4F3907EB.4030402@redhat.com>
+	<20120213130005.GB26773@redhat.com>
+Date: Tue, 14 Feb 2012 00:13:36 +1100
+Message-ID: <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+From: ronnie sahlberg <ronniesahlberg@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Dor Laor <dlaor@redhat.com>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improve the readability by moving the code setting gen_config to one place.
+On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
+>> Only if you use the pci multi-function option but that kills
+>> standard hot unplug
+>
+> It doesn't kill it as such, rather you can't unplug luns individually.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/leds/leds-lm3530.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+Isnt that just a consequence of the current implementation rather than
+a SCSI limitation?
 
-diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
-index e59c166..af3f8b8 100644
---- a/drivers/leds/leds-lm3530.c
-+++ b/drivers/leds/leds-lm3530.c
-@@ -158,9 +158,16 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
- 	gen_config = (pltfm->brt_ramp_law << LM3530_RAMP_LAW_SHIFT) |
- 			((pltfm->max_current & 7) << LM3530_MAX_CURR_SHIFT);
- 
--	if (drvdata->mode == LM3530_BL_MODE_MANUAL ||
--	    drvdata->mode == LM3530_BL_MODE_ALS)
--		gen_config |= (LM3530_ENABLE_I2C);
-+	switch (drvdata->mode) {
-+	case LM3530_BL_MODE_MANUAL:
-+	case LM3530_BL_MODE_ALS:
-+		gen_config |= LM3530_ENABLE_I2C;
-+		break;
-+	case LM3530_BL_MODE_PWM:
-+		gen_config |= LM3530_ENABLE_PWM | LM3530_ENABLE_PWM_SIMPLE |
-+			      (pltfm->pwm_pol_hi << LM3530_PWM_POL_SHIFT);
-+		break;
-+	}
- 
- 	if (drvdata->mode == LM3530_BL_MODE_ALS) {
- 		if (pltfm->als_vmax == 0) {
-@@ -194,11 +201,6 @@ static int lm3530_init_registers(struct lm3530_data *drvdata)
- 
- 	}
- 
--	if (drvdata->mode == LM3530_BL_MODE_PWM)
--		gen_config |= (LM3530_ENABLE_PWM) |
--				(pltfm->pwm_pol_hi << LM3530_PWM_POL_SHIFT) |
--				(LM3530_ENABLE_PWM_SIMPLE);
--
- 	brt_ramp = (pltfm->brt_ramp_fall << LM3530_BRT_RAMP_FALL_SHIFT) |
- 			(pltfm->brt_ramp_rise << LM3530_BRT_RAMP_RISE_SHIFT);
- 
--- 
-1.7.5.4
+A different way to do hoplug could be to flag all devices as removable
+in the standard inq page then
+leave the LUN there persistently and what you remove/add is not the
+LUN device itself but just the media in the device.
+
+Instead of hot-plug remove the LUN,  hot-plug becomes "media eject" or
+"media insert".
+The device remains present all time, you never remove it, but instead
+hot-plug controls if the media is present or not.
 
 
+This would require implementing at least START_STOP_UNIT and
+PREVENT_ALLOW_MEDIUM_REMOVAL opcode emulation from SBC.
 
+
+regards
+ronnie sahlberg
