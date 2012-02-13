@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab2BMBex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 20:34:53 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:49442 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab2BMBew convert rfc822-to-8bit (ORCPT
+	id S1754757Ab2BMBm1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 20:42:27 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:46841 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752967Ab2BMBmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 20:34:52 -0500
+	Sun, 12 Feb 2012 20:42:25 -0500
+Date: Sun, 12 Feb 2012 20:42:24 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Huang Ying <ying.huang@intel.com>, <ming.m.lin@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
+In-Reply-To: <201202122100.05349.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20120211021724.GO19392@google.com>
-References: <CANejiEXUZpPzyrTmD-P-MWD-XDmvDoB9UAjDbnrzTEiAw6nsgQ@mail.gmail.com>
-	<CANejiEXqLxJ=mhDYA04g4ZHo3CiXctCUVnHu1--yp0GYgPxOKQ@mail.gmail.com>
-	<20120208162925.GA19392@google.com>
-	<CANejiEVuQRUY4Ovb2a1JNDZjRTeN_nft8LwY8AB144=9dkFq7A@mail.gmail.com>
-	<20120209175948.GE19392@google.com>
-	<CA+55aFzVmb_DfPPDyeON9X2KAii79g=NszPi+k9jrNLdQS7+4g@mail.gmail.com>
-	<20120209192431.GF19392@google.com>
-	<20120209234844.GG19392@google.com>
-	<CANejiEXaaSfv8Rs3Rg6zLamYsUj=apKku6yrw7EUtpKkB1ZATA@mail.gmail.com>
-	<CANejiEVBd6eu8LwmhbMvQqMW4LqUh6F-5psyW0dVYU06WEJqBQ@mail.gmail.com>
-	<20120211021724.GO19392@google.com>
-Date: Mon, 13 Feb 2012 09:34:51 +0800
-X-Google-Sender-Auth: fTqolyR3uS1fm2SoT-yrNq2byPk
-Message-ID: <CANejiEVQav8mtQHD0FETxo1-Zc7exMyb6ecjrAzdZWw68OkTug@mail.gmail.com>
-Subject: Re: [PATCH] block: strip out locking optimization in put_io_context()
-From: Shaohua Li <shli@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/11 Tejun Heo <tj@kernel.org>:
-> Hello,
->
-> On Fri, Feb 10, 2012 at 04:48:49PM +0800, Shaohua Li wrote:
->> >> Can you please test the following one?  It's probably the simplest
->> >> version w/o RCU and wq deferring.  RCUfying isn't too bad but I'm
->> >> still a bit hesitant because RCU coverage needs to be extended to
->> >> request_queue via conditional synchronize_rcu() in queue exit path
->> >> (can't enforce delayed RCU free on request_queues and unconditional
->> >> synchronize_rcu() may cause excessive delay during boot for certain
->> >> configurations).  It now can be done in the block core layer proper so
->> >> it shouldn't be as bad tho.  If this too flops, I'll get to that.
->> > doesn't work.
->> I added trace in the schedule_work code path of put_io_context, which
->> runs very rare. So it's not lock contention for sure.
->> Sounds the only difference between the good/bad cases is the good
->> case runs with rcu_lock_read/rcu_read_unlock. I also checked slab
->> info, the cfq related slab doesn't use too many memory, unlikely
->> because rcu latency uses too many memory.
->
-> Yeah, that makes much more sense.  It just isn't hot enough path for
-> this sort of micro locking changes to matter.  I think the problem is
-> that, after the change, the cfqq aren't being expired immediately on
-> task exit.  ie. While moving the cic destruction to release path, I
-> accidentally removed exit notification to cfq.  I'll come up with a
-> fix.
-ah, I felt a little strange looking at exit_io_context, but didn't realize
-the exit notification is removed (confused by put_io_context). This
-makes a lot of sense. Good catch!
+On Sun, 12 Feb 2012, Oliver Neukum wrote:
+
+> Yes, we can use the same heuristics as everywhere.
+> command queued -> autopm_get
+> command finished -> autopm_put
+> 
+> but for the USB host adapter, not the sr device
+
+I still don't fully understand.  Are you suggesting that we use the 
+normal autosuspend timeout mechanism for the disk drive (for example, 
+spin down the disk if it hasn't been used for five minutes), and then 
+autosuspend a USB mass-storage device whenever its children are 
+suspended and no commands are in progress?  (In fact, there can't be 
+any commands in progress if all the children are suspended.)
+
+Or are you suggesting that we autosuspend a USB mass-storage device 
+between commands, regardless of the state of its children?  Didn't we 
+discuss this approach a year or two ago and decide against it?
+
+> > Furthermore, if you use active commands as the condition for 
+> > suspending, what do you do when the act of suspending causes a command 
+> > to be sent?  It is necessary to distinguish between ordinary commands 
+> > and those that are PM-related.
+> 
+> No. This problem goes away if you correctly make the distinction between
+> host controller/storage device and the disk drive.
+> You use the "active command standard" for the host controller.
+> Then you need not care about the commands needed to suspend a disk drive.
+> You cannot suspend the host controller while the disk drive is being suspended
+> anyway, as the tree constraint prevents it.
+> 
+> For the disk drive you just declare them busy restarting the timeout as a command
+> goes down to the hardware. There is an interesting case about what you do if
+> the generic layer wants to autosuspend an sr device which has a command queued.
+> I propose we catch that case in sr_suspend() and return -EBUSY in
+> the autosuspend with command in flight case.
+
+The SCSI drivers don't know much about the request queue -- the block
+layer manages it.  That's another reason for handling this at the block
+layer.
+
+Is there some special reason you're talking about sr (the SCSI CD/DVD
+driver) instead of sd (the SCSI disk driver)?
+
+Alan Stern
+
