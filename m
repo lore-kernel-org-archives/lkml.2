@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab2BMUke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:40:34 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42451 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758013Ab2BMUkc (ORCPT
+	id S932248Ab2BMUlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:41:10 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60935 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932171Ab2BMUlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:40:32 -0500
-Date: Mon, 13 Feb 2012 12:39:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        paul@paulmenage.org, rjw@sisk.pl, tj@kernel.org,
-        frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
-        lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
- related to cpusets
-Message-ID: <20120213203929.GQ2864@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com>
- <1328671335.2482.72.camel@laptop>
- <4F32174E.2050207@linux.vnet.ibm.com>
- <20120209075701.GE18387@elte.hu>
- <4F3386E9.7090606@linux.vnet.ibm.com>
- <20120209151158.GA22489@elte.hu>
- <1328889127.25989.14.camel@laptop>
- <20120210165338.GI2458@linux.vnet.ibm.com>
- <4F394CC9.6010103@linux.vnet.ibm.com>
+	Mon, 13 Feb 2012 15:41:07 -0500
+Date: Mon, 13 Feb 2012 15:41:05 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+In-Reply-To: <201202132038.12927.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1202131534040.11382-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F394CC9.6010103@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021320-2398-0000-0000-00000430BBCD
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 11:17:53PM +0530, Srivatsa S. Bhat wrote:
-> On 02/10/2012 10:23 PM, Paul E. McKenney wrote:
-> 
-> > On Fri, Feb 10, 2012 at 04:52:07PM +0100, Peter Zijlstra wrote:
-> >> On Thu, 2012-02-09 at 16:11 +0100, Ingo Molnar wrote:
-> >>
-> >>>> My understanding of the code is that when a CPU is taken 
-> >>>> offline, it is removed from all the cpusets and then the 
-> >>>> scan_for_empty_cpusets() function is run to move tasks from 
-> >>>> empty cpusets to their parent cpusets.
-> >>>
-> >>> Why is that done that way? offlining a CPU should be an 
-> >>> invariant as far as cpusets are concerned.
-> >>
-> >> Can't, tasks need to run someplace. There's two choices, add a still
-> >> online cpu to the now empty cpuset or move the tasks to a parent that
-> >> still has online cpus.
-> >>
-> >> Both are destructive.
-> > 
-> > OK, I will ask the stupid question...  Hey, somebody has to!  ;-)
-> > 
-> > Would it make sense for offlining the last CPU in a cpuset to be
-> > destructive, but to allow offlining of a non-last CPU to be reversible?
-> > 
-> > For example, assume that cpuset A has CPUs 0 and 1, and cpuset B has
-> > 1, 2, and 3.  Then offlining any single CPU and then onlining it would
-> > restore the cpusets to their original state.  Offlining both CPUs 0 and 1
-> > would be destructive to cpuset A, so that onlining those two CPUs would
-> > leave any tasks in cpuset A in some ancestor of cpuset A, and would
-> > leave cpuset A with no assigned CPUs.  However, that same operation
-> > (offlining both CPUs 0 and 1, then onlining them) would restore cpuset
-> > B to its original state, covering CPUs 1, 2, and 3.
-> 
-> But how would this scheme help us? During suspend, all non-boot CPUs are
-> taken offline. Which means, it would be destructive to any cpuset that
-> didn't originally contain CPU0 (even when using the above scheme). So, upon
-> resume, it is still not the same as how it was before suspend.
+On Mon, 13 Feb 2012, Rafael J. Wysocki wrote:
 
-Yep, it would only help for incremental cases.  Or if all cpusets had
-CPU 0 in them.  So preserving cpusets across suspend will require a
-bigger hammer.
+> > I'm not sure if this is really the right approach.  What you're trying 
+> > to do is implement two different low-power states, basically D3hot and 
+> > D3cold.  Currently the runtime PM core doesn't support such things; all 
+> > it knows about is low power and full power.
+> 
+> I'd rather say all it knows about is "suspended" and "active", which mean
+> "the device is not processing I/O" and "the device may be processing I/O",
+> respectively.  A "suspended" device may or may not be in a low-power state,
+> but the runtime PM core doesn't care about that.
 
-							Thanx, Paul
+Yes, okay.  We can say that this patch tries to implement two different 
+"suspended" states, basically "low power" and "power off" (or D3hot and 
+D3cold).
+
+> > Before doing an ad-hoc implementation, it would be best to step back
+> > and think about other subsystems.  Other sorts of devices may well have
+> > multiple low-power states.  What's the best way for this to be
+> > supported by the PM core?
+> 
+> Well, I honestly don't think there's any way they all can be covered at the
+> same time and that's why we chose to support only "suspended" and "active"
+> as defined above.  The handling of multiple low-power states must be
+> implemented outside of the runtime PM core (like in the PCI core, for example).
+
+That's the point.  If this is to be implemented outside of the runtime
+PM core, should the patch be allowed to add new fields to struct
+dev_pm_info (which has to be shared among all subsystems)?
+
+Or to put it another way, if we do add new fields to struct dev_pm_info
+(like can_power_off) in order to help support multiple "suspended"  
+states, shouldn't these new fields be such that they can be used by
+many different subsystems rather than being special for the
+full-power/no-power situation?
+
+Likewise, should new routines like pm_runtime_allow_power_off() be
+added to the runtime PM core if they are going to be used just by PCI?
+
+Alan Stern
 
