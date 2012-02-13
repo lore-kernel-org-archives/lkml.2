@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab2BMQd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:33:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59942 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757091Ab2BMQd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:33:26 -0500
-Date: Mon, 13 Feb 2012 08:33:20 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: vinod.koul@intel.com, shawn.guo@linaro.org, artem.bityutskiy@intel.com,
-        w.sang@pengutronix.de, LW@KARO-electronics.de, lrg@ti.com,
-        cjb@laptop.org, linux-arm-kernel@lists.infradead.org,
-        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] mxs-dma : move the mxs dma.h to a more common
- place
-Message-ID: <20120213163319.GC3494@opensource.wolfsonmicro.com>
-References: <1329110756-14434-1-git-send-email-b32955@freescale.com>
- <1329110756-14434-2-git-send-email-b32955@freescale.com>
+	id S1757209Ab2BMQgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:36:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282Ab2BMQgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 11:36:12 -0500
+Date: Mon, 13 Feb 2012 11:35:46 -0500
+From: Dave Jones <davej@redhat.com>
+To: "N. Coesel" <nico@nctdev.nl>, linux-kernel@vger.kernel.org
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: Cpufreq shutdown patch (kernel 2.6.35.3)
+Message-ID: <20120213163546.GA31316@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"N. Coesel" <nico@nctdev.nl>, linux-kernel@vger.kernel.org,
+	Kay Sievers <kay.sievers@vrfy.org>
+References: <CPSMTPM-CMT109lZGdO0011ecc5@CPSMTPM-CMT109.kpnxchange.com>
+ <20120213162852.GA29947@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f0KYrhQ4vYSV2aJu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329110756-14434-2-git-send-email-b32955@freescale.com>
-X-Cookie: Your aim is high and to the right.
+In-Reply-To: <20120213162852.GA29947@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 13, 2012 at 11:28:53AM -0500, Dave Jones wrote:
+ > On Thu, Jan 19, 2012 at 10:18:10PM +0100, N. Coesel wrote:
+ >  
+ >  > I've found a problem in drivers/cpufreq/cpufreq.c. The driver does 
+ >  > not execute the exit member of the low level driver when shutting 
+ >  > down for a reboot (reset). This potentially leaves the power supply 
+ >  > at a too low voltage to boot the system properly. The patch below 
+ >  > adds a shutdown function which executes the exit member of the low 
+ >  > level driver which allows a system to be properly prepared for a reset.
+ > 
+ > I'm curious what hardware you saw this problem on ?
+ > 
+ > I've just seen a report on an x86 system which looks like it might
+ > be solved by this.
+ > https://bugzilla.redhat.com/show_bug.cgi?id=789964
+ > 
+ >  > --- drivers/cpufreq/cpufreq.c.orig      2010-08-20 20:55:55.000000000 +0200
+ >  > +++ drivers/cpufreq/cpufreq.c   2012-01-19 21:50:46.000000000 +0100
+ >  > @@ -1431,11 +1431,34 @@ fail:
+ >  >          return ret;
+ >  >   }
+ >  > 
+ >  > +
+ >  > +static int cpufreq_shutdown(struct sys_device *sysdev)
+ >  > +{
+ >  > +       struct cpufreq_policy *cpu_policy;
+ >  > +       int cpu = sysdev->id;
+ >  > +       int ret =0;
+ >  > +
+ >  > +       if (!cpu_online(cpu))
+ >  > +               return 0;
+ >  > +
+ >  > +       cpu_policy = cpufreq_cpu_get(cpu);
+ >  > +       if (!cpu_policy)
+ >  > +               return -EINVAL;
+ >  > +
+ >  > +//     printk("cpufreq_shutdown %d \n", cpu);
+ >  > +       if (cpufreq_driver->exit)
+ >  > +               ret = cpufreq_driver->exit(cpu_policy);
+ >  > +
+ >  > +       return ret;
+ >  > +}
+ >  > +
+ >  > +
+ >  >   static struct sysdev_driver cpufreq_sysdev_driver = {
+ >  >          .add            = cpufreq_add_dev,
+ >  >          .remove         = cpufreq_remove_dev,
+ >  >          .suspend        = cpufreq_suspend,
+ >  >          .resume         = cpufreq_resume,
+ >  > +       .shutdown = cpufreq_shutdown,
+ >  >   };
+ > 
+ > I'll queue this up, with the whitespace fixed, and commented out line removed.
 
---f0KYrhQ4vYSV2aJu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Except I can't of course, because we no longer have a sysdev driver
+since 8a25a2fd126c621f44f3aeaef80d51f00fc11639
+Kay, given the subsys_interface doesn't have a shutdown method, what should
+this be doing ?
 
-On Mon, Feb 13, 2012 at 01:25:55PM +0800, Huang Shijie wrote:
-> Move the header to a more common place.
-> The mxs dma engine is not only used in mx23/mx28, but also used
-> in mx50/mx6q.  It will also be used in the future chips.
-
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---f0KYrhQ4vYSV2aJu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPOTs+AAoJEBus8iNuMP3dshgP/0oxrWuqvejvhp1kOy6FWPbK
-i2VdoFTU7ordzqj4U2osLcPKSx4vOgbEM+AQLmsebA7n37t17pkA0h2GtdIFYZrZ
-SNJc4sDI6RJYL7E17yE+LzoBwQcaTp1yZxY6oGIfYzcOfZrROOCtVMfyTGt2cB4+
-Lwiarl5HU+frDb/rQ7KsN5qlvKW5/w2xgXIl6EtH63h61nyw9PBVo/8mj8Rhb6Tw
-tQJMmnQpmtbXdpMSVtEWctz3LP+tMUJhY9BIdyIifZ9BmBPaPq3phpj0nid7Zi+l
-zvqjgV708j1aUpZkScRqLMLeAev5vUW4j/AZ0/jcCyt1RYw3k+/3Y2A/kmPF71M5
-cZdrIBjQYwkxYEeM6LeLlkOh28iqXi1cIh/3AO3hQJxezRvqyyFHfNQu/unVLbvZ
-BpZUcDVo8Sie2DeskRha+nBO2hqmy4SpUqRLLOWLLjCfixu1BQ8Y5XshEnHjPpyq
-oUI0iK17OSpDcKC1DezOm4x/St/pTn3GWYNYaO7aiMLu9STAQmPZwLU9D6Rf673B
-idmEdXQq0Xk0Fh38Hu4EzVavYsb1AZbdTYG3KZWgHM0GR70QSXUv9R0kYobt8Dqc
-HLYb9/sSrl5BlT/kIuP3QNY/ZEHrf6w94fVMTk4xgxYSluY6EcVMz+YHpXGU0u+A
-JHvRGx6M7t4h+hYTLQJe
-=EySv
------END PGP SIGNATURE-----
-
---f0KYrhQ4vYSV2aJu--
+	Dave 
