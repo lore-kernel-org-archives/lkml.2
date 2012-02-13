@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2BMJUW (ORCPT <rfc822;w@1wt.eu>);
+	id S1756335Ab2BMJUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:20:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756236Ab2BMJUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Feb 2012 04:20:22 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11543 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab2BMJUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:20:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 13 Feb 2012 01:20:20 -0800
-Message-ID: <4F38D55A.5020208@nvidia.com>
-Date: Mon, 13 Feb 2012 14:48:18 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+Message-ID: <4F38D5BC.8010705@redhat.com>
+Date: Mon, 13 Feb 2012 10:19:56 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Regulator enable/disable delay based on board design: How to handle?
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Christian Hoff <christian.hoff@de.ibm.com>, BORNTRAE@linux.vnet.ibm.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, mst@redhat.com, rusty@rustcorp.com.au
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>  <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>  <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>  <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>  <4F313526.2050907@redhat.com>  <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>  <4F3390FB.80107@redhat.com> <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-We observed that some of the rail enable/disable settling time depends 
-on the board design specially based on external capacitor connected on
-rails.  This is observed mainly on VBUS regulator rail where difference 
-on the capacitance value which is connected on rail makes the on/off
-time to vary.
-Currently none of regulator driver support such board related delay.
-My question is:
+On 02/12/2012 09:16 PM, James Bottomley wrote:
+> Well, no-one's yet answered the question I had about why.  virtio-scsi
+> seems to be a basic duplication of virtio-blk except that it seems to
+> fix some problems virtio-blk has.  Namely queue parameter discover,
+> which virtio-blk doesn't seem to do.
 
-- Should we add board delay as part of platform data for regulator and 
-handle in regulator driver? Or,
-- Push this delay parameter to respective client driver and let them to 
-handle. Not a good idea as it is mainly related to rail on/off. Or,
-- Should we add one more parameter in regulator_init_data as rail_delay 
-and push this change to core driver of regulator i.e. if it is non-zero 
-then take this value from this field otherwise take from <xxx>-regulator 
-driver?
+The biggest differences between virtio-blk and virtio-scsi are that:
+
+1) how the feature set is defined.  virtio-blk defines the feature set 
+of the device through a shared spec between the guest and the host.  The 
+virtio-scsi spec does not define a feature set for the devices, only for 
+the transport.  Introducing new features in the guest does not need to 
+be done specifically for virt, it can be done in generic code (sd.c). 
+This results in a large feature set and at the same time a very stable spec.
+
+Right now virtio-blk covers common usecases nicely.  However, the Linux 
+block layer _is_ growing support for new operations: discard is already 
+there, write same is in the works, extended copy will also come in due 
+time.  Perhaps we'll add them to virtio-blk, perhaps not.  If we will, 
+we will have to modify the spec, the host implementation, and the guest 
+drivers for each possible guest OS.  virtio-scsi will support them 
+transparently.  Depending on your configuration, it might work without 
+touching the host at all.
 
 
-I can also work towards If there is any other good options and 
-acceptable to linux community.
+2) for disks with SCSI attachment, the native interface is exposed 
+precisely as it is in the host.  I think we had some misunderstanding 
+WRT queue parameter discovery.  My concern with virtio-blk's SG_IO 
+support is more general than that.  It is that SG_IO accesses the host 
+disk, not the guest disk.  They will have the same data, but they are 
+effectively different disks.  For example they might have different 
+queue parameters, hence the misunderstanding.
 
-Thanks,
-Laxman
+People are mostly using the SG_IO interface for sane purposes.  For 
+example you can ping the storage with INQUIRY commands to detect 
+problems on the NAS or SAN.  For these usecases the difference does not 
+matter.  However, there _are_ worrisome usecases for SG_IO that people 
+are looking at.  For example installing vendor backup tools in their 
+guests.  These tools send vendor-specific commands to the disks. 
+Nothing particularly insane about that, but we want them to do it using 
+a saner interface than VIRTIO_BLK_T_SCSI_CMD.
 
+
+On top of this, only virtio-scsi obviously will support devices such as 
+tapes.
+
+> There may also be a reason to cut the stack lower down.  Error
+> handling is most often cited for this, but no-one's satisfactorily
+> explaned why it's better to do error handling in the guest instead of
+> the host.
+
+It's not necessarily better.  However error handling in the host may 
+simply not be there.  This is for example the case of NFS-based storage 
+with the "hard" option.
+
+Paolo
