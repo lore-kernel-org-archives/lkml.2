@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab2BMUMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:12:52 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39121 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab2BMUMv (ORCPT
+	id S1757879Ab2BMUPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:15:30 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41866 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab2BMUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:12:51 -0500
-Date: Mon, 13 Feb 2012 18:12:43 -0200
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] perf tools: Introduce struct perf_maps_opts
-Message-ID: <20120213201243.GM15955@infradead.org>
-References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
- <1329118064-9412-2-git-send-email-namhyung.kim@lge.com>
- <20120213183232.GD15955@infradead.org>
- <4F395B75.4060800@gmail.com>
- <20120213190542.GL15955@infradead.org>
- <4F396249.2050001@gmail.com>
+	Mon, 13 Feb 2012 15:15:28 -0500
+Date: Tue, 14 Feb 2012 00:15:22 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-urgent.git
+Message-ID: <20120213201522.GA23907@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4F396249.2050001@gmail.com>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Feb 13, 2012 at 12:19:37PM -0700, David Ahern escreveu:
-> 
-> 
-> On 02/13/2012 12:05 PM, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Feb 13, 2012 at 11:50:29AM -0700, David Ahern escreveu:
-> >> Today's perf if you give it an invalid pid, scandir fails and the
-> >> command spits out the usage statement. Which is completely confusing --
-> >> ie., not clear that the command failed b/c the pid does not exist.
+Hello Linus,
 
-> > Humm, ok, but then I think we should have an enum + a strerror(3)
-> > equivalent, i.e.:
+Let's try requesting pull via the signed tag thing...
 
-> > 	enum perf_target_error perf_evlist__create_maps(...);
+- - - -
+The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5ebab:
 
-> > 	int perf_target__strerror(struct perf_target *target, int errnum,
-> > 				  char *buf, size_t buflen);
+  Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
 
-> ok, so you are proposing an internal generation of enum error codes and
-> correlating them to strings rather than adding a buffer into
-> perf_target. If that's the case perhaps we need a libperf-wide design:
+are available in the git repository at:
 
-> enum perf_error perf__strerror(enum perf_error)
-> 
-> which effectively taps an array similar to _sys_errlist_internal based
-> on enum index.
+  git://git.infradead.org/users/cbou/battery-urgent.git battery-fixes-for-v3.3-rc2
 
-I think a per class mechanism is better. I.e. some errors are too
-specific.
+for you to fetch changes up to 455a0e2cd80f7a2849b2e6d3be85c053ee44446b:
 
-I couldn't find any standard way to know the max errno value used :-\ If
-we had that we could reuse strerror_r and use a different range for per
-class specific errnos, i.e.:
+  lp8727_charger: Add terminating entry for i2c_device_id table (2012-02-01 21:34:26 +0400)
 
- int perf_target__strerror(struct perf_target *target, int errnum,
-                           char *buf, size_t buflen)
- {
-	if (errnum < MAX_ERRNO)
-		return strerror_r(errnum, buf, buflen);
+----------------------------------------------------------------
+Just a few small fixes for a bunch of drivers. Nothing noteworthy.
 
-	errnum -= MAX_ERRNO;
+----------------------------------------------------------------
+Anton Vorontsov (1):
+      Revert "bq27x00_battery: Fix reporting status value for bq27500 battery"
 
-	if (errnum >= PERF_TARGET__MAX_ERRNO)
-		return -1;
+Axel Lin (2):
+      power_supply: Fix modalias for charger-manager
+      lp8727_charger: Add terminating entry for i2c_device_id table
 
-	snprintf(buf, buflen, "%s", perf_target__error_str[errnum]);
-	return 0;
- }
+Grazvydas Ignotas (1):
+      bq27x00_battery: Fix flag register read
 
- 
-> > Please see 'man strerror_r", and make it work like the POSIX compliant
-> > variant.
-> 
-> No globals are in use, so I would expect the _r to be redundant. I have
-> glibc source; scanning __strerror_r implementation ....
-> 
-> > 
-> > Ok, so it may be better to first process Kim's patches and then you
-> > rework yours?
-> 
-> The current patch is ready to go; I just don't like the error handling
-> and lack of a useful message. That said, it is no worse than what
-> happens today.
+Kim, Milo (1):
+      lp8727_chager: Fix permissions on a header file
 
-Yeah, we can go with what you have and then add the
-perf_target__strerror on top, I'll read it now.
-
-- Arnaldo
+ drivers/power/bq27x00_battery.c |   15 +++++----------
+ drivers/power/charger-manager.c |    4 ++--
+ drivers/power/lp8727_charger.c  |    1 +
+ 3 files changed, 8 insertions(+), 12 deletions(-)
+ mode change 100755 => 100644 include/linux/lp8727.h
