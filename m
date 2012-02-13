@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab2BMF1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:27:48 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:32925 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab2BMF1r (ORCPT
+	id S1751491Ab2BMF1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:27:52 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60539 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab2BMF1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:27:47 -0500
-Date: Mon, 13 Feb 2012 16:27:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>
-Subject: linux-next: build warning after merge of the libata tree
-Message-Id: <20120213162740.9e3cb47a39da19ed89edea49@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi"
+	Mon, 13 Feb 2012 00:27:49 -0500
+Date: Mon, 13 Feb 2012 13:27:29 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
+Message-ID: <20120213052729.GA24636@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1328560933-3037-1-git-send-email-venki@google.com>
+ <20120208065115.GA19691@zhy>
+ <CABeCy1bAB6PSAUabk8zO8oh_sLVo3sOPVrr_kSovLdmOOtkfTg@mail.gmail.com>
+ <20120209021855.GA26152@zhy>
+ <CABeCy1YcELDiFB0rdSCKGgPm7RE5MkQL9v-9xOHfwn5SP3iVeA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CABeCy1YcELDiFB0rdSCKGgPm7RE5MkQL9v-9xOHfwn5SP3iVeA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Feb 09, 2012 at 06:17:06PM -0800, Venki Pallipadi wrote:
+> 
+> This should likely work. But, if you do want to use similar logic in
+> smp_call_function() or idle load balance kick etc, you need additional
+> bit other than need_resched() as there we only need irq+softirq and
+> not necessarily a resched.
 
-Hi Jeff,
+Yeah, putting resched_idle_cpu() into smp_call_function_*() is a bit ugly
+though resched could work in the scenario because you have
+generic_smp_call_function_single_interrupt() called in cpu_idle();
 
-After merging the libata tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+> At this time I am not sure how poll wakeup logic works in MIPS. But,
 
-drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
-used [-Wunused-function]
-drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
-t used [-Wunused-function]
-drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
- used [-Wunused-function]
-drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
- used [-Wunused-function]
-drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
-used [-Wunused-function]
-drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
-t used [-Wunused-function]
-drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
- used [-Wunused-function]
-drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
-used [-Wunused-function]
-drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
-t used [-Wunused-function]
-drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
- used [-Wunused-function]
-drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
-used [-Wunused-function]
-drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
-t used [-Wunused-function]
+A typical example is busy loop:
+void __noreturn cpu_idle(void)
+{
+	...
 
-Introduced by commits 75d22cd567ca ("libata: Bind the Linux device tree
-to the ACPI device tree") and c9df614ade0e ("libata: Add links between
-removable devices and docks").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+        while (1) {
+                tick_nohz_idle_enter();
+                rcu_idle_enter();
+                while (!need_resched() && cpu_online(cpu)) {
+                	;
+		}   
+                rcu_idle_exit();
+                tick_nohz_idle_exit();
+                preempt_enable_no_resched();
+                schedule();
+		preempt_disable();
+	}
 
---Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi
-Content-Type: application/pgp-signature
+	...
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPOJ9MAAoJEECxmPOUX5FEOZsP/iJDNNYZ66k50v7kNtYX2bzw
-haWtSz4JFjhSgwh5YoqSTK1CBxHbLqYbGub/cAyLgr01FqfZ4JdnrO4RDgKTUi/h
-MFhQu2pygI8qjjQiGoNbmf0S73HkGJVYUy1QuJJLv/Hhn2ztzmN8sbbQurFFl9fm
-99le/0j8W2ilGABplbAFFft/Hu0Dfe34CHmaQSWE+F0D3JSWDjMcPhc3FMJ0V6Z+
-Lihy4Iddss2u/szXIv0Q7u1MntVWT13nnZyjkQQ48V+H4ZfpGeEaC9879CKEkjOh
-jeODrN4bmWj/v12+D4k87/5QZnd6LMbGYOE725BA+ESi7wP0zXWCDzTGFauPuonP
-ovaAFpRPUpZEuHxIPy5ROxyx7tjtuC39s/1tpu0Qb9Dg82q/cUUlT126xbwRkc53
-v67tMsUArJrB5C4jBrtOIg0B5HDfc8VJZ+tNZxjA2C70gizg0go3HGGq3bEtoovT
-FiN9oT9V1+j3gw3IDKK1BX923MEvsdMbunthKub+QGN/Wuy+mW6+LpiM2wVgUJZk
-H2zPNYp8cAG395q17JDHBHbmv9OwweewlNTvefvpTvknf0JfVquLeHmv46qjyxGs
-WV7YKl+7ehWEbTY0Brfc8iVgWsk0wzPJmi3l8CrCEVAP17hrT+wM4yPG0lnNdTv3
-kzRTNFPVfiT2Ju3WJh3h
-=gbHO
------END PGP SIGNATURE-----
+> if it is something that is similar to x86 mwait and we can wakeup with
+> a bit other than TIF_NEED_RESCHED, we can generalize most of the
+> changes in my RFC and share it across archs.
 
---Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi--
+Yeah, there are many things we could share IMHO, especially the hook
+in cpu_idle().
+
+Thanks,
+Yong
