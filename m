@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2BMHLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 02:11:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43543 "EHLO
+	id S1755012Ab2BMHLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:11:34 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49008 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab2BMHLc (ORCPT
+	with ESMTP id S1750698Ab2BMHLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Feb 2012 02:11:32 -0500
-X-AuditID: 9c930197-b7cdbae000001518-5f-4f38b7a136cf
+X-AuditID: 9c930197-b7cdbae000001518-53-4f38b7a0ca6b
 From: Namhyung Kim <namhyung.kim@lge.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] perf stat: Convert to perf_maps_opts
-Date: Mon, 13 Feb 2012 16:27:34 +0900
-Message-Id: <1329118064-9412-3-git-send-email-namhyung.kim@lge.com>
+Subject: [PATCH 01/11] perf tools: Introduce struct perf_maps_opts
+Date: Mon, 13 Feb 2012 16:27:33 +0900
+Message-Id: <1329118064-9412-2-git-send-email-namhyung.kim@lge.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
 References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
@@ -24,168 +24,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct perf_maps_opts as it is introduces by previous patch.
-This is a preparation of further changes.
+The perf_maps_opts struct will be used for taking care of cpu/thread
+maps based on user's input. Since it is used on various subcommands
+it'd be better factoring it out.
 
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/builtin-stat.c |   50 +++++++++++++++++++++++---------------------
- 1 files changed, 26 insertions(+), 24 deletions(-)
+ tools/perf/builtin-record.c |   46 +++++++++++++++++++++++-------------------
+ tools/perf/builtin-test.c   |   11 ++++++---
+ tools/perf/perf.h           |   11 +++++++--
+ tools/perf/util/evlist.c    |    3 +-
+ tools/perf/util/evsel.c     |    9 ++++---
+ 5 files changed, 47 insertions(+), 33 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index d14b37ad7638..14a30c2b9fe0 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -175,22 +175,17 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f8d9a545dd6e..7b50316136bf 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -44,7 +44,6 @@ struct perf_record {
+ 	struct perf_evlist	*evlist;
+ 	struct perf_session	*session;
+ 	const char		*progname;
+-	const char		*uid_str;
+ 	int			output;
+ 	unsigned int		page_size;
+ 	int			realtime_prio;
+@@ -215,7 +214,7 @@ try_again:
+ 			if (err == EPERM || err == EACCES) {
+ 				ui__error_paranoid();
+ 				exit(EXIT_FAILURE);
+-			} else if (err ==  ENODEV && opts->cpu_list) {
++			} else if (err ==  ENODEV && opts->maps.cpu_list) {
+ 				die("No such device - did you specify"
+ 					" an out-of-range profile CPU?\n");
+ 			} else if (err == EINVAL && opts->sample_id_all_avail) {
+@@ -564,7 +563,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		perf_session__process_machines(session, tool,
+ 					       perf_event__synthesize_guest_os);
  
- struct perf_evlist		*evsel_list;
+-	if (!opts->system_wide)
++	if (!opts->maps.system_wide)
+ 		perf_event__synthesize_thread_map(tool, evsel_list->threads,
+ 						  process_synthesized_event,
+ 						  machine);
+@@ -645,8 +644,10 @@ static const char * const record_usage[] = {
+  */
+ static struct perf_record record = {
+ 	.opts = {
+-		.target_pid	     = -1,
+-		.target_tid	     = -1,
++		.maps = {
++			.target_pid	     = -1,
++			.target_tid	     = -1,
++		},
+ 		.mmap_pages	     = UINT_MAX,
+ 		.user_freq	     = UINT_MAX,
+ 		.user_interval	     = ULLONG_MAX,
+@@ -670,9 +671,9 @@ const struct option record_options[] = {
+ 		     parse_events_option),
+ 	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
+ 		     "event filter", parse_filter),
+-	OPT_INTEGER('p', "pid", &record.opts.target_pid,
++	OPT_INTEGER('p', "pid", &record.opts.maps.target_pid,
+ 		    "record events on existing process id"),
+-	OPT_INTEGER('t', "tid", &record.opts.target_tid,
++	OPT_INTEGER('t', "tid", &record.opts.maps.target_tid,
+ 		    "record events on existing thread id"),
+ 	OPT_INTEGER('r', "realtime", &record.realtime_prio,
+ 		    "collect data with this RT SCHED_FIFO priority"),
+@@ -680,11 +681,11 @@ const struct option record_options[] = {
+ 		    "collect data without buffering"),
+ 	OPT_BOOLEAN('R', "raw-samples", &record.opts.raw_samples,
+ 		    "collect raw sample records from all opened counters"),
+-	OPT_BOOLEAN('a', "all-cpus", &record.opts.system_wide,
++	OPT_BOOLEAN('a', "all-cpus", &record.opts.maps.system_wide,
+ 			    "system-wide collection from all CPUs"),
+ 	OPT_BOOLEAN('A', "append", &record.append_file,
+ 			    "append to the output file to do incremental profiling"),
+-	OPT_STRING('C', "cpu", &record.opts.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &record.opts.maps.cpu_list, "cpu",
+ 		    "list of cpus to monitor"),
+ 	OPT_BOOLEAN('f', "force", &record.force,
+ 			"overwrite existing data file (deprecated)"),
+@@ -718,7 +719,7 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
+-	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
++	OPT_STRING('u', "uid", &record.opts.maps.uid_str, "user", "user to profile"),
+ 	OPT_END()
+ };
  
--static bool			system_wide			=  false;
- static int			run_idx				=  0;
--
- static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
- static bool			no_aggr				= false;
--static pid_t			target_pid			= -1;
--static pid_t			target_tid			= -1;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
- static bool			sync_run			=  false;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
--static const char		*cpu_list;
- static const char		*csv_sep			= NULL;
- static bool			csv_output			= false;
- static bool			group				= false;
-@@ -198,6 +193,11 @@ static const char		*output_name			= NULL;
- static FILE			*output				= NULL;
- static int			output_fd;
+@@ -739,8 +740,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
  
-+static struct perf_maps_opts maps = {
-+	.target_pid		= -1,
-+	.target_tid		= -1,
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+-	if (!argc && rec->opts.target_pid == -1 && rec->opts.target_tid == -1 &&
+-		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
++	if (!argc && rec->opts.maps.target_pid == -1 &&
++	    rec->opts.maps.target_tid == -1 &&
++	    !rec->opts.maps.system_wide && !rec->opts.maps.cpu_list &&
++	    !rec->opts.maps.uid_str)
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	if (rec->force && rec->append_file) {
+@@ -753,7 +756,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		rec->write_mode = WRITE_FORCE;
+ 	}
+ 
+-	if (nr_cgroups && !rec->opts.system_wide) {
++	if (nr_cgroups && !rec->opts.maps.system_wide) {
+ 		fprintf(stderr, "cgroup monitoring only available in"
+ 			" system-wide mode\n");
+ 		usage_with_options(record_usage, record_options);
+@@ -780,17 +783,18 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		goto out_symbol_exit;
+ 	}
+ 
+-	rec->opts.uid = parse_target_uid(rec->uid_str, rec->opts.target_tid,
+-					 rec->opts.target_pid);
+-	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
++	rec->opts.maps.uid = parse_target_uid(rec->opts.maps.uid_str,
++					      rec->opts.maps.target_tid,
++					      rec->opts.maps.target_pid);
++	if (rec->opts.maps.uid_str && rec->opts.maps.uid == UINT_MAX - 1)
+ 		goto out_free_fd;
+ 
+-	if (rec->opts.target_pid != -1)
+-		rec->opts.target_tid = rec->opts.target_pid;
++	if (rec->opts.maps.target_pid != -1)
++		rec->opts.maps.target_tid = rec->opts.maps.target_pid;
+ 
+-	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
+-				     rec->opts.target_tid, rec->opts.uid,
+-				     rec->opts.cpu_list) < 0)
++	if (perf_evlist__create_maps(evsel_list, rec->opts.maps.target_pid,
++				     rec->opts.maps.target_tid, rec->opts.maps.uid,
++				     rec->opts.maps.cpu_list) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	list_for_each_entry(pos, &evsel_list->entries, node) {
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 70c4eb2bdf72..da3c1c3f8524 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -1010,8 +1010,10 @@ realloc:
+ static int test__PERF_RECORD(void)
+ {
+ 	struct perf_record_opts opts = {
+-		.target_pid = -1,
+-		.target_tid = -1,
++		.maps = {
++			.target_pid = -1,
++			.target_tid = -1,
++		},
+ 		.no_delay   = true,
+ 		.freq	    = 10,
+ 		.mmap_pages = 256,
+@@ -1055,8 +1057,9 @@ static int test__PERF_RECORD(void)
+ 	 * perf_evlist__prepare_workload we'll fill in the only thread
+ 	 * we're monitoring, the one forked there.
+ 	 */
+-	err = perf_evlist__create_maps(evlist, opts.target_pid,
+-				       opts.target_tid, UINT_MAX, opts.cpu_list);
++	err = perf_evlist__create_maps(evlist, opts.maps.target_pid,
++				       opts.maps.target_tid, UINT_MAX,
++				       opts.maps.cpu_list);
+ 	if (err < 0) {
+ 		pr_debug("Not enough memory to create thread/cpu maps\n");
+ 		goto out_delete_evlist;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 92af1688bae4..972cd99fb509 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -185,10 +185,17 @@ extern const char perf_version_string[];
+ 
+ void pthread__unblock_sigwinch(void);
+ 
+-struct perf_record_opts {
++struct perf_maps_opts {
+ 	pid_t	     target_pid;
+ 	pid_t	     target_tid;
+ 	uid_t	     uid;
++	bool	     system_wide;
++	const char   *cpu_list;
++	const char   *uid_str;
 +};
 +
- static volatile int done = 0;
++struct perf_record_opts {
++	struct perf_maps_opts maps;
+ 	bool	     call_graph;
+ 	bool	     group;
+ 	bool	     inherit_stat;
+@@ -200,14 +207,12 @@ struct perf_record_opts {
+ 	bool	     sample_address;
+ 	bool	     sample_time;
+ 	bool	     sample_id_all_avail;
+-	bool	     system_wide;
+ 	bool	     period;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+-	const char   *cpu_list;
+ };
  
- struct stats
-@@ -293,10 +293,10 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ #endif
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index a57a8cfc5d90..d7c3a2d5771c 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -820,7 +820,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 		exit(-1);
+ 	}
  
- 	attr->inherit = !no_inherit;
+-	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
++	if (!opts->maps.system_wide && opts->maps.target_tid == -1 &&
++	    opts->maps.target_pid == -1)
+ 		evlist->threads->map[0] = evlist->workload.pid;
  
--	if (system_wide)
-+	if (maps.system_wide)
- 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
- 						group, group_fd);
--	if (target_pid == -1 && target_tid == -1) {
-+	if (maps.target_pid == -1 && maps.target_tid == -1) {
+ 	close(child_ready_pipe[1]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9a11f9edac12..6a4e97d5f6d5 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -105,15 +105,15 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 	if (opts->call_graph)
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
+-	if (opts->system_wide)
++	if (opts->maps.system_wide)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 
+ 	if (opts->period)
+ 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+ 
+ 	if (opts->sample_id_all_avail &&
+-	    (opts->sample_time || opts->system_wide ||
+-	     !opts->no_inherit || opts->cpu_list))
++	    (opts->sample_time || opts->maps.system_wide ||
++	     !opts->no_inherit || opts->maps.cpu_list))
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+ 
+ 	if (opts->raw_samples) {
+@@ -130,7 +130,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 	attr->mmap = track;
+ 	attr->comm = track;
+ 
+-	if (opts->target_pid == -1 && opts->target_tid == -1 && !opts->system_wide) {
++	if (opts->maps.target_pid == -1 && opts->maps.target_tid == -1 &&
++	    !opts->maps.system_wide) {
  		attr->disabled = 1;
  		attr->enable_on_exec = 1;
  	}
-@@ -446,7 +446,8 @@ static int run_perf_stat(int argc __used, const char **argv)
- 			exit(-1);
- 		}
- 
--		if (target_tid == -1 && target_pid == -1 && !system_wide)
-+		if (maps.target_tid == -1 && maps.target_pid == -1 &&
-+		    !maps.system_wide)
- 			evsel_list->threads->map[0] = child_pid;
- 
- 		/*
-@@ -476,7 +477,7 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				error("You may not have permission to collect %sstats.\n"
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
--				      system_wide ? "system-wide " : "");
-+				      maps.system_wide ? "system-wide " : "");
- 			} else {
- 				error("open_counter returned with %d (%s). "
- 				      "/bin/dmesg may provide additional information.\n",
-@@ -968,14 +969,14 @@ static void print_stat(int argc, const char **argv)
- 	if (!csv_output) {
- 		fprintf(output, "\n");
- 		fprintf(output, " Performance counter stats for ");
--		if(target_pid == -1 && target_tid == -1) {
-+		if(maps.target_pid == -1 && maps.target_tid == -1) {
- 			fprintf(output, "\'%s", argv[0]);
- 			for (i = 1; i < argc; i++)
- 				fprintf(output, " %s", argv[i]);
--		} else if (target_pid != -1)
--			fprintf(output, "process id \'%d", target_pid);
-+		} else if (maps.target_pid != -1)
-+			fprintf(output, "process id \'%d", maps.target_pid);
- 		else
--			fprintf(output, "thread id \'%d", target_tid);
-+			fprintf(output, "thread id \'%d", maps.target_tid);
- 
- 		fprintf(output, "\'");
- 		if (run_count > 1)
-@@ -1049,11 +1050,11 @@ static const struct option options[] = {
- 		     "event filter", parse_filter),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
--	OPT_INTEGER('p', "pid", &target_pid,
-+	OPT_INTEGER('p', "pid", &maps.target_pid,
- 		    "stat events on existing process id"),
--	OPT_INTEGER('t', "tid", &target_tid,
-+	OPT_INTEGER('t', "tid", &maps.target_tid,
- 		    "stat events on existing thread id"),
--	OPT_BOOLEAN('a', "all-cpus", &system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &maps.system_wide,
- 		    "system-wide collection from all CPUs"),
- 	OPT_BOOLEAN('g', "group", &group,
- 		    "put the counters into a counter group"),
-@@ -1072,7 +1073,7 @@ static const struct option options[] = {
- 	OPT_CALLBACK_NOOPT('B', "big-num", NULL, NULL, 
- 			   "print large numbers with thousands\' separators",
- 			   stat__set_big_num),
--	OPT_STRING('C', "cpu", &cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &maps.cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
- 	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
- 		    "disable CPU count aggregation"),
-@@ -1190,13 +1191,13 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	} else if (big_num_opt == 0) /* User passed --no-big-num */
- 		big_num = false;
- 
--	if (!argc && target_pid == -1 && target_tid == -1)
-+	if (!argc && maps.target_pid == -1 && maps.target_tid == -1)
- 		usage_with_options(stat_usage, options);
- 	if (run_count <= 0)
- 		usage_with_options(stat_usage, options);
- 
- 	/* no_aggr, cgroup are for system-wide only */
--	if ((no_aggr || nr_cgroups) && !system_wide) {
-+	if ((no_aggr || nr_cgroups) && !maps.system_wide) {
- 		fprintf(stderr, "both cgroup and no-aggregation "
- 			"modes only available in system-wide mode\n");
- 
-@@ -1206,17 +1207,18 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (add_default_attributes())
- 		goto out;
- 
--	if (target_pid != -1)
--		target_tid = target_pid;
-+	if (maps.target_pid != -1)
-+		maps.target_tid = maps.target_pid;
- 
--	evsel_list->threads = thread_map__new(target_pid, target_tid, UINT_MAX);
-+	evsel_list->threads = thread_map__new(maps.target_pid, maps.target_tid,
-+					      UINT_MAX);
- 	if (evsel_list->threads == NULL) {
- 		pr_err("Problems finding threads of monitor\n");
- 		usage_with_options(stat_usage, options);
- 	}
- 
--	if (system_wide)
--		evsel_list->cpus = cpu_map__new(cpu_list);
-+	if (maps.system_wide)
-+		evsel_list->cpus = cpu_map__new(maps.cpu_list);
- 	else
- 		evsel_list->cpus = cpu_map__dummy_new();
- 
 -- 
 1.7.9
 
