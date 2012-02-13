@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab2BMGp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 01:45:28 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49604 "EHLO
+	id S1754770Ab2BMGpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 01:45:38 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52221 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751476Ab2BMGp0 (ORCPT
+	by vger.kernel.org with ESMTP id S1754197Ab2BMGpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 01:45:26 -0500
-X-Sasl-enc: HR9hLa7LYDadAA1FPGLZgsXq/DD6NGilDJQWGjqR65v9 1329115525
-Date: Sun, 12 Feb 2012 22:43:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Renninger <trenn@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        cpufreq@vger.kernel.org
-Subject: Re: [PATCH 0/5] Clean up x86 CPU auto-loading
-Message-ID: <20120213064308.GB28617@kroah.com>
-References: <1329000256.325.48.camel@deadeye>
- <201202130010.57492.trenn@suse.de>
- <20120213021847.GA25382@kroah.com>
- <4F387CCF.7040604@zytor.com>
+	Mon, 13 Feb 2012 01:45:33 -0500
+X-Sasl-enc: yR8fcXK1IRx8GBLynq41yqvezzbwvdQ1yIMgnsR1Vy01 1329115532
+Date: Sun, 12 Feb 2012 22:45:08 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+Message-ID: <20120213064508.GD28617@kroah.com>
+References: <20120213171949.262e0c12e8d8883e90216df1@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F387CCF.7040604@zytor.com>
+In-Reply-To: <20120213171949.262e0c12e8d8883e90216df1@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 07:00:31PM -0800, H. Peter Anvin wrote:
-> On 02/12/2012 06:18 PM, Greg KH wrote:
-> > I can take them, unless the x86 maintainers object and want to take them
-> > through their tree.
+On Mon, Feb 13, 2012 at 05:19:49PM +1100, Stephen Rothwell wrote:
+> Hi ,
 > 
-> Why don't we take them... I think it makes more sense long-term.
+> After merging the final tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
+> 
+> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_cpu_notifier':
+> drivers/staging/zsmalloc/zsmalloc-main.c:451:3: error: implicit declaration of function 'alloc_vm_area' [-Werror=implicit-function-declaration]
+> drivers/staging/zsmalloc/zsmalloc-main.c:451:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+> drivers/staging/zsmalloc/zsmalloc-main.c:459:4: error: implicit declaration of function 'free_vm_area' [-Werror=implicit-function-declaration]
+> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_map_object':
+> drivers/staging/zsmalloc/zsmalloc-main.c:705:3: error: implicit declaration of function 'set_pte' [-Werror=implicit-function-declaration]
+> drivers/staging/zsmalloc/zsmalloc-main.c:709:27: error: dereferencing pointer to incomplete type
+> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_unmap_object':
+> drivers/staging/zsmalloc/zsmalloc-main.c:739:3: error: implicit declaration of function '__flush_tlb_one' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 61989a80fb3a ("staging: zsmalloc: zsmalloc memory
+> allocation library").  This needs to include linux/vmalloc.h at least.  I
+> couldn't find set_pte at all or __flush_tlb_one for powerpc.
+> 
+> This was too hard to revert, so I have left powerpc allyesconfig broken
+> for today.  I may revert it (and some dependent commits) tomorrow.
 
-Ok, but for some reason I thought they depended on the patches already
-in my driver-core-next tree.  If that's not the case, please feel free
-to take them through yours.
+Nitin, please send me a patch to fix this as soon as possible.
 
 greg k-h
