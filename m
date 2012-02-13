@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab2BMIWl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 03:22:41 -0500
-Received: from mail.mnsspb.ru ([84.204.75.2]:47764 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab2BMIWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 03:22:40 -0500
-Date: Mon, 13 Feb 2012 12:25:39 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Paul Parsons <lost.distance@yahoo.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: No /dev/root with devtmpfs?
-Message-ID: <20120213082539.GA5930@tugrik.mns.mnsspb.ru>
-References: <20120210090425.GA3997@tugrik.mns.mnsspb.ru>
- <1328879437.80871.YahooMailClassic@web29006.mail.ird.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328879437.80871.YahooMailClassic@web29006.mail.ird.yahoo.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752647Ab2BMIYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 03:24:23 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:54077 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750978Ab2BMIYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 03:24:21 -0500
+Message-ID: <1329121457.31689.1.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] bluetooth: Use more current logging styles
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 13 Feb 2012 00:24:17 -0800
+In-Reply-To: <1329118233.28848.62.camel@aeonflux>
+References: <cover.1329102581.git.joe@perches.com>
+	 <44b8744770a55924c68f8ad0ca274816d2d6148f.1329102581.git.joe@perches.com>
+	 <1329114913.28848.50.camel@aeonflux> <1329115573.30878.1.camel@joe2Laptop>
+	 <1329117706.28848.55.camel@aeonflux> <1329118080.31068.4.camel@joe2Laptop>
+	 <1329118233.28848.62.camel@aeonflux>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 01:10:37PM +0000, Paul Parsons wrote:
-> --- On Fri, 10/2/12, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> > > Could you simply use /etc/fstab to identify the root
-> > partition?
-> > 
-> > Unfortunately no, because /etc/fstab can't know where the
-> > card will be
-> > inserted to boot this time - i.e. either in compactflash
-> > slot on
-> > motherboard, or through usb via cardreader. So root has to
-> > be determined
-> > at runtime.
-> > 
-> > Personally I'm ok with no /dev/root symlink as long as there
-> > is another
-> > way to detect root blkdev reliably. And I'm still confised
-> > what's the
-> > rationale about why this can't be done for modern
-> > filesysems.
-> 
-> Here's another suggestion: /proc/cmdline
-> 
-> The bootloader might pass the root partition to the kernel via the
-> "root=" kernel parameter; these can be read at /proc/cmdline.
-> For example, on an HP iPAQ hx4700: root=/dev/mtdblock2
+On Mon, 2012-02-13 at 08:30 +0100, Marcel Holtmann wrote:
+> > > > There shouldn't be a newline at all with the
+> > > > actual functions bt_err or bt_info except
+> > > > at the uses.
+> > > then you might wanna read your patch again ;)
+> > Easy to fix at your end if you like.
+> and why exactly is this my job now to fix your broken patch?
 
-This does not work universally either, for example for
+It's not really.  It's just a means to avoid a repost
+of a 100+KB patch.  If you want, I'll repost it.
 
-    root=PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF
+cheers, Joe
 
-
-the kernel scans partitions and finds one for root by partition uuid
-(see name_to_dev_t() in init/do_mounts.c).
-
-That's exactly my situation - I have universal flash image which can
-bee booted via CF slot (on several boards, thus will have different
-/dev/hd? or /dev/sd?) and via usb/cardreader (again different /dev/
-entry), and root is mounted by partition id.
-
-The kernel has no problem finding root partition and mounting it. I just
-needed a sane and robust way to know its choice.
-
-
-Thanks,
-Kirill
