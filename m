@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab2BMHnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 02:43:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50540 "EHLO mx1.redhat.com"
+	id S1756222Ab2BMHox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:44:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755072Ab2BMHnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 02:43:42 -0500
-Message-ID: <1329119009.2647.34.camel@cr0>
-Subject: Re: [Drbd-dev] [PATCH 58/60] drbd: remove the second argument of
+	id S1750789Ab2BMHow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 02:44:52 -0500
+Message-ID: <1329119055.2647.35.camel@cr0>
+Subject: Re: [PATCH 25/60] target: remove the second argument of
  k[un]map_atomic()
 From: Cong Wang <amwang@redhat.com>
-To: Robert Kim App and Facebook Marketing <evdo.hsdpa@gmail.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        drbd-user@lists.linbit.com, Lars Ellenberg <drbd-dev@lists.linbit.com>
-Date: Mon, 13 Feb 2012 15:43:29 +0800
-In-Reply-To: <CA+xKNSgdt7mc2NYTbprFspE54R_4T4PTzyGKyKESqBRyaNCPJg@mail.gmail.com>
+        Andy Grover <agrover@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Kiran Patil <kiran.patil@intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org
+Date: Mon, 13 Feb 2012 15:44:15 +0800
+In-Reply-To: <1328912323.9333.92.camel@haakon2.linux-iscsi.org>
 References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
-	 <1328852421-19678-59-git-send-email-amwang@redhat.com>
-	 <CA+xKNSgdt7mc2NYTbprFspE54R_4T4PTzyGKyKESqBRyaNCPJg@mail.gmail.com>
+	 <1328852421-19678-26-git-send-email-amwang@redhat.com>
+	 <1328912323.9333.92.camel@haakon2.linux-iscsi.org>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
@@ -25,12 +27,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-12 at 14:54 +0900, Robert Kim App and Facebook Marketing
-wrote:
-> Guys... in my email... the code really breaks up bad... is there a version
-> of the code without any line-breaks????
+On Fri, 2012-02-10 at 14:18 -0800, Nicholas A. Bellinger wrote:
+> On Fri, 2012-02-10 at 13:39 +0800, Cong Wang wrote:
+> > Signed-off-by: Cong Wang <amwang@redhat.com>
+> > ---
+> >  drivers/target/target_core_transport.c |    4 ++--
+> >  drivers/target/tcm_fc/tfc_io.c         |   10 ++++------
+> >  2 files changed, 6 insertions(+), 8 deletions(-)
+> > 
+> 
+> Hi Cong,
+> 
+> This looks fine to me, I assume you'll push this upstream..?
+> 
+> Acked-by: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I use git to send out these patches, before you, nobody complains. So I
-am afraid it is a problem of your email client. :)
+Hi,
 
+I resent these to let Andrew take them. :)
+
+Thanks!
 
