@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab2BMCWp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 21:22:45 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58336 "EHLO
+	id S1756090Ab2BMCXv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 21:23:51 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:42006 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753396Ab2BMCWn (ORCPT
+	by vger.kernel.org with ESMTP id S1753247Ab2BMCXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 21:22:43 -0500
-X-Sasl-enc: 3b6YXYpxuMVr756Fcg7kAp30mGy+QO1r1Kw/uCZveuyA 1329099762
-Date: Sun, 12 Feb 2012 18:18:47 -0800
+	Sun, 12 Feb 2012 21:23:49 -0500
+X-Sasl-enc: Dqj79Gl4axXB4OC+MfNLOFgCQWrMFatOU20IfNhC8hh9 1329099828
+Date: Sun, 12 Feb 2012 18:22:21 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        cpufreq@vger.kernel.org
-Subject: Re: [PATCH 0/5] Clean up x86 CPU auto-loading
-Message-ID: <20120213021847.GA25382@kroah.com>
-References: <1329000256.325.48.camel@deadeye>
- <201202130010.57492.trenn@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: ALPS touchpad no longer recognizing 'taps' as mouseclick in
+ 3.3-rc3
+Message-ID: <20120213022221.GF25382@kroah.com>
+References: <20120212164728.GA19629@kroah.com>
+ <20120212201236.GA9389@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201202130010.57492.trenn@suse.de>
+In-Reply-To: <20120212201236.GA9389@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 12:10:56AM +0100, Thomas Renninger wrote:
-> On Saturday 11 February 2012 23:44:16 Ben Hutchings wrote:
-> > This series fixes a number of apparent bugs in the recent changes to
-> > enable auto-loading by x86 CPU ID.
+On Sun, Feb 12, 2012 at 12:12:36PM -0800, Dmitry Torokhov wrote:
+> Hi Greg,
 > 
-> These all look correct.
-> I should have spotted the intel_idle modifications myself.
-> Good catch(es).
+> On Sun, Feb 12, 2012 at 08:47:28AM -0800, Greg KH wrote:
+> > Hi,
+> > 
+> > This problem has been since 3.3-rc1, but I only now am getting around to
+> > reporting it, sorry about that.
+> > 
+> > In 3.3-rc3, my alps touchpad isn't recognizing a tap on the touchpad as
+> > a mouse click.  Is there a new Kconfig option that I need to enable?
+> > 
+> > My /proc/bus/input/devices entry for this thing is:
+> > I: Bus=0011 Vendor=0002 Product=0008 Version=7326
+> > N: Name="AlpsPS/2 ALPS DualPoint TouchPad"
+> > P: Phys=isa0060/serio1/input0
+> > S: Sysfs=/devices/platform/i8042/serio1/input/input6
+> > U: Uniq=
+> > H: Handlers=mouse1 event6 
+> > B: PROP=8
+> > B: EV=b
+> > B: KEY=e420 70000 0 0 0 0
+> > B: ABS=260800001000003
+> > 
+> > Is there anything else you need me to report to help track this down?
+> > 
 > 
-> Greg: I expect these should get queued in your driver-core-next branch?
+> Please make sure you have xorg-x11-drv-synaptics installed and then
+> check if tap to click is enabled in your DE. I think Gnome for some
+> reason has it off my default.
 
-I can take them, unless the x86 maintainers object and want to take them
-through their tree.
+Is this a new thing for the 3.3 kernel?  I ask as 3.2 and older kernels
+work just fine this way.  I can do a 'git bisect' to track it down to a
+specific patch if that will help out.
 
 thanks,
 
