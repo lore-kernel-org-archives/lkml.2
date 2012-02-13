@@ -1,194 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2BMMm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:42:29 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:8344 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639Ab2BMMm0 (ORCPT
+	id S1756280Ab2BMMtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:49:31 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:58591 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307Ab2BMMt3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:42:26 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Mon, 13 Feb 2012 13:41:55 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 03/14 v3] MIPS: adapt for dma_map_ops changes
-In-reply-to: <4F38E8E1.3070004@mvista.com>
-To: linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Message-id: <1329136915-24824-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.8.3
-References: <4F38E8E1.3070004@mvista.com>
+	Mon, 13 Feb 2012 07:49:29 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, kexec@lists.infradead.org,
+        vgoyal@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<m1ipjc3fsk.fsf@fess.ebiederm.org>
+	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+Date: Mon, 13 Feb 2012 04:52:10 -0800
+In-Reply-To: <CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+	(Yinghai Lu's message of "Sat, 11 Feb 2012 20:17:43 -0800")
+Message-ID: <m1zkcmyjyd.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/b47R3r7bWoQl0TZJ/IW3UHguzycnnKr0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Yinghai Lu <yinghai@kernel.org> writes:
 
-Adapt core MIPS architecture code for dma_map_ops changes: replace
-alloc/free_coherent with generic alloc/free methods.
+> On Sat, Feb 11, 2012 at 7:13 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Yinghai Lu <yinghai@kernel.org> writes:
+>>> After reverting this commit, kdump is working again.
+>>>
+>>> So assume you need to drop this patch.
+>>
+>> It sounds like there is a bug in ioapic initialization in the context of
+>> VT-d.  Where do you fail?
+>>
+> before get debug print out from second kernel, the system get reset.
 
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-[added missing changes to arch/mips/cavium-octeon/dma-octeon.c,
- fixed attrs argument in dma-mapping.h]
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/mips/cavium-octeon/dma-octeon.c |   16 ++++++++--------
- arch/mips/include/asm/dma-mapping.h  |   18 ++++++++++++------
- arch/mips/mm/dma-default.c           |    8 ++++----
- 3 files changed, 24 insertions(+), 18 deletions(-)
+Ouch.
 
-diff --git a/arch/mips/cavium-octeon/dma-octeon.c b/arch/mips/cavium-octeon/dma-octeon.c
-index b6bb92c..df70600 100644
---- a/arch/mips/cavium-octeon/dma-octeon.c
-+++ b/arch/mips/cavium-octeon/dma-octeon.c
-@@ -157,7 +157,7 @@ static void octeon_dma_sync_sg_for_device(struct device *dev,
- }
- 
- static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
--	dma_addr_t *dma_handle, gfp_t gfp)
-+	dma_addr_t *dma_handle, gfp_t gfp, struct dma_attrs *attrs)
- {
- 	void *ret;
- 
-@@ -184,7 +184,7 @@ static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
- 	/* Don't invoke OOM killer */
- 	gfp |= __GFP_NORETRY;
- 
--	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp);
-+	ret = swiotlb_alloc_coherent(dev, size, dma_handle, gfp, attrs);
- 
- 	mb();
- 
-@@ -192,14 +192,14 @@ static void *octeon_dma_alloc_coherent(struct device *dev, size_t size,
- }
- 
- static void octeon_dma_free_coherent(struct device *dev, size_t size,
--	void *vaddr, dma_addr_t dma_handle)
-+	void *vaddr, dma_addr_t dma_handle, struct dma_attrs *attrs)
- {
- 	int order = get_order(size);
- 
- 	if (dma_release_from_coherent(dev, order, vaddr))
- 		return;
- 
--	swiotlb_free_coherent(dev, size, vaddr, dma_handle);
-+	swiotlb_free_coherent(dev, size, vaddr, dma_handle, attrs);
- }
- 
- static dma_addr_t octeon_unity_phys_to_dma(struct device *dev, phys_addr_t paddr)
-@@ -240,8 +240,8 @@ EXPORT_SYMBOL(dma_to_phys);
- 
- static struct octeon_dma_map_ops octeon_linear_dma_map_ops = {
- 	.dma_map_ops = {
--		.alloc_coherent = octeon_dma_alloc_coherent,
--		.free_coherent = octeon_dma_free_coherent,
-+		.alloc = octeon_dma_alloc_coherent,
-+		.free = octeon_dma_free_coherent,
- 		.map_page = octeon_dma_map_page,
- 		.unmap_page = swiotlb_unmap_page,
- 		.map_sg = octeon_dma_map_sg,
-@@ -325,8 +325,8 @@ void __init plat_swiotlb_setup(void)
- #ifdef CONFIG_PCI
- static struct octeon_dma_map_ops _octeon_pci_dma_map_ops = {
- 	.dma_map_ops = {
--		.alloc_coherent = octeon_dma_alloc_coherent,
--		.free_coherent = octeon_dma_free_coherent,
-+		.alloc = octeon_dma_alloc_coherent,
-+		.free = octeon_dma_free_coherent,
- 		.map_page = octeon_dma_map_page,
- 		.unmap_page = swiotlb_unmap_page,
- 		.map_sg = octeon_dma_map_sg,
-diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
-index 7aa37dd..be39a12 100644
---- a/arch/mips/include/asm/dma-mapping.h
-+++ b/arch/mips/include/asm/dma-mapping.h
-@@ -57,25 +57,31 @@ dma_set_mask(struct device *dev, u64 mask)
- extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
- 	       enum dma_data_direction direction);
- 
--static inline void *dma_alloc_coherent(struct device *dev, size_t size,
--				       dma_addr_t *dma_handle, gfp_t gfp)
-+#define dma_alloc_coherent(d,s,h,f)	dma_alloc_attrs(d,s,h,f,NULL)
-+
-+static inline void *dma_alloc_attrs(struct device *dev, size_t size,
-+				    dma_addr_t *dma_handle, gfp_t gfp,
-+				    struct dma_attrs *attrs)
- {
- 	void *ret;
- 	struct dma_map_ops *ops = get_dma_ops(dev);
- 
--	ret = ops->alloc_coherent(dev, size, dma_handle, gfp);
-+	ret = ops->alloc(dev, size, dma_handle, gfp, attrs);
- 
- 	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
- 
- 	return ret;
- }
- 
--static inline void dma_free_coherent(struct device *dev, size_t size,
--				     void *vaddr, dma_addr_t dma_handle)
-+#define dma_free_coherent(d,s,c,h) dma_free_attrs(d,s,c,h,NULL)
-+
-+static inline void dma_free_attrs(struct device *dev, size_t size,
-+				  void *vaddr, dma_addr_t dma_handle,
-+				  struct dma_attrs *attrs)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
- 
--	ops->free_coherent(dev, size, vaddr, dma_handle);
-+	ops->free(dev, size, vaddr, dma_handle, attrs);
- 
- 	debug_dma_free_coherent(dev, size, vaddr, dma_handle);
- }
-diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-index 4608491..3fab204 100644
---- a/arch/mips/mm/dma-default.c
-+++ b/arch/mips/mm/dma-default.c
-@@ -98,7 +98,7 @@ void *dma_alloc_noncoherent(struct device *dev, size_t size,
- EXPORT_SYMBOL(dma_alloc_noncoherent);
- 
- static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
--	dma_addr_t * dma_handle, gfp_t gfp)
-+	dma_addr_t * dma_handle, gfp_t gfp, struct dma_attrs *attrs)
- {
- 	void *ret;
- 
-@@ -132,7 +132,7 @@ void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
- EXPORT_SYMBOL(dma_free_noncoherent);
- 
- static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
--	dma_addr_t dma_handle)
-+	dma_addr_t dma_handle, struct dma_attrs *attrs)
- {
- 	unsigned long addr = (unsigned long) vaddr;
- 	int order = get_order(size);
-@@ -323,8 +323,8 @@ void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
- EXPORT_SYMBOL(dma_cache_sync);
- 
- static struct dma_map_ops mips_default_dma_map_ops = {
--	.alloc_coherent = mips_dma_alloc_coherent,
--	.free_coherent = mips_dma_free_coherent,
-+	.alloc = mips_dma_alloc_coherent,
-+	.free = mips_dma_free_coherent,
- 	.map_page = mips_dma_map_page,
- 	.unmap_page = mips_dma_unmap_page,
- 	.map_sg = mips_dma_map_sg,
--- 
-1.7.1.569.g6f426
+Don can you work with with Yinghai to figure out what is different
+between your test configuration and his?
 
+YH did you have early printk enabled?
+
+YH Did I understand you properly that things work if you don't enable
+VT-d?   By VT-d are you referring to interrupt remapping?
+
+For anyone watching.  The premise of this patch was that we can boot
+the kernel without resorting to legacy tricks that require us to
+put the interrupt controllers in PIT mode.
+
+Apparently there is some weird corner case that YH can reproduce that
+Don did not have in his test set that YH does that causes things to
+fail.
+
+I really don't see any likely candidates when looking at the code.  The
+most I can see is some code that we don't run when interrupt remapping
+is enabled in disable_IO_APIC.
+
+So I suspect we have a bug in our apic initialization somewhere, but
+apic initialization should happen after printk are enabled.  Or at least
+after early printks so the reset YH is reporting doesn't make much sense.
+
+Eric
