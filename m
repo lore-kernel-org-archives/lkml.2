@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2BMV0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:26:47 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:33373 "HELO
+	id S1758229Ab2BMV1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:27:32 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:51640 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756008Ab2BMV0p (ORCPT
+	with SMTP id S1755973Ab2BMV1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:26:45 -0500
+	Mon, 13 Feb 2012 16:27:31 -0500
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18ADj4jTqkA7vV8BZurUqwxGDSSs7EQ4jFCLDCokz
-	3X/qjT5VtFshTZ
-Message-ID: <4F398006.6080000@gmx.de>
-Date: Mon, 13 Feb 2012 21:26:30 +0000
+X-Provags-ID: V01U2FsdGVkX1+Y6FI91JGYBOP3b5OdrLCJrodUv4Hui73zQLMsUM
+	p6LEmm481eQZTl
+Message-ID: <4F398033.80900@gmx.de>
+Date: Mon, 13 Feb 2012 21:27:15 +0000
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: linux-fbdev@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/16] riva/fbdev: fix several -Wuninitialized
-References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-14-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1327960820-11867-14-git-send-email-danny.kukawka@bisect.de>
+Subject: Re: [PATCH] video: da8xx-fb: Fix build warning on unused label
+References: <1328763879-16345-1-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <1328763879-16345-1-git-send-email-prakash.pm@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Y-GMX-Trusted: 0
@@ -28,12 +29,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2012 10:00 PM, Danny Kukawka wrote:
-> Fix several -Wuninitialized compiler warnings by changing the
-> order of getting modedb in riva_update_default_var() to set
-> first the fallback and then the prefered timing.
+On 02/09/2012 05:04 AM, Manjunathappa, Prakash wrote:
+> Patch fixes build warning on label "err_cpu_freq" when CONFIG_CPU_FREQ
+> is not defined.
 > 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 
 Applied.
 
@@ -43,30 +43,21 @@ Thanks,
 Florian Tobias Schandinat
 
 > ---
->  drivers/video/riva/fbdev.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
+>  drivers/video/da8xx-fb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/video/riva/fbdev.c b/drivers/video/riva/fbdev.c
-> index 2f58cf9..90df1a6 100644
-> --- a/drivers/video/riva/fbdev.c
-> +++ b/drivers/video/riva/fbdev.c
-> @@ -1816,6 +1816,8 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
->  			     specs->modedb, specs->modedb_len,
->  			     NULL, 8);
->  	} else if (specs->modedb != NULL) {
-> +		/* get first mode in database as fallback */
-> +		modedb = specs->modedb[0];
->  		/* get preferred timing */
->  		if (info->monspecs.misc & FB_MISC_1ST_DETAIL) {
->  			int i;
-> @@ -1826,9 +1828,6 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
->  					break;
->  				}
->  			}
-> -		} else {
-> -			/* otherwise, get first mode in database */
-> -			modedb = specs->modedb[0];
->  		}
->  		var->bits_per_pixel = 8;
->  		riva_update_var(var, &modedb);
+> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+> index 29577bf..f360d62 100644
+> --- a/drivers/video/da8xx-fb.c
+> +++ b/drivers/video/da8xx-fb.c
+> @@ -1264,8 +1264,8 @@ static int __devinit fb_probe(struct platform_device *device)
+>  irq_freq:
+>  #ifdef CONFIG_CPU_FREQ
+>  	lcd_da8xx_cpufreq_deregister(par);
+> -#endif
+>  err_cpu_freq:
+> +#endif
+>  	unregister_framebuffer(da8xx_fb_info);
+>  
+>  err_dealloc_cmap:
 
