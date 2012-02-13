@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab2BMQO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:14:26 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36643 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754852Ab2BMQOZ (ORCPT
+	id S1757135Ab2BMQOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:14:33 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:58163 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757118Ab2BMQOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:14:25 -0500
-Message-ID: <4F3936BE.8060003@xenotime.net>
-Date: Mon, 13 Feb 2012 08:13:50 -0800
+	Mon, 13 Feb 2012 11:14:31 -0500
+Message-ID: <4F3936C5.6060501@xenotime.net>
+Date: Mon, 13 Feb 2012 08:13:57 -0800
 From: Randy Dunlap <rdunlap@xenotime.net>
 Organization: YPO4
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Masanari Iida <standby24x7@gmail.com>
 CC: trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, JF@linux.or.jp
-Subject: Re: [PATCH] [trivial] Documentation: Fix broken URL "JF"
-References: <1329141187-2158-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1329141187-2158-1-git-send-email-standby24x7@gmail.com>
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] Documentation: Fix Broken URL "freshmeat"
+References: <1329140578-2045-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1329140578-2045-1-git-send-email-standby24x7@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
@@ -26,36 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2012 05:53 AM, Masanari Iida wrote:
-> Fix broken URL for JF (Japanese FAQ).
+On 02/13/2012 05:42 AM, Masanari Iida wrote:
+> Fix broken URL in documents "freshmeat" to "freecode" in
+> Documentation/filesystems/ramfs-rootfs-initramfs.txt,
+> Documentation/scsi/scsi-generic.txt
+> Documentation/usb/mtouchusb.txt
 > 
 > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-
-Adding JF Project email address to Cc: list for their
-input.
-
 
 Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
 Thanks.
 
 > ---
->  Documentation/00-INDEX |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  .../filesystems/ramfs-rootfs-initramfs.txt         |    2 +-
+>  Documentation/scsi/scsi-generic.txt                |    2 +-
+>  Documentation/usb/mtouchusb.txt                    |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-> index 65bbd26..a859507 100644
-> --- a/Documentation/00-INDEX
-> +++ b/Documentation/00-INDEX
-> @@ -8,7 +8,7 @@ Please try and keep the descriptions small enough to fit on one line.
->  Following translations are available on the WWW:
+> diff --git a/Documentation/filesystems/ramfs-rootfs-initramfs.txt b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+> index a8273d5..59b4a09 100644
+> --- a/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+> +++ b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+> @@ -297,7 +297,7 @@ the above threads) is:
+>     either way about the archive format, and there are alternative tools,
+>     such as:
 >  
->     - Japanese, maintained by the JF Project (JF@linux.or.jp), at
-> -     http://www.linux.or.jp/JF/
-> +     http://linuxjf.sourceforge.jp/
+> -     http://freshmeat.net/projects/afio/
+> +     http://freecode.com/projects/afio
 >  
->  00-INDEX
->  	- this file.
+>  2) The cpio archive format chosen by the kernel is simpler and cleaner (and
+>     thus easier to create and parse) than any of the (literally dozens of)
+> diff --git a/Documentation/scsi/scsi-generic.txt b/Documentation/scsi/scsi-generic.txt
+> index 0a22ab8..51be20a 100644
+> --- a/Documentation/scsi/scsi-generic.txt
+> +++ b/Documentation/scsi/scsi-generic.txt
+> @@ -62,7 +62,7 @@ There are two packages of sg utilities:
+>                  and earlier
+>  Both packages will work in the lk 2.4 series however sg3_utils offers more
+>  capabilities. They can be found at: http://sg.danny.cz/sg/sg3_utils.html and 
+> -freshmeat.net
+> +freecode.com
+>  
+>  Another approach is to look at the applications that use the sg driver.
+>  These include cdrecord, cdparanoia, SANE and cdrdao.
+> diff --git a/Documentation/usb/mtouchusb.txt b/Documentation/usb/mtouchusb.txt
+> index 86302cd..a91adb2 100644
+> --- a/Documentation/usb/mtouchusb.txt
+> +++ b/Documentation/usb/mtouchusb.txt
+> @@ -1,7 +1,7 @@
+>  CHANGES
+>  
+>  - 0.3 - Created based off of scanner & INSTALL from the original touchscreen
+> -  driver on freshmeat (http://freshmeat.net/projects/3mtouchscreendriver)
+> +  driver on freecode (http://freecode.com/projects/3mtouchscreendriver)
+>  - Amended for linux-2.4.18, then 2.4.19
+>  
+>  - 0.5 - Complete rewrite using Linux Input in 2.6.3
 
 
 -- 
