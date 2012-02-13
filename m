@@ -1,112 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab2BMQwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:52:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56765 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757269Ab2BMQwh (ORCPT
+	id S1757325Ab2BMQxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:53:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63821 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab2BMQvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:52:37 -0500
-Date: Mon, 13 Feb 2012 16:52:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Porter <mporter@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
-	regulators
-Message-ID: <20120213165209.GA31482@n2100.arm.linux.org.uk>
-References: <1329151422-2146-1-git-send-email-mporter@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329151422-2146-1-git-send-email-mporter@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 13 Feb 2012 11:51:43 -0500
+Message-Id: <20120213165137.833859657@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 13 Feb 2012 20:48:23 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [patch 1/4] fs, proc: Introduce /proc/<pid>/task/<tid>/children entry v9
+References: <20120213164822.227219834@openvz.org>
+Content-Disposition: inline; filename=fs-proc-tid-children-13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 11:43:42AM -0500, Matt Porter wrote:
-> This fixes smsc911x support on platforms using gpmc_smsc911x_init().
-> Commit c7e963f6888816f04d1f5da0e07bec4e0092f227 added the requirement
-> that platforms provide vdd33a and vddvario supplies.
+When we do checkpoint of a task we need to know the list of children
+the task, has but there is no easy and fast way to generate reverse
+parent->children chain from arbitrary <pid> (while a parent pid is
+provided in "PPid" field of /proc/<pid>/status).
 
-Thanks.  Only one comment on this.
+So instead of walking over all pids in the system (creating one big process
+tree in memory, just to figure out which children a task has) -- we add
+explicit /proc/<pid>/task/<tid>/children entry, because the kernel already has
+this kind of information but it is not yet exported.
 
-> +static struct platform_device gpmc_smsc911x_regulator = {
-> +	.name		= "reg-fixed-voltage",
-> +	.id		= 0,
+This is a first level children, not the whole process tree.
 
-$ grep -A1 reg-fixed-voltage arch/arm/*omap* -r
-arch/arm/mach-omap2/board-omap3evm.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-omap3evm.c-	.id		= 1,
---
-arch/arm/mach-omap2/board-zoom-peripherals.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-zoom-peripherals.c-	.id		= 1,
---
-arch/arm/mach-omap2/board-overo.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-overo.c-	.id		= 1,
---
-arch/arm/mach-omap2/board-omap4panda.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-omap4panda.c-	.id		= 1,
---
-arch/arm/mach-omap2/board-rm680.c:	.name			= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-rm680.c-	.dev			= {
---
-arch/arm/mach-omap2/board-igep0020.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-igep0020.c-	.id		= 0,
---
-arch/arm/mach-omap2/board-4430sdp.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-4430sdp.c-	.id		= -1,
---
-arch/arm/mach-omap2/board-4430sdp.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-4430sdp.c-	.id		= 1,
---
-arch/arm/mach-omap2/board-omap3pandora.c:	.name		= "reg-fixed-voltage",
-arch/arm/mach-omap2/board-omap3pandora.c-	.id		= 1,
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ Documentation/filesystems/proc.txt |   18 +++++
+ fs/proc/array.c                    |  123 +++++++++++++++++++++++++++++++++++++
+ fs/proc/base.c                     |    3 
+ fs/proc/internal.h                 |    1 
+ 4 files changed, 145 insertions(+)
 
-igep0020.c does this:
+Index: linux-2.6.git/Documentation/filesystems/proc.txt
+===================================================================
+--- linux-2.6.git.orig/Documentation/filesystems/proc.txt
++++ linux-2.6.git/Documentation/filesystems/proc.txt
+@@ -40,6 +40,7 @@ Table of Contents
+   3.4	/proc/<pid>/coredump_filter - Core dump filtering settings
+   3.5	/proc/<pid>/mountinfo - Information about mounts
+   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
++  3.7   /proc/<pid>/task/<tid>/children - Information about task children
+ 
+   4	Configuring procfs
+   4.1	Mount options
+@@ -1549,6 +1550,23 @@ then the kernel's TASK_COMM_LEN (current
+ comm value.
+ 
+ 
++3.7	/proc/<pid>/task/<tid>/children - Information about task children
++-------------------------------------------------------------------------
++This file provides a fast way to retrieve first level children pids
++of a task pointed by <pid>/<tid> pair. The format is a space separated
++stream of pids.
++
++Note the "first level" here -- if a child has own children they will
++not be listed here, one needs to read /proc/<children-pid>/task/<tid>/children
++to obtain the descendants.
++
++Since this interface is intended to be fast and cheap it doesn't
++guarantee to provide precise results and some children might be
++skipped, especially if they've exited right after we printed their
++pids, so one need to either stop or freeze processes being inspected
++if precise results are needed.
++
++
+ ------------------------------------------------------------------------------
+ Configuring procfs
+ ------------------------------------------------------------------------------
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -556,3 +556,126 @@ int proc_pid_statm(struct seq_file *m, s
+ 
+ 	return 0;
+ }
++
++#ifdef CONFIG_CHECKPOINT_RESTORE
++static struct pid *
++get_children_pid(struct inode *inode, struct pid *pid_prev, loff_t pos)
++{
++	struct task_struct *start, *task;
++	struct pid *pid = NULL;
++
++	read_lock(&tasklist_lock);
++
++	start = pid_task(proc_pid(inode), PIDTYPE_PID);
++	if (!start)
++		goto out;
++
++	/*
++	 * Lets try to continue searching first, this gives
++	 * us significant speedup on children-rich processes.
++	 */
++	if (pid_prev) {
++		task = pid_task(pid_prev, PIDTYPE_PID);
++		if (task && task->real_parent == start &&
++		    !(list_empty(&task->sibling))) {
++			if (list_is_last(&task->sibling, &start->children))
++				goto out;
++			task = list_first_entry(&task->sibling,
++						struct task_struct, sibling);
++			pid = get_pid(task_pid(task));
++			goto out;
++		}
++	}
++
++	/*
++	 * Slow search case.
++	 *
++	 * We might miss some children here if children
++	 * are exited while we were not holding the lock,
++	 * but it was never promised to be accurate that
++	 * much.
++	 *
++	 * "Just suppose that the parent sleeps, but N children
++	 *  exit after we printed their tids. Now the slow paths
++	 *  skips N extra children, we miss N tasks." (c)
++	 *
++	 * So one need to stop or freeze the leader and all
++	 * its children to get a precise result.
++	 */
++	list_for_each_entry(task, &start->children, sibling) {
++		if (pos-- == 0) {
++			pid = get_pid(task_pid(task));
++			break;
++		}
++	}
++
++out:
++	read_unlock(&tasklist_lock);
++	return pid;
++}
++
++static int children_seq_show(struct seq_file *seq, void *v)
++{
++	struct inode *inode = seq->private;
++	pid_t pid;
++
++	pid = pid_nr_ns(v, inode->i_sb->s_fs_info);
++	return seq_printf(seq, "%d ", pid);
++}
++
++static void *children_seq_start(struct seq_file *seq, loff_t *pos)
++{
++	return get_children_pid(seq->private, NULL, *pos);
++}
++
++static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
++{
++	struct pid *pid;
++
++	pid = get_children_pid(seq->private, v, *pos + 1);
++	put_pid(v);
++
++	++*pos;
++	return pid;
++}
++
++static void children_seq_stop(struct seq_file *seq, void *v)
++{
++	put_pid(v);
++}
++
++static const struct seq_operations children_seq_ops = {
++	.start	= children_seq_start,
++	.next	= children_seq_next,
++	.stop	= children_seq_stop,
++	.show	= children_seq_show,
++};
++
++static int children_seq_open(struct inode *inode, struct file *file)
++{
++	struct seq_file *m;
++	int ret;
++
++	ret = seq_open(file, &children_seq_ops);
++	if (ret)
++		return ret;
++
++	m = file->private_data;
++	m->private = inode;
++
++	return ret;
++}
++
++int children_seq_release(struct inode *inode, struct file *file)
++{
++	seq_release(inode, file);
++	return 0;
++}
++
++const struct file_operations proc_tid_children_operations = {
++	.open    = children_seq_open,
++	.read    = seq_read,
++	.llseek  = seq_lseek,
++	.release = children_seq_release,
++};
++#endif /* CONFIG_CHECKPOINT_RESTORE */
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -3350,6 +3350,9 @@ static const struct pid_entry tid_base_s
+ 	ONE("stat",      S_IRUGO, proc_tid_stat),
+ 	ONE("statm",     S_IRUGO, proc_pid_statm),
+ 	REG("maps",      S_IRUGO, proc_maps_operations),
++#ifdef CONFIG_CHECKPOINT_RESTORE
++	REG("children",  S_IRUGO, proc_tid_children_operations),
++#endif
+ #ifdef CONFIG_NUMA
+ 	REG("numa_maps", S_IRUGO, proc_numa_maps_operations),
+ #endif
+Index: linux-2.6.git/fs/proc/internal.h
+===================================================================
+--- linux-2.6.git.orig/fs/proc/internal.h
++++ linux-2.6.git/fs/proc/internal.h
+@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
+ 				struct pid *pid, struct task_struct *task);
+ extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
+ 
++extern const struct file_operations proc_tid_children_operations;
+ extern const struct file_operations proc_maps_operations;
+ extern const struct file_operations proc_numa_maps_operations;
+ extern const struct file_operations proc_smaps_operations;
 
-static struct omap_smsc911x_platform_data smsc911x_cfg = {
-        .cs             = IGEP2_SMSC911X_CS,
-        .gpio_irq       = IGEP2_SMSC911X_GPIO,
-        .gpio_reset     = -EINVAL,
-        .flags          = SMSC911X_USE_32BIT | SMSC911X_SAVE_MAC_ADDRESS,
-};
-
-static inline void __init igep2_init_smsc911x(void)
-{
-        gpmc_smsc911x_init(&smsc911x_cfg);
-}
-
-so it seems to use the gpmc_smsc stuff as well.  So we're ending up with
-two "reg-fixed-voltage" devices both with ID 0.  That's not going to work,
-and the driver model/sysfs will give you a nice warning there about that.
-
-I think OMAP (or even the reg-fixed-voltage folk) needs to create an enum
-similar to what I did for 8250 to control the allocation of platform
-device IDs for this, otherwise we're going to keep on running over this
-problem.
-
-/*
- * Allocate 8250 platform device IDs.  Nothing is implied by
- * the numbering here, except for the legacy entry being -1.
- */
-enum {
-	PLAT8250_DEV_LEGACY = -1,
-	PLAT8250_DEV_PLATFORM,
-	PLAT8250_DEV_PLATFORM1,
-	PLAT8250_DEV_PLATFORM2,
-	PLAT8250_DEV_FOURPORT,
-	PLAT8250_DEV_ACCENT,
-	PLAT8250_DEV_BOCA,
-	PLAT8250_DEV_EXAR_ST16C554,
-	PLAT8250_DEV_HUB6,
-	PLAT8250_DEV_MCA,
-	PLAT8250_DEV_AU1X00,
-	PLAT8250_DEV_SM501,
-};
-
-Added Mark for his comment.
