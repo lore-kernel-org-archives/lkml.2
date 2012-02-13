@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2BMBm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 20:42:27 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:46841 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752967Ab2BMBmZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 20:42:25 -0500
-Date: Sun, 12 Feb 2012 20:42:24 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: Huang Ying <ying.huang@intel.com>, <ming.m.lin@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
-In-Reply-To: <201202122100.05349.oliver@neukum.org>
-Message-ID: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
+	id S1753631Ab2BMBrH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 20:47:07 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:59599 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064Ab2BMBrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 20:47:06 -0500
+Message-ID: <1329097617.4f386b91792a3@www.imp.polymtl.ca>
+Date: Sun, 12 Feb 2012 20:46:57 -0500
+From: Naveen Goswamy <naveen.goswamy@polymtl.ca>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: Kernel crashing on eject SD card
+References: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca> <20120212220836.6aa7fa4d@stein> <20120212222027.71651e8b@stein>
+In-Reply-To: <20120212222027.71651e8b@stein>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.3
+X-Originating-IP: 76.10.169.205
+X-Poly-FromMTA: (imp-4-3.polymtl.ca [132.207.4.78]) at Mon, 13 Feb 2012 01:46:58 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Feb 2012, Oliver Neukum wrote:
+I confirm that it behaves properly when virtualbox drivers are not loaded.
 
-> Yes, we can use the same heuristics as everywhere.
-> command queued -> autopm_get
-> command finished -> autopm_put
-> 
-> but for the USB host adapter, not the sr device
+Cheers,
 
-I still don't fully understand.  Are you suggesting that we use the 
-normal autosuspend timeout mechanism for the disk drive (for example, 
-spin down the disk if it hasn't been used for five minutes), and then 
-autosuspend a USB mass-storage device whenever its children are 
-suspended and no commands are in progress?  (In fact, there can't be 
-any commands in progress if all the children are suspended.)
+Naveen
 
-Or are you suggesting that we autosuspend a USB mass-storage device 
-between commands, regardless of the state of its children?  Didn't we 
-discuss this approach a year or two ago and decide against it?
 
-> > Furthermore, if you use active commands as the condition for 
-> > suspending, what do you do when the act of suspending causes a command 
-> > to be sent?  It is necessary to distinguish between ordinary commands 
-> > and those that are PM-related.
-> 
-> No. This problem goes away if you correctly make the distinction between
-> host controller/storage device and the disk drive.
-> You use the "active command standard" for the host controller.
-> Then you need not care about the commands needed to suspend a disk drive.
-> You cannot suspend the host controller while the disk drive is being suspended
-> anyway, as the tree constraint prevents it.
-> 
-> For the disk drive you just declare them busy restarting the timeout as a command
-> goes down to the hardware. There is an interesting case about what you do if
-> the generic layer wants to autosuspend an sr device which has a command queued.
-> I propose we catch that case in sr_suspend() and return -EBUSY in
-> the autosuspend with command in flight case.
+Quoting Stefan Richter <stefanr@s5r6.in-berlin.de>:
 
-The SCSI drivers don't know much about the request queue -- the block
-layer manages it.  That's another reason for handling this at the block
-layer.
+> On Feb 12 Stefan Richter wrote:
+> > Modules linked in: [...] vboxnetadp(O) vboxnetflt(O) vboxdrv(O) [...]
+>
+> Oh, could you try without virtualbox?
+>
+> The debian bug report hints that kernel 3.2 /without virtualbox drivers/
+> seems to behave itself.
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=649735
+> --
+> Stefan Richter
+> -=====-===-- --=- -==--
+> http://arcgraph.de/sr/
+>
 
-Is there some special reason you're talking about sr (the SCSI CD/DVD
-driver) instead of sd (the SCSI disk driver)?
 
-Alan Stern
 
