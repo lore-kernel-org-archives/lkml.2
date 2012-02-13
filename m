@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab2BNCmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 21:42:38 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:48039 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751251Ab2BNCme convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 21:42:34 -0500
+	id S1758823Ab2BNCqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 21:46:18 -0500
+Received: from pluton.utt.fr ([193.50.230.240]:58113 "EHLO pluton.utt.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab2BNCqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 21:46:17 -0500
+X-Greylist: delayed 15303 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Feb 2012 21:46:17 EST
+Message-ID: <20120213232609.uwi1umq9noc448cc@messagerie.utt.fr>
+Date: Mon, 13 Feb 2012 23:26:09 +0100
+From: BUNEL Maxime <maxime.bunel@utt.fr>
+Reply-to: mr_ronaldo112@yahoo.co.jp
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6tqsYs8-n2Q+EGGekS6wOOYYXUvUbEu6sfQ7U3--Gyjnw@mail.gmail.com>
-References: <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee>
- <20120213214623.GJ11077@ponder.secretlab.ca> <20120213.195835.1573147101037168145.davem@davemloft.net>
- <CACxGe6tqsYs8-n2Q+EGGekS6wOOYYXUvUbEu6sfQ7U3--Gyjnw@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 13 Feb 2012 19:41:48 -0700
-X-Google-Sender-Auth: Wt-XZwoiV9dM6AE44C-zwCav9Lw
-Message-ID: <CACxGe6vp-a1TC_zMaOW+XE9WeYtgAS7X-HDyf7uxYZPKLzEkVQ@mail.gmail.com>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-To: David Miller <davem@davemloft.net>
-Cc: mroos@linux.ee, rob.herring@calxeda.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 7:30 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Feb 13, 2012 at 5:58 PM, David Miller <davem@davemloft.net> wrote:
->> From: Grant Likely <grant.likely@secretlab.ca>
->> Date: Mon, 13 Feb 2012 14:46:23 -0700
->>
->>> Ugh; that looks bad.  If it failed there, then the global device node list
->>> is corrupted.  I hate to ask you this, but would you be able to git bisect to
->>> narrow down the commit that causes the problem?
->>
->> Wild guess on all of these bugs, bad OF node reference counting and a
->> OF node is free'd up prematurely.
->>
->> If you look at the sparc code that has been subsumed into the generic
->> drivers/of/ stuff over the past few years, you'll see that we never
->> consistently did any of the reference counting bits on the sparc side.
->
-> Hmmm.... The of_node_put() code path shouldn't exist on sparc.  You'll
-> see that it is #ifdef'd out in include/linux/of.h.  Plus, only
-> 'OF_DETACHED' nodes are allowed to be released, an there are only 3
-> code paths (all calling of_detach_node()) specific to powerpc that can
-> detach a node.
 
-In fact, I should disable those paths always when CONFIG_OF_DYNAMIC is
-disabled.  I'll look into doing so for v3.4.
+Good Day,
 
-g.
+I have a business proposal of USD $8,500,000.00 only for you to transact
+with me from my bank to your country. All confirmable documents to back up
+the claims will be made available to you prior to your acceptance. Reply if
+you are interested so that we can commence the transation which will
+take less than 5 days.
+
+Best Regards,
+Mr. Rolando Biscocho Castillo.
+Investment consultant,
+UBS Investment Bank, Philippines.
+
+
+
+
+
