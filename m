@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab2BMF15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:27:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45361 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab2BMF1z (ORCPT
+	id S1751449Ab2BMFcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:32:15 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50761 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab2BMFcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:27:55 -0500
-Date: Mon, 13 Feb 2012 16:27:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the kmap_atomic tree with the staging
- tree
-Message-Id: <20120213162752.b4207f13fb95d7e4db1b5ba2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38"
+	Mon, 13 Feb 2012 00:32:14 -0500
+Date: Sun, 12 Feb 2012 22:32:08 -0700
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+Message-ID: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com>
+From: David Ahern <dsahern@gmail.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1D5WLhp032195
 
---Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[sorry for the top post - you would think Android would have a better mail client]
 
-Hi Cong,
+If the first patch is needed then kvm-events will not work with older, unpatched kernels. That's a big limitation from a perf perpective.
 
-Today's linux-next merge of the kmap_atomic tree got a conflict in
-drivers/staging/zram/xvmalloc.c between commit b154ff05e1b0 ("staging:
-zram: remove xvmalloc") from the staging tree and commit ea81cfe7d7fb
-("zram: remove the second argument of k[un]map_atomic()") from the
-kmap_atomic tree.
+David
 
-The former removed the file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Sent from my ASUS Eee Pad
 
---Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38
-Content-Type: application/pgp-signature
+Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPOJ9YAAoJEECxmPOUX5FEgR4P+QGnG4KbgKlqoSdDWvYxjFOY
-cnXYvLWg203w3ohnfYvG9XIWQ37u6qUn3fGyuOjOOx19WucO1zjXSsJUJMugS9jT
-VvM+w7yFs2OaTJtvn6I7FOLAdI7L5ihuBMdY9WLXFifYlN0zQyQUcYku4SVtCEuK
-OXNHtXdPqSi5UwO+R8uIgVaF1vK6z/TtlAOGEet0FVOHwpwGESbSaMO8SPnML0x7
-2g1+mCqxyMsNK7Ztg6MBVmuTI8rX48kl3zvzirIk5UjBXrmoLGAuNyXYW0KNzHv8
-tj2HFdghoVDWe+AFcqNoAFHwgwc4xoyFYHycWQMDtjjUt7f38wovDU0s7foaKdHz
-d0i05YKDr+o1O620pHpF/JimGjmk2KUKnHPzZBZW/H5tV0TQ6rEWMqmVyzWly/iE
-0YquSQ9e5cDnBaLpUwTUs/+iDyHRUYr1h6+/vF87ldAsIUjug4iMYn4Vfgy1naT7
-Rl/h5YCsW4M3hQfY0/hDgjIAPMWjwu+r1dLzR2vvI1kFkCluKorwrchvQdVudS8s
-9DJnXM20O1/+VyZ+mwJ2p8HqZkoRLdeVkgQ+0HBCtMxhOBjCN+Tg+L4/0gJ0wX/l
-3F6z3wBwLHRrhzbwtbL1WNY9YW2qx0pejGTYLlFNBywyYyj6T1ZWGU8GD5+/GQNj
-herFsa88EYQxx0FFK8jx
-=8m1w
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38--
+>On 02/13/2012 11:04 AM, David Ahern wrote:
+>
+>> Compile fails on Fedora 16, x86_64 with latest tip-perf-core branch:
+>> 
+>> 
+>> In file included from builtin-kvm-events.c:19:0:
+>> ../../arch/x86/include/asm/svm.h:133:1: error: packed attribute is
+>> unnecessary for â€˜vmcb_segâ€™ [-Werror=packed]
+>> ../../arch/x86/include/asm/svm.h:178:1: error: packed attribute is
+>> unnecessary for â€˜vmcb_save_areaâ€™ [-Werror=packed]
+>> ../../arch/x86/include/asm/svm.h:183:1: error: packed attribute is
+>> unnecessary for â€˜vmcbâ€™ [-Werror=packed]
+>> In file included from builtin-kvm-events.c:20:0:
+>> ../../arch/x86/include/asm/vmx.h:334:0: error: "REG_R8" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:46:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:335:0: error: "REG_R9" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:48:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:336:0: error: "REG_R10" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:50:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:337:0: error: "REG_R11" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:52:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:338:0: error: "REG_R12" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:54:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:339:0: error: "REG_R13" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:56:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:340:0: error: "REG_R14" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:58:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:341:0: error: "REG_R15" redefined [-Werror]
+>> /usr/include/sys/ucontext.h:60:0: note: this is the location of the
+>> previous definition
+>> ../../arch/x86/include/asm/vmx.h:443:13: error: expected declaration
+>> specifiers or â€˜...â€™ before numeric constant
+>> In file included from builtin-kvm-events.c:21:0:
+>> ../../arch/x86/include/asm/kvm_host.h:15:22: fatal error: linux/mm.h: No
+>> such file or directory
+>> cc1: all warnings being treated as errors
+>> 
+>
+>
+>The first patch(patch 1/3) should be applied!
+>
+>Thank you, David! :)
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
