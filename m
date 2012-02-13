@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2BMSPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:15:25 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44414 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757464Ab2BMSPX (ORCPT
+	id S1757531Ab2BMSQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:16:04 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36171 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab2BMSQB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:15:23 -0500
-Date: Mon, 13 Feb 2012 18:15:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Rabin Vincent <rabin@rab.in>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
-Message-ID: <20120213181501.GD25655@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.02.1202022016480.2759@xanadu.home> <1328234629-32735-1-git-send-email-sboyd@codeaurora.org> <CAH+eYFCKcPzMMp_Ef5iX0Xp=xK8MdvJoUBRgKGT56SVjY5DXoA@mail.gmail.com> <alpine.LFD.2.02.1202131307430.24536@xanadu.home> <4F3952C7.3040502@codeaurora.org>
+	Mon, 13 Feb 2012 13:16:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3952C7.3040502@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<m1ipjc3fsk.fsf@fess.ebiederm.org>
+	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+	<m1zkcmyjyd.fsf@fess.ebiederm.org>
+	<CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
+Date: Mon, 13 Feb 2012 10:16:00 -0800
+X-Google-Sender-Auth: duI1l9GBI-I5LQhbNKXc32GaeMk
+Message-ID: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, kexec@lists.infradead.org,
+        vgoyal@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 10:13:27AM -0800, Stephen Boyd wrote:
-> Thanks. Russell has already merged the original patch to the fixes
-> branch. Hopefully he can fold this one in.
+On Mon, Feb 13, 2012 at 8:51 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> So I suspect we have a bug in our apic initialization somewhere, but
+>> apic initialization should happen after printk are enabled.  Or at least
+>> after early printks so the reset YH is reporting doesn't make much sense.
+>
+> will try Don's first version patch that only removing disable_IO_APIC.
 
-Nope, I've asked Linus to pull it.
+first version patch (only removing disable_IO_APIC) is working.
 
-So do we conclude that the original patch wasn't properly tested? :P
+Thanks
+
+Yinghai
