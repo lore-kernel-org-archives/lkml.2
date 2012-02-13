@@ -1,160 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab2BMFYy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:24:54 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:38506
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751363Ab2BMFYw (ORCPT
+	id S1751376Ab2BMF1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:27:48 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:32925 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab2BMF1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:24:52 -0500
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Huang Shijie <b32955@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <shawn.guo@linaro.org>, <artem.bityutskiy@intel.com>,
-        <w.sang@pengutronix.de>, <LW@KARO-electronics.de>,
-        <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>, <cjb@laptop.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v5 1/2] mxs-dma : move the mxs dma.h to a more common place
-Date: Mon, 13 Feb 2012 13:25:55 +0800
-Message-ID: <1329110756-14434-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1329110756-14434-1-git-send-email-b32955@freescale.com>
-References: <1329110756-14434-1-git-send-email-b32955@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Mon, 13 Feb 2012 00:27:47 -0500
+Date: Mon, 13 Feb 2012 16:27:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: linux-next: build warning after merge of the libata tree
+Message-Id: <20120213162740.9e3cb47a39da19ed89edea49@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the header to a more common place.
-The mxs dma engine is not only used in mx23/mx28, but also used
-in mx50/mx6q.  It will also be used in the future chips.
+--Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rename it to mxs-dma.h, and create a new folder include/linux/fsl/ to
-store the Freescale's header files.
+Hi Jeff,
 
-change mxs-dma driver, mxs-mmc driver, gpmi-nand driver, mxs-saif driver
-to the new header file.
+After merging the libata tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/dma/mxs-dma.c                              |    2 +-
- drivers/mmc/host/mxs-mmc.c                         |    2 +-
- drivers/mtd/nand/gpmi-nand/gpmi-nand.h             |    2 +-
- .../mach/dma.h => include/linux/fsl/mxs-dma.h      |    0
- sound/soc/mxs/mxs-pcm.c                            |    2 +-
- sound/soc/mxs/mxs-pcm.h                            |    2 +-
- sound/soc/mxs/mxs-saif.c                           |    2 +-
- 7 files changed, 6 insertions(+), 6 deletions(-)
- rename arch/arm/mach-mxs/include/mach/dma.h => include/linux/fsl/mxs-dma.h (100%)
+drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
+used [-Wunused-function]
+drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
+t used [-Wunused-function]
+drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
+ used [-Wunused-function]
+drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
+ used [-Wunused-function]
+drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
+used [-Wunused-function]
+drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
+t used [-Wunused-function]
+drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
+ used [-Wunused-function]
+drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
+used [-Wunused-function]
+drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
+t used [-Wunused-function]
+drivers/ata/libata.h:132:13: warning: 'ata_acpi_unregister' defined but not=
+ used [-Wunused-function]
+drivers/ata/libata.h:133:13: warning: 'ata_acpi_bind_dock' defined but not =
+used [-Wunused-function]
+drivers/ata/libata.h:134:13: warning: 'ata_acpi_unbind_dock' defined but no=
+t used [-Wunused-function]
 
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index b06cd4c..0afcedb 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -22,10 +22,10 @@
- #include <linux/platform_device.h>
- #include <linux/dmaengine.h>
- #include <linux/delay.h>
-+#include <linux/fsl/mxs-dma.h>
- 
- #include <asm/irq.h>
- #include <mach/mxs.h>
--#include <mach/dma.h>
- #include <mach/common.h>
- 
- /*
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 382c835..e5ea2b1 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -38,10 +38,10 @@
- #include <linux/gpio.h>
- #include <linux/regulator/consumer.h>
- #include <linux/module.h>
-+#include <linux/fsl/mxs-dma.h>
- 
- #include <mach/mxs.h>
- #include <mach/common.h>
--#include <mach/dma.h>
- #include <mach/mmc.h>
- 
- #define DRIVER_NAME	"mxs-mmc"
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-index c93b0ae..b9002c8 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-@@ -20,7 +20,7 @@
- #include <linux/mtd/nand.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--#include <mach/dma.h>
-+#include <linux/fsl/mxs-dma.h>
- 
- struct resources {
- 	void          *gpmi_regs;
-diff --git a/arch/arm/mach-mxs/include/mach/dma.h b/include/linux/fsl/mxs-dma.h
-similarity index 100%
-rename from arch/arm/mach-mxs/include/mach/dma.h
-rename to include/linux/fsl/mxs-dma.h
-diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
-index 105f42a..420715e 100644
---- a/sound/soc/mxs/mxs-pcm.c
-+++ b/sound/soc/mxs/mxs-pcm.c
-@@ -28,6 +28,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/dmaengine.h>
-+#include <linux/fsl/mxs-dma.h>
- 
- #include <sound/core.h>
- #include <sound/initval.h>
-@@ -35,7 +36,6 @@
- #include <sound/pcm_params.h>
- #include <sound/soc.h>
- 
--#include <mach/dma.h>
- #include "mxs-pcm.h"
- 
- static struct snd_pcm_hardware snd_mxs_hardware = {
-diff --git a/sound/soc/mxs/mxs-pcm.h b/sound/soc/mxs/mxs-pcm.h
-index f55ac4f..d2c8b12 100644
---- a/sound/soc/mxs/mxs-pcm.h
-+++ b/sound/soc/mxs/mxs-pcm.h
-@@ -19,7 +19,7 @@
- #ifndef _MXS_PCM_H
- #define _MXS_PCM_H
- 
--#include <mach/dma.h>
-+#include <linux/fsl/mxs-dma.h>
- 
- struct mxs_pcm_dma_params {
- 	int chan_irq;
-diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
-index f204dba..ce59112 100644
---- a/sound/soc/mxs/mxs-saif.c
-+++ b/sound/soc/mxs/mxs-saif.c
-@@ -24,12 +24,12 @@
- #include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/time.h>
-+#include <linux/fsl/mxs-dma.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/pcm_params.h>
- #include <sound/soc.h>
- #include <sound/saif.h>
--#include <mach/dma.h>
- #include <asm/mach-types.h>
- #include <mach/hardware.h>
- #include <mach/mxs.h>
--- 
-1.7.0.4
+Introduced by commits 75d22cd567ca ("libata: Bind the Linux device tree
+to the ACPI device tree") and c9df614ade0e ("libata: Add links between
+removable devices and docks").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOJ9MAAoJEECxmPOUX5FEOZsP/iJDNNYZ66k50v7kNtYX2bzw
+haWtSz4JFjhSgwh5YoqSTK1CBxHbLqYbGub/cAyLgr01FqfZ4JdnrO4RDgKTUi/h
+MFhQu2pygI8qjjQiGoNbmf0S73HkGJVYUy1QuJJLv/Hhn2ztzmN8sbbQurFFl9fm
+99le/0j8W2ilGABplbAFFft/Hu0Dfe34CHmaQSWE+F0D3JSWDjMcPhc3FMJ0V6Z+
+Lihy4Iddss2u/szXIv0Q7u1MntVWT13nnZyjkQQ48V+H4ZfpGeEaC9879CKEkjOh
+jeODrN4bmWj/v12+D4k87/5QZnd6LMbGYOE725BA+ESi7wP0zXWCDzTGFauPuonP
+ovaAFpRPUpZEuHxIPy5ROxyx7tjtuC39s/1tpu0Qb9Dg82q/cUUlT126xbwRkc53
+v67tMsUArJrB5C4jBrtOIg0B5HDfc8VJZ+tNZxjA2C70gizg0go3HGGq3bEtoovT
+FiN9oT9V1+j3gw3IDKK1BX923MEvsdMbunthKub+QGN/Wuy+mW6+LpiM2wVgUJZk
+H2zPNYp8cAG395q17JDHBHbmv9OwweewlNTvefvpTvknf0JfVquLeHmv46qjyxGs
+WV7YKl+7ehWEbTY0Brfc8iVgWsk0wzPJmi3l8CrCEVAP17hrT+wM4yPG0lnNdTv3
+kzRTNFPVfiT2Ju3WJh3h
+=gbHO
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Feb_2012_16_27_40_+1100_BUpFz8xKW0mBNlsi--
