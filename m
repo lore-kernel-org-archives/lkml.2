@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab2BMTyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:54:14 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46817 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab2BMTyM (ORCPT
+	id S1757781Ab2BMTy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:54:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57191 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757766Ab2BMTy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:54:12 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 13 Feb 2012 20:53:32 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de
-Subject: Re: [PATCH 06/13] firewire-sbp-target: Add sbp_fabric.{c,h}
-Message-ID: <20120213205332.09bc683f@stein>
-In-Reply-To: <337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
-References: <4E4BD560.4010806@bootc.net>
-	<1328989452-20921-1-git-send-email-bootc@bootc.net>
-	<1328989452-20921-7-git-send-email-bootc@bootc.net>
-	<1329138360.9333.399.camel@haakon2.linux-iscsi.org>
-	<337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Feb 2012 14:54:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <87d39xj955.fsf@rustcorp.com.au>
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
+	<1328055439-9441-1-git-send-email-venki@google.com>
+	<20120201140125.c656df41.akpm@linux-foundation.org>
+	<87d39xj955.fsf@rustcorp.com.au>
+Date: Mon, 13 Feb 2012 11:54:26 -0800
+Message-ID: <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
+From: Tony Luck <tony.luck@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 13 Chris Boot wrote:
-> I'd like to support ABORT_TASK and friends at some point. The problem
-> I see here though is that tags in SBP-2/3 are 48-bits wide (the ORB
-> address in the initiator node's memory), and the target framework seems
-> to use a u32 for this. SAM-3 Section 4.11 seems to say "A task tag is a
-> value that is composed of up to 64 bits" so it might be worth getting
-> that changed in the target framework?
+On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
+> Feel free to try to fix this in -next though, and see what breaks...
 
-In practice, its is quite likely that only 32 bit wide SBP tags are being
-used.  But there is no way to guarantee this.
--- 
-Stefan Richter
--=====-===-- --=- -==-=
-http://arcgraph.de/sr/
+ia64 is what breaks ... well not actually broken ... but some very
+weird delays that
+show up in different places depending on whether this patch is present.
+
+First linux-next kernel to be blessed with this patch was
+next-20120210. Booting it
+I see:
+[    7.164233] Switching to clocksource itc
+[  146.077315] pnp: PnP ACPI init
+
+An ugly 138.913 second delay.  Digging in the code showed that the bad bits
+happened inside stop_machine()
+
+Reverting just this patch makes this big delay disappear:
+
+[   32.780232] Switching to clocksource itc
+[   32.832100] pnp: PnP ACPI init
+
+but notice that it takes 25 extra seconds to get to this point in the
+boot (and while
+we expect to save some time by not re-computing num_online_cpus each time we
+need it ... this looks to be a lot more than I'd expect!)
+
+-Tony
