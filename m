@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab2BMSCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:02:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42820 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757442Ab2BMSCu (ORCPT
+	id S1757487Ab2BMSCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:02:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63677 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757472Ab2BMSCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:02:50 -0500
-Date: Mon, 13 Feb 2012 18:02:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Matt Porter <mporter@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
-	regulators
-Message-ID: <20120213180236.GB31482@n2100.arm.linux.org.uk>
-References: <1329151422-2146-1-git-send-email-mporter@ti.com> <20120213165209.GA31482@n2100.arm.linux.org.uk> <20120213165617.GE3494@opensource.wolfsonmicro.com> <20120213175233.GC1426@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120213175233.GC1426@atomide.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 13 Feb 2012 13:02:49 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=eSfxnIkts4oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=b8VgSBC0AAAA:8 a=nE_x1U7TGn8nXCXWI2QA:9 a=vlM-zp3Osn6qgXzsRZIA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329156168.25686.9.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCHv8 0/8] ftrace, perf: Adding support to use function trace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Date: Mon, 13 Feb 2012 13:02:48 -0500
+In-Reply-To: <1328643899-8361-1-git-send-email-jolsa@redhat.com>
+References: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
+	 <1328643899-8361-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 09:52:34AM -0800, Tony Lindgren wrote:
-> * Mark Brown <broonie@opensource.wolfsonmicro.com> [120213 08:25]:
-> > On Mon, Feb 13, 2012 at 04:52:09PM +0000, Russell King - ARM Linux wrote:
-> > 
-> > > I think OMAP (or even the reg-fixed-voltage folk) needs to create an enum
-> > > similar to what I did for 8250 to control the allocation of platform
-> > > device IDs for this, otherwise we're going to keep on running over this
-> > > problem.
-> > 
-> > > Added Mark for his comment.
-> > 
-> > Hrm, seems slightly icky but the enum will work if we can decide how to
-> > add elements to the enum since it'll be easy to bloat a lot it if it's
-> > central.  It's tempting to suggest just using a random number to assign
-> > the IDs randomly rather than have a central registry but obviously
-> > there's no guarantees there.
+On Tue, 2012-02-07 at 20:44 +0100, Jiri Olsa wrote:
+> hi,
+> here's another version of perf support for function trace
+> with filter. 
 > 
-> Can't we just leave out the .id and have it automatically assigned?
+> attached patches:
+>  - 1/8 ftrace: Change filter/notrace set functions to return exit code
+>  - 2/8 ftrace: Add enable/disable ftrace_ops control interface
+>  - 3/8 ftrace, perf: Add open/close tracepoint perf registration actions
+>  - 4/8 ftrace, perf: Add add/del tracepoint perf registration actions
+>  - 5/8 ftrace: Add FTRACE_ENTRY_REG macro to allow event registration
+>  - 6/8 ftrace, perf: Add support to use function tracepoint in perf
+>  - 7/8 ftrace: Allow to specify filter field type for ftrace events
+>  - 8/8 ftrace, perf: Add filter support for function trace event
 
-Unfortunately, there's no such infrastructure in the driver model.
+OK, these break on a lot of configs.
+
+Make sure they build with the following before sending another series.
+I'll give you some of the fixes I added already.
+
+Please test: allnoconfig, allmodconfig
+
+http://rostedt.homelinux.com/private/configs/config-ftrace-patchcheck
+http://rostedt.homelinux.com/private/configs/config-ftrace-static-patchcheck
+http://rostedt.homelinux.com/private/configs/config-nofunc-patchcheck
+http://rostedt.homelinux.com/private/configs/config-notrace-patchcheck
+
+Thanks!
+
+-- Steve
+
+Note, These need to be defines and not static inlines, because
+ftrace_ops is not defined in some cases.
+
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 76f6c49..d984c08 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -381,9 +381,6 @@ extern void ftrace_enable_daemon(void);
+ #else
+ static inline int skip_trace(unsigned long ip) { return 0; }
+ static inline int ftrace_force_update(void) { return 0; }
+-static inline void ftrace_set_filter(unsigned char *buf, int len, int reset)
+-{
+-}
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
+@@ -407,6 +404,9 @@ static inline int ftrace_text_reserved(void *start, void *end)
+  */
+ #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
+ #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
++#define ftrace_free_filter(ops) do { } while (0)
++#define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
++#define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
+ 
+ static inline ssize_t ftrace_filter_write(struct file *file, const char __user *ubuf,
+ 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
+
+
+
