@@ -1,84 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab2BMVuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:50:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10266 "EHLO mx1.redhat.com"
+	id S1755756Ab2BMVyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:54:33 -0500
+Received: from bues.ch ([80.190.117.144]:38405 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754309Ab2BMVuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:50:50 -0500
-Date: Mon, 13 Feb 2012 16:50:39 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
-        Karel Zak <kzak@redhat.com>, maxim.patlasov@gmail.com
-Subject: Re: [PATCH 0/2] block: online resize of disk partitions
-Message-ID: <20120213215039.GD3130@redhat.com>
-References: <1329161438-12602-1-git-send-email-vgoyal@redhat.com>
- <4F3981FE.7090601@ubuntu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3981FE.7090601@ubuntu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751329Ab2BMVyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 16:54:31 -0500
+Date: Mon, 13 Feb 2012 21:57:23 +0000
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org, chunkeey@web.de,
+        Max Filippov <jcmvbkbc@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not
+ from probe routine
+Message-ID: <20120213215723.565e8a8d@Nokia-N900>
+In-Reply-To: <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
+References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net>
+	<1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; arm-unknown-linux-gnueabi)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 04:34:54PM -0500, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On Mon, 13 Feb 2012 13:37:06 -0600
+Larry Finger <Larry.Finger@lwfinger.net> wrote:
+
+> Drivers that load firmware from their probe routine have problems with the
+> latest versions of udev as they get timeouts while waiting for user
+> space to start. The problem is fixed by loading the firmware and starting
+> mac80211 from a delayed_work queue. By using this method, most of the
+> original code is preserved.
 > 
-> On 2/13/2012 2:30 PM, Vivek Goyal wrote:
-> > Hi,
-> > 
-> > Following patch adds support for online resizing of a partition.
-> > This patch is based on previously posted patches by Phillip Susi.
-> > 
-> > There are two patches. Out of which one is kernel patch and other
-> > one is util-linux patch to add support of a user space utility
-> > "resizepart" to allow resizing the partition.
-> > 
-> > This ioctl only resizes the partition size in kenrel and does not
-> > change the size on disk. A user needs to make sure that
-> > corresponding changes are made to disk data structures also using
-> > fdisk(or partx), if changes are to be retained across reboot.
-> > 
-> > I made some changes according to the feedback received last time.
-> > Following are changes since the version Phillip posted.
-> > 
-> > - RESIZE ioctl ignores the partition "start" and does not expect
-> > user to specify one. Caller needs to just specify "device",
-> > "partition number" and "size" of new partition.
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
+> This one is compile-tested only.
 > 
-> I would prefer that the start argument not be left undefined.  I
-> checked it to make sure it was unchanged as a simple sanity check to
-> guard against user space being goofy,
+> Larry
+> ---
+>  drivers/net/wireless/p54/p54spi.c |   38 ++++++++++++++++++++++++++----------
+>  drivers/net/wireless/p54/p54spi.h |    1 +
+>  2 files changed, 28 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
+> index 7faed62..87c2634 100644
+> --- a/drivers/net/wireless/p54/p54spi.c
+> +++ b/drivers/net/wireless/p54/p54spi.c
+> @@ -595,6 +595,30 @@ static void p54spi_op_stop(struct ieee80211_hw *dev)
+>  	cancel_work_sync(&priv->work);
+>  }
+>  
+> +static void p54s_load_firmware(struct work_struct *work)
+> +{
+> +	struct p54s_priv *priv = container_of(to_delayed_work(work),
+> +				 struct p54s_priv, firmware_load);
+> +	struct ieee80211_hw *hw = priv->hw;
+> +	int ret;
+> +
+> +	ret = p54spi_request_firmware(hw);
+> +	if (ret < 0)
+> +		goto err_free_common;
+> +
+> +	ret = p54spi_request_eeprom(hw);
+> +	if (ret)
+> +		goto err_free_common;
+> +
+> +	ret = p54_register_common(hw, &priv->spi->dev);
+> +	if (ret)
+> +		goto err_free_common;
+> +	return;
+> +
+> +err_free_common:
+> +	dev_err(&priv->spi->dev, "Failed to read firmware\n");
+> +}
+> +
+>  static int __devinit p54spi_probe(struct spi_device *spi)
+>  {
+>  	struct p54s_priv *priv = NULL;
+> @@ -658,17 +682,9 @@ static int __devinit p54spi_probe(struct spi_device *spi)
+>  	priv->common.stop = p54spi_op_stop;
+>  	priv->common.tx = p54spi_op_tx;
+>  
+> -	ret = p54spi_request_firmware(hw);
+> -	if (ret < 0)
+> -		goto err_free_common;
+> -
+> -	ret = p54spi_request_eeprom(hw);
+> -	if (ret)
+> -		goto err_free_common;
+> -
+> -	ret = p54_register_common(hw, &priv->spi->dev);
+> -	if (ret)
+> -		goto err_free_common;
+> +	/* setup and start delayed work to load firmware */
+> +	INIT_DELAYED_WORK(&priv->firmware_load, p54s_load_firmware);
+> +	schedule_delayed_work(&priv->firmware_load, HZ);
 
-I am not sure that it is really helping. I looked at pvresize, lvresize
-and resize2fs user interfaces and a user has to just specify the new
-size of physical volume, logical volume, filesystem respectively. So
-it makes sense to keep partition resize interface inline with above
-tools.
+Why delay it one second?
+That seems arbitrary. Just use a non-delayed workqueue. That should be good enough.
 
-So if a user anyway does not specify the start of sector, then tools
-shall have to first read it and then call the ioctl. If anyway tools
-are specifying, there is no much scope of screwing up the things?
+>  
+>  	return 0;
+>  
+> diff --git a/drivers/net/wireless/p54/p54spi.h b/drivers/net/wireless/p54/p54spi.h
+> index dfaa62a..5f7714b 100644
+> --- a/drivers/net/wireless/p54/p54spi.h
+> +++ b/drivers/net/wireless/p54/p54spi.h
+> @@ -120,6 +120,7 @@ struct p54s_priv {
+>  
+>  	enum fw_state fw_state;
+>  	const struct firmware *firmware;
+> +	struct delayed_work firmware_load;
+>  };
+>  
+>  #endif /* P54SPI_H */
 
-Also in delete partition ioctl, we just ask the user the partition
-number being deleted. We don't ask for start and size of partition
-in an effort to verify that you are deleting the right partition.
+I think we have to cancel the work in the remove handler. Just in case the device was removed
+before fw load wq could run.
 
-> as well as to allow for the
-> possibility of extending the interface in the future to allow changing
-> the start as well as the length.
-
-Even if we allow changing start at some point of time, then IOCTL can
-remain the same and just the implementation will change in a backward
-compatible manner. Old tools still will continue to work as they have
-always been, and new ones can start passing "start" too.
-
-So I really did not find passing and checking "start" of partition
-very appealing.
-
-Thanks
-Vivek
+-- 
+Greetings, Michael.
