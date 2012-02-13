@@ -1,98 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757708Ab2BMTnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:43:15 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:32658 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab2BMTnO (ORCPT
+	id S1757723Ab2BMTqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:46:55 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:59502 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754569Ab2BMTqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:43:14 -0500
-Date: Mon, 13 Feb 2012 22:44:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Xi Wang <xi.wang@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
-Message-ID: <20120213194446.GD26353@mwanda>
-References: <20120208142513.4db2493a.akpm@linux-foundation.org>
- <4F33BF05.208@gmail.com>
- <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
- <4F33C7D7.1060801@kernel.dk>
- <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
- <4F33CEAE.60400@gmail.com>
- <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
- <20120209150652.5b1d19dc.akpm@linux-foundation.org>
- <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com>
- <alpine.DEB.2.00.1202130958470.23562@router.home>
+	Mon, 13 Feb 2012 14:46:54 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <jbottomley@parallels.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
+ of the staging area
+Thread-Index: AQHM53l7bNaLMVkRnEuVbUmiF0pdz5Y282MAgATPJAD//3pI0A==
+Date: Mon, 13 Feb 2012 19:31:40 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B70D5E0@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1328825688-4337-1-git-send-email-kys@microsoft.com>
+	 <20120210180212.GA605@kroah.com> <1329161318.20751.30.camel@dabdike>
+In-Reply-To: <1329161318.20751.30.camel@dabdike>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.35]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AjmyJqqohANyBN/e"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202130958470.23562@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F3967C1.00E1,ss=1,re=0.000,fgs=0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1DJl0bG004056
 
 
---AjmyJqqohANyBN/e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Feb 13, 2012 at 10:01:42AM -0600, Christoph Lameter wrote:
-> Well I think the best is just not do any of this. One can already do
-> k[zm]alloc(x * sizeof(struct whatever)). Do x*x for 2 dimensions etc etc.
-> No need to change the API.
->=20
+> -----Original Message-----
+> From: James Bottomley [mailto:jbottomley@parallels.com]
+> Sent: Monday, February 13, 2012 2:29 PM
+> To: Greg KH
+> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: Re: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of the
+> staging area
+> 
+> On Fri, 2012-02-10 at 10:02 -0800, Greg KH wrote:
+> > On Thu, Feb 09, 2012 at 02:14:48PM -0800, K. Y. Srinivasan wrote:
+> > > The storage driver (storvsc_drv.c) handles all block storage devices
+> > > assigned to Linux guests hosted on Hyper-V. This driver has been in the
+> > > staging tree for a while and this patch moves it out of the staging area.
+> > >
+> > > James was willing to apply this patch during the 3.3-rc phase and a decision
+> > > was taken to defer this to 3.4 since Greg had queued up a bunch of storvsc
+> > > patches for 3.4. Now that Greg has applied all of the pending storvsc patches,
+> > > I am sending this patch to move this driver out of staging. Based on James'
+> > > recommendation, this patch gets rid of the unneeded files in the staging/hv
+> > > directory.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > ---
+> > >  drivers/scsi/Kconfig                       |    7 +++++++
+> > >  drivers/scsi/Makefile                      |    3 +++
+> > >  drivers/{staging/hv => scsi}/storvsc_drv.c |    0
+> > >  drivers/staging/Kconfig                    |    2 --
+> > >  drivers/staging/Makefile                   |    1 -
+> > >  drivers/staging/hv/Kconfig                 |    5 -----
+> > >  drivers/staging/hv/Makefile                |    3 ---
+> > >  drivers/staging/hv/TODO                    |    5 -----
+> > >  8 files changed, 10 insertions(+), 16 deletions(-)
+> > >  rename drivers/{staging/hv => scsi}/storvsc_drv.c (100%)
+> > >  delete mode 100644 drivers/staging/hv/Kconfig
+> > >  delete mode 100644 drivers/staging/hv/Makefile
+> > >  delete mode 100644 drivers/staging/hv/TODO
+> >
+> > James, can I add your Acked-by: for this patch?
+> 
+> Yes ... i finally managed to pull your tree down and verify it.
+> 
+> Acked-by: James Bottomley <JBottomley@Parallels.com>
 
-The point was that there are a bunch of places where we have had
-integer overflows caused by doing kmalloc(x * sizeof(struct whatever)).
-For kzalloc(x * sizeof(struct whatever)), you just write it like
-kcalloc(x, sizeof(struct whatever)) and avoid the overflow, but we
-don't have a non-zeroing version of kcalloc() to do that.
+Thank you.
 
-Probably once we have the kmalloc_array() and people start using it,
-we get a bunch of overflow checking automatically and it's a kernel
-hardenning thing.  As well we could remove the duplicative checking
-so it's a cleanup.
-
-> If you add these variants then please think
-> about the necessity to add other variants (like the kmalloc_node() NUMA
-> call) etc in the future.
->=20
-
-We don't have a kcalloc_node(), so I don't think this is likely to
-be a big issue.
-
-regards,
-dan carpenter
-
---AjmyJqqohANyBN/e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPOWguAAoJEOnZkXI/YHqRyx8P/1ze6Oc8AWUJYBwS82KdtStO
-QWCXapv6zyPEITYpzegBXLjZbiE2SA+sv1Ue/n3M5lUMkf/TwvmkBWl6UReksL6z
-3SRML3UN5bTioC1+ov3FBz5+YDJgu62bMecgXH8OboaQk6dtv2nc8df8y9jFUge8
-AL8tdtaSeEqBU2uPvNYuIo2+89AvbLlsSGwulJVOguiS0hylDQ4iFBMLStnITi1T
-6tpklzxLhNAIqpEpg3uKlHCDSjigwqYfApqqWw3FkMpuObyJW0P6tBP+g49OQ4G/
-EjbFBrF2C0uCXrvq23xiTNxWwPMZ7DORJ9UKsJW4rwTqL1HykoHUgtV/YxD5r1wE
-zDKlMSjhnyOmY62RD259b38BwAqOwozNMB1UB/36/itcr3ie0b2nf0mvh4K9zcOy
-+jKQFiof4rV6C5lbm83UAT9kLdPA2WYq50M5zUjNSDphGmRt98mxa7Vx4oUh+mJo
-P84YB4+m9MOhUTaekbCnqPemlk37JCW34TDWX7wJGUNfDFknHWavsmOgnNP52TCX
-zJaf9mYJCcQzLxcjqww4II2QnnlZv3SApFVpTOQ0TwEbI6vNEfGQdI0wQE18gq/N
-FPXkoRJMHUgI+E61bh0AvOjSLDzRHJzZz+DcknoEla7DcYwf3y6sHvzZIDpPfJLw
-mZ9QV6o5QoYB0R/M+v4C
-=0lnz
------END PGP SIGNATURE-----
-
---AjmyJqqohANyBN/e--
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
