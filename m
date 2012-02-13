@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab2BMOLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 09:11:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756680Ab2BMOLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 09:11:51 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <htejun@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: exit_aio() hang after I/O failure
-References: <CAO+b5-orBaZMmmw1_5Jo+oSEDu8yXrXt-cAcZxQeqkmFkP8efA@mail.gmail.com>
-	<x49ipk2bdkn.fsf@segfault.boston.devel.redhat.com>
-	<CAO+b5-q9zYWiBLJMyXEfY1EhOyQtKLs5rPyx+n+Tf79=6WiK1g@mail.gmail.com>
-	<CAO+b5-pCQmz=c5na5vmLAWm=2Ps2ts33v2ZMkJGTjaMohzysLA@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 13 Feb 2012 09:11:43 -0500
-In-Reply-To: <CAO+b5-pCQmz=c5na5vmLAWm=2Ps2ts33v2ZMkJGTjaMohzysLA@mail.gmail.com>
-	(Bart Van Assche's message of "Sat, 11 Feb 2012 18:30:42 +0000")
-Message-ID: <x49lio6yg9s.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756644Ab2BMOPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 09:15:16 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52247 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab2BMOPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 09:15:14 -0500
+Message-ID: <4F391A98.3080400@linux.vnet.ibm.com>
+Date: Mon, 13 Feb 2012 08:13:44 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+References: <20120213171949.262e0c12e8d8883e90216df1@canb.auug.org.au> <20120213064508.GD28617@kroah.com>
+In-Reply-To: <20120213064508.GD28617@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021314-6148-0000-0000-0000036507D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bart Van Assche <bvanassche@acm.org> writes:
-
-> On Mon, Jan 23, 2012 at 4:47 PM, Bart Van Assche <bvanassche@acm.org> wrote:
->> On Mon, Jan 23, 2012 at 4:15 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
->> > Bart Van Assche <bvanassche@acm.org> writes:
->> > > Apparently processes can hang in exit_aio() with at least kernel 3.2.1
->> > > after an I/O failure. Has anyone seen this before ?
->> > >
->> > > This occurred after a SCSI device had been removed entirely (and hence
->> > > after all I/O requests were killed by scsi_remove_host()).
->> >
->> > Fixed here:
->> >
->> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=69e4747ee9727d660b88d7e1efe0f4afcb35db1b
+On 02/13/2012 12:45 AM, Greg KH wrote:
+> On Mon, Feb 13, 2012 at 05:19:49PM +1100, Stephen Rothwell wrote:
+>> Hi ,
 >>
->> Thanks a lot for the feedback - I'll give this patch a try.
->
-> Bad news: I've been able to reproduce exactly the same call stack with
-> kernel 3.2.5. That kernel version includes the aforementioned commit.
+>> After merging the final tree, today's linux-next build (powerpc allyesconfig)
+>> failed like this:
+>>
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_cpu_notifier':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:451:3: error: implicit declaration of function 'alloc_vm_area' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:451:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:459:4: error: implicit declaration of function 'free_vm_area' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_map_object':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:705:3: error: implicit declaration of function 'set_pte' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:709:27: error: dereferencing pointer to incomplete type
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_unmap_object':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:739:3: error: implicit declaration of function '__flush_tlb_one' [-Werror=implicit-function-declaration]
+>>
+>> Caused by commit 61989a80fb3a ("staging: zsmalloc: zsmalloc memory
+>> allocation library").  This needs to include linux/vmalloc.h at least.  I
+>> couldn't find set_pte at all or __flush_tlb_one for powerpc.
+>>
+>> This was too hard to revert, so I have left powerpc allyesconfig broken
+>> for today.  I may revert it (and some dependent commits) tomorrow.
+> 
+> Nitin, please send me a patch to fix this as soon as possible.
 
-OK, thanks for testing.  I'll try to reproduce this.
+Hey Greg,
 
-Cheers,
-Jeff
+Working... response within the hour.
+
+--
+Seth
+
