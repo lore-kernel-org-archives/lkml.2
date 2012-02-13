@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab2BMRr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:47:28 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36434 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab2BMRr1 (ORCPT
+	id S1757421Ab2BMRsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 12:48:08 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42910 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592Ab2BMRsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:47:27 -0500
-Message-ID: <4F394CA0.9020902@linux.vnet.ibm.com>
-Date: Mon, 13 Feb 2012 23:17:12 +0530
+	Mon, 13 Feb 2012 12:48:06 -0500
+Message-ID: <4F394CC9.6010103@linux.vnet.ibm.com>
+Date: Mon, 13 Feb 2012 23:17:53 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-        paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-        paul@paulmenage.org, tj@kernel.org, frank.rowand@am.sony.com,
-        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
-        prashanth@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+To: paulmck@linux.vnet.ibm.com
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        paul@paulmenage.org, rjw@sisk.pl, tj@kernel.org,
+        frank.rowand@am.sony.com, pjt@google.com, tglx@linutronix.de,
+        lizf@cn.fujitsu.com, prashanth@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
 Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling related
  to cpusets
-References: <Pine.LNX.4.44L0.1202101647440.1179-100000@iolanthe.rowland.org> <201202102339.02702.rjw@sisk.pl> <1328926042.2476.3.camel@laptop> <4F35EE11.5010202@linux.vnet.ibm.com>
-In-Reply-To: <4F35EE11.5010202@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+References: <20120207185411.7482.43576.stgit@srivatsabhat.in.ibm.com> <1328671335.2482.72.camel@laptop> <4F32174E.2050207@linux.vnet.ibm.com> <20120209075701.GE18387@elte.hu> <4F3386E9.7090606@linux.vnet.ibm.com> <20120209151158.GA22489@elte.hu> <1328889127.25989.14.camel@laptop> <20120210165338.GI2458@linux.vnet.ibm.com>
+In-Reply-To: <20120210165338.GI2458@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12021317-2674-0000-0000-000003537E60
+x-cbid: 12021317-5564-0000-0000-0000015A2262
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2012 09:56 AM, Srivatsa S. Bhat wrote:
+On 02/10/2012 10:23 PM, Paul E. McKenney wrote:
 
-> On 02/11/2012 07:37 AM, Peter Zijlstra wrote:
-> 
->> On Fri, 2012-02-10 at 23:39 +0100, Rafael J. Wysocki wrote:
+> On Fri, Feb 10, 2012 at 04:52:07PM +0100, Peter Zijlstra wrote:
+>> On Thu, 2012-02-09 at 16:11 +0100, Ingo Molnar wrote:
+>>
+>>>> My understanding of the code is that when a CPU is taken 
+>>>> offline, it is removed from all the cpusets and then the 
+>>>> scan_for_empty_cpusets() function is run to move tasks from 
+>>>> empty cpusets to their parent cpusets.
 >>>
->>>> I don't see why not.  Presumably no CPUs will be added or removed while 
->>>> the system is asleep.
->>>
->>> ACPI explicitly forbids that level of hardware reconfiguration in a sleep
->>> state (even in S4), AFAICS.  Still, people may try to do that ... 
+>>> Why is that done that way? offlining a CPU should be an 
+>>> invariant as far as cpusets are concerned.
 >>
->> I'm ok with breaking that :-) If its really really important to someone
->> we (him most likely) could fix it by detecting the topology changed over
->> the suspend and do a fixup. Assuming it actually gets that far.
+>> Can't, tasks need to run someplace. There's two choices, add a still
+>> online cpu to the now empty cpuset or move the tasks to a parent that
+>> still has online cpus.
 >>
->> Srivatsa, wanna give this (the proposal to not modify cpusets on
->> CPU_TASKS_FROZEN) a try?
->>
+>> Both are destructive.
 > 
+> OK, I will ask the stupid question...  Hey, somebody has to!  ;-)
 > 
-> Sure! After you pointed out that CPU Hotplug is destructive in general and
-> hence it is not a good idea to put back online CPUs to cpusets, the next
-> thing I thought of trying was a special case handling for suspend/resume
-> alone, IOW, not calling the cpuset update upon CPU_TASKS_FROZEN.
+> Would it make sense for offlining the last CPU in a cpuset to be
+> destructive, but to allow offlining of a non-last CPU to be reversible?
 > 
-> So, yes, I'll write up a patch for that and post it soon :-)
+> For example, assume that cpuset A has CPUs 0 and 1, and cpuset B has
+> 1, 2, and 3.  Then offlining any single CPU and then onlining it would
+> restore the cpusets to their original state.  Offlining both CPUs 0 and 1
+> would be destructive to cpuset A, so that onlining those two CPUs would
+> leave any tasks in cpuset A in some ancestor of cpuset A, and would
+> leave cpuset A with no assigned CPUs.  However, that same operation
+> (offlining both CPUs 0 and 1, then onlining them) would restore cpuset
+> B to its original state, covering CPUs 1, 2, and 3.
 > 
 
 
-Trivially removing CPU_TASKS_FROZEN as shown below doesn't look right to me:
-
----
-
- kernel/sched/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..43a166e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6729,7 +6729,7 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
- static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
- 		cpuset_update_active_cpus();
-@@ -6742,7 +6742,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- 			       void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
- 		return NOTIFY_OK;
-
-
-IMO, irrespective of whether we keep cpusets unaware of all CPU Hotplug or
-only unaware of the CPU hotplug in the suspend/resume path, I feel the
-scheduler should always know the true state of the system, ie., offline CPUs
-must not be part of any sched domain, at any point in time.
-
-At the moment, I am exploring several ways to achieve this (I can think of 2
-ways at the moment, will see which one is better). But in case this approach
-itself seems wrong for any reason, please let me know.
+But how would this scheme help us? During suspend, all non-boot CPUs are
+taken offline. Which means, it would be destructive to any cpuset that
+didn't originally contain CPU0 (even when using the above scheme). So, upon
+resume, it is still not the same as how it was before suspend.
 
 Regards,
 Srivatsa S. Bhat
