@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166Ab2BMQWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:22:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65432 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab2BMQWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:22:46 -0500
+	id S1757161Ab2BMQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:29:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56549 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755109Ab2BMQ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 11:29:21 -0500
+Date: Mon, 13 Feb 2012 11:28:53 -0500
+From: Dave Jones <davej@redhat.com>
+To: "N. Coesel" <nico@nctdev.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Cpufreq shutdown patch (kernel 2.6.35.3)
+Message-ID: <20120213162852.GA29947@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"N. Coesel" <nico@nctdev.nl>, linux-kernel@vger.kernel.org
+References: <CPSMTPM-CMT109lZGdO0011ecc5@CPSMTPM-CMT109.kpnxchange.com>
 MIME-Version: 1.0
-In-Reply-To: <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com> <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 13 Feb 2012 11:22:26 -0500
-X-Google-Sender-Auth: Swh99qbykZLzXYvDf4qT1DnySAQ
-Message-ID: <CAHGf_=qs8-nE6y6EzNYUzgjGo0sMP5zvCc3=GNZmHct6mPecqg@mail.gmail.com>
-Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CPSMTPM-CMT109lZGdO0011ecc5@CPSMTPM-CMT109.kpnxchange.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1DGMqRY002888
 
-> @@ -1181,8 +1258,22 @@ page_ok:
->                 * When a sequential read accesses a page several times,
->                 * only mark it as accessed the first time.
->                 */
-> -               if (prev_index != index || offset != prev_offset)
-> -                       mark_page_accessed(page);
-> +               if (prev_index != index || offset != prev_offset) {
-> +                       int mode;
-> +
-> +                       mode = filemap_get_cache(mapping, index);
-> +                       switch (mode) {
-> +                       case FILEMAP_CACHE_NORMAL:
-> +                               mark_page_accessed(page);
-> +                               break;
-> +                       case FILEMAP_CACHE_ONCE:
-> +                               mark_page_usedonce(page);
-> +                               break;
-> +                       default:
-> +                               WARN_ON_ONCE(1);
-> +                               break;
+On Thu, Jan 19, 2012 at 10:18:10PM +0100, N. Coesel wrote:
+ 
+ > I've found a problem in drivers/cpufreq/cpufreq.c. The driver does 
+ > not execute the exit member of the low level driver when shutting 
+ > down for a reboot (reset). This potentially leaves the power supply 
+ > at a too low voltage to boot the system properly. The patch below 
+ > adds a shutdown function which executes the exit member of the low 
+ > level driver which allows a system to be properly prepared for a reset.
 
-Here is generic_file_read, right? Why don't you care write and page fault?
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'm curious what hardware you saw this problem on ?
+
+I've just seen a report on an x86 system which looks like it might
+be solved by this.
+https://bugzilla.redhat.com/show_bug.cgi?id=789964
+
+ > --- drivers/cpufreq/cpufreq.c.orig      2010-08-20 20:55:55.000000000 +0200
+ > +++ drivers/cpufreq/cpufreq.c   2012-01-19 21:50:46.000000000 +0100
+ > @@ -1431,11 +1431,34 @@ fail:
+ >          return ret;
+ >   }
+ > 
+ > +
+ > +static int cpufreq_shutdown(struct sys_device *sysdev)
+ > +{
+ > +       struct cpufreq_policy *cpu_policy;
+ > +       int cpu = sysdev->id;
+ > +       int ret =0;
+ > +
+ > +       if (!cpu_online(cpu))
+ > +               return 0;
+ > +
+ > +       cpu_policy = cpufreq_cpu_get(cpu);
+ > +       if (!cpu_policy)
+ > +               return -EINVAL;
+ > +
+ > +//     printk("cpufreq_shutdown %d \n", cpu);
+ > +       if (cpufreq_driver->exit)
+ > +               ret = cpufreq_driver->exit(cpu_policy);
+ > +
+ > +       return ret;
+ > +}
+ > +
+ > +
+ >   static struct sysdev_driver cpufreq_sysdev_driver = {
+ >          .add            = cpufreq_add_dev,
+ >          .remove         = cpufreq_remove_dev,
+ >          .suspend        = cpufreq_suspend,
+ >          .resume         = cpufreq_resume,
+ > +       .shutdown = cpufreq_shutdown,
+ >   };
+
+I'll queue this up, with the whitespace fixed, and commented out line removed.
+
+	Dave
+
