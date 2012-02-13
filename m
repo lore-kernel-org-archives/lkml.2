@@ -1,123 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2BMWg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 17:36:59 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:43851 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2BMWg6 (ORCPT
+	id S1757512Ab2BMWmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:42:03 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38785 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab2BMWmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 17:36:58 -0500
-MIME-Version: 1.0
-From: Yufeng Shen <miletus@chromium.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Ben Widawsky <ben@bwidawsk.net>, Yufeng Shen <miletus@chromium.org>
-Subject: [PATCH] drm/i915: Fix race condition in accessing GMBUS
-Date: Mon, 13 Feb 2012 17:36:54 -0500
-Message-Id: <1329172614-13085-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1328825697-23685-1-git-send-email-miletus@chromium.org>
-References: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+	Mon, 13 Feb 2012 17:42:01 -0500
+Subject: Re: [PATCH 06/13] firewire-sbp-target: Add sbp_fabric.{c,h}
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        stefanr@s5r6.in-berlin.de
+In-Reply-To: <337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
+References: <4E4BD560.4010806@bootc.net>
+	 <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	 <1328989452-20921-7-git-send-email-bootc@bootc.net>
+	 <1329138360.9333.399.camel@haakon2.linux-iscsi.org>
+	 <337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Feb 2012 14:41:53 -0800
+Message-ID: <1329172913.4431.27.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved gmbus_mutex below intel_gmbus and added comments.
-Rebased to drm-intel-next-queued.
+On Mon, 2012-02-13 at 14:01 +0000, Chris Boot wrote:
+> On 13 Feb 2012, at 13:06, Nicholas A. Bellinger wrote:
+> 
+> > On Sat, 2012-02-11 at 19:44 +0000, Chris Boot wrote:
+> >> This serves as further glue between the target framework and SBP-2, in
+> >> this case dealing with SCSI command submission and data in/out.
+> >> 
+> >> Signed-off-by: Chris Boot <bootc@bootc.net>
+> >> Cc: Andy Grover <agrover@redhat.com>
+> >> Cc: Clemens Ladisch <clemens@ladisch.de>
+> >> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> >> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> >> ---
+> >> drivers/target/sbp/sbp_fabric.c |  321 +++++++++++++++++++++++++++++++++++++++
+> >> drivers/target/sbp/sbp_fabric.h |   32 ++++
+> >> 2 files changed, 353 insertions(+), 0 deletions(-)
+> >> create mode 100644 drivers/target/sbp/sbp_fabric.c
+> >> create mode 100644 drivers/target/sbp/sbp_fabric.h
+> >> 
+> >> diff --git a/drivers/target/sbp/sbp_fabric.c b/drivers/target/sbp/sbp_fabric.c
+> >> new file mode 100644
+> >> index 0000000..edc6fda
+> >> --- /dev/null
+> >> +++ b/drivers/target/sbp/sbp_fabric.c
+> 
+> <snip>
+> 
+> >> +int sbp_new_cmd(struct se_cmd *se_cmd)
+> >> +{
+> >> +	struct sbp_target_request *req = container_of(se_cmd,
+> >> +			struct sbp_target_request, se_cmd);
+> >> +	int ret;
+> >> +
+> >> +	ret = transport_generic_allocate_tasks(se_cmd, req->cmd_buf);
+> >> +	if (ret)
+> >> +		return ret;
+> >> +
+> >> +	return transport_generic_map_mem_to_cmd(se_cmd, NULL, 0, NULL, 0);
+> >> +}
+> >> +
+> > 
+> > Because sbp_scsi_cmnd.c:sbp_handle_command() is using the new
+> > target_submit_cmd() logic, target-core will not be calling
+> > TFO->new_cmd_map() -> sbp_new_cmd() for setup here.
+> > 
+> > Go ahead and drop this now.
+> 
+> So I can just set TFO->new_cmd_map to NULL?
+> 
 
-----------------------------------------------------------------
+Just drop the sbp_ops->new_cmd_map assignment, no need to explictly set
+it to NULL..
 
-GMBUS has several ports and each has it's own corresponding
-I2C adpater. When multiple I2C adapters call gmbus_xfer() at
-the same time there is a race condition in using the underlying
-GMBUS controller. Fixing this by adding a mutex lock when calling
-gmbus_xfer().
+> >> +
+> >> +u32 sbp_get_task_tag(struct se_cmd *se_cmd)
+> >> +{
+> >> +	struct sbp_target_request *req = container_of(se_cmd,
+> >> +			struct sbp_target_request, se_cmd);
+> >> +
+> >> +	/* only used for printk and family? */
+> >> +	return (u32)req->orb_pointer;
+> >> +}
+> >> +
+> > 
+> > So an the ABORT_TASK TMR patches use TFO->get_task_tag() to locate a
+> > referenced tag to locate the se_cmd descriptor.  Since we don't
+> > support TMRs yet in sbp, this value will only be used for
+> informational
+> > purposes.
+> 
+> I'd like to support ABORT_TASK and friends at some point. The problem
+> I see here though is that tags in SBP-2/3 are 48-bits wide (the ORB
+> address in the initiator node's memory), and the target framework
+> seems to use a u32 for this. SAM-3 Section 4.11 seems to say "A task
+> tag is a value that is composed of up to 64 bits" so it might be worth
+> getting that changed in the target framework?
 
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
----
- drivers/gpu/drm/i915/i915_drv.h  |    8 ++++++++
- drivers/gpu/drm/i915/intel_i2c.c |   24 +++++++++++++++++-------
- 2 files changed, 25 insertions(+), 7 deletions(-)
+Bumping TFO->get_task_tag and se_tmr_req->ref_task_tag to u64 is easy
+enough, but it would make sense to figure out if this is really required
+in practice first..
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 563d24e..40027de 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -313,6 +313,14 @@ typedef struct drm_i915_private {
- 		u32 reg0;
- 	} *gmbus;
- 
-+	/** Multiple intel_gmbus i2c adapters are actually sharing the same
-+	underlying GMBUS controller. i2c core protects concurrent use of
-+	the same i2c adapter but is not aware of the concurrent use of the
-+	underlying GMBUS controller. gmbus_mutex is used to prevent the race
-+	condition from the perspective of GMBUS controller.
-+	*/
-+	struct mutex gmbus_mutex;
-+
- 	struct pci_dev *bridge_dev;
- 	struct intel_ring_buffer ring[I915_NUM_RINGS];
- 	uint32_t next_seqno;
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index d30cccc..fc75d71 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -233,11 +233,15 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 					       struct intel_gmbus,
- 					       adapter);
- 	struct drm_i915_private *dev_priv = adapter->algo_data;
--	int i, reg_offset;
-+	int i, reg_offset, ret;
- 
--	if (bus->force_bit)
--		return intel_i2c_quirk_xfer(dev_priv,
-+	mutex_lock(&dev_priv->gmbus_mutex);
-+
-+	if (bus->force_bit) {
-+		ret = intel_i2c_quirk_xfer(dev_priv,
- 					    bus->force_bit, msgs, num);
-+		goto out;
-+	}
- 
- 	reg_offset = HAS_PCH_SPLIT(dev_priv->dev) ? PCH_GMBUS0 - GMBUS0 : 0;
- 
-@@ -321,7 +325,8 @@ done:
- 	 * start of the next xfer, till then let it sleep.
- 	 */
- 	I915_WRITE(GMBUS0 + reg_offset, 0);
--	return i;
-+	ret = i;
-+	goto out;
- 
- timeout:
- 	DRM_INFO("GMBUS timed out, falling back to bit banging on pin %d [%s]\n",
-@@ -331,9 +336,12 @@ timeout:
- 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
- 	bus->force_bit = intel_gpio_create(dev_priv, bus->reg0 & 0xff);
- 	if (!bus->force_bit)
--		return -ENOMEM;
--
--	return intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
-+		ret = -ENOMEM;
-+	else
-+		ret = intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
-+out:
-+	mutex_unlock(&dev_priv->gmbus_mutex);
-+	return ret;
- }
- 
- static u32 gmbus_func(struct i2c_adapter *adapter)
-@@ -380,6 +388,8 @@ int intel_setup_gmbus(struct drm_device *dev)
- 	if (dev_priv->gmbus == NULL)
- 		return -ENOMEM;
- 
-+	mutex_init(&dev_priv->gmbus_mutex);
-+
- 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
- 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
- 
--- 
-1.7.3.1
+--nab
 
