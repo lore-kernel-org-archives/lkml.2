@@ -1,150 +1,652 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2BMTkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:40:06 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:38132 "EHLO
+	id S1757721Ab2BMTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:40:25 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49133 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755078Ab2BMTkB (ORCPT
+	by vger.kernel.org with ESMTP id S1757688Ab2BMTkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:40:01 -0500
-X-Sasl-enc: XMoBe/HiIybcKc6QbUOOs05Z4LWAP1FHCL4seBnEwcNM 1329162000
-Date: Mon, 13 Feb 2012 11:31:11 -0800
+	Mon, 13 Feb 2012 14:40:04 -0500
+X-Sasl-enc: p/Ds6cQ/RRaVnn5Lvg2f1GQPUfOXE2MkHlyy7gNOvmvw 1329162002
+Date: Mon, 13 Feb 2012 11:31:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 2.6.32.57
-Message-ID: <20120213193111.GA29302@kroah.com>
+Subject: Re: Linux 2.6.32.57
+Message-ID: <20120213193123.GB29302@kroah.com>
+References: <20120213193111.GA29302@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120213193111.GA29302@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 2.6.32.57 kernel.
-
-All users of the 2.6.32 kernel series must upgrade.
-
-The updated 2.6.32.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-2.6.32.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsh=
-ortlog;h=3Drefs/heads/linux-2.6.32.y
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                              |    2 +-
- drivers/gpu/drm/i915/intel_tv.c       |   16 ++++++++--------
- drivers/infiniband/hw/mlx4/mad.c      |    7 ++-----
- drivers/misc/cb710/core.c             |    1 +
- drivers/staging/android/binder.c      |   13 +++++++++++--
- drivers/staging/asus_oled/asus_oled.c |   10 ++++++++--
- drivers/usb/gadget/f_loopback.c       |    2 +-
- drivers/usb/host/pci-quirks.c         |    6 ++++++
- drivers/usb/serial/ftdi_sio.c         |    1 +
- drivers/usb/serial/ftdi_sio_ids.h     |    7 +++++++
- drivers/video/atmel_lcdfb.c           |    2 +-
- fs/ecryptfs/read_write.c              |    4 ++--
- fs/nfs/nfs4proc.c                     |   29 ++++++++++++++++++++++-------
- fs/nfs/nfs4state.c                    |   19 ++++++++++---------
- fs/udf/super.c                        |    6 ++++++
- include/net/sock.h                    |   15 +--------------
- mm/filemap_xip.c                      |    7 ++++++-
- net/core/skbuff.c                     |   30 ++++++++++++++++++++++++++++++
- net/ipv4/udp.c                        |    4 ++--
- net/sunrpc/xprtsock.c                 |    8 ++------
- 20 files changed, 128 insertions(+), 61 deletions(-)
-
-Arve Hj=F8nnev=E5g (2):
-      Staging: android: binder: Don't call dump_stack in binder_vma_open
-      Staging: android: binder: Fix crashes when sharing a binder file betw=
-een processes
-
-Axel Lin (1):
-      mmc: cb710 core: Add missing spin_lock_init for irq_lock of struct cb=
-710_chip
-
-Bian Naimeng (1):
-      rpc client can not deal with ENOSOCK, so translate it into ENOCONN
-
-Carsten Otte (1):
-      mm/filemap_xip.c: fix race condition in xip_file_fault()
-
-Eric Dumazet (2):
-      net: fix sk_forward_alloc corruptions
-      net: sock_queue_err_skb() dont mess with sk_forward_alloc
-
-Greg Kroah-Hartman (1):
-      Linux 2.6.32.57
-
-Hubert Feurstein (1):
-      atmel_lcdfb: fix usage of CONTRAST_CTR in suspend/resume
-
-Jack Morgenstein (1):
-      IB/mlx4: pass SMP vendor-specific attribute MADs to firmware
-
-Jan Kara (1):
-      udf: Mark LVID buffer as uptodate before marking it dirty
-
-Jayachandran C (1):
-      usb: Skip PCI USB quirk handling for Netlogic XLP
-
-Li Wang (1):
-      eCryptfs: Infinite loop due to overflow in ecryptfs_write()
-
-Milan Kocian (1):
-      USB: usbserial: add new PID number (0xa951) to the ftdi driver
-
-Pekka Paalanen (1):
-      Staging: asus_oled: fix image processing
-
-Rodrigo Vivi (1):
-      drm/i915: Fix TV Out refresh rate.
-
-Timo Juhani Lindfors (1):
-      usb: gadget: zero: fix bug in loopback autoresume handling
-
-Trond Myklebust (5):
-      NFSv4: Fix up the callers of nfs4_state_end_reclaim_reboot
-      NFSv4: The state manager shouldn't exit on errors that were handled
-      NFSv4: Ensure the state manager handles NFS4ERR_NO_GRACE correctly
-      NFSv4: Handle NFS4ERR_GRACE when recovering an expired lease.
-      NFSv4: Fix open recovery
-
-
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPOWT/AAoJEDjbvchgkmk+zSIQALHCshos81cDzBcBJmYIFK5W
-Y8aqlUXlqBo7ROa7izAfU/q07g2x9rZRX/j9Zwssk6uQ7n2qtuqlMAtVInnqMyjb
-m1FH1g7Qv6P/6Xv2N0+NCpa61tyLz7Y5NJUKKrCKV5rK3MQESNFt/TZl45+/hqGQ
-GXQRnZ8bZKrwWqJ9Q1lVVewPIvbyaWMAvxKuyfNylH08DnXmu0Yv4J1ZXNov2TTs
-OIVCRifAfJ9Sykh011tQhEPhx0NqG2Sm7zJlOqCYwx4sMpmBGcNa/RmOvKw+Ulyz
-0g0iIbTd6yUCSKLE4DW04hSb5H0mIA5IGkI9uHG3vNLiP4HNgehMebXDxM76HGmN
-zdHbH95EkFIvers4O9aVbDkUExrsl2tRO7pdchO009bZ2QqaXm1wuQ8k9CbUeWUF
-LNWiOsITHqT6hCRP5sU+37jMnGSTktpnye+jKkX233e2p8kKFs0UqOA1Jq6LFj7l
-Aga/W++NZFiewunfsjSxq3EXwq3IkaZ7zeNQpU0zawHIVskGpeCbbXM8wr0N+SlN
-8qrwv0vnk2AA6lF3kzOA53YbhGXbuLsgnaKaJWZMMS53Bhs/TXc04oxDTadOTrst
-FyTDspRxaaj/OlT3uwMvqq+6KQseasdRlmjhcMRARzmdCPn34hE1TFoREmZOJ10o
-OdZEw+2iH6C9RTEHmIoH
-=GM1T
------END PGP SIGNATURE-----
-
---X1bOJ3K7DJ5YkBrT--
+diff --git a/Makefile b/Makefile
+index 81ad738..3377650 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .56
++EXTRAVERSION = .57
+ NAME = Man-Eating Seals of Antiquity
+ 
+ # *DOCUMENTATION*
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 5b28b4e..d156b25 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -415,7 +415,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name		= "NTSC-M",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 3.580MHz */
+@@ -458,7 +458,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name		= "NTSC-443",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 		/* 525 Lines, 60 Fields, 15.734KHz line, Sub-Carrier 4.43MHz */
+@@ -500,7 +500,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name		= "NTSC-J",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -543,7 +543,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name		= "PAL-M",
+ 		.clock		= 108000,
+-		.refresh	= 29970,
++		.refresh	= 59940,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -587,7 +587,7 @@ static const struct tv_mode tv_modes[] = {
+ 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
+ 		.name	    = "PAL-N",
+ 		.clock		= 108000,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -632,7 +632,7 @@ static const struct tv_mode tv_modes[] = {
+ 		/* 625 Lines, 50 Fields, 15.625KHz line, Sub-Carrier 4.434MHz */
+ 		.name	    = "PAL",
+ 		.clock		= 108000,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample	= TV_OVERSAMPLE_8X,
+ 		.component_only = 0,
+ 
+@@ -819,7 +819,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name       = "1080i@50Hz",
+ 		.clock		= 148800,
+-		.refresh	= 25000,
++		.refresh	= 50000,
+ 		.oversample     = TV_OVERSAMPLE_2X,
+ 		.component_only = 1,
+ 
+@@ -845,7 +845,7 @@ static const struct tv_mode tv_modes[] = {
+ 	{
+ 		.name       = "1080i@60Hz",
+ 		.clock		= 148800,
+-		.refresh	= 30000,
++		.refresh	= 60000,
+ 		.oversample     = TV_OVERSAMPLE_2X,
+ 		.component_only = 1,
+ 
+diff --git a/drivers/infiniband/hw/mlx4/mad.c b/drivers/infiniband/hw/mlx4/mad.c
+index 19e68ab..c0206dc 100644
+--- a/drivers/infiniband/hw/mlx4/mad.c
++++ b/drivers/infiniband/hw/mlx4/mad.c
+@@ -252,12 +252,9 @@ int mlx4_ib_process_mad(struct ib_device *ibdev, int mad_flags,	u8 port_num,
+ 			return IB_MAD_RESULT_SUCCESS;
+ 
+ 		/*
+-		 * Don't process SMInfo queries or vendor-specific
+-		 * MADs -- the SMA can't handle them.
++		 * Don't process SMInfo queries -- the SMA can't handle them.
+ 		 */
+-		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO ||
+-		    ((in_mad->mad_hdr.attr_id & IB_SMP_ATTR_VENDOR_MASK) ==
+-		     IB_SMP_ATTR_VENDOR_MASK))
++		if (in_mad->mad_hdr.attr_id == IB_SMP_ATTR_SM_INFO)
+ 			return IB_MAD_RESULT_SUCCESS;
+ 	} else if (in_mad->mad_hdr.mgmt_class == IB_MGMT_CLASS_PERF_MGMT ||
+ 		   in_mad->mad_hdr.mgmt_class == MLX4_IB_VENDOR_CLASS1   ||
+diff --git a/drivers/misc/cb710/core.c b/drivers/misc/cb710/core.c
+index b14eab0..e43777e 100644
+--- a/drivers/misc/cb710/core.c
++++ b/drivers/misc/cb710/core.c
+@@ -244,6 +244,7 @@ static int __devinit cb710_probe(struct pci_dev *pdev,
+ 	if (err)
+ 		return err;
+ 
++	spin_lock_init(&chip->irq_lock);
+ 	chip->pdev = pdev;
+ 	chip->iobase = pcim_iomap_table(pdev)[0];
+ 
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 99010d4..b9b37ff 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -36,6 +36,7 @@
+ 
+ static DEFINE_MUTEX(binder_lock);
+ static DEFINE_MUTEX(binder_deferred_lock);
++static DEFINE_MUTEX(binder_mmap_lock);
+ 
+ static HLIST_HEAD(binder_procs);
+ static HLIST_HEAD(binder_deferred_list);
+@@ -614,6 +615,11 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+ 	if (mm) {
+ 		down_write(&mm->mmap_sem);
+ 		vma = proc->vma;
++		if (vma && mm != vma->vm_mm) {
++			pr_err("binder: %d: vma mm and task mm mismatch\n",
++				proc->pid);
++			vma = NULL;
++		}
+ 	}
+ 
+ 	if (allocate == 0)
+@@ -2741,7 +2747,6 @@ static void binder_vma_open(struct vm_area_struct *vma)
+ 		     proc->pid, vma->vm_start, vma->vm_end,
+ 		     (vma->vm_end - vma->vm_start) / SZ_1K, vma->vm_flags,
+ 		     (unsigned long)pgprot_val(vma->vm_page_prot));
+-	dump_stack();
+ }
+ 
+ static void binder_vma_close(struct vm_area_struct *vma)
+@@ -2785,6 +2790,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	}
+ 	vma->vm_flags = (vma->vm_flags | VM_DONTCOPY) & ~VM_MAYWRITE;
+ 
++	mutex_lock(&binder_mmap_lock);
+ 	if (proc->buffer) {
+ 		ret = -EBUSY;
+ 		failure_string = "already mapped";
+@@ -2799,6 +2805,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	}
+ 	proc->buffer = area->addr;
+ 	proc->user_buffer_offset = vma->vm_start - (uintptr_t)proc->buffer;
++	mutex_unlock(&binder_mmap_lock);
+ 
+ #ifdef CONFIG_CPU_CACHE_VIPT
+ 	if (cache_is_vipt_aliasing()) {
+@@ -2831,7 +2838,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+ 	binder_insert_free_buffer(proc, buffer);
+ 	proc->free_async_space = proc->buffer_size / 2;
+ 	barrier();
+-	proc->files = get_files_struct(current);
++	proc->files = get_files_struct(proc->tsk);
+ 	proc->vma = vma;
+ 
+ 	/*printk(KERN_INFO "binder_mmap: %d %lx-%lx maps %p\n",
+@@ -2842,10 +2849,12 @@ err_alloc_small_buf_failed:
+ 	kfree(proc->pages);
+ 	proc->pages = NULL;
+ err_alloc_pages_failed:
++	mutex_lock(&binder_mmap_lock);
+ 	vfree(proc->buffer);
+ 	proc->buffer = NULL;
+ err_get_vm_area_failed:
+ err_already_mapped:
++	mutex_unlock(&binder_mmap_lock);
+ err_bad_arg:
+ 	printk(KERN_ERR "binder_mmap: %d %lx-%lx %s failed %d\n",
+ 	       proc->pid, vma->vm_start, vma->vm_end, failure_string, ret);
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 8a05725..ea99f05 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -349,7 +349,14 @@ static void send_data(struct asus_oled_dev *odev)
+ 
+ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
+ {
+-	while (count-- > 0 && val) {
++	odev->last_val = val;
++
++	if (val == 0) {
++		odev->buf_offs += count;
++		return 0;
++	}
++
++	while (count-- > 0) {
+ 		size_t x = odev->buf_offs % odev->width;
+ 		size_t y = odev->buf_offs / odev->width;
+ 		size_t i;
+@@ -400,7 +407,6 @@ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
+ 			;
+ 		}
+ 
+-		odev->last_val = val;
+ 		odev->buf_offs++;
+ 	}
+ 
+diff --git a/drivers/usb/gadget/f_loopback.c b/drivers/usb/gadget/f_loopback.c
+index 6cb29d3..8b4dbfc 100644
+--- a/drivers/usb/gadget/f_loopback.c
++++ b/drivers/usb/gadget/f_loopback.c
+@@ -373,7 +373,7 @@ int __init loopback_add(struct usb_composite_dev *cdev, bool autoresume)
+ 
+ 	/* support autoresume for remote wakeup testing */
+ 	if (autoresume)
+-		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
++		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
+ 
+ 	/* support OTG systems */
+ 	if (gadget_is_otg(cdev->gadget)) {
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index eae8b18..8213f79 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -498,6 +498,12 @@ hc_init:
+ 
+ static void __devinit quirk_usb_early_handoff(struct pci_dev *pdev)
+ {
++	/* Skip Netlogic mips SoC's internal PCI USB controller.
++	 * This device does not need/support EHCI/OHCI handoff
++	 */
++	if (pdev->vendor == 0x184e)	/* vendor Netlogic */
++		return;
++
+ 	if (pdev->class == PCI_CLASS_SERIAL_USB_UHCI)
+ 		quirk_usb_handoff_uhci(pdev);
+ 	else if (pdev->class == PCI_CLASS_SERIAL_USB_OHCI)
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 85d630e..0a1ccaa 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -840,6 +840,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LOGBOOKML_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_LS_LOGBOOK_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCIENCESCOPE_HS_LOGBOOK_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_CINTERION_MC55I_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
+ 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 212fc41..7bc0abd 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1192,3 +1192,10 @@
+  */
+ /* ZigBee controller */
+ #define FTDI_RF_R106		0x8A28
++
++/*
++ * Product: HCP HIT GPRS modem
++ * Manufacturer: HCP d.o.o.
++ * ATI command output: Cinterion MC55i
++ */
++#define FTDI_CINTERION_MC55I_PID	0xA951
+diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+index d5e8010..8c5e432 100644
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -1052,7 +1052,7 @@ static int atmel_lcdfb_suspend(struct platform_device *pdev, pm_message_t mesg)
+ 	 */
+ 	lcdc_writel(sinfo, ATMEL_LCDC_IDR, ~0UL);
+ 
+-	sinfo->saved_lcdcon = lcdc_readl(sinfo, ATMEL_LCDC_CONTRAST_VAL);
++	sinfo->saved_lcdcon = lcdc_readl(sinfo, ATMEL_LCDC_CONTRAST_CTR);
+ 	lcdc_writel(sinfo, ATMEL_LCDC_CONTRAST_CTR, 0);
+ 	if (sinfo->atmel_lcdfb_power_control)
+ 		sinfo->atmel_lcdfb_power_control(0);
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index 6b78546..0404659 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -134,7 +134,7 @@ int ecryptfs_write(struct file *ecryptfs_file, char *data, loff_t offset,
+ 		pgoff_t ecryptfs_page_idx = (pos >> PAGE_CACHE_SHIFT);
+ 		size_t start_offset_in_page = (pos & ~PAGE_CACHE_MASK);
+ 		size_t num_bytes = (PAGE_CACHE_SIZE - start_offset_in_page);
+-		size_t total_remaining_bytes = ((offset + size) - pos);
++		loff_t total_remaining_bytes = ((offset + size) - pos);
+ 
+ 		if (fatal_signal_pending(current)) {
+ 			rc = -EINTR;
+@@ -145,7 +145,7 @@ int ecryptfs_write(struct file *ecryptfs_file, char *data, loff_t offset,
+ 			num_bytes = total_remaining_bytes;
+ 		if (pos < offset) {
+ 			/* remaining zeros to write, up to destination offset */
+-			size_t total_remaining_zeros = (offset - pos);
++			loff_t total_remaining_zeros = (offset - pos);
+ 
+ 			if (num_bytes > total_remaining_zeros)
+ 				num_bytes = total_remaining_zeros;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index eb4421b..3c759df 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1067,6 +1067,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
+ 	clear_bit(NFS_DELEGATED_STATE, &state->flags);
+ 	smp_rmb();
+ 	if (state->n_rdwr != 0) {
++		clear_bit(NFS_O_RDWR_STATE, &state->flags);
+ 		ret = nfs4_open_recover_helper(opendata, FMODE_READ|FMODE_WRITE, &newstate);
+ 		if (ret != 0)
+ 			return ret;
+@@ -1074,6 +1075,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
+ 			return -ESTALE;
+ 	}
+ 	if (state->n_wronly != 0) {
++		clear_bit(NFS_O_WRONLY_STATE, &state->flags);
+ 		ret = nfs4_open_recover_helper(opendata, FMODE_WRITE, &newstate);
+ 		if (ret != 0)
+ 			return ret;
+@@ -1081,6 +1083,7 @@ static int nfs4_open_recover(struct nfs4_opendata *opendata, struct nfs4_state *
+ 			return -ESTALE;
+ 	}
+ 	if (state->n_rdonly != 0) {
++		clear_bit(NFS_O_RDONLY_STATE, &state->flags);
+ 		ret = nfs4_open_recover_helper(opendata, FMODE_READ, &newstate);
+ 		if (ret != 0)
+ 			return ret;
+@@ -1490,7 +1493,7 @@ static int _nfs4_open_expired(struct nfs_open_context *ctx, struct nfs4_state *s
+ 	return ret;
+ }
+ 
+-static inline int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4_state *state)
++static int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(state->inode);
+ 	struct nfs4_exception exception = { };
+@@ -1498,10 +1501,16 @@ static inline int nfs4_do_open_expired(struct nfs_open_context *ctx, struct nfs4
+ 
+ 	do {
+ 		err = _nfs4_open_expired(ctx, state);
+-		if (err != -NFS4ERR_DELAY)
+-			break;
+-		nfs4_handle_exception(server, err, &exception);
++		switch (err) {
++		default:
++			goto out;
++		case -NFS4ERR_GRACE:
++		case -NFS4ERR_DELAY:
++			nfs4_handle_exception(server, err, &exception);
++			err = 0;
++		}
+ 	} while (exception.retry);
++out:
+ 	return err;
+ }
+ 
+@@ -4111,10 +4120,16 @@ static int nfs4_lock_expired(struct nfs4_state *state, struct file_lock *request
+ 		if (test_bit(NFS_DELEGATED_STATE, &state->flags) != 0)
+ 			return 0;
+ 		err = _nfs4_do_setlk(state, F_SETLK, request, 0);
+-		if (err != -NFS4ERR_DELAY)
+-			break;
+-		nfs4_handle_exception(server, err, &exception);
++		switch (err) {
++		default:
++			goto out;
++		case -NFS4ERR_GRACE:
++		case -NFS4ERR_DELAY:
++			nfs4_handle_exception(server, err, &exception);
++			err = 0;
++		}
+ 	} while (exception.retry);
++out:
+ 	return err;
+ }
+ 
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index 2fd5287..2a7f163 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1051,15 +1051,19 @@ static void nfs4_state_end_reclaim_nograce(struct nfs_client *clp)
+ 	clear_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state);
+ }
+ 
+-static void nfs4_recovery_handle_error(struct nfs_client *clp, int error)
++static int nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+ {
+ 	switch (error) {
+ 		case -NFS4ERR_CB_PATH_DOWN:
+ 			nfs_handle_cb_pathdown(clp);
+-			break;
++			return 0;
++		case -NFS4ERR_NO_GRACE:
++			nfs4_state_end_reclaim_reboot(clp);
++			return 0;
+ 		case -NFS4ERR_STALE_CLIENTID:
+ 		case -NFS4ERR_LEASE_MOVED:
+ 			set_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state);
++			nfs4_state_end_reclaim_reboot(clp);
+ 			nfs4_state_start_reclaim_reboot(clp);
+ 			break;
+ 		case -NFS4ERR_EXPIRED:
+@@ -1074,6 +1078,7 @@ static void nfs4_recovery_handle_error(struct nfs_client *clp, int error)
+ 		case -NFS4ERR_SEQ_MISORDERED:
+ 			set_bit(NFS4CLNT_SESSION_SETUP, &clp->cl_state);
+ 	}
++	return error;
+ }
+ 
+ static int nfs4_do_reclaim(struct nfs_client *clp, const struct nfs4_state_recovery_ops *ops)
+@@ -1093,8 +1098,7 @@ restart:
+ 		if (status < 0) {
+ 			set_bit(ops->owner_flag_bit, &sp->so_flags);
+ 			nfs4_put_state_owner(sp);
+-			nfs4_recovery_handle_error(clp, status);
+-			return status;
++			return nfs4_recovery_handle_error(clp, status);
+ 		}
+ 		nfs4_put_state_owner(sp);
+ 		goto restart;
+@@ -1124,8 +1128,7 @@ static int nfs4_check_lease(struct nfs_client *clp)
+ 	status = ops->renew_lease(clp, cred);
+ 	put_rpccred(cred);
+ out:
+-	nfs4_recovery_handle_error(clp, status);
+-	return status;
++	return nfs4_recovery_handle_error(clp, status);
+ }
+ 
+ static int nfs4_reclaim_lease(struct nfs_client *clp)
+@@ -1263,7 +1266,7 @@ static void nfs4_state_manager(struct nfs_client *clp)
+ 			}
+ 		}
+ 		/* First recover reboot state... */
+-		if (test_and_clear_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state)) {
++		if (test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state)) {
+ 			status = nfs4_do_reclaim(clp,
+ 				nfs4_reboot_recovery_ops[clp->cl_minorversion]);
+ 			if (status == -NFS4ERR_STALE_CLIENTID)
+@@ -1309,8 +1312,6 @@ static void nfs4_state_manager(struct nfs_client *clp)
+ out_error:
+ 	printk(KERN_WARNING "Error: state manager failed on NFSv4 server %s"
+ 			" with error %d\n", clp->cl_hostname, -status);
+-	if (test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
+-		nfs4_state_end_reclaim_reboot(clp);
+ 	nfs4_clear_state_manager_bit(clp);
+ }
+ 
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 1e4543c..ee6b3af 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1791,6 +1791,12 @@ static void udf_open_lvid(struct super_block *sb)
+ 			le16_to_cpu(lvid->descTag.descCRCLength)));
+ 
+ 	lvid->descTag.tagChecksum = udf_tag_checksum(&lvid->descTag);
++	/*
++	 * We set buffer uptodate unconditionally here to avoid spurious
++	 * warnings from mark_buffer_dirty() when previous EIO has marked
++	 * the buffer as !uptodate
++	 */
++	set_buffer_uptodate(bh);
+ 	mark_buffer_dirty(bh);
+ 	sbi->s_lvid_dirty = 0;
+ }
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 9f96394..78adf52 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1354,20 +1354,7 @@ extern void sk_stop_timer(struct sock *sk, struct timer_list* timer);
+ 
+ extern int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb);
+ 
+-static inline int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
+-{
+-	/* Cast skb->rcvbuf to unsigned... It's pointless, but reduces
+-	   number of warnings when compiling with -W --ANK
+-	 */
+-	if (atomic_read(&sk->sk_rmem_alloc) + skb->truesize >=
+-	    (unsigned)sk->sk_rcvbuf)
+-		return -ENOMEM;
+-	skb_set_owner_r(skb, sk);
+-	skb_queue_tail(&sk->sk_error_queue, skb);
+-	if (!sock_flag(sk, SOCK_DEAD))
+-		sk->sk_data_ready(sk, skb->len);
+-	return 0;
+-}
++extern int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb);
+ 
+ /*
+  *	Recover an error report and clear atomically
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 1888b2d..e395030 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -262,7 +262,12 @@ found:
+ 							xip_pfn);
+ 		if (err == -ENOMEM)
+ 			return VM_FAULT_OOM;
+-		BUG_ON(err);
++		/*
++		 * err == -EBUSY is fine, we've raced against another thread
++		 * that faulted-in the same page
++		 */
++		if (err != -EBUSY)
++			BUG_ON(err);
+ 		return VM_FAULT_NOPAGE;
+ 	} else {
+ 		int err, ret = VM_FAULT_OOM;
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index a807f8c..025f924 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2977,6 +2977,34 @@ int skb_cow_data(struct sk_buff *skb, int tailbits, struct sk_buff **trailer)
+ }
+ EXPORT_SYMBOL_GPL(skb_cow_data);
+ 
++static void sock_rmem_free(struct sk_buff *skb)
++{
++	struct sock *sk = skb->sk;
++
++	atomic_sub(skb->truesize, &sk->sk_rmem_alloc);
++}
++
++/*
++ * Note: We dont mem charge error packets (no sk_forward_alloc changes)
++ */
++int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
++{
++	if (atomic_read(&sk->sk_rmem_alloc) + skb->truesize >=
++	    (unsigned)sk->sk_rcvbuf)
++		return -ENOMEM;
++
++	skb_orphan(skb);
++	skb->sk = sk;
++	skb->destructor = sock_rmem_free;
++	atomic_add(skb->truesize, &sk->sk_rmem_alloc);
++
++	skb_queue_tail(&sk->sk_error_queue, skb);
++	if (!sock_flag(sk, SOCK_DEAD))
++		sk->sk_data_ready(sk, skb->len);
++	return 0;
++}
++EXPORT_SYMBOL(sock_queue_err_skb);
++
+ void skb_tstamp_tx(struct sk_buff *orig_skb,
+ 		struct skb_shared_hwtstamps *hwtstamps)
+ {
+@@ -3008,7 +3036,9 @@ void skb_tstamp_tx(struct sk_buff *orig_skb,
+ 	memset(serr, 0, sizeof(*serr));
+ 	serr->ee.ee_errno = ENOMSG;
+ 	serr->ee.ee_origin = SO_EE_ORIGIN_TIMESTAMPING;
++
+ 	err = sock_queue_err_skb(sk, skb);
++
+ 	if (err)
+ 		kfree_skb(skb);
+ }
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index 0ac8833..8e28770 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -440,9 +440,9 @@ void __udp4_lib_err(struct sk_buff *skb, u32 info, struct udp_table *udptable)
+ 	if (!inet->recverr) {
+ 		if (!harderr || sk->sk_state != TCP_ESTABLISHED)
+ 			goto out;
+-	} else {
++	} else
+ 		ip_icmp_error(sk, skb, err, uh->dest, info, (u8 *)(uh+1));
+-	}
++
+ 	sk->sk_err = err;
+ 	sk->sk_error_report(sk);
+ out:
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 683c99d..d37f07c 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -563,8 +563,6 @@ static int xs_udp_send_request(struct rpc_task *task)
+ 		/* Still some bytes left; set up for a retry later. */
+ 		status = -EAGAIN;
+ 	}
+-	if (!transport->sock)
+-		goto out;
+ 
+ 	switch (status) {
+ 	case -ENOTSOCK:
+@@ -584,7 +582,7 @@ static int xs_udp_send_request(struct rpc_task *task)
+ 		 * prompts ECONNREFUSED. */
+ 		clear_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags);
+ 	}
+-out:
++
+ 	return status;
+ }
+ 
+@@ -666,8 +664,6 @@ static int xs_tcp_send_request(struct rpc_task *task)
+ 		status = -EAGAIN;
+ 		break;
+ 	}
+-	if (!transport->sock)
+-		goto out;
+ 
+ 	switch (status) {
+ 	case -ENOTSOCK:
+@@ -687,7 +683,7 @@ static int xs_tcp_send_request(struct rpc_task *task)
+ 	case -ENOTCONN:
+ 		clear_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags);
+ 	}
+-out:
++
+ 	return status;
+ }
+ 
