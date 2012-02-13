@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab2BMUlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:41:10 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:60935 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932171Ab2BMUlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:41:07 -0500
-Date: Mon, 13 Feb 2012 15:41:05 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Lin Ming <ming.m.lin@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
-In-Reply-To: <201202132038.12927.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1202131534040.11382-100000@iolanthe.rowland.org>
+	id S932252Ab2BMUmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:42:53 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34907 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751370Ab2BMUmv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 15:42:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4F39287A.9030808@suse.de>
+References: <4F313526.2050907@redhat.com>
+	<OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
+	<4F3390FB.80107@redhat.com>
+	<1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+	<4F38B657.7060405@de.ibm.com>
+	<4F38C27E.7030300@redhat.com>
+	<1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+	<4F3907EB.4030402@redhat.com>
+	<20120213130005.GB26773@redhat.com>
+	<CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+	<20120213131848.GD26773@redhat.com>
+	<4F39287A.9030808@suse.de>
+Date: Tue, 14 Feb 2012 07:42:50 +1100
+Message-ID: <CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+From: ronnie sahlberg <ronniesahlberg@gmail.com>
+To: Hannes Reinecke <hare@suse.de>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Dor Laor <dlaor@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Rafael J. Wysocki wrote:
+On Tue, Feb 14, 2012 at 2:12 AM, Hannes Reinecke <hare@suse.de> wrote:
+> On 02/13/2012 02:18 PM, Michael S. Tsirkin wrote:
+>> On Tue, Feb 14, 2012 at 12:13:36AM +1100, ronnie sahlberg wrote:
+>>> On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>>>> On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
+>>>>> Only if you use the pci multi-function option but that kills
+>>>>> standard hot unplug
+>>>>
+>>>> It doesn't kill it as such, rather you can't unplug luns individually.
+>>>
+>>> Isnt that just a consequence of the current implementation rather than
+>>> a SCSI limitation?
+>>
+>> Yes.
+>>
+>>> A different way to do hoplug could be to flag all devices as removable
+>>> in the standard inq page then
+>>> leave the LUN there persistently and what you remove/add is not the
+>>> LUN device itself but just the media in the device.
+>>>
+>>> Instead of hot-plug remove the LUN,  hot-plug becomes "media eject" or
+>>> "media insert".
+>>> The device remains present all time, you never remove it, but instead
+>>> hot-plug controls if the media is present or not.
+>>>
+>>>
+>>> This would require implementing at least START_STOP_UNIT and
+>>> PREVENT_ALLOW_MEDIUM_REMOVAL opcode emulation from SBC.
+>>>
+>>>
+>>> regards
+>>> ronnie sahlberg
+>>
+>> That would work.
+>>
+> Or we simply use the Peripheral Qualifier that the device is gone;
+> eg we could simply set PQ = 1, return sense code 0x25/00 and be done
+> with ...
+>
 
-> > I'm not sure if this is really the right approach.  What you're trying 
-> > to do is implement two different low-power states, basically D3hot and 
-> > D3cold.  Currently the runtime PM core doesn't support such things; all 
-> > it knows about is low power and full power.
-> 
-> I'd rather say all it knows about is "suspended" and "active", which mean
-> "the device is not processing I/O" and "the device may be processing I/O",
-> respectively.  A "suspended" device may or may not be in a low-power state,
-> but the runtime PM core doesn't care about that.
+That is still similar to "rip a device out from the guest without notice"
+and can cause the guest to be "surprised".
 
-Yes, okay.  We can say that this patch tries to implement two different 
-"suspended" states, basically "low power" and "power off" (or D3hot and 
-D3cold).
 
-> > Before doing an ad-hoc implementation, it would be best to step back
-> > and think about other subsystems.  Other sorts of devices may well have
-> > multiple low-power states.  What's the best way for this to be
-> > supported by the PM core?
-> 
-> Well, I honestly don't think there's any way they all can be covered at the
-> same time and that's why we chose to support only "suspended" and "active"
-> as defined above.  The handling of multiple low-power states must be
-> implemented outside of the runtime PM core (like in the PCI core, for example).
+Removable media is standard feature in SCSI SBC (and other commandsets).
+The nice part of removable media is that it activates a contract
+between the device and the guest
+to prevent removal of the media when the guest depends on the media
+not being removed.
 
-That's the point.  If this is to be implemented outside of the runtime
-PM core, should the patch be allowed to add new fields to struct
-dev_pm_info (which has to be shared among all subsystems)?
+I.e.  If you have a SBC device with the removable-media bit set,
+this is used to tell the initiator "this media can be removed, be
+prepared that this might happen".
+So when you mount such a SBC device in the guest, the guest will issue
+a "PREVENT_ALLOW_MEDIUM_REMOVAL"
+to tell the device "this medium is in use and may not be removed".
 
-Or to put it another way, if we do add new fields to struct dev_pm_info
-(like can_power_off) in order to help support multiple "suspended"  
-states, shouldn't these new fields be such that they can be used by
-many different subsystems rather than being special for the
-full-power/no-power situation?
+This automatically provides you with a mechanism where any guest can
+signal to qemu when qemu may or may not remove the device/medium.
 
-Likewise, should new routines like pm_runtime_allow_power_off() be
-added to the runtime PM core if they are going to be used just by PCI?
 
-Alan Stern
 
+In addition to implementing PREVENT_ALLOW_MEDIUM_REMOVAL emulation,
+qemu would also need to check the prevent-allow status before it
+allows the device to be removed.
+
+If nothing else, using this approach will automatically provide a
+channel from the guest kernel to qemu to tell qemu when a device may
+be unplugged and when it is not safe to unplug the device.
+
+
+
+regards
+ronnie sahlberg
