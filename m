@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab2BMTsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:48:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64404 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab2BMTsU (ORCPT
+	id S1757746Ab2BMTyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:54:14 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46817 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877Ab2BMTyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:48:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F360853.3050402@nvidia.com>
-References: <1328814050-22715-1-git-send-email-linus.walleij@linaro.org>
-	<4F34A3EF.3070207@nvidia.com>
-	<CACRpkdZ0kTXLAfdsfMjeZZX4W-fx5zyEdeGboKCmKSzCaMVw_A@mail.gmail.com>
-	<4F360853.3050402@nvidia.com>
-Date: Mon, 13 Feb 2012 20:48:19 +0100
-Message-ID: <CACRpkdYm3sb7wbJP1M9HmjkGHq1YuT06ar6-+V1RoZ1QdoT9BA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] pinctrl: move the core per-device handlers to core
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Barry Song <21cnbao@gmail.com>, Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 13 Feb 2012 14:54:12 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 13 Feb 2012 20:53:32 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de
+Subject: Re: [PATCH 06/13] firewire-sbp-target: Add sbp_fabric.{c,h}
+Message-ID: <20120213205332.09bc683f@stein>
+In-Reply-To: <337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
+References: <4E4BD560.4010806@bootc.net>
+	<1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1328989452-20921-7-git-send-email-bootc@bootc.net>
+	<1329138360.9333.399.camel@haakon2.linux-iscsi.org>
+	<337FFBD7-6B4A-41CA-BB57-6038C935B5BF@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 11, 2012 at 7:18 AM, Stephen Warren <swarren@nvidia.com> wrote:
+On Feb 13 Chris Boot wrote:
+> I'd like to support ABORT_TASK and friends at some point. The problem
+> I see here though is that tags in SBP-2/3 are 48-bits wide (the ORB
+> address in the initiator node's memory), and the target framework seems
+> to use a u32 for this. SAM-3 Section 4.11 seems to say "A task tag is a
+> value that is composed of up to 64 bits" so it might be worth getting
+> that changed in the target framework?
 
-> I'll probably want to rework the 3 patches your changes break anyway (in
-> order to completely remove use of board-*-pinmux.c when booting from DT,
-> once I write the DT code) and so you may as well not apply them, just
-> the driver itself. It'll save some churn.
-
-OK will that happen for this merge window or is the driver going to sit
-unused for the 3.4 cycle?
-
-I'm mainly thinking if the underlying driver may be subject to change I
-could just keep it out-of-tree, unless you want it merged in for some
-practical reason, then I'll just merge it.
-
-Yours,
-Linus Walleij
+In practice, its is quite likely that only 32 bit wide SBP tags are being
+used.  But there is no way to guarantee this.
+-- 
+Stefan Richter
+-=====-===-- --=- -==-=
+http://arcgraph.de/sr/
