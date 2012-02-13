@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab2BMMy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:54:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab2BMMyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:54:24 -0500
-Message-ID: <4F3907EB.4030402@redhat.com>
-Date: Mon, 13 Feb 2012 14:54:03 +0200
-From: Dor Laor <dlaor@redhat.com>
-Reply-To: dlaor@redhat.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756561Ab2BMMzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:55:04 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39251 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307Ab2BMMzA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 07:55:00 -0500
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Christian Borntraeger <borntraeger@de.ibm.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>  <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>  <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>  <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>  <4F313526.2050907@redhat.com>  <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>  <4F3390FB.80107@redhat.com>  <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>  <4F38B657.7060405@de.ibm.com>  <4F38C27E.7030300@redhat.com> <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
+References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
+	<CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
+	<CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
+Date: Mon, 13 Feb 2012 14:54:58 +0200
+Message-ID: <CANOLnOOdY78RmQafa3udkbBZ30c6Ra1P_hM9HMy6xKL02gKLjA@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Hema HK <hemahk@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2012 02:40 PM, Nicholas A. Bellinger wrote:
-> Hi Dor, James&  Co,
->
-> On Mon, 2012-02-13 at 09:57 +0200, Dor Laor wrote:
->> On 02/13/2012 09:05 AM, Christian Borntraeger wrote:
->>> On 12/02/12 21:16, James Bottomley wrote:
->>>> Well, no-one's yet answered the question I had about why.
+On Thu, Jan 12, 2012 at 5:40 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> On Thu, Jan 12, 2012 at 1:56 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
+>> On Mon, Dec 19, 2011 at 10:01 PM, Felipe Contreras
+>> <felipe.contreras@nokia.com> wrote:
+>>> From: Felipe Contreras <felipe.contreras@gmail.com>
 >>>
->>> Just to give one example from a different angle:
->>> In the big datacenters tape libraries are still very important, and lots
->>> of them have a scsi attachement. virtio-blk certainly is not the right
->>> way to handle those. Furthermore it seems even pretty hard to craft
->>> a virtio-tape since most of those libraries have vendor specific library
->>> controls (via sg). We would need to duplicate scsi generic (hint, hint :-)
+>>> In musb_init_controller() there's a pm_runtime_put(), but there's no
+>>> pm_runtime_get(), which creates a mismatch that causes the driver to
+>>> sleep when it shouldn't.
+>>
+>> This patch is causing problems here, the device never suspends, I've
+>> verified musb_runtime_suspend and omap2430_runtime_suspend are never
+>> called in my setup, unless I revert this patch. I'm using musb with
+>> ethernet gadget; cable removal also doesn't suspend musb.
+>>
+>> It seems pm_runtime_put() that was removed was balancing out
+>> pm_runtime_get in musb_platform_init(), which is called at the
+>> beginning of musb_init_controller(). I think this pm_runtime_get()
+>> from musb_platform_init() should be moved to musb_init_controller() to
+>> stop confusing people and pm_runtime_put() needs to be brought back. I
+>> can do a patch if nobody objects.
+>
+> You mean have both get and put in musb_init_controller()? That's OK,
+> it would be balanced then, but you would have to remove the
+> pm_runtime_put() from omap2430_remove() that presumably was balancing
+> the pm_runtime_get_sync() in omap2430_musb_init().
+>
+>>> This was introduced in 7acc619[1], but it wasn't triggered in my setup
+>>> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
+>>> when PM is working as it was supposed to.
 >>>
->>>> virtio-scsi seems to be a basic duplication of virtio-blk except that it seems to
->>>> fix some problems virtio-blk has.  Namely queue parameter discover,
->>>> which virtio-blk doesn't seem to do.  There may also be a reason to cut
->>>> the stack lower down.  Error handling is most often cited for this, but
->>>> no-one's satisfactorily explaned why it's better to do error handling in
->>>> the guest instead of the host.
->>>>
->>>> Could someone please explain to me why you can't simply fix virtio-blk?
+>>> However, it seems most of the time this is used in a way that keeps the
+>>> counter above 0, so nobody noticed. Also, it seems to depend on the
+>>> configuration used in versions before 3.1, but not later (or in it).
 >>>
->>> I dont think that virtio-scsi will replace virtio-blk everywhere. For non-scsi
->>> block devices, image files or logical volumes virtio-blk seems to be the right
->>> approach, I think.
+>>> I found the problem by loading isp1704_charger before any usb gadgets:
+>>> http://article.gmane.org/gmane.linux.kernel/1226122
 >>
->> +1
->>
->> virtio-scsi is superior w.r.t:
->>     - Device support: tapes, cdroms, other
+>> isp1704_charger seems to be doing otg_io_read(), and it's perfectly
+>> normal that musb can be suspended at the time isp1704 decides to do
+>> this. I think proper fix is to wake up must on musb_ulpi_read() and
+>> musb_ulpi_write() instead.
 >
-> AFAICT any type of non TYPE_DISK struct scsi_device passthrough is going
-> to currently require virtio-scsi in order to work.
->
->>     - Does guest-host mapped multipath
->
-> The logic that comes with target_core_fabric_configfs.c and the native
-> target control plane gives a host-side (tcm_vhost) fabric driver generic
-> explict/implict ALUA multipath support by default.
->
-> I think there are some interesting possibilities for paravirtualized
-> ALUA multipath..  8-)
->
->>     - Supports plenty of virtual disks mapped to the guest w/o need for a
->>       pci slot per each virtio-blk
->
-> Ouch, virtio-blk lacks multi-lun per pci slot support..?
+> I guess so. If you send these patches I can give them a try.
 
-Only if you use the pci multi-function option but that kills standard 
-hot unplug
+Sent them a week ago, would be nice if you tried them.
 
->
->>     - offload fancy/new/sophisticated scsi commands from the guest to the
->>       storage array w/o need for qemu implementation. Example XCOPY.
->>
->
-> ...
->
->> There are some more goodies like ability to support windows guest
->> clustering w/o hacky versions of scsi pass through over virtio-blk.
->> virtio-blk is also a candidate to change the request based towards bio
->> based implementation, so sticking to it does not buy us too much.
->>
->
-> MSFT cluster guests that require SPC-3 PR support can run today with
-> tcm_loop LLD SCSI LUNs + SG_IO/BSG + right megasas QEMU HBA emulation,
-> but I do agree this would be better served by virtio-scsi for guests
-> that require SPC-3 PR support or passthrough.
->
-> --nab
->
->
->
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+-- 
+Gražvydas
