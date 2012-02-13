@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab2BMVYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:24:09 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14255 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2BMVYH (ORCPT
+	id S1758211Ab2BMV0r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:26:47 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:33373 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756008Ab2BMV0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:24:07 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1//Ao1U12lUuwCovqGqCW7A
-Date: Mon, 13 Feb 2012 13:24:01 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Anders Kaseorg <andersk@ksplice.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH] modpost: Fix section warnings for ARM for many compilers
-Message-ID: <20120213212401.GH1426@atomide.com>
+	Mon, 13 Feb 2012 16:26:45 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18ADj4jTqkA7vV8BZurUqwxGDSSs7EQ4jFCLDCokz
+	3X/qjT5VtFshTZ
+Message-ID: <4F398006.6080000@gmx.de>
+Date: Mon, 13 Feb 2012 21:26:30 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/16] riva/fbdev: fix several -Wuninitialized
+References: <1327960820-11867-1-git-send-email-danny.kukawka@bisect.de> <1327960820-11867-14-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1327960820-11867-14-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It turns out that many compilers don't show section warnings on ARM
-currently because handling for ARM_CALL relocs are missing from
-modpost.c.
+On 01/30/2012 10:00 PM, Danny Kukawka wrote:
+> Fix several -Wuninitialized compiler warnings by changing the
+> order of getting modedb in riva_update_default_var() to set
+> first the fallback and then the prefered timing.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-Based on commit c2e26114 ([ARM] 3205/1: Handle new EABI relocations when
-loading kernel modules) it seems that R_ARM_PC24, R_ARM_CALL and
-R_ARM_JUMP24 can be handled the same way.
+Applied.
 
-As modpost.c includes elf.h, we need to also consider that at least
-Debian libc6-dev is missing defines for both R_ARM_CALL and R_ARM_JUMP24
-in /usr/include/elf.h.
 
-So for now let's just use the numbers in modpost.c.
+Thanks,
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Anders Kaseorg <andersk@ksplice.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Florian Tobias Schandinat
 
----
+> ---
+>  drivers/video/riva/fbdev.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/riva/fbdev.c b/drivers/video/riva/fbdev.c
+> index 2f58cf9..90df1a6 100644
+> --- a/drivers/video/riva/fbdev.c
+> +++ b/drivers/video/riva/fbdev.c
+> @@ -1816,6 +1816,8 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
+>  			     specs->modedb, specs->modedb_len,
+>  			     NULL, 8);
+>  	} else if (specs->modedb != NULL) {
+> +		/* get first mode in database as fallback */
+> +		modedb = specs->modedb[0];
+>  		/* get preferred timing */
+>  		if (info->monspecs.misc & FB_MISC_1ST_DETAIL) {
+>  			int i;
+> @@ -1826,9 +1828,6 @@ static void __devinit riva_update_default_var(struct fb_var_screeninfo *var,
+>  					break;
+>  				}
+>  			}
+> -		} else {
+> -			/* otherwise, get first mode in database */
+> -			modedb = specs->modedb[0];
+>  		}
+>  		var->bits_per_pixel = 8;
+>  		riva_update_var(var, &modedb);
 
-Anybody got better ideas for dealing with the missing elf.h
-defines?
-
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1505,6 +1505,8 @@ static int addend_arm_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
- 		              (elf->symtab_start + ELF_R_SYM(r->r_info));
- 		break;
- 	case R_ARM_PC24:
-+	case 28:		/* R_ARM_CALL */
-+	case 29:		/* R_ARM_JUMP24 */
- 		/* From ARM ABI: ((S + A) | T) - P */
- 		r->r_addend = (int)(long)(elf->hdr +
- 		              sechdr->sh_offset +
