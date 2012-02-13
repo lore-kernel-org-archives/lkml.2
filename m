@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491Ab2BMF1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:27:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60539 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab2BMF1t (ORCPT
+	id S1751660Ab2BMF15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:27:57 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45361 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2BMF1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:27:49 -0500
-Date: Mon, 13 Feb 2012 13:27:29 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-Message-ID: <20120213052729.GA24636@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
- <20120208065115.GA19691@zhy>
- <CABeCy1bAB6PSAUabk8zO8oh_sLVo3sOPVrr_kSovLdmOOtkfTg@mail.gmail.com>
- <20120209021855.GA26152@zhy>
- <CABeCy1YcELDiFB0rdSCKGgPm7RE5MkQL9v-9xOHfwn5SP3iVeA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABeCy1YcELDiFB0rdSCKGgPm7RE5MkQL9v-9xOHfwn5SP3iVeA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Feb 2012 00:27:55 -0500
+Date: Mon, 13 Feb 2012 16:27:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the kmap_atomic tree with the staging
+ tree
+Message-Id: <20120213162752.b4207f13fb95d7e4db1b5ba2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 09, 2012 at 06:17:06PM -0800, Venki Pallipadi wrote:
-> 
-> This should likely work. But, if you do want to use similar logic in
-> smp_call_function() or idle load balance kick etc, you need additional
-> bit other than need_resched() as there we only need irq+softirq and
-> not necessarily a resched.
+--Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, putting resched_idle_cpu() into smp_call_function_*() is a bit ugly
-though resched could work in the scenario because you have
-generic_smp_call_function_single_interrupt() called in cpu_idle();
+Hi Cong,
 
-> At this time I am not sure how poll wakeup logic works in MIPS. But,
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+drivers/staging/zram/xvmalloc.c between commit b154ff05e1b0 ("staging:
+zram: remove xvmalloc") from the staging tree and commit ea81cfe7d7fb
+("zram: remove the second argument of k[un]map_atomic()") from the
+kmap_atomic tree.
 
-A typical example is busy loop:
-void __noreturn cpu_idle(void)
-{
-	...
+The former removed the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-        while (1) {
-                tick_nohz_idle_enter();
-                rcu_idle_enter();
-                while (!need_resched() && cpu_online(cpu)) {
-                	;
-		}   
-                rcu_idle_exit();
-                tick_nohz_idle_exit();
-                preempt_enable_no_resched();
-                schedule();
-		preempt_disable();
-	}
+--Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38
+Content-Type: application/pgp-signature
 
-	...
-}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPOJ9YAAoJEECxmPOUX5FEgR4P+QGnG4KbgKlqoSdDWvYxjFOY
+cnXYvLWg203w3ohnfYvG9XIWQ37u6qUn3fGyuOjOOx19WucO1zjXSsJUJMugS9jT
+VvM+w7yFs2OaTJtvn6I7FOLAdI7L5ihuBMdY9WLXFifYlN0zQyQUcYku4SVtCEuK
+OXNHtXdPqSi5UwO+R8uIgVaF1vK6z/TtlAOGEet0FVOHwpwGESbSaMO8SPnML0x7
+2g1+mCqxyMsNK7Ztg6MBVmuTI8rX48kl3zvzirIk5UjBXrmoLGAuNyXYW0KNzHv8
+tj2HFdghoVDWe+AFcqNoAFHwgwc4xoyFYHycWQMDtjjUt7f38wovDU0s7foaKdHz
+d0i05YKDr+o1O620pHpF/JimGjmk2KUKnHPzZBZW/H5tV0TQ6rEWMqmVyzWly/iE
+0YquSQ9e5cDnBaLpUwTUs/+iDyHRUYr1h6+/vF87ldAsIUjug4iMYn4Vfgy1naT7
+Rl/h5YCsW4M3hQfY0/hDgjIAPMWjwu+r1dLzR2vvI1kFkCluKorwrchvQdVudS8s
+9DJnXM20O1/+VyZ+mwJ2p8HqZkoRLdeVkgQ+0HBCtMxhOBjCN+Tg+L4/0gJ0wX/l
+3F6z3wBwLHRrhzbwtbL1WNY9YW2qx0pejGTYLlFNBywyYyj6T1ZWGU8GD5+/GQNj
+herFsa88EYQxx0FFK8jx
+=8m1w
+-----END PGP SIGNATURE-----
 
-> if it is something that is similar to x86 mwait and we can wakeup with
-> a bit other than TIF_NEED_RESCHED, we can generalize most of the
-> changes in my RFC and share it across archs.
-
-Yeah, there are many things we could share IMHO, especially the hook
-in cpu_idle().
-
-Thanks,
-Yong
+--Signature=_Mon__13_Feb_2012_16_27_52_+1100_Y5NEprYJUKZgFg38--
