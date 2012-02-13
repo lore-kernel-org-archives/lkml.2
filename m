@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab2BMMtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:49:31 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:58591 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307Ab2BMMt3 convert rfc822-to-8bit (ORCPT
+	id S1756396Ab2BMMuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:50:15 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53912 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab2BMMuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:49:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        torvalds@linux-foundation.org, kexec@lists.infradead.org,
-        vgoyal@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        dzickus@redhat.com, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
-References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
-	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
-	<m1ipjc3fsk.fsf@fess.ebiederm.org>
-	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
-Date: Mon, 13 Feb 2012 04:52:10 -0800
-In-Reply-To: <CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
-	(Yinghai Lu's message of "Sat, 11 Feb 2012 20:17:43 -0800")
-Message-ID: <m1zkcmyjyd.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/b47R3r7bWoQl0TZJ/IW3UHguzycnnKr0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Mon, 13 Feb 2012 07:50:13 -0500
+Subject: Re: [PATCH 03/13] firewire-sbp-target: Add Kconfig, Makefile and
+ TODO
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        stefanr@s5r6.in-berlin.de
+In-Reply-To: <1328989452-20921-4-git-send-email-bootc@bootc.net>
+References: <4E4BD560.4010806@bootc.net>
+	 <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	 <1328989452-20921-4-git-send-email-bootc@bootc.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Feb 2012 04:50:10 -0800
+Message-ID: <1329137410.9333.389.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+On Sat, 2012-02-11 at 19:44 +0000, Chris Boot wrote:
+> The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
+> as a SCSI transport. This module uses the SCSI Target framework to
+> expose LUNs to other machines attached to a FireWire bus, in effect
+> acting as a FireWire hard disk similar to FireWire Target Disk mode on
+> older Apple computers.
+> 
+> Signed-off-by: Chris Boot <bootc@bootc.net>
+> Cc: Andy Grover <agrover@redhat.com>
+> Cc: Clemens Ladisch <clemens@ladisch.de>
+> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> ---
+>  drivers/target/sbp/Kconfig  |   14 ++++++++++++++
+>  drivers/target/sbp/Makefile |   13 +++++++++++++
+>  drivers/target/sbp/TODO     |    7 +++++++
+>  3 files changed, 34 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/target/sbp/Kconfig
+>  create mode 100644 drivers/target/sbp/Makefile
+>  create mode 100644 drivers/target/sbp/TODO
+> 
+> diff --git a/drivers/target/sbp/Kconfig b/drivers/target/sbp/Kconfig
+> new file mode 100644
+> index 0000000..8544010
+> --- /dev/null
+> +++ b/drivers/target/sbp/Kconfig
+> @@ -0,0 +1,14 @@
+> +
+> +config FIREWIRE_SBP_TARGET
+> +	tristate "FireWire SBP-2 fabric module"
+> +	depends on TARGET_CORE && CONFIGFS_FS && FIREWIRE && EXPERIMENTAL
+> +	default n
+> +	help
+> +	  Say Y or M here to enable SCSI target functionality over FireWire.
+> +	  This enables you to expose SCSI devices to other nodes on the FireWire
+> +	  bus, for example hard disks. Similar to FireWire Target Disk mode on
+> +	  older Apple computers.
+> +
+> +	  To compile this driver as a module, say M here: The module will be
+> +	  called firewire-sbp-target.
+> +
 
-> On Sat, Feb 11, 2012 at 7:13 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->>> After reverting this commit, kdump is working again.
->>>
->>> So assume you need to drop this patch.
->>
->> It sounds like there is a bug in ioapic initialization in the context of
->> VT-d.  Where do you fail?
->>
-> before get debug print out from second kernel, the system get reset.
+Hi Chris,
 
-Ouch.
+Just a minor Kconfig related item here.  You can go ahead and drop the
+extra depends on TARGET_CORE && CONFIGFS_FS here, as
+drivers/target/Kconfig is already handling the dependencies for these
+two config options before including drivers/target/sbp/Kconfig.
 
-Don can you work with with Yinghai to figure out what is different
-between your test configuration and his?
+Thanks!
 
-YH did you have early printk enabled?
+--nab
 
-YH Did I understand you properly that things work if you don't enable
-VT-d?   By VT-d are you referring to interrupt remapping?
-
-For anyone watching.  The premise of this patch was that we can boot
-the kernel without resorting to legacy tricks that require us to
-put the interrupt controllers in PIT mode.
-
-Apparently there is some weird corner case that YH can reproduce that
-Don did not have in his test set that YH does that causes things to
-fail.
-
-I really don't see any likely candidates when looking at the code.  The
-most I can see is some code that we don't run when interrupt remapping
-is enabled in disable_IO_APIC.
-
-So I suspect we have a bug in our apic initialization somewhere, but
-apic initialization should happen after printk are enabled.  Or at least
-after early printks so the reset YH is reporting doesn't make much sense.
-
-Eric
