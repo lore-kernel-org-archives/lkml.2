@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab2BMRA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:00:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab2BMRAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:00:25 -0500
-Message-ID: <4F3941A2.3040205@redhat.com>
-Date: Mon, 13 Feb 2012 12:00:18 -0500
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Harald Hoyer <harald@redhat.com>
-CC: Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, initramfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, systemd-devel@lists.freedesktop.org,
-        selinux@lists.fedoraproject.org
-Subject: Re: dracut: ordering of modules
-References: <1328886121.2472.19.camel@falcor> <4F38DEF0.8010202@redhat.com> <4F38E337.7030200@polito.it> <4F38E5F4.9070009@redhat.com>
-In-Reply-To: <4F38E5F4.9070009@redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757349Ab2BMRNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 12:13:37 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:63480 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab2BMRNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 12:13:36 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] block: avoid false positive warnings on ioctl to partition
+Date: Mon, 13 Feb 2012 18:13:26 +0100
+Message-Id: <1329153206-31355-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+After a month of reports, the warnings from non-whitelisted ioctls to
+a partitions can be classified in three groups.
 
-On 02/13/2012 05:29 AM, Harald Hoyer wrote:
-> Am 13.02.2012 11:17, schrieb Roberto Sassu:
->> Hi Harald
->> 
->> this functionality seems to be broken in dracut due to a change
->> in the SELinux load_policy tool. After enabling the selinux
->> module in dracut, i obtain:
->> 
->> [    3.369059] dracut: Loading SELinux policy [    3.449850]
->> dracut: /sbin/load_policy: Can't load policy: No such file or 
->> directory [    3.659899] dracut: Switching root
->> 
-> 
-> This error can have multiple causes... Dan?
+BLKFLSBUF and BLKROSET are always sent to devices.  Not having them in
+the whitelist did not cause any visible harm, but anyway they can and
+should be added to the whitelist.
 
-Well likeliest would be selinux-policy package is not installed.
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Many unrecognized ioctls are sent to partitions as an attempt to probe for
+CD-ROMs, floppies and other kinds of devices.  Like CDROM_GET_CAPABILITY,
+they can be blocked safely.
 
-iEYEARECAAYFAk85QaIACgkQrlYvE4MpobMNbwCgi8JG0fmlQsnvo2HNnA+Orxzr
-UYcAoKqHj0+Ll8lfbYpvGzANxck4MAwP
-=geIr
------END PGP SIGNATURE-----
+Of the actual SCSI ioctls, only SG_IO was reported in the wild (twice).
+udev's scsi_id can issue INQUIRY commands if passed a partition; this
+only occurs with custom rules and is strictly speaking invalid, but we
+need a transition period so that people can fix their configuration.
+zfs-fuse also can issue SYNCHRONIZE CACHE commands, where it should
+simply use fdatasync.
+
+Therefore, this patch silently blocks all ioctls except SG_IO, since
+all of them turned out to be false positives; in case some escaped, it
+should be easily diagnosable or at least bisectable.  The warning text
+is separated for root and non-root, and the deprecation period for root
+users is set to end a year from now.
+
+Cc: stable@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+	Note: I will take care of the stable backport as soon as this
+	patch or something similar hits Linus's tree.
+
+ block/scsi_ioctl.c |   43 ++++++++++++++++++++++++++++++-------------
+ 1 files changed, 30 insertions(+), 13 deletions(-)
+
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 260fa80..fe86923 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -696,9 +696,6 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 	if (bd && bd == bd->bd_contains)
+ 		return 0;
+ 
+-	/* Actually none of these is particularly useful on a partition,
+-	 * but they are safe.
+-	 */
+ 	switch (cmd) {
+ 	case SCSI_IOCTL_GET_IDLUN:
+ 	case SCSI_IOCTL_GET_BUS_NUMBER:
+@@ -710,22 +707,42 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
+ 	case SG_GET_RESERVED_SIZE:
+ 	case SG_SET_RESERVED_SIZE:
+ 	case SG_EMULATED_HOST:
++		/* Actually none of these is particularly useful on a partition,
++		 * but they are safe.
++		 */
+ 		return 0;
+-	case CDROM_GET_CAPABILITY:
+-		/* Keep this until we remove the printk below.  udev sends it
+-		 * and we do not want to spam dmesg about it.   CD-ROMs do
+-		 * not have partitions, so we get here only for disks.
++
++	case BLKROSET:
++	case BLKFLSBUF:
++		/* These are generic block layer ioctls that are nevertheless
++		 * passed down to devices.  They are certainly valid for
++		 * partitions!
++		 */
++		return 0;
++
++	case SG_IO:
++		/* Accept this for non-root users during a one-year transition
++		 * period.
+ 		 */
+-		return -ENOIOCTLCMD;
+-	default:
+ 		break;
++
++	default:
++		/* In particular, rule out all resets and host-specific ioctls.  */
++		return -ENOIOCTLCMD;
+ 	}
+ 
+-	/* In particular, rule out all resets and host-specific ioctls.  */
+-	printk_ratelimited(KERN_WARNING
+-			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
++	if (capable(CAP_SYS_RAWIO)) {
++		printk_ratelimited(KERN_WARNING
++				   "%s: SG_IO to a partition will be "
++				   "disallowed in January 2013\n",
++				   current->comm);
++		return 0;
++	}
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++	printk_ratelimited(KERN_WARNING
++			   "%s: rejecting SG_IO to a partition for non-root user\n",
++			   current->comm);
++	return -ENOIOCTLCMD;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
+-- 
+1.7.1
+
