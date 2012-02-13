@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab2BMJZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:25:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756409Ab2BMJZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:25:50 -0500
-Date: Mon, 13 Feb 2012 10:25:39 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-Cc: wwguy <wey-yi.w.guy@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20120213092538.GA6214@redhat.com>
-References: <20111110163051.GA24533@nomi.cz>
- <20111111054731.GA2292@redhat.com>
- <20111111150105.GA25437@nomi.cz>
- <20111114140714.GD2513@redhat.com>
- <20111119181106.GA5515@nomi.cz>
- <1321755233.22510.1.camel@wwguy-ubuntu>
- <20111120032016.GA14520@nomi.cz>
- <1321763314.22510.4.camel@wwguy-ubuntu>
- <20111120204007.GA7273@nomi.cz>
- <20120210180929.GA17733@nomi.cz>
+	id S1756441Ab2BMJ0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:26:19 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:33404 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab2BMJ0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:26:18 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
+Date: Mon, 13 Feb 2012 10:28:45 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>
+References: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120210180929.GA17733@nomi.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202131028.45806.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 07:09:29PM +0100, Tomáš Janoušek wrote:
-> On Sun, Nov 20, 2011 at 09:40:07PM +0100, Tomáš Janoušek wrote:
-> > > Yes, I will try your configuration when I get back  to the office Monday
+Am Montag, 13. Februar 2012, 02:42:24 schrieb Alan Stern:
+> On Sun, 12 Feb 2012, Oliver Neukum wrote:
 > 
-> Did you have any luck?
-I think I tried to reproduce that problem and failed, but honestly I do
-not remember right now ...
-
-> I just found out something which is almost completely
-> insane.
+> > Yes, we can use the same heuristics as everywhere.
+> > command queued -> autopm_get
+> > command finished -> autopm_put
+> > 
+> > but for the USB host adapter, not the sr device
 > 
-> For the last few months, I've happily used a 64-bit kernel and have had no
-> problems whatsoever. About a week ago, I started using virtual machines in
-> KVM. And today I found that I have exactly the same problem, but only _inside_
-> the virtual machine. I can't reliably scp a file from the internet to my
-> virtual machine. It works fine when I scp to the host, it works fine when I'm
-> on a WPA-PSK network. And it happens even if I tell kvm to emulate e1000, not
-> only with virtio-net. How strange is that?
->
-> And while this is happening, the host is running just fine. The host has a
-> 64-bit kernel with a 32-bit userspace, so if something was wrong with the
-> 32-bit mode of my processor, it would've appeared on the host as well, no?
-> 
-> It's also worth mentioning that if I build openssl with "no-asm 386", scp
-> works just fine. So it doesn't look like a memory corruption after all. It
-> seems as if certain CPU instructions didn't work properly if running on a
-> 32-bit kernel with a WiFi adapter doing something. But how can it be
-> that those same CPU instructions work on a 64-bit host with 32-bit userspace?
-> At the same time! That's just completely insane, and I can't think of an
-> explanation. Shall I get a new CPU perhaps? :-)
+> I still don't fully understand.  Are you suggesting that we use the 
+> normal autosuspend timeout mechanism for the disk drive (for example, 
+> spin down the disk if it hasn't been used for five minutes), and then
 
-Currently there are discussion about compilator problems that
-can result a corruption
-http://lwn.net/Articles/478657/
-Perhaps this problem is something similar.
+Yes. The key here is to realize that from a view point of functionality
+they are not suspended. But they will be ready to be suspended.
 
-Also, if you look at lspci -vt, does it show that corruption happen
-only  when PCI bridge is used (however that would not explain why it
-only happens with WPA enterprise).
+> autosuspend a USB mass-storage device whenever its children are 
+> suspended and no commands are in progress?  (In fact, there can't be 
+> any commands in progress if all the children are suspended.)
 
-Stanislaw
+Really? It is currently true because the device must be opened to issue
+commands.
+In fact now that you put it this way, it seems to me that this is the
+preconception we must shed.
+
+
+> The SCSI drivers don't know much about the request queue -- the block
+> layer manages it.  That's another reason for handling this at the block
+> layer.
+
+That was refering to SCSI requests.
+ 
+> Is there some special reason you're talking about sr (the SCSI CD/DVD
+> driver) instead of sd (the SCSI disk driver)?
+
+My stupidity.
+
+	Regards
+		Oliver
