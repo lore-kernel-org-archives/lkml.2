@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab2BMWHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 17:07:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60544 "EHLO
+	id S1757154Ab2BMWKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:10:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60551 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754727Ab2BMWHD (ORCPT
+	by vger.kernel.org with ESMTP id S1751511Ab2BMWKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 17:07:03 -0500
-Date: Mon, 13 Feb 2012 14:06:57 -0800
+	Mon, 13 Feb 2012 17:10:21 -0500
+Date: Mon, 13 Feb 2012 14:10:16 -0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@stericsson.com,
-        dunlap@xenotime.net, lrg@ti.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1 2/3] Documentation: gpio: Add details of open-drain
- configuration
-Message-ID: <20120213220656.GA11931@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        linus.walleij@stericsson.com, dunlap@xenotime.net, lrg@ti.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1 0/3] Support for open drain gpios in gpilib/fixed
+ regulators.
+Message-ID: <20120213221015.GB11931@opensource.wolfsonmicro.com>
 References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>
- <1329114588-15430-3-git-send-email-ldewangan@nvidia.com>
- <20120213211809.GI11077@ponder.secretlab.ca>
+ <CACRpkdb5VA4GJpB_0Xra=R0LUD9fz4CoDLjuwFHZ8SnTMz3fpg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
+	protocol="application/pgp-signature"; boundary="cvVnyQ+4j833TQvp"
 Content-Disposition: inline
-In-Reply-To: <20120213211809.GI11077@ponder.secretlab.ca>
+In-Reply-To: <CACRpkdb5VA4GJpB_0Xra=R0LUD9fz4CoDLjuwFHZ8SnTMz3fpg@mail.gmail.com>
 X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,64 +31,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
+--cvVnyQ+4j833TQvp
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Feb 13, 2012 at 02:18:09PM -0700, Grant Likely wrote:
-> On Mon, Feb 13, 2012 at 11:59:47AM +0530, Laxman Dewangan wrote:
-> > Adding details of open drain configuration of the gpio so that
-> > client can set the pin as open drain at the time of gpio request.
+On Mon, Feb 13, 2012 at 09:02:03PM +0100, Linus Walleij wrote:
+> On Mon, Feb 13, 2012 at 7:29 AM, Laxman Dewangan <ldewangan@nvidia.com> w=
+rote:
 
-> Implicitly, the gpio api already supports open-drain and several drivers
-> make use of it.  Instead of being a separate flag; users who need open
-> drain will set the pin to input.  For example, see the i2c-gpio driver.
+> > This is series of patches =A0to add support of the open drain gpios
+> > in standard gpio library and using this in fixed regulators.
+> > - Added GPIOF_OD flag so that client can request the gpio with this fla=
+g.
+> > - Added support for the sysfs interface for open-drain.
+> > - Handle open drain gpio configuration properly.
+> > - Use this flag in fixed regualtor to tell that gpio is open drain.
+> > - Gpio documentation changes to have support for open-drain.
 
-> I'm not convinced this is needed; but my opinion could be swayed.
+> My gut feeling is that this stuff needs to go into pinctrl.
 
-The actual idea is to provide support for doing the switch to input to
-drivers that just want to set a logic level and don't (at their level)
-care one way or another if it's a CMOS or open drain output but instead
-leaves it up to board configuration which mode is used.  Laxman posted a
-patch for doing this to a regulator driver but looking at it the code
-for emulating open drain while also maintaining support for regular CMOS
-is fiddly enough that it seemed like it should be factored out of the
-individual drivers.
+Does that really make sense for cases like this where we're emulating
+the open drain support rather than actually configuring the hardware
+into an open drain mode?  That emulation is a pretty GPIO specific
+thing.
 
-> Also, you should include a patch to make i2c-gpio.c use this new
-> functionality as a proof-of-concept.  You may not be able to test it,
-> but it will make it a lot easier to justify merging by showing how it
-> cleans up a gpio user.
-
-The regulator patch is one example - I think things that could be CMOS
-are probably more interesting here than drivers that always want open
-drain as they have more of a complexity hit from needing to decide if
-they'll use the emulation or not.
-
-We could also at some later point add support for hardware which can
-implement open drain mode itself though I'm not sure if there's enough
-problem with emulating to make it worth the effort.
-
---mP3DRpeJDSE+ciuQ
+--cvVnyQ+4j833TQvp
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPOYl5AAoJEBus8iNuMP3de9MP/j/7PumfKyRuR9LkeTN4A/t6
-9q4YRm7GaSs/J6P7C/Qe/Ifm6NSNzb6BjHN2nO/o58EZ2OeGO3MRIT9vWtRAtD6K
-M3MmvSCVVVL8B+9WJjbX1J9zq9nPGSc7UOrIV8YGYSz1e6c2OJof/2MNftRzHyo3
-rcd7Ewlas3yq3FOYZNJMIh8N66JYsy4wnBZmhzoMZOorK2i2cQW6Tr8ZNMeykBRr
-Ws1lF4oKD4/5D65ckuUUrFFRKeIBxxVaisQ6K9PyxagzhxOz/vKd9vSUVevJbObe
-qwWVogZzmzwmukk4T3eGnZXznJDU2AJjoVe1xfOabtjnc/Ah/CgEfnF4aZ6pNCTC
-/lsOipbV6mDFQo9/S3tuTdk51Ou2+xmxxDCCNlLIPHELDUp+Bg1NQJiyMkreN/uW
-V4M1YNINGPY8megh/QniqcCbupTszqqRQFN/fxbsB0ZnO2IZpA381mJwh1Pcs7In
-P8E/M7sjFXJe9C6N4aYBkXddlucGVe49wFnvf3HnGJtruuxH0KXwp4ozDdc5etKn
-MCdx5ffQ3S6TVxU6qO7/Nh6RmJKyOOb2PBiOrN2IEvSeCB59knFhLvtcm/QaYnT5
-pWWzmjiicT9M5mUaIH4Rp+nz3f1jGXOrgsYNjvqVUIfRzRPk+Hdj1sII+S0Zc03h
-5sQnQw25ZyW7MhUUj9uL
-=zQFX
+iQIcBAEBAgAGBQJPOYpBAAoJEBus8iNuMP3doK8P/RJqkDHgKuFEdybO5UCAt+K4
+pZcWrolaDlHU+GHfjhSGi5l9bAm9XbViwnv9WiGPaePwrRU9go06EIbSfAsDZ2PA
+AAOv9X/gAXdnVUn7rJhA3wVB4EzrzYHpU2U+ei4SZLSzxMMDzGzvFrUweTYN3o4s
+huHvG8BMTheqpRelxXM5UrRsNZ7IM5npJzmFbEeVwCN5ROxDSkXljDoKtqZjON6G
+8y/H+KiJD5WdRiIO5w/6vgRz1ytDxryVj8wPZy4zrI8mb4rGnID2AcV9M9NIFfHm
+GgR+PW0tIO+2qp44G94MApbHr4mb+LNJAXuE1tT3nKMxCQr3vMQJjR9q3/9/yJQq
+P8dKCsE1ISEOJg7lZJmljMpGxr999VOFM4VueN5v/XJrvVG+Nomasl4dhu4KpI1c
+L31TPQ6Q4yG4JohpQYIMBLpMfYNmBAK3xrEg+CgeVq4R5I6QvPKL2WkeKn7up7b8
+rju2uY0lCLhL+fMxtbblLey4yqauYGVsg8tOUQRmJVcPZ5bV/J5Sdq78j/ggElF9
+tb5+nrdYEYGCEFnHlZ88HI4qHqfPExh+fhUswEg5tBgcDx35bMKGbAK5HApLvT0p
+4vLxXw3m72wMNWLwB0PaS7llxlKiPCaqHkCvKtYALAdQtiy40IExXkWFI5GI1K4a
+Lh+1sCHvziouusjVxPwS
+=/udR
 -----END PGP SIGNATURE-----
 
---mP3DRpeJDSE+ciuQ--
+--cvVnyQ+4j833TQvp--
