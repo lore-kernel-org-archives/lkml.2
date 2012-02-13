@@ -1,76 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab2BMFMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:12:51 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34962 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2BMFMt (ORCPT
+	id S1751084Ab2BMFPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:15:47 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45146 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab2BMFPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:12:49 -0500
-Date: Sun, 12 Feb 2012 21:12:43 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: ALPS touchpad no longer recognizing 'taps' as mouseclick in
- 3.3-rc3
-Message-ID: <20120213051243.GA10056@core.coreip.homeip.net>
-References: <20120212164728.GA19629@kroah.com>
- <20120212201236.GA9389@core.coreip.homeip.net>
- <20120213022221.GF25382@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120213022221.GF25382@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Feb 2012 00:15:45 -0500
+Date: Mon, 13 Feb 2012 16:15:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the kmap_atomic tree with the staging
+ tree
+Message-Id: <20120213161537.3cf109d3f9c4c577f8fcb789@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 06:22:21PM -0800, Greg KH wrote:
-> On Sun, Feb 12, 2012 at 12:12:36PM -0800, Dmitry Torokhov wrote:
-> > Hi Greg,
-> > 
-> > On Sun, Feb 12, 2012 at 08:47:28AM -0800, Greg KH wrote:
-> > > Hi,
-> > > 
-> > > This problem has been since 3.3-rc1, but I only now am getting around to
-> > > reporting it, sorry about that.
-> > > 
-> > > In 3.3-rc3, my alps touchpad isn't recognizing a tap on the touchpad as
-> > > a mouse click.  Is there a new Kconfig option that I need to enable?
-> > > 
-> > > My /proc/bus/input/devices entry for this thing is:
-> > > I: Bus=0011 Vendor=0002 Product=0008 Version=7326
-> > > N: Name="AlpsPS/2 ALPS DualPoint TouchPad"
-> > > P: Phys=isa0060/serio1/input0
-> > > S: Sysfs=/devices/platform/i8042/serio1/input/input6
-> > > U: Uniq=
-> > > H: Handlers=mouse1 event6 
-> > > B: PROP=8
-> > > B: EV=b
-> > > B: KEY=e420 70000 0 0 0 0
-> > > B: ABS=260800001000003
-> > > 
-> > > Is there anything else you need me to report to help track this down?
-> > > 
-> > 
-> > Please make sure you have xorg-x11-drv-synaptics installed and then
-> > check if tap to click is enabled in your DE. I think Gnome for some
-> > reason has it off my default.
-> 
-> Is this a new thing for the 3.3 kernel?  I ask as 3.2 and older kernels
-> work just fine this way.  I can do a 'git bisect' to track it down to a
-> specific patch if that will help out.
+--Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, there is no need. I am pretty sure pre-3.3 your touchpad worked in
-PS/2 compatibility mode; in 3.3 we merged support for native multitouch
-protocol so your touchpad works in absolute mode, can support various
-gestures (vertical/hrizontal scroll, user-selected sensitivity, etc.)
-and is recognozed as a proper touchpad by the entire stack. For some
-reason though Gnome has disabled tap to click for touchpads by default.
-I do not remember what is the default for KDE.
+Hi Cong,
 
-Hope this helps.
+Today's linux-next merge of the kmap_atomic tree got a conflict in
+drivers/staging/zcache/zcache-main.c between commit a49aeb1de585
+("staging: zcache: replace xvmalloc with zsmalloc") (and mayb others)
+from the staging tree and commit 1edbcaee3bbe ("zcache: remove the second
+argument of k [un]map_atomic()") from the kmap_atomic tree.
 
--- 
-Dmitry
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/zcache/zcache-main.c
+index ccfa854,f0843e8a..0000000
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@@ -455,14 -421,13 +455,14 @@@ static int zbud_decompress(struct page=20
+  	}
+  	ASSERT_SENTINEL(zh, ZBH);
+  	BUG_ON(zh->size =3D=3D 0 || zh->size > zbud_max_buddy_size());
+- 	to_va =3D kmap_atomic(page, KM_USER0);
++ 	to_va =3D kmap_atomic(page);
+  	size =3D zh->size;
+  	from_va =3D zbud_data(zh, size);
+ -	ret =3D lzo1x_decompress_safe(from_va, size, to_va, &out_len);
+ -	BUG_ON(ret !=3D LZO_E_OK);
+ +	ret =3D zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, from_va, size,
+ +				to_va, &out_len);
+ +	BUG_ON(ret);
+  	BUG_ON(out_len !=3D PAGE_SIZE);
+- 	kunmap_atomic(to_va, KM_USER0);
++ 	kunmap_atomic(to_va);
+  out:
+  	spin_unlock(&zbpg->lock);
+  	return ret;
+@@@ -745,22 -708,21 +745,22 @@@ static void zv_free(struct zs_pool *poo
+  	local_irq_restore(flags);
+  }
+ =20
+ -static void zv_decompress(struct page *page, struct zv_hdr *zv)
+ +static void zv_decompress(struct page *page, void *handle)
+  {
+ -	size_t clen =3D PAGE_SIZE;
+ +	unsigned int clen =3D PAGE_SIZE;
+  	char *to_va;
+ -	unsigned size;
+  	int ret;
+ +	struct zv_hdr *zv;
+ =20
+ +	zv =3D zs_map_object(zcache_host.zspool, handle);
+ +	BUG_ON(zv->size =3D=3D 0);
+  	ASSERT_SENTINEL(zv, ZVH);
+- 	to_va =3D kmap_atomic(page, KM_USER0);
+ -	size =3D xv_get_object_size(zv) - sizeof(*zv);
+ -	BUG_ON(size =3D=3D 0);
++ 	to_va =3D kmap_atomic(page);
+ -	ret =3D lzo1x_decompress_safe((char *)zv + sizeof(*zv),
+ -					size, to_va, &clen);
+ +	ret =3D zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, (char *)zv + sizeof(*zv=
+),
+ +				zv->size, to_va, &clen);
+- 	kunmap_atomic(to_va, KM_USER0);
++ 	kunmap_atomic(to_va);
+ -	BUG_ON(ret !=3D LZO_E_OK);
+ +	zs_unmap_object(zcache_host.zspool, handle);
+ +	BUG_ON(ret);
+  	BUG_ON(clen !=3D PAGE_SIZE);
+  }
+ =20
+@@@ -1333,16 -1297,15 +1333,16 @@@ static int zcache_compress(struct page=20
+  	char *from_va;
+ =20
+  	BUG_ON(!irqs_disabled());
+ -	if (unlikely(dmem =3D=3D NULL || wmem =3D=3D NULL))
+ -		goto out;  /* no buffer, so can't compress */
+ +	if (unlikely(dmem =3D=3D NULL))
+ +		goto out;  /* no buffer or no compressor so can't compress */
+ +	*out_len =3D PAGE_SIZE << ZCACHE_DSTMEM_ORDER;
+- 	from_va =3D kmap_atomic(from, KM_USER0);
++ 	from_va =3D kmap_atomic(from);
+  	mb();
+ -	ret =3D lzo1x_1_compress(from_va, PAGE_SIZE, dmem, out_len, wmem);
+ -	BUG_ON(ret !=3D LZO_E_OK);
+ +	ret =3D zcache_comp_op(ZCACHE_COMPOP_COMPRESS, from_va, PAGE_SIZE, dmem,
+ +				(unsigned int *)out_len);
+ +	BUG_ON(ret);
+  	*out_va =3D dmem;
+- 	kunmap_atomic(from_va, KM_USER0);
++ 	kunmap_atomic(from_va);
+  	ret =3D 1;
+  out:
+  	return ret;
+
+--Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOJx5AAoJEECxmPOUX5FEEM0P/jhyA8+GOus1owYq2AB0LLcz
+bBL0VlGpofOUbRTC+4/YBQ7T2Hed9hB7WqT3MEnR9N55VLMNVBF2ESb1EbzPjPdw
+nEHnvPh7f4ndlNfRYbnuyV2cDKUQewkyMsP2jwNiSQV9M6xsCGVouUJv6/5ok3I5
+AXQnRsEngKQ1kPqUE1N4mIbdIttzloc0fS6HbiChRj7XNillY80Oytr8yYJX0+TI
+nGkZ/p5zHQZyWdsOH3SNhTNG/zZB32HkycrdkTCjhqvQ+4Um7NzZlNP131J2ik8g
+j14DxEhhcBXOAsYJPq6p7wG3T20OXhixHcMnM1JehJF1bTWqv2H3VczIw9j7tpvw
+HxsRBJZOjhrvm7V3ZXHuSplLPMk0xbmeJLrX3cK2hixb1j3raenUTFm4vEem/fU0
+AcBxnApBG6SMKaDmCDe407mpy59F1SAB5MeHwKzcUbdAjql3MWcm1GpJNX2lqeyH
+EjtmCU/jQzlWe+So7mw1Mv/QnrWiIDqXfscx0P9p3e15kskrq/Qxp1UCk8tSQYrA
+BvAXsJ0wGTSfFJV6ThFqO8CHu52iwn7+D6h+QYQDkvVDLHqZBTPVhDSGA2/m8wxZ
+rQvlYh+7450oLRM90kCp9hpabl0P4UnOvcCg5hP8n5KoJG7RW1Z++Hzf9mKxyG+P
+IzDvX9Ew7MRc/or0V6ag
+=0THF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx--
