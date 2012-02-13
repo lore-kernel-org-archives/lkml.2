@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab2BMTQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:16:31 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36537 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab2BMTQa (ORCPT
+	id S1757651Ab2BMTTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:19:43 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49223 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757622Ab2BMTTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:16:30 -0500
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: scsi_error: do not allow IO errors with certain ILLEGAL_REQUEST sense to be retryable
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1322857889-2623-1-git-send-email-snitzer@redhat.com>
-	<yq1zkf5pfx1.fsf@sermon.lab.mkp.net>
-	<20111206212704.GB30719@redhat.com>
-	<yq1vcptpdch.fsf@sermon.lab.mkp.net>
-	<20111206224218.GA31543@redhat.com>
-	<20120213162923.GA29578@redhat.com>
-	<yq1d39iipra.fsf@sermon.lab.mkp.net>
-	<20120213181359.GA5803@redhat.com>
-Date: Mon, 13 Feb 2012 14:16:14 -0500
-In-Reply-To: <20120213181359.GA5803@redhat.com> (Mike Snitzer's message of
-	"Mon, 13 Feb 2012 13:13:59 -0500")
-Message-ID: <yq14nuuilxd.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	Mon, 13 Feb 2012 14:19:42 -0500
+Message-ID: <4F396249.2050001@gmail.com>
+Date: Mon, 13 Feb 2012 12:19:37 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F396183.00E7,ss=1,re=0.000,fgs=0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] perf tools: Introduce struct perf_maps_opts
+References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com> <1329118064-9412-2-git-send-email-namhyung.kim@lge.com> <20120213183232.GD15955@infradead.org> <4F395B75.4060800@gmail.com> <20120213190542.GL15955@infradead.org>
+In-Reply-To: <20120213190542.GL15955@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
-
->> I don't have a fundamental problem with your patch. But since we
->> explicitly handle ILLEGAL REQUEST with 0x20 and 0x24 in sd.c I wonder
->> what's broken? We should disable discard support if the WRITE SAME w/
->> UNMAP fails.
-
-Mike> Yeah, I thought the disabling would be sufficient too.  But
-Mike> unfortunately multipath doesn't inspect the request it is retrying
-Mike> (after it fails the path the request just failed on).
-
-Well, we shouldn't be returning something that multipath should ever act
-on.
-
-I think I understand what's going on. Can you try the following patch?
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
 
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index b2c95db..4e8d0b6 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -879,6 +879,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 				    cmd->cmnd[0] == WRITE_SAME_16 ||
- 				    cmd->cmnd[0] == WRITE_SAME)) {
- 				description = "Discard failure";
-+				error = -EREMOTEIO;
- 				action = ACTION_FAIL;
- 			} else
- 				action = ACTION_FAIL;
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c691fb5..5f0d383 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -497,6 +497,8 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
- 		max(sdkp->physical_block_size,
- 		    sdkp->unmap_granularity * logical_block_size);
- 
-+	sdkp->provisioning_mode = mode;
-+
- 	switch (mode) {
- 
- 	case SD_LBP_DISABLE:
-@@ -524,8 +526,6 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
- 
- 	q->limits.max_discard_sectors = max_blocks * (logical_block_size >> 9);
- 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
--
--	sdkp->provisioning_mode = mode;
- }
- 
- /**
+On 02/13/2012 12:05 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Feb 13, 2012 at 11:50:29AM -0700, David Ahern escreveu:
+>> The cleanup might make my multiple tid/pid patch easier: e.g.,
+>>
+>> struct perf_target{
+>> 	...
+>> 	char errmsg[128];
+>> };
+>>
+>> Then if the tid/pid string parsing fails in perf_evlist__create_maps and
+>> friends the errmsg can be put into the buffer for the callers to get a
+>> more useful message to the user as to what happened.
+>>
+>> Today's perf if you give it an invalid pid, scandir fails and the
+>> command spits out the usage statement. Which is completely confusing --
+>> ie., not clear that the command failed b/c the pid does not exist.
+> 
+> Humm, ok, but then I think we should have an enum + a strerror(3)
+> equivalent, i.e.:
+> 
+> 	enum perf_target_error perf_evlist__create_maps(...);
+> 
+> 	int perf_target__strerror(struct perf_target *target, int errnum,
+> 				  char *buf, size_t buflen);
+
+ok, so you are proposing an internal generation of enum error codes and
+correlating them to strings rather than adding a buffer into
+perf_target. If that's the case perhaps we need a libperf-wide design:
+
+enum perf_error
+perf__strerror(enum perf_error)
+
+which effectively taps an array similar to _sys_errlist_internal based
+on enum index.
+
+> 
+> Please see 'man strerror_r", and make it work like the POSIX compliant
+> variant.
+
+No globals are in use, so I would expect the _r to be redundant. I have
+glibc source; scanning __strerror_r implementation ....
+
+> 
+> Ok, so it may be better to first process Kim's patches and then you
+> rework yours?
+
+The current patch is ready to go; I just don't like the error handling
+and lack of a useful message. That said, it is no worse than what
+happens today.
+
+David
+
+> 
+> - Arnaldo
