@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2BMDET (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 22:04:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:52468 "EHLO ozlabs.org"
+	id S1754987Ab2BMDIy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 22:08:54 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38470 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab2BMDEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 22:04:16 -0500
-From: Michael Neuling <mikey@neuling.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        linux-next@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: Boot failure with next-20120208
-In-reply-to: <20120212113805.c7e5d902c95a9d0f4037e12c@canb.auug.org.au>
-References: <20120212113805.c7e5d902c95a9d0f4037e12c@canb.auug.org.au>
-Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
-   message dated "Sun, 12 Feb 2012 11:38:05 +1100."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Mon, 13 Feb 2012 14:04:14 +1100
-Message-ID: <16788.1329102254@neuling.org>
+	id S1753943Ab2BMDIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 22:08:53 -0500
+Date: Mon, 13 Feb 2012 11:08:08 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: svaidy@linux.vnet.ibm.com, Ram Pai <linuxram@us.ibm.com>,
+        Yinghai Lu <yinghai.lu@oracle.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUGFIX][PATCH] pci: check for 4k resource_size alignment in
+ sriov_init
+Message-ID: <20120213030808.GA18296@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <20120127191032.GA22999@dirshya.in.ibm.com>
+ <20120130031845.GA2359@ram-ThinkPad-T61>
+ <20120131174402.GA6172@dirshya.in.ibm.com>
+ <20120201062145.GA11505@ram-ThinkPad-T61>
+ <20120201130206.GD3510@dirshya.in.ibm.com>
+ <20120210115452.4bfefa05@jbarnes-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120210115452.4bfefa05@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021303-1976-0000-0000-00000A72D753
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Just a quick note to say I got a boot OOPs with next-20120208 and 9 on a
-> Power7 blade (my other PowerPC boot tests are ok.  I'll investigate this
-> further on Monday.
->
-> The line referenced below is:
->
-> BUG_ON(!kobj || !kobj->sd || !attr);
->
-> in sysfs_create_file().
+On Fri, Feb 10, 2012 at 11:54:52AM -0800, Jesse Barnes wrote:
+> On Wed, 1 Feb 2012 18:32:06 +0530
+> Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com> wrote:
 > 
-> calling  .topology_init+0x0/0x1ac @ 1
-> initcall 7_.async_cpu_up+0x0/0x40 returned 0 after 9765 usecs
-> async_continuing @ 20 after 9765 usec
-> ------------[ cut here ]------------
-> kernel BUG at fs/sysfs/file.c:573!
-> Oops: Exception in kernel mode, sig: 5 [#1]
-> SMP NR_CPUS=32 NUMA pSeries
-> Modules linked in:
-> NIP: c00000000024a35c LR: c0000000004ee050 CTR: c00000000083ca24
-> REGS: c0000003fd9e7560 TRAP: 0700   Not tainted  (3.3.0-rc2-autokern1)
-> MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 88002082  XER: 0000000f
-> CFAR: c00000000024a370
-> TASK = c0000003fd9e8000[20] 'kworker/u:6' THREAD: c0000003fd9e4000 CPU: 0
-> GPR00: 0000000000000001 c0000003fd9e77e0 c000000000d19bb8 0000000000000000 
-> GPR04: c000000000bf37a8 0000000000000008 8000000002096400 0000000000000000 
-> GPR08: 0000000000000000 c000000000f80028 c000000000d52bd8 0000000000000000 
-> GPR12: 0000000048002088 c00000000f33b000 0000000001affa78 00000000009aa000 
-> GPR16: 0000000000e1f3c8 0000000002d517f0 0000000001aff984 0000000000000060 
-> GPR20: 0000000000000000 ffffffffffffffff 0000000000000000 c000000000c45128 
-> GPR24: 0000000000000000 0000000000000008 0000000000000000 c000000000c44200 
-> GPR28: c000000000f80028 0000000000000008 c000000000c85038 0000000000000002 
-> NIP [c00000000024a35c] .sysfs_create_file+0x1c/0x40
-> LR [c0000000004ee050] .device_create_file+0x20/0x40
-> Call Trace:
-> [c0000003fd9e77e0] [c0000003fd9e78a0] 0xc0000003fd9e78a0 (unreliable)
-> [c0000003fd9e7850] [c00000000083c9a4] .register_cpu_online+0x1d0/0x250
-> [c0000003fd9e7900] [c00000000083ca8c] .sysfs_cpu_notify+0x68/0x28c
-> [c0000003fd9e79b0] [c00000000083769c] .notifier_call_chain+0x9c/0x100
-> [c0000003fd9e7a50] [c0000000000a5878] .__cpu_notify+0x38/0x80
-> [c0000003fd9e7ad0] [c00000000083e124] ._cpu_up+0x10c/0x178
-> [c0000003fd9e7b90] [c00000000083e2c8] .cpu_up+0x138/0x164
-> [c0000003fd9e7c20] [c000000000ba46d0] .async_cpu_up+0x28/0x40
-> [c0000003fd9e7ca0] [c0000000000d81ec] .async_run_entry_fn+0xbc/0x1f0
-> [c0000003fd9e7d50] [c0000000000c7cbc] .process_one_work+0x19c/0x590
-> [c0000003fd9e7e10] [c0000000000c8618] .worker_thread+0x188/0x4b0
-> [c0000003fd9e7ed0] [c0000000000ce57c] .kthread+0xbc/0xd0
-> [c0000003fd9e7f90] [c000000000021448] .kernel_thread+0x54/0x70
-> Instruction dump:
-> 7fa3eb78 ebe1fff8 eba1ffe8 7c0803a6 4e800020 2c230000 41820024 e8630030 
-> 7c800074 7800d182 2fa30000 419e0014 <0b000000> 38a00002 4bfffebc e8630030 
-> ---[ end trace 31fd0ba7d8756001 ]---
-> initcall .topology_init+0x0/0x1ac returned 0 after 0 usecs
-> calling  .pcibios_init+0x0/0xe8 @ 1
-> PCI: Probing PCI hardware
-> PCI: Probing PCI hardware done
-> initcall .pcibios_init+0x0/0xe8 returned 0 after 0 usecs
-> calling  .add_system_ram_resources+0x0/0x140 @ 1
-> initcall .add_system_ram_resources+0x0/0x140 returned 0 after 0 usecs
-> calling  .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 @ 1
-> initcall .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 returned 0 after 0 usecs
-> calling  .opal_init+0x0/0x1cc @ 1
-> opal: Node not found
-> initcall .opal_init+0x0/0x1cc returned -19 after 0 usecs
-> calling  .__machine_initcall_pseries_ioei_init+0x0/0xa0 @ 1
+> > * Ram Pai <linuxram@us.ibm.com> [2012-02-01 14:21:45]:
+> > 
+> > > On Tue, Jan 31, 2012 at 11:14:02PM +0530, Vaidyanathan Srinivasan wrote:
+> > > > * Ram Pai <linuxram@us.ibm.com> [2012-01-30 11:18:45]:
+> > > > 
+> > > > > On Sat, Jan 28, 2012 at 12:40:32AM +0530, Vaidyanathan Srinivasan wrote:
+> > > > > > Hi Ram and Jesse,
+> > > > > > 
+> > > > > > I found a trivial issue with page size alignment check on IBM POWER
+> > > > > > box with 64k base page size.  In sriov_init(), changing the check from
+> > > > > > PAGE_SIZE (arch and config dependent) to HW_PAGE_SIZE (always 4k) was
+> > > > > > required to use one of the sriov adapter as PF since the
+> > > > > > resource_size() comes up as 0x8000 and PAGE_SIZE would be 0x10000 for
+> > > > > > pseries boxes.
+> > > > > > 
+> > > > > > I think resource_size() could be less than SystemPageSize, but I would
+> > > > > > like your comments/ack/nack on any consequences of checking for only
+> > > > > > 4k alignment here in a system with larger base page size.
+> > > > > 
+> > > > > As per the SRIOV specs, the  resource has to be System page size aligned.
+> > > > > 
+> > > > > PFs are required to support 4-KB, 8-KB, 64-KB, 256-KB, 1-MB, and 4-MB
+> > > > > page sizes. In your case if your adapter's PF is not supporting 64K page size
+> > > > > then I think it is not conforming to the PCI SRIOV spec.
+> > > > 
+> > > > Hi Ram,
+> > > > 
+> > > > Thanks for the pointer.  I did some more experiments and found that
+> > > > the card does support 64k page size, but the PCI_SRIOV_SYS_PGSIZE was
+> > > > set to default 4k when we do the query and check resource_size().
+> > > > 
+> > > > You were correct, the resource_size() has to come up with 64k on 64k
+> > > > PAGE_SIZE system.  We should not change that check.  I was able to
+> > > > get a working solution by setting PCI_SRIOV_SYS_PGSIZE to 64k before
+> > > > we do the query.
+> > > > 
+> > > > This was the case in the original code before you moved these to
+> > > > sriov_enable().  If it is ok to leave the SYS_PGSIZE setting in
+> > > > sriov_init(), then I have the following fix that works for me.
+> > > > 
+> > > > Please review and let me know your comments.
+> > > > 
+> > > > Thanks,
+> > > > Vaidy
+> > > > ---
+> > > > 
+> > > >     	pci: set pci sriov page size before reading sriov bar
+> > > >     
+> > > >     	For an SRIOV device, PCI_SRIOV_SYS_PGSIZE should be set before
+> > > >     	the PCI_SRIOV_BAR is queried.  The sys pagesize defaults to 4k,
+> > > >     	so this change is required on powerpc box with 64k base page size.
+> > > >     
+> > > >     	This is a regression caused due to moving SRIOV init to sriov_enable().
+> > > >     
+> > > >     	| commit afd24ece5c76af87f6fc477f2747b83a764f161c
+> > > >     	| Author: Ram Pai <linuxram@us.ibm.com>
+> > > >     
+> > > >     	| PCI: delay configuration of SRIOV capability
+> > > >     	| The SRIOV capability, namely page size and total_vfs of a device are
+> > > >     	| configured during enumeration phase of the device.  This can potentially
+> > > >     	| interfere with the PCI operations of the platform, if the IOV capability
+> > > >     	| of the device is not enabled.
+> > > >     
+> > > >     Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> > > > 
+> > > > diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> > > > index 0321fa3..0dab5ec 100644
+> > > > --- a/drivers/pci/iov.c
+> > > > +++ b/drivers/pci/iov.c
+> > > > @@ -347,8 +347,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+> > > >  			return rc;
+> > > >  	}
+> > > > 
+> > > > -	pci_write_config_dword(dev, iov->pos + PCI_SRIOV_SYS_PGSIZE, iov->pgsz);
+> > > > -
+> > > >  	iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
+> > > >  	pci_cfg_access_lock(dev);
+> > > >  	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
+> > > > @@ -466,6 +464,7 @@ found:
+> > > >  		return -EIO;
+> > > > 
+> > > >  	pgsz &= ~(pgsz - 1);
+> > > > +	pci_write_config_dword(dev, pos + PCI_SRIOV_SYS_PGSIZE, pgsz);
+> > > > 
+> > > >  	nres = 0;
+> > > >  	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+> > > 
+> > > 
+> > > ACK. I think it is better to revert  afd24ece5c76af87f6fc477f2747b83a764f161c.
+> > 
+> > Hi Ram,
+> > 
+> > Thanks for the ack.  But afd24ece5c76af87f6fc477f2747b83a764f161c has
+> > one more change of moving 
+> > pci_write_config_word(dev, pos + PCI_SRIOV_NUM_VF, total) to sriov_enable().
+> > 
+> > This change is required so that we set the PCI_SRIOV_NUM_VF only
+> > during sriov_enable.
+> > 
+> > So we should not revert the entire commit, we can just add this change.
+> 
+> So which is it Ram, the ack or the revert? :)
 
-Reverting "smp: start up non-boot CPUs asynchronously" (8de7a96405 from
-next-20120208) fixes this problem for me.  
+Jesse, 
+	As Vaidy mentioned, revert is not the right solution. So dont revert.
+	But apply Vaidy's patch.
 
-Only hit it when on a 32 thread (8 core 4 thread) POWER7 box.  Smaller
-configs didn't hit it.
+> 
+> Having the right page size early seems like the right solution...
+Yes.
 
-Adding Arjan who owns this to the CC.
+RP
 
-Mikey
