@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab2BMVze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:55:34 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40065 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2BMVzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:55:33 -0500
-Date: Mon, 13 Feb 2012 13:55:31 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dan Smith <danms@us.ibm.com>
-cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are
- page-aligned
-In-Reply-To: <87zkcm23az.fsf@caffeine.danplanet.com>
-Message-ID: <alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
-References: <1328902796-30389-1-git-send-email-danms@us.ibm.com> <alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com> <87zkcm23az.fsf@caffeine.danplanet.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755988Ab2BMV5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:57:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17171 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754207Ab2BMV5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 16:57:00 -0500
+Date: Mon, 13 Feb 2012 16:56:50 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Phillip Susi <psusi@ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
+        Karel Zak <kzak@redhat.com>, maxim.patlasov@gmail.com
+Subject: Re: [PATCH 0/2] block: online resize of disk partitions
+Message-ID: <20120213215650.GE3130@redhat.com>
+References: <1329161438-12602-1-git-send-email-vgoyal@redhat.com>
+ <4F3981FE.7090601@ubuntu.com>
+ <20120213215039.GD3130@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120213215039.GD3130@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Dan Smith wrote:
+On Mon, Feb 13, 2012 at 04:50:39PM -0500, Vivek Goyal wrote:
 
-> DR> It doesn't "ensure" anything without CONFIG_DEBUG_VM enabled, which
-> DR> isn't the default.
+[..]
+> > as well as to allow for the
+> > possibility of extending the interface in the future to allow changing
+> > the start as well as the length.
 > 
-> Are you proposing a change in verbiage or a stronger check? A
-> VM_BUG_ON() seemed on par with other checks, such as the one in
-> get_user_pages_fast().
-> 
+> Even if we allow changing start at some point of time, then IOCTL can
+> remain the same and just the implementation will change in a backward
+> compatible manner. Old tools still will continue to work as they have
+> always been, and new ones can start passing "start" too.
 
-That's not a precedent, there's a big difference between the performance 
-of gup_fast(), where we can't spare an additional compare and branch, and 
-walk_page_range().  VM_BUG_ON() is typically used in situations where a 
-debug kernel has been built, including CONFIG_DEBUG_VM, and the check 
-helps to isolate a problem that would be otherwise difficult to find.  If 
-that fits the criteria, fine, but it doesn't "ensure" walk_page_range() 
-always has start and end addresses that are page aligned, so the changelog 
-needs to be modified to describe why an error in this path wouldn't be 
-evident.
+Let me thake that back. Changes will not be backward compatible as
+if old tools run on new kernel specifying start as 0, then change
+will fail on newer kernels which might allow changing start too.
+
+Do you really expect that changing start will really be useful? If yes,
+then it does make a case for not leaving "start" undefined.
+
+Thanks
+Vivek
