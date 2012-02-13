@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab2BMS6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:58:31 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35772 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755799Ab2BMS6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:58:30 -0500
-Date: Mon, 13 Feb 2012 10:58:24 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
- regulators
-Message-ID: <20120213185823.GF3494@opensource.wolfsonmicro.com>
-References: <1329151422-2146-1-git-send-email-mporter@ti.com>
- <20120213165209.GA31482@n2100.arm.linux.org.uk>
- <20120213165617.GE3494@opensource.wolfsonmicro.com>
- <20120213175233.GC1426@atomide.com>
- <20120213180236.GB31482@n2100.arm.linux.org.uk>
- <20120213181410.GE1426@atomide.com>
+	id S932152Ab2BMS74 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:59:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755814Ab2BMS7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 13:59:55 -0500
+Date: Mon, 13 Feb 2012 13:59:48 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
+        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: scsi_error: do not allow IO errors with certain ILLEGAL_REQUEST
+ sense to be retryable
+Message-ID: <20120213185948.GA9229@redhat.com>
+References: <1322857889-2623-1-git-send-email-snitzer@redhat.com>
+ <yq1zkf5pfx1.fsf@sermon.lab.mkp.net>
+ <20111206212704.GB30719@redhat.com>
+ <yq1vcptpdch.fsf@sermon.lab.mkp.net>
+ <20111206224218.GA31543@redhat.com>
+ <20120213162923.GA29578@redhat.com>
+ <yq1d39iipra.fsf@sermon.lab.mkp.net>
+ <20120213181359.GA5803@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xaMk4Io5JJdpkLEb"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120213181410.GE1426@atomide.com>
-X-Cookie: Your aim is high and to the right.
+In-Reply-To: <20120213181359.GA5803@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 13 2012 at  1:13pm -0500,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
---xaMk4Io5JJdpkLEb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Feb 13 2012 at 12:53pm -0500,
+> Martin K. Petersen <martin.petersen@oracle.com> wrote:
+> 
+> > >>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+> > 
+> > Mike> So that makes 3 different _prominent_ storage vendors, that I am
+> > Mike> aware of, that are bitten by their broken storage (relative to
+> > Mike> discard and properly advertising which variant they actually
+> > Mike> support).  I'd much rather deal with the storage vendors (or their
+> > Mike> customers) reporting that discards aren't working than mutual
+> > Mike> customers reporting that they cannot even install to the storage.
+> > 
+> > More graceful handling of the sense data aside, we do have a couple of
+> > options:
+> > 
+> >  1. Now that the provisioning portion seems to be stable in SBC-3 we can
+> >     nuke the interim spec heuristics and only support devices that
+> >     report the right thing. This may disable provisioning for some
+> >     existing users whose arrays run non-compliant firmware.
+> > 
+> >  2. We can add another layer of heuristics based on the RSOC wrapper I
+> >     introduced for write same. Maybe you could send me sg_opcodes output
+> >     for the arrays in question?
+> 
+> Yeah, I think that would be welcomed evolution (but as you say,
+> independent of improving additional ILLEGAL REQUEST processing).
 
-On Mon, Feb 13, 2012 at 10:14:10AM -0800, Tony Lindgren wrote:
-> * Russell King - ARM Linux <linux@arm.linux.org.uk> [120213 09:31]:
-> > On Mon, Feb 13, 2012 at 09:52:34AM -0800, Tony Lindgren wrote:
+That was a response to 1 above.
 
-> > > Can't we just leave out the .id and have it automatically assigned?
+I don't have direct access to the arrays in question to get sg_opcodes.
 
-It'd be nice but...
+But I can work on getting them.
 
-> > Unfortunately, there's no such infrastructure in the driver model.
-
-> Hmm OK, -1 seems to be just used for name in platform_device_add().
-
--1 is a valid ID also, it means "there's only one of these things so
-don't display a number".  Which is sad but there we are.  I'm at ELC/ABS
-so I might try and find Greg in person here to see if we can come up
-with something better, it seems like this is something the core ought to
-be able to help with in much the same way that the USB stuff can.
-
---xaMk4Io5JJdpkLEb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPOV1BAAoJEBus8iNuMP3dqvsQAJfwoP97Gfeo5KJ+3tEAZ8VQ
-dDBE1oQq7A6MIHcq7RPrPGDlNZ1gHwij5YXBESfbn66GrfbXe0oaR5CeumW3Ylce
-oA3CaPZGzl3PzyK0WTqsRm5f8/J0zsJNPZS6WoNWFgoX/xQxB4UFO8Meg2aOJiPK
-dDEpk56A6NYpZlMfJCjOTQrpPNHmd4CrWEvYafHOioNBcUykyeKfr8rE52MPyqjp
-SvWIC2ve7kHi7xPkEF75jqovc7wvKWTpBomDTVuGRpHm2rtHYOLsWcQjqgVcnojN
-6PNKFHZjxbB3OrEXmLGkR7iIypbmVEr1NvSffbtkTK4i/e0yy0vSKODjyGJdVUtD
-R6o8I+RJCLQQYfPNfbXZZUu03n8OkskmREbpNV/FSi9Uz0uaKRBOiGq/Yk6xWZ2j
-m7jbjSqcJkZXTvQenZm5wMcthCbiFFGsRSE9SydASym2XpqOfQD4WdUGtI8jqLJd
-L1aYWYJeeioXszQ3lOe+ccRmi6rluF/y9bQAZLO0e58Qr2LnSJjam/ux1KeWwqGI
-7BkMaTzSZ0zSi89wH7ga6deAOF44DQAsKGeEdmo0lN992vWoWZFPmr5gvER0iS4G
-pVOFjTnRwJ03meTdmBLI2oZkfoJgDldCc+QkQJHeJoYKP2/tMDX4/fwV0KhZOADW
-w0Al+u7y/2pJNj50JvZi
-=N6CA
------END PGP SIGNATURE-----
-
---xaMk4Io5JJdpkLEb--
+Mike
