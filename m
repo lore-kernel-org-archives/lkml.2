@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab2BMJMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:12:37 -0500
-Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:34463
-	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755290Ab2BMJMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:12:35 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Feb 2012 04:12:34 EST
-X-Spam-Flag: NO
-X-Spam-Score: -2.9
-Date: Mon, 13 Feb 2012 10:04:41 +0100
-From: Ben Widawsky <ben@bwidawsk.net>
-To: Yufeng Shen <miletus@chromium.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: Re: [PATCH] [PATCH] drm/i915: Fix race condition in accessing GMBUS
-Message-ID: <20120213090440.GA11414@seagal.ffwll.local>
-Mail-Followup-To: Yufeng Shen <miletus@chromium.org>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	Eugeni Dodonov <eugeni.dodonov@intel.com>
-References: <1328825697-23685-1-git-send-email-miletus@chromium.org>
- <1328896201-20909-1-git-send-email-miletus@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328896201-20909-1-git-send-email-miletus@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756256Ab2BMJMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:12:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56546 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754763Ab2BMJLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:11:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124653335"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [RFC PATCH 3/6] ACPI: Runtime resume all devices covered by a power resource
+Date: Mon, 13 Feb 2012 17:11:08 +0800
+Message-Id: <1329124271-29464-4-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com>
+References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 12:50:01PM -0500, Yufeng Shen wrote:
-> GMBUS has several ports and each has it's own corresponding
-> I2C adpater. When multiple I2C adapters call gmbus_xfer() at
-> the same time there is a race condition in using the underlying
-> GMBUS controller. Fixing this by adding a mutex lock when calling
-> gmbus_xfer().
-> 
-> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+From: Zhang Rui <rui.zhang@intel.com>
 
-I do not see the race. All the i2c transfers should be protected
-correctly by the i2c core, or else I think we haven't registered our
-device properly. Could you give an example of when/how this can happen?
+When an ACPI Power Resource is turned on, we should runtime
+resume all the devices covered by this ACPI Power Resource.
+So that they have a chance to runtime suspend again.
+Or else, they will be in uninitialized state after powered on.
 
-Ben
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/acpi/power.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index a7e2305..86791e3 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -40,6 +40,7 @@
+ #include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/slab.h>
++#include <linux/pm_runtime.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ #include "sleep.h"
+@@ -201,6 +202,7 @@ static int acpi_power_get_list_state(struct acpi_handle_list *list, int *state)
+ static int __acpi_power_on(struct acpi_power_resource *resource)
+ {
+ 	acpi_status status = AE_OK;
++	struct acpi_powered_device *apd;
+ 
+ 	status = acpi_evaluate_object(resource->device->handle, "_ON", NULL, NULL);
+ 	if (ACPI_FAILURE(status))
+@@ -212,6 +214,13 @@ static int __acpi_power_on(struct acpi_power_resource *resource)
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
+ 			  resource->name));
+ 
++	/* resume all the devices when power resource is turned on */
++	list_for_each_entry(apd, &resource->devices, node){
++		pm_request_resume(apd->dev);
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "resume device %s\n",
++						apd->dev->kobj.name));
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.5
+
