@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab2BMQLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:11:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38501 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045Ab2BMQLt (ORCPT
+	id S1757106Ab2BMQO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:14:26 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36643 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754852Ab2BMQOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:11:49 -0500
-Date: Mon, 13 Feb 2012 10:11:35 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "criu@openvz.org" <criu@openvz.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@parisplace.org" <eparis@parisplace.org>,
-        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>
-Subject: Re: [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
-Message-ID: <20120213161135.GE5009@sergelap>
-References: <20120209175043.24392.62810.stgit@localhost6.localdomain6>
- <4F356206.1080509@schaufler-ca.com>
- <4F38EE17.7090809@parallels.com>
+	Mon, 13 Feb 2012 11:14:25 -0500
+Message-ID: <4F3936BE.8060003@xenotime.net>
+Date: Mon, 13 Feb 2012 08:13:50 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F38EE17.7090809@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>
+CC: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JF@linux.or.jp
+Subject: Re: [PATCH] [trivial] Documentation: Fix broken URL "JF"
+References: <1329141187-2158-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1329141187-2158-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
-> 10.02.2012 22:29, Casey Schaufler пишет:
-> >On 2/9/2012 10:01 AM, Stanislav Kinsbursky wrote:
-> >>This patch set aimed to provide additional functionality for all IPC objects,
-> >>which is required for migration these objects by user-space checkpoint/restore
-> >>utils.
-> >>The main problem here was impossibility to set up object id. This patch set
-> >>solves the problem in two steps:
-> >>1) Makes it possible to create new object (shared memory, semaphores set or
-> >>messages queue) with ID, equal to passed key.
-> >>2) Makes it possible to change existent object key.
-> >
-> >Is there any chance you might include the LSM data as well?
-> >
+On 02/13/2012 05:53 AM, Masanari Iida wrote:
+> Fix broken URL for JF (Japanese FAQ).
 > 
-> Sorry, but I don't understand your question.
-> What is this "LSM"? Linux Shared Memory? If yes, and you mean SYSV
-> IPC SHM, then where do you want to include it?
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-He means linux security modules.  (see include/linux/security.h)
+Adding JF Project email address to Cc: list for their
+input.
+
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
+> ---
+>  Documentation/00-INDEX |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+> index 65bbd26..a859507 100644
+> --- a/Documentation/00-INDEX
+> +++ b/Documentation/00-INDEX
+> @@ -8,7 +8,7 @@ Please try and keep the descriptions small enough to fit on one line.
+>  Following translations are available on the WWW:
+>  
+>     - Japanese, maintained by the JF Project (JF@linux.or.jp), at
+> -     http://www.linux.or.jp/JF/
+> +     http://linuxjf.sourceforge.jp/
+>  
+>  00-INDEX
+>  	- this file.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
