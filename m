@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2BMSkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:40:17 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34087 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab2BMSkQ (ORCPT
+	id S1757563Ab2BMSl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:41:29 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45335 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab2BMSl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:40:16 -0500
-Date: Mon, 13 Feb 2012 16:40:08 -0200
+	Mon, 13 Feb 2012 13:41:29 -0500
+Date: Mon, 13 Feb 2012 16:41:21 -0200
 From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 To: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/11] perf stat: Use perf_evlist__create_maps
-Message-ID: <20120213184008.GI15955@infradead.org>
+Subject: Re: [PATCH 10/11] perf stat: Fix event grouping on forked task
+Message-ID: <20120213184121.GJ15955@infradead.org>
 References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
- <1329118064-9412-10-git-send-email-namhyung.kim@lge.com>
+ <1329118064-9412-11-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329118064-9412-10-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1329118064-9412-11-git-send-email-namhyung.kim@lge.com>
 X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Feb 13, 2012 at 04:27:41PM +0900, Namhyung Kim escreveu:
-> Use same function with perf record and top to share the code
-> checks combinations of different switches.
+Em Mon, Feb 13, 2012 at 04:27:42PM +0900, Namhyung Kim escreveu:
+> When event group is enabled for forked task (i.e. no target task was
+> specified) all events were disabled and marked ->enable_on_exec.
+> However they are not counted at all since only group leader will be
+> enabled on exec actually. So the result looked like below:
+> 
+>  $ perf stat --group sleep 1
 
-Haven't fully checked, but if equivalent, nice cleanup!
-
-- Arnaldo
+This one is a bugfix and would be better if we have it isolated from
+this patchset, not needing the cleanups, so that we can send it to
+perf/urgent and stable@
  
+>  Performance counter stats for 'sleep 1':
+> 
+>           0.530891 task-clock                #    0.001 CPUs utilized
+>      <not counted> context-switches
+>      <not counted> CPU-migrations
+>      <not counted> page-faults
+>      <not counted> cycles
+>    <not supported> stalled-cycles-frontend
+>    <not supported> stalled-cycles-backend
+>      <not counted> instructions
+>      <not counted> branches
+>      <not counted> branch-misses
+> 
+>        1.001140177 seconds time elapsed
+> 
+> Fix it by disabling group leader only.
+> 
 > Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 > ---
->  tools/perf/builtin-stat.c |   16 ++--------------
->  1 files changed, 2 insertions(+), 14 deletions(-)
+>  tools/perf/builtin-stat.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> index d080254a2d0c..be2667236bea 100644
+> index be2667236bea..2a592e52eaee 100644
 > --- a/tools/perf/builtin-stat.c
 > +++ b/tools/perf/builtin-stat.c
-> @@ -196,6 +196,7 @@ static int			output_fd;
->  static struct perf_maps_opts maps = {
->  	.target_pid		= -1,
->  	.target_tid		= -1,
-> +	.uid			= UINT_MAX,
->  };
->  
->  static volatile int done = 0;
-> @@ -1208,20 +1209,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
->  
->  	check_target_maps(&maps);
->  
-> -	evsel_list->threads = thread_map__new(maps.target_pid, maps.target_tid,
-> -					      UINT_MAX);
-> -	if (evsel_list->threads == NULL) {
-> -		pr_err("Problems finding threads of monitor\n");
-> -		usage_with_options(stat_usage, options);
-> -	}
-> -
-> -	if (maps.system_wide)
-> -		evsel_list->cpus = cpu_map__new(maps.cpu_list);
-> -	else
-> -		evsel_list->cpus = cpu_map__dummy_new();
-> -
-> -	if (evsel_list->cpus == NULL) {
-> -		perror("failed to parse CPUs map");
-> +	if (perf_evlist__create_maps(evsel_list, &maps) < 0) {
->  		usage_with_options(stat_usage, options);
->  		return -1;
+> @@ -297,7 +297,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+>  	if (maps.system_wide)
+>  		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+>  						group, group_fd);
+> -	if (no_target_task(&maps)) {
+> +	if (no_target_task(&maps) && (!group || evsel == first)) {
+>  		attr->disabled = 1;
+>  		attr->enable_on_exec = 1;
 >  	}
 > -- 
 > 1.7.9
