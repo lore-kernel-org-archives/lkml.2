@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab2BMKNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 05:13:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56535 "EHLO
+	id S1756495Ab2BMKUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 05:20:09 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57435 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab2BMKNH (ORCPT
+	with ESMTP id S1753627Ab2BMKUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 05:13:07 -0500
-Subject: [PATCH v2] HID: use generic driver for Logitech Unifying receivers if
- CONFIG_HID_LOGITECH_DJ=n
-To: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Date: Mon, 13 Feb 2012 14:13:03 +0400
-Message-ID: <20120213101303.8665.76516.stgit@zurg>
-In-Reply-To: <20120213080644.6105.54221.stgit@zurg>
-References: <20120213080644.6105.54221.stgit@zurg>
-User-Agent: StGit/0.15
+	Mon, 13 Feb 2012 05:20:07 -0500
+Message-ID: <4F38E337.7030200@polito.it>
+Date: Mon, 13 Feb 2012 11:17:27 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Harald Hoyer <harald@redhat.com>
+CC: Mimi Zohar <zohar@linux.vnet.ibm.com>, initramfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, systemd-devel@lists.freedesktop.org,
+        selinux@lists.fedoraproject.org
+Subject: Re: dracut: ordering of modules
+References: <1328886121.2472.19.camel@falcor> <4F38DEF0.8010202@redhat.com>
+In-Reply-To: <4F38DEF0.8010202@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 534a7b8e1 "HID: Add full support for Logitech Unifying receivers"
-Logitech Unifying receiver can work as generic device without special driver,
-after that commit these devices does not works without special driver.
+On 02/13/2012 10:59 AM, Harald Hoyer wrote:
+> Am 10.02.2012 16:01, schrieb Mimi Zohar:
+>> Hi Harald,
+>>
+>> Originally, 98integrity/ima-policy-load.sh didn't start executing before
+>> 98selinux/selinux-loadpolicy.sh finished, but unfortunately it now does.
+>>
+>> inst_hook pre-pivot 50 "$moddir/selinux-loadpolicy.sh"
+>> inst_hook pre-pivot 62 "$moddir/ima-policy-load.sh"
+>>
+>> As the IMA policy could be dependent on LSM runtime info, this is a
+>> problem.
+>>
+>> [   10.040574] type=1805 audit(1328865524.387:2): action="dont_measure" fsmagic="0x9fa0" res=0
+>> [   10.040663] type=1805 audit(1328865524.387:3): action="dont_appraise" fsmagic="0x9fa0" res=0
+>> [   10.040729] type=1805 audit(1328865524.387:4): action="dont_measure" fsmagic="0x62656572" res=0
+>> [   10.040792] type=1805 audit(1328865524.387:5): action="dont_appraise" fsmagic="0x62656572" res=0
+>> [   10.040857] type=1805 audit(1328865524.387:6): action="dont_measure" fsmagic="0x64626720" res=0
+>> [   10.040921] type=1805 audit(1328865524.387:7): action="dont_appraise" fsmagic="0x64626720" res=0
+>> [   10.040985] type=1805 audit(1328865524.387:8): action="dont_measure" fsmagic="0x01021994" res=0
+>> [   10.041047] type=1805 audit(1328865524.387:9): action="dont_appraise" fsmagic="0x01021994" res=0
+>> [   10.041113] type=1805 audit(1328865524.387:10): action="dont_measure" fsmagic="0x73636673" res=0
+>> [   10.041177] type=1805 audit(1328865524.387:11): action="dont_appraise" fsmagic="0x73636673" res=0
+>> [   11.898956] SELinux:  Completing initialization.
+>>
+>> I've tried adding a depend for selinux, but it doesn't seem to resolve
+>> the problem, nor does delaying 98integrity to later.  Any suggestions
+>> would be appreciated.
+>>
+>> thanks,
+>>
+>> Mimi
+>>
+>
+> In Fedora the selinux dracut module is disabled by default. You have to enable
+> it manually.
+>
 
-After this patch they will use generic driver if special driver is disabled.
+Hi Harald
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- drivers/hid/Kconfig    |    4 +++-
- drivers/hid/hid-core.c |    2 ++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+this functionality seems to be broken in dracut due to a change in the
+SELinux load_policy tool.
+After enabling the selinux module in dracut, i obtain:
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index a421abd..ca322ee 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -257,7 +257,9 @@ config HID_LOGITECH_DJ
- 	---help---
- 	Say Y if you want support for Logitech Unifying receivers and devices.
- 	Unifying receivers are capable of pairing up to 6 Logitech compliant
--	devices to the same receiver.
-+	devices to the same receiver. Without this driver it will be handled by
-+	generic USB_HID driver and all incomming events will be multiplexed
-+	into a single mouse and a single keyboard device.
- 
- config LOGITECH_FF
- 	bool "Logitech force feedback support"
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index af08ce7..3d7a174 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1462,8 +1462,10 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFGT_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G27_WHEEL) },
-+#if IS_ENABLED(CONFIG_HID_LOGITECH_DJ)
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2) },
-+#endif
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_SPACETRAVELLER) },
+[    3.369059] dracut: Loading SELinux policy
+[    3.449850] dracut: /sbin/load_policy: Can't load policy: No such 
+file or directory
+[    3.659899] dracut: Switching root
+
+
+> echo 'add_dracutmodules+=" selinux "'>>  /etc/dracut.conf.d/99-my.conf
+>
+> although, this also should do the thing:
+>
+> $ git diff modules.d/98integrity/module-setup.sh
+> diff --git a/modules.d/98integrity/module-setup.sh
+> b/modules.d/98integrity/module-setup.sh
+> index 7d5771c..ff1b4aa 100755
+> --- a/modules.d/98integrity/module-setup.sh
+> +++ b/modules.d/98integrity/module-setup.sh
+> @@ -7,7 +7,7 @@ check() {
+>   }
+>
+>   depends() {
+> -    echo masterkey securityfs
+> +    echo masterkey securityfs selinux
+>       return 0
+>   }
+>
+>
+>
+>
+>
 
