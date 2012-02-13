@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab2BMUx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:53:29 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40591 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754169Ab2BMUx1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:53:27 -0500
+	id S1758126Ab2BMUzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:55:48 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51434 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab2BMUzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 15:55:47 -0500
+Message-ID: <4F3978C5.7080901@linux.vnet.ibm.com>
+Date: Tue, 14 Feb 2012 02:25:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com>
-References: <4F313526.2050907@redhat.com>
-	<OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
-	<4F3390FB.80107@redhat.com>
-	<1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-	<4F38B657.7060405@de.ibm.com>
-	<4F38C27E.7030300@redhat.com>
-	<1329136806.9333.383.camel@haakon2.linux-iscsi.org>
-	<4F3907EB.4030402@redhat.com>
-	<20120213130005.GB26773@redhat.com>
-	<CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
-	<20120213131848.GD26773@redhat.com>
-	<4F39287A.9030808@suse.de>
-	<CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com>
-Date: Tue, 14 Feb 2012 07:53:26 +1100
-Message-ID: <CAN05THT6t_w=9Zt+o-B4s8E3jUMWsxiBvTyySxNEK2QfvLe-BA@mail.gmail.com>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-From: ronnie sahlberg <ronniesahlberg@gmail.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Dor Laor <dlaor@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
-        target-devel <target-devel@vger.kernel.org>
+To: Venki Pallipadi <venki@google.com>
+CC: Tony Luck <tony.luck@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v5
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com> <20120201140125.c656df41.akpm@linux-foundation.org> <87d39xj955.fsf@rustcorp.com.au> <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com> <4F3971A1.5010305@linux.vnet.ibm.com> <CABeCy1YUbk35bkDLKdvf2qVVHHVJ4wEJqtMJQK3=xJO4P=KKHg@mail.gmail.com>
+In-Reply-To: <CABeCy1YUbk35bkDLKdvf2qVVHHVJ4wEJqtMJQK3=xJO4P=KKHg@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021320-2674-0000-0000-00000353D5AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 7:42 AM, ronnie sahlberg
-<ronniesahlberg@gmail.com> wrote:
-> On Tue, Feb 14, 2012 at 2:12 AM, Hannes Reinecke <hare@suse.de> wrote:
->> On 02/13/2012 02:18 PM, Michael S. Tsirkin wrote:
->>> On Tue, Feb 14, 2012 at 12:13:36AM +1100, ronnie sahlberg wrote:
->>>> On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>>>> On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
->>>>>> Only if you use the pci multi-function option but that kills
->>>>>> standard hot unplug
->>>>>
->>>>> It doesn't kill it as such, rather you can't unplug luns individually.
->>>>
->>>> Isnt that just a consequence of the current implementation rather than
->>>> a SCSI limitation?
->>>
->>> Yes.
->>>
->>>> A different way to do hoplug could be to flag all devices as removable
->>>> in the standard inq page then
->>>> leave the LUN there persistently and what you remove/add is not the
->>>> LUN device itself but just the media in the device.
->>>>
->>>> Instead of hot-plug remove the LUN,  hot-plug becomes "media eject" or
->>>> "media insert".
->>>> The device remains present all time, you never remove it, but instead
->>>> hot-plug controls if the media is present or not.
->>>>
->>>>
->>>> This would require implementing at least START_STOP_UNIT and
->>>> PREVENT_ALLOW_MEDIUM_REMOVAL opcode emulation from SBC.
->>>>
->>>>
->>>> regards
->>>> ronnie sahlberg
->>>
->>> That would work.
->>>
->> Or we simply use the Peripheral Qualifier that the device is gone;
->> eg we could simply set PQ = 1, return sense code 0x25/00 and be done
->> with ...
+On 02/14/2012 02:13 AM, Venki Pallipadi wrote:
+
+> On Mon, Feb 13, 2012 at 12:25 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 02/14/2012 01:24 AM, Tony Luck wrote:
 >>
->
-> That is still similar to "rip a device out from the guest without notice"
-> and can cause the guest to be "surprised".
->
->
-> Removable media is standard feature in SCSI SBC (and other commandsets).
-> The nice part of removable media is that it activates a contract
-> between the device and the guest
-> to prevent removal of the media when the guest depends on the media
-> not being removed.
->
-> I.e.  If you have a SBC device with the removable-media bit set,
-> this is used to tell the initiator "this media can be removed, be
-> prepared that this might happen".
-> So when you mount such a SBC device in the guest, the guest will issue
-> a "PREVENT_ALLOW_MEDIUM_REMOVAL"
-> to tell the device "this medium is in use and may not be removed".
->
+>>> On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
+>>>> Feel free to try to fix this in -next though, and see what breaks...
+>>>
+>>> ia64 is what breaks ... well not actually broken ... but some very
+>>> weird delays that
+>>> show up in different places depending on whether this patch is present.
+>>>
+>>> First linux-next kernel to be blessed with this patch was
+>>> next-20120210. Booting it
+>>> I see:
+>>> [    7.164233] Switching to clocksource itc
+>>> [  146.077315] pnp: PnP ACPI init
+>>>
+>>> An ugly 138.913 second delay.  Digging in the code showed that the bad bits
+>>> happened inside stop_machine()
+>>>
+>>> Reverting just this patch makes this big delay disappear:
+>>>
+>>> [   32.780232] Switching to clocksource itc
+>>> [   32.832100] pnp: PnP ACPI init
+>>>
+>>> but notice that it takes 25 extra seconds to get to this point in the
+>>> boot (and while
+>>> we expect to save some time by not re-computing num_online_cpus each time we
+>>> need it ... this looks to be a lot more than I'd expect!)
+>>>
+>>
+>>
+>> Oh no!! ia64 directly uses cpu_set() and cpu_clear() on cpu_online_map!!
+>> Grr.. It means num_online_cpus can be different from the actual number of
+>> online cpus because it doesn't go through the set_cpu_online() path.. I haven't
+>> yet pin-pointed the exact problem, but this definitely doesn't look good...
+>>
+> 
+> This feels like a minefield in general. ia64, mips and um seems to
+> have cpu_set and cpu_clear of cpu_online_map and/or cpu_possible_map
+> in there.
+> 
 
-What I mean is that if /dev/sdb is removable,
-if you mount this as   "mount /dev/sdb1 /mnt"
-this will automatically cause the guest kernel to send a
-PREVENT_ALLOW_MEDIUM_REMOVAL to /dev/sdb to prevent removal.
 
-When you "umount /dev/sdb1"   the kernel/guest will automagically send
-PREVENT_ALLOW_MEDIUM_REMOVEAL to /dev/sdb and allow removal of the
-media again.
+Since I had almost never seen code using "cpu_online_map" instead of
+"cpu_online_mask", I hadn't checked it while reviewing your patch... :-(
+Honestly, it is only now that I realized that there is this other variant too!
 
+Regards,
+Srivatsa S. Bhat
 
-If you capture this command and track the "prevent/allow removal
-status"  you automatically get a channel where qemu will
-know when it is safe to unplug the device  and when it is not safe to
-unplug the device.
-This is a nice feature.
