@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2BMNOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:14:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45626 "EHLO mx1.redhat.com"
+	id S1756656Ab2BMNRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:17:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54727 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab2BMNOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:14:17 -0500
-Date: Mon, 13 Feb 2012 14:13:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
-Message-ID: <20120213131343.GC1626@m.brq.redhat.com>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
- <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+	id S1750871Ab2BMNRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 08:17:47 -0500
+Message-ID: <4F390D66.9050706@redhat.com>
+Date: Mon, 13 Feb 2012 14:17:26 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327674868-10486-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ronnie sahlberg <ronniesahlberg@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Dor Laor <dlaor@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com> <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com> <4F3390FB.80107@redhat.com> <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com> <4F38B657.7060405@de.ibm.com> <4F38C27E.7030300@redhat.com> <1329136806.9333.383.camel@haakon2.linux-iscsi.org> <4F3907EB.4030402@redhat.com> <20120213130005.GB26773@redhat.com> <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+In-Reply-To: <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback? ;)
-I saw 1/9 was already taken, thanks
-I can send rebased patchset if needed..
+On 02/13/2012 02:13 PM, ronnie sahlberg wrote:
+> On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
+>>> Only if you use the pci multi-function option but that kills
+>>> standard hot unplug
+>>
+>> It doesn't kill it as such, rather you can't unplug luns individually.
+>
+> Isnt that just a consequence of the current implementation rather than
+> a SCSI limitation?
 
-thanks,
-jirka
+We're talking about virtio-blk here. :)
 
-On Fri, Jan 27, 2012 at 03:34:19PM +0100, Jiri Olsa wrote:
-> hi,
-> Here's new version of event parsing patchset. To summarize:
->  - adding event parser bison/flex generator
->  - the event syntax stays as it was
->  - adding event format sysfs group attribute
->    for pmu device
->  - adding new syntax to specify raw events based
->    on the sysfs pmu's format attribute
->    eg. "cpu/config=1,config1=2,config2=3/u"
-> 
-> There are helping patches 1-4, which I did not want to
-> mangle with the actual change. Patches 5-9 implement
-> the feature itself.
-> 
-> v4 changes:
->  - 5/9 changed sysfs pmu format definitions to the group attribute,
->        each line (in previous patch) is now represented by single
->        sysfs attribute under format group
->  - 6/9 fix raw events so the number is always considered to be hex number
->  - 8/9 move config[12] definitions to be processed by the parser
-> 
-> Attached patches:
->  1/9 perf, tool: Make perf_evlist__splice_list_tail global
->  2/9 perf, tool: Remove unused functions from debugfs object
->  3/9 perf, tool: Add sysfs mountpoint interface
->  4/9 perf, tool: Add bitmap_or function into bitmap object
->  5/9 perf: Adding sysfs group format attribute for pmu device
->  6/9 perf, tool: Add parser generator for events parsing
->  7/9 perf, tool: Add config options support for event parsing
->  8/9 perf, tool: Add perf pmu object to access pmu format definition
->  9/9 perf, tool: Add support to specify pmu style event
-> 
-> 
-> thanks,
-> jirka
-> ---
->  .../testing/sysfs-bus-event_source-devices-format  |   14 +
->  include/linux/perf_event.h                         |   22 +
->  kernel/events/core.c                               |   22 +
->  tools/perf/Makefile                                |   31 +
->  tools/perf/builtin-test.c                          |   52 +-
->  tools/perf/util/bitmap.c                           |   10 +
->  tools/perf/util/debugfs.c                          |  141 --
->  tools/perf/util/debugfs.h                          |    6 -
->  tools/perf/util/evlist.c                           |    6 +-
->  tools/perf/util/evlist.h                           |    5 +
->  tools/perf/util/include/linux/bitmap.h             |   11 +
->  tools/perf/util/parse-events-bison.c               | 1813 ++++++++++++++++
->  tools/perf/util/parse-events-bison.h               |   81 +
->  tools/perf/util/parse-events-flex.c                | 2225 ++++++++++++++++++++
->  tools/perf/util/parse-events-flex.h                |  316 +++
->  tools/perf/util/parse-events.c                     |  552 ++---
->  tools/perf/util/parse-events.h                     |   37 +
->  tools/perf/util/parse-events.l                     |  107 +
->  tools/perf/util/parse-events.y                     |  191 ++
->  tools/perf/util/pmu-bison.c                        | 1663 +++++++++++++++
->  tools/perf/util/pmu-bison.h                        |   73 +
->  tools/perf/util/pmu-flex.c                         | 1821 ++++++++++++++++
->  tools/perf/util/pmu-flex.h                         |  316 +++
->  tools/perf/util/pmu.c                              |  462 ++++
->  tools/perf/util/pmu.h                              |   41 +
->  tools/perf/util/pmu.l                              |   43 +
->  tools/perf/util/pmu.y                              |   93 +
->  tools/perf/util/sysfs.c                            |   60 +
->  tools/perf/util/sysfs.h                            |    6 +
->  29 files changed, 9740 insertions(+), 480 deletions(-)
+Paolo
