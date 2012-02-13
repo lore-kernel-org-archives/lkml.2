@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab2BMR75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:59:57 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5894 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab2BMR74 (ORCPT
+	id S1757466Ab2BMSAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:00:35 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:41422 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab2BMSAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:59:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 13 Feb 2012 09:59:55 -0800
-Message-ID: <4F394F28.70709@nvidia.com>
-Date: Mon, 13 Feb 2012 23:28:00 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 13 Feb 2012 13:00:33 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 825E082A1E
+Date: Mon, 13 Feb 2012 19:00:26 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigbrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120213180026.GA12111@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
+ <CAHGf_=qs8-nE6y6EzNYUzgjGo0sMP5zvCc3=GNZmHct6mPecqg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regulator enable/disable delay based on board design: How to
- handle?
-References: <4F38D55A.5020208@nvidia.com> <20120213163711.GD3494@opensource.wolfsonmicro.com>
-In-Reply-To: <20120213163711.GD3494@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHGf_=qs8-nE6y6EzNYUzgjGo0sMP5zvCc3=GNZmHct6mPecqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 13 February 2012 10:07 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Feb 13, 2012 at 02:48:18PM +0530, Laxman Dewangan wrote:
->
->> We observed that some of the rail enable/disable settling time
->> depends on the board design specially based on external capacitor
->> connected on
->> rails.  This is observed mainly on VBUS regulator rail where
->> difference on the capacitance value which is connected on rail makes
->> the on/off
->> time to vary.
-> Usually this would be handled via regulator driver platform data as the
-> regulator will typically be designed with particular external components
-> in mind and (especially in the case of DCDC convertors) may need to be
-> configured differently depending on the choice of passive components.
-> Many regulators also have some software control for the ramp rate,
-> mainly intended to limit inrush currents on system startup, which can be
-> varied at runtime if desired.
->
+On Mon, Feb 13, 2012 at 11:22:26AM -0500, KOSAKI Motohiro wrote:
+> > @@ -1181,8 +1258,22 @@ page_ok:
+> >                 * When a sequential read accesses a page several times,
+> >                 * only mark it as accessed the first time.
+> >                 */
+> > -               if (prev_index != index || offset != prev_offset)
+> > -                       mark_page_accessed(page);
+> > +               if (prev_index != index || offset != prev_offset) {
+> > +                       int mode;
+> > +
+> > +                       mode = filemap_get_cache(mapping, index);
+> > +                       switch (mode) {
+> > +                       case FILEMAP_CACHE_NORMAL:
+> > +                               mark_page_accessed(page);
+> > +                               break;
+> > +                       case FILEMAP_CACHE_ONCE:
+> > +                               mark_page_usedonce(page);
+> > +                               break;
+> > +                       default:
+> > +                               WARN_ON_ONCE(1);
+> > +                               break;
+> 
+> Here is generic_file_read, right? Why don't you care write and page fault?
 
-Interesting, Many regulator driver is written like it just take the 
-regulator_init_data as the platform data and does not leave any option 
-to add any new platform parameters.
-Not sure how can we add platform data without too much tempering on the 
-existing user, but if we can add parameter of delay(settling time) in 
-struct regulator_init_data then almost all driver can support such 
-platform specific delay.
+That's correct. I focused in my read test case and have not consider
+write and page fault at all yet. There's also another missing piece
+probably: readahead.
 
+About generic_file_read the behavior that we may want to provide looks
+quite clear to me. Instead, I don't know which is the best behavior for
+the NOREUSE writes... should we just avoid active lru list eligibility,
+or also drop the pages after the write if they weren't present in page
+cache before the write? In the former NOREUSE pages can still trash
+pages in the inactive lru list, in the latter writes will be slow
+because we need to wait for the writeback. Ideas/suggestions?
+
+About readahead pages I think we shouldn't touch anything. IIUC, when
+readahead pages are loaded in page cache for the first time they are
+added to the inactive lru list and not marked as referenced.
+
+If the readahead pages are also referenced by the application and
+they're inside a NOREUSE range they won't be marked as referenced and
+will continue to live in the inactive list (and dropped when the
+inactive list is shrunk). If readahead pages are not inside a NOREUSE
+range they will be treated as usual (marked as referenced, and moved to
+the active list if they're accessed more than once).
+
+Thanks,
+-Andrea
