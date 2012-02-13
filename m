@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab2BMQqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:46:37 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:36867 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757018Ab2BMQqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:46:35 -0500
-Date: Mon, 13 Feb 2012 14:43:09 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Dan.Morav@nuvoton.com, KC@nuvoton.com,
-        Dan Morav <dmorav@nuvoton.com>
-Subject: Re: [PATCH 1/2] TPM: Nuvoton I2C driver
-Message-ID: <20120213164309.GA9160@hardened-box.ibm.com>
-References: <y>
- <1328620014-9369-2-git-send-email-srajiv@linux.vnet.ibm.com>
- <4F3562AC.5090701@linux.vnet.ibm.com>
+	id S1757254Ab2BMQtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:49:10 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:27585 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755149Ab2BMQtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 11:49:07 -0500
+Message-ID: <4F393EE7.4050805@parallels.com>
+Date: Mon, 13 Feb 2012 20:48:39 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3562AC.5090701@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021316-9254-0000-0000-0000081A787D
+To: Serge Hallyn <serge.hallyn@canonical.com>
+CC: Casey Schaufler <casey@schaufler-ca.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "criu@openvz.org" <criu@openvz.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@parisplace.org" <eparis@parisplace.org>,
+        "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>
+Subject: Re: [PATCH 0/5] IPC: checkpoint/restore in userspace enhancements
+References: <20120209175043.24392.62810.stgit@localhost6.localdomain6> <4F356206.1080509@schaufler-ca.com> <4F38EE17.7090809@parallels.com> <20120213161135.GE5009@sergelap>
+In-Reply-To: <20120213161135.GE5009@sergelap>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012, Stefan Berger wrote:
+13.02.2012 20:11, Serge Hallyn пишет:
+> Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
+>> 10.02.2012 22:29, Casey Schaufler пишет:
+>>> On 2/9/2012 10:01 AM, Stanislav Kinsbursky wrote:
+>>>> This patch set aimed to provide additional functionality for all IPC objects,
+>>>> which is required for migration these objects by user-space checkpoint/restore
+>>>> utils.
+>>>> The main problem here was impossibility to set up object id. This patch set
+>>>> solves the problem in two steps:
+>>>> 1) Makes it possible to create new object (shared memory, semaphores set or
+>>>> messages queue) with ID, equal to passed key.
+>>>> 2) Makes it possible to change existent object key.
+>>>
+>>> Is there any chance you might include the LSM data as well?
+>>>
+>>
+>> Sorry, but I don't understand your question.
+>> What is this "LSM"? Linux Shared Memory? If yes, and you mean SYSV
+>> IPC SHM, then where do you want to include it?
+>
+> He means linux security modules.  (see include/linux/security.h)
 
-> On 02/07/2012 08:06 AM, Rajiv Andrade wrote:
-> > From: Dan.Morav@nuvoton.com<Dan.Morav@nuvoton.com>
-> >
-> > Below are the additions for WPCT301/NPCT501 Nuvoton Technology
-> > TPM with I2C interface device driver. This driver uses Linux I2C
-> > bus driver to interface with the I2C bus and Linux TPM driver (tpm.ko),
-> > to export the standard Linux TPM interface. This driver requires an
-> > I2C bus driver and TPM driver (tpm.ko) to be loaded prior to its loading.
-> > This driver tested on Linux kernel version 3.3 on an x86 based platform.
-> >
-> > Signed-off-by: Dan Morav<dmorav@nuvoton.com>
-> > Signed-off-by: Rajiv Andrade<srajiv@linux.vnet.ibm.com>
-> [...]
-> > +
-> >   endif # TCG_TPM
-> > diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-> > index ea3a1e0..064669a 100644
-> > --- a/drivers/char/tpm/Makefile
-> > +++ b/drivers/char/tpm/Makefile
-> > @@ -9,3 +9,4 @@ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
-> >   obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
-> >   obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
-> >   obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-> > +obj-$(CONFIG_TCG_NUVOTON_I2C) += tpm_nuvoton_i2c.o
-> > diff --git a/drivers/char/tpm/tpm_nuvoton_i2c.c b/drivers/char/tpm/tpm_nuvoton_i2c.c
-> > new file mode 100644
-> > index 0000000..daf0d49
-> > --- /dev/null
-> > +++ b/drivers/char/tpm/tpm_nuvoton_i2c.c
-> > @@ -0,0 +1,718 @@
-> > +/******************************************************************************
-> > + * Nuvoton TPM I2C Device Driver Interface for WPCT301/NPCT501,
-> > + * based on the TCG TPM Interface Spec version 1.2.
-> > + * Specifications at www.trustedcomputinggroup.org
-> 
-> Since it's implemented following non-proprietary specs, would this 
-> driver qualify as the generic tpm_i2c driver or is there anything 
-> besides the device-id,vendor-id + firmware work-around in the driver 
-> specific to this particular device implementation.
-> 
-> Regards,
->     Stefan
+Ok, thanks for explanation.
+Casey, what exactly you are asking about? Am I going to implement 
+security_*_set() functions?
 
-There isn't. There are other i2c TPMs out there though, but my intention is to 
-keep it all in single tpm_i2c driver in case it's true for them as well.
-
-Rajiv
-
+-- 
+Best regards,
+Stanislav Kinsbursky
