@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab2BMFrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:47:43 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55305 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2BMFrY (ORCPT
+	id S1752170Ab2BMFud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:50:33 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:59169 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab2BMFub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:47:24 -0500
-Date: Mon, 13 Feb 2012 16:47:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        linux-next@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: Boot failure with next-20120208
-Message-Id: <20120213164714.dfb835bf2343ef2e6f24cde1@canb.auug.org.au>
-In-Reply-To: <16788.1329102254@neuling.org>
-References: <20120212113805.c7e5d902c95a9d0f4037e12c@canb.auug.org.au>
-	<16788.1329102254@neuling.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+	Mon, 13 Feb 2012 00:50:31 -0500
+Date: Mon, 13 Feb 2012 00:50:11 -0500 (EST)
+Message-Id: <20120213.005011.1860393880116915900.davem@davemloft.net>
+To: danny.kukawka@bisect.de
+Cc: dkukawka@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        peter.p.waskiewicz.jr@intel.com, alexander.h.duyck@intel.com,
+        john.ronciak@intel.com, mitch.a.williams@intel.com, jpirko@redhat.com,
+        eric.dumazet@gmail.com, e1000-devel@lists.sourceforge.net,
+        shemminger@vyatta.com
+Subject: Re: [PATCH 2/2] rename dev_hw_addr_random and remove redundant
+ second
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1328816934-11508-3-git-send-email-danny.kukawka@bisect.de>
+References: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
+	<1328816934-11508-3-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Feb_2012_16_47_14_+1100_mJyW/hvsWYR.b_k8"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 12 Feb 2012 21:50:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Feb_2012_16_47_14_+1100_mJyW/hvsWYR.b_k8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Danny Kukawka <danny.kukawka@bisect.de>
+Date: Thu,  9 Feb 2012 20:48:54 +0100
 
-On Mon, 13 Feb 2012 14:04:14 +1100 Michael Neuling <mikey@neuling.org> wrot=
-e:
->
-> Reverting "smp: start up non-boot CPUs asynchronously" (8de7a96405 from
-> next-20120208) fixes this problem for me.
+> Renamed dev_hw_addr_random to eth_hw_addr_random() to reflect that
+> this function only assign a random ethernet address (MAC). Removed
+> the second parameter (u8 *hwaddr), it's redundant since the also
+> given net_device already contains net_device->dev_addr.
+> Set it directly.
+> 
+> Adapt igbvf and ixgbevf to the changed function.
+> 
+> Small fix for ixgbevf_probe(): if ixgbevf_sw_init() fails
+> (which means the device got no dev_addr) handle the error and
+> jump to err_sw_init as already done by igbvf in similar case.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-I have reverted that commit (and the following -fix commit) from -next
-today.
-
-Thanks for tracking it down, Mikey.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__13_Feb_2012_16_47_14_+1100_mJyW/hvsWYR.b_k8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPOKPiAAoJEECxmPOUX5FEQyYP/j4i492ndRYNAYqG/nqOZq2G
-X32x3AU5WRnceoNZ0/QgWSnAI4EfjZtX6s83XfuUneLRuUfeju1bI3P5qwkjG3bK
-7QT+NpY6Z0gIEIT/TKrQLggGQx3Gaata0Xl/6flXRGyHDHXFBlzJFtqovx/uIS8K
-WG0/HQBxAjkWJ6kkySxVVYdfZxLRCabTX00aAgXiidd/FsiV9o3ooPTKKfUhf4KO
-BgIhgA5T21/L9BG1SSl2Jxp2P16/v8cRNo4enogYQvzQIexunhcRfVxPnbXwew5L
-cvUEdiLxiqBSHK2Jny6tqupgpFKl2AGdKsu41QYwiQXkPfUxDjYYpnh2yVFIWCZ4
-5FMVynjclwKybFuQJFuGZFwfSDE1gEm1FoNW8f4IV0KMN6kZoLMt9PabmG2HC8RB
-G/T0F3MT/NUe4rjmMgyyymLz9XKpsuswBw+sNtaILx6uzTkRwS/dWmR+5uJds5E2
-fOAF88ly5dBNMbwNc6c2JPWs39Iivt9jhLMSq7CUa84Qp/VMY+ydQI2uB+CcIj8A
-BGBvbwd0IcOQEp4aLkSi9aTcN023xLtYQvrAwxKgeJCQTD3QXQflkBuKYKNbfDop
-5Y9vLpu59I0+we7PudxPfNPoB0zL5BAIRFBVgl1SMgfDgF0BSUNoluc1rjV7Xj0X
-AMN5IUM4bUkMaQ/I/hfz
-=tjIa
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Feb_2012_16_47_14_+1100_mJyW/hvsWYR.b_k8--
+Applied.
