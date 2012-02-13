@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab2BMKmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 05:42:55 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33009 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2BMKmy (ORCPT
+	id S1756488Ab2BMKqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 05:46:07 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63235 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab2BMKqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 05:42:54 -0500
-Message-ID: <4F38E8E1.3070004@mvista.com>
-Date: Mon, 13 Feb 2012 14:41:37 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Subject: Re: [PATCH 03/14 v2] MIPS: adapt for dma_map_ops changes
-References: <1324643253-3024-4-git-send-email-m.szyprowski@samsung.com> <1329129329-25205-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1329129329-25205-1-git-send-email-m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Feb 2012 05:46:05 -0500
+Message-ID: <1329129960.2494.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: ixgbe truesize underestimation fix missing?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christian Brunner <christian@brunner-muc.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 13 Feb 2012 11:46:00 +0100
+In-Reply-To: <CAJafhzS3TMNPsyc_wwjZOf4zNmGD-XdP59qgYgGMx0-SMAnc-w@mail.gmail.com>
+References: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
+	 <1329123803.2336.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CAJafhzS3TMNPsyc_wwjZOf4zNmGD-XdP59qgYgGMx0-SMAnc-w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Le lundi 13 février 2012 à 10:57 +0100, Christian Brunner a écrit :
+> 2012/2/13 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Le lundi 13 février 2012 à 09:45 +0100, Christian Brunner a écrit :
+> >> Back in Oktober, there was a patch by Eric Dumazet for the ixgbe
+> >> driver to fix the skb truesize underestimation (commit
+> >> 98130646770db42cd14c44ba0d7f2d0eb8078820). It changed only one line in
+> >> ixgbe_main.c:
+> >>
+> >> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> >> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> >> @@ -1326,7 +1326,7 @@ static bool ixgbe_clean_rx_irq(struct
+> >> ixgbe_q_vector *q_vector,
+> >>                         skb->len += upper_len;
+> >>                         skb->data_len += upper_len;
+> >> -                       skb->truesize += upper_len;
+> >> +                       skb->truesize += PAGE_SIZE / 2;
+> >>                 }                 i++;
+> >>
+> >>
+> >> But when I look at the current code (3.2.5 or 3.3rc), skb->truesize is
+> >> still increased by the same value as skb->data_len.
+> >>
+> >> 1228         skb->data_len += frag_list_size;
+> >> 1229         skb->truesize += frag_list_size;
+> >>
+> >> Is it posible that there was a merge conflict, or am I missing something here?
+> >
+> > Maybe a problem in your local tree ?
+> >
+> > I can see proper fix in current tree.
+> 
+> Ahh... Sorry. I Was looking at the wrong place -
+> ixgbe_transform_rsc_queue() has code that is quite similar.
+> 
+> This however makes me wonder, why we are using "skb->len" for
+> increasing the frag_list_size, as skb->len might be smaller than
+> skb->truesize.
+> 
+> Shouldn't we add a frag_list_truesize counter in ixgbe_transform_rsc_queue() ?
 
-On 13-02-2012 14:35, Marek Szyprowski wrote:
+Probably, but you should raise this discussion on netdev, not lkml, and
+based on net-next tree, as ixgbe_transform_rsc_queue() doesnt exist
+anymore ;)
 
-> From: Andrzej Pietrasiewicz<andrzej.p@samsung.com>
+Note that in this case (RSC) truesize underestimation is small since
+typical segment size is very close to PAGE_SIZE/2
 
-> Adapt core MIPS architecture code for dma_map_ops changes: replace
-> alloc/free_coherent with generic alloc/free methods.
 
-> Signed-off-by: Andrzej Pietrasiewicz<andrzej.p@samsung.com>
-> [added missing changes to arch/mips/cavium-octeon/dma-octeon.c]
-> Signed-off-by: Marek Szyprowski<m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
-[...]
 
-> diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
-> index 7aa37dd..cbd41f5 100644
-> --- a/arch/mips/include/asm/dma-mapping.h
-> +++ b/arch/mips/include/asm/dma-mapping.h
-> @@ -57,25 +57,31 @@ dma_set_mask(struct device *dev, u64 mask)
->   extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
->   	       enum dma_data_direction direction);
->
-> -static inline void *dma_alloc_coherent(struct device *dev, size_t size,
-> -				       dma_addr_t *dma_handle, gfp_t gfp)
-> +#define dma_alloc_coherent(d,s,h,f)	dma_alloc_attrs(d,s,h,f,NULL)
-> +
-> +static inline void *dma_alloc_attrs(struct device *dev, size_t size,
-> +				    dma_addr_t *dma_handle, gfp_t gfp,
-> +				    struct dma_attrs *attrs)
->   {
->   	void *ret;
->   	struct dma_map_ops *ops = get_dma_ops(dev);
->
-> -	ret = ops->alloc_coherent(dev, size, dma_handle, gfp);
-> +	ret = ops->alloc(dev, size, dma_handle, gfp, NULL);
-
-    Not 'attrs' instead of NULL?
-
->
->   	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
->
->   	return ret;
->   }
->
-> -static inline void dma_free_coherent(struct device *dev, size_t size,
-> -				     void *vaddr, dma_addr_t dma_handle)
-> +#define dma_free_coherent(d,s,c,h) dma_free_attrs(d,s,c,h,NULL)
-> +
-> +static inline void dma_free_attrs(struct device *dev, size_t size,
-> +				  void *vaddr, dma_addr_t dma_handle,
-> +				  struct dma_attrs *attrs)
->   {
->   	struct dma_map_ops *ops = get_dma_ops(dev);
->
-> -	ops->free_coherent(dev, size, vaddr, dma_handle);
-> +	ops->free(dev, size, vaddr, dma_handle, NULL);
-
-    Same here...
-
-WBR, Sergei
