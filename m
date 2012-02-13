@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab2BMUFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:05:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58160 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab2BMUFv (ORCPT
+	id S1757866Ab2BMUMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:12:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39121 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab2BMUMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:05:51 -0500
-Date: Mon, 13 Feb 2012 12:05:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        linux-next@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: Boot failure with next-20120208
-Message-Id: <20120213120549.eab7e2b9.akpm@linux-foundation.org>
-In-Reply-To: <4F391BBA.5020506@linux.intel.com>
-References: <20120212113805.c7e5d902c95a9d0f4037e12c@canb.auug.org.au>
-	<16788.1329102254@neuling.org>
-	<4F391BBA.5020506@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Feb 2012 15:12:51 -0500
+Date: Mon, 13 Feb 2012 18:12:43 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] perf tools: Introduce struct perf_maps_opts
+Message-ID: <20120213201243.GM15955@infradead.org>
+References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
+ <1329118064-9412-2-git-send-email-namhyung.kim@lge.com>
+ <20120213183232.GD15955@infradead.org>
+ <4F395B75.4060800@gmail.com>
+ <20120213190542.GL15955@infradead.org>
+ <4F396249.2050001@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F396249.2050001@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 06:18:34 -0800
-Arjan van de Ven <arjan@linux.intel.com> wrote:
+Em Mon, Feb 13, 2012 at 12:19:37PM -0700, David Ahern escreveu:
+> 
+> 
+> On 02/13/2012 12:05 PM, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Feb 13, 2012 at 11:50:29AM -0700, David Ahern escreveu:
+> >> Today's perf if you give it an invalid pid, scandir fails and the
+> >> command spits out the usage statement. Which is completely confusing --
+> >> ie., not clear that the command failed b/c the pid does not exist.
 
-> On 2/12/2012 7:04 PM, Michael Neuling wrote:
-> >> Just a quick note to say I got a boot OOPs with next-20120208 and 9 on a
-> >> Power7 blade (my other PowerPC boot tests are ok.  I'll investigate this
-> >> further on Monday.
+> > Humm, ok, but then I think we should have an enum + a strerror(3)
+> > equivalent, i.e.:
 
-Thanks for testing linux-next.  Very useful.
+> > 	enum perf_target_error perf_evlist__create_maps(...);
 
-> >> The line referenced below is:
-> >>
-> >> BUG_ON(!kobj || !kobj->sd || !attr);
-> >>
-> >> in sysfs_create_file().
+> > 	int perf_target__strerror(struct perf_target *target, int errnum,
+> > 				  char *buf, size_t buflen);
 
-Yes, this is exactly why we should never use BUG_ON(a || b).  We don't
-know which of those three expressions triggered.
+> ok, so you are proposing an internal generation of enum error codes and
+> correlating them to strings rather than adding a buffer into
+> perf_target. If that's the case perhaps we need a libperf-wide design:
 
-> >> calling  .topology_init+0x0/0x1ac @ 1
-> >> initcall 7_.async_cpu_up+0x0/0x40 returned 0 after 9765 usecs
-> >> async_continuing @ 20 after 9765 usec
-> >> ------------[ cut here ]------------
-> >> kernel BUG at fs/sysfs/file.c:573!
-> >> Oops: Exception in kernel mode, sig: 5 [#1]
-> >> SMP NR_CPUS=32 NUMA pSeries
-> >> Modules linked in:
-> >> NIP: c00000000024a35c LR: c0000000004ee050 CTR: c00000000083ca24
-> >> REGS: c0000003fd9e7560 TRAP: 0700   Not tainted  (3.3.0-rc2-autokern1)
-> >> MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 88002082  XER: 0000000f
-> >> CFAR: c00000000024a370
-> >> TASK = c0000003fd9e8000[20] 'kworker/u:6' THREAD: c0000003fd9e4000 CPU: 0
-> >> GPR00: 0000000000000001 c0000003fd9e77e0 c000000000d19bb8 0000000000000000 
-> >> GPR04: c000000000bf37a8 0000000000000008 8000000002096400 0000000000000000 
-> >> GPR08: 0000000000000000 c000000000f80028 c000000000d52bd8 0000000000000000 
-> >> GPR12: 0000000048002088 c00000000f33b000 0000000001affa78 00000000009aa000 
-> >> GPR16: 0000000000e1f3c8 0000000002d517f0 0000000001aff984 0000000000000060 
-> >> GPR20: 0000000000000000 ffffffffffffffff 0000000000000000 c000000000c45128 
-> >> GPR24: 0000000000000000 0000000000000008 0000000000000000 c000000000c44200 
-> >> GPR28: c000000000f80028 0000000000000008 c000000000c85038 0000000000000002 
-> >> NIP [c00000000024a35c] .sysfs_create_file+0x1c/0x40
-> >> LR [c0000000004ee050] .device_create_file+0x20/0x40
-> >> Call Trace:
-> >> [c0000003fd9e77e0] [c0000003fd9e78a0] 0xc0000003fd9e78a0 (unreliable)
-> >> [c0000003fd9e7850] [c00000000083c9a4] .register_cpu_online+0x1d0/0x250
-> >> [c0000003fd9e7900] [c00000000083ca8c] .sysfs_cpu_notify+0x68/0x28c
-> >> [c0000003fd9e79b0] [c00000000083769c] .notifier_call_chain+0x9c/0x100
-> >> [c0000003fd9e7a50] [c0000000000a5878] .__cpu_notify+0x38/0x80
-> >> [c0000003fd9e7ad0] [c00000000083e124] ._cpu_up+0x10c/0x178
-> >> [c0000003fd9e7b90] [c00000000083e2c8] .cpu_up+0x138/0x164
-> >> [c0000003fd9e7c20] [c000000000ba46d0] .async_cpu_up+0x28/0x40
-> >> [c0000003fd9e7ca0] [c0000000000d81ec] .async_run_entry_fn+0xbc/0x1f0
-> >> [c0000003fd9e7d50] [c0000000000c7cbc] .process_one_work+0x19c/0x590
-> >> [c0000003fd9e7e10] [c0000000000c8618] .worker_thread+0x188/0x4b0
-> >> [c0000003fd9e7ed0] [c0000000000ce57c] .kthread+0xbc/0xd0
-> >> [c0000003fd9e7f90] [c000000000021448] .kernel_thread+0x54/0x70
-> >> Instruction dump:
-> >> 7fa3eb78 ebe1fff8 eba1ffe8 7c0803a6 4e800020 2c230000 41820024 e8630030 
-> >> 7c800074 7800d182 2fa30000 419e0014 <0b000000> 38a00002 4bfffebc e8630030 
-> >> ---[ end trace 31fd0ba7d8756001 ]---
-> >> initcall .topology_init+0x0/0x1ac returned 0 after 0 usecs
-> >> calling  .pcibios_init+0x0/0xe8 @ 1
-> >> PCI: Probing PCI hardware
-> >> PCI: Probing PCI hardware done
-> >> initcall .pcibios_init+0x0/0xe8 returned 0 after 0 usecs
-> >> calling  .add_system_ram_resources+0x0/0x140 @ 1
-> >> initcall .add_system_ram_resources+0x0/0x140 returned 0 after 0 usecs
-> >> calling  .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 @ 1
-> >> initcall .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 returned 0 after 0 usecs
-> >> calling  .opal_init+0x0/0x1cc @ 1
-> >> opal: Node not found
-> >> initcall .opal_init+0x0/0x1cc returned -19 after 0 usecs
-> >> calling  .__machine_initcall_pseries_ioei_init+0x0/0xa0 @ 1
+> enum perf_error perf__strerror(enum perf_error)
+> 
+> which effectively taps an array similar to _sys_errlist_internal based
+> on enum index.
+
+I think a per class mechanism is better. I.e. some errors are too
+specific.
+
+I couldn't find any standard way to know the max errno value used :-\ If
+we had that we could reuse strerror_r and use a different range for per
+class specific errnos, i.e.:
+
+ int perf_target__strerror(struct perf_target *target, int errnum,
+                           char *buf, size_t buflen)
+ {
+	if (errnum < MAX_ERRNO)
+		return strerror_r(errnum, buf, buflen);
+
+	errnum -= MAX_ERRNO;
+
+	if (errnum >= PERF_TARGET__MAX_ERRNO)
+		return -1;
+
+	snprintf(buf, buflen, "%s", perf_target__error_str[errnum]);
+	return 0;
+ }
+
+ 
+> > Please see 'man strerror_r", and make it work like the POSIX compliant
+> > variant.
+> 
+> No globals are in use, so I would expect the _r to be redundant. I have
+> glibc source; scanning __strerror_r implementation ....
+> 
 > > 
-> > Reverting "smp: start up non-boot CPUs asynchronously" (8de7a96405 from
-> > next-20120208) fixes this problem for me.  
-> > 
-> if that fixes it, it means PPC has a race somewhere in the cpu hotplug
-> code, since all the patch does is hotplug the cpus one by one (which the
-> normal kernel also does, just not in parallel with other work)
+> > Ok, so it may be better to first process Kim's patches and then you
+> > rework yours?
+> 
+> The current patch is ready to go; I just don't like the error handling
+> and lack of a useful message. That said, it is no worse than what
+> happens today.
 
-The bug looks pretty generic, nothing very PPC-specific there.  It
-might affect other architectures - we won't know until we find out wht
-caused it.
+Yeah, we can go with what you have and then add the
+perf_target__strerror on top, I'll read it now.
 
-Ho hum, I suppose I should pull the patch out of linux-next, to avoid
-disrupting other testing.  This means it's going to be hard to get the
-bug fixed.
+- Arnaldo
