@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab2BMFe3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:34:29 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47108 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab2BMFe2 (ORCPT
+	id S1751775Ab2BMFkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:40:14 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47611 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab2BMFkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:34:28 -0500
-Date: Mon, 13 Feb 2012 13:34:10 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-Message-ID: <20120213053410.GB24636@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
- <1328901567.25989.51.camel@laptop>
- <CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Feb 2012 00:40:12 -0500
+Date: Mon, 13 Feb 2012 16:40:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the dma-mapping tree
+Message-Id: <20120213164000.da84dfec7723af3a9eb3e13f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_16_40_00_+1100_7TBPtlBtNN+/R+Dj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 06:11:58PM -0800, Venki Pallipadi wrote:
-> On Fri, Feb 10, 2012 at 11:19 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2012-02-06 at 12:42 -0800, Venkatesh Pallipadi wrote:
-> >> smp_call_function_single and ttwu_queue_remote sends unconditional IPI
-> >> to target CPU. However, if the target CPU is in mwait based idle, we can
-> >> do IPI-less wakeups using the magical powers of monitor-mwait.
-> >
-> > So I was thinking, why not change native_smp_send_reschedule() and
-> > native_send_call_func_single_ipi() and keep the change entirely inside
-> > the arch?
-> >
-> > Ideally its only APIC/idle that know about this detail, the scheduler
-> > (or other consumers) really don't care about how the other cpu comes to
-> > run the callback.
-> >
-> 
-> OK. Moving most of this into arch code will be cleaner. But, Yong
-> mentioned in this thread that he was looking to do something similar
-> on MIPS. So, we may end up with some code duplication though..
+--Signature=_Mon__13_Feb_2012_16_40_00_+1100_7TBPtlBtNN+/R+Dj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, most of the things could be shared. Such as the added logic when
-return from idle and the hooks into ttwu_queue_remote() and
-generic_exec_single().
+Hi all,
 
-BTW, I think we should also let the arch provide a wrapper for
-TIF_IPI_PENDING, such as tsk_ipi_pending().
+After merging the dma-mapping tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Thanks,
-Yong
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+arch/powerpc/kernel/vio.c: In function 'vio_dma_iommu_alloc_coherent':
+arch/powerpc/kernel/vio.c:500:21: error: 'struct dma_map_ops' has no member=
+ named 'alloc_coherent'
+arch/powerpc/kernel/vio.c: In function 'vio_dma_iommu_free_coherent':
+arch/powerpc/kernel/vio.c:514:15: error: 'struct dma_map_ops' has no member=
+ named 'free_coherent'
+arch/powerpc/kernel/vio.c: At top level:
+arch/powerpc/kernel/vio.c:615:2: error: unknown field 'alloc_coherent' spec=
+ified in initializer
+arch/powerpc/kernel/vio.c:615:2: error: initialization from incompatible po=
+inter type [-Werror]
+arch/powerpc/kernel/vio.c:615:2: error: (near initialization for 'vio_dma_m=
+apping_ops.alloc') [-Werror]
+arch/powerpc/kernel/vio.c:616:2: error: unknown field 'free_coherent' speci=
+fied in initializer
+arch/powerpc/kernel/vio.c:616:2: error: initialization from incompatible po=
+inter type [-Werror]
+arch/powerpc/kernel/vio.c:616:2: error: (near initialization for 'vio_dma_m=
+apping_ops.free') [-Werror]
 
--- 
-Only stand for myself
+I have dropped the dma-mapping tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__13_Feb_2012_16_40_00_+1100_7TBPtlBtNN+/R+Dj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOKIwAAoJEECxmPOUX5FEYiwP/i9IykpU3Dw2cYZkWh+yZlwT
+uzwHr+uWNjCaBeDyDYT0m1vh1ksmkmTlnjProU5XZte1lZ5zeEL/0uyWeExnFcBp
+YWoc1AJ3ie32b9IoiPERNqbUpYbOTJ4UjvMq5BS3cmyRd+LA9aNwkzGsLyCWr/wS
+pjlF9MOP3Di2gnVpovz7HPzXl16sn4ftrAh+gtos+iUJ2fwskq9JGEbU8hltUkLD
+8nd0wUSagWRMd10ZwBY+7XaJcWFemayWCZR33/zAeuLuLXjjAw5AUuzWV0G+iFSD
+zUQUTIN0OOn7OHdqyHxMWznIfK8STaBkoVsJ6OqpKo0Pq9F/p1Aj0CNUUcCAxpkZ
+Bhm6KaM8sk+xxxmnAhVzHsOPvXjEYIJCjDsUWI1H0L100H2D1lIRVCL6sIsrxE9z
+5CQw4lVH2bwwEJWEHo3aoKFenEUIWvnRkbwnDV/oT11jmqyx6f94kcjlc+mHWMwN
+fgdA/6+lMTpmyP3AjRck6QR4XEOrdd9v4Onxm3iYMFRunZgrrMfJC6+6MwAdcDeL
+eE6r7CxU3ID4fXDpBr69l4rCSgD5sy08I/IKgVCA1odM88c3nqPohs1cL1UXG2c9
+JL3ss/e6xsemBInJbE5I8Vw6XxwsGoU4udAM8HwrG1NmTIMsofnkU2ixotNccO0J
+ZkyNPEvSfDVUyzl8BRzl
+=lGdy
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Feb_2012_16_40_00_+1100_7TBPtlBtNN+/R+Dj--
