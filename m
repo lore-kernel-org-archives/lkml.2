@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab2BMQb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:31:26 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:47831 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757185Ab2BMQbZ (ORCPT
+	id S1757204Ab2BMQd2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:33:28 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59942 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757091Ab2BMQd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:31:25 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: oQeLrgYVM1kaCTA6eXtxxZb98dCJpg7pM7oGLdTkqZ61TGm
- _hM5.054zVT4Kp.Kw5WFcMPMIB_BMiTNyoTvbDBykyycCb.YmIfRE4BCfrdT
- MDvs0gqM5.s.BWjOvxvOzmpio6RJBxG1UEFNTGXhpB45YSqHb3PqYcXmHrKT
- .pTbx6F1R4neA2Jlw4lHTb9HkdwjWzEs0KHwYN7nFGQb.YGiP4GA2zo5OZpZ
- LIyQ1szb26IVvq8M6lIoACwy5wgR8JFIAAkuIBmGhwL9GHHf2kPWHTLgwL88
- CAc9rY9AvA6hGHInkmkePuqezJTsgAD1B7cyiWZDKe5G.Y4V8cYDu8oNIcPR
- NOTUpRngbF8JbsO_WEw.4yiIZ9D8wNtN4qFfMedDo9314dOm6Ok_AVUTr4Dt
- s
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 13 Feb 2012 10:01:42 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Xi Wang <xi.wang@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Jesper Juhl <jj@chaosbits.net>,
-        Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
-In-Reply-To: <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com>
-Message-ID: <alpine.DEB.2.00.1202130958470.23562@router.home>
-References: <20120207141155.GA16184@elgon.mountain> <4F323388.7040902@kernel.dk> <20120208142513.4db2493a.akpm@linux-foundation.org> <4F33BF05.208@gmail.com> <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk>
- <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net> <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 13 Feb 2012 11:33:26 -0500
+Date: Mon, 13 Feb 2012 08:33:20 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: vinod.koul@intel.com, shawn.guo@linaro.org, artem.bityutskiy@intel.com,
+        w.sang@pengutronix.de, LW@KARO-electronics.de, lrg@ti.com,
+        cjb@laptop.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/2] mxs-dma : move the mxs dma.h to a more common
+ place
+Message-ID: <20120213163319.GC3494@opensource.wolfsonmicro.com>
+References: <1329110756-14434-1-git-send-email-b32955@freescale.com>
+ <1329110756-14434-2-git-send-email-b32955@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="f0KYrhQ4vYSV2aJu"
+Content-Disposition: inline
+In-Reply-To: <1329110756-14434-2-git-send-email-b32955@freescale.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well I think the best is just not do any of this. One can already do
-k[zm]alloc(x * sizeof(struct whatever)). Do x*x for 2 dimensions etc etc.
-No need to change the API.
 
-If you add these variants then please think
-about the necessity to add other variants (like the kmalloc_node() NUMA
-call) etc in the future.
+--f0KYrhQ4vYSV2aJu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Mon, Feb 13, 2012 at 01:25:55PM +0800, Huang Shijie wrote:
+> Move the header to a more common place.
+> The mxs dma engine is not only used in mx23/mx28, but also used
+> in mx50/mx6q.  It will also be used in the future chips.
 
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+--f0KYrhQ4vYSV2aJu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPOTs+AAoJEBus8iNuMP3dshgP/0oxrWuqvejvhp1kOy6FWPbK
+i2VdoFTU7ordzqj4U2osLcPKSx4vOgbEM+AQLmsebA7n37t17pkA0h2GtdIFYZrZ
+SNJc4sDI6RJYL7E17yE+LzoBwQcaTp1yZxY6oGIfYzcOfZrROOCtVMfyTGt2cB4+
+Lwiarl5HU+frDb/rQ7KsN5qlvKW5/w2xgXIl6EtH63h61nyw9PBVo/8mj8Rhb6Tw
+tQJMmnQpmtbXdpMSVtEWctz3LP+tMUJhY9BIdyIifZ9BmBPaPq3phpj0nid7Zi+l
+zvqjgV708j1aUpZkScRqLMLeAev5vUW4j/AZ0/jcCyt1RYw3k+/3Y2A/kmPF71M5
+cZdrIBjQYwkxYEeM6LeLlkOh28iqXi1cIh/3AO3hQJxezRvqyyFHfNQu/unVLbvZ
+BpZUcDVo8Sie2DeskRha+nBO2hqmy4SpUqRLLOWLLjCfixu1BQ8Y5XshEnHjPpyq
+oUI0iK17OSpDcKC1DezOm4x/St/pTn3GWYNYaO7aiMLu9STAQmPZwLU9D6Rf673B
+idmEdXQq0Xk0Fh38Hu4EzVavYsb1AZbdTYG3KZWgHM0GR70QSXUv9R0kYobt8Dqc
+HLYb9/sSrl5BlT/kIuP3QNY/ZEHrf6w94fVMTk4xgxYSluY6EcVMz+YHpXGU0u+A
+JHvRGx6M7t4h+hYTLQJe
+=EySv
+-----END PGP SIGNATURE-----
+
+--f0KYrhQ4vYSV2aJu--
