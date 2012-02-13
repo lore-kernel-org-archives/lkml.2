@@ -1,74 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab2BMQhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:37:18 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37735 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755282Ab2BMQhQ (ORCPT
+	id S1757120Ab2BMQmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:42:11 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45412 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755109Ab2BMQmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:37:16 -0500
-Date: Mon, 13 Feb 2012 08:37:12 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regulator enable/disable delay based on board design: How to
- handle?
-Message-ID: <20120213163711.GD3494@opensource.wolfsonmicro.com>
-References: <4F38D55A.5020208@nvidia.com>
+	Mon, 13 Feb 2012 11:42:09 -0500
+Message-ID: <4F393D4A.7080704@linux.vnet.ibm.com>
+Date: Mon, 13 Feb 2012 22:11:46 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/3yNEOqWowh/8j+e"
-Content-Disposition: inline
-In-Reply-To: <4F38D55A.5020208@nvidia.com>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c
+ static
+References: <201202120003.20879.rjw@sisk.pl> <201202131612.26973.rjw@sisk.pl> <4F392D99.7030303@linux.vnet.ibm.com> <201202131653.02013.rjw@sisk.pl>
+In-Reply-To: <201202131653.02013.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021306-5140-0000-0000-000000BD421D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/13/2012 09:23 PM, Rafael J. Wysocki wrote:
 
---/3yNEOqWowh/8j+e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
+>> On 02/13/2012 08:42 PM, Rafael J. Wysocki wrote:
+>>
+>>> On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
+>>>> On 02/13/2012 02:54 AM, Rafael J. Wysocki wrote:
+>>>>
+>>>>> On Sunday, February 12, 2012, Srivatsa S. Bhat wrote:
+>>>>>> On 02/12/2012 04:34 AM, Rafael J. Wysocki wrote:
+>>>>>>
+>>>>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>>>>>>
+>>>>>>> The enter_state() function in kernel/power/suspend.c should be
+>>>>>>> static and state_store() in kernel/power/suspend.c should call
+>>>>>>> pm_suspend() instead of it, so make that happen (which also reduces
+>>>>>>> code duplication related to suspend statistics).
+>>>>>>>
+>>>>>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>>>>>> ---
+>>>>>>>  kernel/power/main.c    |    6 +-----
+>>>>>>>  kernel/power/power.h   |    2 --
+>>>>>>>  kernel/power/suspend.c |    2 +-
+>>>>>>>  3 files changed, 2 insertions(+), 8 deletions(-)
+>>>>>>>
+>>>>>>> Index: linux/kernel/power/main.c
+>>>>>>> ===================================================================
+>>>>>>> --- linux.orig/kernel/power/main.c
+>>>>>>> +++ linux/kernel/power/main.c
+>>>>>>> @@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
+>>>>>>>  #ifdef CONFIG_SUSPEND
+>>>>>>>  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+>>>>>>>  		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+>>>>>>> -			break;
+>>>>>>> -	}
+>>>>>>> -	if (state < PM_SUSPEND_MAX && *s) {
+>>>>>>> -		error = enter_state(state);
+>>>>>>> -		suspend_stats_update(error);
+>>>>>>> +			error = pm_suspend(state);
+>>>>>>
+>>>>>>
+>>>>>> This code will not stop after calling pm_suspend(). It will try more iterations
+>>>>>> in the for loop right?
+>>>>>
+>>>>> Well, only one string in pm_states[] can be matched at a time, but I agree that
+>>>>> it doesn't make sense to continue the loop after we've found a match.
+>>>>>
+>>>>>> We can probably keep the 'for' loop as it is, and just replace the 'if' block
+>>>>>> following the 'for' loop by: error = pm_suspend(state);
+>>>>>
+>>>>> I think the patch below is correct.
+>>>>>
+>>>>> Thanks,
+>>>>> Rafael
+>>>>>
+>>>>> ---
+>>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>>>> Subject: PM / Sleep: Make enter_state() in kernel/power/suspend.c static
+>>>>>
+>>>>> The enter_state() function in kernel/power/suspend.c should be
+>>>>> static and state_store() in kernel/power/suspend.c should call
+>>>>> pm_suspend() instead of it, so make that happen (which also reduces
+>>>>> code duplication related to suspend statistics).
+>>>>>
+>>>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>>>> ---
+>>>>
+>>>>
+>>>> Yeah, this version of the patch will work fine.
+>>>>
+>>>> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>>
+>>> Thanks!
+>>>
+>>> I wonder if that should be Reviewed-by, tough?  You evidently have reviewed
+>>> the patch (actually, all three of them).
+>>>
+>>
+>>
+>> Anything is fine :-) It is not very clear to me when to use Reviewed-by and
+>> when to use Acked-by.. so I randomly chose one of them.. :-)
+>> But please enlighten me as to when to use which one, so that in the future, I
+>> can use the right one :-)
+> 
+> "Acked-by" means, roughly, "I have no objection" or "looks good to me",
+> depending on who's saying that, but it doesn't imply that you've had more than
+> a cursory look at the patch in question.  "Reviewied-by", in contrast, means
+> something like "I have reviewed the patch in detail and haven't found anything
+> wrong in it" (which obviously means that you have no objection too, because
+> otherwise you'd have found _something_ wrong in the patch).
+> 
+> So, "Acked-by" from anyone other than the relevant maintainer is just an
+> "I'm for" declaration, while "Reviewied-by" from _anyone_ carries some actual
+> weight. 
+> 
 
-On Mon, Feb 13, 2012 at 02:48:18PM +0530, Laxman Dewangan wrote:
+Wow! Nice :-) Thanks for the great explanation!
+I'll keep this in mind from the next time onwards :-)
 
-> We observed that some of the rail enable/disable settling time
-> depends on the board design specially based on external capacitor
-> connected on
-> rails.  This is observed mainly on VBUS regulator rail where
-> difference on the capacitance value which is connected on rail makes
-> the on/off
-> time to vary.
+Regards,
+Srivatsa S. Bhat
 
-Usually this would be handled via regulator driver platform data as the
-regulator will typically be designed with particular external components
-in mind and (especially in the case of DCDC convertors) may need to be
-configured differently depending on the choice of passive components.
-Many regulators also have some software control for the ramp rate,
-mainly intended to limit inrush currents on system startup, which can be
-varied at runtime if desired.
-
---/3yNEOqWowh/8j+e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPOTwsAAoJEBus8iNuMP3d/Z8P+waZR6/ICB6RvF8nUrQpGZlq
-XFvmMIFdYYwNroMH7CeCylOeDnXgw8lc6sofQNck0c+4/PhYvGkfe2X1B06hJzu4
-wA3kS2StC5fKJmU3gWmbZsVoXXRcyUZ6vFdvkFH81KLLZohsvgTcXCNZApIdil2a
-NI4R9YrU5byrAh8Z8LbVD2ms1tOfyEFfULlsjkSgG4bDbL4BMe64/T47j9qEI5L5
-200jAiAHAZlQXnQP8qg9+boT4fIXc7ueq1WEiriJ7KkDw+PZzdeHqKolR12o+1yD
-oRB+Yvx0769IKV4nyIGgEZPBNmuYSaTBFRNOdnaiG9hGLksm26/UHgaayoB20Soj
-vvaAYI4lCPLub+M2IBJUjio2cQ3zgPIsiw1Ncd1xJrBFGKDE7bZIRmfSo2PRqIvt
-+xB34h7QqITuEx2X8e6/NXqT+Ci15BiddpSFnuYfpSNe3Eus603ygEYZ6Z25WMX5
-g00IVhhDEhsO/LJb+v4NXsJhS/SKMWCsWTmHvyN2Fws6pvb5H4DkrUNuyPl5mg5/
-BUC9DrxSHWokMF6AXXIrcPPAyWnjFal20zlLzg9e17Q1XUyfEGosiovq2C19yLjY
-1dv1MhSE5gRw8xdqwHanlsA84XYfSr/dtnq5mCkifrZKrSwyhdj9W3Ue0pGEB8+B
-lkSSa+BQm5dj4R+Hfzge
-=7PzK
------END PGP SIGNATURE-----
-
---/3yNEOqWowh/8j+e--
