@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab2BMTg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:36:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754752Ab2BMTg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:36:26 -0500
-Date: Mon, 13 Feb 2012 14:36:15 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: scsi_error: do not allow IO errors with certain ILLEGAL_REQUEST
- sense to be retryable
-Message-ID: <20120213193615.GA10349@redhat.com>
-References: <1322857889-2623-1-git-send-email-snitzer@redhat.com>
- <yq1zkf5pfx1.fsf@sermon.lab.mkp.net>
- <20111206212704.GB30719@redhat.com>
- <yq1vcptpdch.fsf@sermon.lab.mkp.net>
- <20111206224218.GA31543@redhat.com>
- <20120213162923.GA29578@redhat.com>
- <yq1d39iipra.fsf@sermon.lab.mkp.net>
- <20120213181359.GA5803@redhat.com>
- <yq14nuuilxd.fsf@sermon.lab.mkp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq14nuuilxd.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932207Ab2BMThm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:37:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40574 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135Ab2BMThj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 14:37:39 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: linville@tuxdriver.com
+Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
+        chunkeey@web.de, Max Filippov <jcmvbkbc@gmail.com>, m@bues.ch,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not from probe routine
+Date: Mon, 13 Feb 2012 13:37:06 -0600
+Message-Id: <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net>
+References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13 2012 at  2:16pm -0500,
-Martin K. Petersen <martin.petersen@oracle.com> wrote:
+Drivers that load firmware from their probe routine have problems with the
+latest versions of udev as they get timeouts while waiting for user
+space to start. The problem is fixed by loading the firmware and starting
+mac80211 from a delayed_work queue. By using this method, most of the
+original code is preserved.
 
-> >>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
-> 
-> >> I don't have a fundamental problem with your patch. But since we
-> >> explicitly handle ILLEGAL REQUEST with 0x20 and 0x24 in sd.c I wonder
-> >> what's broken? We should disable discard support if the WRITE SAME w/
-> >> UNMAP fails.
-> 
-> Mike> Yeah, I thought the disabling would be sufficient too.  But
-> Mike> unfortunately multipath doesn't inspect the request it is retrying
-> Mike> (after it fails the path the request just failed on).
-> 
-> Well, we shouldn't be returning something that multipath should ever act
-> on.
-> 
-> I think I understand what's going on. Can you try the following patch?
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
+This one is compile-tested only.
 
-Looks good to me (small nit below), it'll solve the immediate problem,
-I'll pass it on.  Please add my:
+Larry
+---
+ drivers/net/wireless/p54/p54spi.c |   38 ++++++++++++++++++++++++++----------
+ drivers/net/wireless/p54/p54spi.h |    1 +
+ 2 files changed, 28 insertions(+), 11 deletions(-)
 
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
+index 7faed62..87c2634 100644
+--- a/drivers/net/wireless/p54/p54spi.c
++++ b/drivers/net/wireless/p54/p54spi.c
+@@ -595,6 +595,30 @@ static void p54spi_op_stop(struct ieee80211_hw *dev)
+ 	cancel_work_sync(&priv->work);
+ }
+ 
++static void p54s_load_firmware(struct work_struct *work)
++{
++	struct p54s_priv *priv = container_of(to_delayed_work(work),
++				 struct p54s_priv, firmware_load);
++	struct ieee80211_hw *hw = priv->hw;
++	int ret;
++
++	ret = p54spi_request_firmware(hw);
++	if (ret < 0)
++		goto err_free_common;
++
++	ret = p54spi_request_eeprom(hw);
++	if (ret)
++		goto err_free_common;
++
++	ret = p54_register_common(hw, &priv->spi->dev);
++	if (ret)
++		goto err_free_common;
++	return;
++
++err_free_common:
++	dev_err(&priv->spi->dev, "Failed to read firmware\n");
++}
++
+ static int __devinit p54spi_probe(struct spi_device *spi)
+ {
+ 	struct p54s_priv *priv = NULL;
+@@ -658,17 +682,9 @@ static int __devinit p54spi_probe(struct spi_device *spi)
+ 	priv->common.stop = p54spi_op_stop;
+ 	priv->common.tx = p54spi_op_tx;
+ 
+-	ret = p54spi_request_firmware(hw);
+-	if (ret < 0)
+-		goto err_free_common;
+-
+-	ret = p54spi_request_eeprom(hw);
+-	if (ret)
+-		goto err_free_common;
+-
+-	ret = p54_register_common(hw, &priv->spi->dev);
+-	if (ret)
+-		goto err_free_common;
++	/* setup and start delayed work to load firmware */
++	INIT_DELAYED_WORK(&priv->firmware_load, p54s_load_firmware);
++	schedule_delayed_work(&priv->firmware_load, HZ);
+ 
+ 	return 0;
+ 
+diff --git a/drivers/net/wireless/p54/p54spi.h b/drivers/net/wireless/p54/p54spi.h
+index dfaa62a..5f7714b 100644
+--- a/drivers/net/wireless/p54/p54spi.h
++++ b/drivers/net/wireless/p54/p54spi.h
+@@ -120,6 +120,7 @@ struct p54s_priv {
+ 
+ 	enum fw_state fw_state;
+ 	const struct firmware *firmware;
++	struct delayed_work firmware_load;
+ };
+ 
+ #endif /* P54SPI_H */
+-- 
+1.7.7
 
-But I also think establishing a baseline of TARGET_ERROR for certain
-ILLEGAL REQUEST is still sane and should go in too...
-
-Thanks,
-Mike
-
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index b2c95db..4e8d0b6 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -879,6 +879,7 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
->  				    cmd->cmnd[0] == WRITE_SAME_16 ||
->  				    cmd->cmnd[0] == WRITE_SAME)) {
->  				description = "Discard failure";
-> +				error = -EREMOTEIO;
->  				action = ACTION_FAIL;
-
-Previous DIX -EILSEQ code block sets error after action.  Should follow
-that order here?  Purely an aesthetics thing.
