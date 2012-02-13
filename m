@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab2BMWX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 17:23:59 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:35870 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab2BMWX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 17:23:57 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6619"; a="160549624"
-Message-ID: <4F398D61.9080501@codeaurora.org>
-Date: Mon, 13 Feb 2012 14:23:29 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1757494Ab2BMWZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:25:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753864Ab2BMWZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 17:25:04 -0500
+Date: Mon, 13 Feb 2012 17:24:54 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Phillip Susi <psusi@ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
+        Karel Zak <kzak@redhat.com>, maxim.patlasov@gmail.com
+Subject: Re: [PATCH 0/2] block: online resize of disk partitions
+Message-ID: <20120213222454.GF3130@redhat.com>
+References: <1329161438-12602-1-git-send-email-vgoyal@redhat.com>
+ <4F3981FE.7090601@ubuntu.com>
+ <20120213215039.GD3130@redhat.com>
+ <4F398C39.6010901@ubuntu.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Nicolas Pitre <nico@fluxnic.net>, Rabin Vincent <rabin@rab.in>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
-References: <alpine.LFD.2.02.1202022016480.2759@xanadu.home> <1328234629-32735-1-git-send-email-sboyd@codeaurora.org> <CAH+eYFCKcPzMMp_Ef5iX0Xp=xK8MdvJoUBRgKGT56SVjY5DXoA@mail.gmail.com> <alpine.LFD.2.02.1202131307430.24536@xanadu.home> <4F3952C7.3040502@codeaurora.org> <20120213181501.GD25655@n2100.arm.linux.org.uk>
-In-Reply-To: <20120213181501.GD25655@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F398C39.6010901@ubuntu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/12 10:15, Russell King - ARM Linux wrote:
-> On Mon, Feb 13, 2012 at 10:13:27AM -0800, Stephen Boyd wrote:
->> Thanks. Russell has already merged the original patch to the fixes
->> branch. Hopefully he can fold this one in.
-> Nope, I've asked Linus to pull it.
->
-> So do we conclude that the original patch wasn't properly tested? :P
+On Mon, Feb 13, 2012 at 05:18:33PM -0500, Phillip Susi wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 2/13/2012 4:50 PM, Vivek Goyal wrote:
+> > So if a user anyway does not specify the start of sector, then 
+> > tools shall have to first read it and then call the ioctl. If 
+> > anyway tools are specifying, there is no much scope of screwing up 
+> > the things?
+> 
+> Tools certainly should know where the partition starts.  I already
+> have patched parted and partx to pass the current size, which they
+> had trivially available.  Making sure of that is a good sanity check
+> to guard against, for instance, resizing the wrong partition.
 
-Sigh. Lockdep strikes again! I promise I tested it with lockdep disabled.
+Ok, so user still specifies just the new size of partition and tool
+passes in both the "start" and new "size" to the ioctl?
 
-It looks like Linus' hasn't pulled yet but maybe he just hasn't
-published it.
+> 
+> > Even if we allow changing start at some point of time, then IOCTL 
+> > can remain the same and just the implementation will change in a 
+> > backward compatible manner. Old tools still will continue to work 
+> > as they have always been, and new ones can start passing "start" 
+> > too.
+> > 
+> > So I really did not find passing and checking "start" of partition
+> >  very appealing.
+> 
+> That is exactly why passing and checking start is required.  If it is
+> entirely ignored, then the interface can not start using it in the
+> future in a backward compatible way, because user mode tools will have
+> grown used to passing in any kind of garbage, so if the kernel starts
+> using it to alter the start position of the partition, older tools
+> would randomly and accidentally be shifting the the start of
+> partitions they just mean to change the length of.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ok, I think keeping the ioctl backward compatible in light of any
+future changes makes sense. I will change the patches to not ignore
+the partition "start" and repost.
 
+Thanks for the comments.
+
+Vivek
