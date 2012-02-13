@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab2BMORw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 09:17:52 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44459 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab2BMORu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 09:17:50 -0500
-Message-ID: <4F391B83.7080703@linux.vnet.ibm.com>
-Date: Mon, 13 Feb 2012 19:47:39 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1756708Ab2BMOSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 09:18:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59532 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756593Ab2BMOSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 09:18:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124765664"
+Message-ID: <4F391BBA.5020506@linux.intel.com>
+Date: Mon, 13 Feb 2012 06:18:34 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
-CC: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-fsdevel@vger.kernel.org
-Subject: Re: Kernel bug with btrfs on laptop with external hd and suspend
- and resume.
-References: <1328990690.2464.6.camel@firefly>
-In-Reply-To: <1328990690.2464.6.camel@firefly>
-Content-Type: text/plain; charset=UTF-8
+To: Michael Neuling <mikey@neuling.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        linux-next@vger.kernel.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: Boot failure with next-20120208
+References: <20120212113805.c7e5d902c95a9d0f4037e12c@canb.auug.org.au> <16788.1329102254@neuling.org>
+In-Reply-To: <16788.1329102254@neuling.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12021314-9574-0000-0000-0000015C0579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding some Cc's.
+On 2/12/2012 7:04 PM, Michael Neuling wrote:
+>> Just a quick note to say I got a boot OOPs with next-20120208 and 9 on a
+>> Power7 blade (my other PowerPC boot tests are ok.  I'll investigate this
+>> further on Monday.
+>>
+>> The line referenced below is:
+>>
+>> BUG_ON(!kobj || !kobj->sd || !attr);
+>>
+>> in sysfs_create_file().
+>>
+>> calling  .topology_init+0x0/0x1ac @ 1
+>> initcall 7_.async_cpu_up+0x0/0x40 returned 0 after 9765 usecs
+>> async_continuing @ 20 after 9765 usec
+>> ------------[ cut here ]------------
+>> kernel BUG at fs/sysfs/file.c:573!
+>> Oops: Exception in kernel mode, sig: 5 [#1]
+>> SMP NR_CPUS=32 NUMA pSeries
+>> Modules linked in:
+>> NIP: c00000000024a35c LR: c0000000004ee050 CTR: c00000000083ca24
+>> REGS: c0000003fd9e7560 TRAP: 0700   Not tainted  (3.3.0-rc2-autokern1)
+>> MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>  CR: 88002082  XER: 0000000f
+>> CFAR: c00000000024a370
+>> TASK = c0000003fd9e8000[20] 'kworker/u:6' THREAD: c0000003fd9e4000 CPU: 0
+>> GPR00: 0000000000000001 c0000003fd9e77e0 c000000000d19bb8 0000000000000000 
+>> GPR04: c000000000bf37a8 0000000000000008 8000000002096400 0000000000000000 
+>> GPR08: 0000000000000000 c000000000f80028 c000000000d52bd8 0000000000000000 
+>> GPR12: 0000000048002088 c00000000f33b000 0000000001affa78 00000000009aa000 
+>> GPR16: 0000000000e1f3c8 0000000002d517f0 0000000001aff984 0000000000000060 
+>> GPR20: 0000000000000000 ffffffffffffffff 0000000000000000 c000000000c45128 
+>> GPR24: 0000000000000000 0000000000000008 0000000000000000 c000000000c44200 
+>> GPR28: c000000000f80028 0000000000000008 c000000000c85038 0000000000000002 
+>> NIP [c00000000024a35c] .sysfs_create_file+0x1c/0x40
+>> LR [c0000000004ee050] .device_create_file+0x20/0x40
+>> Call Trace:
+>> [c0000003fd9e77e0] [c0000003fd9e78a0] 0xc0000003fd9e78a0 (unreliable)
+>> [c0000003fd9e7850] [c00000000083c9a4] .register_cpu_online+0x1d0/0x250
+>> [c0000003fd9e7900] [c00000000083ca8c] .sysfs_cpu_notify+0x68/0x28c
+>> [c0000003fd9e79b0] [c00000000083769c] .notifier_call_chain+0x9c/0x100
+>> [c0000003fd9e7a50] [c0000000000a5878] .__cpu_notify+0x38/0x80
+>> [c0000003fd9e7ad0] [c00000000083e124] ._cpu_up+0x10c/0x178
+>> [c0000003fd9e7b90] [c00000000083e2c8] .cpu_up+0x138/0x164
+>> [c0000003fd9e7c20] [c000000000ba46d0] .async_cpu_up+0x28/0x40
+>> [c0000003fd9e7ca0] [c0000000000d81ec] .async_run_entry_fn+0xbc/0x1f0
+>> [c0000003fd9e7d50] [c0000000000c7cbc] .process_one_work+0x19c/0x590
+>> [c0000003fd9e7e10] [c0000000000c8618] .worker_thread+0x188/0x4b0
+>> [c0000003fd9e7ed0] [c0000000000ce57c] .kthread+0xbc/0xd0
+>> [c0000003fd9e7f90] [c000000000021448] .kernel_thread+0x54/0x70
+>> Instruction dump:
+>> 7fa3eb78 ebe1fff8 eba1ffe8 7c0803a6 4e800020 2c230000 41820024 e8630030 
+>> 7c800074 7800d182 2fa30000 419e0014 <0b000000> 38a00002 4bfffebc e8630030 
+>> ---[ end trace 31fd0ba7d8756001 ]---
+>> initcall .topology_init+0x0/0x1ac returned 0 after 0 usecs
+>> calling  .pcibios_init+0x0/0xe8 @ 1
+>> PCI: Probing PCI hardware
+>> PCI: Probing PCI hardware done
+>> initcall .pcibios_init+0x0/0xe8 returned 0 after 0 usecs
+>> calling  .add_system_ram_resources+0x0/0x140 @ 1
+>> initcall .add_system_ram_resources+0x0/0x140 returned 0 after 0 usecs
+>> calling  .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 @ 1
+>> initcall .__machine_initcall_powermac_pmac_i2c_create_platform_devices+0x0/0xc8 returned 0 after 0 usecs
+>> calling  .opal_init+0x0/0x1cc @ 1
+>> opal: Node not found
+>> initcall .opal_init+0x0/0x1cc returned -19 after 0 usecs
+>> calling  .__machine_initcall_pseries_ioei_init+0x0/0xa0 @ 1
+> 
+> Reverting "smp: start up non-boot CPUs asynchronously" (8de7a96405 from
+> next-20120208) fixes this problem for me.  
+> 
+if that fixes it, it means PPC has a race somewhere in the cpu hotplug
+code, since all the patch does is hotplug the cpus one by one (which the
+normal kernel also does, just not in parallel with other work)
 
-On 02/12/2012 01:34 AM, Nathan A. Mourey II wrote:
-
-> I just installed the new kernel with yum update.  I have an external eSATA hard drive that is 
-> formatted with btrfs.  I closed the lid once it had booted up, I had not logged in yet.  Latter I opened
-> the lid and had the following message on the screen.  Hope it helps.
-> 
-> 
-> Feb 11 14:39:03 firefly kernel: [  253.236050] ------------[ cut here ]------------
-> Feb 11 14:39:03 firefly kernel: [  253.236066] kernel BUG at fs/btrfs/transaction.c:1337!
-> Feb 11 14:39:03 firefly kernel: [  253.236073] invalid opcode: 0000 [#1] SMP
-> Feb 11 14:39:03 firefly kernel: [  253.236081] CPU 1
-> Feb 11 14:39:03 firefly kernel: [  253.236084] Modules linked in: ebtable_nat ebtables ppdev parport_pc ipt_MASQUERADE iptable_nat nf_nat lp parport be2iscsi iscsi_boot_sysfs xt_CHECKSUM bnx2i iptable_mangle cnic uio cxgb4i cxgb4 bridge stp cxgb3i libcxgbi cxgb3 llc mdio ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr nf_conntrack_netbios_ns iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi nf_conntrack_broadcast nf_conntrack_ftp ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_ipv4 nf_defrag_ipv6 nf_defrag_ipv4 ip6table_filter xt_state ip6_tables nf_conntrack binfmt_misc xfs snd_hda_codec_si3054 snd_hda_codec_realtek arc4 snd_hda_intel snd_hda_codec snd_hwdep iwlwifi snd_seq snd_seq_device uvcvideo snd_pcm mac80211 jmb38x_ms cfg80211 videodev media iTCO_wdt memstick usblp snd_timer snd soundcore snd_page_alloc i2c_i801 iTCO_vendor_support v4l2_compat_ioctl32 r8169 rfkill mii serio_raw microcode joydev vhost_net macvtap macvlan tun virtio_net kvm_intel nfsd kvm lockd 
-nfs_acl auth_rpcgss uinput sunrpc btrfs
-> Feb 11 14:39:03 firefly kernel: zlib_deflate libcrc32c sdhci_pci sdhci mmc_core firewire_ohci firewire_core crc_itu_t nouveau ttm drm_kms_helper drm i2c_algo_bit i2c_core mxm_wmi wmi video [last unloaded: scsi_wait_scan]
-> Feb 11 14:39:03 firefly kernel: [  253.236312]
-> Feb 11 14:39:03 firefly kernel: [  253.236316] Pid: 2469, comm: umount Not tainted 3.2.5-3.fc16.x86_64 #1 System76, Inc. Serval Professional/Serval Professional
-> Feb 11 14:39:03 firefly kernel: [  253.236329] RIP: 0010:[<ffffffffa01c2f3c>]  [<ffffffffa01c2f3c>] btrfs_commit_transaction+0x81c/0x820 [btrfs]
-> Feb 11 14:39:03 firefly kernel: [  253.236355] RSP: 0018:ffff880104789d28  EFLAGS: 00010282
-> Feb 11 14:39:03 firefly kernel: [  253.236361] RAX: 00000000fffffffb RBX: ffff880113cf9f00 RCX: 0000000000000000
-> Feb 11 14:39:03 firefly kernel: [  253.236367] RDX: 0000000000000000 RSI: 0000000001c11000 RDI: 0000000000000000
-> Feb 11 14:39:03 firefly kernel: [  253.236373] RBP: ffff880104789db8 R08: 0000000000002000 R09: 0000000000000010
-> Feb 11 14:39:03 firefly kernel: [  253.236380] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801324ebc00
-> Feb 11 14:39:03 firefly kernel: [  253.236386] R13: ffff880137378f78 R14: ffff880113cf9f78 R15: 0000000000000000
-> Feb 11 14:39:03 firefly kernel: [  253.236393] FS:  00007f003c745800(0000) GS:ffff88013fd00000(0000) knlGS:0000000000000000
-> Feb 11 14:39:03 firefly kernel: [  253.236400] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> Feb 11 14:39:03 firefly kernel: [  253.236405] CR2: 00007f4113b74000 CR3: 0000000103e51000 CR4: 00000000000406e0
-> Feb 11 14:39:03 firefly kernel: [  253.236412] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Feb 11 14:39:03 firefly kernel: [  253.236418] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Feb 11 14:39:03 firefly kernel: [  253.236425] Process umount (pid: 2469, threadinfo ffff880104788000, task ffff880138b14560)
-> Feb 11 14:39:03 firefly kernel: [  253.236434] Stack:
-> Feb 11 14:39:03 firefly kernel: [  253.236437]  ffff880104789d58 0000000000000001 0000000000000000 ffff880138b14560
-> Feb 11 14:39:03 firefly kernel: [  253.236448]  ffffffff81090440 ffff880104789d50 ffff880104789d50 ffffffffa01c3394
-> Feb 11 14:39:03 firefly kernel: [  253.236459]  7fffffffffffffff 00000000324eb000 ffff880104789d78 ffff8801324ebc00
-> Feb 11 14:39:03 firefly kernel: [  253.236470] Call Trace:
-> Feb 11 14:39:03 firefly kernel: [  253.236478]  [<ffffffff81090440>] ? remove_wait_queue+0x50/0x50
-> Feb 11 14:39:03 firefly kernel: [  253.236494]  [<ffffffffa01c3394>] ? start_transaction+0x94/0x2a0 [btrfs]
-> Feb 11 14:39:03 firefly kernel: [  253.236508]  [<ffffffffa019e21c>] btrfs_sync_fs+0x6c/0xf0 [btrfs]
-> Feb 11 14:39:03 firefly kernel: [  253.236516]  [<ffffffff811a56b3>] __sync_filesystem+0x63/0x90
-> Feb 11 14:39:03 firefly kernel: [  253.236524]  [<ffffffff811a575b>] sync_filesystem+0x4b/0x70
-> Feb 11 14:39:03 firefly kernel: [  253.236531]  [<ffffffff8117ae2b>] generic_shutdown_super+0x3b/0xd0
-> Feb 11 14:39:03 firefly kernel: [  253.236539]  [<ffffffff8117af56>] kill_anon_super+0x16/0x30
-> Feb 11 14:39:03 firefly kernel: [  253.236546]  [<ffffffff8117b30c>] deactivate_locked_super+0x3c/0xa0
-> Feb 11 14:39:03 firefly kernel: [  253.236552]  [<ffffffff8117bd7e>] deactivate_super+0x4e/0x70
-> Feb 11 14:39:03 firefly kernel: [  253.236559]  [<ffffffff811967d5>] mntput_no_expire+0xb5/0x100
-> Feb 11 14:39:03 firefly kernel: [  253.236566]  [<ffffffff8119755c>] sys_umount+0x6c/0x350
-> Feb 11 14:39:03 firefly kernel: [  253.236573]  [<ffffffff81183912>] ? path_put+0x22/0x30
-> Feb 11 14:39:03 firefly kernel: [  253.236581]  [<ffffffff815e9782>] system_call_fastpath+0x16/0x1b
-> Feb 11 14:39:03 firefly kernel: [  253.236586] Code: e9 9b f9 ff ff 0f 0b 0f 0b 0f 0b 0f 0b 0f 0b 0f 0b be fc 04 00 00 48 c7 c7 93 60 21 a0 e8 5d ae ea e0 e9 4d fb ff ff 0f 0b 0f 0b <0f> 0b 66 90 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 77
-> Feb 11 14:39:03 firefly kernel: [  253.236680] RIP  [<ffffffffa01c2f3c>] btrfs_commit_transaction+0x81c/0x820 [btrfs]
-> Feb 11 14:39:03 firefly kernel: [  253.236698]  RSP <ffff880104789d28>
-> Feb 11 14:39:03 firefly kernel: [  253.296027] usb 2-4: new high-speed USB device number 5 using ehci_hcd
-> Feb 11 14:39:03 firefly kernel: [  253.301277] ---[ end trace b10e35848f70f893 ]---
-> 
-> 
-> 
 
