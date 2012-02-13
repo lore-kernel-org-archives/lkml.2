@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2BMGvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 01:51:47 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:60234 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752629Ab2BMGvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 01:51:45 -0500
-Message-ID: <1329115904.30878.7.camel@joe2Laptop>
-Subject: Re: [PATCH 2/2] bluetooth: Convert BT_DBG to pr_debug
-From: Joe Perches <joe@perches.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Sun, 12 Feb 2012 22:51:44 -0800
-In-Reply-To: <1329115057.28848.52.camel@aeonflux>
-References: <cover.1329102581.git.joe@perches.com>
-	 <90fbd8a0b800c83f5ad1df7889dc9b11d7d9c588.1329102581.git.joe@perches.com>
-	 <1329115057.28848.52.camel@aeonflux>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755238Ab2BMHGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:06:09 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:59930 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab2BMHGG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 02:06:06 -0500
+Message-ID: <4F38B657.7060405@de.ibm.com>
+Date: Mon, 13 Feb 2012 08:05:59 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        mst@redhat.com, rusty@rustcorp.com.au
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com> <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com> <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com> <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com> <4F313526.2050907@redhat.com> <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com> <4F3390FB.80107@redhat.com> <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12021307-3548-0000-0000-00000105E941
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-13 at 07:37 +0100, Marcel Holtmann wrote:
-> > No need to obfuscate, just use the normal debugging macro.
-> > Add "\n" to uses, align arguments, coalesce formats.
-> > Fix a typo and fix a bad format extended by a line continuation.
-> what is this patch buying us.
+On 12/02/12 21:16, James Bottomley wrote:
+> Well, no-one's yet answered the question I had about why.  
 
-Easier greps of pr_debug.
-BT_DBG is just an unnecessary useless wrapper.
+Just to give one example from a different angle:
+In the big datacenters tape libraries are still very important, and lots
+of them have a scsi attachement. virtio-blk certainly is not the right
+way to handle those. Furthermore it seems even pretty hard to craft
+a virtio-tape since most of those libraries have vendor specific library
+controls (via sg). We would need to duplicate scsi generic (hint, hint :-)
 
-> The only useful change would be to move to dev_printk, but we are not
-> there yet.
+> virtio-scsi seems to be a basic duplication of virtio-blk except that it seems to
+> fix some problems virtio-blk has.  Namely queue parameter discover,
+> which virtio-blk doesn't seem to do.  There may also be a reason to cut
+> the stack lower down.  Error handling is most often cited for this, but
+> no-one's satisfactorily explaned why it's better to do error handling in
+> the guest instead of the host.
+> 
+> Could someone please explain to me why you can't simply fix virtio-blk?
 
-Maybe dev_dbg, but there isn't always an
-appropriate device * available.
+I dont think that virtio-scsi will replace virtio-blk everywhere. For non-scsi
+block devices, image files or logical volumes virtio-blk seems to be the right 
+approach, I think.
 
-There are many uses of:
-	pr_debug("%s ...", (some struct hci_dev *)->name, ...)
+> Or would virtio-blk maintainers give a reason why they're unwilling to
+> have it fixed?
 
-that could be something like
+I dont consider virtio-blk broken. It just doesnt cover everything.
 
-hci_dev_dbg((some struct hci_dev *), fmt, ...)
-
+Christian
 
