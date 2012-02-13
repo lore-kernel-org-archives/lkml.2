@@ -1,58 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2BMLIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 06:08:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36730 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab2BMLI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 06:08:29 -0500
+	id S1756558Ab2BMLLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 06:11:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49941 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab2BMLLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 06:11:08 -0500
+Date: Mon, 13 Feb 2012 11:10:58 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 02/15] mm: sl[au]b: Add knowledge of PFMEMALLOC reserve
+ pages
+Message-ID: <20120213111058.GW5938@suse.de>
+References: <20120208144506.GI5938@suse.de>
+ <alpine.DEB.2.00.1202080907320.30248@router.home>
+ <20120208163421.GL5938@suse.de>
+ <alpine.DEB.2.00.1202081338210.32060@router.home>
+ <20120208212323.GM5938@suse.de>
+ <alpine.DEB.2.00.1202081557540.5970@router.home>
+ <20120209125018.GN5938@suse.de>
+ <alpine.DEB.2.00.1202091345540.4413@router.home>
+ <20120210102605.GO5938@suse.de>
+ <alpine.DEB.2.00.1202101443570.31424@router.home>
 MIME-Version: 1.0
-In-Reply-To: <4F38B657.7060405@de.ibm.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>
-	<4F30F4EE.4080607@redhat.com>
-	<4F311154.9080407@de.ibm.com>
-	<4F3119A0.7080005@redhat.com>
-	<4F312492.1040002@de.ibm.com>
-	<OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
-	<4F313526.2050907@redhat.com>
-	<OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
-	<4F3390FB.80107@redhat.com>
-	<1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
-	<4F38B657.7060405@de.ibm.com>
-Date: Mon, 13 Feb 2012 12:08:27 +0100
-X-Google-Sender-Auth: t9Z3HR3tEqILGhF8-ChkYHfmbuk
-Message-ID: <CAO+b5-qADXdd4_MUn_yNNXtYSyEBdmT+iW0AtdqjyAcGp=H6ZA@mail.gmail.com>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-From: Bart Van Assche <bvanassche@acm.org>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mst@redhat.com, rusty@rustcorp.com.au
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202101443570.31424@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 8:05 AM, Christian Borntraeger
-<borntraeger@de.ibm.com> wrote:
-> On 12/02/12 21:16, James Bottomley wrote:
-> > Could someone please explain to me why you can't simply fix virtio-blk?
->
-> I dont think that virtio-scsi will replace virtio-blk everywhere. For non-scsi
-> block devices, image files or logical volumes virtio-blk seems to be the right
-> approach, I think.
->
-> > Or would virtio-blk maintainers give a reason why they're unwilling to
-> > have it fixed?
->
-> I dont consider virtio-blk broken. It just doesnt cover everything.
+On Fri, Feb 10, 2012 at 03:01:37PM -0600, Christoph Lameter wrote:
+> On Fri, 10 Feb 2012, Mel Gorman wrote:
+> 
+> > I have an updated version of this 02/15 patch below. It passed testing
+> > and is a lot less invasive than the previous release. As you suggested,
+> > it uses page flags and the bulk of the complexity is only executed if
+> > someone is using network-backed storage.
+> 
+> Hmmm.. hmm... Still modifies the hotpaths of the allocators for a
+> pretty exotic feature.
+> 
+> > > On top of that you want to add
+> > > special code in various subsystems to also do that over the network.
+> > > Sigh. I think we agreed a while back that we want to limit the amount of
+> > > I/O triggered from reclaim paths?
+> >
+> > Specifically we wanted to reduce or stop page reclaim calling ->writepage()
+> > for file-backed pages because it generated awful IO patterns and deep
+> > call stacks. We still write anonymous pages from page reclaim because we
+> > do not have a dedicated thread for writing to swap. It is expected that
+> > the call stack for writing to network storage would be less than a
+> > filesystem.
+> >
+> > > AFAICT many filesystems do not support
+> > > writeout from reclaim anymore because of all the issues that arise at that
+> > > level.
+> > >
+> >
+> > NBD is a block device so filesystem restrictions like you mention do not
+> > apply. In NFS, the direct_IO paths are used to write pages not
+> > ->writepage so again the restriction does not apply.
+> 
+> Block devices are a little simpler ok. But it is still not a desirable
+> thing to do (just think about raid and other complex filesystems that may
+> also have to do allocations).
 
-Although I'm not sure whether that helps here: since about a year
-there is software present in the upstream kernel that allows to use
-any block device or even a file as a SCSI device.
+Swap IO is never desirable but it has to happen somehow and right now, we
+only initiate swap IO from direct reclaim or kswapd. For complex filesystems,
+it is mandatory if they are using direct_IO like I do for NFS that they
+pin the necessary structures in advance to avoid any allocations in their
+reclaim path. I do not expect RAID to be used over network-based swap files.
 
-Bart.
+> I do not think that block device writers
+> code with the VM in mind. In the case of network devices as block devices
+> we have a pretty serious problem since the network subsystem is certainly
+> not designed to be called from VM reclaim code that may be triggered
+> arbitrarily from deeply nested other code in the kernel. Implementing
+> something like this invites breakage all over the place to show up.
+> 
+
+The whole point of the series is to allow the possibility of using
+network-based swap devices starting with NBD and with NFS in the related
+series. swap-over-NFS has been used for the last few years by enterprise
+distros and while bugs do get reported, they are rare.
+
+As the person that introduced this, I would support it in mainline for
+NBD and NFS if it was merged.
+
+> > index 8b3b8cf..6a3fa1c 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -695,6 +695,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+> >  	trace_mm_page_free(page, order);
+> >  	kmemcheck_free_shadow(page, order);
+> >
+> > +	page->pfmemalloc = false;
+> >  	if (PageAnon(page))
+> >  		page->mapping = NULL;
+> >  	for (i = 0; i < (1 << order); i++)
+> > @@ -1221,6 +1222,7 @@ void free_hot_cold_page(struct page *page, int cold)
+> >
+> >  	migratetype = get_pageblock_migratetype(page);
+> >  	set_page_private(page, migratetype);
+> > +	page->pfmemalloc = false;
+> >  	local_irq_save(flags);
+> >  	if (unlikely(wasMlocked))
+> >  		free_page_mlock(page);
+> 
+> page allocator hotpaths affected.
+> 
+
+I can remove these but then page->pfmemalloc has to be set on the allocation
+side. It's a single write to a dirty cache line that is already local to
+the processor. It's not measurable although I accept that the page
+allocator paths could do with a diet in general.
+
+> > diff --git a/mm/slab.c b/mm/slab.c
+> > index f0bd785..f322dc2 100644
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -123,6 +123,8 @@
+> >
+> >  #include <trace/events/kmem.h>
+> >
+> > +#include	"internal.h"
+> > +
+> >  /*
+> >   * DEBUG	- 1 for kmem_cache_create() to honour; SLAB_RED_ZONE & SLAB_POISON.
+> >   *		  0 for faster, smaller code (especially in the critical paths).
+> > @@ -151,6 +153,12 @@
+> >  #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
+> >  #endif
+> >
+> > +/*
+> > + * true if a page was allocated from pfmemalloc reserves for network-based
+> > + * swap
+> > + */
+> > +static bool pfmemalloc_active;
+> 
+> Implying an additional cacheline use in critical slab paths?
+
+This was the alternative to altering the slub structures.
+
+> Hopefully grouped with other variables already in cache.
+> 
+
+This is the expectation. I considered tagging it read_mostly but didn't
+at the time. I will now because it is genuinely expected to be
+read-mostly and in the case where it is being written to, we're also
+using network-based swap and the cost of a cache miss will be negligible
+in comparison to swapping under memory pressure to a network.
+
+> > @@ -3243,23 +3380,35 @@ static inline void *____cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+> >  {
+> >  	void *objp;
+> >  	struct array_cache *ac;
+> > +	bool force_refill = false;
+> 
+> ... hitting the hotpath here.
+> 
+> > @@ -3693,12 +3845,12 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+> >
+> >  	if (likely(ac->avail < ac->limit)) {
+> >  		STATS_INC_FREEHIT(cachep);
+> > -		ac->entry[ac->avail++] = objp;
+> > +		ac_put_obj(cachep, ac, objp);
+> >  		return;
+> >  	} else {
+> >  		STATS_INC_FREEMISS(cachep);
+> >  		cache_flusharray(cachep, ac);
+> > -		ac->entry[ac->avail++] = objp;
+> > +		ac_put_obj(cachep, ac, objp);
+> >  	}
+> >  }
+> 
+> and here.
+> 
+
+The impact of ac_put_obj() is reduced in a later patch and becomes just
+an additional read of a global variable. There was not an obvious way to
+me to ensure pfmemalloc pages were not used for !pfmemalloc allocations
+without having some sort of impact.
+
+> 
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 4907563..8eed0de 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> 
+> > @@ -2304,8 +2327,8 @@ redo:
+> >  	barrier();
+> >
+> >  	object = c->freelist;
+> > -	if (unlikely(!object || !node_match(c, node)))
+> > -
+> > +	if (unlikely(!object || !node_match(c, node) ||
+> > +					!pfmemalloc_match(c, gfpflags)))
+> >  		object = __slab_alloc(s, gfpflags, node, addr, c);
+> >
+> >  	else {
+> 
+> 
+> Modification to hotpath. That could be fixed here by forcing pfmemalloc
+> (like debug allocs) to always go to the slow path and checking in there
+> instead. Just keep c->freelist == NULL.
+> 
+
+I picked up your patch for this, thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
