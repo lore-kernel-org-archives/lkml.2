@@ -1,126 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab2BMRNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:13:37 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63480 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2BMRNg (ORCPT
+	id S1757316Ab2BMRUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 12:20:25 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:55628 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755503Ab2BMRUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:13:36 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] block: avoid false positive warnings on ioctl to partition
-Date: Mon, 13 Feb 2012 18:13:26 +0100
-Message-Id: <1329153206-31355-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 13 Feb 2012 12:20:23 -0500
+Message-ID: <4F394635.6030707@xenotime.net>
+Date: Mon, 13 Feb 2012 09:19:49 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+CC: trivial@kernel.org, lucas.demarchi@profusion.mobi,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] [trivial] Documentation: broken URL in filesystems
+References: <1329124192-27461-1-git-send-email-michael.opdenacker@free-electrons.com> <1329124192-27461-2-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1329124192-27461-2-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a month of reports, the warnings from non-whitelisted ioctls to
-a partitions can be classified in three groups.
+On 02/13/2012 01:09 AM, Michael Opdenacker wrote:
+> Fix broken link in Documentation/filesystem, replacing
+> ftp://ftp.uk.linux.org/pub/linux/sct/fs/jfs/journal-design.ps.gz
+> by a URL on http://boot.kernel.org
 
-BLKFLSBUF and BLKROSET are always sent to devices.  Not having them in
-the whitelist did not cause any visible harm, but anyway they can and
-should be added to the whitelist.
+Please drop the "boot." portion.  It is not needed.
 
-Many unrecognized ioctls are sent to partitions as an attempt to probe for
-CD-ROMs, floppies and other kinds of devices.  Like CDROM_GET_CAPABILITY,
-they can be blocked safely.
+http://kernel.org/pub/linux/kernel/people/sct/ext3/
+works fine.
 
-Of the actual SCSI ioctls, only SG_IO was reported in the wild (twice).
-udev's scsi_id can issue INQUIRY commands if passed a partition; this
-only occurs with custom rules and is strictly speaking invalid, but we
-need a transition period so that people can fix their configuration.
-zfs-fuse also can issue SYNCHRONIZE CACHE commands, where it should
-simply use fdatasync.
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  Documentation/DocBook/filesystems.tmpl |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/filesystems.tmpl b/Documentation/DocBook/filesystems.tmpl
+> index f51f285..2b3de6d 100644
+> --- a/Documentation/DocBook/filesystems.tmpl
+> +++ b/Documentation/DocBook/filesystems.tmpl
+> @@ -387,7 +387,7 @@ an example.
+>       <title>See also</title>
+>  	<para>
+>  	  <citation>
+> -	   <ulink url="ftp://ftp.uk.linux.org/pub/linux/sct/fs/jfs/journal-design.ps.gz">
+> +	   <ulink url="http://boot.kernel.org/pub/linux/kernel/people/sct/ext3/journal-design.ps.gz">
+>  	   	Journaling the Linux ext2fs Filesystem, LinuxExpo 98, Stephen Tweedie
+>  	   </ulink>
+>  	  </citation>
 
-Therefore, this patch silently blocks all ioctls except SG_IO, since
-all of them turned out to be false positives; in case some escaped, it
-should be easily diagnosable or at least bisectable.  The warning text
-is separated for root and non-root, and the deprecation period for root
-users is set to end a year from now.
 
-Cc: stable@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-	Note: I will take care of the stable backport as soon as this
-	patch or something similar hits Linus's tree.
-
- block/scsi_ioctl.c |   43 ++++++++++++++++++++++++++++++-------------
- 1 files changed, 30 insertions(+), 13 deletions(-)
-
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 260fa80..fe86923 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -696,9 +696,6 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 	if (bd && bd == bd->bd_contains)
- 		return 0;
- 
--	/* Actually none of these is particularly useful on a partition,
--	 * but they are safe.
--	 */
- 	switch (cmd) {
- 	case SCSI_IOCTL_GET_IDLUN:
- 	case SCSI_IOCTL_GET_BUS_NUMBER:
-@@ -710,22 +707,42 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 	case SG_GET_RESERVED_SIZE:
- 	case SG_SET_RESERVED_SIZE:
- 	case SG_EMULATED_HOST:
-+		/* Actually none of these is particularly useful on a partition,
-+		 * but they are safe.
-+		 */
- 		return 0;
--	case CDROM_GET_CAPABILITY:
--		/* Keep this until we remove the printk below.  udev sends it
--		 * and we do not want to spam dmesg about it.   CD-ROMs do
--		 * not have partitions, so we get here only for disks.
-+
-+	case BLKROSET:
-+	case BLKFLSBUF:
-+		/* These are generic block layer ioctls that are nevertheless
-+		 * passed down to devices.  They are certainly valid for
-+		 * partitions!
-+		 */
-+		return 0;
-+
-+	case SG_IO:
-+		/* Accept this for non-root users during a one-year transition
-+		 * period.
- 		 */
--		return -ENOIOCTLCMD;
--	default:
- 		break;
-+
-+	default:
-+		/* In particular, rule out all resets and host-specific ioctls.  */
-+		return -ENOIOCTLCMD;
- 	}
- 
--	/* In particular, rule out all resets and host-specific ioctls.  */
--	printk_ratelimited(KERN_WARNING
--			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-+	if (capable(CAP_SYS_RAWIO)) {
-+		printk_ratelimited(KERN_WARNING
-+				   "%s: SG_IO to a partition will be "
-+				   "disallowed in January 2013\n",
-+				   current->comm);
-+		return 0;
-+	}
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
-+	printk_ratelimited(KERN_WARNING
-+			   "%s: rejecting SG_IO to a partition for non-root user\n",
-+			   current->comm);
-+	return -ENOIOCTLCMD;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
 -- 
-1.7.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
