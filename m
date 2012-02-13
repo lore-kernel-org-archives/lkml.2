@@ -1,90 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab2BMFUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:20:25 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:65447 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751262Ab2BMFUV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:20:21 -0500
+	id S1751291Ab2BMFWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:22:24 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:58512 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2BMFWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 00:22:23 -0500
+Message-ID: <4F389DE0.6020904@linux.vnet.ibm.com>
+Date: Mon, 13 Feb 2012 10:51:36 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_Zsxj9VKpnB7fGWnkqRUKG1DahCV6dKyGTfeAybhqn4KUw@mail.gmail.com>
-References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
-	<m2pqdr2tyq.fsf@bob.laptop.org>
-	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
-	<4F30E19B.9020503@intel.com>
-	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
-	<4F310529.4020101@intel.com>
-	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
-	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
-	<CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
-	<CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
-	<4F31B789.9020509@samsung.com>
-	<CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
-	<15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
-	<CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
-	<4B11A480-8122-4A0B-A0EE-E1E95477F985@marvell.com>
-	<CAAJw_Zu=M7R5cyVRmbd3Tz7MipgX_b5J4g5Z4m+SsiHP-3Uxgw@mail.gmail.com>
-	<CAAJw_ZuQaDka+xKfwfvZCkPwfqJNsd6+UC4bfww=_G1XhaS5QA@mail.gmail.com>
-	<CAAJw_Zsxj9VKpnB7fGWnkqRUKG1DahCV6dKyGTfeAybhqn4KUw@mail.gmail.com>
-Date: Mon, 13 Feb 2012 13:20:21 +0800
-Message-ID: <CAAJw_Zu7TitPqM3Oqo0ySci_VQ8xm9YMghiQ1HLY7nwCrcYnVg@mail.gmail.com>
-Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Philip Rakity <prakity@marvell.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "arindam.nath@amd.com" <arindam.nath@amd.com>,
-        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c
+ static
+References: <201202120003.20879.rjw@sisk.pl> <201202120004.48991.rjw@sisk.pl> <4F37D1AF.5070700@linux.vnet.ibm.com> <201202122224.14640.rjw@sisk.pl>
+In-Reply-To: <201202122224.14640.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021305-3864-0000-0000-0000015CC3FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 1:16 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Mon, Feb 13, 2012 at 12:41 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->> I ran tests for frequency that works dd out 1G of data from 8MHz to
->> 16MHz, and it seems frequency less than 8.4MHz can only transfer at
->> rate of 14.3MB/s and above 8.4MHz, speed goes up to 18.3 MB/s. Above
->> 17MHz, errors encounters.
+On 02/13/2012 02:54 AM, Rafael J. Wysocki wrote:
+
+> On Sunday, February 12, 2012, Srivatsa S. Bhat wrote:
+>> On 02/12/2012 04:34 AM, Rafael J. Wysocki wrote:
 >>
->> hz1  8000000  73.5029 s  14.3 MB/s
->> hz2  8000000  73.4740 s  14.3 MB/s
->> hz3  8000000  73.3982 s  14.3 MB/s
->> hz1  8200000  71.9677 s  14.6 MB/s
->> hz2  8200000  73.4936 s  14.3 MB/s
->> hz3  8200000  73.3462 s  14.3 MB/s
->> hz1  8400000  56.6296 s  18.5 MB/s
->> hz2  8400000  56.7616 s  18.5 MB/s
->> hz3  8400000  56.7926 s  18.5 MB/s
->> hz1  8600000  56.6622 s  18.5 MB/s
->> hz2  8600000  56.7201 s  18.5 MB/s
->> hz3  8600000  56.6476 s  18.5 MB/s
->> hz1  8800000  56.8846 s  18.4 MB/s
->> hz2  8800000  56.8226 s  18.5 MB/s
->> hz3  8800000  56.7070 s  18.5 MB/s
->
-> I've turned on write, and there's no error writing. But speed is
-> slower than accessing it via USB2 SD card reader. Same SD.
->
+>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+>>>
+>>> The enter_state() function in kernel/power/suspend.c should be
+>>> static and state_store() in kernel/power/suspend.c should call
+>>> pm_suspend() instead of it, so make that happen (which also reduces
+>>> code duplication related to suspend statistics).
+>>>
+>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>> ---
+>>>  kernel/power/main.c    |    6 +-----
+>>>  kernel/power/power.h   |    2 --
+>>>  kernel/power/suspend.c |    2 +-
+>>>  3 files changed, 2 insertions(+), 8 deletions(-)
+>>>
+>>> Index: linux/kernel/power/main.c
+>>> ===================================================================
+>>> --- linux.orig/kernel/power/main.c
+>>> +++ linux/kernel/power/main.c
+>>> @@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
+>>>  #ifdef CONFIG_SUSPEND
+>>>  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+>>>  		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+>>> -			break;
+>>> -	}
+>>> -	if (state < PM_SUSPEND_MAX && *s) {
+>>> -		error = enter_state(state);
+>>> -		suspend_stats_update(error);
+>>> +			error = pm_suspend(state);
+>>
+>>
+>> This code will not stop after calling pm_suspend(). It will try more iterations
+>> in the for loop right?
+> 
+> Well, only one string in pm_states[] can be matched at a time, but I agree that
+> it doesn't make sense to continue the loop after we've found a match.
+> 
+>> We can probably keep the 'for' loop as it is, and just replace the 'if' block
+>> following the 'for' loop by: error = pm_suspend(state);
+> 
+> I think the patch below is correct.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Sleep: Make enter_state() in kernel/power/suspend.c static
+> 
+> The enter_state() function in kernel/power/suspend.c should be
+> static and state_store() in kernel/power/suspend.c should call
+> pm_suspend() instead of it, so make that happen (which also reduces
+> code duplication related to suspend statistics).
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
 
-Via SD PCI
-18.779 sec  4.04 %cpu
 
-Via USB2.0 Card Reader
-12.205 sec  2.04 %cpu
+Yeah, this version of the patch will work fine.
 
-Via USB3.0 Card Reader
-11.427 sec  2.01 %cpu
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
+Regards,
+Srivatsa S. Bhat
 
-Shouldn't PCI SD be faster? Same SD used for all tests.
+>  kernel/power/main.c    |    8 +++-----
+>  kernel/power/power.h   |    2 --
+>  kernel/power/suspend.c |    2 +-
+>  3 files changed, 4 insertions(+), 8 deletions(-)
+> 
+> Index: linux/kernel/power/main.c
+> ===================================================================
+> --- linux.orig/kernel/power/main.c
+> +++ linux/kernel/power/main.c
+> @@ -291,12 +291,10 @@ static ssize_t state_store(struct kobjec
+> 
+>  #ifdef CONFIG_SUSPEND
+>  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+> -		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+> +		if (*s && len == strlen(*s) && !strncmp(buf, *s, len)) {
+> +			error = pm_suspend(state);
+>  			break;
+> -	}
+> -	if (state < PM_SUSPEND_MAX && *s) {
+> -		error = enter_state(state);
+> -		suspend_stats_update(error);
+> +		}
+>  	}
+>  #endif
+> 
+> Index: linux/kernel/power/power.h
+> ===================================================================
+> --- linux.orig/kernel/power/power.h
+> +++ linux/kernel/power/power.h
+> @@ -177,13 +177,11 @@ extern const char *const pm_states[];
+> 
+>  extern bool valid_state(suspend_state_t state);
+>  extern int suspend_devices_and_enter(suspend_state_t state);
+> -extern int enter_state(suspend_state_t state);
+>  #else /* !CONFIG_SUSPEND */
+>  static inline int suspend_devices_and_enter(suspend_state_t state)
+>  {
+>  	return -ENOSYS;
+>  }
+> -static inline int enter_state(suspend_state_t state) { return -ENOSYS; }
+>  static inline bool valid_state(suspend_state_t state) { return false; }
+>  #endif /* !CONFIG_SUSPEND */
+> 
+> Index: linux/kernel/power/suspend.c
+> ===================================================================
+> --- linux.orig/kernel/power/suspend.c
+> +++ linux/kernel/power/suspend.c
+> @@ -272,7 +272,7 @@ static void suspend_finish(void)
+>   * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
+>   * system enter the given sleep state and clean up after wakeup.
+>   */
+> -int enter_state(suspend_state_t state)
+> +static int enter_state(suspend_state_t state)
+>  {
+>  	int error;
+> 
+> 
 
-THanks,
-Jeff
-
-
-Thanks,
-Jeff
