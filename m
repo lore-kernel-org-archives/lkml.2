@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab2BMNS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:18:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34817 "EHLO mx1.redhat.com"
+	id S1756672Ab2BMN3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:29:42 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:51074 "EHLO ackle.nomi.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab2BMNS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:18:56 -0500
-Date: Mon, 13 Feb 2012 15:18:48 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: ronnie sahlberg <ronniesahlberg@gmail.com>
-Cc: Dor Laor <dlaor@redhat.com>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-Message-ID: <20120213131848.GD26773@redhat.com>
-References: <4F313526.2050907@redhat.com>
- <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
- <4F3390FB.80107@redhat.com>
- <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
- <4F38B657.7060405@de.ibm.com>
- <4F38C27E.7030300@redhat.com>
- <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
- <4F3907EB.4030402@redhat.com>
- <20120213130005.GB26773@redhat.com>
- <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+	id S1751007Ab2BMN3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 08:29:41 -0500
+Date: Mon, 13 Feb 2012 14:29:37 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: wwguy <wey-yi.w.guy@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20120213132937.GA17203@nomi.cz>
+References: <20111111150105.GA25437@nomi.cz> <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz> <1321755233.22510.1.camel@wwguy-ubuntu> <20111120032016.GA14520@nomi.cz> <1321763314.22510.4.camel@wwguy-ubuntu> <20111120204007.GA7273@nomi.cz> <20120210180929.GA17733@nomi.cz> <20120213092538.GA6214@redhat.com> <20120213130903.GA7355@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120213130903.GA7355@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 12:13:36AM +1100, ronnie sahlberg wrote:
-> On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
-> >> Only if you use the pci multi-function option but that kills
-> >> standard hot unplug
-> >
-> > It doesn't kill it as such, rather you can't unplug luns individually.
-> 
-> Isnt that just a consequence of the current implementation rather than
-> a SCSI limitation?
+Hi,
 
-Yes.
+On Mon, Feb 13, 2012 at 02:09:04PM +0100, Stanislaw Gruszka wrote:
+> I also found this bug report
+> https://bugzilla.kernel.org/show_bug.cgi?id=37742
+> where one user report iwlwifi corruption catched by IOMMU.
 
-> A different way to do hoplug could be to flag all devices as removable
-> in the standard inq page then
-> leave the LUN there persistently and what you remove/add is not the
-> LUN device itself but just the media in the device.
-> 
-> Instead of hot-plug remove the LUN,  hot-plug becomes "media eject" or
-> "media insert".
-> The device remains present all time, you never remove it, but instead
-> hot-plug controls if the media is present or not.
-> 
-> 
-> This would require implementing at least START_STOP_UNIT and
-> PREVENT_ALLOW_MEDIUM_REMOVAL opcode emulation from SBC.
-> 
-> 
-> regards
-> ronnie sahlberg
+I wasn't able to catch anything using IOMMU, and I also wasn't able to
+reproduce the issue using any userspace memory checking tool. Hence I tend to
+believe we're not dealing with a memory corruption at all, perhaps something
+like certain CPU flags/registers not being correctly saved/restored during
+wlan interrupts or something. When I have a sufficient amount of free time,
+I'll try to check this hypothesis and perhaps pinpoint the instruction the
+result of which is corrupted during wlan operation.
 
-That would work.
+> Tomáš, I do not remember, do you have the same problems on
+> older kernels i.e < 3.0
+
+Yeah. I was able to reproduce it with 2.6.38.8 and 2.6.39.4 at least.
+
+Regards,
+-- 
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
