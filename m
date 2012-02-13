@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2BMSVD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:21:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24795 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757456Ab2BMSVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:21:01 -0500
-From: Igor Mammedov <imammedo@redhat.com>
+	id S1757544Ab2BMSaQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:30:16 -0500
+Received: from hades.mikemestnik.net ([184.106.158.151]:43713 "EHLO
+	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755090Ab2BMSaO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 13:30:14 -0500
+Message-ID: <4F3956B3.1060604@mikemestnik.net>
+Date: Mon, 13 Feb 2012 12:30:11 -0600
+From: Mike Mestnik <cheako@mikemestnik.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        riel@redhat.com, amit.shah@redhat.com, mtosatti@redhat.com
-Subject: [PATCH] BUG in pv_clock when overflow condition is detected
-Date: Mon, 13 Feb 2012 19:20:56 +0100
-Message-Id: <1329157256-19926-1-git-send-email-imammedo@redhat.com>
+Subject: Sysreq during system hang where ssh/screen still accessible.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG when overflow occurs at pvclock.c:pvclock_get_nsec_offset
+Hello,
+   I have an unusual hang:
+The box is responding to monitor wakeup key presses and putting the 
+display to sleep after idle, however the screen is always blank.
 
-    u64 delta = native_read_tsc() - shadow->tsc_timestamp;
+ From the network side a previously started root ssh screen session can 
+create more views,but the shell never starts, neither does ls from an 
+existing shell.
 
-this might happen at an attempt to read an uninitialized yet clock.
-It won't prevent stalls and hangs but at least it won't do it silently.
+I've configured remote logging and there is noting in any of the logs to 
+indicate a problem, smart-tools is installed.
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
- arch/x86/kernel/pvclock.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+The remote log(over SCTP) is still connected and the IRC client is still 
+connected.
 
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 42eb330..35a6190 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -43,7 +43,10 @@ void pvclock_set_flags(u8 flags)
- 
- static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
- {
--	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
-+	u64 delta;
-+	u64 tsc = native_read_tsc();
-+	BUG_ON(tsc < shadow->tsc_timestamp);
-+	delta = tsc - shadow->tsc_timestamp;
- 	return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
- 				   shadow->tsc_shift);
- }
--- 
-1.7.7.6
+Kernel messages are being logged, last msg from apparmor about empathy.
+
+Key presses wake up monitor, but sysreq-s is not logging anything.
+
+No further ssh shells able to check, but I don't think that dmesg would 
+even start.
+
+However ssh/screen is still responsive to create new views and switch 
+views, but the shell never starts.
+
+Feb 12 17:33:33: The only error is smatd: Prefailure: Spin_Up_Time (3) 
+changed to: 197
+Feb 13 12:54 AM an email http://pastebin.com/A8srcY7v
+However nothing in the _remote_ log around 1AM/12:54.
+
+Any thoughts?
+linux-image-3.2.0-15-generic-pae
+System specs.
+http://pastebin.com/35NwE0G1
 
