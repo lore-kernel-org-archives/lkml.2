@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2BMN3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:29:42 -0500
-Received: from ackle.nomi.cz ([81.31.33.35]:51074 "EHLO ackle.nomi.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab2BMN3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:29:41 -0500
-Date: Mon, 13 Feb 2012 14:29:37 +0100
-From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: wwguy <wey-yi.w.guy@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20120213132937.GA17203@nomi.cz>
-References: <20111111150105.GA25437@nomi.cz> <20111114140714.GD2513@redhat.com> <20111119181106.GA5515@nomi.cz> <1321755233.22510.1.camel@wwguy-ubuntu> <20111120032016.GA14520@nomi.cz> <1321763314.22510.4.camel@wwguy-ubuntu> <20111120204007.GA7273@nomi.cz> <20120210180929.GA17733@nomi.cz> <20120213092538.GA6214@redhat.com> <20120213130903.GA7355@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120213130903.GA7355@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756674Ab2BMNn1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:43:27 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:35029
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751157Ab2BMNnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 08:43:25 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] Documentation: Fix Broken URL "freshmeat"
+Date: Mon, 13 Feb 2012 22:42:58 +0900
+Message-Id: <1329140578-2045-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix broken URL in documents "freshmeat" to "freecode" in
+Documentation/filesystems/ramfs-rootfs-initramfs.txt,
+Documentation/scsi/scsi-generic.txt
+Documentation/usb/mtouchusb.txt
 
-On Mon, Feb 13, 2012 at 02:09:04PM +0100, Stanislaw Gruszka wrote:
-> I also found this bug report
-> https://bugzilla.kernel.org/show_bug.cgi?id=37742
-> where one user report iwlwifi corruption catched by IOMMU.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ .../filesystems/ramfs-rootfs-initramfs.txt         |    2 +-
+ Documentation/scsi/scsi-generic.txt                |    2 +-
+ Documentation/usb/mtouchusb.txt                    |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-I wasn't able to catch anything using IOMMU, and I also wasn't able to
-reproduce the issue using any userspace memory checking tool. Hence I tend to
-believe we're not dealing with a memory corruption at all, perhaps something
-like certain CPU flags/registers not being correctly saved/restored during
-wlan interrupts or something. When I have a sufficient amount of free time,
-I'll try to check this hypothesis and perhaps pinpoint the instruction the
-result of which is corrupted during wlan operation.
-
-> Tomáš, I do not remember, do you have the same problems on
-> older kernels i.e < 3.0
-
-Yeah. I was able to reproduce it with 2.6.38.8 and 2.6.39.4 at least.
-
-Regards,
+diff --git a/Documentation/filesystems/ramfs-rootfs-initramfs.txt b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+index a8273d5..59b4a09 100644
+--- a/Documentation/filesystems/ramfs-rootfs-initramfs.txt
++++ b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
+@@ -297,7 +297,7 @@ the above threads) is:
+    either way about the archive format, and there are alternative tools,
+    such as:
+ 
+-     http://freshmeat.net/projects/afio/
++     http://freecode.com/projects/afio
+ 
+ 2) The cpio archive format chosen by the kernel is simpler and cleaner (and
+    thus easier to create and parse) than any of the (literally dozens of)
+diff --git a/Documentation/scsi/scsi-generic.txt b/Documentation/scsi/scsi-generic.txt
+index 0a22ab8..51be20a 100644
+--- a/Documentation/scsi/scsi-generic.txt
++++ b/Documentation/scsi/scsi-generic.txt
+@@ -62,7 +62,7 @@ There are two packages of sg utilities:
+                 and earlier
+ Both packages will work in the lk 2.4 series however sg3_utils offers more
+ capabilities. They can be found at: http://sg.danny.cz/sg/sg3_utils.html and 
+-freshmeat.net
++freecode.com
+ 
+ Another approach is to look at the applications that use the sg driver.
+ These include cdrecord, cdparanoia, SANE and cdrdao.
+diff --git a/Documentation/usb/mtouchusb.txt b/Documentation/usb/mtouchusb.txt
+index 86302cd..a91adb2 100644
+--- a/Documentation/usb/mtouchusb.txt
++++ b/Documentation/usb/mtouchusb.txt
+@@ -1,7 +1,7 @@
+ CHANGES
+ 
+ - 0.3 - Created based off of scanner & INSTALL from the original touchscreen
+-  driver on freshmeat (http://freshmeat.net/projects/3mtouchscreendriver)
++  driver on freecode (http://freecode.com/projects/3mtouchscreendriver)
+ - Amended for linux-2.4.18, then 2.4.19
+ 
+ - 0.5 - Complete rewrite using Linux Input in 2.6.3
 -- 
-Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
+1.7.6.5
+
