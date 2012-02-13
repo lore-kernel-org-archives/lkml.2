@@ -1,148 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751084Ab2BMFPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:15:47 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45146 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2BMFPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:15:45 -0500
-Date: Mon, 13 Feb 2012 16:15:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the kmap_atomic tree with the staging
- tree
-Message-Id: <20120213161537.3cf109d3f9c4c577f8fcb789@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx"
+	id S1751116Ab2BMFQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 00:16:36 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:55334 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750873Ab2BMFQf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 00:16:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAAJw_ZuQaDka+xKfwfvZCkPwfqJNsd6+UC4bfww=_G1XhaS5QA@mail.gmail.com>
+References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
+	<m2pqdr2tyq.fsf@bob.laptop.org>
+	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
+	<4F30E19B.9020503@intel.com>
+	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
+	<4F310529.4020101@intel.com>
+	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
+	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
+	<CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
+	<CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
+	<4F31B789.9020509@samsung.com>
+	<CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
+	<15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
+	<CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
+	<4B11A480-8122-4A0B-A0EE-E1E95477F985@marvell.com>
+	<CAAJw_Zu=M7R5cyVRmbd3Tz7MipgX_b5J4g5Z4m+SsiHP-3Uxgw@mail.gmail.com>
+	<CAAJw_ZuQaDka+xKfwfvZCkPwfqJNsd6+UC4bfww=_G1XhaS5QA@mail.gmail.com>
+Date: Mon, 13 Feb 2012 13:16:34 +0800
+Message-ID: <CAAJw_Zsxj9VKpnB7fGWnkqRUKG1DahCV6dKyGTfeAybhqn4KUw@mail.gmail.com>
+Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Philip Rakity <prakity@marvell.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "arindam.nath@amd.com" <arindam.nath@amd.com>,
+        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 13, 2012 at 12:41 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> I ran tests for frequency that works dd out 1G of data from 8MHz to
+> 16MHz, and it seems frequency less than 8.4MHz can only transfer at
+> rate of 14.3MB/s and above 8.4MHz, speed goes up to 18.3 MB/s. Above
+> 17MHz, errors encounters.
+>
+> hz1  8000000  73.5029 s  14.3 MB/s
+> hz2  8000000  73.4740 s  14.3 MB/s
+> hz3  8000000  73.3982 s  14.3 MB/s
+> hz1  8200000  71.9677 s  14.6 MB/s
+> hz2  8200000  73.4936 s  14.3 MB/s
+> hz3  8200000  73.3462 s  14.3 MB/s
+> hz1  8400000  56.6296 s  18.5 MB/s
+> hz2  8400000  56.7616 s  18.5 MB/s
+> hz3  8400000  56.7926 s  18.5 MB/s
+> hz1  8600000  56.6622 s  18.5 MB/s
+> hz2  8600000  56.7201 s  18.5 MB/s
+> hz3  8600000  56.6476 s  18.5 MB/s
+> hz1  8800000  56.8846 s  18.4 MB/s
+> hz2  8800000  56.8226 s  18.5 MB/s
+> hz3  8800000  56.7070 s  18.5 MB/s
 
-Hi Cong,
+I've turned on write, and there's no error writing. But speed is
+slower than accessing it via USB2 SD card reader. Same SD.
 
-Today's linux-next merge of the kmap_atomic tree got a conflict in
-drivers/staging/zcache/zcache-main.c between commit a49aeb1de585
-("staging: zcache: replace xvmalloc with zsmalloc") (and mayb others)
-from the staging tree and commit 1edbcaee3bbe ("zcache: remove the second
-argument of k [un]map_atomic()") from the kmap_atomic tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/zcache/zcache-main.c
-index ccfa854,f0843e8a..0000000
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@@ -455,14 -421,13 +455,14 @@@ static int zbud_decompress(struct page=20
-  	}
-  	ASSERT_SENTINEL(zh, ZBH);
-  	BUG_ON(zh->size =3D=3D 0 || zh->size > zbud_max_buddy_size());
-- 	to_va =3D kmap_atomic(page, KM_USER0);
-+ 	to_va =3D kmap_atomic(page);
-  	size =3D zh->size;
-  	from_va =3D zbud_data(zh, size);
- -	ret =3D lzo1x_decompress_safe(from_va, size, to_va, &out_len);
- -	BUG_ON(ret !=3D LZO_E_OK);
- +	ret =3D zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, from_va, size,
- +				to_va, &out_len);
- +	BUG_ON(ret);
-  	BUG_ON(out_len !=3D PAGE_SIZE);
-- 	kunmap_atomic(to_va, KM_USER0);
-+ 	kunmap_atomic(to_va);
-  out:
-  	spin_unlock(&zbpg->lock);
-  	return ret;
-@@@ -745,22 -708,21 +745,22 @@@ static void zv_free(struct zs_pool *poo
-  	local_irq_restore(flags);
-  }
- =20
- -static void zv_decompress(struct page *page, struct zv_hdr *zv)
- +static void zv_decompress(struct page *page, void *handle)
-  {
- -	size_t clen =3D PAGE_SIZE;
- +	unsigned int clen =3D PAGE_SIZE;
-  	char *to_va;
- -	unsigned size;
-  	int ret;
- +	struct zv_hdr *zv;
- =20
- +	zv =3D zs_map_object(zcache_host.zspool, handle);
- +	BUG_ON(zv->size =3D=3D 0);
-  	ASSERT_SENTINEL(zv, ZVH);
-- 	to_va =3D kmap_atomic(page, KM_USER0);
- -	size =3D xv_get_object_size(zv) - sizeof(*zv);
- -	BUG_ON(size =3D=3D 0);
-+ 	to_va =3D kmap_atomic(page);
- -	ret =3D lzo1x_decompress_safe((char *)zv + sizeof(*zv),
- -					size, to_va, &clen);
- +	ret =3D zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, (char *)zv + sizeof(*zv=
-),
- +				zv->size, to_va, &clen);
-- 	kunmap_atomic(to_va, KM_USER0);
-+ 	kunmap_atomic(to_va);
- -	BUG_ON(ret !=3D LZO_E_OK);
- +	zs_unmap_object(zcache_host.zspool, handle);
- +	BUG_ON(ret);
-  	BUG_ON(clen !=3D PAGE_SIZE);
-  }
- =20
-@@@ -1333,16 -1297,15 +1333,16 @@@ static int zcache_compress(struct page=20
-  	char *from_va;
- =20
-  	BUG_ON(!irqs_disabled());
- -	if (unlikely(dmem =3D=3D NULL || wmem =3D=3D NULL))
- -		goto out;  /* no buffer, so can't compress */
- +	if (unlikely(dmem =3D=3D NULL))
- +		goto out;  /* no buffer or no compressor so can't compress */
- +	*out_len =3D PAGE_SIZE << ZCACHE_DSTMEM_ORDER;
-- 	from_va =3D kmap_atomic(from, KM_USER0);
-+ 	from_va =3D kmap_atomic(from);
-  	mb();
- -	ret =3D lzo1x_1_compress(from_va, PAGE_SIZE, dmem, out_len, wmem);
- -	BUG_ON(ret !=3D LZO_E_OK);
- +	ret =3D zcache_comp_op(ZCACHE_COMPOP_COMPRESS, from_va, PAGE_SIZE, dmem,
- +				(unsigned int *)out_len);
- +	BUG_ON(ret);
-  	*out_va =3D dmem;
-- 	kunmap_atomic(from_va, KM_USER0);
-+ 	kunmap_atomic(from_va);
-  	ret =3D 1;
-  out:
-  	return ret;
-
---Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPOJx5AAoJEECxmPOUX5FEEM0P/jhyA8+GOus1owYq2AB0LLcz
-bBL0VlGpofOUbRTC+4/YBQ7T2Hed9hB7WqT3MEnR9N55VLMNVBF2ESb1EbzPjPdw
-nEHnvPh7f4ndlNfRYbnuyV2cDKUQewkyMsP2jwNiSQV9M6xsCGVouUJv6/5ok3I5
-AXQnRsEngKQ1kPqUE1N4mIbdIttzloc0fS6HbiChRj7XNillY80Oytr8yYJX0+TI
-nGkZ/p5zHQZyWdsOH3SNhTNG/zZB32HkycrdkTCjhqvQ+4Um7NzZlNP131J2ik8g
-j14DxEhhcBXOAsYJPq6p7wG3T20OXhixHcMnM1JehJF1bTWqv2H3VczIw9j7tpvw
-HxsRBJZOjhrvm7V3ZXHuSplLPMk0xbmeJLrX3cK2hixb1j3raenUTFm4vEem/fU0
-AcBxnApBG6SMKaDmCDe407mpy59F1SAB5MeHwKzcUbdAjql3MWcm1GpJNX2lqeyH
-EjtmCU/jQzlWe+So7mw1Mv/QnrWiIDqXfscx0P9p3e15kskrq/Qxp1UCk8tSQYrA
-BvAXsJ0wGTSfFJV6ThFqO8CHu52iwn7+D6h+QYQDkvVDLHqZBTPVhDSGA2/m8wxZ
-rQvlYh+7450oLRM90kCp9hpabl0P4UnOvcCg5hP8n5KoJG7RW1Z++Hzf9mKxyG+P
-IzDvX9Ew7MRc/or0V6ag
-=0THF
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Feb_2012_16_15_37_+1100_mf5F4fl04_uQgKHx--
+Via SD PCI
+8.779 sec  4.04 %cpu
+Via USB Reader
