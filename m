@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab2BMMuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:50:15 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53912 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab2BMMuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:50:13 -0500
-Subject: Re: [PATCH 03/13] firewire-sbp-target: Add Kconfig, Makefile and
- TODO
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        stefanr@s5r6.in-berlin.de
-In-Reply-To: <1328989452-20921-4-git-send-email-bootc@bootc.net>
-References: <4E4BD560.4010806@bootc.net>
-	 <1328989452-20921-1-git-send-email-bootc@bootc.net>
-	 <1328989452-20921-4-git-send-email-bootc@bootc.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 13 Feb 2012 04:50:10 -0800
-Message-ID: <1329137410.9333.389.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756392Ab2BMMy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:54:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab2BMMyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 07:54:24 -0500
+Message-ID: <4F3907EB.4030402@redhat.com>
+Date: Mon, 13 Feb 2012 14:54:03 +0200
+From: Dor Laor <dlaor@redhat.com>
+Reply-To: dlaor@redhat.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        mst@redhat.com, rusty@rustcorp.com.au,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>  <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>  <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>  <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>  <4F313526.2050907@redhat.com>  <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>  <4F3390FB.80107@redhat.com>  <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>  <4F38B657.7060405@de.ibm.com>  <4F38C27E.7030300@redhat.com> <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-02-11 at 19:44 +0000, Chris Boot wrote:
-> The FireWire SBP-2 Target is a driver for using an IEEE-1394 connection
-> as a SCSI transport. This module uses the SCSI Target framework to
-> expose LUNs to other machines attached to a FireWire bus, in effect
-> acting as a FireWire hard disk similar to FireWire Target Disk mode on
-> older Apple computers.
-> 
-> Signed-off-by: Chris Boot <bootc@bootc.net>
-> Cc: Andy Grover <agrover@redhat.com>
-> Cc: Clemens Ladisch <clemens@ladisch.de>
-> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> ---
->  drivers/target/sbp/Kconfig  |   14 ++++++++++++++
->  drivers/target/sbp/Makefile |   13 +++++++++++++
->  drivers/target/sbp/TODO     |    7 +++++++
->  3 files changed, 34 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/target/sbp/Kconfig
->  create mode 100644 drivers/target/sbp/Makefile
->  create mode 100644 drivers/target/sbp/TODO
-> 
-> diff --git a/drivers/target/sbp/Kconfig b/drivers/target/sbp/Kconfig
-> new file mode 100644
-> index 0000000..8544010
-> --- /dev/null
-> +++ b/drivers/target/sbp/Kconfig
-> @@ -0,0 +1,14 @@
-> +
-> +config FIREWIRE_SBP_TARGET
-> +	tristate "FireWire SBP-2 fabric module"
-> +	depends on TARGET_CORE && CONFIGFS_FS && FIREWIRE && EXPERIMENTAL
-> +	default n
-> +	help
-> +	  Say Y or M here to enable SCSI target functionality over FireWire.
-> +	  This enables you to expose SCSI devices to other nodes on the FireWire
-> +	  bus, for example hard disks. Similar to FireWire Target Disk mode on
-> +	  older Apple computers.
-> +
-> +	  To compile this driver as a module, say M here: The module will be
-> +	  called firewire-sbp-target.
-> +
+On 02/13/2012 02:40 PM, Nicholas A. Bellinger wrote:
+> Hi Dor, James&  Co,
+>
+> On Mon, 2012-02-13 at 09:57 +0200, Dor Laor wrote:
+>> On 02/13/2012 09:05 AM, Christian Borntraeger wrote:
+>>> On 12/02/12 21:16, James Bottomley wrote:
+>>>> Well, no-one's yet answered the question I had about why.
+>>>
+>>> Just to give one example from a different angle:
+>>> In the big datacenters tape libraries are still very important, and lots
+>>> of them have a scsi attachement. virtio-blk certainly is not the right
+>>> way to handle those. Furthermore it seems even pretty hard to craft
+>>> a virtio-tape since most of those libraries have vendor specific library
+>>> controls (via sg). We would need to duplicate scsi generic (hint, hint :-)
+>>>
+>>>> virtio-scsi seems to be a basic duplication of virtio-blk except that it seems to
+>>>> fix some problems virtio-blk has.  Namely queue parameter discover,
+>>>> which virtio-blk doesn't seem to do.  There may also be a reason to cut
+>>>> the stack lower down.  Error handling is most often cited for this, but
+>>>> no-one's satisfactorily explaned why it's better to do error handling in
+>>>> the guest instead of the host.
+>>>>
+>>>> Could someone please explain to me why you can't simply fix virtio-blk?
+>>>
+>>> I dont think that virtio-scsi will replace virtio-blk everywhere. For non-scsi
+>>> block devices, image files or logical volumes virtio-blk seems to be the right
+>>> approach, I think.
+>>
+>> +1
+>>
+>> virtio-scsi is superior w.r.t:
+>>     - Device support: tapes, cdroms, other
+>
+> AFAICT any type of non TYPE_DISK struct scsi_device passthrough is going
+> to currently require virtio-scsi in order to work.
+>
+>>     - Does guest-host mapped multipath
+>
+> The logic that comes with target_core_fabric_configfs.c and the native
+> target control plane gives a host-side (tcm_vhost) fabric driver generic
+> explict/implict ALUA multipath support by default.
+>
+> I think there are some interesting possibilities for paravirtualized
+> ALUA multipath..  8-)
+>
+>>     - Supports plenty of virtual disks mapped to the guest w/o need for a
+>>       pci slot per each virtio-blk
+>
+> Ouch, virtio-blk lacks multi-lun per pci slot support..?
 
-Hi Chris,
+Only if you use the pci multi-function option but that kills standard 
+hot unplug
 
-Just a minor Kconfig related item here.  You can go ahead and drop the
-extra depends on TARGET_CORE && CONFIGFS_FS here, as
-drivers/target/Kconfig is already handling the dependencies for these
-two config options before including drivers/target/sbp/Kconfig.
-
-Thanks!
-
---nab
+>
+>>     - offload fancy/new/sophisticated scsi commands from the guest to the
+>>       storage array w/o need for qemu implementation. Example XCOPY.
+>>
+>
+> ...
+>
+>> There are some more goodies like ability to support windows guest
+>> clustering w/o hacky versions of scsi pass through over virtio-blk.
+>> virtio-blk is also a candidate to change the request based towards bio
+>> based implementation, so sticking to it does not buy us too much.
+>>
+>
+> MSFT cluster guests that require SPC-3 PR support can run today with
+> tcm_loop LLD SCSI LUNs + SG_IO/BSG + right megasas QEMU HBA emulation,
+> but I do agree this would be better served by virtio-scsi for guests
+> that require SPC-3 PR support or passthrough.
+>
+> --nab
+>
+>
+>
+>
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
