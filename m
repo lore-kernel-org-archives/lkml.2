@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2BMOtP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 09:49:15 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:14767 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756685Ab2BMOtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 09:49:14 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZC6HR-01-794-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Michal Marek <mmarek@suse.cz>,
-        maximilian attems <max@stro.at>, Ben Hutchings <ben@decadent.org.uk>,
-        <debian-kernel@lists.debian.org>, <linux-kbuild@vger.kernel.org>
-Subject: [PATCH v2] kbuild: Fix link to headers in 'make deb-pkg'
-Date: Mon, 13 Feb 2012 15:48:57 +0100
-Message-ID: <1329144538-21444-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756785Ab2BMOtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 09:49:46 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35542 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab2BMOtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 09:49:45 -0500
+Message-ID: <4F3922A5.5030502@linux.vnet.ibm.com>
+Date: Mon, 13 Feb 2012 08:48:05 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: linux-next: build failure after merge of the final tree (staging
+ tree related)
+References: <20120213171949.262e0c12e8d8883e90216df1@canb.auug.org.au> <20120213064508.GD28617@kroah.com>
+In-Reply-To: <20120213064508.GD28617@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021314-6078-0000-0000-000007DD6DFC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Link to the kernel header files in the debian packages
-point to the original build directory. This is a bad choice
-if the packages were installed on a different machine. Fix
-this in by manually re-creating the link in the builddeb
-script.
+On 02/13/2012 12:45 AM, Greg KH wrote:
+> On Mon, Feb 13, 2012 at 05:19:49PM +1100, Stephen Rothwell wrote:
+>> Hi ,
+>>
+>> After merging the final tree, today's linux-next build (powerpc allyesconfig)
+>> failed like this:
+>>
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_cpu_notifier':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:451:3: error: implicit declaration of function 'alloc_vm_area' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:451:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:459:4: error: implicit declaration of function 'free_vm_area' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_map_object':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:705:3: error: implicit declaration of function 'set_pte' [-Werror=implicit-function-declaration]
+>> drivers/staging/zsmalloc/zsmalloc-main.c:709:27: error: dereferencing pointer to incomplete type
+>> drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_unmap_object':
+>> drivers/staging/zsmalloc/zsmalloc-main.c:739:3: error: implicit declaration of function '__flush_tlb_one' [-Werror=implicit-function-declaration]
+>>
+>> Caused by commit 61989a80fb3a ("staging: zsmalloc: zsmalloc memory
+>> allocation library").  This needs to include linux/vmalloc.h at least.  I
+>> couldn't find set_pte at all or __flush_tlb_one for powerpc.
+>>
+>> This was too hard to revert, so I have left powerpc allyesconfig broken
+>> for today.  I may revert it (and some dependent commits) tomorrow.
+> 
+> Nitin, please send me a patch to fix this as soon as possible.
 
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: maximilian attems <max@stro.at>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: debian-kernel@lists.debian.org
-Cc: linux-kbuild@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- scripts/package/builddeb |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Sending a patch now.  Adds linux/vmalloc.h to zsmalloc-main.c. On a less ideal
+note, it also adds an X86 dependency since set_pte and __flush_tlb_one are
+x86 only.  I'm working to find portable replacements for these functions.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index f6cbc3d..fc3f76a 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -97,6 +97,7 @@ mkdir -m 755 -p "$libc_headers_dir/DEBIAN"
- mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
- mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
- mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
-+mkdir -p "$kernel_headers_dir/lib/modules/$version/"
- if [ "$ARCH" = "um" ] ; then
- 	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
- fi
-@@ -121,6 +122,8 @@ fi
- 
- if grep -q '^CONFIG_MODULES=y' .config ; then
- 	INSTALL_MOD_PATH="$tmpdir" make KBUILD_SRC= modules_install
-+	rm -f "$tmpdir/lib/modules/$version/build"
-+	rm -f "$tmpdir/lib/modules/$version/source"
- 	if [ "$ARCH" = "um" ] ; then
- 		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
- 		rmdir "$tmpdir/lib/modules/$version"
-@@ -245,6 +248,12 @@ destdir=$kernel_headers_dir/usr/src/linux-headers-$version
- mkdir -p "$destdir"
- (cd $srctree; tar -c -f - -T /tmp/files$$) | (cd $destdir; tar -xf -)
- (cd $objtree; tar -c -f - -T /tmp/objfiles$$) | (cd $destdir; tar -xf -)
-+ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
-+if [ "$ARCH" = "um" ] ; then
-+	mkdir -p "$kernel_headers_dir/usr/lib/uml/modules/$version/"
-+	mv "$kernel_headers_dir/lib/modules/$version"/* "$kernel_headers_dir/usr/lib/uml/modules/$version/"
-+	rmdir "$kernel_headers_dir/lib/modules/$version"
-+fi
- rm -f /tmp/files$$ /tmp/objfiles$$
- arch=$(dpkg --print-architecture)
- 
--- 
-1.7.5.4
-
+--
+Seth
 
