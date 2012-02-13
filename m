@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2BMO7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 09:59:54 -0500
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:34402 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756740Ab2BMO7x (ORCPT
+	id S1756835Ab2BMPB5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 10:01:57 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:41603 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752279Ab2BMPBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 09:59:53 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Z516B7wVM1kEDCUqemMAd7weREz23KPCu12Avq9Z0cDGvYQ
- Bmb8GBH6m2BNpopLW9ZODlRNbQKZRWLlyKPay2oKXBJlD.LPD262rSY.DRU8
- wDVvw6.zzCPnGN1sYbCgzvLecsotQFtO1pkk5_3FECxNIAuT1NnDTEh1GNum
- Wn1WWiMoUAZl9xEDD0DL91JYXoT.RAya0r_KgmxbgFMan2S8.YTh_2TZjn4I
- VOiwVhxs4q1I5jUH8E7i28ojaTBstl_FLNsE8fxxYLDpLs_Ri6nOV5VQzks2
- hIJ7QhEr7SzrreGoWrqveUqOQjIhgn5n3.BYmnFEIn9J6HHQrTym_1wNbSnc
- OJx718ug.hzmJKtgrpXB3MhMAx7arwui8w11yCiSC70PYfYHLOvY1bTY3AB8
- -
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 13 Feb 2012 08:59:50 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ming Lei <tom.leiming@gmail.com>
-cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] percpu: use raw_local_irq_* in _this_cpu op
-In-Reply-To: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
-Message-ID: <alpine.DEB.2.00.1202130859340.23562@router.home>
-References: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 13 Feb 2012 10:01:55 -0500
+Date: Mon, 13 Feb 2012 10:01:54 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+In-Reply-To: <1329124271-29464-5-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Ming Lei wrote:
+On Mon, 13 Feb 2012, Lin Ming wrote:
 
-> It doesn't make sense to trace irq off or do irq flags
-> lock proving inside 'this_cpu' operations, so replace local_irq_*
-> with raw_local_irq_* in 'this_cpu' op.
+> From: Zhang Rui <rui.zhang@intel.com>
+> 
+> Introduce flag can_power_off in device structure to support runtime
+> power off/on.
+> 
+> Note that, for a specific device driver,
+> "support runtime power off/on" means that the driver .runtime_suspend
+> callback needs to
+> 1) save all the context so that it can restore the device back to the previous
+>    working state after powered on.
+> 2) set can_power_off flag to tell the driver model that it's ready for power off.
+> 
+> The following example shows how this works.
+> 
+> device A
+>  |---------|
+>  v         v
+> device B  device C
+> 
+> A is the parent of device B and device C, and device A/B/C shares the
+> same power logic
+> (Only device A knows how to turn on/off the power).
+> 
+> In order to power off A, B, C at runtime,
+> 1) device B and device C should support runtime power off
+>    (runtime suspended with can_power_off flag set)
+> 2) pm idle request for device A is fired by runtime PM core.
+> 3) in device A .runtime_suspend callback, it tries to set can_power_off flag.
+> 4) if succeed, it means all its children have been ready for power off
+>    and it can turn off the power at any time.
+> 5) if failed, it means at least one of its children does not support runtime
+>    power off, thus the power can not be turned off.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+I'm not sure if this is really the right approach.  What you're trying 
+to do is implement two different low-power states, basically D3hot and 
+D3cold.  Currently the runtime PM core doesn't support such things; all 
+it knows about is low power and full power.
+
+Before doing an ad-hoc implementation, it would be best to step back
+and think about other subsystems.  Other sorts of devices may well have
+multiple low-power states.  What's the best way for this to be
+supported by the PM core?
+
+Alan Stern
+
