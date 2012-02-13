@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab2BMIp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 03:45:57 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60688 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2BMIp4 (ORCPT
+	id S1751989Ab2BMItZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 03:49:25 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:59292 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab2BMItY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 03:45:56 -0500
+	Mon, 13 Feb 2012 03:49:24 -0500
+From: Mikael Starvik <mikael.starvik@axis.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Feb 2012 09:49:22 +0100
+Subject: SMP MIPS and Linux 3.2
+Thread-Topic: SMP MIPS and Linux 3.2
+Thread-Index: AczqLFmamPTuvzDTTIubWZgAhAn6UA==
+Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D055C767F6C48@xmail3.se.axis.com>
+Accept-Language: sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: sv-SE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [212.34.73.1]
-Date: Mon, 13 Feb 2012 09:45:54 +0100
-X-Google-Sender-Auth: ctfQ-pQc5EzW0Y109l7Rr6NMFFY
-Message-ID: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
-Subject: ixgbe truesize underestimation fix missing?
-From: Christian Brunner <chb@muc.de>
-To: linux-kernel@vger.kernel.org
-Cc: eric.dumazet@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back in Oktober, there was a patch by Eric Dumazet for the ixgbe
-driver to fix the skb truesize underestimation (commit
-98130646770db42cd14c44ba0d7f2d0eb8078820). It changed only one line in
-ixgbe_main.c:
+I'm running Linux 3.2 on a MIPS 34K with two VPEs (in MT_SMP configuration). It works fine in UP but with SMP it deadlocks during bootup (both CPUs gets idle). Typically like this:
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -1326,7 +1326,7 @@ static bool ixgbe_clean_rx_irq(struct
-ixgbe_q_vector *q_vector,
-                        skb->len += upper_len;
-                        skb->data_len += upper_len;
--                       skb->truesize += upper_len;
-+                       skb->truesize += PAGE_SIZE / 2;
-                }                 i++;
+[    0.090000] CPU revision is: 01019550 (MIPS 34Kc)
+[    0.090000] Primary instruction cache 32kB, VIPT, 4-way, linesize 32 bytes.
+[    0.090000] Primary data cache 32kB, 4-way, PIPT, no aliases, linesize 32 bytes
+[    0.170000] Brought up 2 CPUs
+<No more output>
 
+I have tried to enable __ARCH_WANT_INTERRUPTS_ON_CTXSW but that didn't improve anything. Anyone else got this running or have any thoughts about what the problem may be?
 
-But when I look at the current code (3.2.5 or 3.3rc), skb->truesize is
-still increased by the same value as skb->data_len.
-
-1228         skb->data_len += frag_list_size;
-1229         skb->truesize += frag_list_size;
-
-Is it posible that there was a merge conflict, or am I missing something here?
-
-Thanks,
-Christian
+Best Regards
+/Mikael
