@@ -1,295 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab2BMDhW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 22:37:22 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:57213 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756168Ab2BMDhR (ORCPT
+	id S1756109Ab2BMEEy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 23:04:54 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:50434 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab2BMEEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 22:37:17 -0500
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Huang Shijie <b32955@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <shawn.guo@linaro.org>, <artem.bityutskiy@intel.com>,
-        <w.sang@pengutronix.de>, <LW@KARO-electronics.de>,
-        <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>, <cjb@laptop.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v4 2/2] mxs-dma : rewrite the last parameter of mxs_dma_prep_slave_sg()
-Date: Mon, 13 Feb 2012 11:38:23 +0800
-Message-ID: <1329104303-13566-3-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1329104303-13566-1-git-send-email-b32955@freescale.com>
-References: <1329104303-13566-1-git-send-email-b32955@freescale.com>
+	Sun, 12 Feb 2012 23:04:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Noah Watkins <noahwatkins@gmail.com>,
+        Renich Bon Ciric <renich@woralelandia.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] [staging-next] zram: Rename module parameter
+Date: Sun, 12 Feb 2012 23:04:45 -0500
+Message-Id: <1329105885-4038-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1] Background :
-    The GPMI does ECC read page operation with a DMA chain consist of three DMA
-    Command Structures. The middle one of the chain is used to enable the BCH,
-    and read out the NAND page.
+zram accepts number of devices to be created
+as a module parameter. This was renamed from
+num_devices to zram_num_devices (without updating
+the documentation!) since num_devices was declared
+as a non-static global variable, polluting the global
+namespace. Now, we declare it as a static variable
+and revert back the name change.
 
-    The WAIT4END(wait for command end) is a comunication signal between
-    the GPMI and MXS-DMA.
+The documentation (zram.txt) already mentions
+num_devices as the module parameter name.
 
-[2] The current DMA code sets the WAIT4END bit at the last one, such as:
-
-    +-----+               +-----+                      +-----+
-    | cmd | ------------> | cmd | ------------------>  | cmd |
-    +-----+               +-----+                      +-----+
-                                                          ^
-                                                          |
-                                                          |
-                                                     set WAIT4END here
-
-    This chain works fine in the mx23/mx28.
-
-[3] But in the new GPMI version (used in MX50/MX60), the WAIT4END bit should
-    be set not only at the last DMA Command Structure,
-    but also at the middle one, such as:
-
-    +-----+               +-----+                      +-----+
-    | cmd | ------------> | cmd | ------------------>  | cmd |
-    +-----+               +-----+                      +-----+
-                             ^                            ^
-                             |                            |
-                             |                            |
-                        set WAIT4END here too        set WAIT4END here
-
-    If we do not set WAIT4END, the BCH maybe stalls in "ECC reading page" state.
-    In the next ECC write page operation, a DMA-timeout occurs.
-    This has been catched in the MX6Q board.
-
-[4] In order to fix the bug, rewrite the last parameter of mxs_dma_prep_slave_sg(),
-    and use the dma_ctrl_flags:
-    ---------------------------------------------------------
-      DMA_PREP_INTERRUPT : append a new DMA Command Structrue.
-      DMA_CTRL_ACK       : set the WAIT4END bit for this DMA Command Structure.
-    ---------------------------------------------------------
-
-[5] changes to the relative drivers:
-    <1> For mxs-mmc driver, just use the new flags, do not change any logic.
-    <2> For gpmi-nand driver, add new field `gpmi_version` to distinguish
-        different gpmi versions, and use the new flags.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- drivers/dma/mxs-dma.c                 |   32 ++++++++++++++++++++++++++++----
- drivers/mmc/host/mxs-mmc.c            |   10 +++++-----
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c |   24 ++++++++++++++++++------
- 3 files changed, 51 insertions(+), 15 deletions(-)
+ drivers/staging/zram/zram_drv.c   |   27 ++++++++++++++++-----------
+ drivers/staging/zram/zram_drv.h   |    2 +-
+ drivers/staging/zram/zram_sysfs.c |    2 +-
+ 3 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index 0afcedb..0ddfd30 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -349,10 +349,32 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
- 	clk_disable_unprepare(mxs_dma->clk);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5833156..7f13819 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -40,7 +40,7 @@ static int zram_major;
+ struct zram *zram_devices;
+ 
+ /* Module params (documentation at end) */
+-unsigned int zram_num_devices;
++static unsigned int num_devices;
+ 
+ static void zram_stat_inc(u32 *v)
+ {
+@@ -779,13 +779,18 @@ static void destroy_device(struct zram *zram)
+ 		blk_cleanup_queue(zram->queue);
  }
  
-+/*
-+ * How to use the flags for ->device_prep_slave_sg() :
-+ *    [1] If there is only one DMA command in the DMA chain, the code should be:
-+ *            ......
-+ *            ->device_prep_slave_sg(DMA_CTRL_ACK);
-+ *            ......
-+ *    [2] If there are two DMA commands in the DMA chain, the code should be
-+ *            ......
-+ *            ->device_prep_slave_sg(0);
-+ *            ......
-+ *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+ *            ......
-+ *    [3] If there are more than two DMA commands in the DMA chain, the code
-+ *        should be:
-+ *            ......
-+ *            ->device_prep_slave_sg(0);                                // First
-+ *            ......
-+ *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT [| DMA_CTRL_ACK]);
-+ *            ......
-+ *            ->device_prep_slave_sg(DMA_PREP_INTERRUPT | DMA_CTRL_ACK); // Last
-+ *            ......
-+ */
- static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
- 		struct dma_chan *chan, struct scatterlist *sgl,
- 		unsigned int sg_len, enum dma_transfer_direction direction,
--		unsigned long append)
-+		unsigned long flags)
++unsigned int zram_get_num_devices(void)
++{
++	return num_devices;
++}
++
+ static int __init zram_init(void)
  {
- 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-@@ -360,6 +382,7 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
- 	struct scatterlist *sg;
- 	int i, j;
- 	u32 *pio;
-+	bool append = flags & DMA_PREP_INTERRUPT;
- 	int idx = append ? mxs_chan->desc_count : 0;
+ 	int ret, dev_id;
  
- 	if (mxs_chan->status == DMA_IN_PROGRESS && !append)
-@@ -386,7 +409,6 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
- 		ccw->bits |= CCW_CHAIN;
- 		ccw->bits &= ~CCW_IRQ;
- 		ccw->bits &= ~CCW_DEC_SEM;
--		ccw->bits &= ~CCW_WAIT4END;
- 	} else {
- 		idx = 0;
+-	if (zram_num_devices > max_num_devices) {
++	if (num_devices > max_num_devices) {
+ 		pr_warning("Invalid value for num_devices: %u\n",
+-				zram_num_devices);
++				num_devices);
+ 		ret = -EINVAL;
+ 		goto out;
  	}
-@@ -401,7 +423,8 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
- 		ccw->bits = 0;
- 		ccw->bits |= CCW_IRQ;
- 		ccw->bits |= CCW_DEC_SEM;
--		ccw->bits |= CCW_WAIT4END;
-+		if (flags & DMA_CTRL_ACK)
-+			ccw->bits |= CCW_WAIT4END;
- 		ccw->bits |= CCW_HALT_ON_TERM;
- 		ccw->bits |= CCW_TERM_FLUSH;
- 		ccw->bits |= BF_CCW(sg_len, PIO_NUM);
-@@ -432,7 +455,8 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
- 				ccw->bits &= ~CCW_CHAIN;
- 				ccw->bits |= CCW_IRQ;
- 				ccw->bits |= CCW_DEC_SEM;
--				ccw->bits |= CCW_WAIT4END;
-+				if (flags & DMA_CTRL_ACK)
-+					ccw->bits |= CCW_WAIT4END;
- 			}
- 		}
+@@ -797,20 +802,20 @@ static int __init zram_init(void)
+ 		goto out;
  	}
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index e5ea2b1..4062812 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -305,7 +305,7 @@ static irqreturn_t mxs_mmc_irq_handler(int irq, void *dev_id)
+ 
+-	if (!zram_num_devices) {
++	if (!num_devices) {
+ 		pr_info("num_devices not specified. Using default: 1\n");
+-		zram_num_devices = 1;
++		num_devices = 1;
+ 	}
+ 
+ 	/* Allocate the device array and initialize each one */
+-	pr_info("Creating %u devices ...\n", zram_num_devices);
+-	zram_devices = kzalloc(zram_num_devices * sizeof(struct zram), GFP_KERNEL);
++	pr_info("Creating %u devices ...\n", num_devices);
++	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+ 	if (!zram_devices) {
+ 		ret = -ENOMEM;
+ 		goto unregister;
+ 	}
+ 
+-	for (dev_id = 0; dev_id < zram_num_devices; dev_id++) {
++	for (dev_id = 0; dev_id < num_devices; dev_id++) {
+ 		ret = create_device(&zram_devices[dev_id], dev_id);
+ 		if (ret)
+ 			goto free_devices;
+@@ -833,7 +838,7 @@ static void __exit zram_exit(void)
+ 	int i;
+ 	struct zram *zram;
+ 
+-	for (i = 0; i < zram_num_devices; i++) {
++	for (i = 0; i < num_devices; i++) {
+ 		zram = &zram_devices[i];
+ 
+ 		destroy_device(zram);
+@@ -847,8 +852,8 @@ static void __exit zram_exit(void)
+ 	pr_debug("Cleanup done!\n");
  }
  
- static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
--	struct mxs_mmc_host *host, unsigned int append)
-+	struct mxs_mmc_host *host, unsigned long flags)
- {
- 	struct dma_async_tx_descriptor *desc;
- 	struct mmc_data *data = host->data;
-@@ -325,7 +325,7 @@ static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
- 	}
+-module_param(zram_num_devices, uint, 0);
+-MODULE_PARM_DESC(zram_num_devices, "Number of zram devices");
++module_param(num_devices, uint, 0);
++MODULE_PARM_DESC(num_devices, "Number of zram devices");
  
- 	desc = host->dmach->device->device_prep_slave_sg(host->dmach,
--				sgl, sg_len, host->slave_dirn, append);
-+				sgl, sg_len, host->slave_dirn, flags);
- 	if (desc) {
- 		desc->callback = mxs_mmc_dma_irq_callback;
- 		desc->callback_param = host;
-@@ -358,7 +358,7 @@ static void mxs_mmc_bc(struct mxs_mmc_host *host)
- 	host->ssp_pio_words[2] = cmd1;
- 	host->dma_dir = DMA_NONE;
- 	host->slave_dirn = DMA_TRANS_NONE;
--	desc = mxs_mmc_prep_dma(host, 0);
-+	desc = mxs_mmc_prep_dma(host, DMA_CTRL_ACK);
- 	if (!desc)
- 		goto out;
+ module_init(zram_init);
+ module_exit(zram_exit);
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 572faa8..fbe8ac9 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -124,7 +124,7 @@ struct zram {
+ };
  
-@@ -398,7 +398,7 @@ static void mxs_mmc_ac(struct mxs_mmc_host *host)
- 	host->ssp_pio_words[2] = cmd1;
- 	host->dma_dir = DMA_NONE;
- 	host->slave_dirn = DMA_TRANS_NONE;
--	desc = mxs_mmc_prep_dma(host, 0);
-+	desc = mxs_mmc_prep_dma(host, DMA_CTRL_ACK);
- 	if (!desc)
- 		goto out;
+ extern struct zram *zram_devices;
+-extern unsigned int zram_num_devices;
++unsigned int zram_get_num_devices(void);
+ #ifdef CONFIG_SYSFS
+ extern struct attribute_group zram_disk_attr_group;
+ #endif
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index d2875c5..a7f3771 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -34,7 +34,7 @@ static struct zram *dev_to_zram(struct device *dev)
+ 	int i;
+ 	struct zram *zram = NULL;
  
-@@ -526,7 +526,7 @@ static void mxs_mmc_adtc(struct mxs_mmc_host *host)
- 	host->data = data;
- 	host->dma_dir = dma_data_dir;
- 	host->slave_dirn = slave_dirn;
--	desc = mxs_mmc_prep_dma(host, 1);
-+	desc = mxs_mmc_prep_dma(host, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc)
- 		goto out;
- 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index cbcf022..81ddf59 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -850,7 +850,9 @@ int gpmi_send_command(struct gpmi_nand_data *this)
- 	sg_init_one(sgl, this->cmd_buffer, this->command_length);
- 	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel,
--					sgl, 1, DMA_MEM_TO_DEV, 1);
-+				sgl, 1, DMA_MEM_TO_DEV,
-+				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -892,7 +894,8 @@ int gpmi_send_data(struct gpmi_nand_data *this)
- 	/* [2] send DMA request */
- 	prepare_data_dma(this, DMA_TO_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
--						1, DMA_MEM_TO_DEV, 1);
-+					1, DMA_MEM_TO_DEV,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -928,7 +931,8 @@ int gpmi_read_data(struct gpmi_nand_data *this)
- 	/* [2] : send DMA request */
- 	prepare_data_dma(this, DMA_FROM_DEVICE);
- 	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
--						1, DMA_DEV_TO_MEM, 1);
-+					1, DMA_DEV_TO_MEM,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -975,7 +979,8 @@ int gpmi_send_page(struct gpmi_nand_data *this,
- 
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE,
-+					DMA_CTRL_ACK);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -995,6 +1000,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	struct dma_async_tx_descriptor *desc;
- 	struct dma_chan *channel = get_dma_chan(this);
- 	int chip = this->current_chip;
-+	unsigned long flags;
- 	u32 pio[6];
- 
- 	/* [1] Wait for the chip to report ready. */
-@@ -1037,9 +1043,14 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	pio[3] = geo->page_size;
- 	pio[4] = payload;
- 	pio[5] = auxiliary;
-+
-+	/* Set DMA_CTRL_ACK for mx6q which uses the new GPMI version. */
-+	flags = DMA_PREP_INTERRUPT;
-+	if (GPMI_IS_MX6Q(this))
-+		flags |= DMA_CTRL_ACK;
- 	desc = channel->device->device_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
--					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
-+					ARRAY_SIZE(pio), DMA_TRANS_NONE, flags);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -1059,7 +1070,8 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	pio[2] = 0; /* Set GPMI_HW_GPMI_ECCCTRL, disable the BCH. */
- 	desc = channel->device->device_prep_slave_sg(channel,
- 				(struct scatterlist *)pio, 3,
--				DMA_TRANS_NONE, 1);
-+				DMA_TRANS_NONE,
-+				DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		pr_err("step 3 error\n");
- 		return -1;
+-	for (i = 0; i < zram_num_devices; i++) {
++	for (i = 0; i < zram_get_num_devices(); i++) {
+ 		zram = &zram_devices[i];
+ 		if (disk_to_dev(zram->disk) == dev)
+ 			break;
 -- 
-1.7.0.4
-
+1.7.7.6
 
