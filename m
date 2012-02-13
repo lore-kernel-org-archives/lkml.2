@@ -1,228 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2BMUoP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:44:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50416 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab2BMUoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:44:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
-Date: Mon, 13 Feb 2012 21:48:04 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com> <1329124271-29464-3-git-send-email-ming.m.lin@intel.com>
-In-Reply-To: <1329124271-29464-3-git-send-email-ming.m.lin@intel.com>
+	id S1758100Ab2BMUpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:45:08 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49028 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab2BMUpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 15:45:06 -0500
+Message-ID: <4F39763D.3070609@linux.vnet.ibm.com>
+Date: Tue, 14 Feb 2012 02:14:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Tony Luck <tony.luck@gmail.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v5
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com> <20120201140125.c656df41.akpm@linux-foundation.org> <87d39xj955.fsf@rustcorp.com.au> <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com> <4F3971A1.5010305@linux.vnet.ibm.com>
+In-Reply-To: <4F3971A1.5010305@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202132148.04961.rjw@sisk.pl>
+x-cbid: 12021310-7014-0000-0000-00000091621A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 13, 2012, Lin Ming wrote:
-> From: Zhang Rui <rui.zhang@intel.com>
+On 02/14/2012 01:55 AM, Srivatsa S. Bhat wrote:
+
+> On 02/14/2012 01:24 AM, Tony Luck wrote:
 > 
-> ACPI Power Resource can power on/off a couple of devices.
-> Introduce interfaces to register/unregister a device to/from
-> an ACPI Power Resource.
+>> On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
+>>> Feel free to try to fix this in -next though, and see what breaks...
+>>
+>> ia64 is what breaks ... well not actually broken ... but some very
+>> weird delays that
+>> show up in different places depending on whether this patch is present.
+>>
+>> First linux-next kernel to be blessed with this patch was
+>> next-20120210. Booting it
+>> I see:
+>> [    7.164233] Switching to clocksource itc
+>> [  146.077315] pnp: PnP ACPI init
+>>
+>> An ugly 138.913 second delay.  Digging in the code showed that the bad bits
+>> happened inside stop_machine()
+>>
+>> Reverting just this patch makes this big delay disappear:
+>>
+>> [   32.780232] Switching to clocksource itc
+>> [   32.832100] pnp: PnP ACPI init
+>>
+>> but notice that it takes 25 extra seconds to get to this point in the
+>> boot (and while
+>> we expect to save some time by not re-computing num_online_cpus each time we
+>> need it ... this looks to be a lot more than I'd expect!)
+>>
 > 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> ---
->  drivers/acpi/power.c    |  128 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h |    2 +
->  2 files changed, 130 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 0d681fb..a7e2305 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -84,10 +84,25 @@ struct acpi_power_resource {
->  	u32 order;
->  	unsigned int ref_count;
->  	struct mutex resource_lock;
-> +	struct list_head devices; /* list for devices powered by this PR */
->  };
+> Oh no!! ia64 directly uses cpu_set() and cpu_clear() on cpu_online_map!!
+> Grr.. It means num_online_cpus can be different from the actual number of
+> online cpus because it doesn't go through the set_cpu_online() path.. I haven't
+> yet pin-pointed the exact problem, but this definitely doesn't look good...
 >  
->  static struct list_head acpi_power_resource_list;
->  
-> +/*
-> + * When a power resource is turned on, all the devices are put to an uninitialized
-> + * state although their ACPI states are still D0.
-> + * To handle this, we need to keep a list of all devices powered by the power resource,
-> + * and resume all of them.
-> + * Currently, we only support this case:
-> + * 1) multiple devices share the same power resoruce,
-> + * 2) One device uses One Power Resource ONLY.
 
-This is incorrect.  We actually support all combinations.  However, we don't
-generally support checking what devices depend on the given power resource.
 
-> + */
-> +struct acpi_powered_device {
-> +	struct list_head node;
-> +	struct device *dev;
-> +};
-> +
->  /* --------------------------------------------------------------------------
->                               Power Resource Management
->     -------------------------------------------------------------------------- */
-> @@ -455,6 +470,118 @@ int acpi_disable_wakeup_device_power(struct acpi_device *dev)
->                               Device Power Management
->     -------------------------------------------------------------------------- */
->  
-> +int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-> +{
-> +	struct acpi_power_resource *resource;
-> +	struct acpi_device *acpi_dev, *res_dev;
-> +	acpi_handle res_handle = NULL;
-> +	struct acpi_powered_device *apd;
-> +	int i;
-> +	int ret;
-> +
-> +	if (!handle || !dev)
-> +		return -EINVAL;
-> +
-> +	ret = acpi_bus_get_device(handle, &acpi_dev);
-> +	if (ret)
-> +		goto no_power_resource;
-> +
-> +	if (!acpi_dev->power.flags.power_resources)
-> +		goto no_power_resource;
-> +
-> +	for (i = 0; i <= ACPI_STATE_D3; i++) {
-> +		struct acpi_device_power_state *ps = &acpi_dev->power.states[i];
-> +
-> +		if (!ps->flags.valid)
-> +			continue;
-> +
-> +		if (ps->resources.count > 1)
-> +			return 0;
-> +
-> +		if (!res_handle)
-> +			res_handle = ps->resources.handles[0];
-> +		else if (res_handle != ps->resources.handles[0])
-> +			return 0;
-> +	}
+Hmm.. interesting.. The only calls that ia64 uses which updates the
+num_online_cpus macro seem to be init_cpu_online(cpumask_of(0)); Atleast this
+is what the mainline code tells me (haven't checked linux-next).
 
-I'm not sure what the above checks are needed for.  It seems that this function
-will only be called from acpi_bus_add_power_resource() (which needs to be
-modified for this purpose, BTW), so it doesn't need to check all those things
-(those checks have been made already).
+So, if I am not mistaken, is the value of num_online_cpus() always 1 when
+Venki's patch is applied?
 
-> +
-> +	ret = acpi_bus_get_device(res_handle, &res_dev);
-> +	if (ret)
-> +		goto no_power_resource;
-> +
-> +	resource = res_dev->driver_data;
-> +	if (!resource)
-> +		goto no_power_resource;
-> +
-> +	apd = kzalloc(sizeof(struct acpi_powered_device), GFP_KERNEL);
-> +	if (!apd)
-> +		return -ENOMEM;
-> +
-> +	apd->dev = dev;
-> +	mutex_lock(&resource->resource_lock);
-> +	list_add_tail(&apd->node, &resource->devices);
-> +	mutex_unlock(&resource->resource_lock);
-> +	printk(KERN_INFO PREFIX "Device %s uses Power Resource %s\n", dev->kobj.name, acpi_device_name(res_dev));
-> +
-> +	return 0;
-> +
-> +no_power_resource:
-> +	printk(KERN_WARNING PREFIX "Invalid Power Resource to register!");
-> +	return -ENODEV;
-> +}
-> +
-> +void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle)
-> +{
+IOW, what output do you see from the following printk from
+arch/ia64/kernel/smpboot.c?
 
-Who is supposed to call this one?
+printk(KERN_INFO "Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
+         (int)num_online_cpus(), bogosum/(500000/HZ), (bogosum/(5000/HZ))%100);
 
-> +	struct acpi_power_resource *resource;
-> +	struct acpi_device *acpi_dev, *res_dev;
-> +	acpi_handle res_handle = NULL;
-> +	struct acpi_powered_device *apd, *tmp;
-> +	int i;
-> +	int ret;
-> +
-> +	if (!handle || !dev)
-> +		return;
-> +
-> +	ret = acpi_bus_get_device(handle, &acpi_dev);
-> +	if (ret)
-> +		return;
-> +
-> +	if (!acpi_dev->power.flags.power_resources)
-> +		return;
-> +
-> +	for (i = 0; i <= ACPI_STATE_D3; i++) {
-> +		struct acpi_device_power_state *ps = &acpi_dev->power.states[i];
-> +
-> +		if (!ps->flags.valid)
-> +			continue;
-> +
-> +		if (ps->resources.count > 1)
-> +			return;
-> +
-> +		res_handle = ps->resources.handles[0];
-> +		break;
-> +	}
-> +
-> +	if (!res_handle)
-> +		return;
-> +
-> +	ret = acpi_bus_get_device(res_handle, &res_dev);
-> +	if (ret)
-> +		return;
-> +
-> +	resource = res_dev->driver_data;
-> +	if (!resource)
-> +		return;
-> +
-> +	mutex_lock(&resource->resource_lock);
-> +	list_for_each_entry_safe(apd, tmp, &resource->devices, node) {
-> +		if (apd->dev == dev) {
-> +			list_del(&apd->node);
-> +			kfree(apd);
-> +		}
-> +	}
-> +	mutex_unlock(&resource->resource_lock);
-> +}
-> +
->  int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
->  {
->  	int result = 0;
-> @@ -550,6 +677,7 @@ static int acpi_power_add(struct acpi_device *device)
->  
->  	resource->device = device;
->  	mutex_init(&resource->resource_lock);
-> +	INIT_LIST_HEAD(&resource->devices);
->  	strcpy(resource->name, device->pnp.bus_id);
->  	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
->  	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 6cd5b64..32fb899 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -322,6 +322,8 @@ int acpi_bus_get_status(struct acpi_device *device);
->  int acpi_bus_set_power(acpi_handle handle, int state);
->  int acpi_bus_update_power(acpi_handle handle, int *state_p);
->  bool acpi_bus_power_manageable(acpi_handle handle);
-> +int acpi_power_resource_register_device(struct device *dev, acpi_handle handle);
-> +void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle);
->  bool acpi_bus_can_wakeup(acpi_handle handle);
->  #ifdef CONFIG_ACPI_PROC_EVENT
->  int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
 
-Thanks,
-Rafael
+Regards,
+Srivatsa S. Bhat
+
