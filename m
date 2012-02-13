@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2BMSCv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:02:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63677 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757472Ab2BMSCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:02:49 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=eSfxnIkts4oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=b8VgSBC0AAAA:8 a=nE_x1U7TGn8nXCXWI2QA:9 a=vlM-zp3Osn6qgXzsRZIA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329156168.25686.9.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCHv8 0/8] ftrace, perf: Adding support to use function trace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Date: Mon, 13 Feb 2012 13:02:48 -0500
-In-Reply-To: <1328643899-8361-1-git-send-email-jolsa@redhat.com>
-References: <1327776209-4883-1-git-send-email-jolsa@redhat.com>
-	 <1328643899-8361-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757454Ab2BMSG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:06:29 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:35451 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755533Ab2BMSG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 13:06:28 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.3
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20120213180629.527D4426DA7@whiskey.americas.sgi.com>
+Date: Mon, 13 Feb 2012 12:06:29 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-07 at 20:44 +0100, Jiri Olsa wrote:
-> hi,
-> here's another version of perf support for function trace
-> with filter. 
-> 
-> attached patches:
->  - 1/8 ftrace: Change filter/notrace set functions to return exit code
->  - 2/8 ftrace: Add enable/disable ftrace_ops control interface
->  - 3/8 ftrace, perf: Add open/close tracepoint perf registration actions
->  - 4/8 ftrace, perf: Add add/del tracepoint perf registration actions
->  - 5/8 ftrace: Add FTRACE_ENTRY_REG macro to allow event registration
->  - 6/8 ftrace, perf: Add support to use function tracepoint in perf
->  - 7/8 ftrace: Allow to specify filter field type for ftrace events
->  - 8/8 ftrace, perf: Add filter support for function trace event
+Hi Linus,
 
-OK, these break on a lot of configs.
+   Please pull the following two bugfixes in XFS for 3.3.  One fix passes
+   KMEM_SLEEP to kmem_realloc instead of 0, and the other resolves a possible
+   deadlock in xfs quotas.
 
-Make sure they build with the following before sending another series.
-I'll give you some of the fixes I added already.
+Thanks,
+	Ben
 
-Please test: allnoconfig, allmodconfig
+The following changes since commit 612b8507c5d545feed2437b3d2239929cac7688d:
+  Linus Torvalds (1):
+        Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux
 
-http://rostedt.homelinux.com/private/configs/config-ftrace-patchcheck
-http://rostedt.homelinux.com/private/configs/config-ftrace-static-patchcheck
-http://rostedt.homelinux.com/private/configs/config-nofunc-patchcheck
-http://rostedt.homelinux.com/private/configs/config-notrace-patchcheck
+are available in the git repository at:
 
-Thanks!
+  git://oss.sgi.com/xfs/xfs for-linus
 
--- Steve
+Christoph Hellwig (1):
+      xfs: use a normal shrinker for the dquot freelist
 
-Note, These need to be defines and not static inlines, because
-ftrace_ops is not defined in some cases.
+Mitsuo Hayasaka (1):
+      xfs: pass KM_SLEEP flag to kmem_realloc() in xlog_recover_add_to_cnt_trans()
 
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 76f6c49..d984c08 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -381,9 +381,6 @@ extern void ftrace_enable_daemon(void);
- #else
- static inline int skip_trace(unsigned long ip) { return 0; }
- static inline int ftrace_force_update(void) { return 0; }
--static inline void ftrace_set_filter(unsigned char *buf, int len, int reset)
--{
--}
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
-@@ -407,6 +404,9 @@ static inline int ftrace_text_reserved(void *start, void *end)
-  */
- #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
- #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
-+#define ftrace_free_filter(ops) do { } while (0)
-+#define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
-+#define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
- 
- static inline ssize_t ftrace_filter_write(struct file *file, const char __user *ubuf,
- 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
-
-
-
+ fs/xfs/kmem.h            |    6 -
+ fs/xfs/xfs_dquot.c       |  103 ++++------------
+ fs/xfs/xfs_log_recover.c |    2 +-
+ fs/xfs/xfs_qm.c          |  291 ++++++++++++++++++----------------------------
+ fs/xfs/xfs_qm.h          |   14 ---
+ fs/xfs/xfs_qm_stats.c    |    4 +-
+ fs/xfs/xfs_trace.h       |    5 +-
+ 7 files changed, 142 insertions(+), 283 deletions(-)
