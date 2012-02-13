@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab2BMSOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:14:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:17759 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab2BMSOQ (ORCPT
+	id S1757522Ab2BMSOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:14:46 -0500
+Received: from nm23.access.bullet.mail.mud.yahoo.com ([66.94.237.88]:24801
+	"HELO nm23.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755569Ab2BMSOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:14:16 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Nh8Tol+sevGGh1Bc9TYmu
-Date: Mon, 13 Feb 2012 10:14:10 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Matt Porter <mporter@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
- regulators
-Message-ID: <20120213181410.GE1426@atomide.com>
-References: <1329151422-2146-1-git-send-email-mporter@ti.com>
- <20120213165209.GA31482@n2100.arm.linux.org.uk>
- <20120213165617.GE3494@opensource.wolfsonmicro.com>
- <20120213175233.GC1426@atomide.com>
- <20120213180236.GB31482@n2100.arm.linux.org.uk>
+	Mon, 13 Feb 2012 13:14:44 -0500
+X-Yahoo-Newman-Id: 655939.55554.bm@smtp103.biz.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: nBoVz7kVM1m1o3Kocx0gWOrKVhyq56yJn0FwFBK3alxlZe4
+ coAd.UxI58.jWyUXe34j71mTcVa8aIRIcEzWi1fxbtHOXZ3zhuCBLfZusbgH
+ g54rNsrdrdiqBIDOXBG73kKv2EZIif7XlfcAleU5daQAPjvjYvihur1GE7f8
+ 8ZyxhEZzleIVjAPWNOmAkVieqS4TS9l3c.gn9z55D46IzvBVfqh3_o06uqmz
+ gV.w_8LvWe59OzwenKQL0JsFlXUi9wnS8jJ4KmTLmDYa51WXOD3jcdZ6Li_p
+ x37V.k8Y929u.M6K9tvu7kPYD0hHc_3SXrPwKXGERtRoB2xauqQWduaIxawS
+ 54qwFmODOxh4BJiVEd1LkkRO9x49sgmY3ROM_JkeIzCLfq59Y4B1mk_JOAmQ
+ aqKPpzPZK0eZqUEjKOGCwUr_snfaUUe0sitM0TYBNPjqaEZ4zn1fWwTc-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4F395313.5030704@schaufler-ca.com>
+Date: Mon, 13 Feb 2012 10:14:43 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120213180236.GB31482@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+CC: bharat dhaker <bharat4u.u@gmail.com>, linux-kernel@vger.kernel.org,
+        kernelnewbies@kernelnewbies.org,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: difference between ACLs and SElinux
+References: <CANWArFvKbGcP_VFedyM1SGQsXKPx5Md9Ak0vxqfoCcGq9Ozruw@mail.gmail.com> <1329124259.25984.304.camel@thorin>
+In-Reply-To: <1329124259.25984.304.camel@thorin>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [120213 09:31]:
-> On Mon, Feb 13, 2012 at 09:52:34AM -0800, Tony Lindgren wrote:
-> > * Mark Brown <broonie@opensource.wolfsonmicro.com> [120213 08:25]:
-> > > On Mon, Feb 13, 2012 at 04:52:09PM +0000, Russell King - ARM Linux wrote:
-> > > 
-> > > > I think OMAP (or even the reg-fixed-voltage folk) needs to create an enum
-> > > > similar to what I did for 8250 to control the allocation of platform
-> > > > device IDs for this, otherwise we're going to keep on running over this
-> > > > problem.
-> > > 
-> > > > Added Mark for his comment.
-> > > 
-> > > Hrm, seems slightly icky but the enum will work if we can decide how to
-> > > add elements to the enum since it'll be easy to bloat a lot it if it's
-> > > central.  It's tempting to suggest just using a random number to assign
-> > > the IDs randomly rather than have a central registry but obviously
-> > > there's no guarantees there.
-> > 
-> > Can't we just leave out the .id and have it automatically assigned?
-> 
-> Unfortunately, there's no such infrastructure in the driver model.
+On 2/13/2012 1:10 AM, Bernd Petrovitsch wrote:
+> Hi!
+>
+> On Mon, 2012-02-13 at 14:30 +0530, bharat dhaker wrote:
+> [...]
+>> I want to know the differences between ACLs and SElinux.
 
-Hmm OK, -1 seems to be just used for name in platform_device_add().
+The differences are many:
 
-Tony
+ACLs are an extension of the standard Linux Discretionary
+Access Control (DAC) mechanism. SELinux is a supplemental
+Mandatory Access Control (MAC) scheme.
+
+ACLs are based on the withdrawn POSIX P1003.1e/2c DRAFT
+Standard and reflects a rough consensus of the industries
+Unix security experts of its day. SELinux started out as
+the Flask micro-kernel security architecture.
+
+ACLs are part of the base kernel, while SELinux is a
+Linux Security Module.
+
+
+>> Does anyone know
+>> which file-systems supports SElinux?
+
+It's really much more the other way around. SELinux
+uses extended attributes (xattrs) and can take advantage
+of any filesystem that supports them.
+
+> Google knows;-)
+>
+> Actually you make a small partition for each filesystem and try it out.
+>
+> 	Bernd
+
