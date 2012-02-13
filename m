@@ -1,57 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab2BMSaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 13:30:16 -0500
-Received: from hades.mikemestnik.net ([184.106.158.151]:43713 "EHLO
-	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2BMSaO (ORCPT
+	id S1757456Ab2BMSc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 13:32:57 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64424 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257Ab2BMScz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 13:30:14 -0500
-Message-ID: <4F3956B3.1060604@mikemestnik.net>
-Date: Mon, 13 Feb 2012 12:30:11 -0600
-From: Mike Mestnik <cheako@mikemestnik.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Mon, 13 Feb 2012 13:32:55 -0500
+Date: Mon, 13 Feb 2012 16:32:32 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] perf tools: Introduce struct perf_maps_opts
+Message-ID: <20120213183232.GD15955@infradead.org>
+References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
+ <1329118064-9412-2-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Sysreq during system hang where ssh/screen still accessible.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329118064-9412-2-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-   I have an unusual hang:
-The box is responding to monitor wakeup key presses and putting the 
-display to sleep after idle, however the screen is always blank.
+Em Mon, Feb 13, 2012 at 04:27:33PM +0900, Namhyung Kim escreveu:
+> The perf_maps_opts struct will be used for taking care of cpu/thread
+> maps based on user's input. Since it is used on various subcommands
+> it'd be better factoring it out.
 
- From the network side a previously started root ssh screen session can 
-create more views,but the shell never starts, neither does ls from an 
-existing shell.
+I think 'struct perf_target' is a better name than 'struct
+perf_maps_opts'.
 
-I've configured remote logging and there is noting in any of the logs to 
-indicate a problem, smart-tools is installed.
+Then you can remove the 'target_' prefix from pid and tid:
 
-The remote log(over SCTP) is still connected and the IRC client is still 
-connected.
+struct perf_target {
+	pid_t	     pid;
+	pid_t	     tid;
+	uid_t	     uid;
+	const char   *cpu_list;
+	const char   *uid_str;
+	bool	     system_wide;
+};
 
-Kernel messages are being logged, last msg from apparmor about empathy.
+Also bear in mind that this patch will clash with David Ahern's patch
+for supporting pid and tid lists, I'll try to integrate it today and
+then you can work on top of it in my perf/core branch, ok?
 
-Key presses wake up monitor, but sysreq-s is not logging anything.
+Now to the other patches...
 
-No further ssh shells able to check, but I don't think that dmesg would 
-even start.
-
-However ssh/screen is still responsive to create new views and switch 
-views, but the shell never starts.
-
-Feb 12 17:33:33: The only error is smatd: Prefailure: Spin_Up_Time (3) 
-changed to: 197
-Feb 13 12:54 AM an email http://pastebin.com/A8srcY7v
-However nothing in the _remote_ log around 1AM/12:54.
-
-Any thoughts?
-linux-image-3.2.0-15-generic-pae
-System specs.
-http://pastebin.com/35NwE0G1
-
+- Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  tools/perf/builtin-record.c |   46 +++++++++++++++++++++++-------------------
+>  tools/perf/builtin-test.c   |   11 ++++++---
+>  tools/perf/perf.h           |   11 +++++++--
+>  tools/perf/util/evlist.c    |    3 +-
+>  tools/perf/util/evsel.c     |    9 ++++---
+>  5 files changed, 47 insertions(+), 33 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index f8d9a545dd6e..7b50316136bf 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -44,7 +44,6 @@ struct perf_record {
+>  	struct perf_evlist	*evlist;
+>  	struct perf_session	*session;
+>  	const char		*progname;
+> -	const char		*uid_str;
+>  	int			output;
+>  	unsigned int		page_size;
+>  	int			realtime_prio;
+> @@ -215,7 +214,7 @@ try_again:
+>  			if (err == EPERM || err == EACCES) {
+>  				ui__error_paranoid();
+>  				exit(EXIT_FAILURE);
+> -			} else if (err ==  ENODEV && opts->cpu_list) {
+> +			} else if (err ==  ENODEV && opts->maps.cpu_list) {
+>  				die("No such device - did you specify"
+>  					" an out-of-range profile CPU?\n");
+>  			} else if (err == EINVAL && opts->sample_id_all_avail) {
+> @@ -564,7 +563,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+>  		perf_session__process_machines(session, tool,
+>  					       perf_event__synthesize_guest_os);
+>  
+> -	if (!opts->system_wide)
+> +	if (!opts->maps.system_wide)
+>  		perf_event__synthesize_thread_map(tool, evsel_list->threads,
+>  						  process_synthesized_event,
+>  						  machine);
+> @@ -645,8 +644,10 @@ static const char * const record_usage[] = {
+>   */
+>  static struct perf_record record = {
+>  	.opts = {
+> -		.target_pid	     = -1,
+> -		.target_tid	     = -1,
+> +		.maps = {
+> +			.target_pid	     = -1,
+> +			.target_tid	     = -1,
+> +		},
+>  		.mmap_pages	     = UINT_MAX,
+>  		.user_freq	     = UINT_MAX,
+>  		.user_interval	     = ULLONG_MAX,
+> @@ -670,9 +671,9 @@ const struct option record_options[] = {
+>  		     parse_events_option),
+>  	OPT_CALLBACK(0, "filter", &record.evlist, "filter",
+>  		     "event filter", parse_filter),
+> -	OPT_INTEGER('p', "pid", &record.opts.target_pid,
+> +	OPT_INTEGER('p', "pid", &record.opts.maps.target_pid,
+>  		    "record events on existing process id"),
+> -	OPT_INTEGER('t', "tid", &record.opts.target_tid,
+> +	OPT_INTEGER('t', "tid", &record.opts.maps.target_tid,
+>  		    "record events on existing thread id"),
+>  	OPT_INTEGER('r', "realtime", &record.realtime_prio,
+>  		    "collect data with this RT SCHED_FIFO priority"),
+> @@ -680,11 +681,11 @@ const struct option record_options[] = {
+>  		    "collect data without buffering"),
+>  	OPT_BOOLEAN('R', "raw-samples", &record.opts.raw_samples,
+>  		    "collect raw sample records from all opened counters"),
+> -	OPT_BOOLEAN('a', "all-cpus", &record.opts.system_wide,
+> +	OPT_BOOLEAN('a', "all-cpus", &record.opts.maps.system_wide,
+>  			    "system-wide collection from all CPUs"),
+>  	OPT_BOOLEAN('A', "append", &record.append_file,
+>  			    "append to the output file to do incremental profiling"),
+> -	OPT_STRING('C', "cpu", &record.opts.cpu_list, "cpu",
+> +	OPT_STRING('C', "cpu", &record.opts.maps.cpu_list, "cpu",
+>  		    "list of cpus to monitor"),
+>  	OPT_BOOLEAN('f', "force", &record.force,
+>  			"overwrite existing data file (deprecated)"),
+> @@ -718,7 +719,7 @@ const struct option record_options[] = {
+>  	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+>  		     "monitor event in cgroup name only",
+>  		     parse_cgroups),
+> -	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
+> +	OPT_STRING('u', "uid", &record.opts.maps.uid_str, "user", "user to profile"),
+>  	OPT_END()
+>  };
+>  
+> @@ -739,8 +740,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  
+>  	argc = parse_options(argc, argv, record_options, record_usage,
+>  			    PARSE_OPT_STOP_AT_NON_OPTION);
+> -	if (!argc && rec->opts.target_pid == -1 && rec->opts.target_tid == -1 &&
+> -		!rec->opts.system_wide && !rec->opts.cpu_list && !rec->uid_str)
+> +	if (!argc && rec->opts.maps.target_pid == -1 &&
+> +	    rec->opts.maps.target_tid == -1 &&
+> +	    !rec->opts.maps.system_wide && !rec->opts.maps.cpu_list &&
+> +	    !rec->opts.maps.uid_str)
+>  		usage_with_options(record_usage, record_options);
+>  
+>  	if (rec->force && rec->append_file) {
+> @@ -753,7 +756,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  		rec->write_mode = WRITE_FORCE;
+>  	}
+>  
+> -	if (nr_cgroups && !rec->opts.system_wide) {
+> +	if (nr_cgroups && !rec->opts.maps.system_wide) {
+>  		fprintf(stderr, "cgroup monitoring only available in"
+>  			" system-wide mode\n");
+>  		usage_with_options(record_usage, record_options);
+> @@ -780,17 +783,18 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  		goto out_symbol_exit;
+>  	}
+>  
+> -	rec->opts.uid = parse_target_uid(rec->uid_str, rec->opts.target_tid,
+> -					 rec->opts.target_pid);
+> -	if (rec->uid_str != NULL && rec->opts.uid == UINT_MAX - 1)
+> +	rec->opts.maps.uid = parse_target_uid(rec->opts.maps.uid_str,
+> +					      rec->opts.maps.target_tid,
+> +					      rec->opts.maps.target_pid);
+> +	if (rec->opts.maps.uid_str && rec->opts.maps.uid == UINT_MAX - 1)
+>  		goto out_free_fd;
+>  
+> -	if (rec->opts.target_pid != -1)
+> -		rec->opts.target_tid = rec->opts.target_pid;
+> +	if (rec->opts.maps.target_pid != -1)
+> +		rec->opts.maps.target_tid = rec->opts.maps.target_pid;
+>  
+> -	if (perf_evlist__create_maps(evsel_list, rec->opts.target_pid,
+> -				     rec->opts.target_tid, rec->opts.uid,
+> -				     rec->opts.cpu_list) < 0)
+> +	if (perf_evlist__create_maps(evsel_list, rec->opts.maps.target_pid,
+> +				     rec->opts.maps.target_tid, rec->opts.maps.uid,
+> +				     rec->opts.maps.cpu_list) < 0)
+>  		usage_with_options(record_usage, record_options);
+>  
+>  	list_for_each_entry(pos, &evsel_list->entries, node) {
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 70c4eb2bdf72..da3c1c3f8524 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -1010,8 +1010,10 @@ realloc:
+>  static int test__PERF_RECORD(void)
+>  {
+>  	struct perf_record_opts opts = {
+> -		.target_pid = -1,
+> -		.target_tid = -1,
+> +		.maps = {
+> +			.target_pid = -1,
+> +			.target_tid = -1,
+> +		},
+>  		.no_delay   = true,
+>  		.freq	    = 10,
+>  		.mmap_pages = 256,
+> @@ -1055,8 +1057,9 @@ static int test__PERF_RECORD(void)
+>  	 * perf_evlist__prepare_workload we'll fill in the only thread
+>  	 * we're monitoring, the one forked there.
+>  	 */
+> -	err = perf_evlist__create_maps(evlist, opts.target_pid,
+> -				       opts.target_tid, UINT_MAX, opts.cpu_list);
+> +	err = perf_evlist__create_maps(evlist, opts.maps.target_pid,
+> +				       opts.maps.target_tid, UINT_MAX,
+> +				       opts.maps.cpu_list);
+>  	if (err < 0) {
+>  		pr_debug("Not enough memory to create thread/cpu maps\n");
+>  		goto out_delete_evlist;
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 92af1688bae4..972cd99fb509 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -185,10 +185,17 @@ extern const char perf_version_string[];
+>  
+>  void pthread__unblock_sigwinch(void);
+>  
+> -struct perf_record_opts {
+> +struct perf_maps_opts {
+>  	pid_t	     target_pid;
+>  	pid_t	     target_tid;
+>  	uid_t	     uid;
+> +	bool	     system_wide;
+> +	const char   *cpu_list;
+> +	const char   *uid_str;
+> +};
+> +
+> +struct perf_record_opts {
+> +	struct perf_maps_opts maps;
+>  	bool	     call_graph;
+>  	bool	     group;
+>  	bool	     inherit_stat;
+> @@ -200,14 +207,12 @@ struct perf_record_opts {
+>  	bool	     sample_address;
+>  	bool	     sample_time;
+>  	bool	     sample_id_all_avail;
+> -	bool	     system_wide;
+>  	bool	     period;
+>  	unsigned int freq;
+>  	unsigned int mmap_pages;
+>  	unsigned int user_freq;
+>  	u64	     default_interval;
+>  	u64	     user_interval;
+> -	const char   *cpu_list;
+>  };
+>  
+>  #endif
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index a57a8cfc5d90..d7c3a2d5771c 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -820,7 +820,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+>  		exit(-1);
+>  	}
+>  
+> -	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
+> +	if (!opts->maps.system_wide && opts->maps.target_tid == -1 &&
+> +	    opts->maps.target_pid == -1)
+>  		evlist->threads->map[0] = evlist->workload.pid;
+>  
+>  	close(child_ready_pipe[1]);
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index 9a11f9edac12..6a4e97d5f6d5 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -105,15 +105,15 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>  	if (opts->call_graph)
+>  		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+>  
+> -	if (opts->system_wide)
+> +	if (opts->maps.system_wide)
+>  		attr->sample_type	|= PERF_SAMPLE_CPU;
+>  
+>  	if (opts->period)
+>  		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+>  
+>  	if (opts->sample_id_all_avail &&
+> -	    (opts->sample_time || opts->system_wide ||
+> -	     !opts->no_inherit || opts->cpu_list))
+> +	    (opts->sample_time || opts->maps.system_wide ||
+> +	     !opts->no_inherit || opts->maps.cpu_list))
+>  		attr->sample_type	|= PERF_SAMPLE_TIME;
+>  
+>  	if (opts->raw_samples) {
+> @@ -130,7 +130,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>  	attr->mmap = track;
+>  	attr->comm = track;
+>  
+> -	if (opts->target_pid == -1 && opts->target_tid == -1 && !opts->system_wide) {
+> +	if (opts->maps.target_pid == -1 && opts->maps.target_tid == -1 &&
+> +	    !opts->maps.system_wide) {
+>  		attr->disabled = 1;
+>  		attr->enable_on_exec = 1;
+>  	}
+> -- 
+> 1.7.9
