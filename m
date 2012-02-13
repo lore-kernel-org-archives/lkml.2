@@ -1,74 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab2BMNn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:43:27 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:35029
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751157Ab2BMNnZ (ORCPT
+	id S1756619Ab2BMNvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:51:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46255 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2BMNvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:43:25 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, rdunlap@xenotime.net, linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] Documentation: Fix Broken URL "freshmeat"
-Date: Mon, 13 Feb 2012 22:42:58 +0900
-Message-Id: <1329140578-2045-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Mon, 13 Feb 2012 08:51:19 -0500
+MIME-Version: 1.0
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mark Gross <markgross@thegnar.org>,
+        Venkatesh Pallipadi <venki@google.com>
+Cc: Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH] PM / QoS: unconditionally build the feature
+Date: Mon, 13 Feb 2012 14:50:59 +0100
+Message-Id: <1329141059-16554-1-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
+References: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix broken URL in documents "freshmeat" to "freecode" in
-Documentation/filesystems/ramfs-rootfs-initramfs.txt,
-Documentation/scsi/scsi-generic.txt
-Documentation/usb/mtouchusb.txt
+The PM QoS feature depends on CONFIG_PM which depends on
+PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
+not having these CONFIGs.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+This patch allows the feature in all cases.
+
+Signed-off-by: Jean Pihet <j-pihet@ti.com>
+Reported-by: Venkatesh Pallipadi <venki@google.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Mark Gross <markgross@thegnar.org>
 ---
- .../filesystems/ramfs-rootfs-initramfs.txt         |    2 +-
- Documentation/scsi/scsi-generic.txt                |    2 +-
- Documentation/usb/mtouchusb.txt                    |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/pm_qos.h |   41 +----------------------------------------
+ kernel/power/Makefile  |    3 ++-
+ 2 files changed, 3 insertions(+), 41 deletions(-)
 
-diff --git a/Documentation/filesystems/ramfs-rootfs-initramfs.txt b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
-index a8273d5..59b4a09 100644
---- a/Documentation/filesystems/ramfs-rootfs-initramfs.txt
-+++ b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
-@@ -297,7 +297,7 @@ the above threads) is:
-    either way about the archive format, and there are alternative tools,
-    such as:
+diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+index 4d99e4e..105be69 100644
+--- a/include/linux/pm_qos.h
++++ b/include/linux/pm_qos.h
+@@ -63,7 +63,6 @@ static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
+ 	return req->dev != 0;
+ }
  
--     http://freshmeat.net/projects/afio/
-+     http://freecode.com/projects/afio
+-#ifdef CONFIG_PM
+ int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
+ 			 enum pm_qos_req_action action, int value);
+ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+@@ -78,6 +77,7 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
+ int pm_qos_request_active(struct pm_qos_request *req);
+ s32 pm_qos_read_value(struct pm_qos_constraints *c);
  
- 2) The cpio archive format chosen by the kernel is simpler and cleaner (and
-    thus easier to create and parse) than any of the (literally dozens of)
-diff --git a/Documentation/scsi/scsi-generic.txt b/Documentation/scsi/scsi-generic.txt
-index 0a22ab8..51be20a 100644
---- a/Documentation/scsi/scsi-generic.txt
-+++ b/Documentation/scsi/scsi-generic.txt
-@@ -62,7 +62,7 @@ There are two packages of sg utilities:
-                 and earlier
- Both packages will work in the lk 2.4 series however sg3_utils offers more
- capabilities. They can be found at: http://sg.danny.cz/sg/sg3_utils.html and 
--freshmeat.net
-+freecode.com
++#ifdef CONFIG_PM
+ s32 __dev_pm_qos_read_value(struct device *dev);
+ s32 dev_pm_qos_read_value(struct device *dev);
+ int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+@@ -95,45 +95,6 @@ void dev_pm_qos_constraints_destroy(struct device *dev);
+ int dev_pm_qos_add_ancestor_request(struct device *dev,
+ 				    struct dev_pm_qos_request *req, s32 value);
+ #else
+-static inline int pm_qos_update_target(struct pm_qos_constraints *c,
+-				       struct plist_node *node,
+-				       enum pm_qos_req_action action,
+-				       int value)
+-			{ return 0; }
+-static inline void pm_qos_add_request(struct pm_qos_request *req,
+-				      int pm_qos_class, s32 value)
+-			{ return; }
+-static inline void pm_qos_update_request(struct pm_qos_request *req,
+-					 s32 new_value)
+-			{ return; }
+-static inline void pm_qos_remove_request(struct pm_qos_request *req)
+-			{ return; }
+-
+-static inline int pm_qos_request(int pm_qos_class)
+-{
+-	switch (pm_qos_class) {
+-	case PM_QOS_CPU_DMA_LATENCY:
+-		return PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+-	case PM_QOS_NETWORK_LATENCY:
+-		return PM_QOS_NETWORK_LAT_DEFAULT_VALUE;
+-	case PM_QOS_NETWORK_THROUGHPUT:
+-		return PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE;
+-	default:
+-		return PM_QOS_DEFAULT_VALUE;
+-	}
+-}
+-
+-static inline int pm_qos_add_notifier(int pm_qos_class,
+-				      struct notifier_block *notifier)
+-			{ return 0; }
+-static inline int pm_qos_remove_notifier(int pm_qos_class,
+-					 struct notifier_block *notifier)
+-			{ return 0; }
+-static inline int pm_qos_request_active(struct pm_qos_request *req)
+-			{ return 0; }
+-static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+-			{ return 0; }
+-
+ static inline s32 __dev_pm_qos_read_value(struct device *dev)
+ 			{ return 0; }
+ static inline s32 dev_pm_qos_read_value(struct device *dev)
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index 07e0e28..66d808e 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -1,7 +1,8 @@
  
- Another approach is to look at the applications that use the sg driver.
- These include cdrecord, cdparanoia, SANE and cdrdao.
-diff --git a/Documentation/usb/mtouchusb.txt b/Documentation/usb/mtouchusb.txt
-index 86302cd..a91adb2 100644
---- a/Documentation/usb/mtouchusb.txt
-+++ b/Documentation/usb/mtouchusb.txt
-@@ -1,7 +1,7 @@
- CHANGES
+ ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
  
- - 0.3 - Created based off of scanner & INSTALL from the original touchscreen
--  driver on freshmeat (http://freshmeat.net/projects/3mtouchscreendriver)
-+  driver on freecode (http://freecode.com/projects/3mtouchscreendriver)
- - Amended for linux-2.4.18, then 2.4.19
- 
- - 0.5 - Complete rewrite using Linux Input in 2.6.3
+-obj-$(CONFIG_PM)		+= main.o qos.o
++obj-y				+= qos.o
++obj-$(CONFIG_PM)		+= main.o
+ obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
+ obj-$(CONFIG_FREEZER)		+= process.o
+ obj-$(CONFIG_SUSPEND)		+= suspend.o
 -- 
-1.7.6.5
+1.7.5.4
 
