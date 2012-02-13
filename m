@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab2BMQvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 11:51:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63821 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab2BMQvs (ORCPT
+	id S932125Ab2BMQwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 11:52:15 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64234 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab2BMQwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 11:51:48 -0500
-Message-Id: <20120213165137.984626680@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 13 Feb 2012 20:48:25 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Kees Cook <keescook@chromium.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: [patch 3/4] c/r: procfs: add arg_start/end, env_start/end and exit_code members to /proc/$pid/stat
-References: <20120213164822.227219834@openvz.org>
-Content-Disposition: inline; filename=fs-proc-extend-state-2-linux-next
+	Mon, 13 Feb 2012 11:52:12 -0500
+Message-ID: <1329152067.22240.214.camel@sauron.fi.intel.com>
+Subject: Re: [patch] Adding Secure Deletion to UBIFS
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 13 Feb 2012 18:54:27 +0200
+In-Reply-To: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-kgyEtLFGEhJaOjmQ5UBh"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We would like to have an ability to restore command line
-arguments and program environment pointers but first we
-need to obtain them somehow. Thus we put these values into
-/proc/$pid/stat. The exit_code is needed to restore zombie
-tasks.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
----
- Documentation/filesystems/proc.txt |    5 +++++
- fs/proc/array.c                    |   20 +++++++++++++++++---
- 2 files changed, 22 insertions(+), 3 deletions(-)
+--=-kgyEtLFGEhJaOjmQ5UBh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -311,6 +311,11 @@ Table 1-4: Contents of the stat files (a
-   start_data    address above which program data+bss is placed
-   end_data      address below which program data+bss is placed
-   start_brk     address above which program heap can be expanded with brk()
-+  arg_start     address above which program command line is placed
-+  arg_end       address below which program command line is placed
-+  env_start     address above which program environment is placed
-+  env_end       address below which program environment is placed
-+  exit_code     the thread's exit_code in the form reported by the waitpid system call
- ..............................................................................
- 
- The /proc/PID/maps file containing the currently mapped memory regions and
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -508,9 +508,23 @@ static int do_task_stat(struct seq_file
- 	seq_put_decimal_ull(m, ' ', delayacct_blkio_ticks(task));
- 	seq_put_decimal_ull(m, ' ', cputime_to_clock_t(gtime));
- 	seq_put_decimal_ll(m, ' ', cputime_to_clock_t(cgtime));
--	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->start_data : 0);
--	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->end_data : 0);
--	seq_put_decimal_ull(m, ' ', (mm && permitted) ? mm->start_brk : 0);
-+
-+	if (mm && permitted) {
-+		seq_put_decimal_ull(m, ' ', mm->start_data);
-+		seq_put_decimal_ull(m, ' ', mm->end_data);
-+		seq_put_decimal_ull(m, ' ', mm->start_brk);
-+		seq_put_decimal_ull(m, ' ', mm->arg_start);
-+		seq_put_decimal_ull(m, ' ', mm->arg_end);
-+		seq_put_decimal_ull(m, ' ', mm->env_start);
-+		seq_put_decimal_ull(m, ' ', mm->env_end);
-+	} else
-+		seq_printf(m, " 0 0 0 0 0 0 0");
-+
-+	if (permitted)
-+		seq_put_decimal_ll(m, ' ', task->exit_code);
-+	else
-+		seq_put_decimal_ll(m, ' ', 0);
-+
- 	seq_putc(m, '\n');
- 	if (mm)
- 		mmput(mm);
+Hi, I will try to get into more details soon, but to keep you busy - the
+first thing to start is to introduce new on-flash format version -
+because you need more space in 'struct ubifs_branch'
+
+On Thu, 2012-02-09 at 16:24 +0100, Joel Reardon wrote:
+> @@ -742,6 +751,7 @@ struct ubifs_branch {
+>   	__le32 lnum;
+>   	__le32 offs;
+>   	__le32 len;
+> +	__le64 crypto_lookup;
+>   	__u8 key[];
+>   } __packed;
+
+Could you make a separate patch which adds new on-flash format and make
+sure that new ubifs binaries can mount the old formats and work with
+them. And that old ubifs binaries gracefully reject the new format.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-kgyEtLFGEhJaOjmQ5UBh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPOUBDAAoJECmIfjd9wqK0NxUQAMkbSqxjb5+pqwGgBxPZH8XZ
+ad5B3ehyiK7jBOMUZnQczxXohwNcM5fYjIktigD912s1aGxNIDrZbOdCs03+CzFi
+/4VcZy2yFNhr8ZNCxF74/5r+z1QdG6l5KPcPK9DYrj/dQXVjvhmYjX7qOYWub8wb
+bdgw131gB1Hg4IKUTGxs8wRUFjV2jnYbidJjripKKN8PxL0pxPiJu4/wEzKhHv2o
+xkRetVyEEc5m4RDkpe+zqVxWaFeO7DQWGiWeXvnveh4YFWCigziAQqqZ33Ra8Dh6
++2jFpf5/xqr/Q8cNjFmzqGKaF1M/y6CoAhxaGeej2oT+LaM8gNXDdf7YnI1+Xeu5
+Js1IEx3Pg0txxwvyt8H1VL6cpm5a5o9LiIvI6M1TAxg4i+dDdmaciFVzUYCqJY9R
+gQWp9lVk7ItAtsA5O5XucEZ8+WLwd8WQWI8Z/sNG+qbYLykFqEHMELL1051P1TBm
+9ma8DGPxeLvCZWT2zfMoJssHBbTiUI3rrYY4G0s4fByYqt2DMeVDqgsVMO0sIYcE
+aK28dq3KiF7YD1x6U6xIGeaOXO8lmr8vL4tXbJ/GZaddb2mF8xqU1EUooHx+umnl
+mo0CRuKMOi/5cMTRp5/IVO7mIxlAH+QOSCaHvvhyuMHFNbxvLc+UmsgJsy98P3bO
+Hy2urMuLfcB4T6htRE0f
+=INn4
+-----END PGP SIGNATURE-----
+
+--=-kgyEtLFGEhJaOjmQ5UBh--
 
