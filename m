@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab2BMWSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 17:18:36 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:13865 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab2BMWSf (ORCPT
+	id S1757430Ab2BMWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:23:59 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35870 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab2BMWX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 17:18:35 -0500
-X-Authority-Analysis: v=2.0 cv=XsF4yC59 c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=ODbK2BMGt0IA:10 a=2WZXf8VwxVAA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=xe8BsctaAAAA:8 a=VJC23yv4v7J3gei8j-IA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.78.168.186
-Message-ID: <4F398C39.6010901@ubuntu.com>
-Date: Mon, 13 Feb 2012 17:18:33 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Mon, 13 Feb 2012 17:23:57 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6619"; a="160549624"
+Message-ID: <4F398D61.9080501@codeaurora.org>
+Date: Mon, 13 Feb 2012 14:23:29 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
-        Karel Zak <kzak@redhat.com>, maxim.patlasov@gmail.com
-Subject: Re: [PATCH 0/2] block: online resize of disk partitions
-References: <1329161438-12602-1-git-send-email-vgoyal@redhat.com> <4F3981FE.7090601@ubuntu.com> <20120213215039.GD3130@redhat.com>
-In-Reply-To: <20120213215039.GD3130@redhat.com>
-X-Enigmail-Version: 1.3.5
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nico@fluxnic.net>, Rabin Vincent <rabin@rab.in>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+References: <alpine.LFD.2.02.1202022016480.2759@xanadu.home> <1328234629-32735-1-git-send-email-sboyd@codeaurora.org> <CAH+eYFCKcPzMMp_Ef5iX0Xp=xK8MdvJoUBRgKGT56SVjY5DXoA@mail.gmail.com> <alpine.LFD.2.02.1202131307430.24536@xanadu.home> <4F3952C7.3040502@codeaurora.org> <20120213181501.GD25655@n2100.arm.linux.org.uk>
+In-Reply-To: <20120213181501.GD25655@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 02/13/12 10:15, Russell King - ARM Linux wrote:
+> On Mon, Feb 13, 2012 at 10:13:27AM -0800, Stephen Boyd wrote:
+>> Thanks. Russell has already merged the original patch to the fixes
+>> branch. Hopefully he can fold this one in.
+> Nope, I've asked Linus to pull it.
+>
+> So do we conclude that the original patch wasn't properly tested? :P
 
-On 2/13/2012 4:50 PM, Vivek Goyal wrote:
-> So if a user anyway does not specify the start of sector, then 
-> tools shall have to first read it and then call the ioctl. If 
-> anyway tools are specifying, there is no much scope of screwing up 
-> the things?
+Sigh. Lockdep strikes again! I promise I tested it with lockdep disabled.
 
-Tools certainly should know where the partition starts.  I already
-have patched parted and partx to pass the current size, which they
-had trivially available.  Making sure of that is a good sanity check
-to guard against, for instance, resizing the wrong partition.
+It looks like Linus' hasn't pulled yet but maybe he just hasn't
+published it.
 
-> Even if we allow changing start at some point of time, then IOCTL 
-> can remain the same and just the implementation will change in a 
-> backward compatible manner. Old tools still will continue to work 
-> as they have always been, and new ones can start passing "start" 
-> too.
-> 
-> So I really did not find passing and checking "start" of partition
->  very appealing.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-That is exactly why passing and checking start is required.  If it is
-entirely ignored, then the interface can not start using it in the
-future in a backward compatible way, because user mode tools will have
-grown used to passing in any kind of garbage, so if the kernel starts
-using it to alter the start position of the partition, older tools
-would randomly and accidentally be shifting the the start of
-partitions they just mean to change the length of.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEcBAEBAgAGBQJPOYw5AAoJEJrBOlT6nu75CV4H/2vyZwujRqb+mqTAfQ+/XJE7
-E850b+MOFZEQEoKQy+XAeu15pmm/TIa8NTk83kBeoQb30P2sU814+rJjbMKpZ9x/
-xc8DZVC+DdnLLJ8a9aQw5feV0nmy102QrL0CWS+Wi6vS3DLlLCQQ+nv7AZ1jPV0Z
-NPzqtmI/zBopf/F2IrL+5DLD9TAi7mf+Yv5IBb7w2JQSiU9LoBo9TTMJhPAhaqtC
-ihqSJ0Q/t0DG3WacK+8fwh6Jyta1Bx+YsoUzYijtsaH6GQ1zbe+3c44T1JMI+Zvq
-30M8V7y1BsLhp+lfZSUlC5YvPpu7gCJ1lg2fpMz56q2DENURj3L1HkdFwPwfLcw=
-=TTAk
------END PGP SIGNATURE-----
