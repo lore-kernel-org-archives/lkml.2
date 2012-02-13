@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2BMHeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 02:34:21 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42616 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752792Ab2BMHeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 02:34:20 -0500
-MIME-Version: 1.0
-Date: Mon, 13 Feb 2012 15:34:19 +0800
-Message-ID: <CANudz+t_yXA621maPO+Cn5hGtsyL-ebn2hzFv+2XxOA9KyL2Fw@mail.gmail.com>
-Subject: some questions about container_of and user_struct
-From: loody <miloody@gmail.com>
-To: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756170Ab2BMHnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:43:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755072Ab2BMHnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 02:43:42 -0500
+Message-ID: <1329119009.2647.34.camel@cr0>
+Subject: Re: [Drbd-dev] [PATCH 58/60] drbd: remove the second argument of
+ k[un]map_atomic()
+From: Cong Wang <amwang@redhat.com>
+To: Robert Kim App and Facebook Marketing <evdo.hsdpa@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        drbd-user@lists.linbit.com, Lars Ellenberg <drbd-dev@lists.linbit.com>
+Date: Mon, 13 Feb 2012 15:43:29 +0800
+In-Reply-To: <CA+xKNSgdt7mc2NYTbprFspE54R_4T4PTzyGKyKESqBRyaNCPJg@mail.gmail.com>
+References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
+	 <1328852421-19678-59-git-send-email-amwang@redhat.com>
+	 <CA+xKNSgdt7mc2NYTbprFspE54R_4T4PTzyGKyKESqBRyaNCPJg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi all:
-I add below function in free_uid to get which task try to free user_struct
+On Sun, 2012-02-12 at 14:54 +0900, Robert Kim App and Facebook Marketing
+wrote:
+> Guys... in my email... the code really breaks up bad... is there a version
+> of the code without any line-breaks????
 
-struct task_struct *p;
-struct cred *c;
-c = container_of(up,struct cred, user);
-p = container_of(c,struct task_struct,real_cred);
-printk("%s user %p, cred->user = %p p->pid = %d\n",__func__,up, c->user,p->pid);
+I use git to send out these patches, before you, nobody complains. So I
+am afraid it is a problem of your email client. :)
 
-but p->pid is always 0.
-I think it is wrong for me to get cred and task by using container_of.
 
-1. from kernel definition below, is it ok that member is pointer?
-#define container_of(ptr, type, member)
-
-2. is there already exist macros or functions I can use for #1 above?
-
-3. what is user_struct used for? When and under what circumstances
-kernel will try to release it.
-
-4. since user_struct is allocated by kmem_cache_zalloc, is there api
-or tool I can monitor it?
-
-Thanks for your help,
