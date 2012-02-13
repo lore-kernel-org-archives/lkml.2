@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2BMMRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:17:41 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61781 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2BMMRj (ORCPT
+	id S1755076Ab2BMMbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 07:31:31 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38484 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab2BMMba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:17:39 -0500
-Date: Mon, 13 Feb 2012 13:17:35 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Felipe Balbi <balbi@ti.com>
-cc: linux-usb@vger.kernel.org,
-        "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>,
-        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 2/2] usb: fix renesas_usbhs to not schedule in atomic
- context
-In-Reply-To: <20120213120814.GP6614@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.64.1202131316220.8277@axis700.grange>
-References: <Pine.LNX.4.64.1202092313560.18719@axis700.grange>
- <Pine.LNX.4.64.1202092316180.18719@axis700.grange>
- <20120213120814.GP6614@legolas.emea.dhcp.ti.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:ydKxEdLKR9tuaFuZLOAeFE7as3bzAlZtuccyXn5l3om
- 5Ezch/vVjwSOd+L0Z6S7TGOkxp0emlh+MdW5bf2oYMKffD4P3O
- MPS3M1z8yp0JW97n4FZ0HAOKvif+1zAC1b4+LZ+tW8hV0oZFzv
- HBg035CJyq3/lLeDwS3RTZgw5bnwtWG9T03yK3AOMJRIJX+WBd
- acLI2T+wIKIE1q7Ne1JhGcceDgSGqdxqqccJiWNAaHlcbqhI95
- Q5wME15jIV5SGGR03V3e9JOmGPwIjr/KyWkXU9N7b3o/TqXXH3
- z3VVytbk/IQYYGeJiGuRJ1TSMVO9sffj4MJRfuv10mb0Kp8o3c
- fH93Kma8UdpQKu5fCrEr03mS4BJG4epgclXxqkMeuafmjbML3S
- +gWFfWLY14fuA==
+	Mon, 13 Feb 2012 07:31:30 -0500
+Message-ID: <1329136425.22240.119.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] [trivial] jffs2: Fix typo in compr.c
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 13 Feb 2012 14:33:45 +0200
+In-Reply-To: <1328701179-1823-1-git-send-email-standby24x7@gmail.com>
+References: <1328701179-1823-1-git-send-email-standby24x7@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-47UGooDptLg5R3qI3rXw"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Felipe Balbi wrote:
 
-> Hi,
-> 
-> On Thu, Feb 09, 2012 at 11:17:51PM +0100, Guennadi Liakhovetski wrote:
-> > @@ -997,7 +991,7 @@ static bool usbhsf_dma_filter(struct dma_chan *chan, void *param)
-> >  	 *
-> >  	 * usbhs doesn't recognize id = 0 as valid DMA
-> >  	 */
-> > -	if (0 == slave->slave_id)
-> > +	if (0 == slave->simple_slave.slave_id)
-> >  		return false;
-> >  
-> >  	chan->private = slave;
-> > @@ -1176,8 +1170,8 @@ int usbhs_fifo_probe(struct usbhs_priv *priv)
-> >  	fifo->port	= D0FIFO;
-> >  	fifo->sel	= D0FIFOSEL;
-> >  	fifo->ctr	= D0FIFOCTR;
-> > -	fifo->tx_slave.slave_id	= usbhs_get_dparam(priv, d0_tx_id);
-> > -	fifo->rx_slave.slave_id	= usbhs_get_dparam(priv, d0_rx_id);
-> > +	fifo->tx_slave.simple_slave.slave_id	= usbhs_get_dparam(priv, d0_tx_id);
-> > +	fifo->rx_slave.simple_slave.slave_id	= usbhs_get_dparam(priv, d0_rx_id);
-> 
-> what are these "simple_slave" changes ? They have nothing to do with
-> $SUBJECT ? In fact, breaks my gadget branch.
+--=-47UGooDptLg5R3qI3rXw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hrrrm... Right, sorry, that's clearly unrelated...
+On Wed, 2012-02-08 at 20:39 +0900, Masanari Iida wrote:
+> Correct spelling "modul" to "module" in
+> fs/hffs2/compr.c
+>=20
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Pushed to l2-mtd.git tree, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-47UGooDptLg5R3qI3rXw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPOQMpAAoJECmIfjd9wqK0oUAP+weFoPgKv08kbWqGcnCbXmFG
+NA94cfTKwsoNBauNtgJgTosnuNsD4vwKIQ5cXt60ayVvJM17WZwesIX5YnXhTjp3
+Bx34e9qWyYnuPlPCVRv4is+P+C8c1qQe5AvHNBoNXMseH3SphvFMcXYHRDxfJYku
+6RbeBYkwcL+dEk9mVJtTEtx6hu5+L+jgF4y4BDOjyJq4YyOc7yyQqJAwZWX860dI
+DHGePTtCHijGqvBW/j19neMt9UtIWb2iO81wm6CWhiq0C47o3/GHEbJCrNxk8reE
+yNU6atNnVC28M2oZOQ+TS6eQKnwioived0+RLBs1V8qf+a7ug1onUqvs4enQkFlY
+edoX5cV7nvWD7ZQzauoXfRuyMKqOniu/8LpvFC/JGVWBWd7+YGBZaIHTzg37J1Go
++o+3wXHLnK5STVwQOhLnlVF5xEDK/XVwaglALG2NXC8NxvdQlRKDHhpmCtayNEkA
+MyLV0+0vE6o6lKyKC57a3SfYL9jgVanoM9RTBj/k0nFn5Qtkj1e7wI9Z/bDnlgSh
+nIk14r00XwfvMDwdnq1j8jf+Xnu+h2gvvF5yvj1dUy/ER6LZhh1TP0mIaO2eS346
+E5zaGpflmzHzHwGdORL9RPqzF9hlQNIvCrFV6vq//qfvX9eqKbyEkuJNkLBdYp0T
+j6YSfB8Pky6uI4fr2H0u
+=GjfV
+-----END PGP SIGNATURE-----
+
+--=-47UGooDptLg5R3qI3rXw--
+
