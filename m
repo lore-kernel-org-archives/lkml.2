@@ -1,66 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2BMA0n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 19:26:43 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56049 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754757Ab2BMA0m (ORCPT
+	id S1756084Ab2BMAtK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 19:49:10 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:35961 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab2BMAtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 19:26:42 -0500
-Message-ID: <4F3858BD.3040707@lwfinger.net>
-Date: Sun, 12 Feb 2012 18:26:37 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Sun, 12 Feb 2012 19:49:07 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com B33C982A1F
+Date: Mon, 13 Feb 2012 01:48:15 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] kinterval: routines to manipulate generic
+ intervals
+Message-ID: <20120213004815.GA2052@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-2-git-send-email-andrea@betterlinux.com>
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>
-CC: chunkeey@web.de, m@bues.ch, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org
-Subject: Re: [RFC/RFT] p54spi: Convert driver to use asynchronous firmware
- loading
-References: <4f346d61.3S6x22TS5RH2gGO5%Larry.Finger@lwfinger.net> <CAMo8BfL+nbOmO=jo1uqYoXOUCDW2-c7BZTL5UBcdHGuyGODiFA@mail.gmail.com>
-In-Reply-To: <CAMo8BfL+nbOmO=jo1uqYoXOUCDW2-c7BZTL5UBcdHGuyGODiFA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329006098-5454-2-git-send-email-andrea@betterlinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2012 06:20 PM, Max Filippov wrote:
->> Drivers that load firmware from their probe routine have problems with the
->> latest versions of udev as they get timeouts while waiting for user
->> space to start. The problem is fixed by using request_firmware_nowait()
->> and delaying the start of mac80211 until the firmware is loaded.
->>
->> To prevent the possibility of the driver being unloaded while the firmware
->> loading callback is still active, a completion queue entry is used.
->>
->> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
->> ---
->>
->> This conversion of p54spi to use asynchronous firmware loading is based
->> on the method used in p54usb. As I do not have the hardware, it is only
->> compile tested. I would appreciate any feedback from people that have the
->> hardware.
->
-> Hi, Larry.
->
-> Are there any prerequisites for this patch?
-> For now I'm applying it to the linux-omap ToT and having the following:
+On Sun, Feb 12, 2012 at 01:21:36AM +0100, Andrea Righi wrote:
+> Add a generic infrastructure to efficiently keep track of intervals.
+> 
+> An interval is represented by a triplet (start, end, type). The values
+> (start, end) define the bounds of the range. The type is a generic
+> property associated to the interval. The interpretation of the type is
+> left to the user.
+> 
+> Multiple intervals associated to the same object are stored in an
+> interval tree (augmented rbtree) [1], with tree ordered on starting
+> address. The tree cannot contain multiple entries of different
+> interval types which overlap; in case of overlapping intervals new
+> inserted intervals overwrite the old ones (completely or in part, in the
+> second case the old interval is shrunk or split accordingly).
+> 
+> Reference:
+>  [1] "Introduction to Algorithms" by Cormen, Leiserson, Rivest and Stein
+> 
+> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+> ---
 
-No, there are no prerequisites; however, as Michael Buesch noted, I missed the 
-eeprom loading. This patch will not work.
+For those who are interested, I've an extra patch for this part (must be
+applied on top of the previous one): there's a bug fix and some
+improvements.
 
-I am currently testing an approach that is much simpler. Rather than using 
-request_firmware_nowait(), I am having the probe routine start a work queue, and 
-let that routine do a normal request_firmware(). This form of the patch is a lot 
-less intrusive.
+I'll include the following fix in the next version of the
+POSIX_FADV_NOREUSE patch set (sorry for this, but the whole patch set is
+still totally experimental, especially the kinterval part, I also plan
+to add a proper documentation and a sample test case in the samples/ dir
+if we think it'll be useful).
 
-I hope to post a revised patch within a day.
+Thanks,
+-Andrea
 
-Thanks for testing.
+---
+From: Andrea Righi <andrea@betterlinux.com>
+Subject: [PATCH] kinterval: fix interval boundaries and optimize insertion/removal
 
-Larry
+Use the right notation [start, end) instead of [start, end] for interval
+boundaries, so now an interval does not include its endpoint. This is
+the natural way to define a memory range (i.e, 0-4096 = all bytes
+between 0 and 4095 included) and it makes easier to reuse this code also
+for other similar cases.
 
+Moreover, optimize insertion and removal code to be actually O(log(n)).
 
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ include/linux/kinterval.h |    2 +-
+ lib/kinterval.c           |  135 ++++++++++++++++++++++++++++-----------------
+ 2 files changed, 86 insertions(+), 51 deletions(-)
 
-
+diff --git a/include/linux/kinterval.h b/include/linux/kinterval.h
+index 8152265..7a505f4 100644
+--- a/include/linux/kinterval.h
++++ b/include/linux/kinterval.h
+@@ -114,7 +114,7 @@ long kinterval_lookup_range(struct rb_root *root, u64 start, u64 end);
+  */
+ static inline long kinterval_lookup(struct rb_root *root, u64 addr)
+ {
+-	return kinterval_lookup_range(root, addr, addr);
++	return kinterval_lookup_range(root, addr, addr + 1);
+ }
+ 
+ /**
+diff --git a/lib/kinterval.c b/lib/kinterval.c
+index 2a9d463..28ee627 100644
+--- a/lib/kinterval.c
++++ b/lib/kinterval.c
+@@ -31,7 +31,7 @@ static struct kmem_cache *kinterval_cachep __read_mostly;
+ 
+ static bool is_interval_overlapping(struct kinterval *node, u64 start, u64 end)
+ {
+-	return !(node->start > end || node->end < start);
++	return !(node->start >= end || node->end <= start);
+ }
+ 
+ static u64 get_subtree_max_end(struct rb_node *node)
+@@ -76,23 +76,65 @@ static struct kinterval *
+ kinterval_rb_lowest_match(struct rb_root *root, u64 start, u64 end)
+ {
+ 	struct rb_node *node = root->rb_node;
+-	struct kinterval *lower_range = NULL;
++	struct kinterval *lowest_match = NULL;
+ 
+ 	while (node) {
+ 		struct kinterval *range = rb_entry(node, struct kinterval, rb);
+ 
+ 		if (get_subtree_max_end(node->rb_left) > start) {
++			/* Lowest overlap if any must be on the left side */
+ 			node = node->rb_left;
+ 		} else if (is_interval_overlapping(range, start, end)) {
+-			lower_range = range;
++			lowest_match = range;
+ 			break;
+ 		} else if (start >= range->start) {
++			/* Lowest overlap if any must be on the right side */
+ 			node = node->rb_right;
+ 		} else {
+ 			break;
+ 		}
+ 	}
+-	return lower_range;
++	return lowest_match;
++}
++
++/*
++ * Merge two adjacent intervals, if they can be merged next is removed from the
++ * tree.
++ */
++static void kinterval_rb_merge_node(struct rb_root *root,
++			struct kinterval *prev, struct kinterval *next)
++{
++	struct rb_node *deepest;
++
++	if (prev && prev->type == next->type && prev->end == next->start) {
++		prev->end = next->end;
++		deepest = rb_augment_erase_begin(&next->rb);
++		rb_erase(&next->rb, root);
++		rb_augment_erase_end(deepest,
++				kinterval_rb_augment_cb, NULL);
++		kmem_cache_free(kinterval_cachep, next);
++	}
++}
++
++/*
++ * Try to merge a new inserted interval with the previous and the next
++ * interval.
++ */
++static void kinterval_rb_merge(struct rb_root *root, struct kinterval *new)
++{
++	struct kinterval *next, *prev;
++	struct rb_node *node;
++
++	node = rb_prev(&new->rb);
++	prev = node ? rb_entry(node, struct kinterval, rb) : NULL;
++
++	node = rb_next(&new->rb);
++	next = node ? rb_entry(node, struct kinterval, rb) : NULL;
++
++	if (next)
++		kinterval_rb_merge_node(root, new, next);
++	if (prev)
++		kinterval_rb_merge_node(root, prev, new);
+ }
+ 
+ static void
+@@ -114,32 +156,8 @@ kinterval_rb_insert(struct rb_root *root, struct kinterval *new)
+ 	rb_link_node(&new->rb, parent, node);
+ 	rb_insert_color(&new->rb, root);
+ 	rb_augment_insert(&new->rb, kinterval_rb_augment_cb, NULL);
+-}
+ 
+-/* Merge adjacent intervals */
+-static void kinterval_rb_merge(struct rb_root *root)
+-{
+-	struct kinterval *next, *prev = NULL;
+-	struct rb_node *node, *deepest;
+-
+-	node = rb_first(root);
+-	while (node) {
+-		next = rb_entry(node, struct kinterval, rb);
+-		node = rb_next(&next->rb);
+-
+-		if (prev && prev->type == next->type &&
+-				prev->end == (next->start - 1) &&
+-				prev->end < next->start) {
+-			prev->end = next->end;
+-			deepest = rb_augment_erase_begin(&next->rb);
+-			rb_erase(&next->rb, root);
+-			rb_augment_erase_end(deepest,
+-					kinterval_rb_augment_cb, NULL);
+-			kmem_cache_free(kinterval_cachep, next);
+-		} else {
+-			prev = next;
+-		}
+-	}
++	kinterval_rb_merge(root, new);
+ }
+ 
+ static int kinterval_rb_check_add(struct rb_root *root,
+@@ -148,16 +166,17 @@ static int kinterval_rb_check_add(struct rb_root *root,
+ 	struct kinterval *old;
+ 	struct rb_node *node, *deepest;
+ 
+-	node = rb_first(root);
++	old = kinterval_rb_lowest_match(root, new->start, new->end);
++	node = old ? &old->rb : NULL;
++
+ 	while (node) {
+ 		old = rb_entry(node, struct kinterval, rb);
++		node = rb_next(&old->rb);
++
+ 		/* Check all the possible matches within the range */
+-		if (old->start > new->end)
++		if (old->start >= new->end)
+ 			break;
+-		node = rb_next(&old->rb);
+ 
+-		if (!is_interval_overlapping(old, new->start, new->end))
+-			continue;
+ 		/*
+ 		 * Interval is overlapping another one, shrink the old interval
+ 		 * accordingly.
+@@ -206,8 +225,12 @@ static int kinterval_rb_check_add(struct rb_root *root,
+ 			 * new         old
+ 			 * |___________|_______|
+ 			 */
++			deepest = rb_augment_erase_begin(&old->rb);
+ 			rb_erase(&old->rb, root);
++			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
++						NULL);
+ 			old->start = new->end + 1;
++			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 			break;
+ 		} else if (new->start >= old->start && new->end >= old->end) {
+@@ -230,7 +253,7 @@ static int kinterval_rb_check_add(struct rb_root *root,
+ 			rb_erase(&old->rb, root);
+ 			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
+ 						NULL);
+-			old->end = new->start - 1;
++			old->end = new->start;
+ 			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 		} else if (new->start >= old->start && new->end <= old->end) {
+@@ -261,13 +284,17 @@ static int kinterval_rb_check_add(struct rb_root *root,
+ 			if (unlikely(!prev))
+ 				return -ENOMEM;
+ 
++			deepest = rb_augment_erase_begin(&old->rb);
+ 			rb_erase(&old->rb, root);
++			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
++						NULL);
+ 
+ 			prev->start = old->start;
+-			old->start = new->end + 1;
+-			prev->end = new->start - 1;
++			old->start = new->end;
++			prev->end = new->start;
+ 			prev->type = old->type;
+ 
++			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 
+ 			new->subtree_max_end = new->end;
+@@ -280,7 +307,6 @@ static int kinterval_rb_check_add(struct rb_root *root,
+ 	}
+ 	new->subtree_max_end = new->end;
+ 	kinterval_rb_insert(root, new);
+-	kinterval_rb_merge(root);
+ 
+ 	return 0;
+ }
+@@ -291,7 +317,7 @@ int kinterval_add(struct rb_root *root, u64 start, u64 end,
+ 	struct kinterval *range;
+ 	int ret;
+ 
+-	if (end < start)
++	if (end <= start)
+ 		return -EINVAL;
+ 	range = kmem_cache_zalloc(kinterval_cachep, flags);
+ 	if (unlikely(!range))
+@@ -314,16 +340,17 @@ static int kinterval_rb_check_del(struct rb_root *root,
+ 	struct kinterval *old;
+ 	struct rb_node *node, *deepest;
+ 
+-	node = rb_first(root);
++	old = kinterval_rb_lowest_match(root, start, end);
++	node = old ? &old->rb : NULL;
++
+ 	while (node) {
+ 		old = rb_entry(node, struct kinterval, rb);
++		node = rb_next(&old->rb);
++
+ 		/* Check all the possible matches within the range */
+-		if (old->start > end)
++		if (old->start >= end)
+ 			break;
+-		node = rb_next(&old->rb);
+ 
+-		if (!is_interval_overlapping(old, start, end))
+-			continue;
+ 		if (start <= old->start && end >= old->end) {
+ 			/*
+ 			 * Completely erase the old range:
+@@ -354,8 +381,12 @@ static int kinterval_rb_check_del(struct rb_root *root,
+ 			 *             old
+ 			 *             |_______|
+ 			 */
++			deepest = rb_augment_erase_begin(&old->rb);
+ 			rb_erase(&old->rb, root);
+-			old->start = end + 1;
++			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
++						NULL);
++			old->start = end;
++			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 			break;
+ 		} else if (start >= old->start && end >= old->end) {
+@@ -378,7 +409,7 @@ static int kinterval_rb_check_del(struct rb_root *root,
+ 			rb_erase(&old->rb, root);
+ 			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
+ 						NULL);
+-			old->end = start - 1;
++			old->end = start;
+ 			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 		} else if (start >= old->start && end <= old->end) {
+@@ -403,13 +434,17 @@ static int kinterval_rb_check_del(struct rb_root *root,
+ 			if (unlikely(!prev))
+ 				return -ENOMEM;
+ 
++			deepest = rb_augment_erase_begin(&old->rb);
+ 			rb_erase(&old->rb, root);
++			rb_augment_erase_end(deepest, kinterval_rb_augment_cb,
++						NULL);
+ 
+ 			prev->start = old->start;
+-			old->start = end + 1;
+-			prev->end = start - 1;
++			old->start = end;
++			prev->end = start;
+ 			prev->type = old->type;
+ 
++			old->subtree_max_end = old->end;
+ 			kinterval_rb_insert(root, old);
+ 
+ 			prev->subtree_max_end = prev->end;
+@@ -422,7 +457,7 @@ static int kinterval_rb_check_del(struct rb_root *root,
+ 
+ int kinterval_del(struct rb_root *root, u64 start, u64 end, gfp_t flags)
+ {
+-	if (end < start)
++	if (end <= start)
+ 		return -EINVAL;
+ 	return kinterval_rb_check_del(root, start, end, flags);
+ }
+@@ -451,7 +486,7 @@ long kinterval_lookup_range(struct rb_root *root, u64 start, u64 end)
+ {
+ 	struct kinterval *range;
+ 
+-	if (end < start)
++	if (end <= start)
+ 		return -EINVAL;
+ 	range = kinterval_rb_lowest_match(root, start, end);
+ 	return range ? range->type : -ENOENT;
+-- 
+1.7.5.4
