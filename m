@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2BMJK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:10:56 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:35749 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab2BMJKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:10:54 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: rdunlap@xenotime.net, trivial@kernel.org, lucas.demarchi@profusion.mobi,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH 2/2] [trivial] Documentation: broken URL in libata
-Date: Mon, 13 Feb 2012 10:09:52 +0100
-Message-Id: <1329124192-27461-3-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1329124192-27461-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1329124192-27461-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S1754692Ab2BMJLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:11:35 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56546 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab2BMJLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:11:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="124653276"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [RFC] ACPI D3Cold state and SATA ZPODD support
+Date: Mon, 13 Feb 2012 17:11:05 +0800
+Message-Id: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix broken link to license text:
-http://www.opensource.org/licenses/osl-1.1.txt
-The text for version 1.1 of the Open Sofware license doesn't seem
-to be available anywhere on http://www.opensource.org/ any more.
-Replace it with a snapshot from the Internet Wayback Machine.
+Hi all,
 
-I first thought about hosting a copy of this file on my
-own website, but my website has less authority than
-an explicit backup of the original location.
+This patchset adds support for ACPI D3Cold state and ZPODD(Zero Power
+Optical Disk Drive).
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- Documentation/DocBook/libata.tmpl |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ZPODD is a new feature in SATA 3.1 specification. It provides a way to
+power off unused CDROM.
 
-diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
-index cdd1bb9..bda33c1 100644
---- a/Documentation/DocBook/libata.tmpl
-+++ b/Documentation/DocBook/libata.tmpl
-@@ -22,8 +22,8 @@
-    <para>
-    The contents of this file are subject to the Open
-    Software License version 1.1 that can be found at
--   <ulink url="http://www.opensource.org/licenses/osl-1.1.txt">http://www.opensource.org/licenses/osl-1.1.txt</ulink> and is included herein
--   by reference.
-+   <ulink url="http://web.archive.org/web/20060924133258/http://www.opensource.org/licenses/osl-1.1.txt">http://web.archive.org/web/20060924133258/http://www.opensource.org/licenses/osl-1.1.txt</ulink>
-+   and is included herein by reference.
-    </para>
- 
-    <para>
--- 
-1.7.4.1
+CDROM is powered on/off by executing ACPI power resource's _ON/_OFF
+method. It enters ACPI D3Cold state when powered off.
 
+PATCH 1 to 4: Adds ACPI D3Cold state support
+PATCH 5 to 6: Adds ZPODD support
+
+Applied on top of libata/ALL branch.
+
+[PATCH 1/6] ACPI: Introduce ACPI D3_COLD state support
+[PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
+[PATCH 3/6] ACPI: Runtime resume all devices covered by a power resource
+[PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+[PATCH 5/6] PCI: Move acpi_dev_run_wake to acpi core
+[PATCH 6/6] libata: add ZPODD support
+
+ drivers/acpi/power.c       |  141 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/acpi/scan.c        |   10 +++-
+ drivers/acpi/sleep.c       |   35 +++++++++++
+ drivers/ata/libata-acpi.c  |   64 ++++++++++++++++----
+ drivers/pci/pci-acpi.c     |   40 +------------
+ drivers/scsi/sr.c          |   39 ++++++++++++
+ drivers/scsi/sr.h          |    3 +
+ include/acpi/acpi_bus.h    |    7 ++
+ include/linux/pm.h         |    1 +
+ include/linux/pm_runtime.h |   30 +++++++++
+ 10 files changed, 319 insertions(+), 51 deletions(-)
+
+Thanks for any comments.
+
+Lin Ming
