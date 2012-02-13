@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2BMPB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 10:01:57 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:41603 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752279Ab2BMPBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 10:01:55 -0500
-Date: Mon, 13 Feb 2012 10:01:54 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-ide@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
-In-Reply-To: <1329124271-29464-5-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
+	id S1756862Ab2BMPCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 10:02:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42120 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756740Ab2BMPCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 10:02:18 -0500
+Message-ID: <4F3925F6.3050500@suse.de>
+Date: Mon, 13 Feb 2012 16:02:14 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Harald Hoyer <harald@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, initramfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Roberto Sassu <roberto.sassu@polito.it>
+Subject: Re: dracut: ordering of modules
+References: <1328886121.2472.19.camel@falcor> <4F38DEF0.8010202@redhat.com>
+In-Reply-To: <4F38DEF0.8010202@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Lin Ming wrote:
+On 02/13/2012 10:59 AM, Harald Hoyer wrote:
+> Am 10.02.2012 16:01, schrieb Mimi Zohar:
+>> Hi Harald,
+>>
+[ .. ]
 
-> From: Zhang Rui <rui.zhang@intel.com>
-> 
-> Introduce flag can_power_off in device structure to support runtime
-> power off/on.
-> 
-> Note that, for a specific device driver,
-> "support runtime power off/on" means that the driver .runtime_suspend
-> callback needs to
-> 1) save all the context so that it can restore the device back to the previous
->    working state after powered on.
-> 2) set can_power_off flag to tell the driver model that it's ready for power off.
-> 
-> The following example shows how this works.
-> 
-> device A
->  |---------|
->  v         v
-> device B  device C
-> 
-> A is the parent of device B and device C, and device A/B/C shares the
-> same power logic
-> (Only device A knows how to turn on/off the power).
-> 
-> In order to power off A, B, C at runtime,
-> 1) device B and device C should support runtime power off
->    (runtime suspended with can_power_off flag set)
-> 2) pm idle request for device A is fired by runtime PM core.
-> 3) in device A .runtime_suspend callback, it tries to set can_power_off flag.
-> 4) if succeed, it means all its children have been ready for power off
->    and it can turn off the power at any time.
-> 5) if failed, it means at least one of its children does not support runtime
->    power off, thus the power can not be turned off.
+Ohh, can you _order_ dracut modules now?
 
-I'm not sure if this is really the right approach.  What you're trying 
-to do is implement two different low-power states, basically D3hot and 
-D3cold.  Currently the runtime PM core doesn't support such things; all 
-it knows about is low power and full power.
+Harald, that'll be four modules for me, please :-)
 
-Before doing an ad-hoc implementation, it would be best to step back
-and think about other subsystems.  Other sorts of devices may well have
-multiple low-power states.  What's the best way for this to be
-supported by the PM core?
 
-Alan Stern
+Sorry, I just _had_ to go for that cheap pun.
 
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
