@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab2BMJ0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:26:19 -0500
-Received: from smtp-out003.kontent.com ([81.88.40.217]:33404 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab2BMJ0S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:26:18 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
-Date: Mon, 13 Feb 2012 10:28:45 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Huang Ying <ying.huang@intel.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>
-References: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1202122013300.24811-100000@netrider.rowland.org>
+	id S1756374Ab2BMJb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:31:58 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:49126 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751141Ab2BMJb5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:31:57 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202131028.45806.oliver@neukum.org>
+In-Reply-To: <4F38D4BC.20708@openvz.org>
+References: <20120213080644.6105.54221.stgit@zurg> <CAE7qMrrubKoOSo+kwG9rpx6ac8U=6PQtHTDEh416NBBJNr8mGA@mail.gmail.com>
+ <4F38D4BC.20708@openvz.org>
+From: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Date: Mon, 13 Feb 2012 10:31:26 +0100
+Message-ID: <CAE7qMroBw6G5c-dWjwTneuLchwO=m9FdLaYLwajncbZU4VjE1w@mail.gmail.com>
+Subject: Re: [PATCH] HID: use generic driver for Logitech Unifying receivers
+ if CONFIG_HID_LOGITECH_DJ=n
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 13. Februar 2012, 02:42:24 schrieb Alan Stern:
-> On Sun, 12 Feb 2012, Oliver Neukum wrote:
-> 
-> > Yes, we can use the same heuristics as everywhere.
-> > command queued -> autopm_get
-> > command finished -> autopm_put
-> > 
-> > but for the USB host adapter, not the sr device
-> 
-> I still don't fully understand.  Are you suggesting that we use the 
-> normal autosuspend timeout mechanism for the disk drive (for example, 
-> spin down the disk if it hasn't been used for five minutes), and then
+On Mon, Feb 13, 2012 at 10:15 AM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> Nestor Lopez Casado wrote:
+>>
+>> Hi Konstantin,
+>>
+>> This was the original implementation
+>> http://www.spinics.net/lists/linux-input/msg15225.html
+>> Jiri suggested we removed the conditional compilation and we accepted.
+>>
+>> Which are your reasons to add those conditionals back again?
+>
+>
+> This device can work perfectly without special driver. It does not add
+> any special advantage if there only one mouse and/or one keyboard device.
+> So, I don't see any reason for this strictly requirement of special driver.
 
-Yes. The key here is to realize that from a view point of functionality
-they are not suspended. But they will be ready to be suspended.
+I'm OK with that. It's Jiri's call.
 
-> autosuspend a USB mass-storage device whenever its children are 
-> suspended and no commands are in progress?  (In fact, there can't be 
-> any commands in progress if all the children are suspended.)
+Nevertheless, if you change that, please change the description on
+Kconfig to reflect the fact that the receiver would work even without
+the driver.
 
-Really? It is currently true because the device must be opened to issue
-commands.
-In fact now that you put it this way, it seems to me that this is the
-preconception we must shed.
+Nestor.
 
-
-> The SCSI drivers don't know much about the request queue -- the block
-> layer manages it.  That's another reason for handling this at the block
-> layer.
-
-That was refering to SCSI requests.
- 
-> Is there some special reason you're talking about sr (the SCSI CD/DVD
-> driver) instead of sd (the SCSI disk driver)?
-
-My stupidity.
-
-	Regards
-		Oliver
+>
+>
+>>
+>> Cheers,
+>>
+>> Nestor
+>>
+>> On Mon, Feb 13, 2012 at 9:06 AM, Konstantin Khlebnikov
+>> <khlebnikov@openvz.org>  wrote:
+>>>
+>>> Before commit 534a7b8e1 "HID: Add full support for Logitech Unifying
+>>> receivers"
+>>> Logitech Unifying receiver can work as generic device without special
+>>> driver,
+>>> after that commit these devices does not works without special driver.
+>>>
+>>> After this patch they will use generic driver if special driver is
+>>> disabled.
+>>>
+>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>>> ---
+>>>  drivers/hid/hid-core.c |    2 ++
+>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>>> index af08ce7..3d7a174 100644
+>>> --- a/drivers/hid/hid-core.c
+>>> +++ b/drivers/hid/hid-core.c
+>>> @@ -1462,8 +1462,10 @@ static const struct hid_device_id
+>>> hid_have_special_driver[] = {
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_DFGT_WHEEL) },
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_G27_WHEEL) },
+>>> +#if IS_ENABLED(CONFIG_HID_LOGITECH_DJ)
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER) },
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2) },
+>>> +#endif
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_WII_WHEEL) },
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
+>>>        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+>>> USB_DEVICE_ID_SPACETRAVELLER) },
+>>>
+>
