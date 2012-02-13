@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab2BMKGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 05:06:20 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:53469 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab2BMKGS (ORCPT
+	id S1756346Ab2BMKM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 05:12:26 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47783 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab2BMKMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 05:06:18 -0500
-Message-ID: <4F38E091.5070504@linux.vnet.ibm.com>
-Date: Mon, 13 Feb 2012 18:06:09 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Mon, 13 Feb 2012 05:12:24 -0500
+Date: Mon, 13 Feb 2012 02:12:21 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dan Smith <danms@us.ibm.com>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are
+ page-aligned
+In-Reply-To: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
+Message-ID: <alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
+References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com>
-In-Reply-To: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12021300-5140-0000-0000-000000BCE6BE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2012 01:32 PM, David Ahern wrote:
+On Fri, 10 Feb 2012, Dan Smith wrote:
 
-> [sorry for the top post - you would think Android would have a better mail client]
+> The inner function walk_pte_range() increments "addr" by PAGE_SIZE after
+> each pte is processed, and only exits the loop if the result is equal to
+> "end". Current, if either (or both of) the starting or ending addresses
+> passed to walk_page_range() are not page-aligned, then we will never
+> satisfy that exit condition and begin calling the pte_entry handler with
+> bad data.
 > 
-> If the first patch is needed then kvm-events will not work with older, unpatched kernels. That's a big limitation from a perf perpective.
+> To be sure that we will land in the right spot, this patch checks that
+> both "addr" and "end" are page-aligned in walk_page_range() before starting
+> the traversal.
 > 
 
-
-The first patch is only needed for code compilation, after kvm-events is
-compiled, you can analyse any kernels. :)
-
+It doesn't "ensure" anything without CONFIG_DEBUG_VM enabled, which isn't 
+the default.
