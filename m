@@ -1,124 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2BMNvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 08:51:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46255 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab2BMNvT (ORCPT
+	id S1756683Ab2BMNxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:53:34 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:35036
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751372Ab2BMNxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 08:51:19 -0500
-MIME-Version: 1.0
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Gross <markgross@thegnar.org>,
-        Venkatesh Pallipadi <venki@google.com>
-Cc: Jean Pihet <j-pihet@ti.com>
-Subject: [PATCH] PM / QoS: unconditionally build the feature
-Date: Mon, 13 Feb 2012 14:50:59 +0100
-Message-Id: <1329141059-16554-1-git-send-email-j-pihet@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
-References: <1328603646-2714-2-git-send-email-j-pihet@ti.com>
+	Mon, 13 Feb 2012 08:53:32 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] Documentation: Fix broken URL "JF"
+Date: Mon, 13 Feb 2012 22:53:07 +0900
+Message-Id: <1329141187-2158-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PM QoS feature depends on CONFIG_PM which depends on
-PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
-not having these CONFIGs.
+Fix broken URL for JF (Japanese FAQ).
 
-This patch allows the feature in all cases.
-
-Signed-off-by: Jean Pihet <j-pihet@ti.com>
-Reported-by: Venkatesh Pallipadi <venki@google.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Mark Gross <markgross@thegnar.org>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- include/linux/pm_qos.h |   41 +----------------------------------------
- kernel/power/Makefile  |    3 ++-
- 2 files changed, 3 insertions(+), 41 deletions(-)
+ Documentation/00-INDEX |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 4d99e4e..105be69 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -63,7 +63,6 @@ static inline int dev_pm_qos_request_active(struct dev_pm_qos_request *req)
- 	return req->dev != 0;
- }
+diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+index 65bbd26..a859507 100644
+--- a/Documentation/00-INDEX
++++ b/Documentation/00-INDEX
+@@ -8,7 +8,7 @@ Please try and keep the descriptions small enough to fit on one line.
+ Following translations are available on the WWW:
  
--#ifdef CONFIG_PM
- int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
- 			 enum pm_qos_req_action action, int value);
- void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
-@@ -78,6 +77,7 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
- int pm_qos_request_active(struct pm_qos_request *req);
- s32 pm_qos_read_value(struct pm_qos_constraints *c);
+    - Japanese, maintained by the JF Project (JF@linux.or.jp), at
+-     http://www.linux.or.jp/JF/
++     http://linuxjf.sourceforge.jp/
  
-+#ifdef CONFIG_PM
- s32 __dev_pm_qos_read_value(struct device *dev);
- s32 dev_pm_qos_read_value(struct device *dev);
- int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
-@@ -95,45 +95,6 @@ void dev_pm_qos_constraints_destroy(struct device *dev);
- int dev_pm_qos_add_ancestor_request(struct device *dev,
- 				    struct dev_pm_qos_request *req, s32 value);
- #else
--static inline int pm_qos_update_target(struct pm_qos_constraints *c,
--				       struct plist_node *node,
--				       enum pm_qos_req_action action,
--				       int value)
--			{ return 0; }
--static inline void pm_qos_add_request(struct pm_qos_request *req,
--				      int pm_qos_class, s32 value)
--			{ return; }
--static inline void pm_qos_update_request(struct pm_qos_request *req,
--					 s32 new_value)
--			{ return; }
--static inline void pm_qos_remove_request(struct pm_qos_request *req)
--			{ return; }
--
--static inline int pm_qos_request(int pm_qos_class)
--{
--	switch (pm_qos_class) {
--	case PM_QOS_CPU_DMA_LATENCY:
--		return PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
--	case PM_QOS_NETWORK_LATENCY:
--		return PM_QOS_NETWORK_LAT_DEFAULT_VALUE;
--	case PM_QOS_NETWORK_THROUGHPUT:
--		return PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE;
--	default:
--		return PM_QOS_DEFAULT_VALUE;
--	}
--}
--
--static inline int pm_qos_add_notifier(int pm_qos_class,
--				      struct notifier_block *notifier)
--			{ return 0; }
--static inline int pm_qos_remove_notifier(int pm_qos_class,
--					 struct notifier_block *notifier)
--			{ return 0; }
--static inline int pm_qos_request_active(struct pm_qos_request *req)
--			{ return 0; }
--static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
--			{ return 0; }
--
- static inline s32 __dev_pm_qos_read_value(struct device *dev)
- 			{ return 0; }
- static inline s32 dev_pm_qos_read_value(struct device *dev)
-diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-index 07e0e28..66d808e 100644
---- a/kernel/power/Makefile
-+++ b/kernel/power/Makefile
-@@ -1,7 +1,8 @@
- 
- ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
- 
--obj-$(CONFIG_PM)		+= main.o qos.o
-+obj-y				+= qos.o
-+obj-$(CONFIG_PM)		+= main.o
- obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
- obj-$(CONFIG_FREEZER)		+= process.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
+ 00-INDEX
+ 	- this file.
 -- 
-1.7.5.4
+1.7.6.5
 
