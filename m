@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab2BMUV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:21:28 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50349 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951Ab2BMUVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:21:23 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [RFC PATCH 1/6] ACPI: Introduce ACPI D3_COLD state support
-Date: Mon, 13 Feb 2012 21:25:15 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com> <1329124271-29464-2-git-send-email-ming.m.lin@intel.com>
-In-Reply-To: <1329124271-29464-2-git-send-email-ming.m.lin@intel.com>
+	id S1757984Ab2BMUZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:25:20 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54842 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab2BMUZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 15:25:19 -0500
+Message-ID: <4F3971A1.5010305@linux.vnet.ibm.com>
+Date: Tue, 14 Feb 2012 01:55:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Tony Luck <tony.luck@gmail.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v5
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com> <20120201140125.c656df41.akpm@linux-foundation.org> <87d39xj955.fsf@rustcorp.com.au> <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+In-Reply-To: <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202132125.15537.rjw@sisk.pl>
+x-cbid: 12021310-1618-0000-0000-000000CAEBC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 13, 2012, Lin Ming wrote:
-> From: Zhang Rui <rui.zhang@intel.com>
+On 02/14/2012 01:24 AM, Tony Luck wrote:
+
+> On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
+>> Feel free to try to fix this in -next though, and see what breaks...
 > 
-> If a device has _PR3._ON, it means the device supports D3_HOT.
-> If a device has _PR3._OFF, it means the device supports D3_COLD.
-> Add the ability to validate and enter D3_COLD state in ACPI.
+> ia64 is what breaks ... well not actually broken ... but some very
+> weird delays that
+> show up in different places depending on whether this patch is present.
 > 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-
-This is supposed to be ACPI 5.0 support, right?
-
-So can anyone please tell me what part of the ACPI 5.0 spec is the
-basis of this patch, because I can't see that immediately?
-
-The only places where D3Cold is _mentioned_ are Section 7.2.12 (_PRE, which
-appears to be new in 5.0), Section 7.2.20 (_S0W), Section 7.2.21 (_S1W),
-Section 7.2.22 (_S2W), Section 7.2.23 (_S3W) and Section 7.2.24 (_S4W).
-None of them mentions those _PR3._ON and _PR3._OFF things above.
-
-Moreover, my understanding of the spec is that D3Cold means all of the
-power resources returned by _PR3 are "off" (whereas some of them will be
-"on" in D3hot).
-
-> ---
->  drivers/acpi/power.c |    4 ++--
->  drivers/acpi/scan.c  |   10 +++++++++-
->  2 files changed, 11 insertions(+), 3 deletions(-)
+> First linux-next kernel to be blessed with this patch was
+> next-20120210. Booting it
+> I see:
+> [    7.164233] Switching to clocksource itc
+> [  146.077315] pnp: PnP ACPI init
 > 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 9ac2a9f..0d681fb 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
->  {
->  	int result;
->  
-> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
-> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->  		return -EINVAL;
->  
->  	if (device->power.state == state)
->  		return 0;
->  
->  	if ((device->power.state < ACPI_STATE_D0)
-> -	    || (device->power.state > ACPI_STATE_D3))
-> +	    || (device->power.state > ACPI_STATE_D3_COLD))
->  		return -ENODEV;
->  
->  	/* TBD: Resources must be ordered. */
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 8ab80ba..a9d4391 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -881,8 +881,16 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  
->  			device->power.flags.power_resources = 1;
->  			ps->flags.valid = 1;
-> -			for (j = 0; j < ps->resources.count; j++)
-> +			for (j = 0; j < ps->resources.count; j++) {
->  				acpi_bus_add_power_resource(ps->resources.handles[j]);
-> +				/* Check for D3_COLD support. _PR3._OFF equals D3_COLD ? */
-> +				if (i == ACPI_STATE_D3) {
-> +					if (j == 0)
-> +						device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> +					status = acpi_get_handle(ps->resources.handles[j], "_OFF",  &handle);
-> +					device->power.states[ACPI_STATE_D3_COLD].flags.valid &= ACPI_SUCCESS(status);
-> +				}
-> +			}
-
-Sorry, but this doesn't make sense to me.  Power resources always have
-the _OFF method, right?
-
->  		}
->  
->  		/* Evaluate "_PSx" to see if we can do explicit sets */
+> An ugly 138.913 second delay.  Digging in the code showed that the bad bits
+> happened inside stop_machine()
+> 
+> Reverting just this patch makes this big delay disappear:
+> 
+> [   32.780232] Switching to clocksource itc
+> [   32.832100] pnp: PnP ACPI init
+> 
+> but notice that it takes 25 extra seconds to get to this point in the
+> boot (and while
+> we expect to save some time by not re-computing num_online_cpus each time we
+> need it ... this looks to be a lot more than I'd expect!)
 > 
 
-Rafael
+
+Oh no!! ia64 directly uses cpu_set() and cpu_clear() on cpu_online_map!!
+Grr.. It means num_online_cpus can be different from the actual number of
+online cpus because it doesn't go through the set_cpu_online() path.. I haven't
+yet pin-pointed the exact problem, but this definitely doesn't look good...
+ 
+Regards,
+Srivatsa S. Bhat
+
