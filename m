@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2BMWcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 17:32:05 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35399 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2BMWcD (ORCPT
+	id S1757707Ab2BMWfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 17:35:39 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:36780 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2BMWfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 17:32:03 -0500
-Date: Mon, 13 Feb 2012 14:31:56 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, avi@redhat.com,
-        nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20120213223156.GG12117@google.com>
-References: <20111223014043.GC12738@redhat.com>
- <20111222175834.66559c8b.akpm@linux-foundation.org>
- <20111223025629.GE12738@redhat.com>
- <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
- <20111227175249.GE17712@google.com>
- <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
- <20111228004102.GK17712@google.com>
- <20120105012842.GQ31746@google.com>
- <20120209235845.GH19392@google.com>
- <20120210162658.GC3150@redhat.com>
+	Mon, 13 Feb 2012 17:35:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120210162658.GC3150@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: y@google.com
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Ben Widawsky <ben@bwidawsk.net>, Yufeng Shen <miletus@chromium.org>
+Subject: [PATCH] drm/i915: Fix race condition in accessing GMBUS
+Date: Mon, 13 Feb 2012 17:35:33 -0500
+Message-Id: <4f399036.091c0e0a.2a24.2301SMTPIN_ADDED@gmr-mx.google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+References: <1328825697-23685-1-git-send-email-miletus@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
+From: Yufeng Shen <miletus@chromium.org>
 
-On Fri, Feb 10, 2012 at 11:26:58AM -0500, Vivek Goyal wrote:
-> The only difference is that by putting this logic in per cpu counters,
-> we make it somewhat generic so that other users who can't do GFP_KERNEL
-> allocation of per cpu data, can use it. I can live with that.
+Moved gmbus_mutex below intel_gmbus and added comments.
+Rebased to drm-intel-next-queued.
 
-Also, it has fallback mechanism while percpu data isn't there, so the
-counts are guaranteed to be right.  Probably doesn't matter all that
-much for blkcg stats.
+----------------------------------------------------------------
 
-> But if you don't think that fixing alloc_percpu() is possible in long
-> term and users should use per cpu counters for any kind of non GFP_KERNEL
-> needs, then it probably is find to continue to develop this patch.
+GMBUS has several ports and each has it's own corresponding
+I2C adpater. When multiple I2C adapters call gmbus_xfer() at
+the same time there is a race condition in using the underlying
+GMBUS controller. Fixing this by adding a mutex lock when calling
+gmbus_xfer().
 
-Updating alloc_percpu() to support full @gfp_mask is rather complex
-and likely to generate a lot of churn and fragility.
+Signed-off-by: Yufeng Shen <miletus@chromium.org>
+---
+ drivers/gpu/drm/i915/i915_drv.h  |    8 ++++++++
+ drivers/gpu/drm/i915/intel_i2c.c |   24 +++++++++++++++++-------
+ 2 files changed, 25 insertions(+), 7 deletions(-)
 
-> Personally, I liked my old patch of restricting worker thread allocation
-> logic to blk-throttle.c and cfq-iosched.c. If you don't have objection
-> to that approach, I can brush it up, fix a pending issue and post it?
-
-I don't know.  If we're gonna do that, I think doing that in mempool
-is better.  Andrew, are you still dead against using mempool for
-percpu pooling?  That logic is going somewhere and it probably is
-better to put it somewhere common rather than shoving it in block
-cgroup code.
-
-Thanks.
-
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index 563d24e..40027de 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -313,6 +313,14 @@ typedef struct drm_i915_private {
+ 		u32 reg0;
+ 	} *gmbus;
+ 
++	/** Multiple intel_gmbus i2c adapters are actually sharing the same
++	underlying GMBUS controller. i2c core protects concurrent use of
++	the same i2c adapter but is not aware of the concurrent use of the
++	underlying GMBUS controller. gmbus_mutex is used to prevent the race
++	condition from the perspective of GMBUS controller.
++	*/
++	struct mutex gmbus_mutex;
++
+ 	struct pci_dev *bridge_dev;
+ 	struct intel_ring_buffer ring[I915_NUM_RINGS];
+ 	uint32_t next_seqno;
+diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+index d30cccc..fc75d71 100644
+--- a/drivers/gpu/drm/i915/intel_i2c.c
++++ b/drivers/gpu/drm/i915/intel_i2c.c
+@@ -233,11 +233,15 @@ gmbus_xfer(struct i2c_adapter *adapter,
+ 					       struct intel_gmbus,
+ 					       adapter);
+ 	struct drm_i915_private *dev_priv = adapter->algo_data;
+-	int i, reg_offset;
++	int i, reg_offset, ret;
+ 
+-	if (bus->force_bit)
+-		return intel_i2c_quirk_xfer(dev_priv,
++	mutex_lock(&dev_priv->gmbus_mutex);
++
++	if (bus->force_bit) {
++		ret = intel_i2c_quirk_xfer(dev_priv,
+ 					    bus->force_bit, msgs, num);
++		goto out;
++	}
+ 
+ 	reg_offset = HAS_PCH_SPLIT(dev_priv->dev) ? PCH_GMBUS0 - GMBUS0 : 0;
+ 
+@@ -321,7 +325,8 @@ done:
+ 	 * start of the next xfer, till then let it sleep.
+ 	 */
+ 	I915_WRITE(GMBUS0 + reg_offset, 0);
+-	return i;
++	ret = i;
++	goto out;
+ 
+ timeout:
+ 	DRM_INFO("GMBUS timed out, falling back to bit banging on pin %d [%s]\n",
+@@ -331,9 +336,12 @@ timeout:
+ 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
+ 	bus->force_bit = intel_gpio_create(dev_priv, bus->reg0 & 0xff);
+ 	if (!bus->force_bit)
+-		return -ENOMEM;
+-
+-	return intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
++		ret = -ENOMEM;
++	else
++		ret = intel_i2c_quirk_xfer(dev_priv, bus->force_bit, msgs, num);
++out:
++	mutex_unlock(&dev_priv->gmbus_mutex);
++	return ret;
+ }
+ 
+ static u32 gmbus_func(struct i2c_adapter *adapter)
+@@ -380,6 +388,8 @@ int intel_setup_gmbus(struct drm_device *dev)
+ 	if (dev_priv->gmbus == NULL)
+ 		return -ENOMEM;
+ 
++	mutex_init(&dev_priv->gmbus_mutex);
++
+ 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
+ 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
+ 
 -- 
-tejun
+1.7.3.1
+
