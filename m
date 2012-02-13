@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2BMUCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:02:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52333 "EHLO
+	id S1757855Ab2BMUFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:05:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33474 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833Ab2BMUCD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757696Ab2BMUFA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:02:03 -0500
+	Mon, 13 Feb 2012 15:05:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>
-References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>
-Date: Mon, 13 Feb 2012 21:02:03 +0100
-Message-ID: <CACRpkdb5VA4GJpB_0Xra=R0LUD9fz4CoDLjuwFHZ8SnTMz3fpg@mail.gmail.com>
-Subject: Re: [PATCH V1 0/3] Support for open drain gpios in gpilib/fixed regulators.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        dunlap@xenotime.net, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
+In-Reply-To: <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
+	<1328055439-9441-1-git-send-email-venki@google.com>
+	<20120201140125.c656df41.akpm@linux-foundation.org>
+	<87d39xj955.fsf@rustcorp.com.au>
+	<CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+Date: Mon, 13 Feb 2012 12:04:59 -0800
+Message-ID: <CABeCy1aky-_CM-24r8u6yK65Om8aKyOHhuW0wgi-nVZf1Htqag@mail.gmail.com>
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
+From: Venki Pallipadi <venki@google.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 7:29 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Mon, Feb 13, 2012 at 11:54 AM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
+>> Feel free to try to fix this in -next though, and see what breaks...
+>
+> ia64 is what breaks ... well not actually broken ... but some very
+> weird delays that
+> show up in different places depending on whether this patch is present.
+>
+> First linux-next kernel to be blessed with this patch was
+> next-20120210. Booting it
+> I see:
+> [    7.164233] Switching to clocksource itc
+> [  146.077315] pnp: PnP ACPI init
+>
+> An ugly 138.913 second delay.  Digging in the code showed that the bad bits
+> happened inside stop_machine()
+>
+> Reverting just this patch makes this big delay disappear:
+>
+> [   32.780232] Switching to clocksource itc
+> [   32.832100] pnp: PnP ACPI init
+>
+> but notice that it takes 25 extra seconds to get to this point in the
+> boot (and while
+> we expect to save some time by not re-computing num_online_cpus each time we
+> need it ... this looks to be a lot more than I'd expect!)
+>
+> -Tony
 
-> This is series of patches  to add support of the open drain gpios
-> in standard gpio library and using this in fixed regulators.
-> - Added GPIOF_OD flag so that client can request the gpio with this flag.
-> - Added support for the sysfs interface for open-drain.
-> - Handle open drain gpio configuration properly.
-> - Use this flag in fixed regualtor to tell that gpio is open drain.
-> - Gpio documentation changes to have support for open-drain.
-
-My gut feeling is that this stuff needs to go into pinctrl.
-
-The reason, which has been discussed when similar patches (from me,
-for example) were NACK:ed in the past, is that if we put in OD pin
-properties, we put in all pin properties (open source, drive strength,
-biasing pull-up/pull-down etc etc) and that is the reason to why the
-orthogonal pinctrl subsystem was created in the first place.
-
-So I'd opt for moving the driver you need to drivers/pinctrl and
-expose the gpiolib interface from there, while adding pinctrl
-on the side.
-
-Also, we had a flamefest a while back as to whether we should
-enumerate all config options (like OD, OS...) or have it all-custom,
-and I was sort of shot down on that. But I have a generic control patch
-set boiling so if you like that kind of stuff I'll respin it.
-
-Yours,
-Linus Walleij
+What is NR_CPUS set to here? And how many actual CPUs are there on this machine?
