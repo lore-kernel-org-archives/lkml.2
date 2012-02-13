@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2BMFxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 00:53:12 -0500
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:42336
-	"EHLO l.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab2BMFxK (ORCPT
+	id S1751809Ab2BMGT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 01:19:59 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48159 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2BMGT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 00:53:10 -0500
-Message-ID: <4F38A526.70900@chelsio.com>
-Date: Sun, 12 Feb 2012 21:52:38 -0800
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: pull request: linux-firmware: update cxgb* firmwares
-References: <4F35DB79.6070104@chelsio.com> <20120211140701.GA5194@neilslaptop.think-freely.org>
-In-Reply-To: <20120211140701.GA5194@neilslaptop.think-freely.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Feb 2012 01:19:58 -0500
+Date: Mon, 13 Feb 2012 17:19:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the final tree (staging
+ tree related)
+Message-Id: <20120213171949.262e0c12e8d8883e90216df1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_17_19_49_+1100_nXti6E32PpsXVg=y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/11/2012 6:07 AM, Neil Horman wrote:
-> On Fri, Feb 10, 2012 at 07:07:37PM -0800, Divy Le Ray wrote:
->> Hi David,
->>
->> Can you please pull from the following URL?
->>       git://git.chelsio.net/pub/git/linux-firmware.git for-david
->>
->> It contains the following commits:
->> 03cadf2 linux-firmware: update cxgb3 driver firmware to revision 7.12.0
->> 235dfaf linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
->> e2ea873 linux-firmware: remove current t4fw.bin
->>
->> The following changes since commit 15888a2eab052ac3d3f49334e4f6f05f347a516e:
->>
->>    bnx2x: Adding FW 7.0.29.0 (2011-10-24 16:31:44 +0200)
->>
->> are available in the git repository at:
->>    git://git.chelsio.net/pub/git/linux-firmware.git for-david
->>
->> Divy Le Ray (3):
->>        linux-firmware: remove current t4fw.bin
->>        linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
->>        linux-firmware: update cxgb3 driver firmware to revision 7.12.0
->>
->>   WHENCE                  |    3 ++-
->>   cxgb3/t3fw-7.12.0.bin   |  Bin 0 ->   31812 bytes
->>   cxgb4/t4fw-1.4.16.0.bin |  Bin 0 ->   298496 bytes
->>   cxgb4/t4fw.bin          |  Bin 241664 ->   0 bytes
->>   4 files changed, 2 insertions(+), 1 deletions(-)
->>   create mode 100755 cxgb3/t3fw-7.12.0.bin
->>   create mode 100644 cxgb4/t4fw-1.4.16.0.bin
->>   delete mode 100644 cxgb4/t4fw.bin
->>
-> Deleting the old firmware is a bad idea.  You've haven't modified the driver in
-> net or net-next to use the new firmware, and until you do, kernels won't be able
-> to find the firmware the driver is requesting.  You should make firmware changes
-> addative.  Add new versions of firmware, but keep the old ones (at least for a
-> while).  Thank you for moving cxgb4 to a versioned firmware file though.  I
-> presume there is a pending update to change the FW_FNAME definition to pending?
+--Signature=_Mon__13_Feb_2012_17_19_49_+1100_nXti6E32PpsXVg=y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Neil,
+Hi ,
 
-Thank you for the review. I have updated the patch series with the 
-following changes:
-- Rename the existing t4fw.bin file as t4fw-1.3.10.0.bin
-- Add t4fw.bin as a symlink to the latest t4fw revision.
+After merging the final tree, today's linux-next build (powerpc allyesconfi=
+g)
+failed like this:
 
-The driver looks up "t4fw.bin", the symlink allows updates of the FW 
-without actually modifying the driver source.
-Also, if the firmware revision under /lib/firmware/cxgb4/t4fw.bin is 
-more recent than the adapter's embedded FW,
-the driver will update it. The FW revisions are forward compatible.
+drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_cpu_notifier':
+drivers/staging/zsmalloc/zsmalloc-main.c:451:3: error: implicit declaration=
+ of function 'alloc_vm_area' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/zsmalloc/zsmalloc-main.c:451:12: warning: assignment makes =
+pointer from integer without a cast [enabled by default]
+drivers/staging/zsmalloc/zsmalloc-main.c:459:4: error: implicit declaration=
+ of function 'free_vm_area' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_map_object':
+drivers/staging/zsmalloc/zsmalloc-main.c:705:3: error: implicit declaration=
+ of function 'set_pte' [-Werror=3Dimplicit-function-declaration]
+drivers/staging/zsmalloc/zsmalloc-main.c:709:27: error: dereferencing point=
+er to incomplete type
+drivers/staging/zsmalloc/zsmalloc-main.c: In function 'zs_unmap_object':
+drivers/staging/zsmalloc/zsmalloc-main.c:739:3: error: implicit declaration=
+ of function '__flush_tlb_one' [-Werror=3Dimplicit-function-declaration]
 
-The following changes since commit 15888a2eab052ac3d3f49334e4f6f05f347a516e:
+Caused by commit 61989a80fb3a ("staging: zsmalloc: zsmalloc memory
+allocation library").  This needs to include linux/vmalloc.h at least.  I
+couldn't find set_pte at all or __flush_tlb_one for powerpc.
 
-   bnx2x: Adding FW 7.0.29.0 (2011-10-24 16:31:44 +0200)
-
-are available in the git repository at:
-   git://git.chelsio.net/pub/git/linux-firmware.git for-david
-
-Divy Le Ray (3):
-       linux-firmware: rename t4fw.bin
-       linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
-       linux-firmware: update cxgb3 driver firmware to revision 7.12.0
-
-  WHENCE                  |    4 +++-
-  cxgb3/t3fw-7.12.0.bin   |  Bin 0 -> 31812 bytes
-  cxgb4/t4fw-1.3.10.0.bin |  Bin 0 -> 241664 bytes
-  cxgb4/t4fw-1.4.16.0.bin |  Bin 0 -> 298496 bytes
-  cxgb4/t4fw.bin          |  Bin 241664 -> 17 bytes
-  5 files changed, 3 insertions(+), 1 deletions(-)
-  create mode 100755 cxgb3/t3fw-7.12.0.bin
-  create mode 100644 cxgb4/t4fw-1.3.10.0.bin
-  create mode 100644 cxgb4/t4fw-1.4.16.0.bin
-  mode change 100644 => 120000 cxgb4/t4fw.bin
-
+This was too hard to revert, so I have left powerpc allyesconfig broken
+for today.  I may revert it (and some dependent commits) tomorrow.
+--=20
 Cheers,
-Divy
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Mon__13_Feb_2012_17_19_49_+1100_nXti6E32PpsXVg=y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOKuFAAoJEECxmPOUX5FEY1MP/ioIbn1gEbss2fdOtPe4pJMu
+hybXU2M5Je+YTW+Qf1uYMpChlTjtDGEcxNZh3zRPvdjZZWkJYkmSZ9Dj2Zkx7+n2
+5VVYSb0HNME7h9Lp4qxMc8Hn02RqiIJgPkfiPrLqIGR3cYYL+IPGpaeaYG39gqVq
+RTFic3/GeIYNHroA5lsWYG0ugSu9VlcO8cgB1eZfhESrW+yvSXn89veWHr49cAUx
+8ZN9EyeLrncVM33YXCENqI9GUJV3AlUg6Lw97NqLbibkBXlKPpOD8Yd7jd/Z6mst
+10HRYFnInQiWna61S9Xu27McgHrkRGq0Iiafz3Ee7GxXSJIAxxSyWD1C3mKsUwzn
+b8jlBf1PxI0Fza/LhTWVEh7ZzO6baP30qHwlrpLf3s8lMG2X4sHcT8q4iuXb65fK
+AJt6/5kqf0OK81FnHN93POgw6sXjKiSXCDnniJJ/LUaNRZtGESJlQ3nef0Ig82Ag
+abpywdorAlk57+mV0YqLU8ByBHYWoPv3TPp6BtqyCo+YqBWnSOeZYGmqKkiEBvck
+VcqMLBh5cmUjGNUsdZBTd4KsSpaxJtKiqbNAUcD/GRztpFmxmbbbs0pL+FRVIU6i
+e6WQVg6V3Rotv/9kSj/cmGOcobJ2CqaaInZGcD5Y+GTPiJHk8AIYEQtvMyY+rT0J
+DUbqXNUp+mB6IFHLgEKI
+=SuX7
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Feb_2012_17_19_49_+1100_nXti6E32PpsXVg=y--
