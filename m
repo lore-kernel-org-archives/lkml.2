@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab2BMRag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:30:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62988 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757171Ab2BMRad (ORCPT
+	id S1757337Ab2BMRdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 12:33:50 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:47646 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab2BMRdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:30:33 -0500
-Date: Mon, 13 Feb 2012 09:30:27 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Bug in disk event polling
-Message-ID: <20120213173027.GC12117@google.com>
-References: <20120211002349.GN19392@google.com>
- <Pine.LNX.4.44L0.1202121216060.18114-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1202121216060.18114-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 13 Feb 2012 12:33:49 -0500
+Subject: Re: [PATCH v3] printk: add console output tracing
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1329154226.25686.4.camel@gandalf.stny.rr.com>
+References: <20111117145502.GA18437@somewhere>
+	 <1321541877.3997.31.camel@jlt3.sipsolutions.net>
+	 <20111117150040.GB18437@somewhere>
+	 <1321543268.3997.40.camel@jlt3.sipsolutions.net>
+	 <20111118184401.GA24787@somewhere.redhat.com>
+	 <1321641975.10266.73.camel@jlt3.sipsolutions.net>
+	 <20111118185449.GB24787@somewhere.redhat.com>
+	 <1321642752.10266.75.camel@jlt3.sipsolutions.net>
+	 <20111123131622.GA10669@somewhere.redhat.com>
+	 <1322140919.5366.17.camel@jlt3.sipsolutions.net>
+	 <20111124154519.GB18579@somewhere.redhat.com>
+	 (sfid-20111124_164601_383201_AB72557F) <1322161388.5366.54.camel@jlt3.sipsolutions.net>
+	 <1329154226.25686.4.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 13 Feb 2012 18:33:44 +0100
+Message-ID: <1329154424.3365.8.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
-
-On Sun, Feb 12, 2012 at 12:48:22PM -0500, Alan Stern wrote:
-> > I think it would be better to use wq for most kthreads.  A lot of them
-> > aren't strictly correct in the way they deal with
-> > kthread_should_stop() and freezing.  kthread in general simply seems
-> > way too difficult to use correctly.
-> 
-> Maybe so, but getting rid of it at this point would be a big change.  
-
-Ooh, yeah, if we do it, it would be a gradual transition.
-
-> Also, kthreads were originally considered more suitable for tasks that
-> would need to run for a long time; is this no longer true?
-
-wq no longer has problem w/ long running work items.  The only
-limiting parameter is max_active, which is primarily there to protect
-against berserk cases.
-
-> > > kthread_run() can be adjusted on a case-by-case basis, by inserting
-> > > calls to set_freezable() and try_to_freeze() at the appropriate places.  
-> > > But what about async_schedule()?
+On Mon, 2012-02-13 at 12:30 -0500, Steven Rostedt wrote:
+> On Thu, 2011-11-24 at 20:03 +0100, Johannes Berg wrote:
+> > From: Johannes Berg <johannes.berg@intel.com>
 > > 
-> > Given the stuff async is used for, maybe just make all async execution
-> > freezable?
+> > Add a printk.console trace point to record any printk
+> > messages into the trace, regardless of the current
+> > console loglevel. This can help correlate (existing)
+> > printk debugging with other tracing.
+> > 
 > 
-> That probably won't work.  What if a driver relies on async thread
-> execution to carry out its I/O?
->
-> As another example, sd_probe() calls async_schedule(sd_probe_async,...)
-> to handle the long-running parts of probing a SCSI disk.  In turn,
-> sd_remove() calls async_synchronize_full() to insure that probing is
-> over before the device is unbound from sd.
+> Looks like this patch got lost in the x-mas parade.
 > 
-> What happens if a hot-unpluggable disk drive is unplugged while the
-> system is asleep?  It's entirely possible that the bus subsystem's
-> resume routine would see the device was gone and would try to 
-> unregister it.  Then sd_remove would wait for the async thread 
-> to finish, which would never happen because the thread would be frozen 
-> and wouldn't be thawed until all the resume routines had finished.
+> Is this the last version of the patch?
 > 
-> In this case, the proper solution is to have the SCSI prepare method 
-> call async_synchronize_full().  Other cases will require other 
-> solutions.
+> In the thread I also see:
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Acked-by-me (Thomas Gleixner)
 
-Hmmm.... I don't know then. :)
+I don't think I made a newer version, in fact, I dropped it from my
+local tree already :)
 
-Thanks.
+johannes
 
--- 
-tejun
+
