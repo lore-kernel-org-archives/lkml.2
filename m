@@ -1,104 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab2BMAUe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 19:20:34 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34264 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754757Ab2BMAUd (ORCPT
+	id S1756075Ab2BMAWH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 19:22:07 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51477 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754757Ab2BMAWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 19:20:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <4f346d61.3S6x22TS5RH2gGO5%Larry.Finger@lwfinger.net>
-References: <4f346d61.3S6x22TS5RH2gGO5%Larry.Finger@lwfinger.net>
-Date: Mon, 13 Feb 2012 03:20:32 +0300
-Message-ID: <CAMo8BfL+nbOmO=jo1uqYoXOUCDW2-c7BZTL5UBcdHGuyGODiFA@mail.gmail.com>
-Subject: Re: [RFC/RFT] p54spi: Convert driver to use asynchronous firmware loading
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: chunkeey@web.de, m@bues.ch, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 12 Feb 2012 19:22:05 -0500
+Date: Mon, 13 Feb 2012 11:21:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: Re: [PULL REQUEST] DMA-mapping framework redesign preparation
+ patches
+Message-Id: <20120213112145.4b8990c739d297cd30714d52@canb.auug.org.au>
+In-Reply-To: <1328898737-15854-1-git-send-email-m.szyprowski@samsung.com>
+References: <1328898737-15854-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Feb_2012_11_21_45_+1100_8oMlxM5sQu=KHg4V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Drivers that load firmware from their probe routine have problems with the
-> latest versions of udev as they get timeouts while waiting for user
-> space to start. The problem is fixed by using request_firmware_nowait()
-> and delaying the start of mac80211 until the firmware is loaded.
+--Signature=_Mon__13_Feb_2012_11_21_45_+1100_8oMlxM5sQu=KHg4V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Marek,
+
+On Fri, 10 Feb 2012 19:32:17 +0100 Marek Szyprowski <m.szyprowski@samsung.c=
+om> wrote:
 >
-> To prevent the possibility of the driver being unloaded while the firmware
-> loading callback is still active, a completion queue entry is used.
->
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> ---
->
-> This conversion of p54spi to use asynchronous firmware loading is based
-> on the method used in p54usb. As I do not have the hardware, it is only
-> compile tested. I would appreciate any feedback from people that have the
-> hardware.
+> Our patches with DMA-mapping framework redesign proposal have been
+> hanging for over a month with just a few comments. We would like to go
+> further in the development, but first I would like to ask You to give
+> them a try in the linux-next kernel.
+>=20
+> For everyone interested in this patch series, here is the relevant
+> thread: https://lkml.org/lkml/2011/12/23/97
+>=20
+> If there are any problems with our git tree, please contact Marek=20
+> Szyprowski <m.szyprowski@samsung.com> or alternatively Kyungmin Park
+> <kyungmin.park@samsung.com>.
+>=20
+> The following changes since commit 62aa2b537c6f5957afd98e29f96897419ed5eb=
+ab:
+>=20
+>   Linux 3.3-rc2 (2012-01-31 13:31:54 -0800)
+>=20
+> are available in the git repository at:
+>   git://git.infradead.org/users/kmpark/linux-samsung dma-mapping-next
 
-Hi, Larry.
+I have added this from today.
 
-Are there any prerequisites for this patch?
-For now I'm applying it to the linux-omap ToT and having the following:
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-<7>[    2.968048] calling  p54spi_init+0x0/0x30 [p54spi] @ 456
-<4>[    2.973937] ------------[ cut here ]------------
-<4>[    2.974090] WARNING: at
-/home/dumb/ws/osll/n8x0/linux-3.3/linux-omap-2.6/fs/sysfs/dir.c:481
-sysfs_add_one+0x74/0x9c()
-<4>[    2.974212] sysfs: cannot create duplicate filename
-'/devices/platform/omap/omap2_mcspi.2/spi_master/spi2/spi2.0/firmware/spi2.0'
-<4>[    2.974334] Modules linked in: p54spi(+)
-<4>[    2.974487] [<c00182bc>] (unwind_backtrace+0x0/0xe4) from
-[<c002ef0c>] (warn_slowpath_common+0x4c/0x64)
-<4>[    2.974670] [<c002ef0c>] (warn_slowpath_common+0x4c/0x64) from
-[<c002efa4>] (warn_slowpath_fmt+0x2c/0x3c)
-<4>[    2.974792] [<c002efa4>] (warn_slowpath_fmt+0x2c/0x3c) from
-[<c00e5888>] (sysfs_add_one+0x74/0x9c)
-<4>[    2.974945] [<c00e5888>] (sysfs_add_one+0x74/0x9c) from
-[<c00e6290>] (create_dir+0x5c/0xac)
-<4>[    2.975067] [<c00e6290>] (create_dir+0x5c/0xac) from
-[<c00e6394>] (sysfs_create_dir+0xb4/0xcc)
-<4>[    2.975219] [<c00e6394>] (sysfs_create_dir+0xb4/0xcc) from
-[<c0142ce8>] (kobject_add_internal+0xe4/0x1c0)
-<4>[    2.975372] [<c0142ce8>] (kobject_add_internal+0xe4/0x1c0) from
-[<c0142f30>] (kobject_add+0x44/0x54)
-<4>[    2.975494] [<c0142f30>] (kobject_add+0x44/0x54) from
-[<c0193c98>] (device_add+0xe0/0x530)
-<4>[    2.975646] [<c0193c98>] (device_add+0xe0/0x530) from
-[<c019f184>] (_request_firmware+0x190/0x394)
-<4>[    2.975799] [<c019f184>] (_request_firmware+0x190/0x394) from
-[<c019f3c8>] (request_firmware_work_func+0x40/0x78)
-<4>[    2.975952] [<c019f3c8>] (request_firmware_work_func+0x40/0x78)
-from [<c00473cc>] (kthread+0x88/0x94)
-<4>[    2.976135] [<c00473cc>] (kthread+0x88/0x94) from [<c0013844>]
-(kernel_thread_exit+0x0/0x8)
-<4>[    2.976226] ---[ end trace 181b959cc0c448db ]---
-<3>[    2.976318] kobject_add_internal failed for spi2.0 with -EEXIST,
-don't try to register things with the same name in the same directory.
-<4>[    2.976501] [<c00182bc>] (unwind_backtrace+0x0/0xe4) from
-[<c0142d84>] (kobject_add_internal+0x180/0x1c0)
-<4>[    2.976654] [<c0142d84>] (kobject_add_internal+0x180/0x1c0) from
-[<c0142f30>] (kobject_add+0x44/0x54)
-<4>[    2.976776] [<c0142f30>] (kobject_add+0x44/0x54) from
-[<c0193c98>] (device_add+0xe0/0x530)
-<4>[    2.976928] [<c0193c98>] (device_add+0xe0/0x530) from
-[<c019f184>] (_request_firmware+0x190/0x394)
-<4>[    2.977081] [<c019f184>] (_request_firmware+0x190/0x394) from
-[<c019f3c8>] (request_firmware_work_func+0x40/0x78)
-<4>[    2.977233] [<c019f3c8>] (request_firmware_work_func+0x40/0x78)
-from [<c00473cc>] (kthread+0x88/0x94)
-<4>[    2.977386] [<c00473cc>] (kthread+0x88/0x94) from [<c0013844>]
-(kernel_thread_exit+0x0/0x8)
-<3>[    2.977508] p54spi spi2.0: fw_create_instance: device_register failed
-<3>[    2.977600] p54spi spi2.0: Firmware loading failed
-<3>[    3.104492] firmware spi2.0: firmware_loading_store: vmap() failed
-<6>[    3.108337] p54spi spi2.0: loading default eeprom...
-<6>[    3.108764] ieee80211 phy0: hwaddr 00:02:ee:c0:ff:ee,
-MAC:isl3820 RF:Longbow
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
--- 
-Thanks.
--- Max
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Mon__13_Feb_2012_11_21_45_+1100_8oMlxM5sQu=KHg4V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOFeZAAoJEECxmPOUX5FEGasQAJRfELGvaG157f04fLOp5cZ+
+BExY8MINAksS9ksXnf+o7emW9FWZFTLZT3pJ7Gnx8j/Po+kYnITOStRQLl6K8h3Y
++cZmYubikIrZyPJCVYBZUTH0Gi/5VrTCx/rbolS2ai67WicKa7qzPOJ5D/oaeCdY
+CiOWMIgyaNbESpoR/l32Ta4XMJG0aDIV6bWlBpmKZVSzmpOFh40StsbQ3Ej6UUfo
+b+lo7IhOegjvNWITbiuIRDe9bAk5ONW2UU1z5sOWq/aELytRbSw1bNifvJlQF1VG
+AD+VNjEMrYNKg9soRpaZaIqAN1wb8a+I3//iaSL9kVstPo+D5uJLjAIEWBsgUO+N
+Duu3l8/GNL9tb1EvDXrt4d+H8zaow9P11rGHb2e6x9ndLZDmijjcYLQa1R/ektxo
+Z7kZIJNvi6rGlAurojo+q5gjnIP4aDDjZNMJ4pCayn5+YCLfDvu6jcK7od5S5dEM
+fbmVkAAysd8ajciJdN0Yj9Vv/oZ2/ARaQjAMVZtOBNTj5JR/WdRPeYZ0y71a4hSX
+RYNdeiQC3AhYufvXe5YCP7e+MvzMRHW336Rjyd+AMNjYx/cs6JZSOVgz6qKTWX6H
+oWde9Tl8A70eoN3/LtS7kC+WX228gPd9qPn5sHxyiKVV87OxwNaDP3kZqS1k3b3r
+4gyxILj3Uf7TanB2Wbsh
+=mWBa
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Feb_2012_11_21_45_+1100_8oMlxM5sQu=KHg4V--
