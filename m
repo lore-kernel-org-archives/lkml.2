@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab2BMHMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 02:12:17 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54445 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793Ab2BMHLe (ORCPT
+	id S1754996Ab2BMHVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:21:39 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:56220 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2BMHVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 02:11:34 -0500
-X-AuditID: 9c930197-b7cdbae000001518-75-4f38b7a2f18a
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] perf tools: Check more combinations of PID/TID, UID and CPU switches
-Date: Mon, 13 Feb 2012 16:27:38 +0900
-Message-Id: <1329118064-9412-7-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
-References: <1329118064-9412-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 13 Feb 2012 02:21:38 -0500
+Message-ID: <1329117558.28848.53.camel@aeonflux>
+Subject: Re: [PATCH 2/2] bluetooth: Convert BT_DBG to pr_debug
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Joe Perches <joe@perches.com>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 13 Feb 2012 08:19:18 +0100
+In-Reply-To: <1329115904.30878.7.camel@joe2Laptop>
+References: <cover.1329102581.git.joe@perches.com>
+	 <90fbd8a0b800c83f5ad1df7889dc9b11d7d9c588.1329102581.git.joe@perches.com>
+	 <1329115057.28848.52.camel@aeonflux> <1329115904.30878.7.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were some combinations of these switches that are not so
-appropriate IMHO. Since there are implicit priorities between
-them, they worked well anyway, but end up opening useless
-duplicated events. For example, 'perf stat -t <pid> -a' will
-open multiple events for the thread instead of one.
+Hi Joe,
 
-Add explicit checks and warn user in check_target_maps().
+> > > No need to obfuscate, just use the normal debugging macro.
+> > > Add "\n" to uses, align arguments, coalesce formats.
+> > > Fix a typo and fix a bad format extended by a line continuation.
+> > what is this patch buying us.
+> 
+> Easier greps of pr_debug.
+> BT_DBG is just an unnecessary useless wrapper.
+> 
+> > The only useful change would be to move to dev_printk, but we are not
+> > there yet.
+> 
+> Maybe dev_dbg, but there isn't always an
+> appropriate device * available.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/util/usage.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+exactly. And that needs to be fixed first. People are working on getting
+some old legacy 2.4 leftovers out of this subsystem so we can have first
+call struct device everywhere.
 
-diff --git a/tools/perf/util/usage.c b/tools/perf/util/usage.c
-index d235013600e5..08423c037a7e 100644
---- a/tools/perf/util/usage.c
-+++ b/tools/perf/util/usage.c
-@@ -133,4 +133,17 @@ void check_target_maps(struct perf_maps_opts *maps)
- 		maps->uid_str = NULL;
- 	}
- 
-+	/* UID and CPU are mutually exclusive */
-+	if (maps->uid_str && maps->cpu_list) {
-+		ui__warning("UID switch overriding CPU\n");
-+		sleep(1);
-+		maps->cpu_list = NULL;
-+	}
-+
-+	/* PID/UID and SYSTEM are mutually exclusive */
-+	if ((maps->target_tid > 0 || maps->uid_str) && maps->system_wide) {
-+		ui__warning("PID/TID/UID switch overriding CPU\n");
-+		sleep(1);
-+		maps->system_wide = false;
-+	}
- }
--- 
-1.7.9
+Regards
+
+Marcel
+
 
