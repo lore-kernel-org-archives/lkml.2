@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2BMThm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 14:37:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40574 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab2BMThj (ORCPT
+	id S932217Ab2BMTi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 14:38:28 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:35722 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab2BMTi1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 14:37:39 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: linville@tuxdriver.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
-        chunkeey@web.de, Max Filippov <jcmvbkbc@gmail.com>, m@bues.ch,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [RFC/RFT 5/5] p54spi: Load firmware from work queue and not from probe routine
-Date: Mon, 13 Feb 2012 13:37:06 -0600
-Message-Id: <1329161826-11135-6-git-send-email-Larry.Finger@lwfinger.net>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net>
-References: <1329161826-11135-1-git-send-email-Larry.Finger@lwfinger.net>
+	Mon, 13 Feb 2012 14:38:27 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Robert Nelson" <robertcnelson@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, "Ohad Ben-Cohen" <ohad@wizery.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Arnd Bergmann" <arnd@arndb.de>, "Jonathan Corbet" <corbet@lwn.net>,
+        "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Rob Clark" <rob.clark@linaro.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Linaro-mm-sig] [PATCHv21 12/16] mm: trigger page reclaim in
+ alloc_contig_range() to stabilise watermarks
+References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+ <1328895151-5196-13-git-send-email-m.szyprowski@samsung.com>
+ <CAOCHtYi01NVp1j=MX+0-z7ygW5tJuoswn8eWTQp+0Z5mMGdeQw@mail.gmail.com>
+Date: Mon, 13 Feb 2012 11:38:22 -0800
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v9mt58ch3l0zgt@mpn-glaptop>
+In-Reply-To: <CAOCHtYi01NVp1j=MX+0-z7ygW5tJuoswn8eWTQp+0Z5mMGdeQw@mail.gmail.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers that load firmware from their probe routine have problems with the
-latest versions of udev as they get timeouts while waiting for user
-space to start. The problem is fixed by loading the firmware and starting
-mac80211 from a delayed_work queue. By using this method, most of the
-original code is preserved.
+> On Fri, Feb 10, 2012 at 11:32 AM, Marek Szyprowski
+> <m.szyprowski@samsung.com> wrote:
+>> @@ -5637,6 +5642,56 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>>        return ret > 0 ? 0 : ret;
+>>  }
+>>
+>> +/*
+>> + * Update zone's cma pages counter used for watermark level calculation.
+>> + */
+>> +static inline void __update_cma_wmark_pages(struct zone *zone, int count)
+>> +{
+>> +       unsigned long flags;
+>> +       spin_lock_irqsave(&zone->lock, flags);
+>> +       zone->min_cma_pages += count;
+>> +       spin_unlock_irqrestore(&zone->lock, flags);
+>> +       setup_per_zone_wmarks();
+>> +}
+>> +
+>> +/*
+>> + * Trigger memory pressure bump to reclaim some pages in order to be able to
+>> + * allocate 'count' pages in single page units. Does similar work as
+>> + *__alloc_pages_slowpath() function.
+>> + */
+>> +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
+>> +{
+>> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>> +       struct zonelist *zonelist = node_zonelist(0, gfp_mask);
+>> +       int did_some_progress = 0;
+>> +       int order = 1;
+>> +       unsigned long watermark;
+>> +
+>> +       /*
+>> +        * Increase level of watermarks to force kswapd do his job
+>> +        * to stabilise at new watermark level.
+>> +        */
+>> +       __modify_min_cma_pages(zone, count);
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
-This one is compile-tested only.
+On Mon, 13 Feb 2012 10:57:58 -0800, Robert Nelson <robertcnelson@gmail.com> wrote:
+> Hi Marek,   This ^^^ function doesn't seem to exist in this patchset,
+> is it in another set posted to lkml?
 
-Larry
----
- drivers/net/wireless/p54/p54spi.c |   38 ++++++++++++++++++++++++++----------
- drivers/net/wireless/p54/p54spi.h |    1 +
- 2 files changed, 28 insertions(+), 11 deletions(-)
+This should read __update_cma_wmark_pages().  Sorry for the incorrect patch.
 
-diff --git a/drivers/net/wireless/p54/p54spi.c b/drivers/net/wireless/p54/p54spi.c
-index 7faed62..87c2634 100644
---- a/drivers/net/wireless/p54/p54spi.c
-+++ b/drivers/net/wireless/p54/p54spi.c
-@@ -595,6 +595,30 @@ static void p54spi_op_stop(struct ieee80211_hw *dev)
- 	cancel_work_sync(&priv->work);
- }
- 
-+static void p54s_load_firmware(struct work_struct *work)
-+{
-+	struct p54s_priv *priv = container_of(to_delayed_work(work),
-+				 struct p54s_priv, firmware_load);
-+	struct ieee80211_hw *hw = priv->hw;
-+	int ret;
-+
-+	ret = p54spi_request_firmware(hw);
-+	if (ret < 0)
-+		goto err_free_common;
-+
-+	ret = p54spi_request_eeprom(hw);
-+	if (ret)
-+		goto err_free_common;
-+
-+	ret = p54_register_common(hw, &priv->spi->dev);
-+	if (ret)
-+		goto err_free_common;
-+	return;
-+
-+err_free_common:
-+	dev_err(&priv->spi->dev, "Failed to read firmware\n");
-+}
-+
- static int __devinit p54spi_probe(struct spi_device *spi)
- {
- 	struct p54s_priv *priv = NULL;
-@@ -658,17 +682,9 @@ static int __devinit p54spi_probe(struct spi_device *spi)
- 	priv->common.stop = p54spi_op_stop;
- 	priv->common.tx = p54spi_op_tx;
- 
--	ret = p54spi_request_firmware(hw);
--	if (ret < 0)
--		goto err_free_common;
--
--	ret = p54spi_request_eeprom(hw);
--	if (ret)
--		goto err_free_common;
--
--	ret = p54_register_common(hw, &priv->spi->dev);
--	if (ret)
--		goto err_free_common;
-+	/* setup and start delayed work to load firmware */
-+	INIT_DELAYED_WORK(&priv->firmware_load, p54s_load_firmware);
-+	schedule_delayed_work(&priv->firmware_load, HZ);
- 
- 	return 0;
- 
-diff --git a/drivers/net/wireless/p54/p54spi.h b/drivers/net/wireless/p54/p54spi.h
-index dfaa62a..5f7714b 100644
---- a/drivers/net/wireless/p54/p54spi.h
-+++ b/drivers/net/wireless/p54/p54spi.h
-@@ -120,6 +120,7 @@ struct p54s_priv {
- 
- 	enum fw_state fw_state;
- 	const struct firmware *firmware;
-+	struct delayed_work firmware_load;
- };
- 
- #endif /* P54SPI_H */
 -- 
-1.7.7
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
