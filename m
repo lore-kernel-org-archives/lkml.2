@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab2BMVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:37:28 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:64000 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab2BMVh0 convert rfc822-to-8bit (ORCPT
+	id S1756680Ab2BMViI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:38:08 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36582 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab2BMViH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:37:26 -0500
+	Mon, 13 Feb 2012 16:38:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <op.v9mzhvxt3l0zgt@mpn-glaptop>
-References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
-	<1328895151-5196-13-git-send-email-m.szyprowski@samsung.com>
-	<CAOCHtYi01NVp1j=MX+0-z7ygW5tJuoswn8eWTQp+0Z5mMGdeQw@mail.gmail.com>
-	<op.v9mt58ch3l0zgt@mpn-glaptop>
-	<CAOCHtYjc39ThfrcAqdsxNf-bFqKzu=T8=O_W9Cg3cRNzQnX-OQ@mail.gmail.com>
-	<op.v9mzhvxt3l0zgt@mpn-glaptop>
-Date: Mon, 13 Feb 2012 15:37:25 -0600
-Message-ID: <CAOCHtYh8Gx+79_a-UtqX67gGP0WsMA26Y4MXbgi99AS7tqhH2Q@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCHv21 12/16] mm: trigger page reclaim in
- alloc_contig_range() to stabilise watermarks
-From: Robert Nelson <robertcnelson@gmail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rob Clark <rob.clark@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120213090440.GA11414@seagal.ffwll.local>
+References: <1328825697-23685-1-git-send-email-miletus@chromium.org>
+	<1328896201-20909-1-git-send-email-miletus@chromium.org>
+	<20120213090440.GA11414@seagal.ffwll.local>
+Date: Mon, 13 Feb 2012 16:38:05 -0500
+Message-ID: <CAPDwgkM5=J994Cp3ftkXLshfuPsZOp7q933MnPpeEmUqSjUdPQ@mail.gmail.com>
+Subject: Re: [PATCH] [PATCH] drm/i915: Fix race condition in accessing GMBUS
+From: Yufeng Shen <miletus@google.com>
+To: Yufeng Shen <miletus@chromium.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Ben Widawsky <ben@bwidawsk.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/13 Michal Nazarewicz <mina86@mina86.com>:
->>> On Fri, Feb 10, 2012 at 11:32 AM, Marek Szyprowski
->>>>
->>>> +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int
->>>> count)
->>>>
->>>> +{
->>>> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
->>>> +       struct zonelist *zonelist = node_zonelist(0, gfp_mask);
->>>> +       int did_some_progress = 0;
->>>> +       int order = 1;
->>>> +       unsigned long watermark;
->>>> +
->>>> +       /*
->>>> +        * Increase level of watermarks to force kswapd do his job
->>>> +        * to stabilise at new watermark level.
->>>> +        */
->>>> +       __modify_min_cma_pages(zone, count);
->
->
->> 2012/2/13 Michal Nazarewicz <mina86@mina86.com>:
+Hi Ben,
+
+So I2C core  does protect multiple access to one adapter, but I2C core
+does not protect the case where multiple adapters share the same underlying
+device. GMBUS has 7 different pin pairs and each pair is registered as an I2C
+adapter. I2C core can serialize the access to one pin pair, say that
+the LVDS port
+, or the DDC port. But when there are I2C transactions on both LVDS
+and DDC ports,
+since they share the same GMBUS registers, there will be race condition.
+Does this make sense to you ?
+
+--- Yufeng Shen
+
+On Mon, Feb 13, 2012 at 4:04 AM, Ben Widawsky <ben@bwidawsk.net> wrote:
+> On Fri, Feb 10, 2012 at 12:50:01PM -0500, Yufeng Shen wrote:
+>> GMBUS has several ports and each has it's own corresponding
+>> I2C adpater. When multiple I2C adapters call gmbus_xfer() at
+>> the same time there is a race condition in using the underlying
+>> GMBUS controller. Fixing this by adding a mutex lock when calling
+>> gmbus_xfer().
 >>
->>> This should read __update_cma_wmark_pages().  Sorry for the incorrect
->>> patch.
+>> Signed-off-by: Yufeng Shen <miletus@chromium.org>
 >
+> I do not see the race. All the i2c transfers should be protected
+> correctly by the i2c core, or else I think we haven't registered our
+> device properly. Could you give an example of when/how this can happen?
 >
-> On Mon, 13 Feb 2012 13:15:13 -0800, Robert Nelson <robertcnelson@gmail.com>
-> wrote:
->>
->> Thanks Michal, that fixed it..
->
->
-> You are most welcome.
->
->
->> cma-v21 with Rob Clark's omapdrm works great on the Beagle xM..
->
->
-> Can we take that as:
->
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
->
-> ? ;)
-
-Oh, of course:
-
-Tested-by: Robert Nelson <robertcnelson@gmail.com>
-
-Regards,
-
--- 
-Robert Nelson
-http://www.rcn-ee.com/
+> Ben
