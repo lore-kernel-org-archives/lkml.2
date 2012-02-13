@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2BMPqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 10:46:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9546 "EHLO mx1.redhat.com"
+	id S1757031Ab2BMPtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 10:49:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49912 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756953Ab2BMPqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 10:46:36 -0500
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, jacob.jun.pan@linux.intel.com, alan@linux.intel.com,
-        feng.tang@intel.com, konrad.wilk@oracle.com, avi@redhat.com,
-        glommer@redhat.com, johnstul@us.ibm.com, riel@redhat.com,
-        tj@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        akpm@linux-foundation.org, amit.shah@redhat.com
-Subject: [PATCH RFC] pvclock: Make pv_clock more robust and fixup it if overflow happens
-Date: Mon, 13 Feb 2012 16:45:59 +0100
-Message-Id: <1329147959-22472-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <20120213130727.GA8052@amt.cnet>
-References: <20120213130727.GA8052@amt.cnet>
+	id S1754004Ab2BMPtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 10:49:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/3] PM / Sleep: Make enter_state() in kernel/power/suspend.c static
+Date: Mon, 13 Feb 2012 16:53:01 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+References: <201202120003.20879.rjw@sisk.pl> <201202131612.26973.rjw@sisk.pl> <4F392D99.7030303@linux.vnet.ibm.com>
+In-Reply-To: <4F392D99.7030303@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202131653.02013.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of hunting misterious stalls/hungs all over the kernel when
-overflow occurs at pvclock.c:pvclock_get_nsec_offset
+On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
+> On 02/13/2012 08:42 PM, Rafael J. Wysocki wrote:
+> 
+> > On Monday, February 13, 2012, Srivatsa S. Bhat wrote:
+> >> On 02/13/2012 02:54 AM, Rafael J. Wysocki wrote:
+> >>
+> >>> On Sunday, February 12, 2012, Srivatsa S. Bhat wrote:
+> >>>> On 02/12/2012 04:34 AM, Rafael J. Wysocki wrote:
+> >>>>
+> >>>>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>>>
+> >>>>> The enter_state() function in kernel/power/suspend.c should be
+> >>>>> static and state_store() in kernel/power/suspend.c should call
+> >>>>> pm_suspend() instead of it, so make that happen (which also reduces
+> >>>>> code duplication related to suspend statistics).
+> >>>>>
+> >>>>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >>>>> ---
+> >>>>>  kernel/power/main.c    |    6 +-----
+> >>>>>  kernel/power/power.h   |    2 --
+> >>>>>  kernel/power/suspend.c |    2 +-
+> >>>>>  3 files changed, 2 insertions(+), 8 deletions(-)
+> >>>>>
+> >>>>> Index: linux/kernel/power/main.c
+> >>>>> ===================================================================
+> >>>>> --- linux.orig/kernel/power/main.c
+> >>>>> +++ linux/kernel/power/main.c
+> >>>>> @@ -292,11 +292,7 @@ static ssize_t state_store(struct kobjec
+> >>>>>  #ifdef CONFIG_SUSPEND
+> >>>>>  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++) {
+> >>>>>  		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
+> >>>>> -			break;
+> >>>>> -	}
+> >>>>> -	if (state < PM_SUSPEND_MAX && *s) {
+> >>>>> -		error = enter_state(state);
+> >>>>> -		suspend_stats_update(error);
+> >>>>> +			error = pm_suspend(state);
+> >>>>
+> >>>>
+> >>>> This code will not stop after calling pm_suspend(). It will try more iterations
+> >>>> in the for loop right?
+> >>>
+> >>> Well, only one string in pm_states[] can be matched at a time, but I agree that
+> >>> it doesn't make sense to continue the loop after we've found a match.
+> >>>
+> >>>> We can probably keep the 'for' loop as it is, and just replace the 'if' block
+> >>>> following the 'for' loop by: error = pm_suspend(state);
+> >>>
+> >>> I think the patch below is correct.
+> >>>
+> >>> Thanks,
+> >>> Rafael
+> >>>
+> >>> ---
+> >>> From: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> Subject: PM / Sleep: Make enter_state() in kernel/power/suspend.c static
+> >>>
+> >>> The enter_state() function in kernel/power/suspend.c should be
+> >>> static and state_store() in kernel/power/suspend.c should call
+> >>> pm_suspend() instead of it, so make that happen (which also reduces
+> >>> code duplication related to suspend statistics).
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >>> ---
+> >>
+> >>
+> >> Yeah, this version of the patch will work fine.
+> >>
+> >> Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > 
+> > Thanks!
+> > 
+> > I wonder if that should be Reviewed-by, tough?  You evidently have reviewed
+> > the patch (actually, all three of them).
+> > 
+> 
+> 
+> Anything is fine :-) It is not very clear to me when to use Reviewed-by and
+> when to use Acked-by.. so I randomly chose one of them.. :-)
+> But please enlighten me as to when to use which one, so that in the future, I
+> can use the right one :-)
 
-    u64 delta = native_read_tsc() - shadow->tsc_timestamp;
+"Acked-by" means, roughly, "I have no objection" or "looks good to me",
+depending on who's saying that, but it doesn't imply that you've had more than
+a cursory look at the patch in question.  "Reviewied-by", in contrast, means
+something like "I have reviewed the patch in detail and haven't found anything
+wrong in it" (which obviously means that you have no objection too, because
+otherwise you'd have found _something_ wrong in the patch).
 
-and introducing hooks when places of unexpected access found, pv_clock
-should be initialized for the calling cpu if overflow condition is detected.
+So, "Acked-by" from anyone other than the relevant maintainer is just an
+"I'm for" declaration, while "Reviewied-by" from _anyone_ carries some actual
+weight. 
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
- arch/x86/kernel/pvclock.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 42eb330..b486756 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -41,9 +41,14 @@ void pvclock_set_flags(u8 flags)
- 	valid_flags = flags;
- }
- 
--static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
-+static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow,
-+				   bool *overflow)
- {
--	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
-+	u64 delta;
-+	u64 tsc = native_read_tsc();
-+	u64 shadow_timestamp = shadow->tsc_timestamp;
-+	*overflow = tsc < shadow_timestamp;
-+	delta = tsc - shadow_timestamp;
- 	return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
- 				   shadow->tsc_shift);
- }
-@@ -94,12 +99,19 @@ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src)
- 	unsigned version;
- 	cycle_t ret, offset;
- 	u64 last;
-+	bool overflow;
- 
- 	do {
- 		version = pvclock_get_time_values(&shadow, src);
- 		barrier();
--		offset = pvclock_get_nsec_offset(&shadow);
-+		offset = pvclock_get_nsec_offset(&shadow, &overflow);
- 		ret = shadow.system_timestamp + offset;
-+		if (unlikely(overflow)) {
-+			memset(src, 0, sizeof(*src));
-+			barrier();
-+			x86_cpuinit.early_percpu_clock_init();
-+			continue;
-+		}
- 		barrier();
- 	} while (version != src->version);
- 
--- 
-1.7.7.6
-
+Thanks,
+Rafael
