@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab2BMKqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 05:46:07 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63235 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2BMKqF (ORCPT
+	id S1755027Ab2BMLD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 06:03:59 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47510 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab2BMLD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 05:46:05 -0500
-Message-ID: <1329129960.2494.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: ixgbe truesize underestimation fix missing?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christian Brunner <christian@brunner-muc.de>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 13 Feb 2012 11:46:00 +0100
-In-Reply-To: <CAJafhzS3TMNPsyc_wwjZOf4zNmGD-XdP59qgYgGMx0-SMAnc-w@mail.gmail.com>
-References: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
-	 <1329123803.2336.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CAJafhzS3TMNPsyc_wwjZOf4zNmGD-XdP59qgYgGMx0-SMAnc-w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Mon, 13 Feb 2012 06:03:58 -0500
+From: Ming Lei <tom.leiming@gmail.com>
+To: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH] percpu: use raw_local_irq_* in _this_cpu op
+Date: Mon, 13 Feb 2012 19:03:38 +0800
+Message-Id: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 13 février 2012 à 10:57 +0100, Christian Brunner a écrit :
-> 2012/2/13 Eric Dumazet <eric.dumazet@gmail.com>:
-> > Le lundi 13 février 2012 à 09:45 +0100, Christian Brunner a écrit :
-> >> Back in Oktober, there was a patch by Eric Dumazet for the ixgbe
-> >> driver to fix the skb truesize underestimation (commit
-> >> 98130646770db42cd14c44ba0d7f2d0eb8078820). It changed only one line in
-> >> ixgbe_main.c:
-> >>
-> >> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> >> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> >> @@ -1326,7 +1326,7 @@ static bool ixgbe_clean_rx_irq(struct
-> >> ixgbe_q_vector *q_vector,
-> >>                         skb->len += upper_len;
-> >>                         skb->data_len += upper_len;
-> >> -                       skb->truesize += upper_len;
-> >> +                       skb->truesize += PAGE_SIZE / 2;
-> >>                 }                 i++;
-> >>
-> >>
-> >> But when I look at the current code (3.2.5 or 3.3rc), skb->truesize is
-> >> still increased by the same value as skb->data_len.
-> >>
-> >> 1228         skb->data_len += frag_list_size;
-> >> 1229         skb->truesize += frag_list_size;
-> >>
-> >> Is it posible that there was a merge conflict, or am I missing something here?
-> >
-> > Maybe a problem in your local tree ?
-> >
-> > I can see proper fix in current tree.
-> 
-> Ahh... Sorry. I Was looking at the wrong place -
-> ixgbe_transform_rsc_queue() has code that is quite similar.
-> 
-> This however makes me wonder, why we are using "skb->len" for
-> increasing the frag_list_size, as skb->len might be smaller than
-> skb->truesize.
-> 
-> Shouldn't we add a frag_list_truesize counter in ixgbe_transform_rsc_queue() ?
+It doesn't make sense to trace irq off or do irq flags
+lock proving inside 'this_cpu' operations, so replace local_irq_*
+with raw_local_irq_* in 'this_cpu' op.
 
-Probably, but you should raise this discussion on netdev, not lkml, and
-based on net-next tree, as ixgbe_transform_rsc_queue() doesnt exist
-anymore ;)
+Also the patch fixes one lockdep warning[1], which is caused
+by the added local_irq_save/restore(flags) in this_cpu_inc
+called by __debug_atomic_inc: kernel/lockdep.c
 
-Note that in this case (RSC) truesize underestimation is small since
-typical segment size is very close to PAGE_SIZE/2
+[1],
+[    0.162841] ------------[ cut here ]------------
+[    0.167694] WARNING: at kernel/lockdep.c:3493 check_flags+0xc0/0x1d0()
+[    0.174468] Modules linked in:
+[    0.177703] Backtrace:
+[    0.180328] [<c00171f0>] (dump_backtrace+0x0/0x110) from [<c0412320>] (dump_stack+0x18/0x1c)
+[    0.189086]  r6:c051f778 r5:00000da5 r4:00000000 r3:60000093
+[    0.195007] [<c0412308>] (dump_stack+0x0/0x1c) from [<c00410e8>] (warn_slowpath_common+0x54/0x6c)
+[    0.204223] [<c0041094>] (warn_slowpath_common+0x0/0x6c) from [<c0041124>] (warn_slowpath_null+0x24/0x2c)
+[    0.214111]  r8:00000000 r7:00000000 r6:ee069598 r5:60000013 r4:ee082000
+[    0.220825] r3:00000009
+[    0.223693] [<c0041100>] (warn_slowpath_null+0x0/0x2c) from [<c0088f38>] (check_flags+0xc0/0x1d0)
+[    0.232910] [<c0088e78>] (check_flags+0x0/0x1d0) from [<c008d348>] (lock_acquire+0x4c/0x11c)
+[    0.241668] [<c008d2fc>] (lock_acquire+0x0/0x11c) from [<c0415aa4>] (_raw_spin_lock+0x3c/0x74)
+[    0.250610] [<c0415a68>] (_raw_spin_lock+0x0/0x74) from [<c010a844>] (set_task_comm+0x20/0xc0)
+[    0.259521]  r6:ee069588 r5:ee0691c0 r4:ee082000
+[    0.264404] [<c010a824>] (set_task_comm+0x0/0xc0) from [<c0060780>] (kthreadd+0x28/0x108)
+[    0.272857]  r8:00000000 r7:00000013 r6:c0044a08 r5:ee0691c0 r4:ee082000
+[    0.279571] r3:ee083fe0
+[    0.282470] [<c0060758>] (kthreadd+0x0/0x108) from [<c0044a08>] (do_exit+0x0/0x6dc)
+[    0.290405]  r5:c0060758 r4:00000000
+[    0.294189] ---[ end trace 1b75b31a2719ed1c ]---
+[    0.299041] possible reason: unannotated irqs-on.
+[    0.303955] irq event stamp: 5
+[    0.307159] hardirqs last  enabled at (4): [<c001331c>] no_work_pending+0x8/0x2c
+[    0.314880] hardirqs last disabled at (5): [<c0089b08>] trace_hardirqs_on_caller+0x60/0x26c
+[    0.323547] softirqs last  enabled at (0): [<c003f754>] copy_process+0x33c/0xef4
+[    0.331207] softirqs last disabled at (0): [<  (null)>]   (null)
+[    0.337585] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
 
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+ include/linux/percpu.h |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 6e68d05..5ed1e38 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -294,9 +294,9 @@ do {									\
+ #define _this_cpu_generic_to_op(pcp, val, op)				\
+ do {									\
+ 	unsigned long flags;						\
+-	local_irq_save(flags);						\
++	raw_local_irq_save(flags);						\
+ 	*__this_cpu_ptr(&(pcp)) op val;					\
+-	local_irq_restore(flags);					\
++	raw_local_irq_restore(flags);					\
+ } while (0)
+ 
+ #ifndef this_cpu_write
+@@ -395,10 +395,10 @@ do {									\
+ ({									\
+ 	typeof(pcp) ret__;						\
+ 	unsigned long flags;						\
+-	local_irq_save(flags);						\
++	raw_local_irq_save(flags);						\
+ 	__this_cpu_add(pcp, val);					\
+ 	ret__ = __this_cpu_read(pcp);					\
+-	local_irq_restore(flags);					\
++	raw_local_irq_restore(flags);					\
+ 	ret__;								\
+ })
+ 
+@@ -425,10 +425,10 @@ do {									\
+ #define _this_cpu_generic_xchg(pcp, nval)				\
+ ({	typeof(pcp) ret__;						\
+ 	unsigned long flags;						\
+-	local_irq_save(flags);						\
++	raw_local_irq_save(flags);						\
+ 	ret__ = __this_cpu_read(pcp);					\
+ 	__this_cpu_write(pcp, nval);					\
+-	local_irq_restore(flags);					\
++	raw_local_irq_restore(flags);					\
+ 	ret__;								\
+ })
+ 
+@@ -453,11 +453,11 @@ do {									\
+ ({									\
+ 	typeof(pcp) ret__;						\
+ 	unsigned long flags;						\
+-	local_irq_save(flags);						\
++	raw_local_irq_save(flags);						\
+ 	ret__ = __this_cpu_read(pcp);					\
+ 	if (ret__ == (oval))						\
+ 		__this_cpu_write(pcp, nval);				\
+-	local_irq_restore(flags);					\
++	raw_local_irq_restore(flags);					\
+ 	ret__;								\
+ })
+ 
+@@ -490,10 +490,10 @@ do {									\
+ ({									\
+ 	int ret__;							\
+ 	unsigned long flags;						\
+-	local_irq_save(flags);						\
++	raw_local_irq_save(flags);						\
+ 	ret__ = __this_cpu_generic_cmpxchg_double(pcp1, pcp2,		\
+ 			oval1, oval2, nval1, nval2);			\
+-	local_irq_restore(flags);					\
++	raw_local_irq_restore(flags);					\
+ 	ret__;								\
+ })
+ 
+-- 
+1.7.9
 
