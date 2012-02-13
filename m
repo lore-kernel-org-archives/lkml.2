@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab2BMVax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 16:30:53 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:35652 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2BMVav convert rfc822-to-8bit (ORCPT
+	id S1756008Ab2BMVd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 16:33:26 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61146 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab2BMVdZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 16:30:51 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Don Zickus <dzickus@redhat.com>, "x86@kernel.org" <x86@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mjg@redhat.com" <mjg@redhat.com>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>
-Date: Mon, 13 Feb 2012 16:22:21 -0500
-Subject: RE: [PATCH 2/2] x86, reschedule: check to see if system is shutting
- down
-Thread-Topic: [PATCH 2/2] x86, reschedule: check to see if system is
- shutting down
-Thread-Index: AczqjfUizZJMMGLeQ46HPHpQ4MqkjgABvx1w
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2DAC7A8FC3@USINDEVS01.corp.hds.com>
-References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
- <1329164860-668-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1329164860-668-3-git-send-email-dzickus@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Feb 2012 16:33:25 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Robert Nelson" <robertcnelson@gmail.com>
+Cc: "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, "Ohad Ben-Cohen" <ohad@wizery.com>,
+        "Daniel Walker" <dwalker@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Arnd Bergmann" <arnd@arndb.de>, "Jonathan Corbet" <corbet@lwn.net>,
+        "Mel Gorman" <mel@csn.ul.ie>, "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Jesse Barker" <jesse.barker@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Rob Clark" <rob.clark@linaro.org>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [Linaro-mm-sig] [PATCHv21 12/16] mm: trigger page reclaim in
+ alloc_contig_range() to stabilise watermarks
+References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+ <1328895151-5196-13-git-send-email-m.szyprowski@samsung.com>
+ <CAOCHtYi01NVp1j=MX+0-z7ygW5tJuoswn8eWTQp+0Z5mMGdeQw@mail.gmail.com>
+ <op.v9mt58ch3l0zgt@mpn-glaptop>
+ <CAOCHtYjc39ThfrcAqdsxNf-bFqKzu=T8=O_W9Cg3cRNzQnX-OQ@mail.gmail.com>
+Date: Mon, 13 Feb 2012 13:33:21 -0800
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1202130209
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v9mzhvxt3l0zgt@mpn-glaptop>
+In-Reply-To: <CAOCHtYjc39ThfrcAqdsxNf-bFqKzu=T8=O_W9Cg3cRNzQnX-OQ@mail.gmail.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> On Fri, Feb 10, 2012 at 11:32 AM, Marek Szyprowski
+>>> +static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
+>>> +{
+>>> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>>> +       struct zonelist *zonelist = node_zonelist(0, gfp_mask);
+>>> +       int did_some_progress = 0;
+>>> +       int order = 1;
+>>> +       unsigned long watermark;
+>>> +
+>>> +       /*
+>>> +        * Increase level of watermarks to force kswapd do his job
+>>> +        * to stabilise at new watermark level.
+>>> +        */
+>>> +       __modify_min_cma_pages(zone, count);
 
->+		WARN_ON(atomic_read(&stopping_cpu) == -1)
+> 2012/2/13 Michal Nazarewicz <mina86@mina86.com>:
+>> This should read __update_cma_wmark_pages().  Sorry for the incorrect patch.
 
-WARN_ON(atomic_read(&stopping_cpu) == -1); ?
+On Mon, 13 Feb 2012 13:15:13 -0800, Robert Nelson <robertcnelson@gmail.com> wrote:
+> Thanks Michal, that fixed it..
 
-";" is missing...
+You are most welcome.
 
-Seiji
+> cma-v21 with Rob Clark's omapdrm works great on the Beagle xM..
 
+Can we take that as:
 
------Original Message-----
-From: Don Zickus [mailto:dzickus@redhat.com] 
-Sent: Monday, February 13, 2012 3:28 PM
-To: x86@kernel.org
-Cc: LKML; Peter Zijlstra; tony.luck@intel.com; Seiji Aguchi; ak@linux.intel.com; mjg@redhat.com; levinsasha928@gmail.com; Don Zickus
-Subject: [PATCH 2/2] x86, reschedule: check to see if system is shutting down
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
 
-Due to reschedule changes in v3.3, a WARN_ON has popped up because a cpu suddenly became offline without letting anyone know.
+? ;)
 
-This results in the schedule trying to move something to another cpu only to find out it isn't there and getting confused.  The splat looks something like:
-
-[   32.448626] ------------[ cut here ]------------
-[   32.449160] WARNING: at arch/x86/kernel/smp.c:119 native_smp_send_reschedule+0x25/0x43()
-[   32.449621] Pid: 1, comm: init_stage2 Not tainted 3.2.0+ #14
-[   32.449621] Call Trace:
-[   32.449621]  <IRQ>  [<ffffffff81041a44>] ? native_smp_send_reschedule+0x25/0x43
-[   32.449621]  [<ffffffff810735b2>] warn_slowpath_common+0x7b/0x93
-[   32.449621]  [<ffffffff810962cc>] ? tick_nohz_handler+0xc9/0xc9
-[   32.449621]  [<ffffffff81073675>] warn_slowpath_null+0x15/0x18
-[   32.449621]  [<ffffffff81041a44>] native_smp_send_reschedule+0x25/0x43
-[   32.449621]  [<ffffffff81067a00>] smp_send_reschedule+0xa/0xc
-[   32.449621]  [<ffffffff8106f25e>] scheduler_tick+0x21a/0x242
-[   32.449621]  [<ffffffff8107da10>] update_process_times+0x62/0x73
-[   32.449621]  [<ffffffff81096336>] tick_sched_timer+0x6a/0x8a
-[   32.449621]  [<ffffffff8108c5eb>] __run_hrtimer.clone.26+0x55/0xcb
-[   32.449621]  [<ffffffff8108cd77>] hrtimer_interrupt+0xcb/0x19b
-[   32.449621]  [<ffffffff810428a8>] smp_apic_timer_interrupt+0x72/0x85
-[   32.449621]  [<ffffffff8165a8de>] apic_timer_interrupt+0x6e/0x80
-[   32.449621]  <EOI>  [<ffffffff8165928e>] ? _raw_spin_unlock_irqrestore+0x3a/0x3e
-[   32.449621]  [<ffffffff81042f4e>] ? arch_local_irq_restore+0x6/0xd
-[   32.449621]  [<ffffffff810430c4>] default_send_IPI_mask_allbutself_phys+0x78/0x88
-[   32.449621]  [<ffffffff8106c3c4>] ? __migrate_task+0xf1/0xf1
-[   32.449621]  [<ffffffff81045445>] physflat_send_IPI_allbutself+0x12/0x14
-[   32.449621]  [<ffffffff81041aaf>] native_stop_other_cpus+0x4d/0xa8
-[   32.449621]  [<ffffffff810411c6>] native_machine_shutdown+0x56/0x6d
-[   32.449621]  [<ffffffff81048499>] kvm_shutdown+0x1a/0x1c
-[   32.449621]  [<ffffffff810411f9>] machine_shutdown+0xa/0xc
-[   32.449621]  [<ffffffff81041265>] native_machine_restart+0x20/0x32
-[   32.449621]  [<ffffffff81041297>] machine_restart+0xa/0xc
-[   32.449621]  [<ffffffff81081d53>] kernel_restart+0x49/0x4d
-
-I solved this by re-using the atomic global variable that is set during native_smp_stop_other_cpus().  This is the piece of code that causes the problem and it sets stopping_cpu to reflect the system is going down.
-
-If the variable is set do not yell with the WARN_ON, just return.
-
-v2:  use if-condition for WARN-ON instead of if {WARN_ON(1)}
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/smp.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c index 48d2b7d..54d570e 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -120,7 +120,8 @@ static bool smp_no_nmi_ipi = false;  static void native_smp_send_reschedule(int cpu)  {
- 	if (unlikely(cpu_is_offline(cpu))) {
--		WARN_ON(1);
-+		/* system is not shutting down.. yell */
-+		WARN_ON(atomic_read(&stopping_cpu) == -1)
- 		return;
- 	}
- 	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
---
-1.7.7.6
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
