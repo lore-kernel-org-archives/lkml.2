@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2BMRxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 12:53:46 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48777 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab2BMRxp (ORCPT
+	id S1757437Ab2BMRzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 12:55:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35612 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab2BMRzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 12:53:45 -0500
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: scsi_error: do not allow IO errors with certain ILLEGAL_REQUEST sense to be retryable
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1322857889-2623-1-git-send-email-snitzer@redhat.com>
-	<yq1zkf5pfx1.fsf@sermon.lab.mkp.net>
-	<20111206212704.GB30719@redhat.com>
-	<yq1vcptpdch.fsf@sermon.lab.mkp.net>
-	<20111206224218.GA31543@redhat.com>
-	<20120213162923.GA29578@redhat.com>
-Date: Mon, 13 Feb 2012 12:53:29 -0500
-In-Reply-To: <20120213162923.GA29578@redhat.com> (Mike Snitzer's message of
-	"Mon, 13 Feb 2012 11:29:24 -0500")
-Message-ID: <yq1d39iipra.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	Mon, 13 Feb 2012 12:55:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F394E20.010F,ss=1,re=0.000,fgs=0
+In-Reply-To: <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+References: <alpine.LFD.2.02.1202022016480.2759@xanadu.home> <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+From: Rabin Vincent <rabin@rab.in>
+Date: Mon, 13 Feb 2012 23:24:53 +0530
+X-Google-Sender-Auth: bu28OzzeFFqFEXOfdfzXNLUzrEM
+Message-ID: <CAH+eYFCKcPzMMp_Ef5iX0Xp=xK8MdvJoUBRgKGT56SVjY5DXoA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nico@fluxnic.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+On Fri, Feb 3, 2012 at 07:33, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> armv7's flush_cache_all() flushes caches via set/way. To
+> determine the cache attributes (line size, number of sets,
+> etc.) the assembly first writes the CSSELR register to select a
+> cache level and then reads the CCSIDR register. The CSSELR register
+> is banked per-cpu and is used to determine which cache level CCSIDR
+> reads. If the task is migrated between when the CSSELR is written and
+> the CCSIDR is read the CCSIDR value may be for an unexpected cache
+> level (for example L1 instead of L2) and incorrect cache flushing
+> could occur.
+>
+> Disable interrupts across the write and read so that the correct
+> cache attributes are read and used for the cache flushing
+> routine. We disable interrupts instead of disabling preemption
+> because the critical section is only 3 instructions and we want
+> to call v7_dcache_flush_all from __v7_setup which doesn't have a
+> full kernel stack with a struct thread_info.
+>
+> This fixes a problem we see in scm_call() when flush_cache_all()
+> is called from preemptible context and sometimes the L2 cache is
+> not properly flushed out.
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> ---
+> diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+> index 07c4bc8..654a5fc 100644
+> --- a/arch/arm/mm/cache-v7.S
+> +++ b/arch/arm/mm/cache-v7.S
+> @@ -54,9 +54,15 @@ loop1:
+>        and     r1, r1, #7                      @ mask of the bits for current cache only
+>        cmp     r1, #2                          @ see what cache we have at this level
+>        blt     skip                            @ skip if no cache, or just i-cache
+> +#ifdef CONFIG_PREEMPT
+> +       save_and_disable_irqs r9                @ make cssr&csidr read atomic
+> +#endif
+>        mcr     p15, 2, r10, c0, c0, 0          @ select current cache level in cssr
+>        isb                                     @ isb to sych the new cssr&csidr
+>        mrc     p15, 1, r1, c0, c0, 0           @ read the new csidr
+> +#ifdef CONFIG_PREEMPT
+> +       restore_irqs r9
+> +#endif
+>        and     r2, r1, #7                      @ extract the length of the cache lines
+>        add     r2, r2, #4                      @ add 4 (line length offset)
+>        ldr     r4, =0x3ff
 
-Mike> So that makes 3 different _prominent_ storage vendors, that I am
-Mike> aware of, that are bitten by their broken storage (relative to
-Mike> discard and properly advertising which variant they actually
-Mike> support).  I'd much rather deal with the storage vendors (or their
-Mike> customers) reporting that discards aren't working than mutual
-Mike> customers reporting that they cannot even install to the storage.
+This patch breaks the kernel boot when lockdep is enabled.
 
-More graceful handling of the sense data aside, we do have a couple of
-options:
+v7_setup (called before the MMU is enabled) calls v7_flush_dcache_all,
+and the save_and_disable_irqs added by this patch ends up calling
+into lockdep C code (trace_hardirqs_off()) when we are in no position
+to execute it (no stack, no MMU).
 
- 1. Now that the provisioning portion seems to be stable in SBC-3 we can
-    nuke the interim spec heuristics and only support devices that
-    report the right thing. This may disable provisioning for some
-    existing users whose arrays run non-compliant firmware.
+The following fixes it.  Perhaps it can be folded in?
 
- 2. We can add another layer of heuristics based on the RSOC wrapper I
-    introduced for write same. Maybe you could send me sg_opcodes output
-    for the arrays in question?
+diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
+index 62f8095..23371b1 100644
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -137,6 +137,11 @@
+ 	disable_irq
+ 	.endm
 
-
-Mike> The ultimate fix is clear: storage vendors need to fix their
-Mike> storage (2 of the 3 have, 1 is working on it).  But a Linux-only
-Mike> workaround for this series of unfortunate events (particularly as
-Mike> it happens with multipath in the mix) is to have SCSI classify
-Mike> certain ILLEGAL_REQUEST as the TARGET_ERROR that they are.
-
-I don't have a fundamental problem with your patch. But since we
-explicitly handle ILLEGAL REQUEST with 0x20 and 0x24 in sd.c I wonder
-what's broken? We should disable discard support if the WRITE SAME w/
-UNMAP fails.
-
-I'll see if I can figure out what's going on unless you beat me to it...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
++	.macro	save_and_disable_irqs_notrace, oldcpsr
++	mrs	\oldcpsr, cpsr
++	disable_irq_notrace
++	.endm
++
+ /*
+  * Restore interrupt state previously stored in a register.  We don't
+  * guarantee that this will preserve the flags.
+diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+index 7a24d396..a655d3d 100644
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -55,7 +55,7 @@ loop1:
+ 	cmp	r1, #2				@ see what cache we have at this level
+ 	blt	skip				@ skip if no cache, or just i-cache
+ #ifdef CONFIG_PREEMPT
+-	save_and_disable_irqs r9		@ make cssr&csidr read atomic
++	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
+ #endif
+ 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+ 	isb					@ isb to sych the new cssr&csidr
