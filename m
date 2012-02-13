@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab2BMJLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:11:44 -0500
+	id S1756242Ab2BMJMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:12:16 -0500
 Received: from mga11.intel.com ([192.55.52.93]:56546 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754994Ab2BMJLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:11:41 -0500
+	id S1753560Ab2BMJLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:11:39 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="124653380"
+   d="scan'208";a="124653351"
 From: Lin Ming <ming.m.lin@intel.com>
 To: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
         Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC PATCH 5/6] PCI: Move acpi_dev_run_wake to acpi core
-Date: Mon, 13 Feb 2012 17:11:10 +0800
-Message-Id: <1329124271-29464-6-git-send-email-ming.m.lin@intel.com>
+Subject: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+Date: Mon, 13 Feb 2012 17:11:09 +0800
+Message-Id: <1329124271-29464-5-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com>
 References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com>
@@ -25,161 +25,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_dev_run_wake is a generic function which can be used by
-other subsystem too. Rename it to acpi_pm_device_run_wake, to be
-consistent with acpi_pm_device_sleep_wake.
+From: Zhang Rui <rui.zhang@intel.com>
 
-Then move it to acpi core.
+Introduce flag can_power_off in device structure to support runtime
+power off/on.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Note that, for a specific device driver,
+"support runtime power off/on" means that the driver .runtime_suspend
+callback needs to
+1) save all the context so that it can restore the device back to the previous
+   working state after powered on.
+2) set can_power_off flag to tell the driver model that it's ready for power off.
+
+The following example shows how this works.
+
+device A
+ |---------|
+ v         v
+device B  device C
+
+A is the parent of device B and device C, and device A/B/C shares the
+same power logic
+(Only device A knows how to turn on/off the power).
+
+In order to power off A, B, C at runtime,
+1) device B and device C should support runtime power off
+   (runtime suspended with can_power_off flag set)
+2) pm idle request for device A is fired by runtime PM core.
+3) in device A .runtime_suspend callback, it tries to set can_power_off flag.
+4) if succeed, it means all its children have been ready for power off
+   and it can turn off the power at any time.
+5) if failed, it means at least one of its children does not support runtime
+   power off, thus the power can not be turned off.
+
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/acpi/sleep.c    |   35 +++++++++++++++++++++++++++++++++++
- drivers/pci/pci-acpi.c  |   40 +++-------------------------------------
- include/acpi/acpi_bus.h |    5 +++++
- 3 files changed, 43 insertions(+), 37 deletions(-)
+ include/linux/pm.h         |    1 +
+ include/linux/pm_runtime.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index ca191ff..00fa664 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -17,6 +17,7 @@
- #include <linux/suspend.h>
- #include <linux/reboot.h>
- #include <linux/acpi.h>
-+#include <linux/pm_runtime.h>
- 
- #include <asm/io.h>
- 
-@@ -730,6 +731,40 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
- 
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index e4982ac..4a09c76 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -474,6 +474,7 @@ struct dev_pm_info {
+ 	bool			is_prepared:1;	/* Owned by the PM core */
+ 	bool			is_suspended:1;	/* Ditto */
+ 	bool			ignore_children:1;
++	bool			can_power_off:1;
+ 	spinlock_t		lock;
  #ifdef CONFIG_PM_SLEEP
- /**
-+ * acpi_pm_device_run_wake - Enable/disable wake-up for given device.
-+ * @phys_dev: Device to enable/disable the platform to wake-up the system for.
-+ * @enable: Whether enable or disable the wake-up functionality.
-+ *
-+ * Find the ACPI device object corresponding to @pci_dev and try to
-+ * enable/disable the GPE associated with it.
-+ */
-+int acpi_pm_device_run_wake(struct device *phys_dev, bool enable)
-+{
-+	struct acpi_device *dev;
-+	acpi_handle handle;
-+
-+	if (!device_run_wake(phys_dev))
-+		return -EINVAL;
-+
-+	handle = DEVICE_ACPI_HANDLE(phys_dev);
-+	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
-+		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
-+			__func__);
-+		return -ENODEV;
-+	}
-+
-+	if (enable) {
-+		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
-+		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
-+	} else {
-+		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
-+		acpi_disable_wakeup_device_power(dev);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  *	acpi_pm_device_sleep_wake - enable or disable the system wake-up
-  *                                  capability of given device
-  *	@dev: device to handle
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 060fd22..0f150f2 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -277,40 +277,6 @@ static int acpi_pci_sleep_wake(struct pci_dev *dev, bool enable)
- 	return 0;
+ 	struct list_head	entry;
+diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+index 609daae..81f3f13 100644
+--- a/include/linux/pm_runtime.h
++++ b/include/linux/pm_runtime.h
+@@ -100,6 +100,33 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+ 	ACCESS_ONCE(dev->power.last_busy) = jiffies;
  }
  
--/**
-- * acpi_dev_run_wake - Enable/disable wake-up for given device.
-- * @phys_dev: Device to enable/disable the platform to wake-up the system for.
-- * @enable: Whether enable or disable the wake-up functionality.
-- *
-- * Find the ACPI device object corresponding to @pci_dev and try to
-- * enable/disable the GPE associated with it.
-- */
--static int acpi_dev_run_wake(struct device *phys_dev, bool enable)
--{
--	struct acpi_device *dev;
--	acpi_handle handle;
--
--	if (!device_run_wake(phys_dev))
--		return -EINVAL;
--
--	handle = DEVICE_ACPI_HANDLE(phys_dev);
--	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
--		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
--			__func__);
--		return -ENODEV;
--	}
--
--	if (enable) {
--		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
--		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
--	} else {
--		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
--		acpi_disable_wakeup_device_power(dev);
--	}
--
--	return 0;
--}
--
- static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
- {
- 	while (bus->parent) {
-@@ -318,14 +284,14 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
- 
- 		if (bridge->pme_interrupt)
- 			return;
--		if (!acpi_dev_run_wake(&bridge->dev, enable))
-+		if (!acpi_pm_device_run_wake(&bridge->dev, enable))
- 			return;
- 		bus = bus->parent;
- 	}
- 
- 	/* We have reached the root bus. */
- 	if (bus->bridge)
--		acpi_dev_run_wake(bus->bridge, enable);
-+		acpi_pm_device_run_wake(bus->bridge, enable);
- }
- 
- static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
-@@ -333,7 +299,7 @@ static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
- 	if (dev->pme_interrupt)
- 		return 0;
- 
--	if (!acpi_dev_run_wake(&dev->dev, enable))
-+	if (!acpi_pm_device_run_wake(&dev->dev, enable))
- 		return 0;
- 
- 	acpi_pci_propagate_run_wake(dev->bus, enable);
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 32fb899..2d556e3 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -394,8 +394,13 @@ static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
- #endif
- 
- #ifdef CONFIG_PM_SLEEP
-+int acpi_pm_device_run_wake(struct device *, bool);
- int acpi_pm_device_sleep_wake(struct device *, bool);
- #else
-+static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
++static inline bool pm_runtime_can_power_off(struct device *dev)
 +{
-+	return -ENODEV;
++	return !!dev->power.can_power_off;
 +}
- static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
- {
- 	return -ENODEV;
++
++static inline int check_fn(struct device *dev, void *data)
++{
++	return pm_runtime_can_power_off(dev) ? 0 : -1;
++}
++
++static inline bool pm_runtime_allow_power_off(struct device *dev)
++{
++	return device_for_each_child(dev, NULL, check_fn) ? false : true;
++}
++
++static inline void pm_runtime_enable_power_off(struct device *dev)
++{
++	if (!dev->power.is_prepared)
++		dev->power.can_power_off = pm_runtime_allow_power_off(dev);
++}
++
++static inline void pm_runtime_disable_power_off(struct device *dev)
++{
++	if (!dev->power.is_prepared)
++		dev->power.can_power_off = false;
++}
++
+ #else /* !CONFIG_PM_RUNTIME */
+ 
+ static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
+@@ -149,6 +176,9 @@ static inline void pm_runtime_set_autosuspend_delay(struct device *dev,
+ 						int delay) {}
+ static inline unsigned long pm_runtime_autosuspend_expiration(
+ 				struct device *dev) { return 0; }
++static inline bool pm_runtime_can_power_off(struct device *dev) { return false; }
++static inline void pm_runtime_enable_power_off(struct device *dev) {}
++static inline void pm_runtime_disable_power_off(struct device *dev) {}
+ 
+ static inline void pm_runtime_update_max_time_suspended(struct device *dev,
+ 							s64 delta_ns) {}
 -- 
 1.7.2.5
 
