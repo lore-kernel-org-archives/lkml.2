@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab2BMGqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 01:46:17 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:42935 "EHLO
+	id S1755137Ab2BMGvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 01:51:47 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:60234 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750822Ab2BMGqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 01:46:15 -0500
-Message-ID: <1329115573.30878.1.camel@joe2Laptop>
-Subject: Re: [PATCH 1/2] bluetooth: Use more current logging styles
+	id S1752629Ab2BMGvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 01:51:45 -0500
+Message-ID: <1329115904.30878.7.camel@joe2Laptop>
+Subject: Re: [PATCH 2/2] bluetooth: Convert BT_DBG to pr_debug
 From: Joe Perches <joe@perches.com>
 To: Marcel Holtmann <marcel@holtmann.org>
 Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
         "David S. Miller" <davem@davemloft.net>,
         linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
-Date: Sun, 12 Feb 2012 22:46:13 -0800
-In-Reply-To: <1329114913.28848.50.camel@aeonflux>
+Date: Sun, 12 Feb 2012 22:51:44 -0800
+In-Reply-To: <1329115057.28848.52.camel@aeonflux>
 References: <cover.1329102581.git.joe@perches.com>
-	 <44b8744770a55924c68f8ad0ca274816d2d6148f.1329102581.git.joe@perches.com>
-	 <1329114913.28848.50.camel@aeonflux>
+	 <90fbd8a0b800c83f5ad1df7889dc9b11d7d9c588.1329102581.git.joe@perches.com>
+	 <1329115057.28848.52.camel@aeonflux>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
@@ -27,24 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-13 at 07:35 +0100, Marcel Holtmann wrote:
-> Why is this a good thing?
+On Mon, 2012-02-13 at 07:37 +0100, Marcel Holtmann wrote:
+> > No need to obfuscate, just use the normal debugging macro.
+> > Add "\n" to uses, align arguments, coalesce formats.
+> > Fix a typo and fix a bad format extended by a line continuation.
+> what is this patch buying us.
 
-It's more similar to the rest of the <foo>_<level> uses.
-Other than that, it's a little smaller.
+Easier greps of pr_debug.
+BT_DBG is just an unnecessary useless wrapper.
 
-> And in your patch we have bt_err not having \n\n in the end.
+> The only useful change would be to move to dev_printk, but we are not
+> there yet.
 
-There shouldn't be a newline at all with the
-actual functions bt_err or bt_info except
-at the uses.
+Maybe dev_dbg, but there isn't always an
+appropriate device * available.
 
-This is the style used in pr_<level> so that
-it becomes possible to use pr_cont.
+There are many uses of:
+	pr_debug("%s ...", (some struct hci_dev *)->name, ...)
 
-> Size numbers look good. So I am all for this, but not just in one big
-> patch.
+that could be something like
 
-I think the size is more or less irrelevant.
+hci_dev_dbg((some struct hci_dev *), fmt, ...)
 
 
