@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2BMDAH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 22:00:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55593 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab2BMDAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 22:00:05 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH resend] asm/types.h: All architectures use int-ll64.h in kernelspace
-Date: Mon, 13 Feb 2012 02:59:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-References: <alpine.DEB.2.00.1108132152050.18053@ayla.of.borg> <1665974.2LGtkbyJmJ@wuerfel> <20120211094444.GL23916@ZenIV.linux.org.uk>
-In-Reply-To: <20120211094444.GL23916@ZenIV.linux.org.uk>
+	id S1756045Ab2BMDBE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 22:01:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54773 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab2BMDBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Feb 2012 22:01:01 -0500
+Message-ID: <4F387CCF.7040604@zytor.com>
+Date: Sun, 12 Feb 2012 19:00:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Thomas Renninger <trenn@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/5] Clean up x86 CPU auto-loading
+References: <1329000256.325.48.camel@deadeye> <201202130010.57492.trenn@suse.de> <20120213021847.GA25382@kroah.com>
+In-Reply-To: <20120213021847.GA25382@kroah.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202130259.33347.arnd@arndb.de>
-X-Provags-ID: V02:K0:4XhsWMSqOfLMAN1pmCFBh+Oyo22hfXrKLyXDXq+EAEt
- yXzTqV+JIH/JHklXCiKh5YQxZt4g5RUFG9BpYwOuzWDkJUa4gp
- tglsh2MzC/HdAUm2qmvcgHpX9uEaXlHm6RWtWdCzuoZa7Gc1vj
- OQCo4bgzldPcIqtvpXh9mNNn/YJGj7ol7DKp30dNR/ZPzR0NJ8
- Du3S9eUIHxp+TLHAsdDsEzXebOhOt6SangywNKb+vIbQRgWPK+
- tNwiOgTPTFxe8/zniG0DYrmrL/op4y1zCmYcpctV4p9pPJg+7R
- c2bPTpsSaXJZk2thI//jCdriiOpkPnEHpI8gE7l67FVlq0DDph
- kAlUPn4DCwonwkZld+Hw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 11 February 2012, Al Viro wrote:
+On 02/12/2012 06:18 PM, Greg KH wrote:
+> I can take them, unless the x86 maintainers object and want to take them
+> through their tree.
 
-> Umm...  That has happened and yes, asm-generic/types.h is currently
-> equivalent to asm-generic/int-ll64.h.  What exactly are you planning
-> to do?  Just rename the latter to the former and do search-and-replace
-> over the tree?  We still have places that pull int-l64.h, albeit only
-> !__KERNEL__ ones (i.e. everything under #ifdef __KERNEL__ in there
-> seems to be killable)...
-> 
-> AFAICS, for quite a few of those guys we can simply add bitsperlong.h
-> and add types.h to generic-y; is that the plan?
+Why don't we take them... I think it makes more sense long-term.
 
-Yes, I think both would be good cleanups. Maybe David Howells can comment
-as well since his user api split is going to change that a bit:
-We end up needing only a separate version of uapi/asm/types.h for
-alpha/ia64/mips64/powerpc64, while the in-kernel file is ok.
+	-hpa
 
-	Arnd
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
