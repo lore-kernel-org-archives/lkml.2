@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab2BMPGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 10:06:20 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45384 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751967Ab2BMPGS (ORCPT
+	id S1756881Ab2BMPIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 10:08:13 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44053 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab2BMPIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 10:06:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANOLnOOdY78RmQafa3udkbBZ30c6Ra1P_hM9HMy6xKL02gKLjA@mail.gmail.com>
-References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
-	<CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
-	<CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
-	<CANOLnOOdY78RmQafa3udkbBZ30c6Ra1P_hM9HMy6xKL02gKLjA@mail.gmail.com>
-Date: Mon, 13 Feb 2012 17:06:16 +0200
-Message-ID: <CAMP44s1-DkbFXfCHxNdqB8WTEtn1J8Jmf5RP5cgmm4oQkKvptQ@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Hema HK <hemahk@ti.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Feb 2012 10:08:12 -0500
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <20120209150652.5b1d19dc.akpm@linux-foundation.org>
+Date: Mon, 13 Feb 2012 10:08:05 -0500
+Cc: Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        Pekka Enberg <penberg@kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com>
+References: <20120207141155.GA16184@elgon.mountain> <4F323388.7040902@kernel.dk> <20120208142513.4db2493a.akpm@linux-foundation.org> <4F33BF05.208@gmail.com> <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk> <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net> <20120209150652.5b1d19dc.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 2:54 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
-> On Thu, Jan 12, 2012 at 5:40 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Thu, Jan 12, 2012 at 1:56 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
->>> On Mon, Dec 19, 2011 at 10:01 PM, Felipe Contreras
->>> <felipe.contreras@nokia.com> wrote:
->>>> From: Felipe Contreras <felipe.contreras@gmail.com>
->>>>
->>>> In musb_init_controller() there's a pm_runtime_put(), but there's no
->>>> pm_runtime_get(), which creates a mismatch that causes the driver to
->>>> sleep when it shouldn't.
->>>
->>> This patch is causing problems here, the device never suspends, I've
->>> verified musb_runtime_suspend and omap2430_runtime_suspend are never
->>> called in my setup, unless I revert this patch. I'm using musb with
->>> ethernet gadget; cable removal also doesn't suspend musb.
->>>
->>> It seems pm_runtime_put() that was removed was balancing out
->>> pm_runtime_get in musb_platform_init(), which is called at the
->>> beginning of musb_init_controller(). I think this pm_runtime_get()
->>> from musb_platform_init() should be moved to musb_init_controller() to
->>> stop confusing people and pm_runtime_put() needs to be brought back. I
->>> can do a patch if nobody objects.
->>
->> You mean have both get and put in musb_init_controller()? That's OK,
->> it would be balanced then, but you would have to remove the
->> pm_runtime_put() from omap2430_remove() that presumably was balancing
->> the pm_runtime_get_sync() in omap2430_musb_init().
->>
->>>> This was introduced in 7acc619[1], but it wasn't triggered in my setup
->>>> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
->>>> when PM is working as it was supposed to.
->>>>
->>>> However, it seems most of the time this is used in a way that keeps the
->>>> counter above 0, so nobody noticed. Also, it seems to depend on the
->>>> configuration used in versions before 3.1, but not later (or in it).
->>>>
->>>> I found the problem by loading isp1704_charger before any usb gadgets:
->>>> http://article.gmane.org/gmane.linux.kernel/1226122
->>>
->>> isp1704_charger seems to be doing otg_io_read(), and it's perfectly
->>> normal that musb can be suspended at the time isp1704 decides to do
->>> this. I think proper fix is to wake up must on musb_ulpi_read() and
->>> musb_ulpi_write() instead.
->>
->> I guess so. If you send these patches I can give them a try.
->
-> Sent them a week ago, would be nice if you tried them.
+Here goes a quick summary.
 
-Sorry, I just started hacking with my N900 again. I will probably test
-them later today.
+Proposed names
+==============
 
-Cheers.
+kaalloc        (Alexey Dobriyan)
 
--- 
-Felipe Contreras
+kcallocn       (Andrew Morton)
+
+kmalloc_array  (Pekka Enberg)
+
+knalloc        (Andrew Morton, Xi Wang)
+
+kncalloc       (Andrew Morton)
+
+Other changes
+=============
+
+Documentation/CodingStyle "Chapter 14: Allocating memory"
+
+* Mention the new array allocator whatever-it-is-called.
+
+* Add some description:
+
+"The preferred form for allocating an array is the following:
+
+	p = whatever-it-is-called(n, sizeof(...), ...);
+
+To return zeroed items, the preferred form is the following: 
+
+	p = kcalloc(n, sizeof(...), ...);
+
+Both forms avoid overflowing the allocation size n * sizeof(...)."
+
+* Add some checkpatch rule?
+
+- xi
