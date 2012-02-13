@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab2BMCVf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Feb 2012 21:21:35 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58391 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab2BMCVe (ORCPT
+	id S1754343Ab2BMCWp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Feb 2012 21:22:45 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58336 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753396Ab2BMCWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Feb 2012 21:21:34 -0500
-Date: Mon, 13 Feb 2012 13:21:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: linux-next: build failure after merge of the pci tree
-Message-Id: <20120213132125.a292c8832d031d5694b62a8c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Feb_2012_13_21_25_+1100_CHsT7JKMtz5nodMf"
+	Sun, 12 Feb 2012 21:22:43 -0500
+X-Sasl-enc: 3b6YXYpxuMVr756Fcg7kAp30mGy+QO1r1Kw/uCZveuyA 1329099762
+Date: Sun, 12 Feb 2012 18:18:47 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-pm@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        cpufreq@vger.kernel.org
+Subject: Re: [PATCH 0/5] Clean up x86 CPU auto-loading
+Message-ID: <20120213021847.GA25382@kroah.com>
+References: <1329000256.325.48.camel@deadeye>
+ <201202130010.57492.trenn@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201202130010.57492.trenn@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Feb_2012_13_21_25_+1100_CHsT7JKMtz5nodMf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Feb 13, 2012 at 12:10:56AM +0100, Thomas Renninger wrote:
+> On Saturday 11 February 2012 23:44:16 Ben Hutchings wrote:
+> > This series fixes a number of apparent bugs in the recent changes to
+> > enable auto-loading by x86 CPU ID.
+> 
+> These all look correct.
+> I should have spotted the intel_idle modifications myself.
+> Good catch(es).
+> 
+> Greg: I expect these should get queued in your driver-core-next branch?
 
-Hi Jesse,
+I can take them, unless the x86 maintainers object and want to take them
+through their tree.
 
-After merging the pci tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+thanks,
 
-drivers/pci/quirks.c: In function 'do_one_fixup_debug':
-drivers/pci/quirks.c:2915:2: error: implicit declaration of function 'task_=
-pid_nr' [-Werror=3Dimplicit-function-declaration]
-drivers/pci/quirks.c:2916:2: error: implicit declaration of function 'ktime=
-_get' [-Werror=3Dimplicit-function-declaration]
-drivers/pci/quirks.c:2916:11: error: incompatible types when assigning to t=
-ype 'ktime_t' from type 'int'
-drivers/pci/quirks.c:2918:10: error: incompatible types when assigning to t=
-ype 'ktime_t' from type 'int'
-
-Caused by commit 49107584a885 ("PCI: Annotate PCI quirks in
-initcall_debug style"). Some missing include files ...
-
-I have used the pci tree from next-20120210 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__13_Feb_2012_13_21_25_+1100_CHsT7JKMtz5nodMf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPOHOlAAoJEECxmPOUX5FE4+oP/igB4iDjCxqo8lMLTuuoTPQT
-GheQh0zChu8msyuPGJqA9VnO8nGAbjrP+j+aJMI8MBkJGXp3/NGLv74yrRhHI4Tm
-0+GIsZY6zeNGXWyovgGCMlTrGLG7/omOf9+8Tts0qokSs9YUE0L/1HuP9Rd98fsh
-A4sqvXyAWtoO5EauhnfQe1JBG5aITnrviGlHh8zwua2V3wmHo3U1m8xOfaJImcSt
-SKzoNRGadx56IWmOmFye1ImPt1f1MGbfzDoffOQqXAWtpxBntyHIqhUDyja3rRKc
-RZDZoo3h6xOQO8asuJDx/szhNcJeMURSO4bzCg7Wfw+CPrYBalpmxbIkrMehpuOf
-xp7V5TbFj1ulRX7zip2yyVEuVAaio26kT8CSgQc8lppSSHzbOdq1z1RfFa8GXA/L
-UuHHjFxPrV1hyNDkvG3v/h6jDw6MjN/C/ar42ulQKeUlXJU4uZE2XBmpZ7VP3V4G
-OIc2QA20e7WT/1CWhZeM4mbili3pekN0wbz7DIg4A5sDrcCbToFASHHfXvvnp9OQ
-/jDEUPd61WSnFdpmmQbWAdSCA4mmEBJdZBC9TNMvLENq/eRS9QVCNmdQReI3y0tZ
-nBLogg3R43O8JDsxRWCMBGdzG99r/wrlLjIfVH3UkyQchhp1fwPE2toowKmGyt4v
-fiL+pmmIIl81H1udTVhS
-=sPY1
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Feb_2012_13_21_25_+1100_CHsT7JKMtz5nodMf--
+greg k-h
