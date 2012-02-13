@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab2BMOl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 09:41:29 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:21546 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711Ab2BMOl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 09:41:27 -0500
-Date: Mon, 13 Feb 2012 09:41:07 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-fsdevel@vger.kernel.org
-Subject: Re: Kernel bug with btrfs on laptop with external hd and suspend and
- resume.
-Message-ID: <20120213144107.GC1573@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	"Nathan A. Mourey II" <nmoureyii@ne.rr.com>,
-	linux-kernel@vger.kernel.org,
-	Linux PM mailing list <linux-pm@vger.kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, linux-fsdevel@vger.kernel.org
-References: <1328990690.2464.6.camel@firefly>
- <4F391B83.7080703@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F391B83.7080703@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F392110.00E7,ss=1,re=0.000,fgs=0
+	id S1756743Ab2BMOn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 09:43:58 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:8160 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab2BMOn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 09:43:57 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Cc: tglx@linutronix.de, devicetree-discuss@lists.ozlabs.org,
+        avictor.za@gmail.com, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 9/9] ARM: at91/board-dt: remove AIC irq domain from board file
+Date: Mon, 13 Feb 2012 15:43:09 +0100
+Message-Id: <9d4eee84ad7c95fb7ad61194166696c64414fd3f.1329139662.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <2fd1ebedc5ad5ac7aeb15c590c4400212a3b06cf.1329139662.git.nicolas.ferre@atmel.com>
+References: <2fd1ebedc5ad5ac7aeb15c590c4400212a3b06cf.1329139662.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 07:47:39PM +0530, Srivatsa S. Bhat wrote:
-> Adding some Cc's.
-> 
-> On 02/12/2012 01:34 AM, Nathan A. Mourey II wrote:
-> 
-> > I just installed the new kernel with yum update.  I have an external eSATA hard drive that is 
-> > formatted with btrfs.  I closed the lid once it had booted up, I had not logged in yet.  Latter I opened
-> > the lid and had the following message on the screen.  Hope it helps.
-> > 
-> > 
-> > Feb 11 14:39:03 firefly kernel: [  253.236050] ------------[ cut here ]------------
-> > Feb 11 14:39:03 firefly kernel: [  253.236066] kernel BUG at fs/btrfs/transaction.c:1337!
+Adding of irqdomain in AIC code make the specification
+of the irq domain in board file useless.
 
-This crash corresponds to:
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+ arch/arm/mach-at91/board-dt.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-        ret = btrfs_write_and_wait_transaction(trans, root);
-        BUG_ON(ret);
+diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
+index 0579315..6120978 100644
+--- a/arch/arm/mach-at91/board-dt.c
++++ b/arch/arm/mach-at91/board-dt.c
+@@ -15,8 +15,6 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/gpio.h>
+-#include <linux/irqdomain.h>
+-#include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ 
+ #include <mach/hardware.h>
+@@ -88,14 +86,8 @@ static void __init ek_add_device_nand(void)
+ 	at91_add_device_nand(&ek_nand_data);
+ }
+ 
+-static const struct of_device_id aic_of_match[] __initconst = {
+-	{ .compatible = "atmel,at91rm9200-aic", },
+-	{},
+-};
+-
+ static void __init at91_dt_init_irq(void)
+ {
+-	irq_domain_generate_simple(aic_of_match, 0xfffff000, 0);
+ 	at91_init_irq_default();
+ }
+ 
+-- 
+1.7.9
 
-Which basically means we were not able to write all the metadata for the
-transaction (EIO during writeback).  Do other messages from the kernel
-tell you if the crash happened before or after the suspend?
-
-What happened when the machine rebooted?
-
-Since the drive is external, I'm going to guess this is related to the
-device going away at the wrong time.  Was it plugged in the whole time?
-
--chris
