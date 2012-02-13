@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab2BMJDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:03:32 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60581 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2BMJDa (ORCPT
+	id S1754142Ab2BMJFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:05:15 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65458 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab2BMJFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:03:30 -0500
-Message-ID: <1329123803.2336.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: ixgbe truesize underestimation fix missing?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christian Brunner <chb@muc.de>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 13 Feb 2012 10:03:23 +0100
-In-Reply-To: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
-References: <CAJafhzQV821ij62y_TQr9M3jHyyDdovi0P30kidv7H8fsoqKPw@mail.gmail.com>
+	Mon, 13 Feb 2012 04:05:13 -0500
+Message-ID: <1329123903.13995.1.camel@phoenix>
+Subject: [PATCH] i2c: convert drivers/i2c/* to use module_i2c_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>, Michael Lawnick <ml.lawnick@gmx.de>,
+        Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org
+Date: Mon, 13 Feb 2012 17:05:03 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 13 février 2012 à 09:45 +0100, Christian Brunner a écrit :
-> Back in Oktober, there was a patch by Eric Dumazet for the ixgbe
-> driver to fix the skb truesize underestimation (commit
-> 98130646770db42cd14c44ba0d7f2d0eb8078820). It changed only one line in
-> ixgbe_main.c:
-> 
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-> @@ -1326,7 +1326,7 @@ static bool ixgbe_clean_rx_irq(struct
-> ixgbe_q_vector *q_vector,
->                         skb->len += upper_len;
->                         skb->data_len += upper_len;
-> -                       skb->truesize += upper_len;
-> +                       skb->truesize += PAGE_SIZE / 2;
->                 }                 i++;
-> 
-> 
-> But when I look at the current code (3.2.5 or 3.3rc), skb->truesize is
-> still increased by the same value as skb->data_len.
-> 
-> 1228         skb->data_len += frag_list_size;
-> 1229         skb->truesize += frag_list_size;
-> 
-> Is it posible that there was a merge conflict, or am I missing something here?
+This patch converts the drivers in drivers/i2c/* to use the
+module_i2c_driver() macro which makes the code smaller and a bit simpler.
 
-Maybe a problem in your local tree ?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Michael Lawnick <ml.lawnick@gmx.de>
+Cc: Ben Dooks <ben-linux@fluff.org>
+---
+ drivers/i2c/i2c-smbus.c     |   13 +------------
+ drivers/i2c/muxes/pca9541.c |   13 +------------
+ drivers/i2c/muxes/pca954x.c |   13 +------------
+ 3 files changed, 3 insertions(+), 36 deletions(-)
 
-I can see proper fix in current tree.
+diff --git a/drivers/i2c/i2c-smbus.c b/drivers/i2c/i2c-smbus.c
+index f61ccc1..9316705 100644
+--- a/drivers/i2c/i2c-smbus.c
++++ b/drivers/i2c/i2c-smbus.c
+@@ -244,18 +244,7 @@ int i2c_handle_smbus_alert(struct i2c_client *ara)
+ }
+ EXPORT_SYMBOL_GPL(i2c_handle_smbus_alert);
+ 
+-static int __init i2c_smbus_init(void)
+-{
+-	return i2c_add_driver(&smbalert_driver);
+-}
+-
+-static void __exit i2c_smbus_exit(void)
+-{
+-	i2c_del_driver(&smbalert_driver);
+-}
+-
+-module_init(i2c_smbus_init);
+-module_exit(i2c_smbus_exit);
++module_i2c_driver(smbalert_driver);
+ 
+ MODULE_AUTHOR("Jean Delvare <khali@linux-fr.org>");
+ MODULE_DESCRIPTION("SMBus protocol extensions support");
+diff --git a/drivers/i2c/muxes/pca9541.c b/drivers/i2c/muxes/pca9541.c
+index ed699c5..e0df9b6 100644
+--- a/drivers/i2c/muxes/pca9541.c
++++ b/drivers/i2c/muxes/pca9541.c
+@@ -393,18 +393,7 @@ static struct i2c_driver pca9541_driver = {
+ 	.id_table = pca9541_id,
+ };
+ 
+-static int __init pca9541_init(void)
+-{
+-	return i2c_add_driver(&pca9541_driver);
+-}
+-
+-static void __exit pca9541_exit(void)
+-{
+-	i2c_del_driver(&pca9541_driver);
+-}
+-
+-module_init(pca9541_init);
+-module_exit(pca9541_exit);
++module_i2c_driver(pca9541_driver);
+ 
+ MODULE_AUTHOR("Guenter Roeck <guenter.roeck@ericsson.com>");
+ MODULE_DESCRIPTION("PCA9541 I2C master selector driver");
+diff --git a/drivers/i2c/muxes/pca954x.c b/drivers/i2c/muxes/pca954x.c
+index 6f89536..0e37ef2 100644
+--- a/drivers/i2c/muxes/pca954x.c
++++ b/drivers/i2c/muxes/pca954x.c
+@@ -284,18 +284,7 @@ static struct i2c_driver pca954x_driver = {
+ 	.id_table	= pca954x_id,
+ };
+ 
+-static int __init pca954x_init(void)
+-{
+-	return i2c_add_driver(&pca954x_driver);
+-}
+-
+-static void __exit pca954x_exit(void)
+-{
+-	i2c_del_driver(&pca954x_driver);
+-}
+-
+-module_init(pca954x_init);
+-module_exit(pca954x_exit);
++module_i2c_driver(pca954x_driver);
+ 
+ MODULE_AUTHOR("Rodolfo Giometti <giometti@linux.it>");
+ MODULE_DESCRIPTION("PCA954x I2C mux/switch driver");
+-- 
+1.7.5.4
 
 
 
