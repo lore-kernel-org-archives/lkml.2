@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab2BMMzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 07:55:04 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39251 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307Ab2BMMzA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 07:55:00 -0500
+	id S1755454Ab2BMNAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 08:00:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab2BMNAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 08:00:23 -0500
+Date: Mon, 13 Feb 2012 15:00:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dor Laor <dlaor@redhat.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+Message-ID: <20120213130005.GB26773@redhat.com>
+References: <4F312492.1040002@de.ibm.com>
+ <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>
+ <4F313526.2050907@redhat.com>
+ <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>
+ <4F3390FB.80107@redhat.com>
+ <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com>
+ <4F38B657.7060405@de.ibm.com>
+ <4F38C27E.7030300@redhat.com>
+ <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+ <4F3907EB.4030402@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
-References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
-	<CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
-	<CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
-Date: Mon, 13 Feb 2012 14:54:58 +0200
-Message-ID: <CANOLnOOdY78RmQafa3udkbBZ30c6Ra1P_hM9HMy6xKL02gKLjA@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Hema HK <hemahk@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3907EB.4030402@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 5:40 PM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Thu, Jan 12, 2012 at 1:56 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
->> On Mon, Dec 19, 2011 at 10:01 PM, Felipe Contreras
->> <felipe.contreras@nokia.com> wrote:
->>> From: Felipe Contreras <felipe.contreras@gmail.com>
->>>
->>> In musb_init_controller() there's a pm_runtime_put(), but there's no
->>> pm_runtime_get(), which creates a mismatch that causes the driver to
->>> sleep when it shouldn't.
->>
->> This patch is causing problems here, the device never suspends, I've
->> verified musb_runtime_suspend and omap2430_runtime_suspend are never
->> called in my setup, unless I revert this patch. I'm using musb with
->> ethernet gadget; cable removal also doesn't suspend musb.
->>
->> It seems pm_runtime_put() that was removed was balancing out
->> pm_runtime_get in musb_platform_init(), which is called at the
->> beginning of musb_init_controller(). I think this pm_runtime_get()
->> from musb_platform_init() should be moved to musb_init_controller() to
->> stop confusing people and pm_runtime_put() needs to be brought back. I
->> can do a patch if nobody objects.
->
-> You mean have both get and put in musb_init_controller()? That's OK,
-> it would be balanced then, but you would have to remove the
-> pm_runtime_put() from omap2430_remove() that presumably was balancing
-> the pm_runtime_get_sync() in omap2430_musb_init().
->
->>> This was introduced in 7acc619[1], but it wasn't triggered in my setup
->>> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
->>> when PM is working as it was supposed to.
->>>
->>> However, it seems most of the time this is used in a way that keeps the
->>> counter above 0, so nobody noticed. Also, it seems to depend on the
->>> configuration used in versions before 3.1, but not later (or in it).
->>>
->>> I found the problem by loading isp1704_charger before any usb gadgets:
->>> http://article.gmane.org/gmane.linux.kernel/1226122
->>
->> isp1704_charger seems to be doing otg_io_read(), and it's perfectly
->> normal that musb can be suspended at the time isp1704 decides to do
->> this. I think proper fix is to wake up must on musb_ulpi_read() and
->> musb_ulpi_write() instead.
->
-> I guess so. If you send these patches I can give them a try.
+On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
+> Only if you use the pci multi-function option but that kills
+> standard hot unplug
 
-Sent them a week ago, would be nice if you tried them.
-
-
--- 
-Gražvydas
+It doesn't kill it as such, rather you can't unplug luns individually.
