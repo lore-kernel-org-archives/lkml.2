@@ -1,93 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab2BMUpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 15:45:08 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49028 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2BMUpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 15:45:06 -0500
-Message-ID: <4F39763D.3070609@linux.vnet.ibm.com>
-Date: Tue, 14 Feb 2012 02:14:45 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1758115Ab2BMUp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 15:45:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:50427 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754772Ab2BMUpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 15:45:23 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [RFC PATCH 5/6] PCI: Move acpi_dev_run_wake to acpi core
+Date: Mon, 13 Feb 2012 21:49:15 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com> <1329124271-29464-6-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <1329124271-29464-6-git-send-email-ming.m.lin@intel.com>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
- -v5
-References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com> <20120201140125.c656df41.akpm@linux-foundation.org> <87d39xj955.fsf@rustcorp.com.au> <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com> <4F3971A1.5010305@linux.vnet.ibm.com>
-In-Reply-To: <4F3971A1.5010305@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12021310-7014-0000-0000-00000091621A
+Message-Id: <201202132149.16118.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2012 01:55 AM, Srivatsa S. Bhat wrote:
+On Monday, February 13, 2012, Lin Ming wrote:
+> acpi_dev_run_wake is a generic function which can be used by
+> other subsystem too. Rename it to acpi_pm_device_run_wake, to be
+> consistent with acpi_pm_device_sleep_wake.
+> 
+> Then move it to acpi core.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 
-> On 02/14/2012 01:24 AM, Tony Luck wrote:
+OK, why not.
+
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+> ---
+>  drivers/acpi/sleep.c    |   35 +++++++++++++++++++++++++++++++++++
+>  drivers/pci/pci-acpi.c  |   40 +++-------------------------------------
+>  include/acpi/acpi_bus.h |    5 +++++
+>  3 files changed, 43 insertions(+), 37 deletions(-)
 > 
->> On Thu, Feb 2, 2012 at 12:03 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> IIRC playing with 3 archs boot code seemed like a recipe for disaster.
->>> Feel free to try to fix this in -next though, and see what breaks...
->>
->> ia64 is what breaks ... well not actually broken ... but some very
->> weird delays that
->> show up in different places depending on whether this patch is present.
->>
->> First linux-next kernel to be blessed with this patch was
->> next-20120210. Booting it
->> I see:
->> [    7.164233] Switching to clocksource itc
->> [  146.077315] pnp: PnP ACPI init
->>
->> An ugly 138.913 second delay.  Digging in the code showed that the bad bits
->> happened inside stop_machine()
->>
->> Reverting just this patch makes this big delay disappear:
->>
->> [   32.780232] Switching to clocksource itc
->> [   32.832100] pnp: PnP ACPI init
->>
->> but notice that it takes 25 extra seconds to get to this point in the
->> boot (and while
->> we expect to save some time by not re-computing num_online_cpus each time we
->> need it ... this looks to be a lot more than I'd expect!)
->>
-> 
-> 
-> Oh no!! ia64 directly uses cpu_set() and cpu_clear() on cpu_online_map!!
-> Grr.. It means num_online_cpus can be different from the actual number of
-> online cpus because it doesn't go through the set_cpu_online() path.. I haven't
-> yet pin-pointed the exact problem, but this definitely doesn't look good...
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index ca191ff..00fa664 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/suspend.h>
+>  #include <linux/reboot.h>
+>  #include <linux/acpi.h>
+> +#include <linux/pm_runtime.h>
 >  
-
-
-Hmm.. interesting.. The only calls that ia64 uses which updates the
-num_online_cpus macro seem to be init_cpu_online(cpumask_of(0)); Atleast this
-is what the mainline code tells me (haven't checked linux-next).
-
-So, if I am not mistaken, is the value of num_online_cpus() always 1 when
-Venki's patch is applied?
-
-IOW, what output do you see from the following printk from
-arch/ia64/kernel/smpboot.c?
-
-printk(KERN_INFO "Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
-         (int)num_online_cpus(), bogosum/(500000/HZ), (bogosum/(5000/HZ))%100);
-
-
-Regards,
-Srivatsa S. Bhat
+>  #include <asm/io.h>
+>  
+> @@ -730,6 +731,40 @@ int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p)
+>  
+>  #ifdef CONFIG_PM_SLEEP
+>  /**
+> + * acpi_pm_device_run_wake - Enable/disable wake-up for given device.
+> + * @phys_dev: Device to enable/disable the platform to wake-up the system for.
+> + * @enable: Whether enable or disable the wake-up functionality.
+> + *
+> + * Find the ACPI device object corresponding to @pci_dev and try to
+> + * enable/disable the GPE associated with it.
+> + */
+> +int acpi_pm_device_run_wake(struct device *phys_dev, bool enable)
+> +{
+> +	struct acpi_device *dev;
+> +	acpi_handle handle;
+> +
+> +	if (!device_run_wake(phys_dev))
+> +		return -EINVAL;
+> +
+> +	handle = DEVICE_ACPI_HANDLE(phys_dev);
+> +	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
+> +		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
+> +			__func__);
+> +		return -ENODEV;
+> +	}
+> +
+> +	if (enable) {
+> +		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
+> +		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+> +	} else {
+> +		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+> +		acpi_disable_wakeup_device_power(dev);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   *	acpi_pm_device_sleep_wake - enable or disable the system wake-up
+>   *                                  capability of given device
+>   *	@dev: device to handle
+> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+> index 060fd22..0f150f2 100644
+> --- a/drivers/pci/pci-acpi.c
+> +++ b/drivers/pci/pci-acpi.c
+> @@ -277,40 +277,6 @@ static int acpi_pci_sleep_wake(struct pci_dev *dev, bool enable)
+>  	return 0;
+>  }
+>  
+> -/**
+> - * acpi_dev_run_wake - Enable/disable wake-up for given device.
+> - * @phys_dev: Device to enable/disable the platform to wake-up the system for.
+> - * @enable: Whether enable or disable the wake-up functionality.
+> - *
+> - * Find the ACPI device object corresponding to @pci_dev and try to
+> - * enable/disable the GPE associated with it.
+> - */
+> -static int acpi_dev_run_wake(struct device *phys_dev, bool enable)
+> -{
+> -	struct acpi_device *dev;
+> -	acpi_handle handle;
+> -
+> -	if (!device_run_wake(phys_dev))
+> -		return -EINVAL;
+> -
+> -	handle = DEVICE_ACPI_HANDLE(phys_dev);
+> -	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &dev))) {
+> -		dev_dbg(phys_dev, "ACPI handle has no context in %s!\n",
+> -			__func__);
+> -		return -ENODEV;
+> -	}
+> -
+> -	if (enable) {
+> -		acpi_enable_wakeup_device_power(dev, ACPI_STATE_S0);
+> -		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+> -	} else {
+> -		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number);
+> -		acpi_disable_wakeup_device_power(dev);
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>  static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+>  {
+>  	while (bus->parent) {
+> @@ -318,14 +284,14 @@ static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+>  
+>  		if (bridge->pme_interrupt)
+>  			return;
+> -		if (!acpi_dev_run_wake(&bridge->dev, enable))
+> +		if (!acpi_pm_device_run_wake(&bridge->dev, enable))
+>  			return;
+>  		bus = bus->parent;
+>  	}
+>  
+>  	/* We have reached the root bus. */
+>  	if (bus->bridge)
+> -		acpi_dev_run_wake(bus->bridge, enable);
+> +		acpi_pm_device_run_wake(bus->bridge, enable);
+>  }
+>  
+>  static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+> @@ -333,7 +299,7 @@ static int acpi_pci_run_wake(struct pci_dev *dev, bool enable)
+>  	if (dev->pme_interrupt)
+>  		return 0;
+>  
+> -	if (!acpi_dev_run_wake(&dev->dev, enable))
+> +	if (!acpi_pm_device_run_wake(&dev->dev, enable))
+>  		return 0;
+>  
+>  	acpi_pci_propagate_run_wake(dev->bus, enable);
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 32fb899..2d556e3 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -394,8 +394,13 @@ static inline int acpi_pm_device_sleep_state(struct device *d, int *p)
+>  #endif
+>  
+>  #ifdef CONFIG_PM_SLEEP
+> +int acpi_pm_device_run_wake(struct device *, bool);
+>  int acpi_pm_device_sleep_wake(struct device *, bool);
+>  #else
+> +static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
+> +{
+> +	return -ENODEV;
+> +}
+>  static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
+>  {
+>  	return -ENODEV;
+> 
 
