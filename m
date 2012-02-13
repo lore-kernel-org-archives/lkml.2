@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab2BMHcr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 02:32:47 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:33933 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab2BMHcq (ORCPT
+	id S1756176Ab2BMHeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 02:34:21 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42616 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752792Ab2BMHeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 02:32:46 -0500
-Message-ID: <1329118233.28848.62.camel@aeonflux>
-Subject: Re: [PATCH 1/2] bluetooth: Use more current logging styles
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Joe Perches <joe@perches.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Mon, 13 Feb 2012 08:30:33 +0100
-In-Reply-To: <1329118080.31068.4.camel@joe2Laptop>
-References: <cover.1329102581.git.joe@perches.com>
-	 <44b8744770a55924c68f8ad0ca274816d2d6148f.1329102581.git.joe@perches.com>
-	 <1329114913.28848.50.camel@aeonflux> <1329115573.30878.1.camel@joe2Laptop>
-	 <1329117706.28848.55.camel@aeonflux> <1329118080.31068.4.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 13 Feb 2012 02:34:20 -0500
+MIME-Version: 1.0
+Date: Mon, 13 Feb 2012 15:34:19 +0800
+Message-ID: <CANudz+t_yXA621maPO+Cn5hGtsyL-ebn2hzFv+2XxOA9KyL2Fw@mail.gmail.com>
+Subject: some questions about container_of and user_struct
+From: loody <miloody@gmail.com>
+To: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+hi all:
+I add below function in free_uid to get which task try to free user_struct
 
-> > > There shouldn't be a newline at all with the
-> > > actual functions bt_err or bt_info except
-> > > at the uses.
-> > then you might wanna read your patch again ;)
-> 
-> Yup, there's no newline with bt_info
-> and there shouldn't be one with bt_err
-> either.  There is though.  Oh well.
-> Easy to fix at your end if you like.
+struct task_struct *p;
+struct cred *c;
+c = container_of(up,struct cred, user);
+p = container_of(c,struct task_struct,real_cred);
+printk("%s user %p, cred->user = %p p->pid = %d\n",__func__,up, c->user,p->pid);
 
-and why exactly is this my job now to fix your broken patch?
+but p->pid is always 0.
+I think it is wrong for me to get cred and task by using container_of.
 
-Regards
+1. from kernel definition below, is it ok that member is pointer?
+#define container_of(ptr, type, member)
 
-Marcel
+2. is there already exist macros or functions I can use for #1 above?
 
+3. what is user_struct used for? When and under what circumstances
+kernel will try to release it.
 
+4. since user_struct is allocated by kmem_cache_zalloc, is there api
+or tool I can monitor it?
+
+Thanks for your help,
