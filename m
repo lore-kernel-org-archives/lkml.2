@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab2BMJlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 04:41:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab2BMJlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 04:41:49 -0500
-Subject: Re: [Cluster-devel] [PATCH 3/4] gfs2: Use generic handlers of
- O_SYNC AIO DIO
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jeff Moyer <jmoyer@redhat.com>, cluster-devel@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com
-In-Reply-To: <1328889842-23231-4-git-send-email-jack@suse.cz>
-References: <1328889842-23231-1-git-send-email-jack@suse.cz>
-	 <1328889842-23231-4-git-send-email-jack@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 13 Feb 2012 09:42:18 +0000
-Message-ID: <1329126138.2702.4.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756312Ab2BMJnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 04:43:40 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41994 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab2BMJnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 04:43:39 -0500
+Date: Mon, 13 Feb 2012 11:43:29 +0200
+From: Ido Yariv <ido@wizery.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
+Message-ID: <20120213094329.GA29428@WorkStation>
+References: <1322843052-7166-1-git-send-email-ido@wizery.com>
+ <alpine.LFD.2.02.1112022345300.2735@ionos>
+ <20111204190932.GO32400@WorkStation>
+ <20111216104828.GB18877@WorkStation>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111216104828.GB18877@WorkStation>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Thomas,
 
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
-
-That looks ok to me,
-
-Steve.
-
-On Fri, 2012-02-10 at 17:04 +0100, Jan Kara wrote:
-> Use generic handlers to queue fsync() when AIO DIO is completed for O_SYNC
-> file.
+On Sun, Dec 04, 2011 at 09:09:32PM +0200, Ido Yariv wrote:
+> Hi Thomas,
 > 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/gfs2/aops.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> On Sat, Dec 03, 2011 at 12:21:46AM +0100, Thomas Gleixner wrote:
+> > I can see your problem, but this might lead to threads_active leaks
+> > under certain conditions. desc->threads_active was only meant to deal
+> > with shared interrupts.
+> > 
+> > We explicitely allow a design where the primary handler can leave the
+> > device interrupt enabled and allow further interrupts to occur while
+> > the handler is running. We only have a single bit to note that the
+> > thread should run, but your wakeup would up the threads_active count
+> > in that scenario several times w/o a counterpart which decrements it.
+> > 
+> > The solution for this is to keep the current threads_active semantics
+> > and make the wait function different. Instead of waiting for
+> > threads_active to become 0 it should wait for threads_active == 0 and
+> > the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
+> > over the actions, we can take a similar approach as we take with the
+> > desc->threads_oneshot bitfield.
 > 
-> diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-> index 501e5cb..9c381ff 100644
-> --- a/fs/gfs2/aops.c
-> +++ b/fs/gfs2/aops.c
-> @@ -1034,7 +1034,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
->  
->  	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
->  				  offset, nr_segs, gfs2_get_block_direct,
-> -				  NULL, NULL, 0);
-> +				  NULL, NULL, DIO_SYNC_WRITES);
->  out:
->  	gfs2_glock_dq_m(1, &gh);
->  	gfs2_holder_uninit(&gh);
+> Thanks for reviewing this.
+> 
+> I might be missing something, but I don't see any potential
+> threads_active leaks in this approach. We wont increase threads_active
+> if IRQTF_RUNTHREAD was already set beforehand (as test_and_set_bit()
+> will return 1).
+> 
+> If irq_wake_thread is called multiple times before irq_thread has had a
+> chance to run, threads_active will only be increased once and decreased
+> back when IRQTF_RUNTHREAD is cleared.
+> 
+> Am I missing something? If not, do you see any other issues with this
+> implementation?
 
+Any thoughts on this?
 
+Thanks,
+Ido.
