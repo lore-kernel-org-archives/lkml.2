@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab2BNBx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:53:56 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45720 "EHLO
+	id S1758765Ab2BNBxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:53:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45723 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2BNBxT (ORCPT
+	with ESMTP id S1751343Ab2BNBxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Feb 2012 20:53:19 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/16] perf tools: Moving code in header.c
-Date: Mon, 13 Feb 2012 23:52:53 -0200
-Message-Id: <1329184375-27911-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/16] perf tools: cleanup initialization of attr->size
+Date: Mon, 13 Feb 2012 23:52:55 -0200
+Message-Id: <1329184375-27911-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.123.g65da0
 In-Reply-To: <1329184375-27911-1-git-send-email-acme@infradead.org>
 References: <1329184375-27911-1-git-send-email-acme@infradead.org>
@@ -23,336 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: Stephane Eranian <eranian@google.com>
 
-Needed for later changes. No modified functionality.
+The perf_event_attr size needs to be initialized in all cases because it
+captures the ABI version.
+
+This patch moves the initialization of the field from the
+perf_event_open() syscall stub to its proper location in the
+event_attr_init().
 
 Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1328884916-5901-1-git-send-email-robert.richter@amd.com
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120209151238.GA10272@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |  300 +++++++++++++++++++++++-----------------------
- 1 files changed, 150 insertions(+), 150 deletions(-)
+ tools/perf/perf.h      |    1 -
+ tools/perf/util/util.c |    2 ++
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6f4187d..5bb2d75 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1316,6 +1316,156 @@ static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
- 	free(str);
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index deb17db..03a0456 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -167,7 +167,6 @@ sys_perf_event_open(struct perf_event_attr *attr,
+ 		      pid_t pid, int cpu, int group_fd,
+ 		      unsigned long flags)
+ {
+-	attr->size = sizeof(*attr);
+ 	return syscall(__NR_perf_event_open, attr, pid, cpu,
+ 		       group_fd, flags);
+ }
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index fb25d13..8109a90 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -14,6 +14,8 @@ void event_attr_init(struct perf_event_attr *attr)
+ 		attr->exclude_host  = 1;
+ 	if (!perf_guest)
+ 		attr->exclude_guest = 1;
++	/* to capture ABI version */
++	attr->size = sizeof(*attr);
  }
  
-+static int __event_process_build_id(struct build_id_event *bev,
-+				    char *filename,
-+				    struct perf_session *session)
-+{
-+	int err = -1;
-+	struct list_head *head;
-+	struct machine *machine;
-+	u16 misc;
-+	struct dso *dso;
-+	enum dso_kernel_type dso_type;
-+
-+	machine = perf_session__findnew_machine(session, bev->pid);
-+	if (!machine)
-+		goto out;
-+
-+	misc = bev->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+
-+	switch (misc) {
-+	case PERF_RECORD_MISC_KERNEL:
-+		dso_type = DSO_TYPE_KERNEL;
-+		head = &machine->kernel_dsos;
-+		break;
-+	case PERF_RECORD_MISC_GUEST_KERNEL:
-+		dso_type = DSO_TYPE_GUEST_KERNEL;
-+		head = &machine->kernel_dsos;
-+		break;
-+	case PERF_RECORD_MISC_USER:
-+	case PERF_RECORD_MISC_GUEST_USER:
-+		dso_type = DSO_TYPE_USER;
-+		head = &machine->user_dsos;
-+		break;
-+	default:
-+		goto out;
-+	}
-+
-+	dso = __dsos__findnew(head, filename);
-+	if (dso != NULL) {
-+		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+
-+		dso__set_build_id(dso, &bev->build_id);
-+
-+		if (filename[0] == '[')
-+			dso->kernel = dso_type;
-+
-+		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
-+				  sbuild_id);
-+		pr_debug("build id event received for %s: %s\n",
-+			 dso->long_name, sbuild_id);
-+	}
-+
-+	err = 0;
-+out:
-+	return err;
-+}
-+
-+static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
-+						 int input, u64 offset, u64 size)
-+{
-+	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct {
-+		struct perf_event_header   header;
-+		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
-+		char			   filename[0];
-+	} old_bev;
-+	struct build_id_event bev;
-+	char filename[PATH_MAX];
-+	u64 limit = offset + size;
-+
-+	while (offset < limit) {
-+		ssize_t len;
-+
-+		if (read(input, &old_bev, sizeof(old_bev)) != sizeof(old_bev))
-+			return -1;
-+
-+		if (header->needs_swap)
-+			perf_event_header__bswap(&old_bev.header);
-+
-+		len = old_bev.header.size - sizeof(old_bev);
-+		if (read(input, filename, len) != len)
-+			return -1;
-+
-+		bev.header = old_bev.header;
-+
-+		/*
-+		 * As the pid is the missing value, we need to fill
-+		 * it properly. The header.misc value give us nice hint.
-+		 */
-+		bev.pid	= HOST_KERNEL_ID;
-+		if (bev.header.misc == PERF_RECORD_MISC_GUEST_USER ||
-+		    bev.header.misc == PERF_RECORD_MISC_GUEST_KERNEL)
-+			bev.pid	= DEFAULT_GUEST_KERNEL_ID;
-+
-+		memcpy(bev.build_id, old_bev.build_id, sizeof(bev.build_id));
-+		__event_process_build_id(&bev, filename, session);
-+
-+		offset += bev.header.size;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_header__read_build_ids(struct perf_header *header,
-+				       int input, u64 offset, u64 size)
-+{
-+	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct build_id_event bev;
-+	char filename[PATH_MAX];
-+	u64 limit = offset + size, orig_offset = offset;
-+	int err = -1;
-+
-+	while (offset < limit) {
-+		ssize_t len;
-+
-+		if (read(input, &bev, sizeof(bev)) != sizeof(bev))
-+			goto out;
-+
-+		if (header->needs_swap)
-+			perf_event_header__bswap(&bev.header);
-+
-+		len = bev.header.size - sizeof(bev);
-+		if (read(input, filename, len) != len)
-+			goto out;
-+		/*
-+		 * The a1645ce1 changeset:
-+		 *
-+		 * "perf: 'perf kvm' tool for monitoring guest performance from host"
-+		 *
-+		 * Added a field to struct build_id_event that broke the file
-+		 * format.
-+		 *
-+		 * Since the kernel build-id is the first entry, process the
-+		 * table using the old format if the well known
-+		 * '[kernel.kallsyms]' string for the kernel build-id has the
-+		 * first 4 characters chopped off (where the pid_t sits).
-+		 */
-+		if (memcmp(filename, "nel.kallsyms]", 13) == 0) {
-+			if (lseek(input, orig_offset, SEEK_SET) == (off_t)-1)
-+				return -1;
-+			return perf_header__read_build_ids_abi_quirk(header, input, offset, size);
-+		}
-+
-+		__event_process_build_id(&bev, filename, session);
-+
-+		offset += bev.header.size;
-+	}
-+	err = 0;
-+out:
-+	return err;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1735,156 +1885,6 @@ int perf_file_header__read(struct perf_file_header *header,
- 	return 0;
- }
- 
--static int __event_process_build_id(struct build_id_event *bev,
--				    char *filename,
--				    struct perf_session *session)
--{
--	int err = -1;
--	struct list_head *head;
--	struct machine *machine;
--	u16 misc;
--	struct dso *dso;
--	enum dso_kernel_type dso_type;
--
--	machine = perf_session__findnew_machine(session, bev->pid);
--	if (!machine)
--		goto out;
--
--	misc = bev->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--
--	switch (misc) {
--	case PERF_RECORD_MISC_KERNEL:
--		dso_type = DSO_TYPE_KERNEL;
--		head = &machine->kernel_dsos;
--		break;
--	case PERF_RECORD_MISC_GUEST_KERNEL:
--		dso_type = DSO_TYPE_GUEST_KERNEL;
--		head = &machine->kernel_dsos;
--		break;
--	case PERF_RECORD_MISC_USER:
--	case PERF_RECORD_MISC_GUEST_USER:
--		dso_type = DSO_TYPE_USER;
--		head = &machine->user_dsos;
--		break;
--	default:
--		goto out;
--	}
--
--	dso = __dsos__findnew(head, filename);
--	if (dso != NULL) {
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		dso__set_build_id(dso, &bev->build_id);
--
--		if (filename[0] == '[')
--			dso->kernel = dso_type;
--
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--		pr_debug("build id event received for %s: %s\n",
--			 dso->long_name, sbuild_id);
--	}
--
--	err = 0;
--out:
--	return err;
--}
--
--static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
--						 int input, u64 offset, u64 size)
--{
--	struct perf_session *session = container_of(header, struct perf_session, header);
--	struct {
--		struct perf_event_header   header;
--		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
--		char			   filename[0];
--	} old_bev;
--	struct build_id_event bev;
--	char filename[PATH_MAX];
--	u64 limit = offset + size;
--
--	while (offset < limit) {
--		ssize_t len;
--
--		if (read(input, &old_bev, sizeof(old_bev)) != sizeof(old_bev))
--			return -1;
--
--		if (header->needs_swap)
--			perf_event_header__bswap(&old_bev.header);
--
--		len = old_bev.header.size - sizeof(old_bev);
--		if (read(input, filename, len) != len)
--			return -1;
--
--		bev.header = old_bev.header;
--
--		/*
--		 * As the pid is the missing value, we need to fill
--		 * it properly. The header.misc value give us nice hint.
--		 */
--		bev.pid	= HOST_KERNEL_ID;
--		if (bev.header.misc == PERF_RECORD_MISC_GUEST_USER ||
--		    bev.header.misc == PERF_RECORD_MISC_GUEST_KERNEL)
--			bev.pid	= DEFAULT_GUEST_KERNEL_ID;
--
--		memcpy(bev.build_id, old_bev.build_id, sizeof(bev.build_id));
--		__event_process_build_id(&bev, filename, session);
--
--		offset += bev.header.size;
--	}
--
--	return 0;
--}
--
--static int perf_header__read_build_ids(struct perf_header *header,
--				       int input, u64 offset, u64 size)
--{
--	struct perf_session *session = container_of(header, struct perf_session, header);
--	struct build_id_event bev;
--	char filename[PATH_MAX];
--	u64 limit = offset + size, orig_offset = offset;
--	int err = -1;
--
--	while (offset < limit) {
--		ssize_t len;
--
--		if (read(input, &bev, sizeof(bev)) != sizeof(bev))
--			goto out;
--
--		if (header->needs_swap)
--			perf_event_header__bswap(&bev.header);
--
--		len = bev.header.size - sizeof(bev);
--		if (read(input, filename, len) != len)
--			goto out;
--		/*
--		 * The a1645ce1 changeset:
--		 *
--		 * "perf: 'perf kvm' tool for monitoring guest performance from host"
--		 *
--		 * Added a field to struct build_id_event that broke the file
--		 * format.
--		 *
--		 * Since the kernel build-id is the first entry, process the
--		 * table using the old format if the well known
--		 * '[kernel.kallsyms]' string for the kernel build-id has the
--		 * first 4 characters chopped off (where the pid_t sits).
--		 */
--		if (memcmp(filename, "nel.kallsyms]", 13) == 0) {
--			if (lseek(input, orig_offset, SEEK_SET) == (off_t)-1)
--				return -1;
--			return perf_header__read_build_ids_abi_quirk(header, input, offset, size);
--		}
--
--		__event_process_build_id(&bev, filename, session);
--
--		offset += bev.header.size;
--	}
--	err = 0;
--out:
--	return err;
--}
--
- static int perf_file_section__process(struct perf_file_section *section,
- 				      struct perf_header *ph,
- 				      int feat, int fd, void *data __used)
+ int mkdir_p(char *path, mode_t mode)
 -- 
 1.7.9.123.g65da0
 
