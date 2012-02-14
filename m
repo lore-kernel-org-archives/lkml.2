@@ -1,142 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759977Ab2BNLKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:10:15 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40725 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab2BNLKN (ORCPT
+	id S1760067Ab2BNLMO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:12:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54630 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab2BNLMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:10:13 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Feb 2012 20:08:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 6/6 v4] memcg: fix performance of
- mem_cgroup_begin_update_page_stat()
-Message-Id: <20120214200842.df132ab1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <CAHH2K0baOnU6BE5c16cR0KiMvM3Hz+ngcBCs5e4+xJ_dcoeOww@mail.gmail.com>
-References: <20120214120414.025625c2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120214121631.782352f2.kamezawa.hiroyu@jp.fujitsu.com>
-	<CAHH2K0baOnU6BE5c16cR0KiMvM3Hz+ngcBCs5e4+xJ_dcoeOww@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Feb 2012 06:12:12 -0500
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <20120214072017.GF26353@mwanda>
+Date: Tue, 14 Feb 2012 06:12:06 -0500
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <57269901-FC81-4276-818E-4C996C5C902A@gmail.com>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk> <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net> <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 23:22:50 -0800
-Greg Thelen <gthelen@google.com> wrote:
+On Feb 14, 2012, at 2:20 AM, Dan Carpenter wrote:
+> I really think that's over thinking things.  Let's just match
+> kcalloc() exactly except without zeroing.  The BUILD_BUG_ON() thing
+> is an over complication as well.  We haven't needed it for
+> kcalloc().
 
-> On Mon, Feb 13, 2012 at 7:16 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > From 3377fd7b6e23a5d2a368c078eae27e2b49c4f4aa Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Mon, 6 Feb 2012 12:14:47 +0900
-> > Subject: [PATCH 6/6] memcg: fix performance of mem_cgroup_begin_update_page_stat()
-> >
-> > mem_cgroup_begin_update_page_stat() should be very fast because
-> > it's called very frequently. Now, it needs to look up page_cgroup
-> > and its memcg....this is slow.
-> >
-> > This patch adds a global variable to check "a memcg is moving or not".
-> 
-> s/a memcg/any memcg/
-> 
-yes.
+I don't think the BUILD_BUG_ON macro is useful here nor in kcalloc
+(besides gcc won't give you much handy information).
 
-> > By this, the caller doesn't need to visit page_cgroup and memcg.
-> 
-> s/By/With/
-> 
-ok.
+Just matching the new non-zeroing array allocator with kcalloc seems
+like the right thing to do.  We had quite a few patches that could
+be simpler with it.  For now I don't feel like it's necessary to
+change the API (e.g., making gfp_t as the first argument), do "smart"
+optimizations (e.g., recognizing the first argument is a constant),
+nor add more allocators (e.g., to match vmalloc, kmalloc_node).
 
-> > Here is a test result. A test program makes page faults onto a file,
-> > MAP_SHARED and makes each page's page_mapcount(page) > 1, and free
-> > the range by madvise() and page fault again.  This program causes
-> > 26214400 times of page fault onto a file(size was 1G.) and shows
-> > shows the cost of mem_cgroup_begin_update_page_stat().
-> 
-> Out of curiosity, what is the performance of the mmap program before
-> this series?
-> 
-
-Score of 3 runs underlinux-next.
-==
-[root@bluextal test]# time ./mmap 1G
-
-real    0m21.041s
-user    0m6.146s
-sys     0m14.625s
-[root@bluextal test]# time ./mmap 1G
-
-real    0m21.063s
-user    0m6.019s
-sys     0m14.776s
-[root@bluextal test]# time ./mmap 1G
-
-real    0m21.178s
-user    0m6.000s
-sys     0m14.849s
-==
-
-My program is attached. This program is for checking cost of updating FILE_MAPPED.
-I guess sys_time scores's error rate will be 0.2-0.3 sec.
-
-Thanks,
--Kame
-==
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-
-void reader(int fd, int size)
-{
-	int i, off, x;
-	char *addr;
-
-	addr = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-	for (i = 0; i < 100; i++) {
-		for(off = 0; off < size; off += 4096) {
-			x += *(addr + off);
-		}
-		madvise(addr, size, MADV_DONTNEED);
-	}
-}
-
-int main(int argc, char *argv[])
-{
-	int fd;
-	char *addr, *c;
-	unsigned long size;
-	struct stat statbuf;
-
-	fd = open(argv[1], O_RDONLY);
-	if (fd < 0) {
-		perror("cannot open file");
-		return 1;
-	}
-
-	if (fstat(fd, &statbuf)) {
-		perror("fstat failed");
-		return 1;
-	}
-	size = statbuf.st_size;
-	/* mmap in 2 place. */
-	addr = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-	mlock(addr, size);
-	reader(fd, size);
-}
-
+- xi
