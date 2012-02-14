@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab2BNRqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 12:46:32 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:41297 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753322Ab2BNRq3 (ORCPT
+	id S1752683Ab2BNRuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 12:50:46 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19907 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab2BNRuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 12:46:29 -0500
-Message-ID: <4F3A9DD0.6030501@xenotime.net>
-Date: Tue, 14 Feb 2012 09:45:52 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-doc@vger.kernel.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [trivial] Documentation: Fix typo in kernel-parameters.txt
-References: <1329233202-2576-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1329233202-2576-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Tue, 14 Feb 2012 12:50:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 14 Feb 2012 09:50:44 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] pinctrl: Make "hog" mapping table entries work
+Date: Tue, 14 Feb 2012 10:50:41 -0700
+Message-Id: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2012 07:26 AM, Masanari Iida wrote:
-> Correct spelling "mininum" to "minimum", "conroller" to "controller"
-> and "explicitely" to "explicitly" in
-> Documentation/kernel-parameters.txt
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Commit 77a5988 "pinctrl: changes hog mechanism to be self-referential"
+modified the way "hog" entries were represented in the mapping table.
+However, the new representation failed some error checks in
+pinctrl_hog_map(). Remove the now-bogus error-check, and fix the code
+to solve the issue the error-check used to avoid.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/pinctrl/core.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
 
-Thanks.
-
-> ---
->  Documentation/kernel-parameters.txt |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 033d4e6..cfcc73f 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -950,7 +950,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			     controller
->  	i8042.nopnp	[HW] Don't use ACPIPnP / PnPBIOS to discover KBD/AUX
->  			     controllers
-> -	i8042.notimeout	[HW] Ignore timeout condition signalled by conroller
-> +	i8042.notimeout	[HW] Ignore timeout condition signalled by controller
->  	i8042.reset	[HW] Reset the controller during init and cleanup
->  	i8042.unlock	[HW] Unlock (ignore) the keylock
->  
-> @@ -2434,7 +2434,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			For more information see Documentation/vm/slub.txt.
->  
->  	slub_min_order=	[MM, SLUB]
-> -			Determines the mininum page order for slabs. Must be
-> +			Determines the minimum page order for slabs. Must be
->  			lower than slub_max_order.
->  			For more information see Documentation/vm/slub.txt.
->  
-> @@ -2600,7 +2600,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  
->  	threadirqs	[KNL]
->  			Force threading of all interrupt handlers except those
-> -			marked explicitely IRQF_NO_THREAD.
-> +			marked explicitly IRQF_NO_THREAD.
->  
->  	topology=	[S390]
->  			Format: {off | on}
-
-
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index c5f76ad..8a91eb2 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -725,23 +725,11 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
+ 	struct pinctrl *p;
+ 	int ret;
+ 
+-	if (map->dev_name) {
+-		/*
+-		 * TODO: the day we have device tree support, we can
+-		 * traverse the device tree and hog to specific device nodes
+-		 * without any problems, so then we can hog pinmuxes for
+-		 * all devices that just want a static pin mux at this point.
+-		 */
+-		dev_err(pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
+-				map->name);
+-		return -EINVAL;
+-	}
+-
+ 	hog = kzalloc(sizeof(struct pinctrl_hog), GFP_KERNEL);
+ 	if (!hog)
+ 		return -ENOMEM;
+ 
+-	p = pinctrl_get(NULL, map->name);
++	p = pinctrl_get(pctldev->dev, map->name);
+ 	if (IS_ERR(p)) {
+ 		kfree(hog);
+ 		dev_err(pctldev->dev,
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.0.4
+
