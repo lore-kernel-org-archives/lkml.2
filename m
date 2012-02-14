@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab2BNLvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:51:44 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51732 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab2BNLvm (ORCPT
+	id S1755204Ab2BNLyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:54:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60485 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab2BNLyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:51:42 -0500
+	Tue, 14 Feb 2012 06:54:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
-Date: Tue, 14 Feb 2012 12:51:41 +0100
-Message-ID: <CACKLOr1Gn_NR8HPhmyK6DW9W+7CGG8y7yoZm6PE3bH2zt6Ej-g@mail.gmail.com>
-Subject: Re: [PATCH 0/4] dmaengine: i.MX DMA series.
-From: javier Martin <javier.martin@vista-silicon.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, vinod.koul@intel.com,
-        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+In-Reply-To: <4F3A46DD.8030305@ce.jp.nec.com>
+References: <4EE8E419.8010000@pre-sense.de>
+	<CA+v9cxZFUC45WD0=+8mvH2Tq_xvX3PgaW4ttzPep0jqvqab_6w@mail.gmail.com>
+	<20111225215804.03ef9402@stein>
+	<4F3A46DD.8030305@ce.jp.nec.com>
+Date: Tue, 14 Feb 2012 12:54:42 +0100
+X-Google-Sender-Auth: _ouZV8Ds2BIRM6XoJIGWzHC35NU
+Message-ID: <CAO+b5-pCW-F1nD365TnEiAfoN7zKB4zXkk3uO6p5QyUPY2icsA@mail.gmail.com>
+Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
+ of oops in sd_revalidate_disk?)
+From: Bart Van Assche <bvanassche@acm.org>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, jbottomley@parallels.com,
+        linux-scsi@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
+        Axel Theilmann <theilmann@pre-sense.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 February 2012 15:31, Javier Martin
-<javier.martin@vista-silicon.com> wrote:
-> Patches 1-3 have already been sent to the list (not merged yet)
-> but they are submitted so that everyone can get the whole picture
-> of what we're trying to do here.
->
-> A new patch(4) has been added which adds support for multiple
-> descriptors.
->
-> [PATCH 1/4] dmaengine: Add support for MEMCPY for imx-dma.
-> [PATCH 2/4] i.MX DMA: Add support for 2D transfers.
-> [PATCH 3/4] dmaengine: i.MX: Add support for interleaved transfers.
-> [PATCH 4/4] dmaengine: Add support for multiple descriptors for imx-dma.
+On Tue, Feb 14, 2012 at 12:34 PM, Jun'ichi Nomura
+<j-nomura@ce.jp.nec.com> wrote:
+> While scsi_device is propery refcounted object,
+> q->queuedata is set to NULL by scsi_remove_device() asynchronously.
+> So every reader of scsi_device's q->queuedata should always check it.
 
-Hi,
-what do you think of this series?
+As far as I can see this patch narrows the race window but doesn't fix
+the race. At least sd_prep_fn() still reads queuedata and if I'm not
+mistaken that read races with scsi_remove_device(). Has it been
+considered to modify scsi_remove_device() and scsi_request_fn() such
+that device removal is communicated from the former to the latter in
+another way than by clearing queuedata ?
 
-Vinod: your concern about patch 1 is solved in patch 4
-Sascha: I know you are not comfortable with patch 2 since it adds code
-to a file which is meant to be removed. However, is there a chance you
-accept it without me having to rewrite the whole series?
-
-Regards.
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
+Bart.
