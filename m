@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761344Ab2BNWvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:51:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43075 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761264Ab2BNWvh (ORCPT
+	id S1761334Ab2BNWww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:52:52 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56811 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760862Ab2BNWwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:51:37 -0500
-Date: Tue, 14 Feb 2012 14:51:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
+	Tue, 14 Feb 2012 17:52:50 -0500
+MIME-Version: 1.0
+From: Venkatesh Pallipadi <venki@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: [patch 0/4] Resending, c/r series v2
-Message-Id: <20120214145136.fa400757.akpm@linux-foundation.org>
-In-Reply-To: <20120213164822.227219834@openvz.org>
-References: <20120213164822.227219834@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Richard Kuo <rkuo@codeaurora.org>,
+        linux-hexagon@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH 3/3] um: Avoid raw handling of cpu_online_map
+Date: Tue, 14 Feb 2012 14:49:44 -0800
+Message-Id: <1329259784-20592-4-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1329259784-20592-1-git-send-email-venki@google.com>
+References: <87wr7pbwbz.fsf@rustcorp.com.au>
+ <1329259784-20592-1-git-send-email-venki@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 20:48:22 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+Use init_cpu_online and set_cpu_online instead.
 
-> Hi, this series hopefully in a good shape
-> 
->  - sys_kcmp now depends on CONFIG_CHECKPOINT_RESTORE
-> 
->  - the extension of /proc/pid/stat now done against
->    linux-next/master
-> 
-> Please letme know if I've missed something.
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ arch/um/kernel/skas/process.c |    2 +-
+ arch/um/kernel/smp.c          |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Thus far our (my) approach has been to trickle the c/r support code
-into mainline as it is developed.  Under the assumption that the end
-result will be acceptable and useful kernel code.
-
-I'm afraid that I'm losing confidence in that approach.  We have this
-patchset, we have Stanislav's "IPC: checkpoint/restore in userspace
-enhancements" (which apparently needs to get more complex to support
-LSM context c/r).  I simply *don't know* what additional patchsets are
-expected.  And from what you told me it sounds like networking support
-is at a very early stage and I fear for what the end result of that
-will look like.
-
-So I don't feel that I can continue feeding these things into mainline
-until someone can convince me that we won't have a nasty mess (and/or
-an unsufficiently useful feature) at the end of the project.
-
-
-The traditional approach is to develop the feature out-of-tree until it
-is "finished".  That's a lot more hackwork for you guys and it leads to
-a poorer feature - this approach inevitably has a lower level of review
-and inhibits code rework.
-
-
-An alternative is for me to buffer the patches in my tree until it is
-all sufficiently finished.  That also is more work for your team, but
-it will produce better code, because of additional review and code
-rework resulting from that review.
-
-I don't know how many patches that would end up being (this is part of
-the problem!) nor how long they would be carried for.
-
-
-So.  Please talk to me.  How long is this all going to take, and what
-will the final result look like?
+diff --git a/arch/um/kernel/skas/process.c b/arch/um/kernel/skas/process.c
+index 2e9852c..5daa0f5 100644
+--- a/arch/um/kernel/skas/process.c
++++ b/arch/um/kernel/skas/process.c
+@@ -41,7 +41,7 @@ static int __init start_kernel_proc(void *unused)
+ 	cpu_tasks[0].pid = pid;
+ 	cpu_tasks[0].task = current;
+ #ifdef CONFIG_SMP
+-	cpu_online_map = cpumask_of_cpu(0);
++	init_cpu_online(cpumask_of(0));
+ #endif
+ 	start_kernel();
+ 	return 0;
+diff --git a/arch/um/kernel/smp.c b/arch/um/kernel/smp.c
+index 155206a..b5d2ca9 100644
+--- a/arch/um/kernel/smp.c
++++ b/arch/um/kernel/smp.c
+@@ -76,7 +76,7 @@ static int idle_proc(void *cpup)
+ 		cpu_relax();
+ 
+ 	notify_cpu_starting(cpu);
+-	cpu_set(cpu, cpu_online_map);
++	set_cpu_online(cpu, true);
+ 	default_idle();
+ 	return 0;
+ }
+@@ -110,8 +110,8 @@ void smp_prepare_cpus(unsigned int maxcpus)
+ 	for (i = 0; i < ncpus; ++i)
+ 		set_cpu_possible(i, true);
+ 
+-	cpu_clear(me, cpu_online_map);
+-	cpu_set(me, cpu_online_map);
++	set_cpu_online(me, false);
++	set_cpu_online(me, true);
+ 	cpu_set(me, cpu_callin_map);
+ 
+ 	err = os_pipe(cpu_data[me].ipi_pipe, 1, 1);
+@@ -138,7 +138,7 @@ void smp_prepare_cpus(unsigned int maxcpus)
+ 
+ void smp_prepare_boot_cpu(void)
+ {
+-	cpu_set(smp_processor_id(), cpu_online_map);
++	set_cpu_online(smp_processor_id(), true);
+ }
+ 
+ int __cpu_up(unsigned int cpu)
+-- 
+1.7.7.3
 
