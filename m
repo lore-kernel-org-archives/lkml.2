@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab2BNALa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 19:11:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54152 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab2BNALZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 19:11:25 -0500
+	id S1758547Ab2BNALi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 19:11:38 -0500
+Received: from mail.us.es ([193.147.175.20]:43153 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756127Ab2BNAL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 19:11:26 -0500
+Date: Tue, 14 Feb 2012 01:11:23 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        jengelh@medozas.de, rostedt@goodmis.org, basti@b-bl.de
+Subject: Re: [PATCH 4/4] Netfilter: xt_LOG: Implement ring buffer support
+Message-ID: <20120214001123.GA24194@1984>
+References: <1328911856-19260-1-git-send-email-richard@nod.at>
+ <1328911856-19260-7-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <201202122232.12541.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<201202100144.11123.rjw@sisk.pl>
-	<20120212020507.GD18742@gs62>
-	<201202122232.12541.rjw@sisk.pl>
-Date: Mon, 13 Feb 2012 16:11:24 -0800
-Message-ID: <CAMP5Xgd3ODhA6rR_=nTw3EfUeeACfrzN4ycPLypryi8hfcBW8w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, NeilBrown <neilb@suse.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        Greg KH <greg@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328911856-19260-7-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 1:32 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, February 12, 2012, mark gross wrote:
->> On Fri, Feb 10, 2012 at 01:44:10AM +0100, Rafael J. Wysocki wrote:
-> [...]
->> > I'd like us and Android to use the same low-level data structures for power
->> > management and the same API eventually, at least for drivers.  This is not
->> > the case at the moment and it's actively hurting us as a project quite a bit.
->> > If Android needs to add patches on top of whatever we have to get the desired
->> > functionality, I'm fine with that, as long as they don't require drivers to use
->> > APIs that are incompatible with the mainline.  Insisting that Android should
->> > use a user-space-based autosleep implementation wouldn't help at all, because
->> > realistically this isn't going to happen.
->>
->> why not?  I don't think having the PMS explicitly acknowledge a wake
->> event is a big ask at all.
->
-> I'd like to hear what the Android people think about that, but somehow it seems
-> to me they won't like it. :-)
->
+On Fri, Feb 10, 2012 at 11:10:56PM +0100, Richard Weinberger wrote:
+> This patch introduces NETFILTER_XT_TARGET_LOG_RING.
+> It allows logging into various ring buffers which are
+> represented as pipe-like files in /proc/net/netfilter/xt_LOG_ring/.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  include/linux/netfilter/xt_LOG.h    |   13 +-
+>  include/net/netfilter/nf_log.h      |    1 +
+>  include/net/netfilter/xt_log_ring.h |   24 ++
 
-Correct.
+Could merge xt_log_ring.h with xt_log.h?
 
-The android power manager service does not handle wake events and
-therefore does not know when it is safe to acknowledge a wake event
-(assuming this acknowledgement re-triggers suspend). Other components
-handle the event and only notify the power manager if the event should
-change a state (e.g. turn the screen on). Some wake events, like the
-alarm used for battery monitoring, don't signal user space at all if
-the user visible state did not change. Other wake events are processed
-by lower level user-space services than the system-server where the
-power manager runs.
+>  net/netfilter/Kconfig               |   13 +
+>  net/netfilter/xt_LOG.c              |  642 ++++++++++++++++++++++++++++++++++-
+>  5 files changed, 674 insertions(+), 19 deletions(-)
+>  create mode 100644 include/net/netfilter/xt_log_ring.h
+> 
+> diff --git a/include/linux/netfilter/xt_LOG.h b/include/linux/netfilter/xt_LOG.h
+> index cac0790..d84710c 100644
+> --- a/include/linux/netfilter/xt_LOG.h
+> +++ b/include/linux/netfilter/xt_LOG.h
+> @@ -8,7 +8,8 @@
+>  #define XT_LOG_UID		0x08	/* Log UID owning local socket */
+>  #define XT_LOG_NFLOG		0x10	/* Unsupported, don't reuse */
+>  #define XT_LOG_MACDECODE	0x20	/* Decode MAC header */
+> -#define XT_LOG_MASK		0x2f
+> +#define XT_LOG_ADD_TIMESTAMP	0x40	/* Add a timestamp */
 
--- 
-Arve Hjønnevåg
+Please, I'd appreciate if you can split this timestamp support in a
+separated patch.
+
+Thanks.
