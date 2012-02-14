@@ -1,289 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760964Ab2BNUkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 15:40:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757213Ab2BNUkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 15:40:14 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
-        kzak@redhat.com
-Cc: vgoyal@redhat.com, psusi@ubuntu.com, psusi@cfl.rr.com,
-        maxim.patlasov@gmail.com
-Subject: [PATCH 1/2] block: add partition resize function to blkpg ioctl
-Date: Tue, 14 Feb 2012 15:39:50 -0500
-Message-Id: <1329251991-22468-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1329251991-22468-1-git-send-email-vgoyal@redhat.com>
-References: <1329251991-22468-1-git-send-email-vgoyal@redhat.com>
+	id S1760981Ab2BNUpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 15:45:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41658 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757250Ab2BNUpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 15:45:20 -0500
+Date: Tue, 14 Feb 2012 12:45:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Xi Wang <xi.wang@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
+Subject: Re: Uninline kcalloc
+Message-Id: <20120214124518.f42bc03e.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1202141329360.24883@router.home>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com>
+	<4F33C7D7.1060801@kernel.dk>
+	<32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com>
+	<4F33CEAE.60400@gmail.com>
+	<alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
+	<20120209150652.5b1d19dc.akpm@linux-foundation.org>
+	<FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com>
+	<alpine.DEB.2.00.1202130958470.23562@router.home>
+	<20120213194446.GD26353@mwanda>
+	<alpine.DEB.2.00.1202131424020.25908@router.home>
+	<20120214072017.GF26353@mwanda>
+	<alpine.DEB.2.00.1202140858080.20013@router.home>
+	<8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com>
+	<alpine.DEB.2.00.1202141032410.22250@router.home>
+	<ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com>
+	<alpine.DEB.2.00.1202141329360.24883@router.home>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new operation code ( BLKPG_RESIZE_PARTITION ) to the
-BLKPG ioctl that allows altering the size of an existing
-partition, even if it is currently in use.
+On Tue, 14 Feb 2012 13:33:40 -0600 (CST)
+Christoph Lameter <cl@linux.com> wrote:
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> Subject: Uninline kcalloc
+> 
+> kcalloc is not used in performance critical ways. So it does not need to
+> be inline. If we would add diagnostics to track the overflow occurrences
+> then such code would be replicated at all call sites in the kernel.
+
+Uninlining kcalloc() seems reasonable.  But if we're going to uninline
+kcalloc() then we also should uninline kmalloc_array().
+
+And yes, it's still called kmalloc_array() in my tree.  I've been
+following this discussion for N days waiting for a reason for changing
+the original patch and I ain't seen one yet.
+
+
+From: Xi Wang <xi.wang@gmail.com>
+Subject: slab: introduce kmalloc_array()
+
+Introduce a kmalloc_array() wrapper that performs integer overflow
+checking without zeroing the memory.
+
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Suggested-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- block/genhd.c             |   20 ++++++++++++----
- block/ioctl.c             |   57 ++++++++++++++++++++++++++++++++++++++++++--
- block/partition-generic.c |    4 ++-
- include/linux/blkpg.h     |    1 +
- include/linux/genhd.h     |   57 +++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 130 insertions(+), 9 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 23b4f70..935e09b 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -153,7 +153,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
- 		part = rcu_dereference(ptbl->part[piter->idx]);
- 		if (!part)
- 			continue;
--		if (!part->nr_sects &&
-+		if (!part_nr_sects_read(part) &&
- 		    !(piter->flags & DISK_PITER_INCL_EMPTY) &&
- 		    !(piter->flags & DISK_PITER_INCL_EMPTY_PART0 &&
- 		      piter->idx == 0))
-@@ -190,7 +190,7 @@ EXPORT_SYMBOL_GPL(disk_part_iter_exit);
- static inline int sector_in_part(struct hd_struct *part, sector_t sector)
- {
- 	return part->start_sect <= sector &&
--		sector < part->start_sect + part->nr_sects;
-+		sector < part->start_sect + part_nr_sects_read(part);
- }
+ include/linux/slab.h |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff -puN include/linux/slab.h~slab-introduce-kmalloc_array include/linux/slab.h
+--- a/include/linux/slab.h~slab-introduce-kmalloc_array
++++ a/include/linux/slab.h
+@@ -190,7 +190,7 @@ size_t ksize(const void *);
+ #endif
  
  /**
-@@ -765,8 +765,8 @@ void __init printk_all_partitions(void)
- 
- 			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
- 			       bdevt_str(part_devt(part), devt_buf),
--			       (unsigned long long)part->nr_sects >> 1,
--			       disk_name(disk, part->partno, name_buf), uuid);
-+			       (unsigned long long)part_nr_sects_read(part) >> 1
-+			       , disk_name(disk, part->partno, name_buf), uuid);
- 			if (is_part0) {
- 				if (disk->driverfs_dev != NULL &&
- 				    disk->driverfs_dev->driver != NULL)
-@@ -857,7 +857,7 @@ static int show_partition(struct seq_file *seqf, void *v)
- 	while ((part = disk_part_iter_next(&piter)))
- 		seq_printf(seqf, "%4d  %7d %10llu %s\n",
- 			   MAJOR(part_devt(part)), MINOR(part_devt(part)),
--			   (unsigned long long)part->nr_sects >> 1,
-+			   (unsigned long long)part_nr_sects_read(part) >> 1,
- 			   disk_name(sgp, part->partno, buf));
- 	disk_part_iter_exit(&piter);
- 
-@@ -1263,6 +1263,16 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
- 		}
- 		disk->part_tbl->part[0] = &disk->part0;
- 
-+		/*
-+		 * set_capacity() and get_capacity() currently don't use
-+		 * seqcounter to read/update the part0->nr_sects. Still init
-+		 * the counter as we can read the sectors in IO submission
-+		 * patch using seqence counters.
-+		 *
-+		 * TODO: Ideally set_capacity() and get_capacity() should be
-+		 * converted to make use of bd_mutex and sequence counters.
-+		 */
-+		seqcount_init(&disk->part0.nr_sects_seq);
- 		hd_ref_init(&disk->part0);
- 
- 		disk->minors = minors;
-diff --git a/block/ioctl.c b/block/ioctl.c
-index ba15b2d..ddbc649 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -13,7 +13,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+- * kcalloc - allocate memory for an array. The memory is set to zero.
++ * kmalloc_array - allocate memory for an array.
+  * @n: number of elements.
+  * @size: element size.
+  * @flags: the type of memory to allocate.
+@@ -240,11 +240,22 @@ size_t ksize(const void *);
+  * for general use, and so are not documented here. For a full list of
+  * potential flags, always refer to linux/gfp.h.
+  */
+-static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
++static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
  {
- 	struct block_device *bdevp;
- 	struct gendisk *disk;
--	struct hd_struct *part;
-+	struct hd_struct *part, *lpart;
- 	struct blkpg_ioctl_arg a;
- 	struct blkpg_partition p;
- 	struct disk_part_iter piter;
-@@ -36,8 +36,8 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
- 		case BLKPG_ADD_PARTITION:
- 			start = p.start >> 9;
- 			length = p.length >> 9;
--			/* check for fit in a hd_struct */ 
--			if (sizeof(sector_t) == sizeof(long) && 
-+			/* check for fit in a hd_struct */
-+			if (sizeof(sector_t) == sizeof(long) &&
- 			    sizeof(long long) > sizeof(long)) {
- 				long pstart = start, plength = length;
- 				if (pstart != start || plength != length
-@@ -92,6 +92,57 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
- 			bdput(bdevp);
- 
- 			return 0;
-+		case BLKPG_RESIZE_PARTITION:
-+			start = p.start >> 9;
-+			/* new length of partition in bytes */
-+			length = p.length >> 9;
-+			/* check for fit in a hd_struct */
-+			if (sizeof(sector_t) == sizeof(long) &&
-+			    sizeof(long long) > sizeof(long)) {
-+				long pstart = start, plength = length;
-+				if (pstart != start || plength != length
-+				    || pstart < 0 || plength < 0)
-+					return -EINVAL;
-+			}
-+			part = disk_get_part(disk, partno);
-+			if (!part)
-+				return -ENXIO;
-+			bdevp = bdget(part_devt(part));
-+			if (!bdevp) {
-+				disk_put_part(part);
-+				return -ENOMEM;
-+			}
-+			mutex_lock(&bdevp->bd_mutex);
-+			mutex_lock_nested(&bdev->bd_mutex, 1);
-+			if (start != part->start_sect) {
-+				mutex_unlock(&bdevp->bd_mutex);
-+				mutex_unlock(&bdev->bd_mutex);
-+				disk_put_part(part);
-+				return -EINVAL;
-+			}
-+			/* overlap? */
-+			disk_part_iter_init(&piter, disk,
-+					    DISK_PITER_INCL_EMPTY);
-+			while ((lpart = disk_part_iter_next(&piter))) {
-+				if (lpart->partno != partno &&
-+				   !(start + length <= lpart->start_sect ||
-+				   start >= lpart->start_sect + lpart->nr_sects)
-+				   ) {
-+					disk_part_iter_exit(&piter);
-+					mutex_unlock(&bdevp->bd_mutex);
-+					mutex_unlock(&bdev->bd_mutex);
-+					disk_put_part(part);
-+					return -EBUSY;
-+				}
-+			}
-+			disk_part_iter_exit(&piter);
-+			part_nr_sects_write(part, (sector_t)length);
-+			i_size_write(bdevp->bd_inode, p.length);
-+			mutex_unlock(&bdevp->bd_mutex);
-+			mutex_unlock(&bdev->bd_mutex);
-+			bdput(bdevp);
-+			disk_put_part(part);
-+			return 0;
- 		default:
- 			return -EINVAL;
- 	}
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index d06ec1c..363a6f6 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -84,7 +84,7 @@ ssize_t part_size_show(struct device *dev,
- 		       struct device_attribute *attr, char *buf)
- {
- 	struct hd_struct *p = dev_to_part(dev);
--	return sprintf(buf, "%llu\n",(unsigned long long)p->nr_sects);
-+	return sprintf(buf, "%llu\n",(unsigned long long)part_nr_sects_read(p));
- }
- 
- static ssize_t part_ro_show(struct device *dev,
-@@ -294,6 +294,8 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 		err = -ENOMEM;
- 		goto out_free;
- 	}
-+
-+	seqcount_init(&p->nr_sects_seq);
- 	pdev = part_to_dev(p);
- 
- 	p->start_sect = start;
-diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
-index faf8a45..a851944 100644
---- a/include/linux/blkpg.h
-+++ b/include/linux/blkpg.h
-@@ -40,6 +40,7 @@ struct blkpg_ioctl_arg {
- /* The subfunctions (for the op field) */
- #define BLKPG_ADD_PARTITION	1
- #define BLKPG_DEL_PARTITION	2
-+#define BLKPG_RESIZE_PARTITION	3
- 
- /* Sizes of name fields. Unused at present. */
- #define BLKPG_DEVNAMELTH	64
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index fe23ee7..0def3ef 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -98,7 +98,13 @@ struct partition_meta_info {
- 
- struct hd_struct {
- 	sector_t start_sect;
-+	/*
-+	 * nr_sects is protected by sequence counter. One might extend a
-+	 * partition while IO is happening to it and update of nr_sects
-+	 * can be non-atomic on 32bit machines with 64bit sector_t.
-+	 */
- 	sector_t nr_sects;
-+	seqcount_t nr_sects_seq;
- 	sector_t alignment_offset;
- 	unsigned int discard_alignment;
- 	struct device __dev;
-@@ -653,6 +659,57 @@ static inline void hd_struct_put(struct hd_struct *part)
- 		__delete_partition(part);
- }
- 
-+/*
-+ * Any access of part->nr_sects which is not protected by partition
-+ * bd_mutex or gendisk bdev bd_mutex, should be done using this
-+ * accessor function.
-+ *
-+ * Code written along the lines of i_size_read() and i_size_write().
-+ * CONFIG_PREEMPT case optimizes the case of UP kernel with preemption
-+ * on.
-+ */
-+static inline sector_t part_nr_sects_read(struct hd_struct *part)
-+{
-+#if BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_SMP)
-+	sector_t nr_sects;
-+	unsigned seq;
-+	do {
-+		seq = read_seqcount_begin(&part->nr_sects_seq);
-+		nr_sects = part->nr_sects;
-+	} while (read_seqcount_retry(&part->nr_sects_seq, seq));
-+	return nr_sects;
-+#elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
-+	sector_t nr_sects;
-+
-+	preempt_disable();
-+	nr_sects = part->nr_sects;
-+	preempt_enable();
-+	return nr_sects;
-+#else
-+	return part->nr_sects;
-+#endif
+ 	if (size != 0 && n > ULONG_MAX / size)
+ 		return NULL;
+-	return __kmalloc(n * size, flags | __GFP_ZERO);
++	return __kmalloc(n * size, flags);
 +}
 +
-+/*
-+ * Should be called with mutex lock held (typically bd_mutex) of partition
-+ * to provide mutual exlusion among writers otherwise seqcount might be
-+ * left in wrong state leaving the readers spinning infinitely.
++/**
++ * kcalloc - allocate memory for an array. The memory is set to zero.
++ * @n: number of elements.
++ * @size: element size.
++ * @flags: the type of memory to allocate (see kmalloc).
 + */
-+static inline void part_nr_sects_write(struct hd_struct *part, sector_t size)
++static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
 +{
-+#if BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_SMP)
-+	write_seqcount_begin(&part->nr_sects_seq);
-+	part->nr_sects = size;
-+	write_seqcount_end(&part->nr_sects_seq);
-+#elif BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_PREEMPT)
-+	preempt_disable();
-+	part->nr_sects = size;
-+	preempt_enable();
-+#else
-+	part->nr_sects = size;
-+#endif
-+}
-+
- #else /* CONFIG_BLOCK */
++	return kmalloc_array(n, size, flags | __GFP_ZERO);
+ }
  
- static inline void printk_all_partitions(void) { }
--- 
-1.7.6.4
+ #if !defined(CONFIG_NUMA) && !defined(CONFIG_SLOB)
+_
 
