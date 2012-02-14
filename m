@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758765Ab2BNBxy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:53:54 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45723 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab2BNBxT (ORCPT
+	id S1758708Ab2BNB7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:59:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48520 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399Ab2BNB7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 20:53:19 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/16] perf tools: cleanup initialization of attr->size
-Date: Mon, 13 Feb 2012 23:52:55 -0200
-Message-Id: <1329184375-27911-17-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.123.g65da0
-In-Reply-To: <1329184375-27911-1-git-send-email-acme@infradead.org>
-References: <1329184375-27911-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 13 Feb 2012 20:59:20 -0500
+Message-ID: <1329184754.3048.33.camel@deadeye>
+Subject: Re: [patch net-next] cxgb3: update firmware version
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Divy Le Ray <divy@chelsio.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steve Wise <swise@opengridcomputing.com>, nhorman@tuxdriver.com
+Date: Tue, 14 Feb 2012 01:59:14 +0000
+In-Reply-To: <4F398303.1030606@chelsio.com>
+References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com>
+	 <1329165817.2092.62.camel@shinybook.infradead.org>
+	 <4F398303.1030606@chelsio.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-FfgOr2VYUq0CLg4M5W9K"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
 
-The perf_event_attr size needs to be initialized in all cases because it
-captures the ABI version.
+--=-FfgOr2VYUq0CLg4M5W9K
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch moves the initialization of the field from the
-perf_event_open() syscall stub to its proper location in the
-event_attr_init().
+On Mon, 2012-02-13 at 13:39 -0800, Divy Le Ray wrote:
+> On Monday, February 13, 2012 12:43:37 PM, David Woodhouse wrote:
+> >
+> > On Mon, 2012-02-13 at 12:28 -0800, Divy Le Ray wrote:
+> >>
+> >> This patch updates the firmware version cxgb3 is requesting to 7.12.0.
+> >
+> >
+> > I'm confused. Your patch doesn't change anything in the driver, except
+> > the firmware version. So why is it a "major" change?
+>=20
+> Hi David,
+>=20
+> cxgb3 embeds the firmware file name it will request at load time.
+> It uses the FW_VERSION_* defs to construct the firmware name FW_FNAME=20
+> before calling request_firmware().
+> Hence the need to update the firmware minor version.
+>=20
+> On the other hand, the driver version update is not a strict requirement=
+=20
+> here.
+> I would prefer keeping it though.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120209151238.GA10272@quad
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/perf.h      |    1 -
- tools/perf/util/util.c |    2 ++
- 2 files changed, 2 insertions(+), 1 deletions(-)
+The problems with this are:
+1. Older kernel versions don't benefit from the firmware update.
+2. The old firmware has to be kept in linux-firmware to support those
+   old kernel versions, and distributions may have to package more
+   versions.
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index deb17db..03a0456 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -167,7 +167,6 @@ sys_perf_event_open(struct perf_event_attr *attr,
- 		      pid_t pid, int cpu, int group_fd,
- 		      unsigned long flags)
- {
--	attr->size = sizeof(*attr);
- 	return syscall(__NR_perf_event_open, attr, pid, cpu,
- 		       group_fd, flags);
- }
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index fb25d13..8109a90 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -14,6 +14,8 @@ void event_attr_init(struct perf_event_attr *attr)
- 		attr->exclude_host  = 1;
- 	if (!perf_guest)
- 		attr->exclude_guest = 1;
-+	/* to capture ABI version */
-+	attr->size = sizeof(*attr);
- }
- 
- int mkdir_p(char *path, mode_t mode)
--- 
-1.7.9.123.g65da0
+To avoid this, the firmware filename should only be changed if you make
+incompatible changes in the driver/firmware interface.
 
+Ben.
+
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
+
+--=-FfgOr2VYUq0CLg4M5W9K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATzm/8ue/yOyVhhEJAQoQ4xAAuHYB3waPJPC2G/UdXr+7bEeGB+hpVTRs
+34laoEl6PMarS2SAmheb3sXNgMiiYW1YJ452C9lJ+HhbSmEWZJgHZz4g6GKziOlf
+eQRrn98tbb65qhfK8UV1mShxSkgy1YJsS9CwIhHc6ETL52enForGLc4L+yKr19Ae
++AiSrldGrv33TcVCfIUca9hIxg9y3+mJ4wRJQHUY/oEtT3WwwfYtG3CdtJb1eJ67
+8WI3b1z0yRrCQ7JfAy4AIoRBd4I1TVD869ltp+5ylsCB7Pmzkc2ouJkV26CrKdtm
+REYFZNLJvoktXy+BjtZTaApxY9T3717HEgNVRex1TznX7pTcZGOAlrdRU2IPJymX
+YBFX4NKyq/OTVklUyPu7JioMIL/sF4dDYcfJvwQrBp3HVxHZnApvZzom73Mi9zUj
+iTU833o0Tw4Q91VjruK0tjJcXxv3RagaVvNmfnq+fP22SXmAla0zUKW+uDSL+naG
+vY+WAF9WG7SMdUtVUgP9E8V0onA2wtHQWY6yWpF36gE+6UE4klNvzTToxQ/BkEH5
+LMuZtl1h/CCCQX9pLYytmYxwv4IOLSMkOrWHzUtdspHRopkXfzodMpUK17wI4+BV
++P4ey3Mx/H2nLF2RPJSyuO4t9bod4G/ZQ2SnZBpi7UjsCMk92S5jyq5yfEMjSQI9
+cHK16lCq+cQ=
+=qgtQ
+-----END PGP SIGNATURE-----
+
+--=-FfgOr2VYUq0CLg4M5W9K--
