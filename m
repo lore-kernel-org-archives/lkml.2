@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab2BNLl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:41:29 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44692 "EHLO
+	id S1760159Ab2BNLl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:41:27 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44703 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759905Ab2BNLlX (ORCPT
+	by vger.kernel.org with ESMTP id S1755154Ab2BNLlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:41:23 -0500
+	Tue, 14 Feb 2012 06:41:24 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-arch@vger.kernel.org
 Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-alpha@vger.kernel.org
-Subject: [PATCH 01/40] alpha: Use set_current_blocked() and block_sigmask()
-Date: Tue, 14 Feb 2012 11:40:34 +0000
-Message-Id: <1329219673-28711-2-git-send-email-matt@console-pimps.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 02/40] arm: Use set_current_blocked() and block_sigmask()
+Date: Tue, 14 Feb 2012 11:40:35 +0000
+Message-Id: <1329219673-28711-3-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
 References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
@@ -40,23 +42,24 @@ code wrong, so using this helper function should stop that from
 happening again.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-alpha@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/alpha/kernel/signal.c |   31 ++++++++++---------------------
- 1 files changed, 10 insertions(+), 21 deletions(-)
+ arch/arm/kernel/signal.c |   24 ++++++++----------------
+ 1 files changed, 8 insertions(+), 16 deletions(-)
 
-diff --git a/arch/alpha/kernel/signal.c b/arch/alpha/kernel/signal.c
-index 6f7feb5..35f2ef4 100644
---- a/arch/alpha/kernel/signal.c
-+++ b/arch/alpha/kernel/signal.c
-@@ -120,12 +120,13 @@ SYSCALL_DEFINE5(rt_sigaction, int, sig, const struct sigaction __user *, act,
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index 9e617bd..7cb532f 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -66,12 +66,13 @@ const unsigned long syscall_restart_code[2] = {
   */
- SYSCALL_DEFINE1(sigsuspend, old_sigset_t, mask)
+ asmlinkage int sys_sigsuspend(int restart, unsigned long oldmask, old_sigset_t mask)
  {
 -	mask &= _BLOCKABLE;
 -	spin_lock_irq(&current->sighand->siglock);
@@ -73,46 +76,32 @@ index 6f7feb5..35f2ef4 100644
  
  	current->state = TASK_INTERRUPTIBLE;
  	schedule();
-@@ -238,10 +239,7 @@ do_sigreturn(struct sigcontext __user *sc, struct pt_regs *regs,
- 		goto give_sigsegv;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(sc, regs, sw))
- 		goto give_sigsegv;
-@@ -276,10 +274,7 @@ do_rt_sigreturn(struct rt_sigframe __user *frame, struct pt_regs *regs,
- 		goto give_sigsegv;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(&frame->uc.uc_mcontext, regs, sw))
- 		goto give_sigsegv;
-@@ -501,14 +496,8 @@ handle_signal(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	else
- 		ret = setup_frame(sig, ka, oldset, regs, sw);
- 
--	if (ret == 0) {
+@@ -280,10 +281,7 @@ static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
+ 	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
+ 	if (err == 0) {
+ 		sigdelsetmask(&set, ~_BLOCKABLE);
 -		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
--		if (!(ka->sa.sa_flags & SA_NODEFER)) 
--			sigaddset(&current->blocked,sig);
+-		current->blocked = set;
 -		recalc_sigpending();
 -		spin_unlock_irq(&current->sighand->siglock);
--	}
-+	if (ret == 0)
-+		block_sigmask(ka, sig);
++		set_current_blocked(&set);
+ 	}
  
- 	return ret;
+ 	__get_user_error(regs->ARM_r0, &sf->uc.uc_mcontext.arm_r0, err);
+@@ -636,13 +634,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	/*
+ 	 * Block the signal if we were successful.
+ 	 */
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	sigorsets(&tsk->blocked, &tsk->blocked,
+-		  &ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&tsk->blocked, sig);
+-	recalc_sigpending();
+-	spin_unlock_irq(&tsk->sighand->siglock);
++	block_sigmask(ka, sig);
+ 
+ 	return 0;
  }
 -- 
 1.7.4.4
