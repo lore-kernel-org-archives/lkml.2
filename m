@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759429Ab2BNEou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 23:44:50 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:51807 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759401Ab2BNEo3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 23:44:29 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: ranjith kumar <ranjithproxy@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: how to know list of files accessed
-In-Reply-To: Your message of "Mon, 13 Feb 2012 13:32:56 +0100."
-             <4F3902F8.3090905@free-electrons.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CAG9fbzb=B66ku7bPWjJOZ7_EcShYqORypP8-hsvD-g7z9t4oHA@mail.gmail.com>
-            <4F3902F8.3090905@free-electrons.com>
+	id S1759402Ab2BNEsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 23:48:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9236 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753638Ab2BNEsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 23:48:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="117279765"
+Subject: Re: [RFT] USB: Try MSI first before line IRQ for Intel PCIe USB3
+ HCD
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: stern@rowland.harvard.edu, Greg KH <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, andiry.xu@amd.com,
+        linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Takashi Iwai <tiwai@suse.de>, trenn@suse.de, linux-pci@vger.kernel.org,
+        Michal Marek <MMarek@suse.com>
+In-Reply-To: <20120214002557.GA13003@xanatos>
+References: <20120214002557.GA13003@xanatos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Feb 2012 12:43:56 +0800
+Message-ID: <1329194636.12669.1725.camel@debian>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1329194664_3060P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Date: Mon, 13 Feb 2012 23:44:24 -0500
-Message-ID: <8249.1329194664@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4F39E6AA.0039,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1329194664_3060P
-Content-Type: text/plain; charset=us-ascii
+On Mon, 2012-02-13 at 16:25 -0800, Sarah Sharp wrote:
+> We have a PCI USB xhci host controller on a new platform. It doesn't
+> have a line IRQ definition in BIOS. The Linux driver refuses to
+> initial this controller, but Windows works well because it only depends
+> on MSI.
+> 
+> Actually, Linux also can work for MSI. This patch skips the first line
+> IRQ checking for our HCD in usb-core pci probe, then try to enable MSI
+> firstly. That make this HCD works well under Linux.
+> 
+> This patch should be backported to kernels as old as 2.6.32.
+> 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+> Hi Alex,
+> 
+> Please test this on your Panther Point system that doesn't have a BIOS
+> provided IRQ line.  I think this is a much simpler solution.
 
-On Mon, 13 Feb 2012 13:32:56 +0100, Michael Opdenacker said:
+It is Ok on the platform. 
+Thanks!
+> 
+> Sarah Sharp
+> 
+>  drivers/usb/core/hcd-pci.c |    5 ++++-
+>  drivers/usb/core/hcd.c     |    6 ++++--
+>  drivers/usb/host/xhci.c    |    5 +++++
+>  3 files changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+> index d136b8f..81e2c0d 100644
+> --- a/drivers/usb/core/hcd-pci.c
+> +++ b/drivers/usb/core/hcd-pci.c
+> @@ -187,7 +187,10 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+>  		return -ENODEV;
+>  	dev->current_state = PCI_D0;
+>  
+> -	if (!dev->irq) {
+> +	/* The xHCI driver supports MSI and MSI-X,
+> +	 * so don't fail if the BIOS doesn't provide a legacy IRQ.
+> +	 */
+> +	if (!dev->irq && (driver->flags & HCD_MASK) != HCD_USB3) {
+>  		dev_err(&dev->dev,
+>  			"Found HC with no IRQ.  Check BIOS/PCI %s setup!\n",
+>  			pci_name(dev));
+> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> index eb19cba..e128232 100644
+> --- a/drivers/usb/core/hcd.c
+> +++ b/drivers/usb/core/hcd.c
+> @@ -2447,8 +2447,10 @@ int usb_add_hcd(struct usb_hcd *hcd,
+>  			&& device_can_wakeup(&hcd->self.root_hub->dev))
+>  		dev_dbg(hcd->self.controller, "supports USB remote wakeup\n");
+>  
+> -	/* enable irqs just before we start the controller */
+> -	if (usb_hcd_is_primary_hcd(hcd)) {
+> +	/* enable irqs just before we start the controller,
+> +	 * if the BIOS provides legacy PCI irqs.
+> +	 */
+> +	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
+>  		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
+>  		if (retval)
+>  			goto err_request_irq;
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 6bbe3c3..c939f5f 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -352,6 +352,11 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
+>  		/* hcd->irq is -1, we have MSI */
+>  		return 0;
+>  
+> +	if (!pdev->irq) {
+> +		xhci_err(xhci, "No msi-x/msi found and no IRQ in BIOS\n");
+> +		return -EINVAL;
+> +	}
+> +
+>  	/* fall back to legacy interrupt*/
+>  	ret = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
+>  			hcd->irq_descr, hcd);
 
-> An easy way is to run your command with 'strace' to trap all the calls
-> to 'open':
->
-> strace make 2>&1 | grep open
-
-You really want 'strace -f make' - the -f flag makes it follow forks, which you
-want to do because it's gcc that's doing most of the actual file I/O, not make.
-
-Oh.  and you want to redirect that grep into a temporary file and be
-prepared to post-process it with perl or something, there's going to be
-*zillions* of open() syscalls.
-
---==_Exmh_1329194664_3060P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBTznmqAdmEQWDXROgAQLiQxAAmnOUy5jOeaieqUQ5XR/U32m0jmvEcgDu
-qCVgMjqXXunubsKys0WDa3QXlJ1QQ2nFIeOzlYY3uaPFV669laKGNaXQKnQ6UHYH
-+kmrW0x3DDZXkYPkyXFmvjRfCVhfl4SKuAj2HNAXPO69PE08gOz9Qm97vUbNyxOL
-skkhdTSKfTiGCVwiGlnWpYw9Yf5bTEMERoDUODTXMXu5zL4RK8Ph8PXowjL6Qrv8
-hBG0FZAR+lnoxi4bLJyJlO5yllLYsF07ItznIWCuCsS0MDIOxNrBqoQCc6bZVKdJ
-rfFgmIzEz2MH9I1ov18UaBN0uJEdIM5SMXKWCjM1GLc0a74sPL73CIlDA7CoyFWT
-sKRb1ioVopiePZBFdW43lCAYJEggUk9VU4dIBjt7ZKnlzxdfX+PXH8HmaMDdpCD8
-KZr2bx5CyMK4XKTvxmjlQwZLC4CR0GLws0dHgB7T2zgNjr2QnM7J12yJEI9XOgCF
-YISFDz7cxoGAC6clO/Bh7C/vkdCUzLWOXN6E/hhhKLcUQ/dcOMdWp+sHt5jp+EZL
-aSyuRy89nYcQkgIQHJg43asb2va7OMwMaiTw/VANLpgQAQ+Rmdiv3Ju6FP1T7W7Z
-4hT1m9isbkh6huYS3GWayFEds/W/h4Dz4U64z1kh/F0xFsi5VKfMOeVXoTiu5rYQ
-tA/Zt/qSqYU=
-=ai3u
------END PGP SIGNATURE-----
-
---==_Exmh_1329194664_3060P--
 
