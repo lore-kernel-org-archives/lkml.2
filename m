@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714Ab2BNOgU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:36:20 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:51163
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756648Ab2BNOgR (ORCPT
+	id S1760698Ab2BNOgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:36:03 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:36605 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760679Ab2BNOfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:36:17 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: viresh.kumar@st.com
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] arm: Fix typo in spear3[012]0.c
-Date: Tue, 14 Feb 2012 23:35:42 +0900
-Message-Id: <1329230142-2063-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Tue, 14 Feb 2012 09:35:45 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] adis16080: fix compiler -Wuninitialized
+Date: Tue, 14 Feb 2012 15:35:36 +0100
+Message-Id: <1329230136-26576-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230145;e31ed409;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "registeration" to "registration" in
-arch/arm/mach-spear3xx/spear300.c, spear310.c and spear320.c
+Fix for:
+drivers/staging/iio/gyro/adis16080_core.c: In function
+  ‘adis16080_read_raw’:
+drivers/staging/iio/gyro/adis16080_core.c:99:8: warning: ‘ut’
+  may be used uninitialized in this function [-Wuninitialized]
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Initialize ut and change error handling from adis16080_read_raw().
+
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- arch/arm/mach-spear3xx/spear300.c |    2 +-
- arch/arm/mach-spear3xx/spear310.c |    2 +-
- arch/arm/mach-spear3xx/spear320.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/iio/gyro/adis16080_core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-spear3xx/spear300.c b/arch/arm/mach-spear3xx/spear300.c
-index a5e46b4..4f7f518 100644
---- a/arch/arm/mach-spear3xx/spear300.c
-+++ b/arch/arm/mach-spear3xx/spear300.c
-@@ -469,7 +469,7 @@ void __init spear300_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
- 	if (pmx_driver.base) {
- 		ret = pmx_register(&pmx_driver);
- 		if (ret)
--			printk(KERN_ERR "padmux: registeration failed. err no"
-+			printk(KERN_ERR "padmux: registration failed. err no"
- 					": %d\n", ret);
- 		/* Free Mapping, device selection already done */
- 		iounmap(pmx_driver.base);
-diff --git a/arch/arm/mach-spear3xx/spear310.c b/arch/arm/mach-spear3xx/spear310.c
-index 9004cf9..febaa6f 100644
---- a/arch/arm/mach-spear3xx/spear310.c
-+++ b/arch/arm/mach-spear3xx/spear310.c
-@@ -303,6 +303,6 @@ void __init spear310_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
+diff --git a/drivers/staging/iio/gyro/adis16080_core.c b/drivers/staging/iio/gyro/adis16080_core.c
+index 1815490..e0b2a29 100644
+--- a/drivers/staging/iio/gyro/adis16080_core.c
++++ b/drivers/staging/iio/gyro/adis16080_core.c
+@@ -82,7 +82,7 @@ static int adis16080_read_raw(struct iio_dev *indio_dev,
+ 			     long mask)
+ {
+ 	int ret = -EINVAL;
+-	u16 ut;
++	u16 ut = 0;
+ 	/* Take the iio_dev status lock */
  
- 	ret = pmx_register(&pmx_driver);
- 	if (ret)
--		printk(KERN_ERR "padmux: registeration failed. err no: %d\n",
-+		printk(KERN_ERR "padmux: registration failed. err no: %d\n",
- 				ret);
- }
-diff --git a/arch/arm/mach-spear3xx/spear320.c b/arch/arm/mach-spear3xx/spear320.c
-index ee29bef..deaaf19 100644
---- a/arch/arm/mach-spear3xx/spear320.c
-+++ b/arch/arm/mach-spear3xx/spear320.c
-@@ -550,6 +550,6 @@ void __init spear320_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
- 
- 	ret = pmx_register(&pmx_driver);
- 	if (ret)
--		printk(KERN_ERR "padmux: registeration failed. err no: %d\n",
-+		printk(KERN_ERR "padmux: registration failed. err no: %d\n",
- 				ret);
- }
+ 	mutex_lock(&indio_dev->mlock);
+@@ -94,7 +94,7 @@ static int adis16080_read_raw(struct iio_dev *indio_dev,
+ 		if (ret < 0)
+ 			break;
+ 		ret = adis16080_spi_read(indio_dev, &ut);
+-		if (ret < 0)
++		if (ret)
+ 			break;
+ 		*val = ut;
+ 		ret = IIO_VAL_INT;
 -- 
-1.7.6.5
+1.7.7.3
 
