@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab2BNDfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:35:15 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:44002 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab2BNDfK (ORCPT
+	id S1759313Ab2BNDkY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:40:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34864 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759156Ab2BNDkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 22:35:10 -0500
-Date: Tue, 14 Feb 2012 14:35:04 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 3.3
-Message-ID: <20120214033504.GA26895@gondor.apana.org.au>
-References: <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120126024342.GA12492@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 13 Feb 2012 22:40:10 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=CWtqnKM6Dr4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=UPm3pfgAAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=2zli643jjhjTyJyuCMsA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=3vjraaJA2kyUgIr61wAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120214034007.297163721@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Mon, 13 Feb 2012 22:39:14 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 5/9] cpuidle/tracing: Denote the tracepoints as being in rcu_idle_exit()
+ section
+References: <20120214033909.904564921@goodmis.org>
+Content-Disposition: inline; filename=0005-cpuidle-tracing-Denote-the-tracepoints-as-being-in-r.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This push updates the sha512 fix so that it doesn't cause excessive
-stack usage on i386.  This is done by reverting to the original
-code, and avoiding the W duplication by moving its initialisation
-into the loop.
+From: Steven Rostedt <srostedt@redhat.com>
 
-As the underlying code is in fact the one that we have used for years,
-I'm pushing this now instead of postponing to the next cycle.
+As the tracepoints in the cpuidle code are called when rcu_idle_exit() is in
+effect, the _rcuidle() version must be used, otherwise the rcu_read_lock()s
+that protect the tracepoint will not be honored.
 
-Please pull from
+Cc: Len Brown <len.brown@intel.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/cpuidle/cpuidle.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 59f4261..6588f43 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -94,13 +94,13 @@ int cpuidle_idle_call(void)
+=20
+ 	target_state =3D &drv->states[next_state];
+=20
+-	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+-	trace_cpu_idle(next_state, dev->cpu);
++	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
++	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+=20
+ 	entered_state =3D target_state->enter(dev, drv, next_state);
+=20
+-	trace_power_end(dev->cpu);
+-	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
++	trace_power_end_rcuidle(dev->cpu);
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+=20
+ 	if (entered_state >=3D 0) {
+ 		/* Update cpuidle counters */
+--=20
+1.7.8.3
 
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
 
-Herbert Xu (2):
-      crypto: sha512 - Use binary and instead of modulus
-      crypto: sha512 - Avoid stack bloat on i386
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
- crypto/sha512_generic.c |   70 ++++++++++++++++++++++-------------------------
- 1 files changed, 33 insertions(+), 37 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+iQIcBAABAgAGBQJPOdeXAAoJEIy3vGnGbaoA6RgQAMMsr1ppYXzvujeGy0ZMN10C
+CYvfhOipJga/bu8SzEX+zYLIsEzoepHDnSCm/CtaSel51rD3JYB103w2crVsvvux
+TBfgtYI7n4mZfsylNNLNAHNd22I4NAAABzAoX3N7tnHE1Pvwwv1G/+LhzgC1NQo1
+7Led6K9vo+0jNBV8u/MnBeuitvIWY+YZNVLvFmcGBosru/VHq+CDNsMUT0Kf4dGa
+BKpvrT2NNeAwnBHE/crIT57q11CL5Bw5S4GOOACmIOBVQ6CEM5Uow/R7Be6qfc8X
+jzemwsSbJUJGd8a/Njbvgc7pPhD5TatJoTTqXme/mojDxEROLO78e3PnrhRlqzLr
+g5bNrxLFNmrMM9hW6zXpj3AZR2Cf2yTHNfZ8AH3rlFaf/pCzB9LzkpmcSNca4Vcg
++7rXRSks15Mf7nBeVYx3yATwOJnlwqf/h+Mu+ouqNQUFQOJS7f2c+FJ1ghrl/MAe
+Jo/JFUF2i6S5oA++CSGz58RrB1m79yjWo3YAwTHDGedlrmm1gZEf9aXLZDvtIWQo
+PBAbmc6BQ33ZplgsVmKr/qYDw8Zm6e/+M22kwDiEQxd6exVZGDJxgPsB7+COMnPE
+Xlteko6QAZB5OHP2eVt7FuWBckaSLssSpmyyTZt0iujjDveiKkvDkR271IiBa9Mj
+9zKic8uOMkOINRptoeKJ
+=zMMm
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
