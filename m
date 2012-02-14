@@ -1,55 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760424Ab2BNNTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 08:19:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756203Ab2BNNTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 08:19:39 -0500
-Message-ID: <4F3A5F0B.2090309@redhat.com>
-Date: Tue, 14 Feb 2012 15:18:03 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1760549Ab2BNN1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 08:27:50 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49352 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754384Ab2BNN1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 08:27:49 -0500
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-References: <4F2AB66C.2030309@redhat.com> <20120202170134.GM2518@linux.vnet.ibm.com> <4F2AC69B.7000704@redhat.com> <20120202175155.GV2518@linux.vnet.ibm.com> <4F2E7311.8060808@redhat.com> <20120205165927.GH2467@linux.vnet.ibm.com> <20120209152155.GA22552@somewhere.redhat.com> <4F33EEB3.4080807@redhat.com> <20120209182216.GG22552@somewhere.redhat.com> <20120209234144.GC2458@linux.vnet.ibm.com> <20120210013911.GM22552@somewhere.redhat.com>
-In-Reply-To: <20120210013911.GM22552@somewhere.redhat.com>
+Date: Tue, 14 Feb 2012 14:27:48 +0100
+Message-ID: <CAFLxGvwKJ+19+Lj6O=ZJWAgeJr=1dX_nQzd7fPmv-Rw4eUagrw@mail.gmail.com>
+Subject: ppc64: allyesconfig fails: ld: TOC section size exceeds 64k
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: benh@kernel.crashing.org, paulus@samba.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2012 03:39 AM, Frederic Weisbecker wrote:
-> > 
-> > As long as the code doesn't enter RCU read-side critical sections in
-> > the time between rcu_idle_enter() and rcu_idle_exit(), this should
-> > work fine.
->
-> This should work fine yeah but further the correctness, I wonder if this
-> is going to be a win.
->
-> We use rcu_idle_enter() in idle to avoid to keep the tick for RCU. But
-> what about falling into guest mode? I guess the tick is kept there
-> so is it going to be a win in throughput or something to use rcu_idle_enter()?
+Hi!
 
-We could disable the tick while in guest mode as well.  Interrupts in
-guest mode are even more expensive than interrupts in user mode.
+Building an allyesconfig fails on ppc64:
+LD      vmlinux.o
+ld: TOC section size exceeds 64k
+make: *** [vmlinux.o] Fehler 1
+
+Is this a known problem?
+Kernel version is Linus' tree as of today.
+
+gcc-Version 4.6.2 20111027 (Red Hat 4.6.2-1) (GCC)
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Thanks,
+//richard
