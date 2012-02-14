@@ -1,58 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761306Ab2BNWHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:07:07 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36631 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761294Ab2BNWHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:07:01 -0500
-Message-ID: <1329257161.2340.1.camel@work-vm>
-Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
-From: John Stultz <john.stultz@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Righi <andrea@betterlinux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Feb 2012 14:06:01 -0800
-In-Reply-To: <20120214133337.9de7835b.akpm@linux-foundation.org>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
-	 <20120214133337.9de7835b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1761312Ab2BNWHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:07:55 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52432 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757335Ab2BNWHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 17:07:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [RFC PATCH] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
+Date: Tue, 14 Feb 2012 23:11:41 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+References: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021422-3352-0000-0000-000002A0B82D
+Message-Id: <201202142311.41483.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-14 at 13:33 -0800, Andrew Morton wrote:
-> On Sun, 12 Feb 2012 01:21:35 +0100
-> Andrea Righi <andrea@betterlinux.com> wrote:
+Hi,
+
+On Tuesday, February 14, 2012, MyungJoo Ham wrote:
+> 1. CPU_DMA_THROUGHPUT
 > 
-> > The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
-> > drop-behind policy where applications can mark certain intervals of a file as
-> > FADV_NOREUSE before accessing the data.
+> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
+> blocks that creates QoS requirement based on DMA throughput, not
+> latency, while their (those QoS requester H/W blocks) services are
+> short-term bursts that cannot be effectively responsed by DVFS
+> mechanisms (CPUFreq and Devfreq).
 > 
-> I think you and John need to talk to each other, please.  The amount of
-> duplication here is extraordinary.
+> In the Exynos4412 systems that are being tested, such H/W blocks include
+> MFC (multi-function codec)'s decoding and enconding features, TV-out
+> (including HDMI), and Cameras. When the display is operated at 60Hz,
+> each chunk of task should be done within 16ms and the workload on DMA is
+> not well spread and fluctuates between frames; some frame requires more
+> and some do not and within a frame, the workload also fluctuates
+> heavily and the tasks within a frame are usually not parallelized; they
+> are processed through specific H/W blocks, not CPU cores. They often
+> have PPMU capabilities; however, they need to be polled very frequently
+> in order to let DVFS mechanisms react properly. (less than 5ms).
+> 
+> For such specific tasks, allowing them to request QoS requirements seems
+> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
+> longer) cannot follow up with them. Besides, the device drivers know
+> when to request and cancel QoS exactly.
+> 
+> 2. DVFS_LATENCY
+> 
+> Both CPUFreq and Devfreq have response latency to a sudden workload
+> increase. With near-100% (e.g., 95%) up-threshold, the average response
+> latency is approximately 1.5 x polling-rate.
+> 
+> A specific polling rate (e.g., 100ms) may generally fit for its system;
+> however, there could be exceptions for that. For example,
+> - When a user input suddenly starts: typing, clicking, moving cursors, and
+>   such, the user might need the full performance immediately. However,
+>   we do not know whether the full performance is actually needed or not
+>   until we calculate the utilization; thus, we need to calculate it
+>   faster with user inputs or any similar events. Specifying QoS on CPU
+>   processing power or Memory bandwidth at every user input is an
+>   overkill because there are many cases where such speed-up isn't
+>   necessary.
+> - When a device driver needs a faster performance response from DVFS
+>   mechanism. This could be addressed by simply putting QoS requests.
+>   However, such QoS requests may keep the system running fast
+>   unnecessary in some cases, especially if a) the device's resource
+>   usage bursts with some duration (e.g., 100ms-long bursts) and
+>   b) the driver doesn't know when such burst come. MMC/WiFi often had
+>   such behaviors although there are possibilities that part (b) might
+>   be addressed with further efforts.
+> 
+> The cases shown above can be tackled with putting QoS requests on the
+> response time or latency of DVFS mechanism, which is directly related to
+> its polling interval (if the DVFS mechanism is polling based).
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Yea. Clearly there is much we can share. I'm still catching up from a
-conference last week, so I've not had a chance to really look at this
-yet, but its on my queue for this week.
+Who's going to use the new classes?
 
-thanks
--john
+Rafael
 
+
+> ---
+>  include/linux/pm_qos.h |    6 +++++-
+>  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
+>  2 files changed, 35 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index e5bbcba..f8ccb7b 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -13,13 +13,17 @@
+>  #define PM_QOS_CPU_DMA_LATENCY 1
+>  #define PM_QOS_NETWORK_LATENCY 2
+>  #define PM_QOS_NETWORK_THROUGHPUT 3
+> +#define PM_QOS_CPU_DMA_THROUGHPUT 4
+> +#define PM_QOS_DVFS_RESPONSE_LATENCY 5
+>  
+> -#define PM_QOS_NUM_CLASSES 4
+> +#define PM_QOS_NUM_CLASSES 6
+>  #define PM_QOS_DEFAULT_VALUE -1
+>  
+>  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
+> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
+> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
+>  
+>  struct pm_qos_request {
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index 995e3bd..b15e0b7 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
+>  };
+>  
+>  
+> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
+> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
+> +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
+> +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+> +	.type = PM_QOS_MAX,
+> +	.notifiers = &cpu_dma_throughput_notifier,
+> +};
+> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
+> +	.constraints = &cpu_dma_tput_constraints,
+> +	.name = "cpu_dma_throughput",
+> +};
+> +
+> +
+> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
+> +static struct pm_qos_constraints dvfs_lat_constraints = {
+> +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
+> +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+> +	.type = PM_QOS_MIN,
+> +	.notifiers = &dvfs_lat_notifier,
+> +};
+> +static struct pm_qos_object dvfs_lat_pm_qos = {
+> +	.constraints = &dvfs_lat_constraints,
+> +	.name = "dvfs_latency",
+> +};
+> +
+>  static struct pm_qos_object *pm_qos_array[] = {
+>  	&null_pm_qos,
+>  	&cpu_dma_pm_qos,
+>  	&network_lat_pm_qos,
+> -	&network_throughput_pm_qos
+> +	&network_throughput_pm_qos,
+> +	&cpu_dma_throughput_pm_qos,
+> +	&dvfs_lat_pm_qos,
+>  };
+>  
+>  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+> 
 
