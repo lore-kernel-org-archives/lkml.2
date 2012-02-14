@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab2BNPdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 10:33:05 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:18384 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2BNPdB (ORCPT
+	id S1751984Ab2BNPjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 10:39:52 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:51196
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751027Ab2BNPjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 10:33:01 -0500
-Date: Tue, 14 Feb 2012 10:29:55 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
-Subject: ftrace_enabled set to 1 on bootup, slow downs with
- CONFIG_FUNCTION_TRACER in virt environments?
-Message-ID: <20120214152955.GA17671@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F3A7EAA.0032,ss=1,re=0.000,fgs=0
+	Tue, 14 Feb 2012 10:39:51 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: perex@perex.cz, tiwai@suse.de
+Cc: alsa-devel@alsa-project.org, trivial@kernel.org,
+        linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH v2] [trivial] usx2y: Fix typo in usbusx2yaudio.c and usx2yhwdeppcm.c
+Date: Wed, 15 Feb 2012 00:38:55 +0900
+Message-Id: <1329233935-2699-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Correct spelling "propably" to "probably" and "activ" to "active"
+in sound/usb/usx2y/usbusx2yaudio.c and usx2yhwdeppcm.c
 
-I was running some benchmarks (netserver/netperf) where the init script just launched
-the netserver and nothing else and was concerned to see the performance not up to par.
-This was an HVM guest running with PV drivers.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ sound/usb/usx2y/usbusx2yaudio.c |    4 ++--
+ sound/usb/usx2y/usx2yhwdeppcm.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-If I compile the kernel without CONFIG_FUNCTION_TRACER it is much better - but it was
-my understanding that the tracing code does not impact the machine unless it is enabled.
-And when I inserted a bunch of print_dump_bytes I do see instructions such as
-e8 6a 90 60 e1 get replaced with 66 66 66 90 so I see the the instructions getting
-patched over.
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 6ffb371..520ef96 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -80,7 +80,7 @@ static int usX2Y_urb_capt_retire(struct snd_usX2Y_substream *subs)
+ 		cp = (unsigned char*)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
+ 		if (urb->iso_frame_desc[i].status) { /* active? hmm, skip this */
+ 			snd_printk(KERN_ERR "active frame status %i. "
+-				   "Most propably some hardware problem.\n",
++				   "Most probably some hardware problem.\n",
+ 				   urb->iso_frame_desc[i].status);
+ 			return urb->iso_frame_desc[i].status;
+ 		}
+@@ -300,7 +300,7 @@ static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
+ {
+ 	snd_printk(KERN_ERR
+ "Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
+-"Most propably some urb of usb-frame %i is still missing.\n"
++"Most probably some urb of usb-frame %i is still missing.\n"
+ "Cause could be too long delays in usb-hcd interrupt handling.\n",
+ 		   usb_get_current_frame_number(usX2Y->dev),
+ 		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
+diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
+index a51340f..8e40b6e 100644
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -74,7 +74,7 @@ static int usX2Y_usbpcm_urb_capt_retire(struct snd_usX2Y_substream *subs)
+ 	}
+ 	for (i = 0; i < nr_of_packs(); i++) {
+ 		if (urb->iso_frame_desc[i].status) { /* active? hmm, skip this */
+-			snd_printk(KERN_ERR "activ frame status %i. Most propably some hardware problem.\n", urb->iso_frame_desc[i].status);
++			snd_printk(KERN_ERR "active frame status %i. Most probably some hardware problem.\n", urb->iso_frame_desc[i].status);
+ 			return urb->iso_frame_desc[i].status;
+ 		}
+ 		lens += urb->iso_frame_desc[i].actual_length / usX2Y->stride;
+-- 
+1.7.6.5
 
-To get a better feel for this I tried this on baremetal, and (this is going
-to sound a bit round-about way, but please bear with me), I was working on making
-the pte_flags be paravirt (so it is a function instead of being a macro) and noticed
-that on on an AMD A8-3850, with a CONFIG_PARAVIRT and CONFIG_FUNCTION_TRACER and
-running kernelbench it would run slower than without CONFIG_FUNCTION_TRACER.
-
-I am not really sure what the problem is, but based on those experiments
-four things come to my mind:
- - Lots of nops and we choke the CPU instruction decoder with 20-30 bytes
-   of 'nop', so the CPU is stalling waiting for some real instructions.
- - The compiler has choosen to compile most of the paravirt instructions as
-   functions making the call to mcount (which gets patched over), but the
-   end result is that we have an extra 'call' in the chain.
- - Somehow the low-level para-virt (like the assembler ones) calls don't get
-   patched over and still end up calling mcount? (but I really doubt that is the
-   case - but you never know).
- - Something else?
-
-My thought was to crash the kernel as it is up and running and look at the
-diassembled core to see what the instructions end up looking to get a further feel
-for this.  But before I go with this are there some other ideas of what I should look
-for?
-
-Thanks!
-
-Note: The "working on making the pte_flags be paravirt" patches are here:
-http://darnok.org/results/baseline_pte_flags_pte_attrs/ if you are interested.
