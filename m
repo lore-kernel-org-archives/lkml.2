@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759463Ab2BNHgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:36:47 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59905 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2BNHgo (ORCPT
+	id S1759396Ab2BNHkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:40:51 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47017 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324Ab2BNHku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:36:44 -0500
-Message-ID: <1329204997.24837.15.camel@edumazet-laptop>
-Subject: Re: NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jcliburn@gmail.com, chris.snook@gmail.com,
-        netdev <netdev@vger.kernel.org>, Jay Cliburn <jcliburn@gmail.com>
-Date: Tue, 14 Feb 2012 08:36:37 +0100
-In-Reply-To: <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
-References: <1329063403.1449.14.camel@localhost.localdomain>
-	 <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 14 Feb 2012 02:40:50 -0500
+Date: Tue, 14 Feb 2012 15:40:36 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: use raw_local_irq_* in _this_cpu op
+Message-ID: <20120214074035.GA18994@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
+ <20120213172311.GB12117@google.com>
+ <CACVXFVMyihmG3NexXOqTUoJb8UJFa7dJqYGOr6oC_y5heFSo1A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CACVXFVMyihmG3NexXOqTUoJb8UJFa7dJqYGOr6oC_y5heFSo1A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 13 février 2012 à 16:00 -0500, Josh Boyer a écrit :
-> On Sun, Feb 12, 2012 at 11:16 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> > abrt_version:   2.0.7
-> > cmdline:        BOOT_IMAGE=/vmlinuz-3.2.3 root=/dev/sda2 rootfstype=ext4 rootflags=data=writeback ro quiet rhgb
-> > kernel:         3.2.3
-> > reason:         WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-> > time:           Sa 04 Feb 2012 15:31:22 CET
+On Tue, Feb 14, 2012 at 11:30:06AM +0800, Ming Lei wrote:
+> Hi,
+> 
+> On Tue, Feb 14, 2012 at 1:23 AM, Tejun Heo <tj@kernel.org> wrote:
+> > On Mon, Feb 13, 2012 at 07:03:38PM +0800, Ming Lei wrote:
+> >> It doesn't make sense to trace irq off or do irq flags
+> >> lock proving inside 'this_cpu' operations, so replace local_irq_*
+> >> with raw_local_irq_* in 'this_cpu' op.
+> >>
+> >> Also the patch fixes one lockdep warning[1], which is caused
+> >> by the added local_irq_save/restore(flags) in this_cpu_inc
+> >> called by __debug_atomic_inc: kernel/lockdep.c
 > >
-> > backtrace:
-> > :WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-> > :Hardware name: Aspire 1810T
-> > :NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-> > :Modules linked in: vfat fat fuse bluetooth nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep uvcvideo snd_seq arc4 videodev usb_storage snd_seq_device v4l2_compat_ioctl32 snd_pcm snd_timer acer_wmi iwlwifi snd mac80211 sparse_keymap cfg80211 rfkill soundcore snd_page_alloc joydev wmi acerhdf pcspkr virtio_net virtio atl1c virtio_ring kvm_intel kvm uinput ipv6 [last unloaded: scsi_wait_scan]
-> > :Pid: 0, comm: swapper Not tainted 3.2.3 #5
-> > :Call Trace:
-> > : <IRQ>  [<ffffffff810322ca>] warn_slowpath_common+0x7a/0xb0
-> > : [<ffffffff81018a18>] ? lapic_next_event+0x18/0x20
-> > : [<ffffffff810323a1>] warn_slowpath_fmt+0x41/0x50
-> > : [<ffffffff8104e9be>] ? hrtimer_interrupt+0xfe/0x1f0
-> > : [<ffffffff8102c350>] ? wake_up_process+0x10/0x20
-> > : [<ffffffff813e9397>] dev_watchdog+0x1e7/0x1f0
-> > : [<ffffffff8103cfcf>] run_timer_softirq+0xef/0x210
-> > : [<ffffffff813e91b0>] ? qdisc_reset+0x50/0x50
-> > : [<ffffffff81037827>] __do_softirq+0x87/0x110
-> > : [<ffffffff814945fa>] call_softirq+0x1a/0x30
-> > : [<ffffffff810038bd>] do_softirq+0x4d/0x80
-> > : [<ffffffff81037a8e>] irq_exit+0x7e/0xa0
-> > : [<ffffffff8100375b>] do_IRQ+0x5b/0xd0
-> > : [<ffffffff8148de29>] common_interrupt+0x69/0x69
-> > : <EOI>  [<ffffffff8124e115>] ? acpi_idle_enter_bm+0x1c0/0x1ff
-> > : [<ffffffff8124e110>] ? acpi_idle_enter_bm+0x1bb/0x1ff
-> > : [<ffffffff813a24b4>] ? menu_select+0xd4/0x390
-> > : [<ffffffff813a150b>] cpuidle_idle_call+0x8b/0xe0
-> > : [<ffffffff810011ed>] cpu_idle+0x9d/0xe0
-> > : [<ffffffff8147d08e>] rest_init+0x62/0x64
-> > : [<ffffffff81699b54>] start_kernel+0x358/0x363
-> > : [<ffffffff81699322>] x86_64_start_reservations+0x132/0x136
-> > : [<ffffffff81699416>] x86_64_start_kernel+0xf0/0xf7
-> > : [<ffffffff81017e70>] ? acpi_suspend_lowlevel+0x1b0/0x1b0
+> > I think this isn't gonna hurt anything but I don't understand why the
+> > lockdep warning is triggering when using traced version. ?Can you
+> > please explain that in a bit more detail in the patch description?
 > 
-> We've seen this in Fedora for a long time now.  As far as I know, nobody
-> really knows what is going on.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=717211
-> 
-> (Also, you probably should have sent this to netdev.)
+> In trace_hardirqs_on_caller:kernel/lockdep.c, __debug_atomic_inc
+> will be called to add on 'this_cpu' variable, so may introduce recursive
+> trace_hardirqs_on|off_caller called.
 
-CC netdev, Jay Cliburn <jcliburn@gmail.com>, 
+Don't we need to prevent this kind of recursion first?
 
-It seems this driver has partial support for two TX rings.
-
-(TX completion only drains the first ring)
-
-Please try following patch.
-
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index b859124..1ff3c6d 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -2244,10 +2244,6 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
- 			dev_info(&adapter->pdev->dev, "tx locked\n");
- 		return NETDEV_TX_LOCKED;
- 	}
--	if (skb->mark == 0x01)
--		type = atl1c_trans_high;
--	else
--		type = atl1c_trans_normal;
+UNTESTED patch, I guess it'll smooth your concern.
+---
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 8889f7d..028b4c5 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2561,6 +2561,8 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 	if (unlikely(!debug_locks || current->lockdep_recursion))
+ 		return;
  
- 	if (atl1c_tpd_avail(adapter, type) < tpd_req) {
- 		/* no enough descriptor, just stop queue */
-
-
++	current->lockdep_recursion = 1;
++
+ 	if (unlikely(current->hardirqs_enabled)) {
+ 		/*
+ 		 * Neither irq nor preemption are disabled here
+@@ -2568,7 +2570,7 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 		 * in a stat is not a big deal.
+ 		 */
+ 		__debug_atomic_inc(redundant_hardirqs_on);
+-		return;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -2577,23 +2579,24 @@ void trace_hardirqs_on_caller(unsigned long ip)
+ 	 * enabled.. someone messed up their IRQ state tracing.
+ 	 */
+ 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+-		return;
++		goto out;
+ 
+ 	/*
+ 	 * See the fine text that goes along with this variable definition.
+ 	 */
+ 	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+-		return;
++		goto out;
+ 
+ 	/*
+ 	 * Can't allow enabling interrupts while in an interrupt handler,
+ 	 * that's general bad form and such. Recursion, limited stack etc..
+ 	 */
+ 	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
+-		return;
++		goto out;
+ 
+-	current->lockdep_recursion = 1;
+ 	__trace_hardirqs_on_caller(ip);
++
++out:
+ 	current->lockdep_recursion = 0;
+ }
+ EXPORT_SYMBOL(trace_hardirqs_on_caller);
