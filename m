@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760019Ab2BNLDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:03:50 -0500
-Received: from skyrme.org ([193.175.80.135]:34710 "EHLO skyrme.org"
+	id S1760042Ab2BNLFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:05:06 -0500
+Received: from skyrme.org ([193.175.80.135]:34719 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755123Ab2BNLDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:03:33 -0500
-Date: 14 Feb 2012 10:34:26 +0000
-Message-Id: <1329215672-15706-2-git-send-email-oskar@scara.com>
+	id S1759886Ab2BNLDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 06:03:46 -0500
+Date: 14 Feb 2012 10:34:31 +0000
+Message-Id: <1329215672-15706-7-git-send-email-oskar@scara.com>
 From: "Oskar Schirmer" <oskar@scara.com>
 To: sameo@linux.intel.com
 Cc: dmitry.torokhov@gmail.com, kernel@pengutronix.de,
         u.kleine-koenig@pengutronix.de, philippe.retornaz@epfl.ch,
         michael.thalmeier@hale.at, linux-kernel@vger.kernel.org,
         "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH 1/7] mfd: move mc13xxx global declarations to header file
+Subject: [PATCH 6/7] input/touchscreen: add calibration functionality with
 X-Mailer: git-send-email 1.6.0.3
 In-Reply-To: <1329215672-15706-1-git-send-email-oskar@scara.com>
 References: <1329215672-15706-1-git-send-email-oskar@scara.com>
@@ -22,136 +22,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation to split SPI specific stuff from mc13xxx-core.c
-into a separate file, move non local stuff into the mc13xxx
-header file.
+Currently mc13xxx_ts does provide uncalibrated data only.
+Add means to calibrate touchscreen through simple matrix calculus,
+parameters accessible via sysfs.
 
 Signed-off-by: Oskar Schirmer <oskar@scara.com>
 ---
- drivers/mfd/mc13xxx-core.c  |   18 -----------
- include/linux/mfd/mc13xxx.h |   66 ++++++++++++++++++++++++++----------------
- 2 files changed, 41 insertions(+), 43 deletions(-)
+ drivers/input/touchscreen/Kconfig      |    1 +
+ drivers/input/touchscreen/mc13xxx_ts.c |   87 +++++++++++++++++++++++++++++---
+ 2 files changed, 81 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 7122386..94840c1 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -22,18 +22,6 @@
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 51d19cb..9e315d7 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -587,6 +587,7 @@ config TOUCHSCREEN_USB_COMPOSITE
+ config TOUCHSCREEN_MC13XXX
+ 	tristate "Freescale MC13XXX touchscreen input driver"
+ 	depends on MFD_MC13XXX
++	select SYSFS
+ 	help
+ 	  Say Y here if you have an Freescale MC13XXX PMIC on your
+ 	  board and want to use its touchscreen
+diff --git a/drivers/input/touchscreen/mc13xxx_ts.c b/drivers/input/touchscreen/mc13xxx_ts.c
+index 802228e..02f61a7 100644
+--- a/drivers/input/touchscreen/mc13xxx_ts.c
++++ b/drivers/input/touchscreen/mc13xxx_ts.c
+@@ -48,6 +48,7 @@ struct mc13xxx_ts_priv {
+ 	struct delayed_work work;
+ 	struct workqueue_struct *workq;
+ 	unsigned int sample[4];
++	int calibration[7];
+ };
  
--struct mc13xxx {
--	struct spi_device *spidev;
--	struct mutex lock;
--	int irq;
--	int flags;
+ static irqreturn_t mc13xxx_ts_handler(int irq, void *data)
+@@ -76,6 +77,26 @@ static irqreturn_t mc13xxx_ts_handler(int irq, void *data)
+ 			swap(a0, a1);					\
+ 		})
+ 
++static void mc13xxx_report_abs_calibrated(struct mc13xxx_ts_priv *priv,
++			struct input_dev *idev, int x, int y)
++{
++	int *calib = priv->calibration;
++	int xc, yc;
++	if (calib[6]) {
++		xc = (calib[0] * x + calib[1] * y + calib[2]) / calib[6];
++		if (xc < 0)
++			xc = 0;
++		yc = (calib[3] * x + calib[4] * y + calib[5]) / calib[6];
++		if (yc < 0)
++			yc = 0;
++	} else {
++		xc = x;
++		yc = y;
++	}
++	input_report_abs(idev, ABS_X, xc);
++	input_report_abs(idev, ABS_Y, yc);
++}
++
+ static void mc13783_ts_report_sample(struct mc13xxx_ts_priv *priv)
+ {
+ 	struct input_dev *idev = priv->idev;
+@@ -109,9 +130,7 @@ static void mc13783_ts_report_sample(struct mc13xxx_ts_priv *priv)
+ 			 y2 - y0 < sample_tolerance)) {
+ 		/* report the median coordinate and average pressure */
+ 		if (cr0) {
+-			input_report_abs(idev, ABS_X, x1);
+-			input_report_abs(idev, ABS_Y, y1);
 -
--	irq_handler_t irqhandler[MC13XXX_NUM_IRQ];
--	void *irqdata[MC13XXX_NUM_IRQ];
++			mc13xxx_report_abs_calibrated(priv, idev, x1, y1);
+ 			dev_dbg(&idev->dev, "report (%d, %d, %d)\n",
+ 					x1, y1, 0x1000 - cr0);
+ 			queue_delayed_work(priv->workq, &priv->work, HZ / 50);
+@@ -163,9 +182,7 @@ static void mc13892_ts_report_sample(struct mc13xxx_ts_priv *priv)
+ 		if (cr0) {
+ 			x0 = (x0 + x1) / 2;
+ 			y0 = (y0 + y1) / 2;
+-			input_report_abs(idev, ABS_X, x0);
+-			input_report_abs(idev, ABS_Y, y0);
 -
--	int adcflags;
--};
--
- #define MC13XXX_IRQSTAT0	0
- #define MC13XXX_IRQSTAT0_ADCDONEI	(1 << 0)
- #define MC13XXX_IRQSTAT0_ADCBISDONEI	(1 << 1)
-@@ -475,12 +463,6 @@ static irqreturn_t mc13xxx_irq_thread(int irq, void *data)
- 	return IRQ_RETVAL(handled);
++			mc13xxx_report_abs_calibrated(priv, idev, x0, y0);
+ 			dev_dbg(&idev->dev, "report (%d, %d, %d)\n",
+ 					x0, y0, cr0);
+ 			queue_delayed_work(priv->workq, &priv->work, HZ / 50);
+@@ -239,6 +256,53 @@ static void mc13xxx_ts_close(struct input_dev *dev)
+ 	cancel_delayed_work_sync(&priv->work);
  }
  
--enum mc13xxx_id {
--	MC13XXX_ID_MC13783,
--	MC13XXX_ID_MC13892,
--	MC13XXX_ID_INVALID,
--};
--
- static const char *mc13xxx_chipname[] = {
- 	[MC13XXX_ID_MC13783] = "mc13783",
- 	[MC13XXX_ID_MC13892] = "mc13892",
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-index b86ee45..df6654a 100644
---- a/include/linux/mfd/mc13xxx.h
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -11,7 +11,47 @@
- 
- #include <linux/interrupt.h>
- 
--struct mc13xxx;
-+#define MC13XXX_IRQ_ADCDONE	0
-+#define MC13XXX_IRQ_ADCBISDONE	1
-+#define MC13XXX_IRQ_TS		2
-+#define MC13XXX_IRQ_CHGDET	6
-+#define MC13XXX_IRQ_CHGREV	8
-+#define MC13XXX_IRQ_CHGSHORT	9
-+#define MC13XXX_IRQ_CCCV	10
-+#define MC13XXX_IRQ_CHGCURR	11
-+#define MC13XXX_IRQ_BPON	12
-+#define MC13XXX_IRQ_LOBATL	13
-+#define MC13XXX_IRQ_LOBATH	14
-+#define MC13XXX_IRQ_1HZ		24
-+#define MC13XXX_IRQ_TODA	25
-+#define MC13XXX_IRQ_SYSRST	30
-+#define MC13XXX_IRQ_RTCRST	31
-+#define MC13XXX_IRQ_PC		32
-+#define MC13XXX_IRQ_WARM	33
-+#define MC13XXX_IRQ_MEMHLD	34
-+#define MC13XXX_IRQ_THWARNL	36
-+#define MC13XXX_IRQ_THWARNH	37
-+#define MC13XXX_IRQ_CLK		38
++static ssize_t mc13xxx_calibration_show(struct device *d,
++		struct device_attribute *attr, char *buf)
++{
++	struct mc13xxx_ts_priv *priv = dev_get_drvdata(d);
++	int i, p, r;
 +
-+#define MC13XXX_NUM_IRQ		46
++	p = 0;
++	for (i = 0; i < 7; i++) {
++		r = sprintf(&buf[p], i == 6 ? "%d\n" : "%d ",
++				priv->calibration[i]);
++		if (r < 0)
++			return r;
++		p += r;
++	}
++	return p;
++}
 +
-+enum mc13xxx_id {
-+	MC13XXX_ID_MC13783,
-+	MC13XXX_ID_MC13892,
-+	MC13XXX_ID_INVALID,
-+};
++static ssize_t mc13xxx_calibration_store(struct device *d,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct mc13xxx_ts_priv *priv = dev_get_drvdata(d);
++	int i, p, r;
++	int c[7];
 +
-+struct mc13xxx {
-+	struct spi_device *spidev;
-+	struct mutex lock;
-+	int irq;
-+	int flags;
++	p = 0;
++	for (i = 0; i < 7; i++) {
++		if (sscanf(&buf[p], "%d%n", &c[i], &r) != 1)
++			return -EINVAL;
++		p += r;
++	}
++	memcpy(priv->calibration, c, sizeof(priv->calibration));
++	return count;
++}
 +
-+	irq_handler_t irqhandler[MC13XXX_NUM_IRQ];
-+	void *irqdata[MC13XXX_NUM_IRQ];
++static DEVICE_ATTR(calibration, S_IWUSR | S_IRUGO,
++		mc13xxx_calibration_show, mc13xxx_calibration_store);
 +
-+	int adcflags;
-+};
++static int mc13xxx_init_sysfs(struct device *d)
++{
++	return device_create_file(d, &dev_attr_calibration);
++}
++
++static void mc13xxx_free_sysfs(struct device *d)
++{
++	device_remove_file(d, &dev_attr_calibration);
++}
++
+ static int __init mc13xxx_ts_probe(struct platform_device *pdev)
+ {
+ 	struct mc13xxx_ts_priv *priv;
+@@ -286,16 +350,24 @@ static int __init mc13xxx_ts_probe(struct platform_device *pdev)
  
- void mc13xxx_lock(struct mc13xxx *mc13xxx);
- void mc13xxx_unlock(struct mc13xxx *mc13xxx);
-@@ -40,30 +80,6 @@ int mc13xxx_get_flags(struct mc13xxx *mc13xxx);
- int mc13xxx_adc_do_conversion(struct mc13xxx *mc13xxx,
- 		unsigned int mode, unsigned int channel, unsigned int *sample);
+ 	input_set_drvdata(idev, priv);
  
--#define MC13XXX_IRQ_ADCDONE	0
--#define MC13XXX_IRQ_ADCBISDONE	1
--#define MC13XXX_IRQ_TS		2
--#define MC13XXX_IRQ_CHGDET	6
--#define MC13XXX_IRQ_CHGREV	8
--#define MC13XXX_IRQ_CHGSHORT	9
--#define MC13XXX_IRQ_CCCV	10
--#define MC13XXX_IRQ_CHGCURR	11
--#define MC13XXX_IRQ_BPON	12
--#define MC13XXX_IRQ_LOBATL	13
--#define MC13XXX_IRQ_LOBATH	14
--#define MC13XXX_IRQ_1HZ		24
--#define MC13XXX_IRQ_TODA	25
--#define MC13XXX_IRQ_SYSRST	30
--#define MC13XXX_IRQ_RTCRST	31
--#define MC13XXX_IRQ_PC		32
--#define MC13XXX_IRQ_WARM	33
--#define MC13XXX_IRQ_MEMHLD	34
--#define MC13XXX_IRQ_THWARNL	36
--#define MC13XXX_IRQ_THWARNH	37
--#define MC13XXX_IRQ_CLK		38
--
--#define MC13XXX_NUM_IRQ		46
--
- struct regulator_init_data;
++	ret = mc13xxx_init_sysfs(&pdev->dev);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to init sysfs.\n");
++		goto err_destroy_wq;
++	}
++
+ 	ret = input_register_device(priv->idev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev,
+ 			"register input device failed with %d\n", ret);
+-		goto err_destroy_wq;
++		goto err_free_sysfs;
+ 	}
  
- struct mc13xxx_regulator_init_data {
+ 	platform_set_drvdata(pdev, priv);
+ 	return 0;
+ 
++err_free_sysfs:
++	mc13xxx_free_sysfs(&pdev->dev);
+ err_destroy_wq:
+ 	destroy_workqueue(priv->workq);
+ err_free_mem:
+@@ -310,6 +382,7 @@ static int __devexit mc13xxx_ts_remove(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 
++	mc13xxx_free_sysfs(&pdev->dev);
+ 	destroy_workqueue(priv->workq);
+ 	input_unregister_device(priv->idev);
+ 	kfree(priv);
 -- 
 1.7.5.4
 
