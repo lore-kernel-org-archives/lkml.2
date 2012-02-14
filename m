@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2BNPjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 10:39:52 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:51196
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751027Ab2BNPjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 10:39:51 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: perex@perex.cz, tiwai@suse.de
-Cc: alsa-devel@alsa-project.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH v2] [trivial] usx2y: Fix typo in usbusx2yaudio.c and usx2yhwdeppcm.c
-Date: Wed, 15 Feb 2012 00:38:55 +0900
-Message-Id: <1329233935-2699-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1756611Ab2BNPlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 10:41:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751428Ab2BNPlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 10:41:13 -0500
+Date: Tue, 14 Feb 2012 13:38:36 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4 V13] Avoid soft lockup message when KVM is stopped by
+ host
+Message-ID: <20120214153836.GA21106@amt.cnet>
+References: <1328713666-11424-1-git-send-email-emunson@mgebm.net>
+ <20120214152931.GA6881@mgebm.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120214152931.GA6881@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "propably" to "probably" and "activ" to "active"
-in sound/usb/usx2y/usbusx2yaudio.c and usx2yhwdeppcm.c
+On Tue, Feb 14, 2012 at 10:29:31AM -0500, Eric B Munson wrote:
+> On Wed, 08 Feb 2012, Eric B Munson wrote:
+> 
+> > 
+> > When a guest kernel is stopped by the host hypervisor it can look like a soft
+> > lockup to the guest kernel.  This false warning can mask later soft lockup
+> > warnings which may be real.  This patch series adds a method for a host
+> > hypervisor to communicate to a guest kernel that it is being stopped.  The
+> > final patch in the series has the watchdog check this flag when it goes to
+> > issue a soft lockup warning and skip the warning if the guest knows it was
+> > stopped.
+> > 
+> > It was attempted to solve this in Qemu, but the side effects of saving and
+> > restoring the clock and tsc for each vcpu put the wall clock of the guest behind
+> > by the amount of time of the pause.  This forces a guest to have ntp running
+> > in order to keep the wall clock accurate.
+> 
+> Avi,
+> 
+> Is this set fit for merging or is there something else you want changed?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- sound/usb/usx2y/usbusx2yaudio.c |    4 ++--
- sound/usb/usx2y/usx2yhwdeppcm.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Eric,
 
-diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
-index 6ffb371..520ef96 100644
---- a/sound/usb/usx2y/usbusx2yaudio.c
-+++ b/sound/usb/usx2y/usbusx2yaudio.c
-@@ -80,7 +80,7 @@ static int usX2Y_urb_capt_retire(struct snd_usX2Y_substream *subs)
- 		cp = (unsigned char*)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
- 		if (urb->iso_frame_desc[i].status) { /* active? hmm, skip this */
- 			snd_printk(KERN_ERR "active frame status %i. "
--				   "Most propably some hardware problem.\n",
-+				   "Most probably some hardware problem.\n",
- 				   urb->iso_frame_desc[i].status);
- 			return urb->iso_frame_desc[i].status;
- 		}
-@@ -300,7 +300,7 @@ static void usX2Y_error_sequence(struct usX2Ydev *usX2Y,
- {
- 	snd_printk(KERN_ERR
- "Sequence Error!(hcd_frame=%i ep=%i%s;wait=%i,frame=%i).\n"
--"Most propably some urb of usb-frame %i is still missing.\n"
-+"Most probably some urb of usb-frame %i is still missing.\n"
- "Cause could be too long delays in usb-hcd interrupt handling.\n",
- 		   usb_get_current_frame_number(usX2Y->dev),
- 		   subs->endpoint, usb_pipein(urb->pipe) ? "in" : "out",
-diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
-index a51340f..8e40b6e 100644
---- a/sound/usb/usx2y/usx2yhwdeppcm.c
-+++ b/sound/usb/usx2y/usx2yhwdeppcm.c
-@@ -74,7 +74,7 @@ static int usX2Y_usbpcm_urb_capt_retire(struct snd_usX2Y_substream *subs)
- 	}
- 	for (i = 0; i < nr_of_packs(); i++) {
- 		if (urb->iso_frame_desc[i].status) { /* active? hmm, skip this */
--			snd_printk(KERN_ERR "activ frame status %i. Most propably some hardware problem.\n", urb->iso_frame_desc[i].status);
-+			snd_printk(KERN_ERR "active frame status %i. Most probably some hardware problem.\n", urb->iso_frame_desc[i].status);
- 			return urb->iso_frame_desc[i].status;
- 		}
- 		lens += urb->iso_frame_desc[i].actual_length / usX2Y->stride;
--- 
-1.7.6.5
+On Message-ID: <20120210160536.GA23363@amt.cnet>, i asked:
+
+How is the stub getting included for other architectures again?
 
