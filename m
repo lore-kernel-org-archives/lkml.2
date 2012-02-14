@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab2BNByK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:54:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45740 "EHLO
+	id S1758894Ab2BNByH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:54:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45738 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758410Ab2BNBxW (ORCPT
+	with ESMTP id S1758505Ab2BNBxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Feb 2012 20:53:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/16] perf tools: Remove unused functions from debugfs object
-Date: Mon, 13 Feb 2012 23:52:50 -0200
-Message-Id: <1329184375-27911-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 13/16] perf tools: Add bitmap_or function into bitmap object
+Date: Mon, 13 Feb 2012 23:52:52 -0200
+Message-Id: <1329184375-27911-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.123.g65da0
 In-Reply-To: <1329184375-27911-1-git-send-email-acme@infradead.org>
 References: <1329184375-27911-1-git-send-email-acme@infradead.org>
@@ -28,212 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Following debugfs object functions are not referenced
-within the code:
+Adding implementation os bitmap_or function to the bitmap object. It is
+stolen from the kernel lib/bitmap.o object.
 
-  int debugfs_valid_entry(const char *path);
-  int debugfs_umount(void);
-  int debugfs_write(const char *entry, const char *value);
-  int debugfs_read(const char *entry, char *buffer, size_t size);
-  void debugfs_force_cleanup(void);
-  int debugfs_make_path(const char *element, char *buffer, int size);
-
-Removing them.
+It is used in upcomming patches.
 
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1327674868-10486-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1327674868-10486-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/debugfs.c |  141 ---------------------------------------------
- tools/perf/util/debugfs.h |    6 --
- 2 files changed, 0 insertions(+), 147 deletions(-)
+ tools/perf/util/bitmap.c               |   10 ++++++++++
+ tools/perf/util/include/linux/bitmap.h |   11 +++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-index ffc35e7..dd8b193 100644
---- a/tools/perf/util/debugfs.c
-+++ b/tools/perf/util/debugfs.c
-@@ -15,32 +15,6 @@ static const char *debugfs_known_mountpoints[] = {
- 	0,
- };
+diff --git a/tools/perf/util/bitmap.c b/tools/perf/util/bitmap.c
+index 5e230ac..0a1adc1 100644
+--- a/tools/perf/util/bitmap.c
++++ b/tools/perf/util/bitmap.c
+@@ -19,3 +19,13 @@ int __bitmap_weight(const unsigned long *bitmap, int bits)
  
--/* use this to force a umount */
--void debugfs_force_cleanup(void)
--{
--	debugfs_find_mountpoint();
--	debugfs_premounted = 0;
--	debugfs_umount();
--}
--
--/* construct a full path to a debugfs element */
--int debugfs_make_path(const char *element, char *buffer, int size)
--{
--	int len;
--
--	if (strlen(debugfs_mountpoint) == 0) {
--		buffer[0] = '\0';
--		return -1;
--	}
--
--	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
--	if (len >= size)
--		return len+1;
--
--	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
--	return 0;
--}
--
- static int debugfs_found;
+ 	return w;
+ }
++
++void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
++		 const unsigned long *bitmap2, int bits)
++{
++	int k;
++	int nr = BITS_TO_LONGS(bits);
++
++	for (k = 0; k < nr; k++)
++		dst[k] = bitmap1[k] | bitmap2[k];
++}
+diff --git a/tools/perf/util/include/linux/bitmap.h b/tools/perf/util/include/linux/bitmap.h
+index eda4416..bb162e4 100644
+--- a/tools/perf/util/include/linux/bitmap.h
++++ b/tools/perf/util/include/linux/bitmap.h
+@@ -5,6 +5,8 @@
+ #include <linux/bitops.h>
  
- /* find the path to the mounted debugfs */
-@@ -97,17 +71,6 @@ int debugfs_valid_mountpoint(const char *debugfs)
- 	return 0;
+ int __bitmap_weight(const unsigned long *bitmap, int bits);
++void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
++		 const unsigned long *bitmap2, int bits);
+ 
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+@@ -32,4 +34,13 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
+ 	return __bitmap_weight(src, nbits);
  }
  
--
--int debugfs_valid_entry(const char *path)
--{
--	struct stat st;
--
--	if (stat(path, &st))
--		return -errno;
--
--	return 0;
--}
--
- static void debugfs_set_tracing_events_path(const char *mountpoint)
- {
- 	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
-@@ -149,107 +112,3 @@ void debugfs_set_path(const char *mountpoint)
- 	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
- 	debugfs_set_tracing_events_path(mountpoint);
- }
--
--/* umount the debugfs */
--
--int debugfs_umount(void)
--{
--	char umountcmd[128];
--	int ret;
--
--	/* if it was already mounted, leave it */
--	if (debugfs_premounted)
--		return 0;
--
--	/* make sure it's a valid mount point */
--	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
--	if (ret)
--		return ret;
--
--	snprintf(umountcmd, sizeof(umountcmd),
--		 "/bin/umount %s", debugfs_mountpoint);
--	return system(umountcmd);
--}
--
--int debugfs_write(const char *entry, const char *value)
--{
--	char path[PATH_MAX + 1];
--	int ret, count;
--	int fd;
--
--	/* construct the path */
--	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
--
--	/* verify that it exists */
--	ret = debugfs_valid_entry(path);
--	if (ret)
--		return ret;
--
--	/* get how many chars we're going to write */
--	count = strlen(value);
--
--	/* open the debugfs entry */
--	fd = open(path, O_RDWR);
--	if (fd < 0)
--		return -errno;
--
--	while (count > 0) {
--		/* write it */
--		ret = write(fd, value, count);
--		if (ret <= 0) {
--			if (ret == EAGAIN)
--				continue;
--			close(fd);
--			return -errno;
--		}
--		count -= ret;
--	}
--
--	/* close it */
--	close(fd);
--
--	/* return success */
--	return 0;
--}
--
--/*
-- * read a debugfs entry
-- * returns the number of chars read or a negative errno
-- */
--int debugfs_read(const char *entry, char *buffer, size_t size)
--{
--	char path[PATH_MAX + 1];
--	int ret;
--	int fd;
--
--	/* construct the path */
--	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
--
--	/* verify that it exists */
--	ret = debugfs_valid_entry(path);
--	if (ret)
--		return ret;
--
--	/* open the debugfs entry */
--	fd = open(path, O_RDONLY);
--	if (fd < 0)
--		return -errno;
--
--	do {
--		/* read it */
--		ret = read(fd, buffer, size);
--		if (ret == 0) {
--			close(fd);
--			return EOF;
--		}
--	} while (ret < 0 && errno == EAGAIN);
--
--	/* close it */
--	close(fd);
--
--	/* make *sure* there's a null character at the end */
--	buffer[ret] = '\0';
--
--	/* return the number of chars read */
--	return ret;
--}
-diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
-index 4a878f7..68f3e87 100644
---- a/tools/perf/util/debugfs.h
-+++ b/tools/perf/util/debugfs.h
-@@ -3,14 +3,8 @@
- 
- const char *debugfs_find_mountpoint(void);
- int debugfs_valid_mountpoint(const char *debugfs);
--int debugfs_valid_entry(const char *path);
- char *debugfs_mount(const char *mountpoint);
--int debugfs_umount(void);
- void debugfs_set_path(const char *mountpoint);
--int debugfs_write(const char *entry, const char *value);
--int debugfs_read(const char *entry, char *buffer, size_t size);
--void debugfs_force_cleanup(void);
--int debugfs_make_path(const char *element, char *buffer, int size);
- 
- extern char debugfs_mountpoint[];
- extern char tracing_events_path[];
++static inline void bitmap_or(unsigned long *dst, const unsigned long *src1,
++			     const unsigned long *src2, int nbits)
++{
++	if (small_const_nbits(nbits))
++		*dst = *src1 | *src2;
++	else
++		__bitmap_or(dst, src1, src2, nbits);
++}
++
+ #endif /* _PERF_BITOPS_H */
 -- 
 1.7.9.123.g65da0
 
