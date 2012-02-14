@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab2BNDkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:40:13 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34864 "EHLO
+	id S1759274Ab2BNDle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:41:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58422 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab2BNDkI (ORCPT
+	with ESMTP id S1759196Ab2BNDkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 22:40:08 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=S5vDBso3x9EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=cGU8ElX3DAHLmvqY75wA:9 a=-KroAmiC8UV5hKibA-AA:7 a=QEXdDO2ut3YA:10 a=lSinr4eg3GwA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2uqyl7nPndGxnG6HsHsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 13 Feb 2012 22:40:12 -0500
+X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=hpxIdF7lBOIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=D19gQVrFAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=OLi75TEXwbsgIvBTUQgA:9 a=QEXdDO2ut3YA:10 a=Xzri-ZHCAUwA:10 a=jeBq3FmKZ4MA:10 a=MTc4dA8PcwocppFJePcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120214034005.679102672@goodmis.org>
+Message-Id: <20120214034009.136954085@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Mon, 13 Feb 2012 22:39:10 -0500
+Date: Mon, 13 Feb 2012 22:39:18 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/9] ftrace: Change filter/notrace set functions to return exit code
+        Thomas Meyer <thomas@m3y3r.de>
+Subject: [PATCH 9/9] tracing/trivial: Use kcalloc instead of kzalloc to allocate array
 References: <20120214033909.904564921@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Change-filter-notrace-set-functions-to-return.patch
+Content-Disposition: inline; filename=0009-tracing-trivial-Use-kcalloc-instead-of-kzalloc-to-al.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,106 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Thomas Meyer <thomas@m3y3r.de>
 
-Currently the ftrace_set_filter and ftrace_set_notrace functions
-do not return any return code. So there's no way for ftrace_ops
-user to tell wether the filter was correctly applied.
+The advantage of kcalloc is, that will prevent integer overflows which could
+result from the multiplication of number of elements and size and it is also
+a bit nicer to read.
 
-The set_ftrace_filter interface returns error in case the filter
-did not match:
+The semantic patch that makes this change is available
+in https://lkml.org/lkml/2011/11/25/107
 
-  # echo krava > set_ftrace_filter
-  bash: echo: write error: Invalid argument
+Link: http://lkml.kernel.org/r/1322600880.1534.347.camel@localhost.localdom=
+ain
 
-Changing both ftrace_set_filter and ftrace_set_notrace functions
-to return zero if the filter was applied correctly or -E* values
-in case of error.
-
-Link: http://lkml.kernel.org/r/1325495060-6402-2-git-send-email-jolsa@redha=
-t.com
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    4 ++--
- kernel/trace/ftrace.c  |   15 +++++++++------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ kernel/trace/ftrace.c              |    2 +-
+ kernel/trace/trace_events_filter.c |    7 +++----
+ kernel/trace/trace_syscalls.c      |    4 ++--
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 028e26f..f33fb3b 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -178,9 +178,9 @@ struct dyn_ftrace {
- };
-=20
- int ftrace_force_update(void);
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset);
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset);
- void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
- void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 683d559..e2e0597 100644
+index e2e0597..d1499e9 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -3146,8 +3146,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
-ar *buf, int len,
- 	mutex_lock(&ftrace_regex_lock);
- 	if (reset)
- 		ftrace_filter_reset(hash);
--	if (buf)
--		ftrace_match_records(hash, buf, len);
-+	if (buf && !ftrace_match_records(hash, buf, len)) {
-+		ret =3D -EINVAL;
-+		goto out_regex_unlock;
-+	}
+@@ -1129,7 +1129,7 @@ static struct ftrace_hash *alloc_ftrace_hash(int size=
+_bits)
+ 		return NULL;
 =20
- 	mutex_lock(&ftrace_lock);
- 	ret =3D ftrace_hash_move(ops, enable, orig_hash, hash);
-@@ -3157,6 +3159,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned cha=
-r *buf, int len,
+ 	size =3D 1 << size_bits;
+-	hash->buckets =3D kzalloc(sizeof(*hash->buckets) * size, GFP_KERNEL);
++	hash->buckets =3D kcalloc(size, sizeof(*hash->buckets), GFP_KERNEL);
 =20
- 	mutex_unlock(&ftrace_lock);
+ 	if (!hash->buckets) {
+ 		kfree(hash);
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
+_filter.c
+index 24aee71..76afaee 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -685,7 +685,7 @@ find_event_field(struct ftrace_event_call *call, char *=
+name)
 =20
-+ out_regex_unlock:
- 	mutex_unlock(&ftrace_regex_lock);
-=20
- 	free_ftrace_hash(hash);
-@@ -3173,10 +3176,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned c=
-har *buf, int len,
-  * Filters denote which functions should be enabled when tracing is enable=
-d.
-  * If @buf is NULL and reset is set, all functions will be enabled for tra=
-cing.
-  */
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset)
+ static int __alloc_pred_stack(struct pred_stack *stack, int n_preds)
  {
--	ftrace_set_regex(ops, buf, len, reset, 1);
-+	return ftrace_set_regex(ops, buf, len, reset, 1);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_filter);
+-	stack->preds =3D kzalloc(sizeof(*stack->preds)*(n_preds + 1), GFP_KERNEL);
++	stack->preds =3D kcalloc(n_preds + 1, sizeof(*stack->preds), GFP_KERNEL);
+ 	if (!stack->preds)
+ 		return -ENOMEM;
+ 	stack->index =3D n_preds;
+@@ -826,8 +826,7 @@ static int __alloc_preds(struct event_filter *filter, i=
+nt n_preds)
+ 	if (filter->preds)
+ 		__free_preds(filter);
 =20
-@@ -3191,10 +3194,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
-  * is enabled. If @buf is NULL and reset is set, all functions will be ena=
-bled
-  * for tracing.
-  */
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset)
- {
--	ftrace_set_regex(ops, buf, len, reset, 0);
-+	return ftrace_set_regex(ops, buf, len, reset, 0);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_notrace);
- /**
+-	filter->preds =3D
+-		kzalloc(sizeof(*filter->preds) * n_preds, GFP_KERNEL);
++	filter->preds =3D kcalloc(n_preds, sizeof(*filter->preds), GFP_KERNEL);
+=20
+ 	if (!filter->preds)
+ 		return -ENOMEM;
+@@ -1486,7 +1485,7 @@ static int fold_pred(struct filter_pred *preds, struc=
+t filter_pred *root)
+ 	children =3D count_leafs(preds, &preds[root->left]);
+ 	children +=3D count_leafs(preds, &preds[root->right]);
+=20
+-	root->ops =3D kzalloc(sizeof(*root->ops) * children, GFP_KERNEL);
++	root->ops =3D kcalloc(children, sizeof(*root->ops), GFP_KERNEL);
+ 	if (!root->ops)
+ 		return -ENOMEM;
+=20
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index cb65454..4350015 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -468,8 +468,8 @@ int __init init_ftrace_syscalls(void)
+ 	unsigned long addr;
+ 	int i;
+=20
+-	syscalls_metadata =3D kzalloc(sizeof(*syscalls_metadata) *
+-					NR_syscalls, GFP_KERNEL);
++	syscalls_metadata =3D kcalloc(NR_syscalls, sizeof(*syscalls_metadata),
++				    GFP_KERNEL);
+ 	if (!syscalls_metadata) {
+ 		WARN_ON(1);
+ 		return -ENOMEM;
 --=20
 1.7.8.3
 
@@ -141,19 +126,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPOdeVAAoJEIy3vGnGbaoAR80QAJp5VjrDvK6gO6R/R9T2LRao
-mzHJWqwrqqtIvBcX/djL2O/fxBv5O7L/1rwe3QiET9Vr0Gyhjtge5nDlGYoR1Hjh
-gWhiZsuEzG2AbZ5kKp4vn7KLxya6gg96ryQ4GbnS9SlX62k3zGoySL06oZl0HQdb
-m5+F9QXnd9SRVxHg9ifFika1pDZDmty3bBE5e9YKfd1UVwhF6cGpp6zayxNini2T
-jODACMqx+jUKFd67mCX5VqYWsDKlEUE2iw3fWx1m9c1qbOsbD+zNPCfjY4eqZ4lD
-SZfYWqblW+Owq4SqgLKgzPdzteMZPZac7LcP7KKJC7lF2LtaAbgLR6bsl0NHDOh7
-7dzq7lxAY3J/oqjQSbl38SvrS8CVJvsb3UHVvzuDCifNTXfUeVxkgS9AUPiwDEuK
-bs2IrcNF8u0Eb/B9jnvN9JdD8snNbo4y8Q04jXdLRZM4MYzDIC3d9mb9CqSODEmA
-FAjlyCKY+6aN4QNRAH3x2OVwW1Yt2OmQ6+qVT6/bu1ABEyv7o9q0AQz4xR8COdxC
-4aFvQfRQC1IFOvMFBRLaJpWXW8+RwyqqsiaVFmo5BkI6reH8MQvsUTmRdRSjKYKA
-NdWoR+tUgHhabGykmABYOHNciFc8d/ZwEfXZ8/gVmiGJuA73gcqCAVvNkMSB/DGZ
-fmPXfmGhug8rh+CLAe1J
-=d830
+iQIcBAABAgAGBQJPOdeZAAoJEIy3vGnGbaoAWT8QALbPLU3VNAFvJYc2vV0rG4E5
+IYlmOBSYTPpNSwH/EnzW+tQu8MRNbd5brOUObKyWBmpeISE33yG46RE14eraXdfo
+/xooW8RoNOoBSFe9adb7Pnbmg8HIlILDRF0fcJmh95m655ZTv0X1X2x+u5heGmL7
+Ly0krG3JkHlNcXlEK/hMPCGW/7Qxn5OZqX2tgNUg12szh6zuGwMMKFyixafOfeKj
+QtEvYpKVjVHem/5wVWZXONCu/ptl4o8rqj3Vc77AM2U1yfwBvylJp6Pw5cv3N20y
+z+rZVYucDErQ7aLouUSAAjtcfvsYUnkQrpqeNZJ+/aIu/ggENPiuGVSO7bk+Iq5C
+AYH0/fB9KZz8in706G1L9Cmz8UmXPr49jYG1t8GwVe6m79HjY8pmIF0BhFHvflRs
+ecK8nDO9yjWVgObz+mL8QQNCf08bm51zDiFFE9bo+ePih3kh0SbWr70JXQUIAykC
+m1FvLua1dpv45RlQbqwIZgz9BCp3uFUVFVJMW+W2nP2iAMSGCbujzgv3SCAhnb6+
+y52KH3/u8iXrRfaFgdlYjWqK5GZdMMg1HNxbPC3gEjgeP4MrbgjoCZRlCYl5yQok
+YmXWMzATqf1SoYuSNCGCG7htu3nkebezRP4S9MdxEJs7DKu+lM4Z/T+5OyiezWV4
+BS+szn8UPT44fLIiCbJ+
+=9Tk6
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
