@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab2BNBxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:53:22 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45717 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab2BNBxT (ORCPT
+	id S1758965Ab2BNByQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:54:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42589 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab2BNBxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 20:53:19 -0500
+	Mon, 13 Feb 2012 20:53:21 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 15/16] perf tools: Factor out feature op to process header sections
-Date: Mon, 13 Feb 2012 23:52:54 -0200
-Message-Id: <1329184375-27911-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/16] perf record: No build id option fails
+Date: Mon, 13 Feb 2012 23:52:41 -0200
+Message-Id: <1329184375-27911-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.123.g65da0
 In-Reply-To: <1329184375-27911-1-git-send-email-acme@infradead.org>
 References: <1329184375-27911-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: David Ahern <dsahern@gmail.com>
 
-There is individual code for each feature to process header sections.
+A recent refactoring of perf-record introduced the following:
 
-Adding a function pointer .process to struct feature_ops for keeping the
-implementation in separate functions. Code to process header sections is
-now a generic function.
+perf record -a -B
+Couldn't generating buildids. Use --no-buildid to profile anyway.
+sleep: Terminated
 
+I believe the triple negative was meant to be only a double negative.
+:-) While I'm there, fixed the grammar on the error message.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1328884916-5901-2-git-send-email-robert.richter@amd.com
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1328567272-13190-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |   44 +++++++++++++++++++++++++++++---------------
- 1 files changed, 29 insertions(+), 15 deletions(-)
+ tools/perf/builtin-record.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5bb2d75..9f867d9 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1466,25 +1466,48 @@ out:
- 	return err;
- }
- 
-+static int process_trace_info(struct perf_file_section *section __unused,
-+			      struct perf_header *ph __unused,
-+			      int feat __unused, int fd)
-+{
-+	trace_report(fd, false);
-+	return 0;
-+}
-+
-+static int process_build_id(struct perf_file_section *section,
-+			    struct perf_header *ph,
-+			    int feat __unused, int fd)
-+{
-+	if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
-+		pr_debug("Failed to read buildids, continuing...\n");
-+	return 0;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-+	int (*process)(struct perf_file_section *section,
-+		       struct perf_header *h, int feat, int fd);
- 	const char *name;
- 	bool full_only;
- };
- 
- #define FEAT_OPA(n, func) \
- 	[n] = { .name = #n, .write = write_##func, .print = print_##func }
-+#define FEAT_OPP(n, func) \
-+	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-+		.process = process_##func }
- #define FEAT_OPF(n, func) \
--	[n] = { .name = #n, .write = write_##func, .print = print_##func, .full_only = true }
-+	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
-+		.full_only = true }
- 
- /* feature_ops not implemented: */
- #define print_trace_info		NULL
- #define print_build_id			NULL
- 
- static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
--	FEAT_OPA(HEADER_TRACE_INFO,	trace_info),
--	FEAT_OPA(HEADER_BUILD_ID,	build_id),
-+	FEAT_OPP(HEADER_TRACE_INFO,	trace_info),
-+	FEAT_OPP(HEADER_BUILD_ID,	build_id),
- 	FEAT_OPA(HEADER_HOSTNAME,	hostname),
- 	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
- 	FEAT_OPA(HEADER_VERSION,	version),
-@@ -1900,19 +1923,10 @@ static int perf_file_section__process(struct perf_file_section *section,
- 		return 0;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f8d9a54..d6d1c6c 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -494,9 +494,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 			return err;
  	}
  
--	switch (feat) {
--	case HEADER_TRACE_INFO:
--		trace_report(fd, false);
--		break;
--	case HEADER_BUILD_ID:
--		if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
--			pr_debug("Failed to read buildids, continuing...\n");
--		break;
--	default:
--		break;
--	}
-+	if (!feat_ops[feat].process)
-+		return 0;
- 
--	return 0;
-+	return feat_ops[feat].process(section, ph, feat, fd);
- }
- 
- static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+-	if (!!rec->no_buildid
++	if (!rec->no_buildid
+ 	    && !perf_header__has_feat(&session->header, HEADER_BUILD_ID)) {
+-		pr_err("Couldn't generating buildids. "
++		pr_err("Couldn't generate buildids. "
+ 		       "Use --no-buildid to profile anyway.\n");
+ 		return -1;
+ 	}
 -- 
 1.7.9.123.g65da0
 
