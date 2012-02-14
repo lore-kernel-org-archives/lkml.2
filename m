@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760293Ab2BNMxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 07:53:55 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43268 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab2BNMxw (ORCPT
+	id S1760331Ab2BNM71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 07:59:27 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51101 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab2BNM70 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 07:53:52 -0500
+	Tue, 14 Feb 2012 07:59:26 -0500
 MIME-Version: 1.0
-Date: Tue, 14 Feb 2012 20:53:51 +0800
-Message-ID: <CAJd=RBATj97k5UESDFx82bzt0K4OquhBoDkfjPBPacdmdfJE8g@mail.gmail.com>
-Subject: [PATCH] mm: hugetlb: defer freeing pages when gathering surplus pages
+In-Reply-To: <CADZ9YHhGWd9DToiQDbvv4=BvN4DZLJMuvyLNUHjWqErGE3nXzQ@mail.gmail.com>
+References: <CADZ9YHhOfVm7qNj6oznmRCUuyyA4BQfmsd-M7FzrmWB9SxMgzg@mail.gmail.com>
+	<CAJd=RBD+x8SHkMPqxRGwmm90wvj2b_2bAdexxo6w39_ngGgHdA@mail.gmail.com>
+	<CADZ9YHhGWd9DToiQDbvv4=BvN4DZLJMuvyLNUHjWqErGE3nXzQ@mail.gmail.com>
+Date: Tue, 14 Feb 2012 20:59:25 +0800
+Message-ID: <CAJd=RBAAe212McM=26UDAt8_zrZgJFQewFjRyby2Za5m_Z+FDg@mail.gmail.com>
+Subject: Re: [ANNOUNCEMENT] The Barbershop Load Distribution algorithm for
+ Linux kernel scheduler.
 From: Hillf Danton <dhillf@gmail.com>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When gathering surplus pages, the number of needed pages is recomputed after
-reacquiring hugetlb lock to catch changes in resv_huge_pages and
-free_huge_pages. Plus it is recomputed with the number of newly allocated
-pages involved.
+On Tue, Feb 14, 2012 at 1:22 AM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+>>> +
+>>> +       if (rq->pos != 2) {     /* if rq isn't the last one */
+>>> +               struct rq *last;
+>>> +               write_lock_irqsave(&disp_list_lock, flag);
+>>
+>>                    if (rq->pos != 2)
+>>                             goto out;
+>>
+> At this point, we're checking whether this task is activating on a rq
+> which is the last (hightest loaded) rq or not. If rq->pos != 2, it
+> stands we're not activating a task at the highest loaded rq, so a
+> check will be made with the highest loaded rq to make sure - this rq's
+> loaded didn't exceed the highest loaded rq. If rq's load
+> exceed - list will be removed from it's place and will be placed as a
+> last entry of rq_head and thus it becomes the highest loaded rq. So,
+> what you proposed here isn't what was intended.
+>
 
-Thus freeing pages could be deferred a bit to see if the final page request is
-satisfied, though pages could be allocated less than needed.
+I want to say
+                    if (rq->pos == 2)
+                             goto out;
+sorry for the bad:(
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+> Hiff, did you ran the patch? Would like to know.
 
---- a/mm/hugetlb.c	Tue Feb 14 20:10:46 2012
-+++ b/mm/hugetlb.c	Tue Feb 14 20:19:42 2012
-@@ -852,6 +852,7 @@ static int gather_surplus_pages(struct h
- 	struct page *page, *tmp;
- 	int ret, i;
- 	int needed, allocated;
-+	bool alloc_ok = true;
+Try to run soon.
 
- 	needed = (h->resv_huge_pages + delta) - h->free_huge_pages;
- 	if (needed <= 0) {
-@@ -867,17 +868,13 @@ retry:
- 	spin_unlock(&hugetlb_lock);
- 	for (i = 0; i < needed; i++) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
--		if (!page)
--			/*
--			 * We were not able to allocate enough pages to
--			 * satisfy the entire reservation so we free what
--			 * we've allocated so far.
--			 */
--			goto free;
--
-+		if (!page) {
-+			alloc_ok = false;
-+			break;
-+		}
- 		list_add(&page->lru, &surplus_list);
- 	}
--	allocated += needed;
-+	allocated += i;
-
- 	/*
- 	 * After retaking hugetlb_lock, we need to recalculate 'needed'
-@@ -886,9 +883,16 @@ retry:
- 	spin_lock(&hugetlb_lock);
- 	needed = (h->resv_huge_pages + delta) -
- 			(h->free_huge_pages + allocated);
--	if (needed > 0)
--		goto retry;
--
-+	if (needed > 0) {
-+		if (alloc_ok)
-+			goto retry;
-+		/*
-+		 * We were not able to allocate enough pages to
-+		 * satisfy the entire reservation so we free what
-+		 * we've allocated so far.
-+		 */
-+		goto free;
-+	}
- 	/*
- 	 * The surplus_list now contains _at_least_ the number of extra pages
- 	 * needed to accommodate the reservation.  Add the appropriate number
-@@ -914,10 +918,10 @@ retry:
- 		VM_BUG_ON(page_count(page));
- 		enqueue_huge_page(h, page);
- 	}
-+free:
- 	spin_unlock(&hugetlb_lock);
-
- 	/* Free unnecessary surplus pages to the buddy allocator */
--free:
- 	if (!list_empty(&surplus_list)) {
- 		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
- 			list_del(&page->lru);
---
+Best regards
+Hillf
