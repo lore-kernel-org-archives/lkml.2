@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab2BNFwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:52:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36181 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab2BNFwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:52:45 -0500
-Message-ID: <4F39F6A7.6000107@gmail.com>
-Date: Mon, 13 Feb 2012 22:52:39 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+	id S1754298Ab2BNFyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:54:25 -0500
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:56200 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab2BNFyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 00:54:21 -0500
+Date: Tue, 14 Feb 2012 07:54:18 +0200 (EET)
+From: mroos@linux.ee
+To: David Miller <davem@davemloft.net>
+cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+In-Reply-To: <20120213.195835.1573147101037168145.davem@davemloft.net>
+Message-ID: <alpine.SOC.1.00.1202140750130.1759@math.ut.ee>
+References: <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <20120213.195835.1573147101037168145.davem@davemloft.net>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Namhyung Kim <namhyung@gmail.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roberto Agostino Vitillo <ravitillo@lbl.gov>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-References: <1329184375-27911-1-git-send-email-acme@infradead.org> <4F39CBE0.6050806@gmail.com> <4F39D00D.2060206@gmail.com> <4F39ECDB.5090609@lge.com> <4F39EFBB.2010301@gmail.com> <4F39F5BC.6000605@lge.com>
-In-Reply-To: <4F39F5BC.6000605@lge.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/13/12 10:48 PM, Namhyung Kim wrote:
-> Hi,
->
-> 2012-02-14 2:23 PM, David Ahern wrote:
->> On 2/13/12 10:10 PM, Namhyung Kim wrote:
->>>>
->>>
->>> It happened because I used old kernel version that isn't aware of the
->>> exclude_guest bit. So the check on attr->__reserved_1 in
->>> core.c::perf_copy_attr() failed and then ended up seeing EINVAL at
->>> perf_evsel__open().
->>
->> comes back to 1aed2671738785e8f5aea663a6fda91aa7ef59b5 again. See
->>
->> https://lkml.org/lkml/2012/2/8/234
->>
->
-> Thanks for the pointer, then I'll wait until the guys figure out what
-> the correct fix is :)
->
-> Thanks,
-> Namhyung
+> FWIW I've been running current kernels on my niagara boxes without
+> incident for several weeks.
 
-Resetting that default was it. :-)
+It runs for me on Ultra 1, Ultra 5 IDE, Ultra 10 SCSI and Blade 100. 
+Fails on E3500, V100 and Netra X1 so it's probably dependent on 
+something in the device tree.
 
-Does reverting the entire patch fix your problem?
+I will try bisecting and the suggested printk's but it takes time since 
+I will be away from computers most of today.
 
-David
+-- 
+Meelis Roos (mroos@linux.ee)
