@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab2BNW7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:59:32 -0500
-Received: from mail.betterlinux.com ([199.58.199.50]:51000 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2BNW72 (ORCPT
+	id S932663Ab2BNXAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 18:00:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53413 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab2BNXAo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:59:28 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 2CA4782A77
-Date: Tue, 14 Feb 2012 23:59:22 +0100
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
-Message-ID: <20120214225922.GA12394@thinkpad>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
- <20120214133337.9de7835b.akpm@linux-foundation.org>
+	Tue, 14 Feb 2012 18:00:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214133337.9de7835b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F3AD3B6.8070409@linux.vnet.ibm.com>
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com>
+	<1328055439-9441-1-git-send-email-venki@google.com>
+	<20120201140125.c656df41.akpm@linux-foundation.org>
+	<87d39xj955.fsf@rustcorp.com.au>
+	<CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com>
+	<4F3971A1.5010305@linux.vnet.ibm.com>
+	<4F39763D.3070609@linux.vnet.ibm.com>
+	<CA+8MBbLR+rcJqe2z9tAt7Oav4wqgZA3k8Te6zcXNOs+zv2wAaA@mail.gmail.com>
+	<87wr7pbwbz.fsf@rustcorp.com.au>
+	<4F3AD3B6.8070409@linux.vnet.ibm.com>
+Date: Tue, 14 Feb 2012 15:00:43 -0800
+X-Google-Sender-Auth: RC2QC_OmvTYjQpsP5z4q0t6qB_M
+Message-ID: <CA+8MBbLZhacoWj03bLciA-r+wrfyW03C3QrXgWuBrM3axBdGAg@mail.gmail.com>
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus -v5
+From: Tony Luck <tony.luck@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 01:33:37PM -0800, Andrew Morton wrote:
-> On Sun, 12 Feb 2012 01:21:35 +0100
-> Andrea Righi <andrea@betterlinux.com> wrote:
-> 
-> > The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
-> > drop-behind policy where applications can mark certain intervals of a file as
-> > FADV_NOREUSE before accessing the data.
-> 
-> I think you and John need to talk to each other, please.  The amount of
-> duplication here is extraordinary.
+On Tue, Feb 14, 2012 at 1:35 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> Right. And we should also ensure that nobody messes directly with
+> cpu_possible_map as well. I have written up a patch for ia64 (see below).
+> Sorry, I haven't even compile tested it - I neither have the toolchain nor the
+> hardware. I hope it works!
 
-Yes, definitely. I'm currently reviewing and testing the John's patch
-set. I was even considering to apply my patch set on top of the John's
-patch, or at least propose my tree-based approach to manage the list of
-the POSIX_FADV_VOLATILE ranges.
+Thanks for doing this - compiles and seems to work.
 
-> 
-> Both patchsets add fields to the address_space (and hence inode), which
-> is significant - we should convince ourselves that we're getting really
-> good returns from a feature which does this.
-> 
-> 
-> 
-> Regarding the use of fadvise(): I suppose it's a reasonable thing to do
-> in the long term - if the feature works well, popular data streaming
-> applications will eventually switch over.  But I do think we should
-> explore interfaces which don't require modification of userspace source
-> code.  Because there will always be unconverted applications, and the
-> feature becomes available immediately.
-> 
-> One such interface would be to toss the offending application into a
-> container which has a modified drop-behind policy.  And here we need to
-> drag out the crystal ball: what *is* the best way of tuning application
-> pagecache behaviour?  Will we gravitate towards containerization, or
-> will we gravitate towards finer-tuned fadvise/sync_page_range/etc
-> behaviour?  Thus far it has been the latter, and I don't think that has
-> been a great success.
-> 
-> Finally, are the problems which prompted these patchsets already
-> solved?  What happens if you take the offending streaming application
-> and toss it into a 16MB memcg?  That *should* avoid perturbing other
-> things running on that machine.
+Tested-by: Tony Luck <tony.luck@intel.com>
 
-Moving the streaming application into a 16MB memcg can be dangerous in
-some cases... the application might start to do "bad" things, like
-swapping (if the memcg can swap) or just fail due to OOMs.
+Can we get this added to the series - so it gets applied along with
+Venki's patch.
 
-> 
-> And yes, a container-based approach is pretty crude, and one can
-> envision applications which only want modified reclaim policy for one
-> particualr file.  But I suspect an application-wide reclaim policy
-> solves 90% of the problems.
+>  0 files changed, 0 insertions(+), 0 deletions(-)
 
-I really like the container-based approach. But for this we need a
-better file cache control in the memory cgroup; now we have the
-accounting of file pages, but there's no way to limit them.
+I think your patch generation script needs some attention - I see
+ arch/ia64/kernel/setup.c   |    2 +-
+ arch/ia64/kernel/smp.c     |    2 +-
+ arch/ia64/kernel/smpboot.c |   12 ++++++------
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-Thanks for your comments, Andrew.
+> @@ -609,7 +609,7 @@ smp_prepare_cpus (unsigned int max_cpus)
+>        /*
+>         * We have the boot CPU online for sure.
+>         */
+> -       cpu_set(0, cpu_online_map);
+> +       set_cpu_online(0, true);
+>        cpu_set(0, cpu_callin_map);
+>
+>        local_cpu_data->loops_per_jiffy = loops_per_jiffy;
 
--Andrea
+Generic code has already marked cpu 0 online ... so this one could
+just be dropped (and the preceding comment too). Though it does no
+harm to set it again.
+
+-Tony
