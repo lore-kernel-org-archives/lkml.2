@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab2BNRuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 12:50:46 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19907 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab2BNRuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 12:50:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 14 Feb 2012 09:50:44 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] pinctrl: Make "hog" mapping table entries work
-Date: Tue, 14 Feb 2012 10:50:41 -0700
-Message-Id: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	id S1754135Ab2BNRwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 12:52:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863Ab2BNRwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 12:52:08 -0500
+Date: Tue, 14 Feb 2012 18:45:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] signal: give SEND_SIG_FORCED more power to beat
+	SIGNAL_UNKILLABLE
+Message-ID: <20120214174528.GA23562@redhat.com>
+References: <20120210200004.GA20890@redhat.com> <20120210200021.GA20898@redhat.com> <20120210212532.GL19392@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120210212532.GL19392@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 77a5988 "pinctrl: changes hog mechanism to be self-referential"
-modified the way "hog" entries were represented in the mapping table.
-However, the new representation failed some error checks in
-pinctrl_hog_map(). Remove the now-bogus error-check, and fix the code
-to solve the issue the error-check used to avoid.
+Hi Tejun,
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/pinctrl/core.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+On 02/10, Tejun Heo wrote:
+>
+> > --- a/kernel/signal.c
+> > +++ b/kernel/signal.c
+> > @@ -1059,7 +1059,8 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+> >
+> >  	assert_spin_locked(&t->sighand->siglock);
+> >
+> > -	if (!prepare_signal(sig, t, from_ancestor_ns))
+> > +	if (!prepare_signal(sig, t,
+> > +			from_ancestor_ns || (info == SEND_SIG_FORCED)))
+>
+> How about the following indentation instead?  :)
+>
+> 	if (!prepare_signal(sig, t,
+> 	    from_ancestor_ns || (info == SEND_SIG_FORCED)))
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index c5f76ad..8a91eb2 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -725,23 +725,11 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
- 	struct pinctrl *p;
- 	int ret;
- 
--	if (map->dev_name) {
--		/*
--		 * TODO: the day we have device tree support, we can
--		 * traverse the device tree and hog to specific device nodes
--		 * without any problems, so then we can hog pinmuxes for
--		 * all devices that just want a static pin mux at this point.
--		 */
--		dev_err(pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
--				map->name);
--		return -EINVAL;
--	}
--
- 	hog = kzalloc(sizeof(struct pinctrl_hog), GFP_KERNEL);
- 	if (!hog)
- 		return -ENOMEM;
- 
--	p = pinctrl_get(NULL, map->name);
-+	p = pinctrl_get(pctldev->dev, map->name);
- 	if (IS_ERR(p)) {
- 		kfree(hog);
- 		dev_err(pctldev->dev,
--- 
-1.7.0.4
+Well, I am not sure this looks better, although I do not really mind.
+But since this patch is already in -mm, I think I won't send v2 ;)
+
+> Please feel free to add Reviewed-by for 2-4.
+
+Thanks!
+
+Oleg.
 
