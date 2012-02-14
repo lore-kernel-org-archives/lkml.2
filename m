@@ -1,58 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab2BNQgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 11:36:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40376 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab2BNQgK convert rfc822-to-8bit (ORCPT
+	id S932344Ab2BNQgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 11:36:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55478 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757576Ab2BNQgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 11:36:10 -0500
-Message-ID: <1329237367.2293.17.camel@twins>
-Subject: [PATCH] sysfs: Remove CPP abuse
-From: Peter Zijlstra <peterz@infradead.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Feb 2012 17:36:07 +0100
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 14 Feb 2012 11:36:17 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/2] perf tools: Handle kernels that don't support attr.exclude_{guest,host}
+Date: Tue, 14 Feb 2012 14:35:55 -0200
+Message-Id: <1329237356-907-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.123.g65da0
+In-Reply-To: <1329237356-907-1-git-send-email-acme@infradead.org>
+References: <1329237356-907-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's absolutely no reason to abuse CPP to shorten a common sub
-expression, C has variables for this.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
+Just fall back to resetting those fields, if set, warning the user that
+that feature is not available.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+If guest samples appear they will just be discarded because no struct
+machine will be found and thus the event will be accounted as not
+handled and dropped, see 0c09571.
+
+Reported-by: Namhyung Kim <namhyung@gmail.com>
+Tested-by: Joerg Roedel <joerg.roedel@amd.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-vuwxig36mzprl5n7nzvnxxsh@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- fs/sysfs/dir.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c |   29 ++++++++++++++++++++---------
+ tools/perf/builtin-top.c    |   23 +++++++++++++++++------
+ tools/perf/perf.h           |    1 +
+ tools/perf/util/top.h       |    1 +
+ 4 files changed, 39 insertions(+), 15 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 7fdf6a7..80fb6e6 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -576,8 +576,11 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 	}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 08ed24b..d6c10e8 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -205,6 +205,9 @@ static void perf_record__open(struct perf_record *rec)
  
- 	while (p) {
-+		struct sysfs_dirent *node;
- 		int c;
--#define node	rb_entry(p, struct sysfs_dirent, name_node)
-+	       
-+		node = rb_entry(p, struct sysfs_dirent, name_node);
+ 		if (opts->group && pos != first)
+ 			group_fd = first->fd;
++fallback_missing_features:
++		if (opts->exclude_guest_missing)
++			attr->exclude_guest = attr->exclude_host = 0;
+ retry_sample_id:
+ 		attr->sample_id_all = opts->sample_id_all_avail ? 1 : 0;
+ try_again:
+@@ -218,15 +221,23 @@ try_again:
+ 			} else if (err ==  ENODEV && opts->cpu_list) {
+ 				die("No such device - did you specify"
+ 					" an out-of-range profile CPU?\n");
+-			} else if (err == EINVAL && opts->sample_id_all_avail) {
+-				/*
+-				 * Old kernel, no attr->sample_id_type_all field
+-				 */
+-				opts->sample_id_all_avail = false;
+-				if (!opts->sample_time && !opts->raw_samples && !time_needed)
+-					attr->sample_type &= ~PERF_SAMPLE_TIME;
+-
+-				goto retry_sample_id;
++			} else if (err == EINVAL) {
++				if (!opts->exclude_guest_missing &&
++				    (attr->exclude_guest || attr->exclude_host)) {
++					pr_debug("Old kernel, cannot exclude "
++						 "guest or host samples.\n");
++					opts->exclude_guest_missing = true;
++					goto fallback_missing_features;
++				} else if (opts->sample_id_all_avail) {
++					/*
++					 * Old kernel, no attr->sample_id_type_all field
++					 */
++					opts->sample_id_all_avail = false;
++					if (!opts->sample_time && !opts->raw_samples && !time_needed)
++						attr->sample_type &= ~PERF_SAMPLE_TIME;
 +
- 		c = strcmp(name, node->s_name);
- 		if (c < 0) {
- 			p = node->name_node.rb_left;
-@@ -587,7 +590,6 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 			found = node;
- 			p = node->name_node.rb_left;
- 		}
--#undef node
- 	}
++					goto retry_sample_id;
++				}
+ 			}
  
- 	if (found) {
+ 			/*
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 5a88c0d..02e11ff 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -872,6 +872,9 @@ static void perf_top__start_counters(struct perf_top *top)
+ 		attr->mmap = 1;
+ 		attr->comm = 1;
+ 		attr->inherit = top->inherit;
++fallback_missing_features:
++		if (top->exclude_guest_missing)
++			attr->exclude_guest = attr->exclude_host = 0;
+ retry_sample_id:
+ 		attr->sample_id_all = top->sample_id_all_avail ? 1 : 0;
+ try_again:
+@@ -883,12 +886,20 @@ try_again:
+ 			if (err == EPERM || err == EACCES) {
+ 				ui__error_paranoid();
+ 				goto out_err;
+-			} else if (err == EINVAL && top->sample_id_all_avail) {
+-				/*
+-				 * Old kernel, no attr->sample_id_type_all field
+-				 */
+-				top->sample_id_all_avail = false;
+-				goto retry_sample_id;
++			} else if (err == EINVAL) {
++				if (!top->exclude_guest_missing &&
++				    (attr->exclude_guest || attr->exclude_host)) {
++					pr_debug("Old kernel, cannot exclude "
++						 "guest or host samples.\n");
++					top->exclude_guest_missing = true;
++					goto fallback_missing_features;
++				} else if (top->sample_id_all_avail) {
++					/*
++					 * Old kernel, no attr->sample_id_type_all field
++					 */
++					top->sample_id_all_avail = false;
++					goto retry_sample_id;
++				}
+ 			}
+ 			/*
+ 			 * If it's cycles then fall back to hrtimer
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 03a0456..8b9c436 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -199,6 +199,7 @@ struct perf_record_opts {
+ 	bool	     sample_address;
+ 	bool	     sample_time;
+ 	bool	     sample_id_all_avail;
++	bool	     exclude_guest_missing;
+ 	bool	     system_wide;
+ 	bool	     period;
+ 	unsigned int freq;
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index 49eb848..7dea891 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -35,6 +35,7 @@ struct perf_top {
+ 	bool		   inherit;
+ 	bool		   group;
+ 	bool		   sample_id_all_avail;
++	bool		   exclude_guest_missing;
+ 	bool		   dump_symtab;
+ 	const char	   *cpu_list;
+ 	struct hist_entry  *sym_filter_entry;
+-- 
+1.7.9.123.g65da0
 
