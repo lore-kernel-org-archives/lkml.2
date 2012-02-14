@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362Ab2BNDkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:40:31 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58422 "EHLO
+	id S1759332Ab2BNDk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:40:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63772 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759022Ab2BNDkM (ORCPT
+	with ESMTP id S1755062Ab2BNDkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 22:40:12 -0500
-X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=4YTyipVRR88A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=stkexhm8AAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=B3p0L5jOXJwcO024zckA:9 a=dkwQb9cDP1Ew9sMgWFoA:7 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=hGVi4cUYLJSzEAsVQGcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 13 Feb 2012 22:40:11 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=Gihb1u4KezEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=UPm3pfgAAAAA:8 a=meVymXHHAAAA:8 a=iu57WdsQ5xXjiqTCFUwA:9 a=ZqOzGO9ICRuq6nBLeRsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=WQh05Z7aEuoJH3FBF5kA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120214034008.763470231@goodmis.org>
+Message-Id: <20120214034006.895838443@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Mon, 13 Feb 2012 22:39:17 -0500
+Date: Mon, 13 Feb 2012 22:39:13 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 8/9] printk/tracing: Add console output tracing
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 4/9] x86/tracing: Denote the power and cpuidle tracepoints as _rcuidle()
 References: <20120214033909.904564921@goodmis.org>
-Content-Disposition: inline; filename=0008-printk-tracing-Add-console-output-tracing.patch
+Content-Disposition: inline; filename=0004-x86-tracing-Denote-the-power-and-cpuidle-tracepoints.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,101 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Add a printk.console trace point to record any printk
-messages into the trace, regardless of the current
-console loglevel. This can help correlate (existing)
-printk debugging with other tracing.
+The power and cpuidle tracepoints are called within a rcu_idle_exit()
+section, and must be denoted with the _rcuidle() version of the tracepoint.
 
-Link: http://lkml.kernel.org/r/1322161388.5366.54.camel@jlt3.sipsolutions.n=
-et
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/events/printk.h |   41 +++++++++++++++++++++++++++++++++++++=
-++++
- kernel/printk.c               |    5 +++++
- 2 files changed, 46 insertions(+), 0 deletions(-)
- create mode 100644 include/trace/events/printk.h
+ arch/x86/kernel/process.c    |   24 ++++++++++++------------
+ include/trace/events/power.h |    2 ++
+ 2 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/include/trace/events/printk.h b/include/trace/events/printk.h
-new file mode 100644
-index 0000000..94ec79c
---- /dev/null
-+++ b/include/trace/events/printk.h
-@@ -0,0 +1,41 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM printk
-+
-+#if !defined(_TRACE_PRINTK_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_PRINTK_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT_CONDITION(console,
-+	TP_PROTO(const char *log_buf, unsigned start, unsigned end,
-+		 unsigned log_buf_len),
-+
-+	TP_ARGS(log_buf, start, end, log_buf_len),
-+
-+	TP_CONDITION(start !=3D end),
-+
-+	TP_STRUCT__entry(
-+		__dynamic_array(char, msg, end - start + 1)
-+	),
-+
-+	TP_fast_assign(
-+		if ((start & (log_buf_len - 1)) > (end & (log_buf_len - 1))) {
-+			memcpy(__get_dynamic_array(msg),
-+			       log_buf + (start & (log_buf_len - 1)),
-+			       log_buf_len - (start & (log_buf_len - 1)));
-+			memcpy((char *)__get_dynamic_array(msg) +
-+			       log_buf_len - (start & (log_buf_len - 1)),
-+			       log_buf, end & (log_buf_len - 1));
-+		} else
-+			memcpy(__get_dynamic_array(msg),
-+			       log_buf + (start & (log_buf_len - 1)),
-+			       end - start);
-+		((char *)__get_dynamic_array(msg))[end - start] =3D 0;
-+	),
-+
-+	TP_printk("%s", __get_str(msg))
-+);
-+#endif /* _TRACE_PRINTK_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 13c0a11..cb8a6bd 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -44,6 +44,9 @@
-=20
- #include <asm/uaccess.h>
-=20
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/printk.h>
-+
- /*
-  * Architectures can override it:
-  */
-@@ -542,6 +545,8 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel sett=
-ing, to"
- static void _call_console_drivers(unsigned start,
- 				unsigned end, int msg_log_level)
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 15763af..44eefde 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -377,8 +377,8 @@ static inline int hlt_use_halt(void)
+ void default_idle(void)
  {
-+	trace_console(&LOG_BUF(0), start, end, log_buf_len);
-+
- 	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
- 			console_drivers && start !=3D end) {
- 		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
+ 	if (hlt_use_halt()) {
+-		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		trace_cpu_idle(1, smp_processor_id());
++		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
++		trace_cpu_idle_rcuidle(1, smp_processor_id());
+ 		current_thread_info()->status &=3D ~TS_POLLING;
+ 		/*
+ 		 * TS_POLLING-cleared state must be visible before we
+@@ -391,8 +391,8 @@ void default_idle(void)
+ 		else
+ 			local_irq_enable();
+ 		current_thread_info()->status |=3D TS_POLLING;
+-		trace_power_end(smp_processor_id());
+-		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
++		trace_power_end_rcuidle(smp_processor_id());
++		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ 	} else {
+ 		local_irq_enable();
+ 		/* loop is done by the caller */
+@@ -450,8 +450,8 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
+ static void mwait_idle(void)
+ {
+ 	if (!need_resched()) {
+-		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		trace_cpu_idle(1, smp_processor_id());
++		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
++		trace_cpu_idle_rcuidle(1, smp_processor_id());
+ 		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+ 			clflush((void *)&current_thread_info()->flags);
+=20
+@@ -461,8 +461,8 @@ static void mwait_idle(void)
+ 			__sti_mwait(0, 0);
+ 		else
+ 			local_irq_enable();
+-		trace_power_end(smp_processor_id());
+-		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
++		trace_power_end_rcuidle(smp_processor_id());
++		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ 	} else
+ 		local_irq_enable();
+ }
+@@ -474,13 +474,13 @@ static void mwait_idle(void)
+  */
+ static void poll_idle(void)
+ {
+-	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
+-	trace_cpu_idle(0, smp_processor_id());
++	trace_power_start_rcuidle(POWER_CSTATE, 0, smp_processor_id());
++	trace_cpu_idle_rcuidle(0, smp_processor_id());
+ 	local_irq_enable();
+ 	while (!need_resched())
+ 		cpu_relax();
+-	trace_power_end(smp_processor_id());
+-	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
++	trace_power_end_rcuidle(smp_processor_id());
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ }
+=20
+ /*
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index 1bcc2a8..14b3894 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -151,6 +151,8 @@ enum {
+    events get removed */
+ static inline void trace_power_start(u64 type, u64 state, u64 cpuid) {};
+ static inline void trace_power_end(u64 cpuid) {};
++static inline void trace_power_start_rcuidle(u64 type, u64 state, u64 cpui=
+d) {};
++static inline void trace_power_end_rcuidle(u64 cpuid) {};
+ static inline void trace_power_frequency(u64 type, u64 state, u64 cpuid) {=
+};
+ #endif /* _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED */
+=20
 --=20
 1.7.8.3
 
@@ -140,19 +136,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPOdeYAAoJEIy3vGnGbaoAAxMP/jANtFCOC5/8Cz8AqD91T850
-1eLsb8fVsmJxEj/EOOrPEX/SM7Wc3AsHRkgrkqICjX3dXRY7qxqPZ4wvWvKL4aAs
-nFaJqb7vjAtKOqDzcqIrzaYpU4bjDcbDf7SnnYgC5ABQxTMB87e8Hxa0VE/ZOHOV
-/XiX8J+5Hmv7kiReYZmDFtA/l/tiJciScLY2eX+3h+/rRN8GTBzQhMWjIvKXVtAq
-dPgos/sqZJ3W3M1twibtAzM0RMvKoMhRKJc3NO1o5RSJszALCtUI6uNlvTlBnldh
-LjQfAoGue1ccyqc3uqLNsa3poU2/bFjNqaF8fq2vZ57Mb5TKM+fvm6XdQZ676iM5
-D3XhKyMzYUtEoTn7fAK7XOsN2xzNA5FWFDG07wKSV5CqrcJar0SNvJsMt+OvrhqX
-d3JH9tYDHdcjEZGH3O8BlEqJXK1n7whzEYsv6XT4OaSpn560n67RGsNSGzglGLTR
-R2lUI44tSk0NAPaTWlcZ2Py3W9DTnjyZCwBG1ssRdhgW1ekACYttVXPtms2qS8dp
-Upl5qvFj8vVxD/0Q36ruo8gCZl+xfL9wp2SP8Tb4r3y8UexTP6Hp7vct0FUtYMIU
-Erz/TB6BZpc8GNGMiVZt18DAQdNJHHC7Z/IIPjvSAX+J4aTqB5O5IvF9PnUa3usn
-0uFvdbkl95uCZRu0newQ
-=hySG
+iQIcBAABAgAGBQJPOdeWAAoJEIy3vGnGbaoA87cP/2qZ7ZKbVrdFb0uC6gNJ9TOn
+08Si/ogmUw8fYjWQbrEiUwWEQHteCH7tY9OEVewP8PiA8AQh9rsg6lWC3P/uBeDi
+wrtX61/z7Bqf+4whAByxG7mvRlspLjv6QP6RTR0KmQP9BVLyh9i6ItMTmBZ90z50
+B+OooK7HOTvuqFAv47ry9eIt7OmIRZYWkFCt/Mlffh953r5lOK2WN/N3rCBxahrF
+PXDAQtfuVEiWm5R4wDs+IK8YKDU+R61KGRg7EqPeOVVlnk9xyYndq0+fmmHJZ63/
+CnmhiGZ1COKXrwPIBWcsH07dMRq8akg7vy4qVyhOZMPD029sVMz/DWe6wKcPP07G
+2e3RTf0sigTVC3GEzsSuRns8eiQDPJbO+aZU8San/zyV4SyGlTSnradlsSkhqj5Q
+gD1sE94Vhscbog8YB8SZqIb82tbH2SvO+ELglED4cV07MIKzYAB1AbBmkZwmkx+p
+PK32fzToduZWA2J5F5wKSIodhncunm+yzSR+qLxFBUi/bOn3VGmQ6Kb714l1wBbo
+NTwi7m/maJIw7yjMhsUKcOFTOXoPYEJMYr9X5nr5KLVxws2bpvC8QXNnJgmX4n7G
+LOYzyQDZhP2bKm0WaGku15IS/PVl9KpzPtE6HwDIW7IvIGluLm/cxIN8wTmVytdu
+ngqZhP6HZ5dQkONYz1VI
+=bxS7
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
