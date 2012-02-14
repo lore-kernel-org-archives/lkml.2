@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760540Ab2BNO0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:26:13 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:41376 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756274Ab2BNO0L (ORCPT
+	id S1760666Ab2BNOf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:35:27 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:36584 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756596Ab2BNOfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:26:11 -0500
-Message-ID: <4F3A6ECD.7030504@linux.vnet.ibm.com>
-Date: Tue, 14 Feb 2012 08:25:17 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Tue, 14 Feb 2012 09:35:24 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Danny Kukawka <dkukawka@suse.de>, Jiri Kosina <trivial@kernel.org>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] spi-topcliff-pch: fix -Wuninitialized warning
+Date: Tue, 14 Feb 2012 15:35:03 +0100
+Message-Id: <1329230103-26465-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-To: Marc Dietrich <marvin24@gmx.de>
-CC: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: fix powerpc linux-next break on zsmalloc
-References: <1329144469-8575-1-git-send-email-sjenning@linux.vnet.ibm.com> <4F3A43EC.2030209@gmx.de> <4F3A480C.9090407@gmx.de>
-In-Reply-To: <4F3A480C.9090407@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021414-5518-0000-0000-000002383125
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230124;0c3cfea1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2012 05:39 AM, Marc Dietrich wrote:
-> Am 14.02.2012 12:22, schrieb Marc Dietrich:
->> Am 13.02.2012 15:47, schrieb Seth Jennings:
->>> linux/vmalloc.h added to zsmalloc-main.c to resolve implicit
->>> declaration errors.
->>>
->>> X86 dependency added to zsmalloc and dependent drivers zcache and zram.
->>>
->>> This X86 only requirement is not ideal.  Working to find portable
->>> functions for __flush_tlb_one and set_pte.
->>
->> sorry, zcache/zram works fine one ARM here. Why not depend on !POWERPC?
-> 
-> ups, sorry again, I tested an older version only. flush_tlb_one and 
-> set_pte is only used with the new allocator as it seems.
+Fix for:
+drivers/spi/spi-topcliff-pch.c: In function ‘pch_spi_handler_sub’:
+drivers/spi/spi-topcliff-pch.c:325:17: warning: ‘bpw_len’ may be
+  used uninitialized in this function [-Wuninitialized]
+drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘rx_index’ may be
+  used uninitialized in this function [-Wuninitialized]
+drivers/spi/spi-topcliff-pch.c:325:42: warning: ‘tx_index’ may be
+  used uninitialized in this function [-Wuninitialized]
 
-Hey Marc,
+Move usage of tx_index, rx_index and bpw_len into the same
+block as where they are set to prevent uninitialized usage.
 
-I haven't forgotten about you.  I know that zcache (and therefore) zsmalloc
-must work on ARM to be viable since there are known ARM users.  When we have
-a solution, I'll be contacting you to test it on ARM :)
+v2: instead of init variables with 0 move the whole block
 
---
-Seth
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/spi/spi-topcliff-pch.c |   33 +++++++++++++++----------------
+ 1 files changed, 17 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 10182eb..1107469 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -318,22 +318,23 @@ static void pch_spi_handler_sub(struct pch_spi_data *data, u32 reg_spsr_val,
+ 		data->tx_index = tx_index;
+ 		data->rx_index = rx_index;
+ 
+-	}
+-
+-	/* if transfer complete interrupt */
+-	if (reg_spsr_val & SPSR_FI_BIT) {
+-		if ((tx_index == bpw_len) && (rx_index == tx_index)) {
+-			/* disable interrupts */
+-			pch_spi_setclr_reg(data->master, PCH_SPCR, 0, PCH_ALL);
+-
+-			/* transfer is completed;
+-			   inform pch_spi_process_messages */
+-			data->transfer_complete = true;
+-			data->transfer_active = false;
+-			wake_up(&data->wait);
+-		} else {
+-			dev_err(&data->master->dev,
+-				"%s : Transfer is not completed", __func__);
++		/* if transfer complete interrupt */
++		if (reg_spsr_val & SPSR_FI_BIT) {
++			if ((tx_index == bpw_len) && (rx_index == tx_index)) {
++				/* disable interrupts */
++				pch_spi_setclr_reg(data->master, PCH_SPCR, 0,
++						   PCH_ALL);
++
++				/* transfer is completed;
++				   inform pch_spi_process_messages */
++				data->transfer_complete = true;
++				data->transfer_active = false;
++				wake_up(&data->wait);
++			} else {
++				dev_err(&data->master->dev,
++					"%s : Transfer is not completed",
++					__func__);
++			}
+ 		}
+ 	}
+ }
+-- 
+1.7.7.3
 
