@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2BNG1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 01:27:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43578 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab2BNG1n (ORCPT
+	id S1753629Ab2BNHAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:00:11 -0500
+Received: from mailout.ifm.liu.se ([130.236.160.13]:35184 "EHLO
+	mailout.ifm.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab2BNHAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 01:27:43 -0500
-Message-ID: <4F39FEB7.2030605@gmail.com>
-Date: Tue, 14 Feb 2012 14:27:03 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Tue, 14 Feb 2012 02:00:08 -0500
+X-Greylist: delayed 2507 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Feb 2012 02:00:07 EST
 MIME-Version: 1.0
-To: chetan loke <loke.chetan@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Making gmail 2 step verification work with git send-email
-References: <CAAsGZS5VFgFFx8KCBzqVYhxMFLNqyVMj8hmFwauMYBdS_KjFXw@mail.gmail.com>
-In-Reply-To: <CAAsGZS5VFgFFx8KCBzqVYhxMFLNqyVMj8hmFwauMYBdS_KjFXw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
+Date: Mon, 13 Feb 2012 22:16:34 -0800
+From: ickki09 <ickki09@ifm.liu.se>
+To: undisclosed-recipients:;
+Subject: Reply Me:
+Reply-To: <2595632374@qq.com>
+Mail-Reply-To: <2595632374@qq.com>
+Message-ID: <d20069691682b4b9bafd14834c95e77c@ifm.liu.se>
+User-Agent: RoundCube Webmail/0.5.2
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (mailgw.ifm.liu.se [130.236.160.8]); Tue, 14 Feb 2012 07:17:44 +0100 (CET)
+X-IFMLiUSE-MailScanner-Information: Please contact postmaster@ifm.liu.se more information
+X-IFMLiUSE-MailScanner-ID: q1E6Ha7E006757
+X-IFMLiUSE-MailScanner: Found to be clean
+X-IFMLiUSE-MailScanner-SpamScore: sss
+X-IFMLiUSE-MailScanner-From: ickki09@ifm.liu.se
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2012 11:26 AM, chetan loke wrote:
-> Hello,
->
-> Ok, I know this is not a kernel question. So apologies...
-> While sending a patch to linux-scsi yesterday I had to disable the
-> 2-step gmail verification just to send the patch and then enabled it
-> again.
->
-> How do we make git work in the 2 step gmail mode?
-
-Create a new password, and use --smtp-pass[=<password>].
+I am Mr. XIAO Gang from Bank of China. I have a secured business 
+proposal worth $45,275,000.00. Cont Mr. XIAO Gang E-mail: 
+2595632374@qq.com for more information
