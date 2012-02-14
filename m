@@ -1,127 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab2BNFLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:11:06 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58359 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2BNFLB (ORCPT
+	id S1751487Ab2BNFRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:17:04 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:16680 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab2BNFQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:11:01 -0500
-X-AuditID: 9c930197-b7cdbae000001518-22-4f39ece15f10
-Message-ID: <4F39ECDB.5090609@lge.com>
-Date: Tue, 14 Feb 2012 14:10:51 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Lin Ming <ming.m.lin@intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roberto Agostino Vitillo <ravitillo@lbl.gov>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-References: <1329184375-27911-1-git-send-email-acme@infradead.org> <4F39CBE0.6050806@gmail.com> <4F39D00D.2060206@gmail.com>
-In-Reply-To: <4F39D00D.2060206@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Feb 2012 00:16:59 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-25-4f39ee495715
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean Pihet <j-pihet@ti.com>, markgross <markgross@thegnar.org>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Subject: [RFC PATCH] PM / QoS: add pm_qos_update_request_timeout API
+Date: Tue, 14 Feb 2012 14:16:54 +0900
+Message-id: <1329196614-6218-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-02-14 12:07 PM, Namhyung Kim wrote:
-> 2012-02-14 오전 11:50, Namhyung Kim 쓴 글:
->> Hello,
->>
->> 2012-02-14 10:52 AM, Arnaldo Carvalho de Melo wrote:
->>> The following changes since commit c98fdeaa92731308ed80386261fa2589addefa47:
->>>
->>> x86/sched/perf/AMD: Set sched_clock_stable (2012-02-07 13:12:08 +0100)
->>>
->>> are available in the git repository at:
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf-core-for-mingo
->>>
->>> for you to fetch changes up to 7e1ccd3804281fc0755eb726b654469c40a96d89:
->>>
->>> perf tools: cleanup initialization of attr->size (2012-02-13 23:35:04 -0200)
->>>
->>> ----------------------------------------------------------------
->>> perf/core fixes and improvements.
->>>
->>> Signed-off-by: Arnaldo Carvalho de Melo<acme@redhat.com>
->>>
->>
->> I've got a following error during a simple test:
->>
->> $ ./perf record -- sleep 1
->>
->> Error: sys_perf_event_open() syscall returned with 22 (Invalid argument).
->> /bin/dmesg may provide additional information.
->>
->> Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
->>
->> sleep: Terminated
->>
->>
->> Any thoughts?
->>
->> Thanks,
->> Namhyung
->>
->
-> git bisect told me:
->
-> c4a7dca92bbb9881a5d678720f1d0c2153499749 is the first bad commit
-> commit c4a7dca92bbb9881a5d678720f1d0c2153499749
-> Author: Joerg Roedel<joerg.roedel@amd.com>
-> Date:   Fri Feb 10 18:05:05 2012 +0100
->
->      perf tools: Change perf_guest default back to false
->
->      Setting perf_guest to true by default makes no sense because the perf
->      subcommands can not setup guest symbol information and thus not process
->      and guest samples. The only exception is perf-kvm which changes the
->      perf_guest value on its own.  So change the default for perf_guest back
->      to false.
->
->      Cc: David Ahern<dsahern@gmail.com>
->      Cc: Ingo Molnar<mingo@elte.hu>
->      Cc: Jason Wang<jasowang@redhat.com>
->      Cc: Paul Mackerras<paulus@samba.org>
->      Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
->      Link: http://lkml.kernel.org/r/1328893505-4115-3-git-send-email-joerg.roedel@amd.com
->      Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
->      Signed-off-by: Arnaldo Carvalho de Melo<acme@redhat.com>
->
-> :040000 040000 64d65944c9081dfd9ace65dbc19fca655cbdc708 4f0e86ab85314ba68f2295ae1e599f3bb5ab9484 M      tools
->
->
-> Thanks,
-> Namhyung
->
+The new API, pm_qos_update_request_timeout() is to provide a timeout
+with pm_qos_update_request.
 
-It happened because I used old kernel version that isn't aware of the 
-exclude_guest bit. So the check on attr->__reserved_1 in 
-core.c::perf_copy_attr() failed and then ended up seeing EINVAL at 
-perf_evsel__open().
+For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+QoS request on req with value 100 will be active for 1000 jiffies.
+After 1000 jiffies, the QoS request thru req is rolled back to the
+request status when pm_qos_update_request_timeout() was called. If there
+were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+new request with value x will override as this is another request on the
+same req handle. A new request on the same req handle will always
+override the previous request whether it is the conventional request or
+it is the new timeout request.
 
-So I think it should be handled in the same way of handling sample_id_all bit 
-in perf record and top if we want to set perf_guest to false by default. I'll 
-send patches for them soon.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ include/linux/pm_qos.h |    5 ++++
+ kernel/power/qos.c     |   54 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 58 insertions(+), 1 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+index f8ccb7b..1c29f52 100644
+--- a/include/linux/pm_qos.h
++++ b/include/linux/pm_qos.h
+@@ -8,6 +8,7 @@
+ #include <linux/notifier.h>
+ #include <linux/miscdevice.h>
+ #include <linux/device.h>
++#include <linux/workqueue.h>
+ 
+ #define PM_QOS_RESERVED 0
+ #define PM_QOS_CPU_DMA_LATENCY 1
+@@ -29,6 +30,8 @@
+ struct pm_qos_request {
+ 	struct plist_node node;
+ 	int pm_qos_class;
++	s32 value; /* the back-up value for pm_qos_update_request_timeout */
++	struct delayed_work work; /* for pm_qos_update_request_timeout */
+ };
+ 
+ struct dev_pm_qos_request {
+@@ -74,6 +77,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+ 			s32 value);
+ void pm_qos_update_request(struct pm_qos_request *req,
+ 			   s32 new_value);
++void pm_qos_update_request_timeout(struct pm_qos_request *req,
++				   s32 new_value, unsigned long timeout);
+ void pm_qos_remove_request(struct pm_qos_request *req);
+ 
+ int pm_qos_request(int pm_qos_class);
+diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+index b15e0b7..acfa433 100644
+--- a/kernel/power/qos.c
++++ b/kernel/power/qos.c
+@@ -259,6 +259,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
+ EXPORT_SYMBOL_GPL(pm_qos_request_active);
+ 
+ /**
++ * pm_qos_timeout - the timeout handler of pm_qos_update_request_timeout
++ * @work: work struct for the delayed work (timeout)
++ *
++ * This cancels the timeout request and rolls the request value back.
++ */
++static void pm_qos_timeout(struct work_struct *work)
++{
++	struct pm_qos_request *req = container_of(to_delayed_work(work),
++						  struct pm_qos_request,
++						  work);
++
++	pm_qos_update_request(req, req->value);
++}
++
++/**
+  * pm_qos_add_request - inserts new qos request into the list
+  * @req: pointer to a preallocated handle
+  * @pm_qos_class: identifies which list of qos request to use
+@@ -282,6 +297,8 @@ void pm_qos_add_request(struct pm_qos_request *req,
+ 		return;
+ 	}
+ 	req->pm_qos_class = pm_qos_class;
++	req->value = value;
++	INIT_DELAYED_WORK(&req->work, pm_qos_timeout);
+ 	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
+ 			     &req->node, PM_QOS_ADD_REQ, value);
+ }
+@@ -308,14 +325,46 @@ void pm_qos_update_request(struct pm_qos_request *req,
+ 		return;
+ 	}
+ 
+-	if (new_value != req->node.prio)
++	if (delayed_work_pending(&req->work))
++		cancel_delayed_work_sync(&req->work);
++
++	req->value = new_value;
++	if (new_value != req->node.prio) {
+ 		pm_qos_update_target(
+ 			pm_qos_array[req->pm_qos_class]->constraints,
+ 			&req->node, PM_QOS_UPDATE_REQ, new_value);
++	}
+ }
+ EXPORT_SYMBOL_GPL(pm_qos_update_request);
+ 
+ /**
++ * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
++ * @req : handle to list element holding a pm_qos request to use
++ * @new_value: defines the temporal qos request
++ * @timeout: the effective duration of this qos request in jiffies
++ *
++ * After timeout, this qos request is cancelled automatically.
++ */
++void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
++				   unsigned long timeout)
++{
++	if (!req)
++		return;
++	if (WARN(!pm_qos_request_active(req),
++		 "pm_qos_update_request_timeout() called for unknown object."))
++		return;
++
++	if (new_value != req->node.prio) {
++		pm_qos_update_target(
++			pm_qos_array[req->pm_qos_class]->constraints,
++			&req->node, PM_QOS_UPDATE_REQ, new_value);
++		if (delayed_work_pending(&req->work))
++			cancel_delayed_work_sync(&req->work);
++		schedule_delayed_work(&req->work, timeout);
++	}
++}
++
++/**
+  * pm_qos_remove_request - modifies an existing qos request
+  * @req: handle to request list element
+  *
+@@ -334,6 +383,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+ 		return;
+ 	}
+ 
++	if (delayed_work_pending(&req->work))
++		cancel_delayed_work_sync(&req->work);
++
+ 	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+ 			     &req->node, PM_QOS_REMOVE_REQ,
+ 			     PM_QOS_DEFAULT_VALUE);
+-- 
+1.7.4.1
+
