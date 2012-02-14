@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab2BNSRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 13:17:33 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:36862 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab2BNSRa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 13:17:30 -0500
-Message-ID: <4F3AA537.4050700@hp.com>
-Date: Tue, 14 Feb 2012 10:17:27 -0800
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+	id S1759320Ab2BNSRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 13:17:39 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57824 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759141Ab2BNSRh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 13:17:37 -0500
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Divy Le Ray <divy@chelsio.com>, David Woodhouse <dwmw2@infradead.org>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Steve Wise <swise@opengridcomputing.com>,
-        nhorman@tuxdriver.com
-Subject: Re: [patch net-next] cxgb3: update firmware version
-References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com> <1329165817.2092.62.camel@shinybook.infradead.org> <4F398303.1030606@chelsio.com> <1329184754.3048.33.camel@deadeye> <4F39E7C9.20901@chelsio.com> <1329196116.3048.66.camel@deadeye> <4F39F75D.6030107@chelsio.com>
-In-Reply-To: <4F39F75D.6030107@chelsio.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
+References: <4DE6264A.2040901@gmail.com>
+	<CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
+	<CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
+	<201112211325.53648.roucaries.bastien@gmail.com>
+	<CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
+	<CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
+Date: Tue, 14 Feb 2012 19:17:35 +0100
+Message-ID: <CAE2SPAYN1fmQG05GhOVhwBSBqWyXfVxZw2iEbC=YXoegTpkKCA@mail.gmail.com>
+Subject: Re: Kerneloops.org defunct?
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Arjan van de Ven <arjan@linux.intel.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What does an end-user/customer see and do?  When they are told that 
-version the firmware, specified down to the fix level, fixes a problem 
-they are having, how will they know that firmware blob filename 
-drvfw-X.bin on a download/archive site has that fix?  Yes, the support 
-folks can say "It is the drcfw-X.bin file which is 12345 bytes in size 
-with the MD5sum of <blah> but the principle of the telephone game 
-dictates the size and/or MD5sum information will drop as "the word" 
-passes from one person to another. And one cannot run 
-ethtool_ops::get_drvinfo against a website.  Two versions may indeed be 
-"compatible" in terms of interfaces, but they won't be identical in 
-terms of desirability.  As such, for them to be contained in files with 
-identical names just seems like asking for confusion.
+ping**5
 
-Firmware is something of a tiny kernel no?  Would we have everyone name 
-vmlinux files with just a major number?
-
-rick jones
+On Tue, Jan 31, 2012 at 10:50 AM, Bastien ROUCARIES
+<roucaries.bastien@gmail.com> wrote:
+> Ping**4
+>
+> Any news of this ?
+>
+> Can we access to code ? (public git)
+>
+> On Wed, Jan 18, 2012 at 7:20 PM, Bastien ROUCARIES
+> <roucaries.bastien@gmail.com> wrote:
+>> Ping**3
+>>
+>> On Wed, Dec 21, 2011 at 1:25 PM, bastien ROUCARIES
+>> <roucaries.bastien@gmail.com> wrote:
+>>> Le Wednesday 12 October 2011 14:35:44, Bastien ROUCARIES a écrit :
+>>>> Any news now that the fiasco is going to be resolved.
+>>>>
+>>>> Bastien
+>>>>
+>>>> On Wed, Sep 28, 2011 at 10:51 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>>>> > On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>>>
+>>>> >> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
+>>>> >>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
+>>>> >>>> Is the code available somewhere, or will it need to be rewritten ?
+>>>> >>>
+>>>> >>> we have the code on the server/etc... if someone signs up to help he
+>>>> >>> will be on the server of course
+>>>> >>
+>>>> >> It looks like there are some volunteers. Did you have a chance to talk
+>>>> >> to each other and make any progress?
+>>>> >>
+>>>> >> If not, may we have at least a backup of the database published, please?
+>>>> >> There are very valuable data you collected over time and I'm sure there
+>>>> >> are more people than me who would appreciate that.
+>>>
+>>> Any news of this ?
+>>>
+>>> Can we access to code ? (public git)
+>>>
+>>> Bastien
+>>>
+>>>> >> thanks,
+>>>> >> --
+>>>> >> js
+>>>> >> --
+>>>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>>> >> in the body of a message to majordomo@vger.kernel.org
+>>>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> >> Please read the FAQ at  http://www.tux.org/lkml/
+>>>> >
+>>>> > Apparently kerneoops.org is hosted by kernel.org so there will be no
+>>>> > progress until that fiasco is resolved. I'm still up for working on it
+>>>> > if and when the site is back online.
+>>>> >
+>>>> > --
+>>>> > Josh
