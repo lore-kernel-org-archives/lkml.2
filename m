@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab2BNHyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:54:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47733 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753697Ab2BNHys (ORCPT
+	id S1759497Ab2BNHzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:55:55 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45530 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab2BNHzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:54:48 -0500
-Date: Mon, 13 Feb 2012 23:54:40 -0800
-From: Dong Aisheng <dongas86@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 2/2] pinctrl: Add simple pinmux driver using device tree
- data
-Message-ID: <20120214075440.GA3058@b29396-Latitude-E6410>
-References: <20120203205049.4089.74610.stgit@kaulin.local>
- <20120203205508.4089.35304.stgit@kaulin.local>
- <20120204175903.GF1426@atomide.com>
- <CAA+hA=Tux3P0RyaB=vG7UeycTt8z4nX9dBicpjB7tQ+xzwoSDQ@mail.gmail.com>
- <20120210200503.GX1426@atomide.com>
- <CAA+hA=Qa_3vXvgNMRuDjw93Wb3fGNOM1EqmvYVQO5CN9w2FA3A@mail.gmail.com>
- <20120213191113.GF1426@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120213191113.GF1426@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 Feb 2012 02:55:53 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 14 Feb 2012 16:54:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: Re: [PATCHv21 06/16] mm: page_alloc: introduce alloc_contig_range()
+Message-Id: <20120214165410.fb8b68ea.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1328895151-5196-7-git-send-email-m.szyprowski@samsung.com>
+References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
+	<1328895151-5196-7-git-send-email-m.szyprowski@samsung.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 11:11:13AM -0800, Tony Lindgren wrote:
-...
-> > Put it in pinctrl device node?
-> > Then how do we name each pin?
-> > And for IMX, currently we name all pins in driver.
-> > I still can not find a good reason that i should name all pins in dt file.
-> 
-> But do you actually need the pin names in kernel? :)
-> 
-Yes, i meant name pins in driver.
+On Fri, 10 Feb 2012 18:32:21 +0100
+Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
-> > Yes, we indeed have such a case.
-> > For IMX, some special pins mux still need a setting called 'select input' which
-> > is controlled in other registers.
-> > But a rough idea in my mind that may choose different way to fix this issue.
-> > It's a little like:
-> > pinctrl_usdhc4: pinconfig-usdhc4 {
-> >        mux =
-> >                <MX6Q_SD4_CMD  0 SELECT_INPUT>
-> >                <MX6Q_SD4_CLK  0 0>
-> >                <MX6Q_SD4_DAT0 1 0>
-> >                <MX6Q_SD4_DAT1 1 0>
-> >                <MX6Q_SD4_DAT2 1 SELECT_INPUT>
-> >                <MX6Q_SD4_DAT3 1 0>
-> >                <MX6Q_SD4_DAT4 1 0>
-> >                <MX6Q_SD4_DAT5 1 0>
-> >                <MX6Q_SD4_DAT6 1 0>
-> >                <MX6Q_SD4_DAT7 1 0>;
-> > }
-> > This format would not make the dts writer to take too much care of
-> > register address
-> > and value. For this case, the #pinmux-cells would be <3>;
-> > It is a little different from OMAP.
+> From: Michal Nazarewicz <mina86@mina86.com>
 > 
-> If you don't want to keep the extra register entry around, then you
-> could have a custom .data entry in the pinctrl driver that contains
-> the mapping of these special registers.
+> This commit adds the alloc_contig_range() function which tries
+> to allocate given range of pages.  It tries to migrate all
+> already allocated pages that fall in the range thus freeing them.
+> Once all pages in the range are freed they are removed from the
+> buddy system thus allocated for the caller to use.
 > 
-Yes, that's what i think.
-But we still need pass the value for thoes sepcial registers from dt.
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Tested-by: Rob Clark <rob.clark@linaro.org>
+> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
+> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 
-> > For your proposal, I'm afraid it is a little too much depend on the SoC register
-> > layout. We need to find a flexible enough way to cover all possible
-> > register layout
-> > difference for all SoCs.
-> > (Considering one register controls multi muxs?)
-> 
-> Most likely those special cases are best handled in hardware specific
-> drivers.
->  
-Yes, common driver needs provide a way to cover that.
+Hmm, I may have to refactoring memory hot unplug code using this :)
 
-> > Did i misunderstand?
-> > I still can not understand why need this.
-> > The pinctrl properly in device node can support multi pinmuxs .
-> > serial@48020000 {
-> >       pinctrl = <&pmx_uart3_x &pmx_uart3_y>;
-> > It's good to me that the consensus we reached at Linaro Connect is much like
-> > my proposal in above URL. :)
-> 
-> I meant like what you have in the second option here, the count is
-> used to parse each entry.
-You're right, i misunderstood before.
-Sorry for the noise.
+Thanks,
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Regards
-Dong Aisheng
+
