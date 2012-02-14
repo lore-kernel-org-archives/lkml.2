@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760788Ab2BNPTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 10:19:02 -0500
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:57244 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756634Ab2BNPS5 (ORCPT
+	id S1760685Ab2BNPVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 10:21:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52516 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2BNPVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 10:18:57 -0500
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4F3A7B29.10603@cam.ac.uk>
-Date: Tue, 14 Feb 2012 15:18:01 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120124 Thunderbird/10.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Danny Kukawka <danny.kukawka@bisect.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        linux-iio@vger.kernel.org, Danny Kukawka <dkukawka@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] adis16080: fix compiler -Wuninitialized
-References: <1329230136-26576-1-git-send-email-danny.kukawka@bisect.de> <20120214150455.GN4141@mwanda>
-In-Reply-To: <20120214150455.GN4141@mwanda>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 14 Feb 2012 10:21:45 -0500
+Message-ID: <1329232814.2293.7.camel@twins>
+Subject: Re: smp: Start up non-boot CPUs asynchronously
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arjan van de Ven <arjanvandeven@gmail.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, mikey@neuling.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        gregkh@linuxfoundation.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>
+Date: Tue, 14 Feb 2012 16:20:14 +0100
+In-Reply-To: <CADyApD0o4UYsTkqf2H2yJZ-d05NAyRAEc6z+m1gJEogc=cZLqQ@mail.gmail.com>
+References: <20120130205444.22f5e26a@infradead.org>
+	 <20120131125232.GD4408@elte.hu> <20120131054155.371e8307@infradead.org>
+	 <20120131143130.GF13676@elte.hu> <20120131072216.1ce78e50@infradead.org>
+	 <20120131161207.GA18357@elte.hu> <20120131082439.575978c0@infradead.org>
+	 <4F3A1891.8060001@linux.vnet.ibm.com> <4F3A2DFB.5000209@linux.vnet.ibm.com>
+	 <CADyApD0o4UYsTkqf2H2yJZ-d05NAyRAEc6z+m1gJEogc=cZLqQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/14/2012 3:04 PM, Dan Carpenter wrote:
-> On Tue, Feb 14, 2012 at 03:35:36PM +0100, Danny Kukawka wrote:
->> Fix for:
->> drivers/staging/iio/gyro/adis16080_core.c: In function
->>    ‘adis16080_read_raw’:
->> drivers/staging/iio/gyro/adis16080_core.c:99:8: warning: ‘ut’
->>    may be used uninitialized in this function [-Wuninitialized]
->>
->> Initialize ut and change error handling from adis16080_read_raw().
->>
->> Signed-off-by: Danny Kukawka<danny.kukawka@bisect.de>
->> ---
->>   drivers/staging/iio/gyro/adis16080_core.c |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/iio/gyro/adis16080_core.c b/drivers/staging/iio/gyro/adis16080_core.c
->> index 1815490..e0b2a29 100644
->> --- a/drivers/staging/iio/gyro/adis16080_core.c
->> +++ b/drivers/staging/iio/gyro/adis16080_core.c
->> @@ -82,7 +82,7 @@ static int adis16080_read_raw(struct iio_dev *indio_dev,
->>   			     long mask)
->>   {
->>   	int ret = -EINVAL;
->> -	u16 ut;
->> +	u16 ut = 0;
->>   	/* Take the iio_dev status lock */
->>
->>   	mutex_lock(&indio_dev->mlock);
->> @@ -94,7 +94,7 @@ static int adis16080_read_raw(struct iio_dev *indio_dev,
->>   		if (ret<  0)
->>   			break;
->>   		ret = adis16080_spi_read(indio_dev,&ut);
->> -		if (ret<  0)
->> +		if (ret)
->>   			break;
-> Either one of these changes would silence the warning from gcc
-> (which is a false positive).  I would keep the "ut = 0;" change and
-> leave the error handling the same.  That way we check for less than
-> zero consistently instead of checking some for non-zero and some for
-> less than zero.
-Agreed.  I've always been lazy on this one as it was a false positive, 
-but might as well
-get rid of it...
->
-> I normally wouldn't have commented on this if the changelog had said
-> whether it was a gcc false positive or if the code changes the
-> behavior.  It really should be mentioned.
->
-> If you could put a "Staging:" and an "iio" in the subject, that
-> would be grand as well.  Everyone seems to be using the prefix
-> "staging:iio:gyro:adis16080" for that file...  I don't know why they
-> don't just use slashes if they're going to specify the whole file...
-Fair point.   Ah well, habits die hard.  Sometimes we have things like
-staging:iio:treewide which is probably why I started doing this...
+On Tue, 2012-02-14 at 06:31 -0800, Arjan van de Ven wrote:
+> 
+> frankly, such code HAS to worry about cpus going online and offline
+> even today; the firmware, at least on X86, can start taking cores
+> offline/online once ACPI is initialized.... (as controlled by a data
+> center manager from outside the box, usually done based on thermal or
+> power conditions on a datacenter level). Now, no doubt that we have
+> bugs in this space, since this only happened very rarely before. 
+
+Which frankly is an utter piece of crap, that ACPI spec is total garbage
+and completely useless. You might have noticed that the ACPI code
+supporting that failure carries a big nacked-by from me.
+
+That's not to say we shouldn't try to fix hotplug, but bringing that
+ACPI nonsense to the table makes me care less, not more.
+
+I mean, really, that spec is broken, the support is worse.
