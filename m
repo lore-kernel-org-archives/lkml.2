@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab2BNEoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 23:44:13 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19113 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab2BNEoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 23:44:12 -0500
-Date: Mon, 13 Feb 2012 23:41:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.3 or
- stable/for-linus-fixes-3.3-rc3 (tag) for 3.3-rc3
-Message-ID: <20120214044103.GA24072@phenom.dumpdata.com>
+	id S1759450Ab2BNEow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 23:44:52 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40829 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759402Ab2BNEoi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 23:44:38 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F39E696.0045,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120214153652.7850e2bd7b87e92008c15c4c@canb.auug.org.au>
+References: <20120214153652.7850e2bd7b87e92008c15c4c@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 13 Feb 2012 21:44:18 -0700
+X-Google-Sender-Auth: 8mPF6bWFPqLu0UisTL1HVvefhqA
+Message-ID: <CACxGe6uvbyT9Jwg3+nzjF36cSAPqSWOdpKeiPT+JtbeEz5h7tw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the irqdomain tree with Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 13, 2012 at 9:36 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> Today's linux-next merge of the irqdomain tree got a conflict in
+> drivers/mfd/twl-core.c between commit 6252547b8a7a ("ARM: omap: fix
+> broken twl-core dependencies and ifdefs") from Linus' tree and commit
+> 7da5a66bbf1f ("irq_domain: Remove 'new' irq_domain in favour of the ppc
+> one") from the irqdomain tree.
+>
+> The latter removes the code modified by the former, so I did that.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks Stephen. I'll respin the tree after the next rc
 
-Hey Linus,
+g.
 
-Please git pull the following tag:
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-fixes-3.3-rc3
 
-or if I screwed up the tagging, the following branch:
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-fixes-3.3
-
-which has two fixes for VCPU offlining; One to fix the string format exposed
-by the xen-pci[front|back] to conform to the one used in majority of
-PCI drivers; two fixes to make the code more resilient to invalid configurations.
-
-Jan Beulich (1):
-      xenbus_dev: add missing error check to watch handling
-
-Konrad Rzeszutek Wilk (3):
-      xen/bootup: During bootup suppress XENBUS: Unable to read cpu state
-      xen/smp: Fix CPU online/offline bug triggering a BUG: scheduling while atomic.
-      xen/pci[front|back]: Use %d instead of %1x for displaying PCI devfn.
-
-Stefano Stabellini (1):
-      xen pvhvm: do not remap pirqs onto evtchns if !xen_have_vector_callback
-
- arch/x86/pci/xen.c                       |    2 +-
- arch/x86/xen/smp.c                       |    7 +++++++
- drivers/pci/xen-pcifront.c               |   10 +++++-----
- drivers/xen/cpu_hotplug.c                |    3 ++-
- drivers/xen/xen-pciback/pci_stub.c       |    8 ++++----
- drivers/xen/xen-pciback/xenbus.c         |    5 +++--
- drivers/xen/xenbus/xenbus_dev_frontend.c |    4 ++++
- 7 files changed, 26 insertions(+), 13 deletions(-)
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPOeXaAAoJEFjIrFwIi8fJYJYH/ibaujA2OsQR7XRdS8XCK9Kq
-XynnOgv0qFWFu0anPpU8gbxNxps/2pVByeILdDeVUVbx1kNnwyYkGyWm5PiUBMcv
-Za0W/vlcFm78FUBMp8r9jPfwLNagmuKw/Z53ad8ojnTsERcQ+Ca6KR4RIsVoVqoP
-v1/F9a3bWrlWYP32qt3AOTibkoHn8jI25RqdSM5w53/ZosRBBLxMGV51bG2zN0v3
-RCzkkYV3RJGPuad0hYHHrVTevrsDE3MXBArmwzu5JTmwwU0GpvnP0z3IMg4xrAN3
-QYACMFpnWexZ/9dgP/tsfJlEbq41X3wl+TAg27QBS5JjhHidru2hCm8wj+X7R3I=
-=V3bN
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
