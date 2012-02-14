@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab2BNAKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 19:10:31 -0500
-Received: from ozlabs.org ([203.10.76.45]:58967 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100Ab2BNAK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 19:10:29 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christian Hoff <christian.hoff@de.ibm.com>, BORNTRAE@linux.vnet.ibm.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, mst@redhat.com
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-In-Reply-To: <4F38D5BC.8010705@redhat.com>
-References: <OF2D939B55.7C07E33B-ONC125799C.0032B83A-C125799C.0036282C@de.ibm.com>  <4F30F4EE.4080607@redhat.com> <4F311154.9080407@de.ibm.com>  <4F3119A0.7080005@redhat.com> <4F312492.1040002@de.ibm.com>  <OFAFB86CAE.9917478D-ONC125799D.004AF231-C125799D.004CE6D2@de.ibm.com>  <4F313526.2050907@redhat.com>  <OF36197712.1A42EB9E-ONC125799E.0049E3C2-C125799E.004AD4BF@de.ibm.com>  <4F3390FB.80107@redhat.com> <1329077777.21613.60.camel@dabdike.int.hansenpartnership.com> <4F38D5BC.8010705@redhat.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 14 Feb 2012 10:37:46 +1030
-Message-ID: <87ipjacm5p.fsf@rustcorp.com.au>
+	id S1758560Ab2BNALa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 19:11:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54152 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab2BNALZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 19:11:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <201202122232.12541.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201202100144.11123.rjw@sisk.pl>
+	<20120212020507.GD18742@gs62>
+	<201202122232.12541.rjw@sisk.pl>
+Date: Mon, 13 Feb 2012 16:11:24 -0800
+Message-ID: <CAMP5Xgd3ODhA6rR_=nTw3EfUeeACfrzN4ycPLypryi8hfcBW8w@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, NeilBrown <neilb@suse.de>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        Greg KH <greg@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 10:19:56 +0100, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> block layer _is_ growing support for new operations: discard is already 
-> there, write same is in the works, extended copy will also come in due 
-> time.  Perhaps we'll add them to virtio-blk, perhaps not.
+On Sun, Feb 12, 2012 at 1:32 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday, February 12, 2012, mark gross wrote:
+>> On Fri, Feb 10, 2012 at 01:44:10AM +0100, Rafael J. Wysocki wrote:
+> [...]
+>> > I'd like us and Android to use the same low-level data structures for power
+>> > management and the same API eventually, at least for drivers.  This is not
+>> > the case at the moment and it's actively hurting us as a project quite a bit.
+>> > If Android needs to add patches on top of whatever we have to get the desired
+>> > functionality, I'm fine with that, as long as they don't require drivers to use
+>> > APIs that are incompatible with the mainline.  Insisting that Android should
+>> > use a user-space-based autosleep implementation wouldn't help at all, because
+>> > realistically this isn't going to happen.
+>>
+>> why not?  I don't think having the PMS explicitly acknowledge a wake
+>> event is a big ask at all.
+>
+> I'd like to hear what the Android people think about that, but somehow it seems
+> to me they won't like it. :-)
+>
 
-FYI, I'd take patches for discard in virtio_blk today; it's a no-brainer
-in a virtual devoce.
+Correct.
 
-But I wouldn't want extended copy and write same.
+The android power manager service does not handle wake events and
+therefore does not know when it is safe to acknowledge a wake event
+(assuming this acknowledgement re-triggers suspend). Other components
+handle the event and only notify the power manager if the event should
+change a state (e.g. turn the screen on). Some wake events, like the
+alarm used for battery monitoring, don't signal user space at all if
+the user visible state did not change. Other wake events are processed
+by lower level user-space services than the system-server where the
+power manager runs.
 
-Thanks,
-Rusty.
+-- 
+Arve Hjønnevåg
