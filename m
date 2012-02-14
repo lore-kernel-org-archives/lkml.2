@@ -1,43 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab2BNAjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 19:39:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:46424 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754682Ab2BNAjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 19:39:15 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Dave Young <dyoung@redhat.com>, Ondrej Zary <linux@rainbow-software.org>
-Subject: [PULL] module fixes.
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 14 Feb 2012 11:08:37 +1030
-Message-ID: <874nuuckqa.fsf@rustcorp.com.au>
+	id S1756128Ab2BNAt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 19:49:59 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58718 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750832Ab2BNAt4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 19:49:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20120213233334.GC4430@redhat.com>
+References: <1329136806.9333.383.camel@haakon2.linux-iscsi.org>
+	<4F3907EB.4030402@redhat.com>
+	<20120213130005.GB26773@redhat.com>
+	<CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+	<20120213131848.GD26773@redhat.com>
+	<4F39287A.9030808@suse.de>
+	<CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com>
+	<CAN05THT6t_w=9Zt+o-B4s8E3jUMWsxiBvTyySxNEK2QfvLe-BA@mail.gmail.com>
+	<20120213225623.GA2988@redhat.com>
+	<CAN05THS_zTf2VRz6QdccHbkOacnE86LNhtxp7b8twe+XezBU6Q@mail.gmail.com>
+	<20120213233334.GC4430@redhat.com>
+Date: Tue, 14 Feb 2012 11:49:55 +1100
+Message-ID: <CAN05THTTva709Dab9f_PBWxehMWnP9Gg4T7Nnmg7Swk3xuz7aQ@mail.gmail.com>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+From: ronnie sahlberg <ronniesahlberg@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Hannes Reinecke <hare@suse.de>, Dor Laor <dlaor@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To git@github.com:rustyrussell/linux.git
- + 4f960d5...0d86f65 master -> master (forced update)
- + 96f717e...e45f03a for-linus -> for-linus (forced update)
-The following changes since commit d65b4e98d7ea3038b767b70fe8be959b2913f16d:
+On Tue, Feb 14, 2012 at 10:33 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Tue, Feb 14, 2012 at 10:30:59AM +1100, ronnie sahlberg wrote:
+>> On Tue, Feb 14, 2012 at 9:59 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> > On Tue, Feb 14, 2012 at 07:53:26AM +1100, ronnie sahlberg wrote:
+>> >> On Tue, Feb 14, 2012 at 7:42 AM, ronnie sahlberg
+>> >> <ronniesahlberg@gmail.com> wrote:
+>> >> > On Tue, Feb 14, 2012 at 2:12 AM, Hannes Reinecke <hare@suse.de> wrote:
+>> >> >> On 02/13/2012 02:18 PM, Michael S. Tsirkin wrote:
+>> >> >>> On Tue, Feb 14, 2012 at 12:13:36AM +1100, ronnie sahlberg wrote:
+>> >> >>>> On Tue, Feb 14, 2012 at 12:00 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> >> >>>>> On Mon, Feb 13, 2012 at 02:54:03PM +0200, Dor Laor wrote:
+>> >> >>>>>> Only if you use the pci multi-function option but that kills
+>> >> >>>>>> standard hot unplug
+>> >> >>>>>
+>> >> >>>>> It doesn't kill it as such, rather you can't unplug luns individually.
+>> >> >>>>
+>> >> >>>> Isnt that just a consequence of the current implementation rather than
+>> >> >>>> a SCSI limitation?
+>> >> >>>
+>> >> >>> Yes.
+>> >> >>>
+>> >> >>>> A different way to do hoplug could be to flag all devices as removable
+>> >> >>>> in the standard inq page then
+>> >> >>>> leave the LUN there persistently and what you remove/add is not the
+>> >> >>>> LUN device itself but just the media in the device.
+>> >> >>>>
+>> >> >>>> Instead of hot-plug remove the LUN,  hot-plug becomes "media eject" or
+>> >> >>>> "media insert".
+>> >> >>>> The device remains present all time, you never remove it, but instead
+>> >> >>>> hot-plug controls if the media is present or not.
+>> >> >>>>
+>> >> >>>>
+>> >> >>>> This would require implementing at least START_STOP_UNIT and
+>> >> >>>> PREVENT_ALLOW_MEDIUM_REMOVAL opcode emulation from SBC.
+>> >> >>>>
+>> >> >>>>
+>> >> >>>> regards
+>> >> >>>> ronnie sahlberg
+>> >> >>>
+>> >> >>> That would work.
+>> >> >>>
+>> >> >> Or we simply use the Peripheral Qualifier that the device is gone;
+>> >> >> eg we could simply set PQ = 1, return sense code 0x25/00 and be done
+>> >> >> with ...
+>> >> >>
+>> >> >
+>> >> > That is still similar to "rip a device out from the guest without notice"
+>> >> > and can cause the guest to be "surprised".
+>> >> >
+>> >> >
+>> >> > Removable media is standard feature in SCSI SBC (and other commandsets).
+>> >> > The nice part of removable media is that it activates a contract
+>> >> > between the device and the guest
+>> >> > to prevent removal of the media when the guest depends on the media
+>> >> > not being removed.
+>> >> >
+>> >> > I.e.  If you have a SBC device with the removable-media bit set,
+>> >> > this is used to tell the initiator "this media can be removed, be
+>> >> > prepared that this might happen".
+>> >> > So when you mount such a SBC device in the guest, the guest will issue
+>> >> > a "PREVENT_ALLOW_MEDIUM_REMOVAL"
+>> >> > to tell the device "this medium is in use and may not be removed".
+>> >> >
+>> >>
+>> >> What I mean is that if /dev/sdb is removable,
+>> >> if you mount this as   "mount /dev/sdb1 /mnt"
+>> >> this will automatically cause the guest kernel to send a
+>> >> PREVENT_ALLOW_MEDIUM_REMOVAL to /dev/sdb to prevent removal.
+>> >>
+>> >> When you "umount /dev/sdb1"   the kernel/guest will automagically send
+>> >> PREVENT_ALLOW_MEDIUM_REMOVEAL to /dev/sdb and allow removal of the
+>> >> media again.
+>> >>
+>> >>
+>> >> If you capture this command and track the "prevent/allow removal
+>> >> status"  you automatically get a channel where qemu will
+>> >> know when it is safe to unplug the device  and when it is not safe to
+>> >> unplug the device.
+>> >> This is a nice feature.
+>> >
+>> > Presumably there's a way for device to notify the OS
+>> > that user requested removal, as well?
+>>
+>>
+>> I think that is done by responding with sense  to one of the commands,
+>> like the every few second TEST_UNIT_READY that the
+>> initiator/guest-kernel will send.
+>
+> Does it do this even for mounted media?
+> I didn't realize ...
 
-  Linux 3.3-rc3 (2012-02-08 19:21:53 -0800)
+Yes it does. At least for SBC devices that are flagged as removable.
+"Normal" SBC devices that are not removable might trigger different
+behaviour in the kernel.
+(endless string of TEST_UNIT_READY is a way to check if something
+"unexpected" happens on the device.)
 
-are available in the git repository at:
-  git://github.com/rustyrussell/linux.git master
+I just tested on a 3.0.0  kernel.
 
-Dave Young (1):
-      module: make module param bint handle nul value
+I have a mediachanger for SBC and the SBC is flagged as removable.
+/dev/sdd is the iscsi lun with a removable SBC disk.
 
-Ondrej Zary (1):
-      module: fix broken isapnp handling in file2alias
+By just exposing this device to the kernel, the kernel keeps sending,
+or if not the kernel maybe some other process trying to poll the
+status?
 
- kernel/params.c          |    3 ++-
- scripts/mod/file2alias.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-Cc: Dave Young <dyoung@redhat.com>
-Cc: Ondrej Zary <linux@rainbow-software.org>
+every few seconds :
+PREVENT_ALLOW_MEDIUM_REMOVAL  prevent removal
+PREVENT_ALLOW_MEDIUM_REMOVAL  to immediatel change it back to allow
+removal again
+TEST_UNIT_READY
+
+
+After I run this
+mount /dev/sdd1 /mnt
+
+The kernel sends a single
+PREVENT_ALLOW_MEDIUM_REMOVAL to prevent removal
+then every few seconds a
+TEST_UNIT_READY
+
+
+This is what it does for removable SBC disks. Maybe it does something
+differently for "permanent" SBC disks.
+
+regards
+ronnie sahlberg
