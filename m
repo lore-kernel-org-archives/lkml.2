@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab2BNVFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:05:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42039 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357Ab2BNVFX (ORCPT
+	id S1761178Ab2BNVGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:06:22 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40284 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757293Ab2BNVGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:05:23 -0500
-Date: Tue, 14 Feb 2012 13:05:22 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com, vgoyal@redhat.com,
-        seiji.aguchi@hds.com
-Subject: Re: [PATCH V3] kmsg_dump: Don't run on non-error paths by default
-Message-Id: <20120214130522.fdb05b81.akpm@linux-foundation.org>
-In-Reply-To: <1328888715-21589-1-git-send-email-mjg@redhat.com>
-References: <1328888715-21589-1-git-send-email-mjg@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 14 Feb 2012 16:06:19 -0500
+Message-ID: <1329253575.2555.16.camel@edumazet-laptop>
+Subject: Re: [PATCH net-next] epoll: add EPOLLEXCLUSIVE support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Davide Libenzi <davidel@xmailserver.org>
+Date: Tue, 14 Feb 2012 22:06:15 +0100
+In-Reply-To: <1329252484-6309-1-git-send-email-hagen@jauu.net>
+References: <1329252484-6309-1-git-send-email-hagen@jauu.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 10:45:15 -0500
-Matthew Garrett <mjg@redhat.com> wrote:
-
-> Since 04c6862c055fb687c90d9652f32c11a063df15cf kmsg_dump() gets run on
-> normal paths including poweroff and reboot. This is less than ideal given
-> pstore implementations that can only represent single backtraces, since a
-> reboot may overwrite a stored oops before it's been picked up by userspace.
-> In addition, some pstore backends may have low performance and provide a
-> significant delay in reboot as a result.
+Le mardi 14 février 2012 à 21:48 +0100, Hagen Paul Pfeifer a écrit :
+> High performance server sometimes create one listening socket (e.g. port
+> 80), create a epoll file descriptor and add the socket. Afterwards
+> create SC_NPROCESSORS_ONLN threads and wait for events. This often
+> result in a thundering herd problem because all CPUs are scheduled.
 > 
-> This patch adds a printk.always_kmsg_dump kernel parameter (which can also
-> be changed from userspace). Without it, the code will only be run on
-> failure paths rather than on normal paths. The option can be enabled in
-> environments where there's a desire to attempt to audit whether or not
-> a reboot was cleanly requested or not.
+> This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
+> If a descriptor is added with this flag only one CPU is scheduled in.
+> 
+> Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
+> Reported-by: Li Yu <raise.sail@gmail.com>
+> Cc: Davide Libenzi <davidel@xmailserver.org>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
 
-So if I'm understanding it correctly, this patch reverts the kernel
-behaviour to what it was before 04c6862c055fb687c9 ("kmsg_dump: add
-kmsg_dump() calls to the reboot, halt, poweroff and emergency_restart
-paths").  The user must now set printk.always_kmsg_dump to get the
-04c6862c055fb687c9 behaviour.
+Seems pretty good to me.
 
-Correct?  If so, we should get this into 3.3 so we don't have a oddball
-behaviour in one particular kernel release.
+Do you have some performance numbers to share ?
+
+
+
 
