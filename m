@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761003Ab2BNVbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:31:45 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:40947 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757213Ab2BNVbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:31:41 -0500
+	id S932475Ab2BNVcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:32:33 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52362 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932104Ab2BNVca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 16:32:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] PM / Hibernate: print physical addresses consistently with other parts of kernel
+Date: Tue, 14 Feb 2012 22:36:20 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+References: <20120214000447.32522.5191.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20120214000447.32522.5191.stgit@bhelgaas.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20120210053036.GC2068@kroah.com>
-References: <20120210154806.4a81ec53dc24a40cf91a758a@canb.auug.org.au>
-	<20120210053036.GC2068@kroah.com>
-Date: Tue, 14 Feb 2012 15:31:39 -0600
-Message-ID: <CAB-zwWggC696WKszdkFvE+7azu5LtuVK8__SUcjBX3UP4ieV-g@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?V=EDctor_Manuel_J=E1quez?= <vjaquez@igalia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202142236.20788.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Feb 9, 2012 at 11:30 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Feb 10, 2012 at 03:48:06PM +1100, Stephen Rothwell wrote:
->> Hi Greg,
->>
->> Today's linux-next merge of the staging tree got a conflict in
->> drivers/staging/tidspbridge/rmgr/drv_interface.c between commit
->> 5a63177a6967 ("staging: tidspbridge: fix bridge_open memory leaks") from
->> Linus' tree and commit 518761dba127 ("staging: tidspbridge: remove unused
->> header") from the staging tree.
->>
->> I fixed it up (I think - see below) and can carry the fix as necessary.
+On Tuesday, February 14, 2012, Bjorn Helgaas wrote:
+> Print physical address info in a style consistent with the %pR style used
+> elsewhere in the kernel.
 >
-> Thanks, I'll try to fix this up with a merge tomorrow to get this in
-> sync.
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-5a63177a6967 ("staging: tidspbridge: fix bridge_open memory leaks")
-was accidentally reverted with the merge of staging-3.3-rc3 on
-staging-next branch, the same patch still applies since the previous
-patch touching this code moves it some lines above.
+Applied.
 
-Regards,
+Thanks,
+Rafael
 
-Omar
+
+> ---
+>  kernel/power/snapshot.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 6a768e5..8e2e746 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -711,9 +711,10 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
+>  	list_for_each_entry(region, &nosave_regions, list) {
+>  		unsigned long pfn;
+>  
+> -		pr_debug("PM: Marking nosave pages: %016lx - %016lx\n",
+> -				region->start_pfn << PAGE_SHIFT,
+> -				region->end_pfn << PAGE_SHIFT);
+> +		pr_debug("PM: Marking nosave pages: [mem %#010llx-%#010llx]\n",
+> +			 (unsigned long long) region->start_pfn << PAGE_SHIFT,
+> +			 ((unsigned long long) region->end_pfn << PAGE_SHIFT)
+> +				- 1);
+>  
+>  		for (pfn = region->start_pfn; pfn < region->end_pfn; pfn++)
+>  			if (pfn_valid(pfn)) {
+> 
+> 
+> 
+
