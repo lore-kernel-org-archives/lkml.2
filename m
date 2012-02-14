@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab2BNLDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:03:46 -0500
-Received: from skyrme.org ([193.175.80.135]:34711 "EHLO skyrme.org"
+	id S1759578Ab2BNLDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:03:53 -0500
+Received: from skyrme.org ([193.175.80.135]:34712 "EHLO skyrme.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756562Ab2BNLDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:03:35 -0500
-Date: 14 Feb 2012 10:34:28 +0000
-Message-Id: <1329215672-15706-4-git-send-email-oskar@scara.com>
+	id S1756575Ab2BNLDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 06:03:38 -0500
+Date: 14 Feb 2012 10:34:30 +0000
+Message-Id: <1329215672-15706-6-git-send-email-oskar@scara.com>
 From: "Oskar Schirmer" <oskar@scara.com>
 To: sameo@linux.intel.com
 Cc: dmitry.torokhov@gmail.com, kernel@pengutronix.de,
         u.kleine-koenig@pengutronix.de, philippe.retornaz@epfl.ch,
         michael.thalmeier@hale.at, linux-kernel@vger.kernel.org,
         "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH 3/7] mfd: add I2C handling to mc13xxx driver
+Subject: [PATCH 5/7] input/touchscreen: add support for mc13892
 X-Mailer: git-send-email 1.6.0.3
 In-Reply-To: <1329215672-15706-1-git-send-email-oskar@scara.com>
 References: <1329215672-15706-1-git-send-email-oskar@scara.com>
@@ -22,229 +22,356 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mc13xxx chips may be wired to SPI or I2C, alternatively.
-Up to now, mc13xxx did support SPI wiring solely.
-Add support for I2C wiring, make the two alternatives
-separate menu option in configuration.
+Current driver mc13xxx_ts.c does provide support for
+mc13783 chip, only. Add support for similar mc13892 chip,
+rename a bunch of identifiers to reflect multichip support.
 
 Signed-off-by: Oskar Schirmer <oskar@scara.com>
 ---
- drivers/mfd/Kconfig         |   11 +++
- drivers/mfd/Makefile        |    1 +
- drivers/mfd/mc13xxx-i2c.c   |  149 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/mc13xxx.h |    2 +
- 4 files changed, 163 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/mc13xxx-i2c.c
+ drivers/input/touchscreen/Kconfig      |   10 +-
+ drivers/input/touchscreen/Makefile     |    2 +-
+ drivers/input/touchscreen/mc13xxx_ts.c |  166 +++++++++++++++++++++++++-------
+ 3 files changed, 137 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 750b50c..1dd67da 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -576,6 +576,17 @@ config MFD_MC13XXX
- 	select MFD_CORE
- 	select MFD_MC13783
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 4af2a18..51d19cb 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -584,17 +584,17 @@ config TOUCHSCREEN_USB_COMPOSITE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called usbtouchscreen.
  
-+config MFD_MC13XXX_I2C
-+	tristate "Support Freescale MC13783 and MC13892 with I2C"
-+	select MFD_MC13XXX
-+	depends on I2C && GPIOLIB
-+	help
-+	  Support for the Freescale (Atlas) PMIC and audio CODECs
-+	  MC13783 and MC13892, wired for I2C use.
-+	  This driver provides common support for accessing the device,
-+	  additional drivers must be enabled in order to use the
-+	  functionality of the device.
-+
- config MFD_MC13XXX_SPI
- 	tristate "Support Freescale MC13783 and MC13892 with SPI"
- 	select MFD_MC13XXX
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2dc66ed..17129e0 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -53,6 +53,7 @@ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
- obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
+-config TOUCHSCREEN_MC13783
+-	tristate "Freescale MC13783 touchscreen input driver"
+-	depends on MFD_MC13783
++config TOUCHSCREEN_MC13XXX
++	tristate "Freescale MC13XXX touchscreen input driver"
++	depends on MFD_MC13XXX
+ 	help
+-	  Say Y here if you have an Freescale MC13783 PMIC on your
++	  Say Y here if you have an Freescale MC13XXX PMIC on your
+ 	  board and want to use its touchscreen
  
- obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
-+obj-$(CONFIG_MFD_MC13XXX_I2C)	+= mc13xxx-i2c.o
- obj-$(CONFIG_MFD_MC13XXX_SPI)	+= mc13xxx-spi.o
+ 	  If unsure, say N.
  
- obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
-diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
-new file mode 100644
-index 0000000..b7b16b8
---- /dev/null
-+++ b/drivers/mfd/mc13xxx-i2c.c
-@@ -0,0 +1,149 @@
-+/*
-+ * Copyright 2012 Oskar Schirmer <oskar@scara.com>
-+ *
-+ * loosely based on drivers that have
-+ * Copyright 2008-2010 Freescale Semiconductor, Inc.,
-+ * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de> and
-+ * Copyright 2011 Texas Instruments Inc.,
-+ *                      Margarita Olaya Cabrera <magi@slimlogic.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/interrupt.h>
-+#include <linux/i2c.h>
-+#include <linux/mfd/core.h>
+ 	  To compile this driver as a module, choose M here: the
+-	  module will be called mc13783_ts.
++	  module will be called mc13xxx_ts.
+ 
+ config TOUCHSCREEN_USB_EGALAX
+ 	default y
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 07c031b..2c3afda 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -30,7 +30,7 @@ obj-$(CONFIG_TOUCHSCREEN_INEXIO)	+= inexio.o
+ obj-$(CONFIG_TOUCHSCREEN_INTEL_MID)	+= intel-mid-touch.o
+ obj-$(CONFIG_TOUCHSCREEN_LPC32XX)	+= lpc32xx_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_MAX11801)	+= max11801_ts.o
+-obj-$(CONFIG_TOUCHSCREEN_MC13783)	+= mc13xxx_ts.o
++obj-$(CONFIG_TOUCHSCREEN_MC13XXX)	+= mc13xxx_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_MCS5000)	+= mcs5000_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_MIGOR)		+= migor_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_MTOUCH)	+= mtouch.o
+diff --git a/drivers/input/touchscreen/mc13xxx_ts.c b/drivers/input/touchscreen/mc13xxx_ts.c
+index ede0274..802228e 100644
+--- a/drivers/input/touchscreen/mc13xxx_ts.c
++++ b/drivers/input/touchscreen/mc13xxx_ts.c
+@@ -1,5 +1,5 @@
+ /*
+- * Driver for the Freescale Semiconductor MC13783 touchscreen.
++ * Driver for the Freescale Semiconductor MC13xxx touchscreen.
+  *
+  * Copyright 2004-2007 Freescale Semiconductor, Inc. All Rights Reserved.
+  * Copyright (C) 2009 Sascha Hauer, Pengutronix
+@@ -12,7 +12,7 @@
+  * the Free Software Foundation.
+  */
+ #include <linux/platform_device.h>
+-#include <linux/mfd/mc13783.h>
 +#include <linux/mfd/mc13xxx.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/input.h>
+@@ -20,7 +20,7 @@
+ #include <linux/slab.h>
+ #include <linux/init.h>
+ 
+-#define MC13783_TS_NAME	"mc13783-ts"
++#define DRIVER_NAME	"mc13xxx-ts"
+ 
+ #define DEFAULT_SAMPLE_TOLERANCE 300
+ 
+@@ -33,7 +33,16 @@ MODULE_PARM_DESC(sample_tolerance,
+ 		"is supposed to be wrong and is discarded.  Set to 0 to "
+ 		"disable this check.");
+ 
+-struct mc13783_ts_priv {
++#define DEFAULT_PRESSURE_LIMIT 2048
 +
-+static int mc13xxx_i2c_read(struct mc13xxx *mc13xxx,
-+			unsigned int offset, u32 *val)
++static unsigned int pressure_limit = DEFAULT_PRESSURE_LIMIT;
++module_param(pressure_limit, uint, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(pressure_limit,
++		"Pressure values below this value (default: "
++		__stringify(DEFAULT_PRESSURE_LIMIT) ") are taken "
++		"as release event.");
++
++struct mc13xxx_ts_priv {
+ 	struct input_dev *idev;
+ 	struct mc13xxx *mc13xxx;
+ 	struct delayed_work work;
+@@ -41,9 +50,9 @@ struct mc13783_ts_priv {
+ 	unsigned int sample[4];
+ };
+ 
+-static irqreturn_t mc13783_ts_handler(int irq, void *data)
++static irqreturn_t mc13xxx_ts_handler(int irq, void *data)
+ {
+-	struct mc13783_ts_priv *priv = data;
++	struct mc13xxx_ts_priv *priv = data;
+ 
+ 	mc13xxx_irq_ack(priv->mc13xxx, irq);
+ 
+@@ -67,7 +76,7 @@ static irqreturn_t mc13783_ts_handler(int irq, void *data)
+ 			swap(a0, a1);					\
+ 		})
+ 
+-static void mc13783_ts_report_sample(struct mc13783_ts_priv *priv)
++static void mc13783_ts_report_sample(struct mc13xxx_ts_priv *priv)
+ {
+ 	struct input_dev *idev = priv->idev;
+ 	int x0, x1, x2, y0, y1, y2;
+@@ -117,10 +126,63 @@ static void mc13783_ts_report_sample(struct mc13783_ts_priv *priv)
+ 		dev_dbg(&idev->dev, "discard event\n");
+ }
+ 
++static void mc13892_ts_report_sample(struct mc13xxx_ts_priv *priv)
 +{
-+	struct i2c_client *i2c = mc13xxx->control.i2cdev;
-+	unsigned char buf[3];
-+	int ret;
++	struct input_dev *idev = priv->idev;
++	int x0, x1, y0, y1;
++	int cr0, cr1;
 +
-+	memset(buf, 0, 3);
-+	ret = i2c_smbus_read_i2c_block_data(i2c, offset, 3, buf);
-+	if (ret != 3) {
-+		dev_dbg(mc13xxx->dev, "24bit read error, ret = %d %s\n",
-+				ret, i2c->name);
-+		return ret;
-+	}
++	/*
++	 * the values are 10-bit wide only, but the two least significant
++	 * bits are for future 12 bit use and reading yields 0
++	 */
++	x0 = priv->sample[0] & 0xfff;
++	x1 = priv->sample[1] & 0xfff;
++	y0 = priv->sample[3] & 0xfff;
++	y1 = (priv->sample[0] >> 12) & 0xfff;
++	cr0 = (priv->sample[2] >> 12) & 0xfff;
++	cr1 = (priv->sample[3] >> 12) & 0xfff;
 +
-+	*val = buf[0] << 16 | buf[1] << 8 | buf[2];
++	dev_dbg(&idev->dev,
++		"x: (% 4d,% 4d) y: (% 4d,% 4d) cr: (% 4d, % 4d)\n",
++		x0, x1, y0, y1, cr0, cr1);
 +
-+	dev_vdbg(mc13xxx->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
++	if (x0 > x1)
++		swap(x0, x1);
++	if (y0 > y1)
++		swap(y0, y1);
 +
-+	return 0;
++	cr0 = 0x1000 - ((cr0 + cr1) / 2);
++	if (cr0 < pressure_limit)
++		cr0 = 0;
++
++	if (!cr0 || !sample_tolerance ||
++			(x1 - x0 < sample_tolerance &&
++			 y1 - y0 < sample_tolerance)) {
++		/* report the average coordinate and pressure */
++		if (cr0) {
++			x0 = (x0 + x1) / 2;
++			y0 = (y0 + y1) / 2;
++			input_report_abs(idev, ABS_X, x0);
++			input_report_abs(idev, ABS_Y, y0);
++
++			dev_dbg(&idev->dev, "report (%d, %d, %d)\n",
++					x0, y0, cr0);
++			queue_delayed_work(priv->workq, &priv->work, HZ / 50);
++		} else
++			dev_dbg(&idev->dev, "report release\n");
++
++		input_report_abs(idev, ABS_PRESSURE, cr0);
++		input_report_key(idev, BTN_TOUCH, cr0);
++		input_sync(idev);
++	} else
++		dev_dbg(&idev->dev, "discard event\n");
 +}
 +
-+static int mc13xxx_i2c_write(struct mc13xxx *mc13xxx,
-+			unsigned int offset, u32 val)
+ static void mc13783_ts_work(struct work_struct *work)
+ {
+-	struct mc13783_ts_priv *priv =
+-		container_of(work, struct mc13783_ts_priv, work.work);
++	struct mc13xxx_ts_priv *priv =
++		container_of(work, struct mc13xxx_ts_priv, work.work);
+ 	unsigned int mode = MC13XXX_ADC_MODE_TS;
+ 	unsigned int channel = 12;
+ 
+@@ -129,9 +191,21 @@ static void mc13783_ts_work(struct work_struct *work)
+ 		mc13783_ts_report_sample(priv);
+ }
+ 
+-static int mc13783_ts_open(struct input_dev *dev)
++static void mc13892_ts_work(struct work_struct *work)
 +{
-+	struct i2c_client *i2c = mc13xxx->control.i2cdev;
-+	unsigned char buf[3];
-+	int ret;
++	struct mc13xxx_ts_priv *priv =
++		container_of(work, struct mc13xxx_ts_priv, work.work);
++	unsigned int mode = MC13XXX_ADC_MODE_TS;
++	unsigned int channel = 12;
 +
-+	buf[0] = (val >> 16) & 0xff;
-+	buf[1] = (val >> 8) & 0xff;
-+	buf[2] = val & 0xff;
-+
-+	ret = i2c_smbus_write_i2c_block_data(i2c, offset, 3, buf);
-+	if (ret != 0) {
-+		dev_dbg(mc13xxx->dev, "24bit write error, ret = %d %s\n",
-+				ret, i2c->name);
-+		return ret;
-+	}
-+
-+	return 0;
++	if (mc13xxx_adc_do_conversion(priv->mc13xxx,
++				mode, channel, priv->sample) == 0)
++		mc13892_ts_report_sample(priv);
 +}
 +
-+static const struct i2c_device_id mc13xxx_i2c_device_id[] = {
++static int mc13xxx_ts_open(struct input_dev *dev)
+ {
+-	struct mc13783_ts_priv *priv = input_get_drvdata(dev);
++	struct mc13xxx_ts_priv *priv = input_get_drvdata(dev);
+ 	int ret;
+ 
+ 	mc13xxx_lock(priv->mc13xxx);
+@@ -139,7 +213,7 @@ static int mc13783_ts_open(struct input_dev *dev)
+ 	mc13xxx_irq_ack(priv->mc13xxx, MC13XXX_IRQ_TS);
+ 
+ 	ret = mc13xxx_irq_request(priv->mc13xxx, MC13XXX_IRQ_TS,
+-		mc13783_ts_handler, MC13783_TS_NAME, priv);
++		mc13xxx_ts_handler, DRIVER_NAME, priv);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -152,9 +226,9 @@ out:
+ 	return ret;
+ }
+ 
+-static void mc13783_ts_close(struct input_dev *dev)
++static void mc13xxx_ts_close(struct input_dev *dev)
+ {
+-	struct mc13783_ts_priv *priv = input_get_drvdata(dev);
++	struct mc13xxx_ts_priv *priv = input_get_drvdata(dev);
+ 
+ 	mc13xxx_lock(priv->mc13xxx);
+ 	mc13xxx_reg_rmw(priv->mc13xxx, MC13XXX_ADC0,
+@@ -165,9 +239,9 @@ static void mc13783_ts_close(struct input_dev *dev)
+ 	cancel_delayed_work_sync(&priv->work);
+ }
+ 
+-static int __init mc13783_ts_probe(struct platform_device *pdev)
++static int __init mc13xxx_ts_probe(struct platform_device *pdev)
+ {
+-	struct mc13783_ts_priv *priv;
++	struct mc13xxx_ts_priv *priv;
+ 	struct input_dev *idev;
+ 	int ret = -ENOMEM;
+ 
+@@ -176,19 +250,29 @@ static int __init mc13783_ts_probe(struct platform_device *pdev)
+ 	if (!priv || !idev)
+ 		goto err_free_mem;
+ 
+-	INIT_DELAYED_WORK(&priv->work, mc13783_ts_work);
++	switch (platform_get_device_id(pdev)->driver_data) {
++	case MC13XXX_ID_MC13783:
++		INIT_DELAYED_WORK(&priv->work, mc13783_ts_work);
++		break;
++	case MC13XXX_ID_MC13892:
++		INIT_DELAYED_WORK(&priv->work, mc13892_ts_work);
++		break;
++	default:
++		goto err_free_mem;
++	}
++
+ 	priv->mc13xxx = dev_get_drvdata(pdev->dev.parent);
+ 	priv->idev = idev;
+ 
+ 	/*
+-	 * We need separate workqueue because mc13783_adc_do_conversion
++	 * We need separate workqueue because mc13xxx_adc_do_conversion
+ 	 * uses keventd and thus would deadlock.
+ 	 */
+-	priv->workq = create_singlethread_workqueue("mc13783_ts");
++	priv->workq = create_singlethread_workqueue("mc13xxx_ts");
+ 	if (!priv->workq)
+ 		goto err_free_mem;
+ 
+-	idev->name = MC13783_TS_NAME;
++	idev->name = DRIVER_NAME;
+ 	idev->dev.parent = &pdev->dev;
+ 
+ 	idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+@@ -197,8 +281,8 @@ static int __init mc13783_ts_probe(struct platform_device *pdev)
+ 	input_set_abs_params(idev, ABS_Y, 0, 0xfff, 0, 0);
+ 	input_set_abs_params(idev, ABS_PRESSURE, 0, 0xfff, 0, 0);
+ 
+-	idev->open = mc13783_ts_open;
+-	idev->close = mc13783_ts_close;
++	idev->open = mc13xxx_ts_open;
++	idev->close = mc13xxx_ts_close;
+ 
+ 	input_set_drvdata(idev, priv);
+ 
+@@ -220,9 +304,9 @@ err_free_mem:
+ 	return ret;
+ }
+ 
+-static int __devexit mc13783_ts_remove(struct platform_device *pdev)
++static int __devexit mc13xxx_ts_remove(struct platform_device *pdev)
+ {
+-	struct mc13783_ts_priv *priv = platform_get_drvdata(pdev);
++	struct mc13xxx_ts_priv *priv = platform_get_drvdata(pdev);
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 
+@@ -233,27 +317,39 @@ static int __devexit mc13783_ts_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct platform_driver mc13783_ts_driver = {
+-	.remove		= __devexit_p(mc13783_ts_remove),
++const struct platform_device_id mc13xxx_ts_idtable[] = {
 +	{
-+		.name = "mc13783",
++		.name = "mc13783-ts",
 +		.driver_data = MC13XXX_ID_MC13783,
 +	}, {
-+		.name = "mc13892",
++		.name = "mc13892-ts",
 +		.driver_data = MC13XXX_ID_MC13892,
-+	}, {
-+		/* sentinel */
-+	}
-+};
-+MODULE_DEVICE_TABLE(i2c, mc13xxx_i2c_device_id);
-+
-+static const struct of_device_id mc13xxx_dt_ids[] = {
-+	{ .compatible = "fsl,mc13783", .data = (void *) MC13XXX_ID_MC13783, },
-+	{ .compatible = "fsl,mc13892", .data = (void *) MC13XXX_ID_MC13892, },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
-+
-+static int mc13xxx_i2c_probe(struct i2c_client *i2c,
-+			const struct i2c_device_id *id)
-+{
-+	const struct of_device_id *of_id;
-+	struct i2c_driver *idrv = to_i2c_driver(i2c->dev.driver);
-+	struct mc13xxx *mc13xxx;
-+
-+	of_id = of_match_device(mc13xxx_dt_ids, &i2c->dev);
-+	if (of_id)
-+		idrv->id_table =
-+			&mc13xxx_i2c_device_id[(enum mc13xxx_id) of_id->data];
-+
-+	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
-+	if (!mc13xxx)
-+		return -ENOMEM;
-+
-+	mc13xxx->dev = &i2c->dev;
-+	mc13xxx->control.i2cdev = i2c;
-+	mc13xxx->read = mc13xxx_i2c_read;
-+	mc13xxx->write = mc13xxx_i2c_write;
-+	mc13xxx->irq = i2c->irq;
-+
-+	mc13xxx->driver_data = id ? &id->driver_data : NULL;
-+
-+	return mc13xxx_device_init(mc13xxx);
-+}
-+
-+static int __devexit mc13xxx_i2c_remove(struct i2c_client *i2c)
-+{
-+	struct mc13xxx *mc13xxx = i2c_get_clientdata(i2c);
-+
-+	mc13xxx_device_exit(mc13xxx);
-+
-+	return 0;
-+}
-+
-+static struct i2c_driver mc13xxx_i2c_driver = {
-+	.id_table = mc13xxx_i2c_device_id,
-+	.driver = {
-+		.name = "mc13xxx",
-+		.owner = THIS_MODULE,
 +	},
-+	.probe = mc13xxx_i2c_probe,
-+	.remove = __devexit_p(mc13xxx_i2c_remove),
++	{ }
 +};
 +
-+static int __init mc13xxx_i2c_init(void)
-+{
-+	return i2c_add_driver(&mc13xxx_i2c_driver);
-+}
-+subsys_initcall(mc13xxx_i2c_init);
-+
-+static void __exit mc13xxx_i2c_exit(void)
-+{
-+	i2c_del_driver(&mc13xxx_i2c_driver);
-+}
-+module_exit(mc13xxx_i2c_exit);
-+
-+MODULE_DESCRIPTION("I2C support for Freescale MC13XXX PMIC");
-+MODULE_AUTHOR("Oskar Schirmer <oskar@scara.com>");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-index 9929a8e..31c925f 100644
---- a/include/linux/mfd/mc13xxx.h
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -9,6 +9,7 @@
- #ifndef __LINUX_MFD_MC13XXX_H
- #define __LINUX_MFD_MC13XXX_H
++static struct platform_driver mc13xxx_ts_driver = {
++	.id_table	= mc13xxx_ts_idtable,
++	.remove		= __devexit_p(mc13xxx_ts_remove),
+ 	.driver		= {
++		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
+-		.name	= MC13783_TS_NAME,
+ 	},
+ };
  
-+#include <linux/i2c.h>
- #include <linux/interrupt.h>
- #include <linux/spi/spi.h>
+-static int __init mc13783_ts_init(void)
++static int __init mc13xxx_ts_init(void)
+ {
+-	return platform_driver_probe(&mc13783_ts_driver, &mc13783_ts_probe);
++	return platform_driver_probe(&mc13xxx_ts_driver, &mc13xxx_ts_probe);
+ }
+-module_init(mc13783_ts_init);
++module_init(mc13xxx_ts_init);
  
-@@ -45,6 +46,7 @@ enum mc13xxx_id {
- struct mc13xxx {
- 	struct device *dev;
- 	union {
-+		struct i2c_client *i2cdev;
- 		struct spi_device *spidev;
- 	} control;
- 	struct mutex lock;
+-static void __exit mc13783_ts_exit(void)
++static void __exit mc13xxx_ts_exit(void)
+ {
+-	platform_driver_unregister(&mc13783_ts_driver);
++	platform_driver_unregister(&mc13xxx_ts_driver);
+ }
+-module_exit(mc13783_ts_exit);
++module_exit(mc13xxx_ts_exit);
+ 
+-MODULE_DESCRIPTION("MC13783 input touchscreen driver");
++MODULE_DESCRIPTION("MC13xxx input touchscreen driver");
+ MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
+ MODULE_LICENSE("GPL v2");
+-MODULE_ALIAS("platform:" MC13783_TS_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME MC13XXX_TS_NAME);
 -- 
 1.7.5.4
 
