@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2BNFv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:51:28 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:48910 "HELO
+	id S1752633Ab2BNFvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:51:42 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:49564 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752589Ab2BNFvY (ORCPT
+	with SMTP id S1752157Ab2BNFvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:51:24 -0500
+	Tue, 14 Feb 2012 00:51:39 -0500
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/bIZcFgW3bhQpH22fn3sGwNsVNfpeptZf6+F2Xse
-	OQL8tNuIK3f8XK
+X-Provags-ID: V01U2FsdGVkX185PYUvHHw5DXYcgi/asSi4xQamI/yYxcisveJlDH
+	+3B0wSBwsnNaFN
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 1/4] viafb: set correct polarity for second adapter
-Date: Tue, 14 Feb 2012 06:12:02 +0000
-Message-Id: <e0e12a9282a879577ba8e35c73ff5d94ae1f50b9.1329194838.git.FlorianSchandinat@gmx.de>
+Subject: [PATCH 2/4] viafb: fill xres and yres
+Date: Tue, 14 Feb 2012 06:12:03 +0000
+Message-Id: <561c9079ea1de24f8d49c73391811c547d1b2636.1329194838.git.FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1329194838.git.FlorianSchandinat@gmx.de>
 References: <cover.1329194838.git.FlorianSchandinat@gmx.de>
@@ -25,54 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets the correct polarity for the second adapter when
-viafb_SAMM_ON is set and viafb_dual_fb is not set. Just one step to
-make this mode useful.
+This patch fills xres and yres in var which is required when a
+temporary var is genereated when viafb_SAMM_ON is set and
+viafb_dual_fb is not set. It also removes an obsolete comment.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/hw.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/video/via/hw.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index d5aaca9..08c1036 100644
+index 08c1036..399d507 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -1758,13 +1758,13 @@ static void set_display_channel(void)
+@@ -2125,7 +2125,6 @@ void viafb_set_dpa_gfx(int output_interface, struct GFX_DPA_SETTING\
  	}
  }
  
--static u8 get_sync(struct fb_info *info)
-+static u8 get_sync(struct fb_var_screeninfo *var)
+-/*According var's xres, yres fill var's other timing information*/
+ void viafb_fill_var_timing_info(struct fb_var_screeninfo *var,
+ 	struct crt_mode_table *mode)
  {
- 	u8 polarity = 0;
- 
--	if (!(info->var.sync & FB_SYNC_HOR_HIGH_ACT))
-+	if (!(var->sync & FB_SYNC_HOR_HIGH_ACT))
- 		polarity |= VIA_HSYNC_NEGATIVE;
--	if (!(info->var.sync & FB_SYNC_VERT_HIGH_ACT))
-+	if (!(var->sync & FB_SYNC_VERT_HIGH_ACT))
- 		polarity |= VIA_VSYNC_NEGATIVE;
- 	return polarity;
- }
-@@ -1976,13 +1976,13 @@ int viafb_setmode(int video_bpp, int video_bpp1)
- 			viafb_DeviceStatus = CRT_Device;
- 	}
- 	device_on();
--	if (!viafb_dual_fb)
--		via_set_sync_polarity(devices, get_sync(viafbinfo));
-+	if (!viafb_SAMM_ON)
-+		via_set_sync_polarity(devices, get_sync(&viafbinfo->var));
- 	else {
- 		via_set_sync_polarity(viaparinfo->shared->iga1_devices,
--			get_sync(viafbinfo));
-+			get_sync(&viafbinfo->var));
- 		via_set_sync_polarity(viaparinfo->shared->iga2_devices,
--			get_sync(viafbinfo1));
-+			get_sync(&var2));
- 	}
- 
- 	clock.set_engine_pll_state(VIA_STATE_ON);
+@@ -2134,6 +2133,8 @@ void viafb_fill_var_timing_info(struct fb_var_screeninfo *var,
+ 	crt_reg = mode->crtc;
+ 	var->pixclock = 1000000000 / (crt_reg.hor_total * crt_reg.ver_total)
+ 		* 1000 / mode->refresh_rate;
++	var->xres = crt_reg.hor_addr;
++	var->yres = crt_reg.ver_addr;
+ 	var->left_margin =
+ 	    crt_reg.hor_total - (crt_reg.hor_sync_start + crt_reg.hor_sync_end);
+ 	var->right_margin = crt_reg.hor_sync_start - crt_reg.hor_addr;
 -- 
 1.7.9
 
