@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759608Ab2BNIqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 03:46:13 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47589 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab2BNIqL (ORCPT
+	id S1759634Ab2BNIw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 03:52:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34656 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab2BNIw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 03:46:11 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Feb 2012 17:44:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/6 v4] memcg: simplify move_account() check
-Message-Id: <20120214174442.3efcb22c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <CAHH2K0Ynh6o5fMXnkbaYOSwYYvJhc7F3f48TsJ34hki6WDJF6Q@mail.gmail.com>
-References: <20120214120414.025625c2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120214120756.0a42f065.kamezawa.hiroyu@jp.fujitsu.com>
-	<CAHH2K0Ynh6o5fMXnkbaYOSwYYvJhc7F3f48TsJ34hki6WDJF6Q@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 14 Feb 2012 03:52:56 -0500
+Date: Tue, 14 Feb 2012 00:53:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yang Bai <hamo.by@gmail.com>
+Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slab: warning if total alloc size overflow
+Message-Id: <20120214005301.a9d5be1a.akpm@linux-foundation.org>
+In-Reply-To: <1329204499-2671-1-git-send-email-hamo.by@gmail.com>
+References: <1329204499-2671-1-git-send-email-hamo.by@gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 23:21:34 -0800
-Greg Thelen <gthelen@google.com> wrote:
+On Tue, 14 Feb 2012 15:28:19 +0800 Yang Bai <hamo.by@gmail.com> wrote:
 
-> On Mon, Feb 13, 2012 at 7:07 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > From 9cdb3b63dc8d08cc2220c54c80438c13433a0d12 Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Thu, 2 Feb 2012 10:02:39 +0900
-> > Subject: [PATCH 2/6] memcg: simplify move_account() check.
-> >
-> > In memcg, for avoiding take-lock-irq-off at accessing page_cgroup,
-> > a logic, flag + rcu_read_lock(), is used. This works as following
-> >
-> >     CPU-A                     CPU-B
-> >                             rcu_read_lock()
-> >    set flag
-> >                             if(flag is set)
-> >                                   take heavy lock
-> >                             do job.
-> >    synchronize_rcu()        rcu_read_unlock()
+> Before, if the total alloc size is overflow,
+> we just return NULL like alloc fail. But they
+> are two different type problems. The former looks
+> more like a programming problem. So add a warning
+> here.
 > 
-> I assume that CPU-A will take heavy lock after synchronize_rcu() when
-> updating variables read by CPU-B.
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> ---
+>  include/linux/slab.h |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-Ah, yes. I should wrote that.
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index 573c809..5865237 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -242,8 +242,10 @@ size_t ksize(const void *);
+>   */
+>  static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
+>  {
+> -	if (size != 0 && n > ULONG_MAX / size)
+> +	if (size != 0 && n > ULONG_MAX / size) {
+> +		WARN(1, "Alloc memory size (%lu * %lu) overflow.", n, size);
+>  		return NULL;
+> +	}
+>  	return __kmalloc(n * size, flags | __GFP_ZERO);
+>  }
 
-> >  memcontrol.c |   65 ++++++++++++++++++++++-------------------------------------
-> >  1 file changed, 25 insertions(+), 40 deletions(-)
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Acked-by: Greg Thelen <gthelen@google.com>
-> 
+One of the applications of kcalloc() is to prevent userspace from
+causing a multiplicative overflow (and then perhaps causing an
+overwrite beyond the end of the allocated memory).
 
-Thank you!.
+With this patch, we've just handed the user a way of spamming the logs
+at 1MHz.  This is bad.
 
--Kame
 
+Also, please let's not randomly add debug stuff in places where we've
+never demonstrated a need for it.
