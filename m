@@ -1,43 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758318Ab2BNHfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:35:48 -0500
-Received: from pluton.utt.fr ([193.50.230.240]:48646 "EHLO pluton.utt.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab2BNHfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:35:47 -0500
-Message-ID: <20120213232905.8l017ytkrkcsc4gc@messagerie.utt.fr>
-Date: Mon, 13 Feb 2012 23:29:05 +0100
-From: BUNEL Maxime <maxime.bunel@utt.fr>
-Reply-to: mr_ronaldo112@yahoo.co.jp
-To: undisclosed-recipients:;
-Subject: Good Day,
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.0.4)
+	id S1759463Ab2BNHgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:36:47 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59905 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2BNHgo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 02:36:44 -0500
+Message-ID: <1329204997.24837.15.camel@edumazet-laptop>
+Subject: Re: NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jcliburn@gmail.com, chris.snook@gmail.com,
+        netdev <netdev@vger.kernel.org>, Jay Cliburn <jcliburn@gmail.com>
+Date: Tue, 14 Feb 2012 08:36:37 +0100
+In-Reply-To: <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
+References: <1329063403.1449.14.camel@localhost.localdomain>
+	 <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le lundi 13 février 2012 à 16:00 -0500, Josh Boyer a écrit :
+> On Sun, Feb 12, 2012 at 11:16 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > abrt_version:   2.0.7
+> > cmdline:        BOOT_IMAGE=/vmlinuz-3.2.3 root=/dev/sda2 rootfstype=ext4 rootflags=data=writeback ro quiet rhgb
+> > kernel:         3.2.3
+> > reason:         WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
+> > time:           Sa 04 Feb 2012 15:31:22 CET
+> >
+> > backtrace:
+> > :WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
+> > :Hardware name: Aspire 1810T
+> > :NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> > :Modules linked in: vfat fat fuse bluetooth nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep uvcvideo snd_seq arc4 videodev usb_storage snd_seq_device v4l2_compat_ioctl32 snd_pcm snd_timer acer_wmi iwlwifi snd mac80211 sparse_keymap cfg80211 rfkill soundcore snd_page_alloc joydev wmi acerhdf pcspkr virtio_net virtio atl1c virtio_ring kvm_intel kvm uinput ipv6 [last unloaded: scsi_wait_scan]
+> > :Pid: 0, comm: swapper Not tainted 3.2.3 #5
+> > :Call Trace:
+> > : <IRQ>  [<ffffffff810322ca>] warn_slowpath_common+0x7a/0xb0
+> > : [<ffffffff81018a18>] ? lapic_next_event+0x18/0x20
+> > : [<ffffffff810323a1>] warn_slowpath_fmt+0x41/0x50
+> > : [<ffffffff8104e9be>] ? hrtimer_interrupt+0xfe/0x1f0
+> > : [<ffffffff8102c350>] ? wake_up_process+0x10/0x20
+> > : [<ffffffff813e9397>] dev_watchdog+0x1e7/0x1f0
+> > : [<ffffffff8103cfcf>] run_timer_softirq+0xef/0x210
+> > : [<ffffffff813e91b0>] ? qdisc_reset+0x50/0x50
+> > : [<ffffffff81037827>] __do_softirq+0x87/0x110
+> > : [<ffffffff814945fa>] call_softirq+0x1a/0x30
+> > : [<ffffffff810038bd>] do_softirq+0x4d/0x80
+> > : [<ffffffff81037a8e>] irq_exit+0x7e/0xa0
+> > : [<ffffffff8100375b>] do_IRQ+0x5b/0xd0
+> > : [<ffffffff8148de29>] common_interrupt+0x69/0x69
+> > : <EOI>  [<ffffffff8124e115>] ? acpi_idle_enter_bm+0x1c0/0x1ff
+> > : [<ffffffff8124e110>] ? acpi_idle_enter_bm+0x1bb/0x1ff
+> > : [<ffffffff813a24b4>] ? menu_select+0xd4/0x390
+> > : [<ffffffff813a150b>] cpuidle_idle_call+0x8b/0xe0
+> > : [<ffffffff810011ed>] cpu_idle+0x9d/0xe0
+> > : [<ffffffff8147d08e>] rest_init+0x62/0x64
+> > : [<ffffffff81699b54>] start_kernel+0x358/0x363
+> > : [<ffffffff81699322>] x86_64_start_reservations+0x132/0x136
+> > : [<ffffffff81699416>] x86_64_start_kernel+0xf0/0xf7
+> > : [<ffffffff81017e70>] ? acpi_suspend_lowlevel+0x1b0/0x1b0
+> 
+> We've seen this in Fedora for a long time now.  As far as I know, nobody
+> really knows what is going on.
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=717211
+> 
+> (Also, you probably should have sent this to netdev.)
 
-Good Day,
+CC netdev, Jay Cliburn <jcliburn@gmail.com>, 
 
-I have a business proposal of USD $8,500,000.00 only for you to transact
-with me from my bank to your country. All confirmable documents to back up
-the claims will be made available to you prior to your acceptance. Reply if
-you are interested so that we can commence the transation which will
-take less than 5 days.
+It seems this driver has partial support for two TX rings.
 
-Best Regards,
-Mr. Rolando Biscocho Castillo.
-Investment consultant,
-UBS Investment Bank, Philippines.
+(TX completion only drains the first ring)
 
+Please try following patch.
 
-
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index b859124..1ff3c6d 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -2244,10 +2244,6 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
+ 			dev_info(&adapter->pdev->dev, "tx locked\n");
+ 		return NETDEV_TX_LOCKED;
+ 	}
+-	if (skb->mark == 0x01)
+-		type = atl1c_trans_high;
+-	else
+-		type = atl1c_trans_normal;
+ 
+ 	if (atl1c_tpd_avail(adapter, type) < tpd_req) {
+ 		/* no enough descriptor, just stop queue */
 
 
