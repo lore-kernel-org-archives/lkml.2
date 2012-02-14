@@ -1,72 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab2BNMrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 07:47:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32812 "EHLO mx2.suse.de"
+	id S1760286Ab2BNMte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 07:49:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32935 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab2BNMrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 07:47:39 -0500
-Date: Tue, 14 Feb 2012 13:47:35 +0100
+	id S1756506Ab2BNMta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 07:49:30 -0500
 From: Jan Kara <jack@suse.cz>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: Markus <M4rkusXXL@web.de>, lkml <linux-kernel@vger.kernel.org>,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        gregkh@linuxfoundation.org
-Subject: Re: Deadlock?
-Message-ID: <20120214124735.GD1934@quack.suse.cz>
-References: <3125411.WeeEOF8PnR@f209>
- <4F394A5E.4050002@fastmail.fm>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="liOOAslEiF7prFVr"
-Content-Disposition: inline
-In-Reply-To: <4F394A5E.4050002@fastmail.fm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-fsdevel@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Markus <M4rkusXXL@web.de>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH] quota: Make quota code not call tty layer with dqptr_sem held
+Date: Tue, 14 Feb 2012 13:49:20 +0100
+Message-Id: <1329223760-13817-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon 13-02-12 17:37:34, Jack Stone wrote:
-> Adding CCs
-> 
-> On 02/13/2012 11:17 AM, Markus wrote:
-> > I noted some kind of deadlock, where I was not able to write to the raid6, 
-> > while writing to each disk would still work.
-> > This caused many processes to "wait" in d-state, thus making it impossible to 
-> > unmount, cleanly reboot, sync, ...
-  Thanks for report. Could you please provide output of
-    'echo w >/proc/sysrq-trigger'
-in dmesg? That would help us narrow down the real cause the the current
-deadlock.
-
-> > So I enabled the detection of hung tasks and this deplock option.
-> > After running a 3.2.2 for about 5 days:
-> > http://pastebin.com/gy1kaYmS
-> > 
-> > I dont know if its a bug or nothing. Or if it has anything to do with my 
-> > problem as there was no hungtask detected and the raid still seems to work.
-  It's lock debugging code complaining about a possible problem it found.
-Actually, the problem looks real (although hard to hit AFAICS) and attached
-patch should fix it. Does the patch fix things for you? If not, please
-provide the output I describe above.
-
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
-
---liOOAslEiF7prFVr
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-quota-Make-quota-code-not-call-tty-layer-with-dqptr_.patch"
-
->From 4e9707d880d6131e9b123e7cdcf6ef7f4e52e478 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 14 Feb 2012 13:28:01 +0100
-Subject: [PATCH] quota: Make quota code not call tty layer with dqptr_sem held
 
 dqptr_sem can be called from slab reclaim. tty layer uses GFP_KERNEL mask for
 allocation so it can end up calling slab reclaim. Given quota code can call
@@ -78,10 +28,13 @@ easy enough to change quota code to not hold any locks when printing warnings,
 let's just do it. It seems like a good thing to do even when we use netlink
 layer to transmit warnings to userspace.
 
+Reported-by: Markus <M4rkusXXL@web.de>
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
  fs/quota/dquot.c |  189 ++++++++++++++++++++++++++++++++----------------------
  1 files changed, 113 insertions(+), 76 deletions(-)
+
+ I plan to put this fix into my tree if noone objects.
 
 diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
 index 4674197..439ab11 100644
@@ -549,5 +502,3 @@ index 4674197..439ab11 100644
 -- 
 1.7.1
 
-
---liOOAslEiF7prFVr--
