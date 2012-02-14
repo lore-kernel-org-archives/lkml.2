@@ -1,89 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2BNCQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 21:16:53 -0500
-Received: from toronto-hs-216-138-233-67.s-ip.magma.ca ([216.138.233.67]:59546
-	"HELO yow.seanm.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751515Ab2BNCQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 21:16:53 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Feb 2012 21:16:52 EST
-Date: Mon, 13 Feb 2012 21:10:09 -0500
-From: Sean MacLennan <seanm@seanm.ca>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Andrea Merello <andreamrl@tiscali.it>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Mike McCormack <mikem@ring3k.org>
-Subject: Re: [PATCH] Staging, rtl8192e, softmac: remove redundant memset and
- fix mem leak
-Message-ID: <20120213211009.7c0335cc@opus.seanm.ca>
-In-Reply-To: <alpine.LNX.2.00.1202130012140.13814@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202130012140.13814@swampdragon.chaosbits.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756142Ab2BNCWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 21:22:18 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:58244 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751515Ab2BNCWQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 21:22:16 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20120210162512.GF6472@opensource.wolfsonmicro.com>
+References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
+	<1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+	<1328856038-21912-6-git-send-email-myungjoo.ham@samsung.com>
+	<20120210162512.GF6472@opensource.wolfsonmicro.com>
+Date: Tue, 14 Feb 2012 11:22:14 +0900
+X-Google-Sender-Auth: 7WxZ3Ew3AfWjWveA0eYzyHGLEOU
+Message-ID: <CAJ0PZbQNBFT0WS6o_NokXhtif0K8KBez+asDgP=0RDeizfGokg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] Extcon: adc-jack driver to support 3.5 pi or
+ simliar devices
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 00:15:02 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
+On Sat, Feb 11, 2012 at 1:25 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Feb 10, 2012 at 03:40:38PM +0900, MyungJoo Ham wrote:
+>> External connector devices that decides connection information based on
+>> ADC values may use adc-jack device driver. The user simply needs to
+>> provide a table of adc range and connection states. Then, extcon
+>> framework will automatically notify others.
+>
+> This really should be done in terms of the IIO in-kernel framework.
 
-> We also fail to kfree() the memory we allocated for 'network' if we
-> do not enter
-> 
->   if (ieee->current_network.qos_data.supported == 1) {
-> 
-> and the variable then goes out of scope.
-> 
-> To fix that I simply moved the kfree() that was inside that 'if'
-> statement to instead be just after it. It then covers both the case
-> where we take the branch and when we don't.
+The ADC part may be done in IIO. However, the intention of this device
+driver is to provide extcon interface to any ADC drivers, not
+providing an ADC device driver. If we are going to implement this in
+the ADC driver in IIO, we will need to write the given code in every
+ADC driver used for analog ports.
 
-Nice catch! We know that the driver leaks memory if left running for a
-long time, this will help!
+>
+>> +     /* Check the length of array and set num_cables */
+>> +     for (i = 0; data->edev.supported_cable[i]; i++)
+>> +             ;
+>> +     if (i == 0 || i > SUPPORTED_CABLE_MAX) {
+>
+> Can we not avoid the hard limit?
 
-I would recommend a small change: instead of moving the kfree() out of
-the loop, why not move the kzalloc into it? The qos_data.supported == 0
-is the normal case (at least for me), so why not save an alloc?
+Without that limit, we won't be able to easily express binary cable
+status (u32) with the extcon framework. At least, we will need to
+forget about setting the status with u32 values.
 
-Something like this:
+Anyway, I can remove the checking SUPPORT_CABLE_MAX part at probe.
 
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
-index 1637f11..59b991f 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac.c
-@@ -2228,13 +2228,6 @@ inline int rtllib_rx_assoc_resp(struct rtllib_device *ieee, struct sk_buff *skb,
- 	     (ieee->iw_mode == IW_MODE_INFRA)) {
- 		errcode = assoc_parse(ieee, skb, &aid);
- 		if (0 == errcode) {
--			struct rtllib_network *network =
--				 kzalloc(sizeof(struct rtllib_network),
--				 GFP_ATOMIC);
--
--			if (!network)
--				return 1;
--			memset(network, 0, sizeof(*network));
- 			ieee->state = RTLLIB_LINKED;
- 			ieee->assoc_id = aid;
- 			ieee->softmac_stats.rx_ass_ok++;
-@@ -2242,6 +2235,13 @@ inline int rtllib_rx_assoc_resp(struct rtllib_device *ieee, struct sk_buff *skb,
- 			/* Let the register setting default with Legacy station */
- 			assoc_resp = (struct rtllib_assoc_response_frame *)skb->data;
- 			if (ieee->current_network.qos_data.supported == 1) {
-+				struct rtllib_network *network =
-+					kzalloc(sizeof(struct rtllib_network),
-+						GFP_ATOMIC);
-+
-+				if (!network)
-+					return 1;
-+
- 				if (rtllib_parse_info_param(ieee, assoc_resp->info_element,
- 							rx_stats->len - sizeof(*assoc_resp),
- 							network, rx_stats)) {
+>
+>> +     /* Check the length of array and set num_conditions */
+>> +     for (i = 0; data->adc_condition[i].state; i++)
+>> +             ;
+>> +     data->num_conditions = i;
+>
+> It'd seem nicer to just specify the length in the parameters, less error
+> prone.
 
-Cheers,
-   Sean
+Whether to put a NULL at the end or to provide a size variable seems
+quite confusing in Linux kernel. Some use the former, some use the
+latter. Which one is sort of "standard" now? I felt that the former is
+being more popular these days, anyway.
+
+>
+>> +     if (pdata->irq) {
+>> +             data->irq = pdata->irq;
+>> +
+>> +             err = request_threaded_irq(data->irq, NULL,
+>> +                                        adc_jack_irq_thread,
+>> +                                        pdata->irq_flags, pdata->name,
+>> +                                        data);
+>
+> Since all this does is schedule a delayed work there's no reason to
+> bother with a threaded IRQ and this could be request_any_context_irq().
+
+Thanks. I'll update it.
+
+>
+>> +     err = extcon_dev_register(&data->edev, &pdev->dev);
+>> +     if (err)
+>> +             goto err_irq;
+>
+> What happens if the interrupt fires prior to this...
+>
+>> +     data->ready = true;
+>
+> ...ah, that's what this is about.  It'd seem cleaner to just reverse the
+> request and registration.
+
+If it goes to err_irq, it reverses the request of IRQ. data->ready is
+there not to react to a fired IRQ before free-ing the IRQ.
+
+>
+>> +     goto out;
+>
+> More idiomatic to have a return statement here.
+
+Yup.
+
+>
+>> +static int __devexit adc_jack_remove(struct platform_device *pdev)
+>> +{
+>> +     struct adc_jack_data *data = platform_get_drvdata(pdev);
+>> +
+>> +     extcon_dev_unregister(&data->edev);
+>> +     if (data->irq)
+>> +             free_irq(data->irq, data);
+>
+> The interrupt needs to be freed prior to the device unregistration
+> otherwise they may race.
+
+Yes. Thanks.
+
+>
+>> +static int __init adc_jack_init(void)
+>> +{
+>> +     return platform_driver_register(&adc_jack_driver);
+>> +}
+>> +
+>> +static void __exit adc_jack_exit(void)
+>> +{
+>> +     platform_driver_unregister(&adc_jack_driver);
+>> +}
+>
+> module_platform_driver().
+
+Oh.. this is good. :)
+
+>
+>> +     unsigned long handling_delay; /* in jiffies */
+>
+> I'd suggest calling this "debounce" instead, it seems more idiomatic.
+
+Yes, it seems so. I'll fix it.
+
+
+Thank you.
+
+
+
+
+Cheers!
+MyungJoo.
+
+-- 
+MyungJoo Ham, Ph.D.
+System S/W Lab, S/W Center, Samsung Electronics
