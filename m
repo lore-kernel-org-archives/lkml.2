@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2BNVcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:32:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52362 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab2BNVca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:32:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] PM / Hibernate: print physical addresses consistently with other parts of kernel
-Date: Tue, 14 Feb 2012 22:36:20 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-References: <20120214000447.32522.5191.stgit@bhelgaas.mtv.corp.google.com>
-In-Reply-To: <20120214000447.32522.5191.stgit@bhelgaas.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1761260Ab2BNVdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:33:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42290 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757270Ab2BNVdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 16:33:38 -0500
+Date: Tue, 14 Feb 2012 13:33:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
+Message-Id: <20120214133337.9de7835b.akpm@linux-foundation.org>
+In-Reply-To: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202142236.20788.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 14, 2012, Bjorn Helgaas wrote:
-> Print physical address info in a style consistent with the %pR style used
-> elsewhere in the kernel.
->
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+On Sun, 12 Feb 2012 01:21:35 +0100
+Andrea Righi <andrea@betterlinux.com> wrote:
 
-Applied.
+> The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
+> drop-behind policy where applications can mark certain intervals of a file as
+> FADV_NOREUSE before accessing the data.
 
-Thanks,
-Rafael
+I think you and John need to talk to each other, please.  The amount of
+duplication here is extraordinary.
+
+Both patchsets add fields to the address_space (and hence inode), which
+is significant - we should convince ourselves that we're getting really
+good returns from a feature which does this.
 
 
-> ---
->  kernel/power/snapshot.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-> index 6a768e5..8e2e746 100644
-> --- a/kernel/power/snapshot.c
-> +++ b/kernel/power/snapshot.c
-> @@ -711,9 +711,10 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
->  	list_for_each_entry(region, &nosave_regions, list) {
->  		unsigned long pfn;
->  
-> -		pr_debug("PM: Marking nosave pages: %016lx - %016lx\n",
-> -				region->start_pfn << PAGE_SHIFT,
-> -				region->end_pfn << PAGE_SHIFT);
-> +		pr_debug("PM: Marking nosave pages: [mem %#010llx-%#010llx]\n",
-> +			 (unsigned long long) region->start_pfn << PAGE_SHIFT,
-> +			 ((unsigned long long) region->end_pfn << PAGE_SHIFT)
-> +				- 1);
->  
->  		for (pfn = region->start_pfn; pfn < region->end_pfn; pfn++)
->  			if (pfn_valid(pfn)) {
-> 
-> 
-> 
+
+Regarding the use of fadvise(): I suppose it's a reasonable thing to do
+in the long term - if the feature works well, popular data streaming
+applications will eventually switch over.  But I do think we should
+explore interfaces which don't require modification of userspace source
+code.  Because there will always be unconverted applications, and the
+feature becomes available immediately.
+
+One such interface would be to toss the offending application into a
+container which has a modified drop-behind policy.  And here we need to
+drag out the crystal ball: what *is* the best way of tuning application
+pagecache behaviour?  Will we gravitate towards containerization, or
+will we gravitate towards finer-tuned fadvise/sync_page_range/etc
+behaviour?  Thus far it has been the latter, and I don't think that has
+been a great success.
+
+Finally, are the problems which prompted these patchsets already
+solved?  What happens if you take the offending streaming application
+and toss it into a 16MB memcg?  That *should* avoid perturbing other
+things running on that machine.
+
+And yes, a container-based approach is pretty crude, and one can
+envision applications which only want modified reclaim policy for one
+particualr file.  But I suspect an application-wide reclaim policy
+solves 90% of the problems.
 
