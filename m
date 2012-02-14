@@ -1,169 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761312Ab2BNWHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:07:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52432 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757335Ab2BNWHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:07:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [RFC PATCH] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-Date: Tue, 14 Feb 2012 23:11:41 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-References: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
-In-Reply-To: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1761316Ab2BNWId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:08:33 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:32721 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1761264Ab2BNWIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 17:08:30 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: gf.Xo_oVM1kdYNG2BDZ.VHc_QHHBzrM6YDU2HYI1kKPQ.4H
+ KC4310jM6yYTdwGl58gFiz_MATkDpxdOCrIP2ux7.psxgUgNRuVTIvub.z74
+ NZBzx6oU7_g0eEM4n.cI1VMuGfyC6BVn44FzulVhGifr74WSi81JpFcPPJqi
+ XfjzSeE9j6QAkmeO_tucinIdCtCqCscTJA293mIwJIiGyRDn_gP83NnE04.G
+ asCQzcUv3yv7OSudnSlzWnmG19tzyZ89VWUeIKqHbSj8NL2t3N0KyYGfiCiS
+ _RInZaQSF9eAJf8tMaUR5oN24YDN.KPa.0slPxlAPzxZNs614JPb6QlNl294
+ vI3_nlnCFaM94XtcD8SPBcQhUlYkP4OHsPryecY3N_ygvqCf84CZ_SSE4EBz
+ 16ApV9EbVG3NSSqxk0p6Dmq1ITK_hmKMKPi64
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 14 Feb 2012 16:08:26 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Xi Wang <xi.wang@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: Uninline kcalloc
+In-Reply-To: <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com>
+Message-ID: <alpine.DEB.2.00.1202141605240.32407@router.home>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net> <20120209150652.5b1d19dc.akpm@linux-foundation.org>
+ <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home>
+ <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com> <alpine.DEB.2.00.1202141329360.24883@router.home> <20120214124518.f42bc03e.akpm@linux-foundation.org>
+ <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com> <alpine.DEB.2.00.1202141503470.29019@router.home> <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202142311.41483.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 14 Feb 2012, Xi Wang wrote:
 
-On Tuesday, February 14, 2012, MyungJoo Ham wrote:
-> 1. CPU_DMA_THROUGHPUT
-> 
-> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
-> blocks that creates QoS requirement based on DMA throughput, not
-> latency, while their (those QoS requester H/W blocks) services are
-> short-term bursts that cannot be effectively responsed by DVFS
-> mechanisms (CPUFreq and Devfreq).
-> 
-> In the Exynos4412 systems that are being tested, such H/W blocks include
-> MFC (multi-function codec)'s decoding and enconding features, TV-out
-> (including HDMI), and Cameras. When the display is operated at 60Hz,
-> each chunk of task should be done within 16ms and the workload on DMA is
-> not well spread and fluctuates between frames; some frame requires more
-> and some do not and within a frame, the workload also fluctuates
-> heavily and the tasks within a frame are usually not parallelized; they
-> are processed through specific H/W blocks, not CPU cores. They often
-> have PPMU capabilities; however, they need to be polled very frequently
-> in order to let DVFS mechanisms react properly. (less than 5ms).
-> 
-> For such specific tasks, allowing them to request QoS requirements seems
-> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
-> longer) cannot follow up with them. Besides, the device drivers know
-> when to request and cancel QoS exactly.
-> 
-> 2. DVFS_LATENCY
-> 
-> Both CPUFreq and Devfreq have response latency to a sudden workload
-> increase. With near-100% (e.g., 95%) up-threshold, the average response
-> latency is approximately 1.5 x polling-rate.
-> 
-> A specific polling rate (e.g., 100ms) may generally fit for its system;
-> however, there could be exceptions for that. For example,
-> - When a user input suddenly starts: typing, clicking, moving cursors, and
->   such, the user might need the full performance immediately. However,
->   we do not know whether the full performance is actually needed or not
->   until we calculate the utilization; thus, we need to calculate it
->   faster with user inputs or any similar events. Specifying QoS on CPU
->   processing power or Memory bandwidth at every user input is an
->   overkill because there are many cases where such speed-up isn't
->   necessary.
-> - When a device driver needs a faster performance response from DVFS
->   mechanism. This could be addressed by simply putting QoS requests.
->   However, such QoS requests may keep the system running fast
->   unnecessary in some cases, especially if a) the device's resource
->   usage bursts with some duration (e.g., 100ms-long bursts) and
->   b) the driver doesn't know when such burst come. MMC/WiFi often had
->   such behaviors although there are possibilities that part (b) might
->   be addressed with further efforts.
-> 
-> The cases shown above can be tackled with putting QoS requests on the
-> response time or latency of DVFS mechanism, which is directly related to
-> its polling interval (if the DVFS mechanism is polling based).
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> On Feb 14, 2012, at 4:09 PM, Christoph Lameter wrote:
+> > IMHO Having a function to deal with the overflow of a multiplication and
+> > then do an allocation based on the result is a conflation of two different
+> > things that need to be separate. kcalloc only exists because there is
+> > an ancient user space function that somehow got a second parameter instead
+> > of just using the same as malloc().
+>
+> I don't understand why these kcalloc patches have anything to do
+> with kmalloc(SAFE_ARRAY_SIZE(...), ...) you proposed.
 
-Who's going to use the new classes?
+Not sure why you are so hung up on SAFE_ARRAY_SIZE. It was an idea to
+discuss. Certainly having an inline function seems to be better.
 
-Rafael
+> It also doesn't make much sense to force the caller to check the
+> result of SAFE_ARRAY_SIZE() or calculate_array_size() before passing
+> it to kmalloc().  This is too verbose.
 
+kcalloc is still there. Certainly useful for legacy purposes. But I'd feel
+better if I had fine grained control over the size of my allocation rather
+than rely on the slab allocators to check up on my multiplication.
 
-> ---
->  include/linux/pm_qos.h |    6 +++++-
->  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
->  2 files changed, 35 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index e5bbcba..f8ccb7b 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -13,13 +13,17 @@
->  #define PM_QOS_CPU_DMA_LATENCY 1
->  #define PM_QOS_NETWORK_LATENCY 2
->  #define PM_QOS_NETWORK_THROUGHPUT 3
-> +#define PM_QOS_CPU_DMA_THROUGHPUT 4
-> +#define PM_QOS_DVFS_RESPONSE_LATENCY 5
->  
-> -#define PM_QOS_NUM_CLASSES 4
-> +#define PM_QOS_NUM_CLASSES 6
->  #define PM_QOS_DEFAULT_VALUE -1
->  
->  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
->  
->  struct pm_qos_request {
-> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> index 995e3bd..b15e0b7 100644
-> --- a/kernel/power/qos.c
-> +++ b/kernel/power/qos.c
-> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  };
->  
->  
-> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
-> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
-> +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
-> +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MAX,
-> +	.notifiers = &cpu_dma_throughput_notifier,
-> +};
-> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
-> +	.constraints = &cpu_dma_tput_constraints,
-> +	.name = "cpu_dma_throughput",
-> +};
-> +
-> +
-> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
-> +static struct pm_qos_constraints dvfs_lat_constraints = {
-> +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
-> +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MIN,
-> +	.notifiers = &dvfs_lat_notifier,
-> +};
-> +static struct pm_qos_object dvfs_lat_pm_qos = {
-> +	.constraints = &dvfs_lat_constraints,
-> +	.name = "dvfs_latency",
-> +};
-> +
->  static struct pm_qos_object *pm_qos_array[] = {
->  	&null_pm_qos,
->  	&cpu_dma_pm_qos,
->  	&network_lat_pm_qos,
-> -	&network_throughput_pm_qos
-> +	&network_throughput_pm_qos,
-> +	&cpu_dma_throughput_pm_qos,
-> +	&dvfs_lat_pm_qos,
->  };
->  
->  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> 
+With these patches both is possible. And if you want the check of an
+allocation that is not zeroed then you can do so because you have a
+function that will perform the size check for you without calling into the
+slab allocator.
 
