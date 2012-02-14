@@ -1,178 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759574Ab2BNISX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 03:18:23 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36238 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab2BNIST (ORCPT
+	id S1759581Ab2BNIZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 03:25:22 -0500
+Received: from mailout01.t-online.de ([194.25.134.80]:48851 "EHLO
+	mailout01.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab2BNIZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 03:18:19 -0500
-Message-ID: <4F3A1891.8060001@linux.vnet.ibm.com>
-Date: Tue, 14 Feb 2012 13:47:21 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Tue, 14 Feb 2012 03:25:19 -0500
+Message-ID: <4F3A1A5E.9090803@t-online.de>
+Date: Tue, 14 Feb 2012 09:25:02 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>,
-        Andrew Morton <akpm@linux-foundation.org>, arjanvandeven@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        benh@kernel.crashing.org,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, mikey@neuling.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        gregkh@linuxfoundation.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: smp: Start up non-boot CPUs asynchronously
-References: <20120130205444.22f5e26a@infradead.org> <20120131125232.GD4408@elte.hu>	<20120131054155.371e8307@infradead.org> <20120131143130.GF13676@elte.hu>	<20120131072216.1ce78e50@infradead.org> <20120131161207.GA18357@elte.hu> <20120131082439.575978c0@infradead.org>
-In-Reply-To: <20120131082439.575978c0@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12021408-3864-0000-0000-000001619AD4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: shemminger@vyatta.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, dilieto@lineone.net
+Subject: [REGRESSION, PATCH] sky2 WOL fix
+Content-Type: multipart/mixed;
+ boundary="------------010001020305050508040602"
+X-ID: G-bo78ZlwhTNnT9dwj6VNHu3Er3zMXgi8mD+kbj5TxnDclaKwA9-lO2xouebavIwJ4
+X-TOI-MSGID: 4dc40c50-0629-4feb-8418-73db9f368069
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 09:54 PM, Arjan van de Ven wrote:
+This is a multi-part message in MIME format.
+--------------010001020305050508040602
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> From ee65be59057c920042747d46dc174c5a5a56c744 Mon Sep 17 00:00:00 2001
-> From: Arjan van de Ven <arjan@linux.intel.com>
-> Date: Mon, 30 Jan 2012 20:44:51 -0800
-> Subject: [PATCH] smp: Start up non-boot CPUs asynchronously
-> 
-> The starting of the "not first" CPUs actually takes a lot of boot time
-> of the kernel... upto "minutes" on some of the bigger SGI boxes.
-> Right now, this is a fully sequential operation with the rest of the kernel
-> boot.
-> 
-> This patch turns this bringup of the other cpus into an asynchronous operation.
-> With some other changes (not in this patch) this can save significant kernel
-> boot time (upto 40% on my laptop!!).
-> Basically now CPUs could get brought up in parallel to disk enumeration, graphic
-> mode bringup etc etc etc.
-> 
-> Note that the implementation in this patch still waits for all CPUs to
-> be brought up before starting userspace; I would love to remove that
-> restriction over time (technically that is simple), but that becomes
-> then a change in behavior... I'd like to see more discussion on that
-> being a good idea before I write that patch.
-> 
-> Second note on version 2 of the patch:
-> This patch does currently not save any boot time, due to a situation
-> where the cpu hotplug lock gets taken for write by the cpu bringup code,
-> which starves out readers of this lock throughout the kernel.
-> Ingo specifically requested this behavior to expose this lock problem.
-> 
-> CC: Milton Miller <miltonm@bga.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> 
-> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-> ---
->  kernel/smp.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index db197d6..ea48418 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -12,6 +12,8 @@
->  #include <linux/gfp.h>
->  #include <linux/smp.h>
->  #include <linux/cpu.h>
-> +#include <linux/async.h>
-> +#include <linux/delay.h>
-> 
->  #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
->  static struct {
-> @@ -664,17 +666,34 @@ void __init setup_nr_cpu_ids(void)
->  	nr_cpu_ids = find_last_bit(cpumask_bits(cpu_possible_mask),NR_CPUS) + 1;
->  }
-> 
-> +void __init async_cpu_up(void *data, async_cookie_t cookie)
-> +{
-> +	unsigned long nr = (unsigned long) data;
-> +	/*
-> +	 * we can only up one cpu at a time, as enforced by the hotplug
-> +	 * lock; it's better to wait for all earlier CPUs to be done before
-> +	 * we bring up ours, so that the bring up order is predictable.
-> +	 */
-> +	async_synchronize_cookie(cookie);
-> +	cpu_up(nr);
-> +}
-> +
->  /* Called by boot processor to activate the rest. */
->  void __init smp_init(void)
->  {
->  	unsigned int cpu;
-> 
->  	/* FIXME: This should be done in userspace --RR */
-> +
-> +	/*
-> +	 * But until we do this in userspace, we're going to do this
-> +	 * in parallel to the rest of the kernel boot up.-- Arjan
-> +	 */
->  	for_each_present_cpu(cpu) {
->  		if (num_online_cpus() >= setup_max_cpus)
->  			break;
->  		if (!cpu_online(cpu))
-> -			cpu_up(cpu);
-> +			async_schedule(async_cpu_up, (void *) cpu);
->  	}
-> 
->  	/* Any cleanup work */
+This patch fixes the regression introduced with 2.6.38 on my
+system, the patch is safe as the reintroduced code is only
+executed after the motherboard model is identified by dmi.
+
+Probably the dmi_system_id list will grow, a hot candidate
+is the ASUS P5LD2 motherboard, see Debian bug #647560
+
+Nick: Try the patch with your system added to dmi_system_id need_legacy.
+Feel free to send the output of dmidecode if you cannot do that yourself.
+
+cu,
+  Knut
+
+--------------010001020305050508040602
+Content-Type: text/x-patch;
+ name="0001-Fix-an-old-sky2-WOL-regression.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-Fix-an-old-sky2-WOL-regression.patch"
+
+>From f3a7086638b0ee1f9d9e9028a188d96646671088 Mon Sep 17 00:00:00 2001
+From: Knut Petersen <Knut_Petersen@t-online.de>
+Date: Tue, 14 Feb 2012 08:35:17 +0100
+Subject: [PATCH] Fix an old sky2 WOL regression
+
+Wake-On-Lan was broken for a few systems with commit
+87b09f1f25cd1e01d7c50bf423c7fe33027d7511 more than a
+year ago.
+
+This commit fixes the regression for the AOpen i915GMm-HFS
+motherboard. It reintroduces the old code, but that code is
+only executed for those system included in a dmi_system_id
+list. Currently there is only one entry in that list, but
+it probably will grow.
+
+Signed-off-by: Knut Petersen <Knut_Petersen@t-online.de>
+---
+ drivers/net/ethernet/marvell/sky2.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 760c2b1..02f5b44 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -44,6 +44,7 @@
+ #include <linux/prefetch.h>
+ #include <linux/debugfs.h>
+ #include <linux/mii.h>
++#include <linux/dmi.h>
+ 
+ #include <asm/irq.h>
+ 
+@@ -807,6 +808,18 @@ static void sky2_phy_reinit(struct sky2_port *sky2)
+ 	spin_unlock_bh(&sky2->phy_lock);
+ }
+ 
++/* A few systems do need PCI_Y2_PME_LEGACY for WOL, add them here */
++static const struct dmi_system_id need_legacy[] = {
++	{
++		.ident = "AOpen i915GMm-HFS",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
++			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
++		},
++	},
++	{ NULL }
++};
++
+ /* Put device in state to listen for Wake On Lan */
+ static void sky2_wol_init(struct sky2_port *sky2)
+ {
+@@ -814,6 +827,7 @@ static void sky2_wol_init(struct sky2_port *sky2)
+ 	unsigned port = sky2->port;
+ 	enum flow_control save_mode;
+ 	u16 ctrl;
++	u32 reg1;
+ 
+ 	/* Bring hardware out of reset */
+ 	sky2_write16(hw, B0_CTST, CS_RST_CLR);
+@@ -867,6 +881,13 @@ static void sky2_wol_init(struct sky2_port *sky2)
+ 	/* Disable PiG firmware */
+ 	sky2_write16(hw, B0_CTST, Y2_HW_WOL_OFF);
+ 
++	/* set legacy pm bit on those systems that need it */
++	if (dmi_check_system(need_legacy)) {
++		reg1 = sky2_pci_read32(hw, PCI_DEV_REG1);
++		reg1 |= PCI_Y2_PME_LEGACY;
++		sky2_pci_write32(hw, PCI_DEV_REG1, reg1);
++	} 
++
+ 	/* block receiver */
+ 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
+ 	sky2_read32(hw, B0_CTST);
+-- 
+1.7.9
 
 
-If I understand correctly, with this patch, the booting of non-boot CPUs
-will happen in parallel with the rest of the kernel boot, but bringing up
-of individual CPU is still serialized (due to hotplug lock).
-
-If that is correct, I see several issues with this patch:
-
-1. In smp_init(), after the comment "Any cleanup work" (see above), we print:
-printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
-So this can potentially print less than expected number of CPUs and might
-surprise users.
-
-2. Just below that we have smp_cpus_done(setup_max_cpus); and this translates
-to native_smp_cpus_done() under x86, which calls impress_friends().
-And that means, the bogosum calculation and the total activated processor
-count which is printed, may get messed up.
-
-3. sched_init_smp() is called immediately after smp_init(). And that calls
-init_sched_domains(cpu_active_mask). Of course, it registers a hotplug
-notifier callback to handle hot-added cpus.. but with this patch, boot up can
-actually become unnecessarily slow at this point - what could have been done
-in one go with an appropriately filled up cpu_active_mask, needs to be done
-again and again using notifier callbacks. IOW, building sched domains can
-potentially become a bottleneck, especially if there are lots and lots of
-cpus in the machine.
-
-4. There is an unhandled race condition (tiny window) in sched_init_smp():
-
-get_online_cpus();
-...
-init_sched_domains(cpu_active_mask);
-...
-put_online_cpus();
-                                           <<<<<<<<<<<<<<<<<<<<<<<< There!
-
-hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
-hotcpu_notifier(cpuset_cpu_inactive, CPU_PRI_CPUSET_INACTIVE);
-
-At the point shown above, some non-boot cpus can get booted up, without
-being noticed by the scheduler.
-
-5. And in powerpc, it creates a new race condition, as explained in
-https://lkml.org/lkml/2012/2/13/383
-(Of course, we can fix it trivially by using get/put_online_cpus().)
-
-There could be many more things that this patch breaks.. I haven't checked
-thoroughly.
-
-Regards,
-Srivatsa S. Bhat
-
+--------------010001020305050508040602--
