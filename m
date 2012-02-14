@@ -1,151 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab2BND2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:28:53 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44861 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab2BND2w (ORCPT
+	id S1759035Ab2BNDaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:30:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41731 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758927Ab2BNDaG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 22:28:52 -0500
-Date: Mon, 13 Feb 2012 19:28:49 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: San Mehat <san@google.com>, Colin Cross <ccross@android.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [patch -next] android, lowmemorykiller: convert to use
- oom_score_adj
-In-Reply-To: <20120209005724.GA23179@kroah.com>
-Message-ID: <alpine.DEB.2.00.1202131928130.12138@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1202021353420.13316@chino.kir.corp.google.com> <20120209005724.GA23179@kroah.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 13 Feb 2012 22:30:06 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120213172311.GB12117@google.com>
+References: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
+	<20120213172311.GB12117@google.com>
+Date: Tue, 14 Feb 2012 11:30:06 +0800
+Message-ID: <CACVXFVMyihmG3NexXOqTUoJb8UJFa7dJqYGOr6oC_y5heFSo1A@mail.gmail.com>
+Subject: Re: [PATCH] percpu: use raw_local_irq_* in _this_cpu op
+From: Ming Lei <tom.leiming@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/pid/oom_adj is deprecated and will be removed in August 2012
-according to Documentation/feature-removal-schedule.txt.  Convert its
-usage in the lowmemorykiller to use the new interface, oom_score_adj,
-instead.
+Hi,
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- drivers/staging/android/lowmemorykiller.c |   43 +++++++++++++++--------------
- 1 files changed, 22 insertions(+), 21 deletions(-)
+On Tue, Feb 14, 2012 at 1:23 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Feb 13, 2012 at 07:03:38PM +0800, Ming Lei wrote:
+>> It doesn't make sense to trace irq off or do irq flags
+>> lock proving inside 'this_cpu' operations, so replace local_irq_*
+>> with raw_local_irq_* in 'this_cpu' op.
+>>
+>> Also the patch fixes one lockdep warning[1], which is caused
+>> by the added local_irq_save/restore(flags) in this_cpu_inc
+>> called by __debug_atomic_inc: kernel/lockdep.c
+>
+> I think this isn't gonna hurt anything but I don't understand why the
+> lockdep warning is triggering when using traced version.  Can you
+> please explain that in a bit more detail in the patch description?
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -1,16 +1,17 @@
- /* drivers/misc/lowmemorykiller.c
-  *
-  * The lowmemorykiller driver lets user-space specify a set of memory thresholds
-- * where processes with a range of oom_adj values will get killed. Specify the
-- * minimum oom_adj values in /sys/module/lowmemorykiller/parameters/adj and the
-- * number of free pages in /sys/module/lowmemorykiller/parameters/minfree. Both
-- * files take a comma separated list of numbers in ascending order.
-+ * where processes with a range of oom_score_adj values will get killed. Specify
-+ * the minimum oom_score_adj values in
-+ * /sys/module/lowmemorykiller/parameters/adj and the number of free pages in
-+ * /sys/module/lowmemorykiller/parameters/minfree. Both files take a comma
-+ * separated list of numbers in ascending order.
-  *
-  * For example, write "0,8" to /sys/module/lowmemorykiller/parameters/adj and
-  * "1024,4096" to /sys/module/lowmemorykiller/parameters/minfree to kill
-- * processes with a oom_adj value of 8 or higher when the free memory drops
-- * below 4096 pages and kill processes with a oom_adj value of 0 or higher
-- * when the free memory drops below 1024 pages.
-+ * processes with a oom_score_adj value of 8 or higher when the free memory
-+ * drops below 4096 pages and kill processes with a oom_score_adj value of 0 or
-+ * higher when the free memory drops below 1024 pages.
-  *
-  * The driver considers memory used for caches to be free, but if a large
-  * percentage of the cached memory is locked this can be very inaccurate
-@@ -88,9 +89,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	int rem = 0;
- 	int tasksize;
- 	int i;
--	int min_adj = OOM_ADJUST_MAX + 1;
-+	int min_score_adj = OOM_SCORE_ADJ_MAX + 1;
- 	int selected_tasksize = 0;
--	int selected_oom_adj;
-+	int selected_oom_score_adj;
- 	int array_size = ARRAY_SIZE(lowmem_adj);
- 	int other_free = global_page_state(NR_FREE_PAGES);
- 	int other_file = global_page_state(NR_FILE_PAGES) -
-@@ -116,29 +117,29 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	for (i = 0; i < array_size; i++) {
- 		if (other_free < lowmem_minfree[i] &&
- 		    other_file < lowmem_minfree[i]) {
--			min_adj = lowmem_adj[i];
-+			min_score_adj = lowmem_adj[i];
- 			break;
- 		}
- 	}
- 	if (sc->nr_to_scan > 0)
- 		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d, ma %d\n",
- 				sc->nr_to_scan, sc->gfp_mask, other_free,
--				other_file, min_adj);
-+				other_file, min_score_adj);
- 	rem = global_page_state(NR_ACTIVE_ANON) +
- 		global_page_state(NR_ACTIVE_FILE) +
- 		global_page_state(NR_INACTIVE_ANON) +
- 		global_page_state(NR_INACTIVE_FILE);
--	if (sc->nr_to_scan <= 0 || min_adj == OOM_ADJUST_MAX + 1) {
-+	if (sc->nr_to_scan <= 0 || min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
- 		lowmem_print(5, "lowmem_shrink %lu, %x, return %d\n",
- 			     sc->nr_to_scan, sc->gfp_mask, rem);
- 		return rem;
- 	}
--	selected_oom_adj = min_adj;
-+	selected_oom_score_adj = min_score_adj;
- 
- 	rcu_read_lock();
- 	for_each_process(tsk) {
- 		struct task_struct *p;
--		int oom_adj;
-+		int oom_score_adj;
- 
- 		if (tsk->flags & PF_KTHREAD)
- 			continue;
-@@ -147,8 +148,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 		if (!p)
- 			continue;
- 
--		oom_adj = p->signal->oom_adj;
--		if (oom_adj < min_adj) {
-+		oom_score_adj = p->signal->oom_score_adj;
-+		if (oom_score_adj < min_score_adj) {
- 			task_unlock(p);
- 			continue;
- 		}
-@@ -157,22 +158,22 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 		if (tasksize <= 0)
- 			continue;
- 		if (selected) {
--			if (oom_adj < selected_oom_adj)
-+			if (oom_score_adj < selected_oom_score_adj)
- 				continue;
--			if (oom_adj == selected_oom_adj &&
-+			if (oom_score_adj == selected_oom_score_adj &&
- 			    tasksize <= selected_tasksize)
- 				continue;
- 		}
- 		selected = p;
- 		selected_tasksize = tasksize;
--		selected_oom_adj = oom_adj;
-+		selected_oom_score_adj = oom_score_adj;
- 		lowmem_print(2, "select %d (%s), adj %d, size %d, to kill\n",
--			     p->pid, p->comm, oom_adj, tasksize);
-+			     p->pid, p->comm, oom_score_adj, tasksize);
- 	}
- 	if (selected) {
- 		lowmem_print(1, "send sigkill to %d (%s), adj %d, size %d\n",
- 			     selected->pid, selected->comm,
--			     selected_oom_adj, selected_tasksize);
-+			     selected_oom_score_adj, selected_tasksize);
- 		/*
- 		 * If CONFIG_PROFILING is off, then task_handoff_register()
- 		 * is a nop. In that case we don't want to stall the killer
+In trace_hardirqs_on_caller:kernel/lockdep.c, __debug_atomic_inc
+will be called to add on 'this_cpu' variable, so may introduce recursive
+trace_hardirqs_on|off_caller called.
+
+For the lockdep warning, I reproduced it on ARM, see the path below:
+
+kernel_thread_helper	/*irq disabled*/
+	->entry: trace_hardirqs_on_caller	/*hardirqs_enabled was set*/
+		->trace_hardirqs_off_caller /*hardirqs_enabled cleared*/
+			__this_cpu_add(redundant_hardirqs_on)
+		->trace_hardirqs_off_caller	/*irq disabled, so call here*/
+
+so the 'unannotated irqs-on' warning will be triggered somewhere
+because irq will be enabled just after the irq trace inside
+kernel_thread_helper.
+You can refer to log of commit  ac78884e6d89714d18b32b5b7d574116ecfb7c88
+(ARM: lockdep: fix unannotated irqs-on) about irq trace inside
+kernel_thread_helper.
+
+
+thanks,
+-- 
+Ming Lei
