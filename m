@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760677Ab2BNOiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:38:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60115 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab2BNOiO (ORCPT
+	id S1760708Ab2BNOi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:38:58 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:52394 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756647Ab2BNOiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:38:14 -0500
+	Tue, 14 Feb 2012 09:38:51 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: LSI Corporation <DL-MPTFusionLinux@lsi.com>
+Cc: Danny Kukawka <dkukawka@suse.de>, Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Eric Moore <eric.moore@lsi.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mpt2sas: fix -Wunused-variable warning
+Date: Tue, 14 Feb 2012 15:38:46 +0100
+Message-Id: <1329230326-26868-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.01.1202140305030.23763@frira.zrqbmnf.qr>
-References: <alpine.LNX.2.01.1202140305030.23763@frira.zrqbmnf.qr>
-Date: Tue, 14 Feb 2012 09:38:13 -0500
-Message-ID: <CADnq5_N-W-jwN+dx6bF5fOvGUeN3-oZ7U_sTvPF18q7bgGuOsw@mail.gmail.com>
-Subject: Re: drm/radeon: white screen after X does modeswitch from KMS con
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Alex Deucher <alexander.deucher@amd.com>, Dave Airlie <airlied@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230331;3d7cf095;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 9:29 PM, Jan Engelhardt <jengelh@medozas.de> wrote:
-> Hello,
->
->
-> the SONY PCG U3 device has a
->
-> 00:0c.0 VGA compatible controller [0300]: ATI Technologies Inc Radeon
-> Mobility M6 LY [1002:4c59]
->
-> graphics card. With linux 3.1.10, X.org server 7.6_1.10.4 and
-> xf86-video-ati-6.14.2, switching from KMS'd console to X on tty7
-> yields a white screen that also stays when attempting to back to
-> tty1.
->
-> I have to boot with nomodeset to get a usable Xorg picture.
-> Is it just that radeon_drv does not work together with KMS?
+Fix for:
+drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function
+  ‘_scsih_sas_broadcast_primative_event’:
+drivers/scsi/mpt2sas/mpt2sas_scsih.c:5766:40: warning: unused
+  variable ‘event_data’ [-Wunused-variable]
 
-It should work fine.  Does it work any better with a newer kernel?  Is
-this a regression?  If so, what was the last kernel that was working
-properly? Please file a bug:
-https://bugs.freedesktop.org
-and attach your xorg log and dmesg output.
+remove Mpi2EventDataSasBroadcastPrimitive_t *event_data,
+use fw_event->event_data directly instead.
 
-Alex
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 193e33e..067d359 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -5763,7 +5763,6 @@ _scsih_sas_broadcast_primative_event(struct MPT2SAS_ADAPTER *ioc,
+ 	u32 termination_count;
+ 	u32 query_count;
+ 	Mpi2SCSITaskManagementReply_t *mpi_reply;
+-	Mpi2EventDataSasBroadcastPrimitive_t *event_data = fw_event->event_data;
+ 	u16 ioc_status;
+ 	unsigned long flags;
+ 	int r;
+@@ -5772,8 +5771,8 @@ _scsih_sas_broadcast_primative_event(struct MPT2SAS_ADAPTER *ioc,
+ 
+ 	mutex_lock(&ioc->tm_cmds.mutex);
+ 	dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: enter: phy number(%d), "
+-	    "width(%d)\n", ioc->name, __func__, event_data->PhyNum,
+-	     event_data->PortWidth));
++	    "width(%d)\n", ioc->name, __func__, fw_event->event_data->PhyNum,
++	     fw_event->event_data->PortWidth));
+ 
+ 	_scsih_block_io_all_device(ioc);
+ 
+-- 
+1.7.7.3
+
