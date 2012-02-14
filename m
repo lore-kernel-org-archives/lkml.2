@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2BNVJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:09:23 -0500
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:37800 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932294Ab2BNVJW (ORCPT
+	id S1761133Ab2BNVMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:12:37 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:43287 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006Ab2BNVMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:09:22 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: sjpeL0QVM1n0ffTFM9RzI8uQJWNT0Vkj9kOya8ViOvkz6I1
- A8wwducoEn8GBSQKj0WAvhAmdl6u31kboGMAt91ZrTSlcI_WXuDL_CIDFila
- 9fhQ4SBDXxP68oamR1bj_6vhelj.foqOIDkLaP6WxmRoQw2VQ9uDMEHP4rtE
- 3TLOzWAKgn9zclCTCp7eZK3txkWAYUEkd9eQPJvlXPsbfo8xJdi8NuGLyrMN
- qHAn.K6RUEe4n3q0WiEIirpzpVM1.U9u5XAyVSwT5afA2iIcy6VLtsklV65J
- CqF9nk3Agohf3ElJ4p_Gji78EdVitLEgsN9_kzxHRLqnkNPwfnuyHBoaD5Wc
- KIoOQwwQSWP1g4OKbTZteOhrv7uksklbNcaisIQ0C9E5yP14rujYXsrsG1JB
- c
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 14 Feb 2012 15:09:18 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Xi Wang <xi.wang@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: Uninline kcalloc
-In-Reply-To: <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1202141503470.29019@router.home>
-References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk> <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net>
- <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda>
- <alpine.DEB.2.00.1202140858080.20013@router.home> <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com> <alpine.DEB.2.00.1202141329360.24883@router.home>
- <20120214124518.f42bc03e.akpm@linux-foundation.org> <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 14 Feb 2012 16:12:36 -0500
+Date: Tue, 14 Feb 2012 21:12:32 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com, vgoyal@redhat.com,
+        seiji.aguchi@hds.com
+Subject: Re: [PATCH V3] kmsg_dump: Don't run on non-error paths by default
+Message-ID: <20120214211232.GB2750@srcf.ucam.org>
+References: <1328888715-21589-1-git-send-email-mjg@redhat.com>
+ <20120214130522.fdb05b81.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120214130522.fdb05b81.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Feb 2012, Pekka Enberg wrote:
+On Tue, Feb 14, 2012 at 01:05:22PM -0800, Andrew Morton wrote:
 
-> Me neither. I don't think Christoph's SAFE_ARRAY_SIZE() suggestion
-> makes much sense, really. It's more verbose, less obvious API, and
-> doesn't really deal with the overflow case cleanly.
+> So if I'm understanding it correctly, this patch reverts the kernel
+> behaviour to what it was before 04c6862c055fb687c9 ("kmsg_dump: add
+> kmsg_dump() calls to the reboot, halt, poweroff and emergency_restart
+> paths").  The user must now set printk.always_kmsg_dump to get the
+> 04c6862c055fb687c9 behaviour.
 
-IMHO Having a function to deal with the overflow of a multiplication and
-then do an allocation based on the result is a conflation of two different
-things that need to be separate. kcalloc only exists because there is
-an ancient user space function that somehow got a second parameter instead
-of just using the same as malloc().
+Correct.
 
+> Correct?  If so, we should get this into 3.3 so we don't have a oddball
+> behaviour in one particular kernel release.
 
+That would be my preference.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
