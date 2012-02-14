@@ -1,302 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab2BNQ3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 11:29:14 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38851 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab2BNQ3I convert rfc822-to-8bit (ORCPT
+	id S1756838Ab2BNQbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 11:31:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38640 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2BNQa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 11:29:08 -0500
-Message-ID: <1329236924.2293.13.camel@twins>
-Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Date: Tue, 14 Feb 2012 17:28:44 +0100
-In-Reply-To: <1327674868-10486-1-git-send-email-jolsa@redhat.com>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-	 <1327674868-10486-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 14 Feb 2012 11:30:57 -0500
+Subject: Re: [PATCH RFC v2] slab: introduce kmalloc_array
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1202140858080.20013@router.home>
+Date: Tue, 14 Feb 2012 11:30:52 -0500
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <4F33C7D7.1060801@kernel.dk> <32FA0BD0-7C0D-4ED4-B375-4736FC70AC05@gmail.com> <4F33CEAE.60400@gmail.com> <alpine.LNX.2.00.1202092346300.32491@swampdragon.chaosbits.net> <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home>
+To: Christoph Lameter <cl@linux.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-27 at 15:34 +0100, Jiri Olsa wrote:
-> hi,
-> Here's new version of event parsing patchset. To summarize:
->  - adding event parser bison/flex generator
->  - the event syntax stays as it was
->  - adding event format sysfs group attribute
->    for pmu device
->  - adding new syntax to specify raw events based
->    on the sysfs pmu's format attribute
->    eg. "cpu/config=1,config1=2,config2=3/u"
-> 
-> There are helping patches 1-4, which I did not want to
-> mangle with the actual change. Patches 5-9 implement
-> the feature itself.
-> 
-> v4 changes:
->  - 5/9 changed sysfs pmu format definitions to the group attribute,
->        each line (in previous patch) is now represented by single
->        sysfs attribute under format group
->  - 6/9 fix raw events so the number is always considered to be hex number
->  - 8/9 move config[12] definitions to be processed by the parser
+On Feb 14, 2012, at 10:02 AM, Christoph Lameter wrote:
+> We could also catch these issues with BUG() or WARN_ON() and then return
+> zero.
 
+You cannot have SAFE_ARRAY_SIZE return 0 when an integer overflow
+occurs.
 
-I added the below but all I managed was to crash my kernel, its probably
-a simple thing, but sysfs didn't give a hint.
+1) kmalloc(0) has a different semantics.
 
----
-Subject: perf, x86: Add simple format descriptions
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue Feb 14 16:37:27 CET 2012
+2) Using kmalloc(0) allows DoS attacks because often after kmalloc()
+   there is some initialization code that writes to the allocated
+   memory, such as:
 
+   p = kmalloc(SAFE_ARRAY_SIZE(n, size), ...);
+   for (i = 0; i < n; ++i)
+       p[i] = ...;
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/x86/kernel/cpu/perf_event.c       |    7 ++++++
- arch/x86/kernel/cpu/perf_event.h       |    1 
- arch/x86/kernel/cpu/perf_event_amd.c   |   18 +++++++++++++++++
- arch/x86/kernel/cpu/perf_event_intel.c |   34 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_p6.c    |   18 +++++++++++++++++
- include/linux/perf_event.h             |    6 -----
- kernel/events/core.c                   |   22 ---------------------
- 7 files changed, 78 insertions(+), 28 deletions(-)
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1250,6 +1250,11 @@ static void __init pmu_check_apic(void)
- 	pr_info("no hardware sampling interrupt available.\n");
- }
- 
-+static struct attribute_group x86_pmu_format_group = {
-+	.name = "format",
-+	.attrs = NULL,
-+};
-+
- static int __init init_hw_perf_events(void)
- {
- 	struct x86_pmu_quirk *quirk;
-@@ -1324,6 +1329,7 @@ static int __init init_hw_perf_events(vo
- 	}
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
-+	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
- 
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
-@@ -1604,6 +1610,7 @@ static struct attribute_group x86_pmu_at
- 
- static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	&x86_pmu_attr_group,
-+	&x86_pmu_format_group,
- 	NULL,
- };
- 
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -311,6 +311,7 @@ struct x86_pmu {
- 	 * sysfs attrs
- 	 */
- 	int		attr_rdpmc;
-+	struct attribute **format_attrs;
- 
- 	/*
- 	 * CPU Hotplug hooks
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -398,6 +398,20 @@ static void amd_pmu_cpu_dead(int cpu)
- 	}
- }
- 
-+PMU_FORMAT_ATTR(event,	"config:0-7,32-35");
-+PMU_FORMAT_ATTR(umask,	"config:8-15"	);
-+PMU_FORMAT_ATTR(edge,	"config:18"	);
-+PMU_FORMAT_ATTR(inv,	"config:23"	);
-+PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+
-+static struct attribute *amd_format_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+};
-+
- static __initconst const struct x86_pmu amd_pmu = {
- 	.name			= "AMD",
- 	.handle_irq		= x86_pmu_handle_irq,
-@@ -420,6 +434,8 @@ static __initconst const struct x86_pmu 
- 	.get_event_constraints	= amd_get_event_constraints,
- 	.put_event_constraints	= amd_put_event_constraints,
- 
-+	.format_attrs		= amd_format_attr,
-+
- 	.cpu_prepare		= amd_pmu_cpu_prepare,
- 	.cpu_starting		= amd_pmu_cpu_starting,
- 	.cpu_dead		= amd_pmu_cpu_dead,
-@@ -590,6 +606,8 @@ static __initconst const struct x86_pmu 
- 	.cpu_starting		= amd_pmu_cpu_starting,
- 	.cpu_dead		= amd_pmu_cpu_dead,
- #endif
-+
-+	.format_attrs		= amd_format_attr,
- };
- 
- __init int amd_pmu_init(void)
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1382,6 +1382,23 @@ static void core_pmu_enable_all(int adde
- 	}
- }
- 
-+PMU_FORMAT_ATTR(event,	"config:0-7"	);
-+PMU_FORMAT_ATTR(umask,	"config:8-15"	);
-+PMU_FORMAT_ATTR(edge,	"config:18"	);
-+PMU_FORMAT_ATTR(pc,	"config:19"	);
-+PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
-+PMU_FORMAT_ATTR(inv,	"config:23"	);
-+PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+
-+static struct attribute *intel_arch_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+};
-+
- static __initconst const struct x86_pmu core_pmu = {
- 	.name			= "core",
- 	.handle_irq		= x86_pmu_handle_irq,
-@@ -1406,6 +1423,7 @@ static __initconst const struct x86_pmu 
- 	.put_event_constraints	= intel_put_event_constraints,
- 	.event_constraints	= intel_core_event_constraints,
- 	.guest_get_msrs		= core_guest_get_msrs,
-+	.format_attrs		= intel_arch_formats_attr,
- };
- 
- struct intel_shared_regs *allocate_shared_regs(int cpu)
-@@ -1486,6 +1504,20 @@ static void intel_pmu_cpu_dying(int cpu)
- 	fini_debug_store_on_cpu(cpu);
- }
- 
-+PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
-+
-+static struct attribute *intel_arch3_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_any.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+
-+	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+};
-+
- static __initconst const struct x86_pmu intel_pmu = {
- 	.name			= "Intel",
- 	.handle_irq		= intel_pmu_handle_irq,
-@@ -1509,6 +1541,8 @@ static __initconst const struct x86_pmu 
- 	.get_event_constraints	= intel_get_event_constraints,
- 	.put_event_constraints	= intel_put_event_constraints,
- 
-+	.format_attrs		= intel_arch3_formats_attr,
-+
- 	.cpu_prepare		= intel_pmu_cpu_prepare,
- 	.cpu_starting		= intel_pmu_cpu_starting,
- 	.cpu_dying		= intel_pmu_cpu_dying,
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -87,6 +87,22 @@ static void p6_pmu_enable_event(struct p
- 	(void)checking_wrmsrl(hwc->config_base, val);
- }
- 
-+PMU_FORMAT_ATTR(event,	"config:0-7"	);
-+PMU_FORMAT_ATTR(umask,	"config:8-15"	);
-+PMU_FORMAT_ATTR(edge,	"config:18"	);
-+PMU_FORMAT_ATTR(pc,	"config:19"	);
-+PMU_FORMAT_ATTR(inv,	"config:23"	);
-+PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+
-+static struct attribute *intel_p6_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+};
-+
- static __initconst const struct x86_pmu p6_pmu = {
- 	.name			= "p6",
- 	.handle_irq		= x86_pmu_handle_irq,
-@@ -115,6 +131,8 @@ static __initconst const struct x86_pmu 
- 	.cntval_mask		= (1ULL << 32) - 1,
- 	.get_event_constraints	= x86_get_event_constraints,
- 	.event_constraints	= p6_event_constraints,
-+
-+	.format_attrs		= intel_p6_formats_attr,
- };
- 
- __init int p6_pmu_init(void)
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -628,12 +628,6 @@ struct pmu {
- 	int				task_ctx_nr;
- 
- 	/*
--	 * True if the pmu defines its own set of format attributes within
--	 * attr_groups. If false, default format attributes are used.
--	 */
--	bool				format_defined;
--
--	/*
- 	 * Fully disable/enable this PMU, can be used to protect from the PMI
- 	 * as well as for lazy/batch writing of the MSRs.
- 	 */
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5540,22 +5540,6 @@ static struct bus_type pmu_bus = {
- 	.dev_attrs	= pmu_dev_attrs,
- };
- 
--/* Default format attributes. */
--PMU_FORMAT_ATTR(config,  "config:0-63");
--PMU_FORMAT_ATTR(config1, "config1:0-63");
--PMU_FORMAT_ATTR(config2, "config2:0-63");
--
--static struct attribute *format_attrs[] = {
--	&format_attr_config.attr,
--	&format_attr_config1.attr,
--	&format_attr_config2.attr,
--};
--
--static struct attribute_group format_attr_group = {
--	.name   = "format",
--	.attrs  = format_attrs,
--};
--
- static void pmu_dev_release(struct device *dev)
- {
- 	kfree(dev);
-@@ -5582,12 +5566,6 @@ static int pmu_dev_alloc(struct pmu *pmu
- 	if (ret)
- 		goto free_dev;
- 
--	if (!pmu->format_defined) {
--		ret = sysfs_create_group(&pmu->dev->kobj, &format_attr_group);
--		if (ret)
--			goto free_dev;
--	}
--
- out:
- 	return ret;
- 
+Besides, BUG() still allows DoS attacks and WARN_ON() would flood
+the log, especially if n is controlled from user space.  Neither
+seems appropriate here.
 
+- xi
