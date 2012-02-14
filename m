@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761178Ab2BNVGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:06:22 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40284 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757293Ab2BNVGT (ORCPT
+	id S1761207Ab2BNVHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:07:23 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:59341 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757241Ab2BNVHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:06:19 -0500
-Message-ID: <1329253575.2555.16.camel@edumazet-laptop>
-Subject: Re: [PATCH net-next] epoll: add EPOLLEXCLUSIVE support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Davide Libenzi <davidel@xmailserver.org>
-Date: Tue, 14 Feb 2012 22:06:15 +0100
-In-Reply-To: <1329252484-6309-1-git-send-email-hagen@jauu.net>
-References: <1329252484-6309-1-git-send-email-hagen@jauu.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 14 Feb 2012 16:07:22 -0500
+Message-ID: <4F3ACCE2.6040200@xenotime.net>
+Date: Tue, 14 Feb 2012 13:06:42 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Kentaro Takeda <takedakn@nttdata.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        tomoyo-dev-en@lists.sourceforge.jp, James Morris <jmorris@namei.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] security: TOMOYO should clean policy files
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 14 février 2012 à 21:48 +0100, Hagen Paul Pfeifer a écrit :
-> High performance server sometimes create one listening socket (e.g. port
-> 80), create a epoll file descriptor and add the socket. Afterwards
-> create SC_NPROCESSORS_ONLN threads and wait for events. This often
-> result in a thundering herd problem because all CPUs are scheduled.
-> 
-> This patch add an additional flag to epoll_ctl(2) called EPOLLEXCLUSIVE.
-> If a descriptor is added with this flag only one CPU is scheduled in.
-> 
-> Signed-off-by: Hagen Paul Pfeifer <hagen@jauu.net>
-> Reported-by: Li Yu <raise.sail@gmail.com>
-> Cc: Davide Libenzi <davidel@xmailserver.org>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Seems pretty good to me.
+TOMOYO creates some empty/default policy files during build.
+It should remove them during 'make clean'.
 
-Do you have some performance numbers to share ?
+I noticed that they were not being removed because the
+"Creating ..." messages always occurred a maximum of one time
+during 25 randconfig builds, so it was sometimes using the
+files from a previous build (which is not a problem, but
+still, 'make clean' should remove them).
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Kentaro Takeda <takedakn@nttdata.co.jp>
+Cc:	Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc:	tomoyo-dev-en@lists.sourceforge.jp
+---
+ security/tomoyo/Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
 
-
-
+--- linux-next-20120214.orig/security/tomoyo/Makefile
++++ linux-next-20120214/security/tomoyo/Makefile
+@@ -46,3 +46,5 @@ $(obj)/builtin-policy.h: $(obj)/policy/p
+ 	@mv $@.tmp $@
+ 
+ $(obj)/common.o: $(obj)/builtin-policy.h
++
++clean-dirs := $(objtree)/security/tomoyo/policy/
