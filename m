@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760933Ab2BNPHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 10:07:43 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:52055 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab2BNPHm (ORCPT
+	id S1760976Ab2BNPHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 10:07:50 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:26595 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756667Ab2BNPHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 10:07:42 -0500
-Message-ID: <4F3A785A.4030500@de.ibm.com>
-Date: Tue, 14 Feb 2012 16:06:02 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+	Tue, 14 Feb 2012 10:07:48 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: GieEOUsVM1lJFgVfHpOdg1_GFn.K4LeVLy8qAM5tiFq523q
+ DPWMkHF6fDdrpvtheCEM97borL.ztEB9GFZGbPAKuKOtoApLao_eiEpfzm9S
+ eph2MXMNItKv9WpjuZpMMf6XhBs2XpZAC2EoXnJq_7..ofFzftOSU0I7dC5V
+ 5NkA6evSMP_l48huoYcSUTPMIfHN2mXhAnuY7l_uSfcjhLClzxuX.xabZ2aK
+ MJ0sIU5tIatckcuWLDP6x1_.OaR2ZKez1B8NHWB1Moo7wwiDioi1qIzUx2gW
+ otBazDlCrNHCD2ItLDsxnB1vsRRKT1n4YwF4lpHbNgb5RpxQcnYtOD0KsXJW
+ HaxZaKIVvcKci0vs.f2h0ghsJbzgQPod_mnz2yYhUejieDOmaibxLfktSd3m
+ Q
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 14 Feb 2012 09:07:44 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Yang Bai <hamo.by@gmail.com>, penberg@kernel.org, mpm@selenic.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slab: warning if total alloc size overflow
+In-Reply-To: <20120214005301.a9d5be1a.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1202140906500.20013@router.home>
+References: <1329204499-2671-1-git-send-email-hamo.by@gmail.com> <20120214005301.a9d5be1a.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: keyrings@linux-nfs.org, linux-kernel@vger.kernel.org, dan@danny.cz,
-        Carsten Otte <cotte@de.ibm.com>, linux-s390@vger.kernel.org,
-        stable@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] KEYS: Enable the compat keyctl wrapper on s390x
-References: <20120214145022.12531.16731.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120214145022.12531.16731.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12021415-0542-0000-0000-000000FB9248
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/12 15:50, David Howells wrote:
-> Enable the compat keyctl wrapper on s390x so that 32-bit s390 userspace can
-> call the keyctl() syscall.
-> 
-> There's an s390x assembly wrapper that truncates all the register values to
-> 32-bits and this then calls compat_sys_keyctl() - but the latter only exists if
-> CONFIG_KEYS_COMPAT is enabled, and the s390 Kconfig doesn't enable it.
-> 
-> Without this patch, 32-bit calls to the keyctl() syscall are given an ENOSYS
-> error:
-> 
-> 	[root@devel4 ~]# keyctl show
-> 	Session Keyring
-> 	-3: key inaccessible (Function not implemented)
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Acked-by: dan@danny.cz
-> cc: Carsten Otte <cotte@de.ibm.com>
-> cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> cc: linux-s390@vger.kernel.org
-> cc: stable@vger.kernel.org
+On Tue, 14 Feb 2012, Andrew Morton wrote:
 
-Patch looks sane.
-Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> One of the applications of kcalloc() is to prevent userspace from
+> causing a multiplicative overflow (and then perhaps causing an
+> overwrite beyond the end of the allocated memory).
+>
+> With this patch, we've just handed the user a way of spamming the logs
+> at 1MHz.  This is bad.
 
-Do you want to push this change via Martins s390 tree or via other
-trees?
-
-> ---
-> 
->  arch/s390/Kconfig |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-> index d172758..6d99a5f 100644
-> --- a/arch/s390/Kconfig
-> +++ b/arch/s390/Kconfig
-> @@ -227,6 +227,9 @@ config COMPAT
->  config SYSVIPC_COMPAT
->  	def_bool y if COMPAT && SYSVIPC
-> 
-> +config KEYS_COMPAT
-> +	def_bool y if COMPAT && KEYS
-> +
->  config AUDIT_ARCH
->  	def_bool y
-> 
-> 
+Well there is WARN_ON_ONCE too to prevent that.
 
