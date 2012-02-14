@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab2BNJgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 04:36:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:47914 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759829Ab2BNJgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 04:36:08 -0500
-Message-Id: <e39f63$3ncn6e@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="125197518"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Benson Leung <bleung@chromium.org>,
-        keithp@keithp.com, airlied@linux.ie, djkurtz@chromium.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-In-Reply-To: <20120213222623.GN5301@phenom.ffwll.local>
-References: <1328817797-4026-1-git-send-email-bleung@chromium.org> <20120213203838.GM5301@phenom.ffwll.local> <e0d58a$38gbj5@orsmga002.jf.intel.com> <20120213222623.GN5301@phenom.ffwll.local>
-Date: Tue, 14 Feb 2012 09:35:58 +0000
+	id S1759829Ab2BNJnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 04:43:41 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34694 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759600Ab2BNJnh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 04:43:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120214005301.a9d5be1a.akpm@linux-foundation.org>
+References: <1329204499-2671-1-git-send-email-hamo.by@gmail.com> <20120214005301.a9d5be1a.akpm@linux-foundation.org>
+From: Yang Bai <hamo.by@gmail.com>
+Date: Tue, 14 Feb 2012 17:43:17 +0800
+Message-ID: <CAO_0yfOjstSnhqf_DBBr7-it48GyUObF2=4GeMd7TDo_TPaLPg@mail.gmail.com>
+Subject: Re: [PATCH] slab: warning if total alloc size overflow
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012 23:26:23 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Mon, Feb 13, 2012 at 09:49:35PM +0000, Chris Wilson wrote:
-> > On Mon, 13 Feb 2012 21:38:38 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > However, the outstanding issue is that we need to separate the gmbus
-> > i2c adapter from the gpio i2c adapter in order for the pairing to work
-> > with the expectations of the i2c core.
-> 
-> There's another patch floating on dri-devel to add a gmbus_mutex. The
-> issue it tries to avoid is that multiple users corrupting each anothers
-> state when using the single gmbus controller. See "[PATCH] [PATCH]
-> drm/i915: Fix race condition in accessing GMBUS". Or have you thought of
-> another interaction that we need to sort out?
+On Tue, Feb 14, 2012 at 4:53 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 14 Feb 2012 15:28:19 +0800 Yang Bai <hamo.by@gmail.com> wrote:
+>
+>
+> One of the applications of kcalloc() is to prevent userspace from
+> causing a multiplicative overflow (and then perhaps causing an
+> overwrite beyond the end of the allocated memory).
+>
+> With this patch, we've just handed the user a way of spamming the logs
+> at 1MHz.  This is bad.
+>
+>
+> Also, please let's not randomly add debug stuff in places where we've
+> never demonstrated a need for it.
 
-The GMBUS interface is currently disabled because we confused the i2c
-core.
-  https://bugzilla.kernel.org/show_bug.cgi?id=35572
--Chris
+Ok. Please just drop this patch.
+
+Thanks.
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+    """
+    Keep It Simple,Stupid.
+    """
+
+Chinese Name: 白杨
+Nick Name: Hamo
+Homepage: http://hamobai.com/
+GPG KEY ID: 0xA4691A33
+Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
