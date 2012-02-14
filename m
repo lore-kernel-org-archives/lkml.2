@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab2BNRa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 12:30:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab2BNRa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 12:30:27 -0500
-Date: Tue, 14 Feb 2012 18:23:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-am33-list@redhat.com
-Subject: Re: [PATCH 20/40] mn10300: Use set_current_blocked() and
-	block_sigmask()
-Message-ID: <20120214172340.GA22645@redhat.com>
-References: <1329219673-28711-21-git-send-email-matt@console-pimps.org> <1329219673-28711-1-git-send-email-matt@console-pimps.org> <17603.1329234976@redhat.com>
+	id S1758314Ab2BNRdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 12:33:51 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:39557 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2BNRdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 12:33:50 -0500
+Message-ID: <4F3A9AFB.7040007@hp.com>
+Date: Tue, 14 Feb 2012 11:33:47 -0600
+From: Mike Miller <mike.miller@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17603.1329234976@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tomas Henzl <thenzl@redhat.com>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Subject: Re: [PATCH] cciss: add some older controllers to the kdump blacklist
+References: <4F3A95E9.9@redhat.com>
+In-Reply-To: <4F3A95E9.9@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, David Howells wrote:
+On 02/14/2012 11:12 AM, Tomas Henzl wrote:
+> Some other older controllers also do have problems to perform a kdump.
+> Adding controllers to this list means that the driver will signal
+> this non-ability via a resettable flag correctly.
+> The unsupported list was created after a consultation with HP.
 >
-> Matt Fleming <matt@console-pimps.org> wrote:
->
-> >  asmlinkage long sys_sigsuspend(int history0, int history1, old_sigset_t mask)
-> >  {
-> > -	mask &= _BLOCKABLE;
-> > -	spin_lock_irq(&current->sighand->siglock);
-> > +	sigset_t blocked;
-> > +
-> >  	current->saved_sigmask = current->blocked;
->
-> Can this line create a race, now that it's not protected by a lock?  It is
-> possible for current->blocked to get altered by another thread.
+> Signed-off-by: Tomas Henzl<thenzl@redhat.com>
 
-No, only current can change ->blocked. This is even documented in
-sigprocmask(). And more, the only correct way to change ->blocked
-is set_current_blocked(). OK, with a couple of "I know what I am
-doing" exceptions in kernel/signal.c.
+Acked-by: Mike Miller <mike.miller@hp.com>
 
-Oleg.
+>
+>
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index 2047978..e394f2c 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -585,6 +585,12 @@ static u32 unresettable_controller[] = {
+>   	0x40800E11, /* Smart Array 5i */
+>   	0x409C0E11, /* Smart Array 6400 */
+>   	0x409D0E11, /* Smart Array 6400 EM */
+> +	0x40700E11, /* Smart Array 5300 */
+> +	0x40820E11, /* Smart Array 532 */
+> +	0x40830E11, /* Smart Array 5312 */
+> +	0x409A0E11, /* Smart Array 641 */
+> +	0x409B0E11, /* Smart Array 642 */
+> +	0x40910E11, /* Smart Array 6i */
+>   };
+>
+>   /* List of controllers which cannot even be soft reset */
+> @@ -592,6 +598,12 @@ static u32 soft_unresettable_controller[] = {
+>   	0x40800E11, /* Smart Array 5i */
+>   	0x409C0E11, /* Smart Array 6400 */
+>   	0x409D0E11, /* Smart Array 6400 EM */
+> +	0x40700E11, /* Smart Array 5300 */
+> +	0x40820E11, /* Smart Array 532 */
+> +	0x40830E11, /* Smart Array 5312 */
+> +	0x409A0E11, /* Smart Array 641 */
+> +	0x409B0E11, /* Smart Array 642 */
+> +	0x40910E11, /* Smart Array 6i */
+>   };
+>
+>   static int ctlr_is_hard_resettable(u32 board_id)
+>
+>
 
