@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab2BNAyh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 19:54:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36361 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab2BNAyg (ORCPT
+	id S1755436Ab2BNA7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 19:59:18 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:39953 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab2BNA7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 19:54:36 -0500
-Date: Tue, 14 Feb 2012 11:54:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Evgeniy Polyakov <zbr@ioremap.net>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the vfs tree with Linus' tree
-Message-Id: <20120214115419.f4b1300a82ef7e94c450ecb1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+	Mon, 13 Feb 2012 19:59:15 -0500
+Date: Mon, 13 Feb 2012 19:58:35 -0500 (EST)
+Message-Id: <20120213.195835.1573147101037168145.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: mroos@linux.ee, rob.herring@calxeda.com, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120213214623.GJ11077@ponder.secretlab.ca>
+References: <20120213080618.GA11077@ponder.secretlab.ca>
+	<alpine.SOC.1.00.1202131119040.1488@math.ut.ee>
+	<20120213214623.GJ11077@ponder.secretlab.ca>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__14_Feb_2012_11_54_19_+1100_=jjvkfTnwwcE.ZCO"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 13 Feb 2012 16:58:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Feb_2012_11_54_19_+1100_=jjvkfTnwwcE.ZCO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 13 Feb 2012 14:46:23 -0700
 
-Hi Al,
+> Ugh; that looks bad.  If it failed there, then the global device node list
+> is corrupted.  I hate to ask you this, but would you be able to git bisect to
+> narrow down the commit that causes the problem?
 
-Today's linux-next merge of the vfs tree got a conflict in
-drivers/staging/pohmelfs/inode.c between commit 67435319866f ("staging:
-pohmelfs: remove drivers/staging/pohmelfs") from Linus' tree and commit
-044ff9e29029 ("switch open-coded instances of d_make_root() to new
-helper") from the vfs tree.
+Wild guess on all of these bugs, bad OF node reference counting and a
+OF node is free'd up prematurely.
 
-The former just removes this file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+If you look at the sparc code that has been subsumed into the generic
+drivers/of/ stuff over the past few years, you'll see that we never
+consistently did any of the reference counting bits on the sparc side.
 
---Signature=_Tue__14_Feb_2012_11_54_19_+1100_=jjvkfTnwwcE.ZCO
-Content-Type: application/pgp-signature
+I never did it, because I don't anticipate ever having hot-plug
+support for OF nodes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Anyways, if you now start to mix the drivers/of/ stuff which
+religiously does the reference counting with of_node_{get,put}()
+with the remaining scraps of sparc code that doesn't... it might
+not be pretty.
 
-iQIcBAEBCAAGBQJPObC7AAoJEECxmPOUX5FEyNUQAJqUgztCYgMu5BZQkbZoEeld
-7O+hor3n19KBCkHle3UjRYZVli8AQNCcRNngqsJVqURlakC4jLgUhrOxxXaAtiVF
-Gk78bMHxTFASfa4lMg9TiBtyG/hc2GbccvktwUzM5AtnViHCySxBw8jq0ShLGDqG
-FF53r2eUeb9Jxh+wlKtJqe6YTlX/+sjoRr5w47jqx4HGlt3AbI7XCqig9KbTBO5o
-zeyaVuAlQ8ud2lWwEYxHL0xpBAm6548asQJmyPb9IzbPYNPUJdMkLg9E8bqrp/W1
-adcdrJOApVUnQU+fVnonvtepYHE4di5IypAXbhYkrKWnc/b1wBgTkd5hi4rTa46S
-UPUZXEgEPGJq8HIPSEayeQxrZ1hcjGXHU4alx4EDpTKdNTA6olj+Bsc/j91ledHk
-N5L3lksRWqWKChil46LH0FXohh7q3O9+D2vPi0mU8YDU3C+iQIz4o4qxstcZqm6F
-beadX/TM1eFdLpkJ+/8koEXw79EYbWNkBxrXmoCRjOqMPQqpY6y32VGI+cBEkMmM
-tJRWRD8YSHpVs48mdODLDSZyDfSZj6AsBSmOII7nhp65ayGfY2lN50vdKW1i1NDg
-9m8c0E55HSS0HYTlgjhfud8VkCO7o6MeIkCMC1hlC+yu81MUktI3plHHHv1oDiKB
-Gh3dvANJ+OkEdV6W6HxZ
-=AnFK
------END PGP SIGNATURE-----
+In the crash dump after your test patch, we are in
+of_find_node_by_phandle() with a 'np' pointer in the allnodes list
+equal to 0x50.
 
---Signature=_Tue__14_Feb_2012_11_54_19_+1100_=jjvkfTnwwcE.ZCO--
+The signature in the original crash dump is identical, except
+that time we were in of_find_node_by_path(), but again the 'np'
+pointer was 0x50.
+
+Something else that might be suspicious were the memblock changes
+that happened this release cycle, so I wouldn't be surprised if
+a bisect turned up something in there.
+
+FWIW I've been running current kernels on my niagara boxes without
+incident for several weeks.
