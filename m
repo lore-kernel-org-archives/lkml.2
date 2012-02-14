@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2BNPWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 10:22:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27762 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329Ab2BNPWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 10:22:51 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4F3A785A.4030500@de.ibm.com>
-References: <4F3A785A.4030500@de.ibm.com> <20120214145022.12531.16731.stgit@warthog.procyon.org.uk>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        dan@danny.cz, Carsten Otte <cotte@de.ibm.com>,
-        linux-s390@vger.kernel.org, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] KEYS: Enable the compat keyctl wrapper on s390x
-Date: Tue, 14 Feb 2012 15:22:38 +0000
-Message-ID: <15313.1329232958@redhat.com>
+	id S1755578Ab2BNP1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 10:27:18 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:51188
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751674Ab2BNP1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 10:27:12 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] Documentation: Fix typo in kernel-parameters.txt
+Date: Wed, 15 Feb 2012 00:26:42 +0900
+Message-Id: <1329233202-2576-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Borntraeger <borntraeger@de.ibm.com> wrote:
+Correct spelling "mininum" to "minimum", "conroller" to "controller"
+and "explicitely" to "explicitly" in
+Documentation/kernel-parameters.txt
 
-> Do you want to push this change via Martins s390 tree or via other
-> trees?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/kernel-parameters.txt |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-I've no objection to it going via Martin's tree.  It's really an S390 fix
-rather than a keyrings/security fix.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 033d4e6..cfcc73f 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -950,7 +950,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			     controller
+ 	i8042.nopnp	[HW] Don't use ACPIPnP / PnPBIOS to discover KBD/AUX
+ 			     controllers
+-	i8042.notimeout	[HW] Ignore timeout condition signalled by conroller
++	i8042.notimeout	[HW] Ignore timeout condition signalled by controller
+ 	i8042.reset	[HW] Reset the controller during init and cleanup
+ 	i8042.unlock	[HW] Unlock (ignore) the keylock
+ 
+@@ -2434,7 +2434,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			For more information see Documentation/vm/slub.txt.
+ 
+ 	slub_min_order=	[MM, SLUB]
+-			Determines the mininum page order for slabs. Must be
++			Determines the minimum page order for slabs. Must be
+ 			lower than slub_max_order.
+ 			For more information see Documentation/vm/slub.txt.
+ 
+@@ -2600,7 +2600,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	threadirqs	[KNL]
+ 			Force threading of all interrupt handlers except those
+-			marked explicitely IRQF_NO_THREAD.
++			marked explicitly IRQF_NO_THREAD.
+ 
+ 	topology=	[S390]
+ 			Format: {off | on}
+-- 
+1.7.6.5
 
-David
