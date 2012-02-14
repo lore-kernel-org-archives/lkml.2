@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761328Ab2BNXUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 18:20:49 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34412 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757285Ab2BNXUr (ORCPT
+	id S932691Ab2BNXWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 18:22:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43306 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757285Ab2BNXWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 18:20:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6620"; a="163197952"
-Message-ID: <4F3AEC4E.9000303@codeaurora.org>
-Date: Tue, 14 Feb 2012 15:20:46 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: linaro-kernel@lists.linaro.org, Russell King <linux@arm.linux.org.uk>,
+	Tue, 14 Feb 2012 18:22:22 -0500
+Date: Tue, 14 Feb 2012 15:22:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Oleg Nesterov <oleg@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Chan <mike@android.com>, Dave Jones <davej@redhat.com>,
-        Todd Poynor <toddpoynor@google.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org,
-        Arjan Van De Ven <arjan@infradead.org>
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-References: <20120208013959.GA24535@panacea> <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com> <1328736834.2903.33.camel@pasglop> <20120209075106.GB18387@elte.hu> <4F35DD3E.4020406@codeaurora.org> <20120211144530.GA497@elte.hu>
-In-Reply-To: <20120211144530.GA497@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
+Message-Id: <20120214152220.4f621975.akpm@linux-foundation.org>
+In-Reply-To: <20120214225922.GA12394@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+	<20120214133337.9de7835b.akpm@linux-foundation.org>
+	<20120214225922.GA12394@thinkpad>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 14 Feb 2012 23:59:22 +0100
+Andrea Righi <andrea@betterlinux.com> wrote:
 
-On 02/11/2012 06:45 AM, Ingo Molnar wrote:
->
-> * Saravana Kannan<skannan@codeaurora.org>  wrote:
->
->> When you say accommodate all hardware, does it mean we will
->> keep around CPUfreq and allow attempts at improving it? Or we
->> will completely move to scheduler based CPU freq scaling, but
->> won't try to force atomicity? Say, may be queue up a
->> notification to a CPU driver to scale up the frequency as soon
->> as it can?
->
-> I don't think we should (or even could) force atomicity - we
-> adapt to whatever the hardware can do.
+> On Tue, Feb 14, 2012 at 01:33:37PM -0800, Andrew Morton wrote:
+> > On Sun, 12 Feb 2012 01:21:35 +0100
+> > Andrea Righi <andrea@betterlinux.com> wrote:
+> > 
+> > > The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
+> > > drop-behind policy where applications can mark certain intervals of a file as
+> > > FADV_NOREUSE before accessing the data.
+> > 
+> > I think you and John need to talk to each other, please.  The amount of
+> > duplication here is extraordinary.
+> 
+> Yes, definitely. I'm currently reviewing and testing the John's patch
+> set. I was even considering to apply my patch set on top of the John's
+> patch, or at least propose my tree-based approach to manage the list of
+> the POSIX_FADV_VOLATILE ranges.
 
-May be I misread the emails from Peter and you, but it sounded like the 
-idea being proposed was to directly do a freq change from the scheduler. 
-That would force the freq change API to be atomic (if it can be 
-implemented is another issue). That's what I was referring to when I 
-loosely used the terms "force atomicity".
+Cool.
 
-> But the design should be directed at systems where frequency
-> changes can be done in a reasonably fast manner. That is what he
-> future is - any change we initiate today takes years to reach
-> actual products/systems.
+> > 
+> > Both patchsets add fields to the address_space (and hence inode), which
+> > is significant - we should convince ourselves that we're getting really
+> > good returns from a feature which does this.
+> > 
+> > 
+> > 
+> > Regarding the use of fadvise(): I suppose it's a reasonable thing to do
+> > in the long term - if the feature works well, popular data streaming
+> > applications will eventually switch over.  But I do think we should
+> > explore interfaces which don't require modification of userspace source
+> > code.  Because there will always be unconverted applications, and the
+> > feature becomes available immediately.
+> > 
+> > One such interface would be to toss the offending application into a
+> > container which has a modified drop-behind policy.  And here we need to
+> > drag out the crystal ball: what *is* the best way of tuning application
+> > pagecache behaviour?  Will we gravitate towards containerization, or
+> > will we gravitate towards finer-tuned fadvise/sync_page_range/etc
+> > behaviour?  Thus far it has been the latter, and I don't think that has
+> > been a great success.
+> > 
+> > Finally, are the problems which prompted these patchsets already
+> > solved?  What happens if you take the offending streaming application
+> > and toss it into a 16MB memcg?  That *should* avoid perturbing other
+> > things running on that machine.
+> 
+> Moving the streaming application into a 16MB memcg can be dangerous in
+> some cases... the application might start to do "bad" things, like
+> swapping (if the memcg can swap) or just fail due to OOMs.
 
-As long as the new design doesn't treat archs needing schedulable 
-context to set freq as a second class citizen, I think we would all be 
-happy. Because it's not just a matter of it being old hardware. 
-Sometimes the decision to let the SW do the voltage scaling also comes 
-down to HW cost. Considering Linux runs on such a wide set of archs, I 
-think we shouldn't treat the need for schedulable context for freq 
-setting as "broken" or "not sane".
+Well OK, maybe there are problems with the current implementation.  But
+are they unfixable problems?  Is the right approach to give up on ever
+making containers useful for this application and to instead go off and
+implement a new and separate feature?
 
+> > And yes, a container-based approach is pretty crude, and one can
+> > envision applications which only want modified reclaim policy for one
+> > particualr file.  But I suspect an application-wide reclaim policy
+> > solves 90% of the problems.
+> 
+> I really like the container-based approach. But for this we need a
+> better file cache control in the memory cgroup; now we have the
+> accounting of file pages, but there's no way to limit them.
 
->> IMHO, I think the problem with CPUfreq and its dynamic
->> governors today is that they do a timer based sampling of the
->> CPU load instead of getting some hints from the scheduler when
->> the scheduler knows that the load average is quite high.
->
-> Yes - that is one of the "frequency changes are slow"
-> assumptions - which is wrong.
+Again, if/whem memcg becomes sufficiently useful for this application
+we're left maintaining the obsolete POSIX_FADVISE_NOREUSE for ever.
 
-Thanks,
-Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
