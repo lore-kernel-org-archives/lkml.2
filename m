@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759668Ab2BNLtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:49:46 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57680 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760221Ab2BNLmY (ORCPT
+	id S1760295Ab2BNLuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:50:01 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36790 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550Ab2BNLt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:42:24 -0500
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-arch@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org
-Subject: [PATCH 11/40] Hexagon: Use set_current_blocked() and block_sigmask()
-Date: Tue, 14 Feb 2012 11:40:44 +0000
-Message-Id: <1329219673-28711-12-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
+	Tue, 14 Feb 2012 06:49:57 -0500
+Date: Tue, 14 Feb 2012 12:49:49 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Oskar Schirmer <oskar@scara.com>
+Cc: sameo@linux.intel.com, dmitry.torokhov@gmail.com, kernel@pengutronix.de,
+        philippe.retornaz@epfl.ch, michael.thalmeier@hale.at,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] add support for mc13892 I2C based touch panel for
+ mx35_3ds
+Message-ID: <20120214114949.GM14173@pengutronix.de>
+References: <1329215672-15706-1-git-send-email-oskar@scara.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1329215672-15706-1-git-send-email-oskar@scara.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+Hello,
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+I didn't check your series, but are you aware of the series available at
 
-Also, use the new helper function introduced in commit 5e6292c0f28f
-("signal: add block_sigmask() for adding sigmask to current->blocked")
-which centralises the code for updating current->blocked after
-successfully delivering a signal and reduces the amount of duplicate
-code across architectures. In the past some architectures got this
-code wrong, so using this helper function should stop that from
-happening again.
+	http://thread.gmane.org/gmane.linux.drivers.i2c/9872
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/hexagon/kernel/signal.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+?
 
-diff --git a/arch/hexagon/kernel/signal.c b/arch/hexagon/kernel/signal.c
-index b45be31..ecbab34 100644
---- a/arch/hexagon/kernel/signal.c
-+++ b/arch/hexagon/kernel/signal.c
-@@ -192,12 +192,7 @@ static int handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
- 	if (rc)
- 		return rc;
- 
--	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked, sig);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	block_sigmask(ka, sig);
- 
- 	return 0;
- }
-@@ -305,10 +300,7 @@ asmlinkage int sys_rt_sigreturn(void)
- 		goto badframe;
- 
- 	sigdelsetmask(&blocked, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = blocked;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&blocked);
- 
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
- 		goto badframe;
+Best regards
+Uwe
+
 -- 
-1.7.4.4
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
