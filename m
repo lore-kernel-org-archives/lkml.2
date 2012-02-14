@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758720Ab2BNCHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 21:07:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64744 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2BNCH1 convert rfc822-to-8bit (ORCPT
+	id S1756196Ab2BNCQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 21:16:53 -0500
+Received: from toronto-hs-216-138-233-67.s-ip.magma.ca ([216.138.233.67]:59546
+	"HELO yow.seanm.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751515Ab2BNCQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 21:07:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <201202070200.55505.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-Date: Mon, 13 Feb 2012 18:07:26 -0800
-Message-ID: <CAMP5XgeqXJroKtHZO18SESFxg1iGP=wHAa+CU1zEEXQqUEQwTA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Feb 2012 21:16:53 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 Feb 2012 21:16:52 EST
+Date: Mon, 13 Feb 2012 21:10:09 -0500
+From: Sean MacLennan <seanm@seanm.ca>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andrea Merello <andreamrl@tiscali.it>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Mike McCormack <mikem@ring3k.org>
+Subject: Re: [PATCH] Staging, rtl8192e, softmac: remove redundant memset and
+ fix mem leak
+Message-ID: <20120213211009.7c0335cc@opus.seanm.ca>
+In-Reply-To: <alpine.LNX.2.00.1202130012140.13814@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1202130012140.13814@swampdragon.chaosbits.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 6, 2012 at 5:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-...
-> All in all, it's not as much code as I thought it would be and it seems to be
-> relatively simple (which rises the question why the Android people didn't
-> even _try_ to do something like this instead of slapping the "real" wakelocks
-> onto the kernel FWIW).  IMHO it doesn't add anything really new to the kernel,
-> except for the user space interfaces that should be maintainable.  At least I
-> think I should be able to maintain them. :-)
->
+On Mon, 13 Feb 2012 00:15:02 +0100 (CET)
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-Replacing a working solution with an untested one takes time. That
-said, I have recently tried replacing all our kernel wake-locks with a
-thin wrapper around wake-sources. This appears to mostly work, but the
-wake-source timeout feature has some bugs or incompatible apis. An
-init api would also be useful for embedding wake-sources in other data
-structures without adding another memory allocation. Your patch to
-move the spinlock init to wakeup_source_add still require the struct
-to be zero initialized and the name set manually.
+> We also fail to kfree() the memory we allocated for 'network' if we
+> do not enter
+> 
+>   if (ieee->current_network.qos_data.supported == 1) {
+> 
+> and the variable then goes out of scope.
+> 
+> To fix that I simply moved the kfree() that was inside that 'if'
+> statement to instead be just after it. It then covers both the case
+> where we take the branch and when we don't.
 
-I needed to use two wake-sources per wake-lock since calling
-__pm_stay_awake after __pm_wakeup_event on a wake-source does not
-cancel the timeout. Unless there is a reason to keep this behavior I
-would like __pm_stay_awake to cancel any active timeout.
+Nice catch! We know that the driver leaks memory if left running for a
+long time, this will help!
 
-Destroying a wake-source also has some problems. If you call
-wakeup_source_destroy it will spin forever if the wake-source is
-active without a timeout. And, if you call __pm_relax then
-wakeup_source_destroy it could free the wake-source memory while the
-timer function is still running. It also looks as if the wake_source
-can be immediately deactivated if you call __pm_wakeup_event at the
-same time as the previous timeout expired.
+I would recommend a small change: instead of moving the kfree() out of
+the loop, why not move the kzalloc into it? The qos_data.supported == 0
+is the normal case (at least for me), so why not save an alloc?
 
--- 
-Arve Hjønnevåg
+Something like this:
+
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+index 1637f11..59b991f 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+@@ -2228,13 +2228,6 @@ inline int rtllib_rx_assoc_resp(struct rtllib_device *ieee, struct sk_buff *skb,
+ 	     (ieee->iw_mode == IW_MODE_INFRA)) {
+ 		errcode = assoc_parse(ieee, skb, &aid);
+ 		if (0 == errcode) {
+-			struct rtllib_network *network =
+-				 kzalloc(sizeof(struct rtllib_network),
+-				 GFP_ATOMIC);
+-
+-			if (!network)
+-				return 1;
+-			memset(network, 0, sizeof(*network));
+ 			ieee->state = RTLLIB_LINKED;
+ 			ieee->assoc_id = aid;
+ 			ieee->softmac_stats.rx_ass_ok++;
+@@ -2242,6 +2235,13 @@ inline int rtllib_rx_assoc_resp(struct rtllib_device *ieee, struct sk_buff *skb,
+ 			/* Let the register setting default with Legacy station */
+ 			assoc_resp = (struct rtllib_assoc_response_frame *)skb->data;
+ 			if (ieee->current_network.qos_data.supported == 1) {
++				struct rtllib_network *network =
++					kzalloc(sizeof(struct rtllib_network),
++						GFP_ATOMIC);
++
++				if (!network)
++					return 1;
++
+ 				if (rtllib_parse_info_param(ieee, assoc_resp->info_element,
+ 							rx_stats->len - sizeof(*assoc_resp),
+ 							network, rx_stats)) {
+
+Cheers,
+   Sean
