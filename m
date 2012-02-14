@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab2BNJcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 04:32:33 -0500
-Received: from db3outboundsmtppool1.messaging.microsoft.com ([94.245.120.123]:56096
-	"EHLO DB3EHSNDR002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759652Ab2BNJc3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 04:32:29 -0500
-X-FB-OUTBOUND-SPAM: yes
-X-SpamScore: 0
-X-BigFish: VS0(zz98dKzz1202h1082kzzz2dh87h2a8h668h839h944h41h42h)
-X-Forefront-Antispam-Report: CIP:94.101.220.16;KIP:(null);UIP:(null);IPV:NLI;H:nzt0014e.dknz.nzcorp.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 14 Feb 2012 10:32:21 +0100
-From: Anders Ossowicki <aowi@novozymes.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: Memory issues with Opteron 6220
-Message-ID: <20120214093221.GA8363@otto.nzcorp.net>
-Reply-To: <aowi@novozymes.com>
-Mail-Followup-To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-References: <20120208143741.GB28486@otto.nzcorp.net>
- <20120209083315.GA19380@elte.hu>
- <4F343582.7080007@krogh.cc>
- <4F3535E7.4000007@krogh.cc>
- <20120211134847.GD28098@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120211134847.GD28098@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SMTP-Mail-From: aowi@otto.nzcorp.net
-X-OriginatorOrg: novozymes.com
+	id S1759983Ab2BNJgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 04:36:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47914 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759829Ab2BNJgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 04:36:08 -0500
+Message-Id: <e39f63$3ncn6e@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="125197518"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Benson Leung <bleung@chromium.org>,
+        keithp@keithp.com, airlied@linux.ie, djkurtz@chromium.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+In-Reply-To: <20120213222623.GN5301@phenom.ffwll.local>
+References: <1328817797-4026-1-git-send-email-bleung@chromium.org> <20120213203838.GM5301@phenom.ffwll.local> <e0d58a$38gbj5@orsmga002.jf.intel.com> <20120213222623.GN5301@phenom.ffwll.local>
+Date: Tue, 14 Feb 2012 09:35:58 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 11, 2012 at 02:48:47PM +0100, Ingo Molnar wrote:
-> It would be helpful if you could enhance the printk in such a 
-> way, and if you tested it with your workload that triggers it - 
-> and send us the resulting patch. Having more information in the 
-> dmesg is never bad.
-I'd be happy to do so, but I'm not sure where the appropriate place to add it
-is.  I'm guessing a printk wrapped in a printk_ratelimit somewhere in mm but I
-know next to nothing about the internals of the kernel.
--- 
-Anders Ossowicki
+On Mon, 13 Feb 2012 23:26:23 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Mon, Feb 13, 2012 at 09:49:35PM +0000, Chris Wilson wrote:
+> > On Mon, 13 Feb 2012 21:38:38 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > However, the outstanding issue is that we need to separate the gmbus
+> > i2c adapter from the gpio i2c adapter in order for the pairing to work
+> > with the expectations of the i2c core.
+> 
+> There's another patch floating on dri-devel to add a gmbus_mutex. The
+> issue it tries to avoid is that multiple users corrupting each anothers
+> state when using the single gmbus controller. See "[PATCH] [PATCH]
+> drm/i915: Fix race condition in accessing GMBUS". Or have you thought of
+> another interaction that we need to sort out?
 
+The GMBUS interface is currently disabled because we confused the i2c
+core.
+  https://bugzilla.kernel.org/show_bug.cgi?id=35572
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
