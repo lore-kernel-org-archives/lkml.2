@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab2BNENk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 23:13:40 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62666 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2BNENi convert rfc822-to-8bit (ORCPT
+	id S1759189Ab2BNERB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 23:17:01 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36737 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756171Ab2BNERA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 23:13:38 -0500
+	Mon, 13 Feb 2012 23:17:00 -0500
+X-Sasl-enc: DXCZCO2m72zKZBv5MExXQz5e2tpO5VAWmWyLRx2cyws6 1329193019
+Date: Mon, 13 Feb 2012 20:05:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: Staging: bcm: Don't leak 'pstAddIndication' in
+ CmHost.c::StoreCmControlResponseMessage()
+Message-ID: <20120214040546.GA17165@kroah.com>
+References: <alpine.LNX.2.00.1201242338500.27508@swampdragon.chaosbits.net>
+ <alpine.LNX.2.00.1201242346380.27508@swampdragon.chaosbits.net>
+ <20120209175217.GA13959@kroah.com>
+ <alpine.LNX.2.00.1202092329110.32491@swampdragon.chaosbits.net>
+ <20120210180037.GA588@kroah.com>
+ <alpine.LNX.2.00.1202120051310.7100@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-In-Reply-To: <1329192654-11284-1-git-send-email-hamo.by@gmail.com>
-References: <1329192654-11284-1-git-send-email-hamo.by@gmail.com>
-From: Yang Bai <hamo.by@gmail.com>
-Date: Tue, 14 Feb 2012 12:13:18 +0800
-Message-ID: <CAO_0yfOyrK_no3KDS7mX1uaFszKWtMtkkRxUKgb+8xrDQANzew@mail.gmail.com>
-Subject: Re: [PATCH] scsi: if sd card is removed, do not revalidate it
-To: JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yang Bai <hamo.by@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1202120051310.7100@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 12:10 PM, Yang Bai <hamo.by@gmail.com> wrote:
-> During revalidating, if sd card is removed, scsi_device
-> will be NULL, so we should not revalidate or it will cause
-> a panic.
-> This problem is report at:
-> http://comments.gmane.org/gmane.linux.kernel/1250235
->
-> Signed-off-by: Yang Bai <hamo.by@gmail.com>
-> ---
->  drivers/scsi/sd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index c691fb5..470339c 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -2370,10 +2370,10 @@ static int sd_revalidate_disk(struct gendisk *disk)
->                                      "sd_revalidate_disk\n"));
->
->        /*
-> -        * If the device is offline, don't try and read capacity or any
-> +        * If the device is removed or offline, don't try and read capacity or any
->         * of the other niceties.
->         */
-> -       if (!scsi_device_online(sdp))
-> +       if (!sdp || !scsi_device_online(sdp))
->                goto out;
->
->        buffer = kmalloc(SD_BUF_SIZE, GFP_KERNEL);
-> --
-> 1.7.9
->
+On Sun, Feb 12, 2012 at 12:54:31AM +0100, Jesper Juhl wrote:
+> On Fri, 10 Feb 2012, Greg KH wrote:
+> 
+> > On Thu, Feb 09, 2012 at 11:33:25PM +0100, Jesper Juhl wrote:
+> > > From: Jesper Juhl <jj@codesealer.com>
+> > > 
+> > > We allocate memory for 'pstAddIndication' with kmalloc() in
+> > > drivers/staging/bcm/CmHost.c::StoreCmControlResponseMessage() and then
+> > > neglect to free it on a number of exit paths from that function.
+> > > 
+> > > This could probably be resolved cleaner/nicer, but this file needs a
+> > > serious overhaul in any case, so I opted for just fixing the problem
+> > > as directly as I could and then we can clean it up generally
+> > > later... This at least makes it stop bleeding..
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@codesealer.com>
+> > 
+> > Odd, didn't I already apply this patch?
+> > 
+> > confused,
+> > 
+> 
+> Well, you were the one who (in email message with Message-ID: 
+> <20120209175217.GA13959@kroah.com>) said that it no longer applied and 
+> asked for a resubmit against linux-next:
+> 
+>   "This patch no longer applies, care to redo it against the latest
+>   linux-next tree?"
+> 
+> So I just did what you asked :-)
 
-Is this the right way to solve this problem? Or should we add
-a lock to this struct to protect it?
+Yes, but...
 
--- 
-    """
-    Keep It Simple,Stupid.
-    """
+> Whether or not you have already applied it somewhere else I have no 
+> idea...
 
-Chinese Name: 白杨
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
+I tried to apply this, and it said it was already applied.  So either I
+already merged it, or someone else made the same patch, or you created
+it reverted.
+
+I'm confused, sorry.
+
+greg k-h
