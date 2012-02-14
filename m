@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab2BNQTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 11:19:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61017 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab2BNQTH (ORCPT
+	id S1755898Ab2BNQVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 11:21:41 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:53765 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751544Ab2BNQVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 11:19:07 -0500
-Date: Tue, 14 Feb 2012 08:19:01 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org, yong.zhang0@gmail.com
-Subject: Re: [PATCH] percpu: use raw_local_irq_* in _this_cpu op
-Message-ID: <20120214161901.GL12117@google.com>
-References: <1329131018-19107-1-git-send-email-tom.leiming@gmail.com>
- <20120213172311.GB12117@google.com>
- <CACVXFVMyihmG3NexXOqTUoJb8UJFa7dJqYGOr6oC_y5heFSo1A@mail.gmail.com>
+	Tue, 14 Feb 2012 11:21:37 -0500
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX18dpnUJesgdkmZH7KrhfzztXMZN+yUZwwhdeUrIju
+	Orb9et9q/pYWuU
+From: Marc Dietrich <marvin24@gmx.de>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: fix powerpc linux-next break on zsmalloc
+Date: Tue, 14 Feb 2012 17:21:05 +0100
+Message-ID: <5736714.Unq6oKkpjO@ax5200p>
+User-Agent: KMail/4.7.3 (Linux/3.2.0-14-generic; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <4F3A7121.9010803@linux.vnet.ibm.com>
+References: <1329144469-8575-1-git-send-email-sjenning@linux.vnet.ibm.com> <4F3A480C.9090407@gmx.de> <4F3A7121.9010803@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVMyihmG3NexXOqTUoJb8UJFa7dJqYGOr6oC_y5heFSo1A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 11:30:06AM +0800, Ming Lei wrote:
-> On Tue, Feb 14, 2012 at 1:23 AM, Tejun Heo <tj@kernel.org> wrote:
-> > On Mon, Feb 13, 2012 at 07:03:38PM +0800, Ming Lei wrote:
-> >> It doesn't make sense to trace irq off or do irq flags
-> >> lock proving inside 'this_cpu' operations, so replace local_irq_*
-> >> with raw_local_irq_* in 'this_cpu' op.
-> >>
-> >> Also the patch fixes one lockdep warning[1], which is caused
-> >> by the added local_irq_save/restore(flags) in this_cpu_inc
-> >> called by __debug_atomic_inc: kernel/lockdep.c
-> >
-> > I think this isn't gonna hurt anything but I don't understand why the
-> > lockdep warning is triggering when using traced version.  Can you
-> > please explain that in a bit more detail in the patch description?
+Hi Seth,
+
+On Tuesday 14 February 2012 08:35:13 Seth Jennings wrote:
+> On 02/14/2012 05:39 AM, Marc Dietrich wrote:
+> > Am 14.02.2012 12:22, schrieb Marc Dietrich:
+> >> Am 13.02.2012 15:47, schrieb Seth Jennings:
+> >>> linux/vmalloc.h added to zsmalloc-main.c to resolve implicit
+> >>> declaration errors.
+> >>> 
+> >>> X86 dependency added to zsmalloc and dependent drivers zcache and
+> >>> zram.
+> >>> 
+> >>> This X86 only requirement is not ideal.  Working to find portable
+> >>> functions for __flush_tlb_one and set_pte.
+> >> 
+> >> sorry, zcache/zram works fine one ARM here. Why not depend on
+> >> !POWERPC?
+> > 
+> > ups, sorry again, I tested an older version only. flush_tlb_one and
+> > set_pte is only used with the new allocator as it seems.
 > 
-> In trace_hardirqs_on_caller:kernel/lockdep.c, __debug_atomic_inc
-> will be called to add on 'this_cpu' variable, so may introduce recursive
-> trace_hardirqs_on|off_caller called.
+> It would seem that the cpu-local tlb page flushing function for ARM
+> is local_flush_tlb_kernel_page(), by look at the kmap_atomic() code
+> in arch/arm/mm/highmem.c.
+> 
+> So each arch is using a slightly different approach here.
+> 
+> A simple #define per-arch could make a it a common call.  I think
+> I'm going to code it up and see how it goes.
 
-Ah, okay, so lockdep itself is using this_cpu ops.  Can you please
-repost the patch with the above info in the description?
+... and I'm happy to test it ;-)
 
-Thank you.
+Thanks
 
--- 
-tejun
+Marc
+
