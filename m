@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab2BNQoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 11:44:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55618 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab2BNQoS convert rfc822-to-8bit (ORCPT
+	id S1757834Ab2BNQp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 11:45:57 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:56741 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754659Ab2BNQpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 11:44:18 -0500
-Message-ID: <1329237838.2293.20.camel@twins>
-Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Date: Tue, 14 Feb 2012 17:43:58 +0100
-In-Reply-To: <1329236924.2293.13.camel@twins>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
-	 <1327674868-10486-1-git-send-email-jolsa@redhat.com>
-	 <1329236924.2293.13.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 14 Feb 2012 11:45:54 -0500
+Date: Tue, 14 Feb 2012 08:45:51 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: linux-next: build failure after merge of the pci tree
+Message-ID: <20120214084551.6d6ca6cf@jbarnes-desktop>
+In-Reply-To: <20120213132125.a292c8832d031d5694b62a8c@canb.auug.org.au>
+References: <20120213132125.a292c8832d031d5694b62a8c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/D85p6pBGIXgUb49YkicH0TF"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-14 at 17:28 +0100, Peter Zijlstra wrote:
-> 
-> I added the below but all I managed was to crash my kernel, its probably
-> a simple thing, but sysfs didn't give a hint.
+--Sig_/D85p6pBGIXgUb49YkicH0TF
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This isn't it either..
+On Mon, 13 Feb 2012 13:21:25 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-crash looks like:
+> Hi Jesse,
+>=20
+> After merging the pci tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> drivers/pci/quirks.c: In function 'do_one_fixup_debug':
+> drivers/pci/quirks.c:2915:2: error: implicit declaration of function 'tas=
+k_pid_nr' [-Werror=3Dimplicit-function-declaration]
+> drivers/pci/quirks.c:2916:2: error: implicit declaration of function 'kti=
+me_get' [-Werror=3Dimplicit-function-declaration]
+> drivers/pci/quirks.c:2916:11: error: incompatible types when assigning to=
+ type 'ktime_t' from type 'int'
+> drivers/pci/quirks.c:2918:10: error: incompatible types when assigning to=
+ type 'ktime_t' from type 'int'
+>=20
+> Caused by commit 49107584a885 ("PCI: Annotate PCI quirks in
+> initcall_debug style"). Some missing include files ...
+>=20
+> I have used the pci tree from next-20120210 for today.
 
-general protection fault: 0000 [#1] PREEMPT SMP 
-CPU 0 
-Modules linked in:
+I pushed a v2 of the patch with the right #includes, hopefully it'll
+build across arches this time.
 
-Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc3-01426-g2ce21a5-dirty #78 Supermicro X8DTN/X8DTN
-RIP: 0010:[<ffffffff812e258e>]  [<ffffffff812e258e>] strcmp+0x4/0x21
-RSP: 0018:ffff880236879c90  EFLAGS: 00010286
-RAX: ffff880235ac7660 RBX: 0000000000000000 RCX: ffff880236870000
-RDX: 0000000000000000 RSI: ffffffff81b295a6 RDI: 6e7500746e657665
-RBP: ffff880236879c90 R08: 0000000000000180 R09: 6e7500746e657665
-R10: ffffffff812ddedd R11: ffff880236879dc0 R12: 0000000000000000
-R13: ffff880235ac7630 R14: 6e7500746e657665 R15: 0000000000000008
-FS:  0000000000000000(0000) GS:ffff880237c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000001c05000 CR4: 00000000000007f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/0 (pid: 1, threadinfo ffff880236878000, task ffff880236870000)
-Stack:
- ffff880236879cc0 ffffffff811996e2 ffff880235ac7ab0 ffff880236879d30
- ffff880236879d30 ffff880235ac7ab0 ffff880236879ce0 ffffffff81199957
- ffff880236879d30 ffff880235ac75a0 ffff880236879d10 ffffffff81199a06
-Call Trace:
- [<ffffffff811996e2>] sysfs_find_dirent+0x79/0xda
- [<ffffffff81199957>] __sysfs_add_one+0x73/0xc3
- [<ffffffff81199a06>] sysfs_add_one+0x1b/0xab
- [<ffffffff81198fa8>] sysfs_add_file_mode+0x7e/0xb7
- [<ffffffff8119b841>] internal_create_group+0xed/0x168
- [<ffffffff8119b8e7>] sysfs_create_group+0x13/0x18
- [<ffffffff814861fc>] device_add_groups+0x2a/0x69
- [<ffffffff81198ff3>] ? sysfs_add_file+0x12/0x14
- [<ffffffff81486f8f>] device_add+0x37f/0x636
- [<ffffffff8148672b>] ? kzalloc.clone.0+0xe/0x10
- [<ffffffff810f069a>] pmu_dev_alloc+0x88/0xa4
- [<ffffffff81d11114>] ? init_kprobe_trace+0x90/0x90
- [<ffffffff81d1115f>] perf_event_sysfs_init+0x4b/0x9a
- [<ffffffff81d11114>] ? init_kprobe_trace+0x90/0x90
- [<ffffffff8100020f>] do_one_initcall+0x7f/0x139
- [<ffffffff81cf65ba>] kernel_init+0xa2/0x122
- [<ffffffff8109083e>] ? schedule_tail+0x31/0x74
- [<ffffffff817af2a4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81cf6518>] ? parse_early_options+0x20/0x20
- [<ffffffff817af2a0>] ? gs_change+0x13/0x13
-Code: 48 ff c1 80 39 00 75 f8 eb 0d 48 ff c1 48 ff ca 75 05 c6 01 00 eb
-0e 40 8a 3e 48 ff c6 40 88 39 40 84 ff 75 e5 c9 c3 55 48 89 e5 <8a> 07
-8a 16 48 ff c7 48 ff c6 38 d0 74 07 19 c0 83 c8 01 eb 06 
-RIP  [<ffffffff812e258e>] strcmp+0x4/0x21
- RSP <ffff880236879c90>
----[ end trace 5283cffd22793f50 ]---
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/D85p6pBGIXgUb49YkicH0TF
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-And yes, I already send greg a patch for that sillyness in
-sysfs_find_dirent.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
----
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1605,6 +1605,7 @@ static struct attribute *x86_pmu_attrs[]
- };
- 
- static struct attribute_group x86_pmu_attr_group = {
-+	.name = "attributes",
- 	.attrs = x86_pmu_attrs,
- };
- 
+iQIcBAEBAgAGBQJPOo+/AAoJEIEoDkX4Qk9hbFIP/3X94otBvFifiROkDyFiWuOA
+aZMxMmBXpRIuEJ+oSdr6MOwWcwwi7o4SO7LuDOWbKNqCuN4CXF8/6RBJ/gFlQcBA
+29id3wX5wwdkyMiL3sFIulIFTkXuKrWTX3rqwk+F+1ExxqjAPfDPh6Xn3olI0rbH
+GEZrqOwd8/L6Irm4cNMJnI6xQ7vmq05pIR5+B4cT0X6hOUTJ8oNUgP9PwB2OzIkQ
+knDcZZ2wbMdcvETCDnL3zQU+5QlFGHJlZTPXYp84IymgjqfyiSjqBekMGYBSLAgi
+5o3sWGRFx2gUKZlk+LFEr9mKxWOzc3cQl+HsVySZpbw6cATR1MD1BoJif6VICJvl
+s6AYYVItaAetH3mT00vQDyMjho8a/By5EhlK5Rd38Vr9PJ0cuvv17Ja9UY6AV2l1
+NsgWI60kC8RrPGLyfN7xxY6m1ChDUhXWywCwXlU30G1RAT8xxPDjFjfJc6+nFJCq
+hQKqriYYidxhh28dCPkX6vMPJu09pXSvMSUW2J5a8+Fok+q01nIcokbB1UMnbqCP
+bgg/l3mFj+km8cGEJU3gIDbMxWqG7qtXEBzfsUmSexwh3m56Fru+p2kKebokacrQ
+noMEXSwpDXCRddUjlaAvy20rz8iFJvlvBF9MSDy3Zpjt7BvFprZwKlK423aTG//H
+YUJb75P8wPahTXl5OpaV
+=puzd
+-----END PGP SIGNATURE-----
 
+--Sig_/D85p6pBGIXgUb49YkicH0TF--
