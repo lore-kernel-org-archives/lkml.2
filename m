@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760763Ab2BNOmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:42:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46269 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab2BNOmQ convert rfc822-to-8bit (ORCPT
+	id S1760774Ab2BNOoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:44:14 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56725 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751007Ab2BNOoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:42:16 -0500
-MIME-Version: 1.0
-Date: Tue, 14 Feb 2012 15:42:16 +0100
-Message-ID: <CAD74y4kASzFUK4+5wkysFdZA+LfcPpSs-d4+TByBMHe0J8+fmw@mail.gmail.com>
-Subject: realtek NIC constantly hanging up
-From: Georgi Kehaiov <kehaiov.lkml@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Feb 2012 09:44:12 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] leds-lp5523: fix compiler warning
+Date: Tue, 14 Feb 2012 15:44:00 +0100
+Message-Id: <1329230640-27265-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.7.3
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230652;012e214b;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+Fix for some -Wuninitialized compiler warnings related to not
+checking lp5523_read() return values but using to the function
+passed variables later.
 
-I've got a new gigabyte 970a-ud3 with a built in realtek ethernet
-controller. The problem I'm experiencing is that the network interface
-goes down (kinda... it's still there but I don't seem to receive or
-send any packets at all) and I need to restart my network daemon to
-get networking back on. In couple of minutes/hours the same problem
-occurs again. And then again and again... Sometimes it happens while
-I'm uploading something big (3-4 MB/s), sometimes it just happens when
-I'm playing nethack (next to no traffic at all). I've been browsing
-around for some time now and there are actually some people who've had
-a similair issue. But in my case it has nothing to do with
-1000T-base-mode or 100T-base-mode - I'm downloading stuff from dc hubs
-with ~100MB/s. I have tried both the r8168 and r8169 drivers - it
-doesn't matter, the problem keeps occuring.
+v3: handle the error cases from lp5523_read()
 
-Some info:
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/leds/leds-lp5523.c |   25 +++++++++++++++++++++----
+ 1 files changed, 21 insertions(+), 4 deletions(-)
 
- lspci -vvv
-03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
-        Subsystem: Giga-byte Technology GA-EP45-DS5 Motherboard
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort+
-<TAbort+ <MAbort- >SERR- <PERR- INTx-
-        Latency: 0, Cache Line Size: 64 bytes
-        Interrupt: pin A routed to IRQ 43
-        Region 0: I/O ports at ee00 [size=256]
-        Region 2: Memory at fdbff000 (64-bit, prefetchable) [size=4K]
-        Region 4: Memory at fdbf8000 (64-bit, prefetchable) [size=16K]
-        Capabilities: <access denied>
-        Kernel driver in use: r8168
- uname -a
-Linux imladris 3.2.5-1-ARCH #1 SMP PREEMPT Tue Feb 7 08:34:36 CET 2012
-x86_64 AMD Phenom(tm) II X4 960T Processor AuthenticAMD GNU/Linux
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index 73e791a..2b2d10b 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -243,7 +243,13 @@ static int lp5523_configure(struct i2c_client *client)
+ 
+ 	/* Let the programs run for couple of ms and check the engine status */
+ 	usleep_range(3000, 6000);
+-	lp5523_read(client, LP5523_REG_STATUS, &status);
++	ret = lp5523_read(client, LP5523_REG_STATUS, &status);
++
++	if (ret) {
++		dev_err(&client->dev, "could not read status\n");
++		return -1;
++	}
++
+ 	status &= LP5523_ENG_STATUS_MASK;
+ 
+ 	if (status == LP5523_ENG_STATUS_MASK) {
+@@ -256,7 +262,7 @@ static int lp5523_configure(struct i2c_client *client)
+ 
+ 	dev_info(&client->dev, "disabling engines\n");
+ 
+-	ret |= lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
++	ret = lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
+ 
+ 	return ret;
+ }
+@@ -458,10 +464,16 @@ static ssize_t lp5523_selftest(struct device *dev,
+ 				    LP5523_EN_LEDTEST | 16);
+ 	usleep_range(3000, 6000); /* ADC conversion time is typically 2.7 ms */
+ 	ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
++	if (ret)
++		goto fail;
++
+ 	if (!(status & LP5523_LEDTEST_DONE))
+ 		usleep_range(3000, 6000); /* Was not ready. Wait little bit */
+ 
+-	ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
++	ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
++	if (ret)
++		goto fail;
++
+ 	vdd--;	/* There may be some fluctuation in measurement */
+ 
+ 	for (i = 0; i < LP5523_LEDS; i++) {
+@@ -483,9 +495,14 @@ static ssize_t lp5523_selftest(struct device *dev,
+ 		/* ADC conversion time is 2.7 ms typically */
+ 		usleep_range(3000, 6000);
+ 		ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
++		if (ret)
++			goto fail;
++
+ 		if (!(status & LP5523_LEDTEST_DONE))
+ 			usleep_range(3000, 6000);/* Was not ready. Wait. */
+-		ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
++		ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
++		if (ret)
++			goto fail;
+ 
+ 		if (adc >= vdd || adc < LP5523_ADC_SHORTCIRC_LIM)
+ 			pos += sprintf(buf + pos, "LED %d FAIL\n", i);
+-- 
+1.7.7.3
 
- ethtool eth0
-Settings for eth0:
-        Supported ports: [ TP ]
-        Supported link modes:   10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Full
-        Supported pause frame use: No
-        Supports auto-negotiation: Yes
-        Advertised link modes:  10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Full
-        Advertised pause frame use: Symmetric Receive-only
-        Advertised auto-negotiation: Yes
-        Speed: 1000Mb/s
-        Duplex: Full
-        Port: Twisted Pair
-        PHYAD: 0
-        Transceiver: internal
-        Auto-negotiation: on
-        MDI-X: Unknown
-        Supports Wake-on: pumbg
-        Wake-on: g
-        Current message level: 0x00000033 (51)
-                               drv probe ifdown ifup
-        Link detected: yes
-my current dmesg: http://paste.pocoo.org/show/550817/
-my current lsmod: http://paste.pocoo.org/show/550820/
-
-
-I'm completely clueless here, so if anyone can help me out on this it
-would be awesome.
-Best Regards,
-Georgi Kehaiov
