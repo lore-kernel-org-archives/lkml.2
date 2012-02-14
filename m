@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab2BNOlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:41:05 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:52644 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756666Ab2BNOlB (ORCPT
+	id S1760763Ab2BNOmR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:42:17 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46269 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756666Ab2BNOmQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:41:01 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Danny Kukawka <dkukawka@suse.de>, jack_wang@usish.com,
-        lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] pm8001: fix enum checks
-Date: Tue, 14 Feb 2012 15:40:55 +0100
-Message-Id: <1329230455-27084-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 14 Feb 2012 09:42:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230461;0afe932b;
+Date: Tue, 14 Feb 2012 15:42:16 +0100
+Message-ID: <CAD74y4kASzFUK4+5wkysFdZA+LfcPpSs-d4+TByBMHe0J8+fmw@mail.gmail.com>
+Subject: realtek NIC constantly hanging up
+From: Georgi Kehaiov <kehaiov.lkml@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for:
-drivers/scsi/pm8001/pm8001_hwi.c: In function â€˜hw_event_sas_phy_upâ€™:
-drivers/scsi/pm8001/pm8001_hwi.c:2932:32: warning: comparison between
-  â€˜enum sas_device_typeâ€™ and â€˜enum sas_dev_typeâ€™ [-Wenum-compare]
-drivers/scsi/pm8001/pm8001_hwi.c:2934:37: warning: comparison between
-  â€˜enum sas_device_typeâ€™ and â€˜enum sas_dev_typeâ€™ [-Wenum-compare]
+Hello everyone,
 
-Changed SAS_END_DEV to SAS_END_DEVICE and NO_DEVICE with
-SAS_PHY_UNUSED.
+I've got a new gigabyte 970a-ud3 with a built in realtek ethernet
+controller. The problem I'm experiencing is that the network interface
+goes down (kinda... it's still there but I don't seem to receive or
+send any packets at all) and I need to restart my network daemon to
+get networking back on. In couple of minutes/hours the same problem
+occurs again. And then again and again... Sometimes it happens while
+I'm uploading something big (3-4 MB/s), sometimes it just happens when
+I'm playing nethack (next to no traffic at all). I've been browsing
+around for some time now and there are actually some people who've had
+a similair issue. But in my case it has nothing to do with
+1000T-base-mode or 100T-base-mode - I'm downloading stuff from dc hubs
+with ~100MB/s. I have tried both the r8168 and r8169 drivers - it
+doesn't matter, the problem keeps occuring.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/scsi/pm8001/pm8001_hwi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Some info:
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index b7b92f7..46fd7219 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -2929,9 +2929,9 @@ hw_event_sas_phy_up(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 	phy->phy_type |= PORT_TYPE_SAS;
- 	phy->identify.device_type = deviceType;
- 	phy->phy_attached = 1;
--	if (phy->identify.device_type == SAS_END_DEV)
-+	if (phy->identify.device_type == SAS_END_DEVICE)
- 		phy->identify.target_port_protocols = SAS_PROTOCOL_SSP;
--	else if (phy->identify.device_type != NO_DEVICE)
-+	else if (phy->identify.device_type != SAS_PHY_UNUSED)
- 		phy->identify.target_port_protocols = SAS_PROTOCOL_SMP;
- 	phy->sas_phy.oob_mode = SAS_OOB_MODE;
- 	sas_ha->notify_phy_event(&phy->sas_phy, PHYE_OOB_DONE);
--- 
-1.7.7.3
+ lspci -vvv
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
+RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
+        Subsystem: Giga-byte Technology GA-EP45-DS5 Motherboard
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort+
+<TAbort+ <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 43
+        Region 0: I/O ports at ee00 [size=256]
+        Region 2: Memory at fdbff000 (64-bit, prefetchable) [size=4K]
+        Region 4: Memory at fdbf8000 (64-bit, prefetchable) [size=16K]
+        Capabilities: <access denied>
+        Kernel driver in use: r8168
+ uname -a
+Linux imladris 3.2.5-1-ARCH #1 SMP PREEMPT Tue Feb 7 08:34:36 CET 2012
+x86_64 AMD Phenom(tm) II X4 960T Processor AuthenticAMD GNU/Linux
 
+ ethtool eth0
+Settings for eth0:
+        Supported ports: [ TP ]
+        Supported link modes:   10baseT/Half 10baseT/Full
+                                100baseT/Half 100baseT/Full
+                                1000baseT/Full
+        Supported pause frame use: No
+        Supports auto-negotiation: Yes
+        Advertised link modes:  10baseT/Half 10baseT/Full
+                                100baseT/Half 100baseT/Full
+                                1000baseT/Full
+        Advertised pause frame use: Symmetric Receive-only
+        Advertised auto-negotiation: Yes
+        Speed: 1000Mb/s
+        Duplex: Full
+        Port: Twisted Pair
+        PHYAD: 0
+        Transceiver: internal
+        Auto-negotiation: on
+        MDI-X: Unknown
+        Supports Wake-on: pumbg
+        Wake-on: g
+        Current message level: 0x00000033 (51)
+                               drv probe ifdown ifup
+        Link detected: yes
+my current dmesg: http://paste.pocoo.org/show/550817/
+my current lsmod: http://paste.pocoo.org/show/550820/
+
+
+I'm completely clueless here, so if anyone can help me out on this it
+would be awesome.
+Best Regards,
+Georgi Kehaiov
