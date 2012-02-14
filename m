@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759925Ab2BNTXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 14:23:09 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:42888 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab2BNTXG (ORCPT
+	id S1760023Ab2BNTZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 14:25:32 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45528 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab2BNTZa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 14:23:06 -0500
-Date: Tue, 14 Feb 2012 19:23:00 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com, vgoyal@redhat.com,
-        seiji.aguchi@hds.com
-Subject: Re: [PATCH V3] kmsg_dump: Don't run on non-error paths by default
-Message-ID: <20120214192259.GA32339@srcf.ucam.org>
-References: <1328888715-21589-1-git-send-email-mjg@redhat.com>
+	Tue, 14 Feb 2012 14:25:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328888715-21589-1-git-send-email-mjg@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAMuHMdX8=x-=DQu0SCbqYK00+sP8a-kR=9KrUptAq-gqOXHAhA@mail.gmail.com>
+References: <20120120131243.7c867c7b96c75819b68aec8d@canb.auug.org.au>
+	<4F1A0783.9010501@xenotime.net>
+	<CAMuHMdX8=x-=DQu0SCbqYK00+sP8a-kR=9KrUptAq-gqOXHAhA@mail.gmail.com>
+Date: Tue, 14 Feb 2012 20:25:27 +0100
+X-Google-Sender-Auth: UqHC3M874hkl0qyddv7Vel6UJvQ
+Message-ID: <CAMuHMdWofPn9gUdPJwUDm0rqWrzKAnc=yqzDwQqrr7ZCDz6VkA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 20 (drivers/media/radio/wl128x/)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@xenotime.net>, Fabio Estevam <festevam@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 10:45:15AM -0500, Matthew Garrett wrote:
-> Since 04c6862c055fb687c90d9652f32c11a063df15cf kmsg_dump() gets run on
-> normal paths including poweroff and reboot. This is less than ideal given
-> pstore implementations that can only represent single backtraces, since a
-> reboot may overwrite a stored oops before it's been picked up by userspace.
-> In addition, some pstore backends may have low performance and provide a
-> significant delay in reboot as a result.
-> 
-> This patch adds a printk.always_kmsg_dump kernel parameter (which can also
-> be changed from userspace). Without it, the code will only be run on
-> failure paths rather than on normal paths. The option can be enabled in
-> environments where there's a desire to attempt to audit whether or not
-> a reboot was cleanly requested or not.
+On Tue, Jan 24, 2012 at 22:33, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sat, Jan 21, 2012 at 01:32, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On 01/19/2012 06:12 PM, Stephen Rothwell wrote:
+>>> Changes since 20120119:
+>>
+>> on x86_64:
+>>
+>> ERROR: "st_register" [drivers/media/radio/wl128x/fm_drv.ko] undefined!
+>> ERROR: "st_unregister" [drivers/media/radio/wl128x/fm_drv.ko] undefined!
+>
+> Also in m68k allmodconfig since a while:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/5427875/
+>
+> config RADIO_WL128X
+>        tristate "Texas Instruments WL128x FM Radio"
+>        depends on VIDEO_V4L2 && RFKILL
+>        select TI_ST if NET && GPIOLIB
+>
+> config TI_ST
+>        tristate "Shared transport core driver"
+>        depends on NET && GPIOLIB
+>        select FW_LOADER
+>
+> On m68k allmodconfig, GPIOLIB is not enabled, hence TI_ST
+> will not be selected, and st_{,un}register() won't be there.
+> Shouldn't the whole RADIO_WL128X depend on NET && GPIOLIB?
+> Or depend on TI_ST, instead of selecting it?
+>
+> BTW, shouldn't it be called ti_st_un{,un}register()?
+> At first I thought the link error was related to SCSI tape drives ;-)
 
-Anyone? Whose tree should this go through?
+Ping?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Build breakage in mainline since at least 3 weeks.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
