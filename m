@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab2BNDkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:40:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63772 "EHLO
+	id S1759228Ab2BNDkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:40:13 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34864 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759043Ab2BNDkI (ORCPT
+	with ESMTP id S1754978Ab2BNDkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Feb 2012 22:40:08 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=LmyTX4h6QxcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=70i18_JkQwiTONNaSksA:9 a=X6xZqjlP6YXxIweYbfsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=nicvguR0pnOebbLorQ0A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=S5vDBso3x9EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=cGU8ElX3DAHLmvqY75wA:9 a=-KroAmiC8UV5hKibA-AA:7 a=QEXdDO2ut3YA:10 a=lSinr4eg3GwA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2uqyl7nPndGxnG6HsHsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120214034006.059833620@goodmis.org>
+Message-Id: <20120214034005.679102672@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Mon, 13 Feb 2012 22:39:11 -0500
+Date: Mon, 13 Feb 2012 22:39:10 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/9] tracing/softirq: Move __raise_softirq_irqoff() out of header
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/9] ftrace: Change filter/notrace set functions to return exit code
 References: <20120214033909.904564921@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-softirq-Move-__raise_softirq_irqoff-out-of-h.patch
+Content-Disposition: inline; filename=0001-ftrace-Change-filter-notrace-set-functions-to-return.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,79 +29,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The __raise_softirq_irqoff() contains a tracepoint. As tracepoints in heade=
-rs
-can cause issues, and not to mention, bloats the kernel when they are
-in a static inline, it is best to move the function that contains the
-tracepoint out of the header and into softirq.c.
+Currently the ftrace_set_filter and ftrace_set_notrace functions
+do not return any return code. So there's no way for ftrace_ops
+user to tell wether the filter was correctly applied.
 
-Link: http://lkml.kernel.org/r/20120118120711.GB14863@elte.hu
+The set_ftrace_filter interface returns error in case the filter
+did not match:
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
+  # echo krava > set_ftrace_filter
+  bash: echo: write error: Invalid argument
+
+Changing both ftrace_set_filter and ftrace_set_notrace functions
+to return zero if the filter was applied correctly or -E* values
+in case of error.
+
+Link: http://lkml.kernel.org/r/1325495060-6402-2-git-send-email-jolsa@redha=
+t.com
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/interrupt.h |    7 +------
- kernel/irq/chip.c         |    2 ++
- kernel/softirq.c          |    6 ++++++
- 3 files changed, 9 insertions(+), 6 deletions(-)
+ include/linux/ftrace.h |    4 ++--
+ kernel/trace/ftrace.c  |   15 +++++++++------
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a64b00e..3f830e0 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -20,7 +20,6 @@
- #include <linux/atomic.h>
- #include <asm/ptrace.h>
- #include <asm/system.h>
--#include <trace/events/irq.h>
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 028e26f..f33fb3b 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -178,9 +178,9 @@ struct dyn_ftrace {
+ };
 =20
- /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-@@ -456,11 +455,7 @@ asmlinkage void do_softirq(void);
- asmlinkage void __do_softirq(void);
- extern void open_softirq(int nr, void (*action)(struct softirq_action *));
- extern void softirq_init(void);
--static inline void __raise_softirq_irqoff(unsigned int nr)
--{
--	trace_softirq_raise(nr);
--	or_softirq_pending(1UL << nr);
--}
-+extern void __raise_softirq_irqoff(unsigned int nr);
+ int ftrace_force_update(void);
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset);
+ void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
+ void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 683d559..e2e0597 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3146,8 +3146,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned ch=
+ar *buf, int len,
+ 	mutex_lock(&ftrace_regex_lock);
+ 	if (reset)
+ 		ftrace_filter_reset(hash);
+-	if (buf)
+-		ftrace_match_records(hash, buf, len);
++	if (buf && !ftrace_match_records(hash, buf, len)) {
++		ret =3D -EINVAL;
++		goto out_regex_unlock;
++	}
 =20
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index f7c543a..fc41824 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -16,6 +16,8 @@
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
+ 	mutex_lock(&ftrace_lock);
+ 	ret =3D ftrace_hash_move(ops, enable, orig_hash, hash);
+@@ -3157,6 +3159,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned cha=
+r *buf, int len,
 =20
-+#include <trace/events/irq.h>
-+
- #include "internals.h"
+ 	mutex_unlock(&ftrace_lock);
 =20
- /**
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 4eb3a0f..06d4099 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -385,6 +385,12 @@ void raise_softirq(unsigned int nr)
- 	local_irq_restore(flags);
- }
++ out_regex_unlock:
+ 	mutex_unlock(&ftrace_regex_lock);
 =20
-+void __raise_softirq_irqoff(unsigned int nr)
-+{
-+	trace_softirq_raise(nr);
-+	or_softirq_pending(1UL << nr);
-+}
-+
- void open_softirq(int nr, void (*action)(struct softirq_action *))
+ 	free_ftrace_hash(hash);
+@@ -3173,10 +3176,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned c=
+har *buf, int len,
+  * Filters denote which functions should be enabled when tracing is enable=
+d.
+  * If @buf is NULL and reset is set, all functions will be enabled for tra=
+cing.
+  */
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset)
  {
- 	softirq_vec[nr].action =3D action;
+-	ftrace_set_regex(ops, buf, len, reset, 1);
++	return ftrace_set_regex(ops, buf, len, reset, 1);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+=20
+@@ -3191,10 +3194,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+  * is enabled. If @buf is NULL and reset is set, all functions will be ena=
+bled
+  * for tracing.
+  */
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 0);
++	return ftrace_set_regex(ops, buf, len, reset, 0);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_notrace);
+ /**
 --=20
 1.7.8.3
 
@@ -113,19 +141,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPOdeWAAoJEIy3vGnGbaoAjowQAKqy7bUYm6P57At7ehu38NNZ
-joiCzk8EooIER2S1mPWfkSaTypUoEzjvJk0KBjRWmp0Goq0nTmuuzNXQ759Fu8Ml
-AACWRSQ5p+m2N5Ek6sja5NdmCdxMRqSiCDSn1RE1HotR5SdXaVJD5AJ7FosAH/dH
-Gz6plwpW3iZ/DBb+RO2z80iT4stATK/lU4jxJmQ2DkiRVWuyVhbbM9M8Per8RRT6
-L6my73eSSb5oAItfd22PAXWMIXkqY6yk2EOQhcRwUiBY6/Kvur7USg/TGyZh8rEH
-2HFCBEb/oVAOw4YO7HZNjzhWq8zgFJRcN0vTthvHOEA18BT4+kOpy7MTLyzqTbbM
-gcc0Vw2pmzu6ozSzsu+4HrySEwX69XLjlqTGoHP9tvVPad+2aKiaO1lkkdSZV3bM
-wpP9FVmzA914oOIvGNKlyL7yTM/jGk9+MvbqT929VJr1H/21foLc3PN5cMgoouH5
-RFUrdI16SSJ8T9WNwfF5WAl0zeCJ/S+MP+N64rJ4xvs5IlYLZbUdQDkpxI0Qux19
-4Oi9c2CpBK67KLDIwAqu8/Y9FgwcEOEe8N79pqCx7dL0D05w0BXLs12ZDX/3r29R
-51+ykIdECQLT04zKdVrDfOsRaFooxgzl8IAV9Ijgo5iDCcoxN3ggqoKrYqnRN1qt
-xyUta48WZoyUgVTJxcTn
-=1brB
+iQIcBAABAgAGBQJPOdeVAAoJEIy3vGnGbaoAR80QAJp5VjrDvK6gO6R/R9T2LRao
+mzHJWqwrqqtIvBcX/djL2O/fxBv5O7L/1rwe3QiET9Vr0Gyhjtge5nDlGYoR1Hjh
+gWhiZsuEzG2AbZ5kKp4vn7KLxya6gg96ryQ4GbnS9SlX62k3zGoySL06oZl0HQdb
+m5+F9QXnd9SRVxHg9ifFika1pDZDmty3bBE5e9YKfd1UVwhF6cGpp6zayxNini2T
+jODACMqx+jUKFd67mCX5VqYWsDKlEUE2iw3fWx1m9c1qbOsbD+zNPCfjY4eqZ4lD
+SZfYWqblW+Owq4SqgLKgzPdzteMZPZac7LcP7KKJC7lF2LtaAbgLR6bsl0NHDOh7
+7dzq7lxAY3J/oqjQSbl38SvrS8CVJvsb3UHVvzuDCifNTXfUeVxkgS9AUPiwDEuK
+bs2IrcNF8u0Eb/B9jnvN9JdD8snNbo4y8Q04jXdLRZM4MYzDIC3d9mb9CqSODEmA
+FAjlyCKY+6aN4QNRAH3x2OVwW1Yt2OmQ6+qVT6/bu1ABEyv7o9q0AQz4xR8COdxC
+4aFvQfRQC1IFOvMFBRLaJpWXW8+RwyqqsiaVFmo5BkI6reH8MQvsUTmRdRSjKYKA
+NdWoR+tUgHhabGykmABYOHNciFc8d/ZwEfXZ8/gVmiGJuA73gcqCAVvNkMSB/DGZ
+fmPXfmGhug8rh+CLAe1J
+=d830
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
