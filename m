@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab2BNSx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 13:53:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab2BNSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 13:53:27 -0500
-Message-ID: <4F3AADA1.5090508@redhat.com>
-Date: Tue, 14 Feb 2012 13:53:21 -0500
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1758997Ab2BNS7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 13:59:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48291 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab2BNS7B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 13:59:01 -0500
 MIME-Version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>
-CC: initramfs@vger.kernel.org, systemd-devel@lists.freedesktop.org,
-        selinux@lists.fedoraproject.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Harald Hoyer <harald@redhat.com>
-Subject: Re: dracut: ordering of modules
-References: <1328886121.2472.19.camel@falcor> <4F38DEF0.8010202@redhat.com> <4F38E337.7030200@polito.it> <4F38E5F4.9070009@redhat.com> <4F3941A2.3040205@redhat.com> <4F3A836E.1020208@polito.it>
-In-Reply-To: <4F3A836E.1020208@polito.it>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F32E98F.2090909@zytor.com>
+References: <4F32A98F.7030400@zytor.com>
+	<1328677745-20121-22-git-send-email-hpa@zytor.com>
+	<1328677745-20121-1-git-send-email-hpa@zytor.com>
+	<8328.1328703626@redhat.com>
+	<16325.1328736262@redhat.com>
+	<4F32E98F.2090909@zytor.com>
+Date: Tue, 14 Feb 2012 10:59:00 -0800
+X-Google-Sender-Auth: p687YD7eg6VTnzQogoUhu3mdMVE
+Message-ID: <CA+8MBb+rMJqJAyDnnkB=x794F3MAQJfwTi29=4oN4-6=g5uDFw@mail.gmail.com>
+Subject: Re: [PATCH 21/21] posix_types: Remove fd_set macros
+From: Tony Luck <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Parts 1, 2 and 9 work fine on ia64 - consider them: Acked-by: Tony
+Luck <tony.luck@intel.com>
 
-On 02/14/2012 10:53 AM, Roberto Sassu wrote:
-> Hi Dan
-> 
-> i confirm this issue happens in a Fedora 16 system with the 
-> selinux-policy package installed.
-> 
-> The selinux dracut module tries to load the policy but returns with
-> the error below. After switching root, the policy is successfully
-> loaded by Systemd.
-> 
-> Thanks
-> 
-> Roberto Sassu
-> 
-> 
-Well in F16 dracut is not supposed to load the policy.
-> On 02/13/2012 06:00 PM, Daniel J Walsh wrote: On 02/13/2012 05:29
-> AM, Harald Hoyer wrote:
->>>> Am 13.02.2012 11:17, schrieb Roberto Sassu:
->>>>> Hi Harald
->>>>> 
->>>>> this functionality seems to be broken in dracut due to a
->>>>> change in the SELinux load_policy tool. After enabling the
->>>>> selinux module in dracut, i obtain:
->>>>> 
->>>>> [    3.369059] dracut: Loading SELinux policy [
->>>>> 3.449850] dracut: /sbin/load_policy: Can't load policy: No
->>>>> such file or directory [    3.659899] dracut: Switching
->>>>> root
->>>>> 
->>>> 
->>>> This error can have multiple causes... Dan?
-> 
-> Well likeliest would be selinux-policy package is not installed.
-> 
-> -- selinux mailing list selinux@lists.fedoraproject.org 
-> https://admin.fedoraproject.org/mailman/listinfo/selinux
+This part causes build problems (starting with):
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iEYEARECAAYFAk86rZ4ACgkQrlYvE4MpobPKXwCfbVdkQuaylTtHIASztazyokqN
-u4wAnR9bueXLrFH4vvDxSPYSNqBDYP19
-=W0oJ
------END PGP SIGNATURE-----
+  CC      arch/ia64/kernel/asm-offsets.s
+In file included from include/linux/timex.h:56,
+                 from include/linux/sched.h:57,
+                 from arch/ia64/kernel/asm-offsets.c:9:
+include/linux/time.h: In function ‘__FD_ZERO’:
+include/linux/time.h:280: error: implicit declaration of function ‘memset’
+include/linux/time.h:280: warning: incompatible implicit declaration
+of built-in function ‘memset’
+
+Adding a #include <linux/string.h> to include/linux/time.h fixes them for me.
+
+-Tony
