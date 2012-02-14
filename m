@@ -1,86 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2BNXPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 18:15:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61795 "EHLO mx1.redhat.com"
+	id S932688Ab2BNXSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 18:18:35 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52568 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932622Ab2BNXPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 18:15:00 -0500
-Date: Tue, 14 Feb 2012 18:14:51 -0500
-From: Dave Jones <davej@redhat.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Andi Kleen <andi@firstfloor.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Kerneloops.org defunct?
-Message-ID: <20120214231450.GB13981@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Ted Ts'o <tytso@mit.edu>,
-	Andi Kleen <andi@firstfloor.org>,
-	Arjan van de Ven <arjan@linux.intel.com>,
-	Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-	Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-	Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-	Randy Dunlap <rdunlap@xenotime.net>
-References: <4DE6264A.2040901@gmail.com>
- <CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
- <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
- <201112211325.53648.roucaries.bastien@gmail.com>
- <CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
- <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
- <CAE2SPAYN1fmQG05GhOVhwBSBqWyXfVxZw2iEbC=YXoegTpkKCA@mail.gmail.com>
- <4F3AD5F5.7010402@linux.intel.com>
- <20120214215450.GA22014@one.firstfloor.org>
- <20120214221240.GC11382@thunk.org>
+	id S1757285Ab2BNXSd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 18:18:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Date: Wed, 15 Feb 2012 00:22:25 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <CAMP5XgeqXJroKtHZO18SESFxg1iGP=wHAa+CU1zEEXQqUEQwTA@mail.gmail.com>
+In-Reply-To: <CAMP5XgeqXJroKtHZO18SESFxg1iGP=wHAa+CU1zEEXQqUEQwTA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214221240.GC11382@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202150022.26072.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 05:12:40PM -0500, Ted Ts'o wrote:
- > On Tue, Feb 14, 2012 at 10:54:50PM +0100, Andi Kleen wrote:
- > > On Tue, Feb 14, 2012 at 01:45:25PM -0800, Arjan van de Ven wrote:
- > > > On 2/14/2012 10:17 AM, Bastien ROUCARIES wrote:
- > > > > ping**5
- > > > > 
- > > > so.. with Fedora not really submitting oopses anymore, and the box
- > > > wiped/down from kernel.org...  what's the point still ??
- > > 
- > > Just scanning the mailing lists would be good.
- > > 
- > > But I assume Fedora may be willing to fix their submission?
- > 
- > I hear Fedora just got a new project leader; maybe it's time to
- > approach them again?
+On Tuesday, February 14, 2012, Arve Hjønnevåg wrote:
+> On Mon, Feb 6, 2012 at 5:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> ...
+> > All in all, it's not as much code as I thought it would be and it seems to be
+> > relatively simple (which rises the question why the Android people didn't
+> > even _try_ to do something like this instead of slapping the "real" wakelocks
+> > onto the kernel FWIW).  IMHO it doesn't add anything really new to the kernel,
+> > except for the user space interfaces that should be maintainable.  At least I
+> > think I should be able to maintain them. :-)
+> >
+> 
+> Replacing a working solution with an untested one takes time.
 
-$ yum info libreport-plugin-kerneloops
-Loaded plugins: fastestmirror, langpacks, presto, refresh-packagekit
-Loading mirror speeds from cached hostfile
- * fedora: ftp.cse.buffalo.edu
- * rpmfusion-free: mirror.hiwaay.net
- * rpmfusion-free-updates: mirror.hiwaay.net
- * rpmfusion-nonfree: mirror.hiwaay.net
- * rpmfusion-nonfree-updates: mirror.hiwaay.net
- * updates: mirror.steadfast.net
- * updates-testing: mirror.steadfast.net
-Installed Packages
-Name        : libreport-plugin-kerneloops
-Arch        : x86_64
-Version     : 2.0.8
-Release     : 4.fc16
-Size        : 15 k
-Repo        : installed
->From repo   : updates
-Summary     : libreport's kerneloops reporter plugin
-URL         : https://fedorahosted.org/abrt/
-License     : GPLv2+
-Description : This package contains plugin which sends kernel crash information to specified
-            : server, usually to kerneloops.org.
+Sure, that's pretty obvious. :-)
+
+> That said, I have recently tried replacing all our kernel wake-locks with a
+> thin wrapper around wake-sources. This appears to mostly work,
+
+Good!
+
+> but the wake-source timeout feature has some bugs or incompatible apis. An
+> init api would also be useful for embedding wake-sources in other data
+> structures without adding another memory allocation. Your patch to
+> move the spinlock init to wakeup_source_add still require the struct
+> to be zero initialized and the name set manually.
+
+That should be easy to fix.  What about the appended patch?
+
+> I needed to use two wake-sources per wake-lock since calling
+> __pm_stay_awake after __pm_wakeup_event on a wake-source does not
+> cancel the timeout. Unless there is a reason to keep this behavior I
+> would like __pm_stay_awake to cancel any active timeout.
+
+That actually is a bug.  At least it's not consistent with
+__pm_wakeup_event() that will replace the existing timeout with a new
+one.
+
+I'll post a patch to fix that in the next couple of days, stay tuned. :-)
+
+> Destroying a wake-source also has some problems. If you call
+> wakeup_source_destroy it will spin forever if the wake-source is
+> active without a timeout. And, if you call __pm_relax then
+> wakeup_source_destroy it could free the wake-source memory while the
+> timer function is still running.
+
+This also is a bug that needs fixing anyway.
+
+> It also looks as if the wake_source can be immediately deactivated if
+> you call __pm_wakeup_event at the same time as the previous timeout expired.
+
+Yes, there is a race window if the timer function has already started.
+It looks like I wanted to make it too simple. :-)  Will fix.
+
+Thanks,
+Rafael
 
 
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/wakeup.c |   44 +++++++++++++++++++++++++++++++++++++-------
+ include/linux/pm_wakeup.h   |    9 +++++++++
+ 2 files changed, 46 insertions(+), 7 deletions(-)
+
+Index: linux/drivers/base/power/wakeup.c
+===================================================================
+--- linux.orig/drivers/base/power/wakeup.c
++++ linux/drivers/base/power/wakeup.c
+@@ -53,6 +53,28 @@ static void pm_wakeup_timer_fn(unsigned
+ static LIST_HEAD(wakeup_sources);
  
+ /**
++ * wakeup_source_init - Initialize a struct wakeup_source object.
++ * @ws: Wakeup source to initialize.
++ * @name: Name of the new wakeup source.
++ */
++int wakeup_source_init(struct wakeup_source *ws, const char *name)
++{
++	int ret = 0;
++
++	if (!ws)
++		return -EINVAL;
++
++	memset(ws, 0, sizeof(*ws));
++	if (name) {
++		ws->name = kstrdup(name, GFP_KERNEL);
++		if (!ws->name)
++			ret = -ENOMEM;
++	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(wakeup_source_init);
++
++/**
+  * wakeup_source_create - Create a struct wakeup_source object.
+  * @name: Name of the new wakeup source.
+  */
+@@ -60,22 +82,20 @@ struct wakeup_source *wakeup_source_crea
+ {
+ 	struct wakeup_source *ws;
+ 
+-	ws = kzalloc(sizeof(*ws), GFP_KERNEL);
++	ws = kmalloc(sizeof(*ws), GFP_KERNEL);
+ 	if (!ws)
+ 		return NULL;
+ 
+-	if (name)
+-		ws->name = kstrdup(name, GFP_KERNEL);
+-
++	wakeup_source_init(ws, name);
+ 	return ws;
+ }
+ EXPORT_SYMBOL_GPL(wakeup_source_create);
+ 
+ /**
+- * wakeup_source_destroy - Destroy a struct wakeup_source object.
+- * @ws: Wakeup source to destroy.
++ * wakeup_source_drop - Prepare a struct wakeup_source object for destruction.
++ * @ws: Wakeup source to prepare for destruction.
+  */
+-void wakeup_source_destroy(struct wakeup_source *ws)
++void wakeup_source_drop(struct wakeup_source *ws)
+ {
+ 	if (!ws)
+ 		return;
+@@ -91,6 +111,16 @@ void wakeup_source_destroy(struct wakeup
+ 	spin_unlock_irq(&ws->lock);
+ 
+ 	kfree(ws->name);
++}
++EXPORT_SYMBOL_GPL(wakeup_source_drop);
++
++/**
++ * wakeup_source_destroy - Destroy a struct wakeup_source object.
++ * @ws: Wakeup source to destroy.
++ */
++void wakeup_source_destroy(struct wakeup_source *ws)
++{
++	wakeup_source_drop(ws);
+ 	kfree(ws);
+ }
+ EXPORT_SYMBOL_GPL(wakeup_source_destroy);
+Index: linux/include/linux/pm_wakeup.h
+===================================================================
+--- linux.orig/include/linux/pm_wakeup.h
++++ linux/include/linux/pm_wakeup.h
+@@ -73,7 +73,9 @@ static inline bool device_may_wakeup(str
+ }
+ 
+ /* drivers/base/power/wakeup.c */
++extern int wakeup_source_init(struct wakeup_source *ws, const char *name);
+ extern struct wakeup_source *wakeup_source_create(const char *name);
++extern void wakeup_source_drop(struct wakeup_source *ws);
+ extern void wakeup_source_destroy(struct wakeup_source *ws);
+ extern void wakeup_source_add(struct wakeup_source *ws);
+ extern void wakeup_source_remove(struct wakeup_source *ws);
+@@ -103,11 +105,18 @@ static inline bool device_can_wakeup(str
+ 	return dev->power.can_wakeup;
+ }
+ 
++static inline int wakeup_source_init(struct wakeup_source *ws, const char *name)
++{
++	return -ENOSYS;
++}
++
+ static inline struct wakeup_source *wakeup_source_create(const char *name)
+ {
+ 	return NULL;
+ }
+ 
++static inline void wakeup_source_drop(struct wakeup_source *ws) {}
++
+ static inline void wakeup_source_destroy(struct wakeup_source *ws) {}
+ 
+ static inline void wakeup_source_add(struct wakeup_source *ws) {}
+
