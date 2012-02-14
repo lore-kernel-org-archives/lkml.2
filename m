@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760624Ab2BNLoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:44:23 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57893 "EHLO
+	id S1760633Ab2BNLoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:44:44 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57886 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760585Ab2BNLoF (ORCPT
+	by vger.kernel.org with ESMTP id S1760510Ab2BNLoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:44:05 -0500
+	Tue, 14 Feb 2012 06:44:04 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-arch@vger.kernel.org
 Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
         Chris Zankel <chris@zankel.net>
-Subject: [PATCH 40/40] xtensa: Use set_current_blocked() and block_sigmask()
-Date: Tue, 14 Feb 2012 11:41:13 +0000
-Message-Id: <1329219673-28711-41-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 39/40] xtensa: Don't mask signals if we fail to setup signal stack
+Date: Tue, 14 Feb 2012 11:41:12 +0000
+Message-Id: <1329219673-28711-40-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
 References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
@@ -24,69 +24,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+setup_frame() needs to return an indication of whether it succeeded or
+failed in setting up the signal stack frame. If setup_frame() fails
+then we must not modify current->blocked.
 
-Also, use the new helper function introduced in commit 5e6292c0f28f
-("signal: add block_sigmask() for adding sigmask to current->blocked")
-which centralises the code for updating current->blocked after
-successfully delivering a signal and reduces the amount of duplicate
-code across architectures. In the past some architectures got this
-code wrong, so using this helper function should stop that from
-happening again.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 Cc: Chris Zankel <chris@zankel.net>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/xtensa/kernel/signal.c |   17 +++--------------
- 1 files changed, 3 insertions(+), 14 deletions(-)
+ arch/xtensa/kernel/signal.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-index 17ceab8..b69b000 100644
+index 24655e3..17ceab8 100644
 --- a/arch/xtensa/kernel/signal.c
 +++ b/arch/xtensa/kernel/signal.c
-@@ -260,10 +260,7 @@ asmlinkage long xtensa_rt_sigreturn(long a0, long a1, long a2, long a3,
- 		goto badframe;
+@@ -336,8 +336,8 @@ gen_return_code(unsigned char *codemem)
+ }
  
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
  
- 	if (restore_sigcontext(regs, frame))
- 		goto badframe;
-@@ -448,11 +445,8 @@ asmlinkage long xtensa_rt_sigsuspend(sigset_t __user *unewset,
- 		return -EFAULT;
+-static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+-			sigset_t *set, struct pt_regs *regs)
++static int setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
++		       sigset_t *set, struct pt_regs *regs)
+ {
+ 	struct rt_sigframe *frame;
+ 	int err = 0;
+@@ -422,10 +422,11 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		current->comm, current->pid, signal, frame, regs->pc);
+ #endif
  
- 	sigdelsetmask(&newset, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
- 	saveset = current->blocked;
--	current->blocked = newset;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&newset);
+-	return;
++	return 0;
  
- 	regs->areg[2] = -EINTR;
- 	while (1) {
-@@ -539,12 +533,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
- 		if (ret)
- 			return ret;
+ give_sigsegv:
+ 	force_sigsegv(sig, current);
++	return -EFAULT;
+ }
  
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked, &current->blocked, &ka.sa.sa_mask);
--		if (!(ka.sa.sa_flags & SA_NODEFER))
--			sigaddset(&current->blocked, signr);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
-+		block_sigmask(&ka, signr);
- 		if (current->ptrace & PT_SINGLESTEP)
- 			task_pt_regs(current)->icountlevel = 1;
+ /*
+@@ -534,7 +535,9 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
  
+ 		/* Whee!  Actually deliver the signal.  */
+ 		/* Set up the stack frame */
+-		setup_frame(signr, &ka, &info, oldset, regs);
++		ret = setup_frame(signr, &ka, &info, oldset, regs);
++		if (ret)
++			return ret;
+ 
+ 		spin_lock_irq(&current->sighand->siglock);
+ 		sigorsets(&current->blocked, &current->blocked, &ka.sa.sa_mask);
 -- 
 1.7.4.4
 
