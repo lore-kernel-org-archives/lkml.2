@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759981Ab2BNJ55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 04:57:57 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45628 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab2BNJ5w (ORCPT
+	id S1760012Ab2BNKV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 05:21:27 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43001 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab2BNKV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 04:57:52 -0500
-Message-ID: <4F3A3017.4060202@redhat.com>
-Date: Tue, 14 Feb 2012 10:57:43 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: ronnie sahlberg <ronniesahlberg@gmail.com>, Hannes Reinecke <hare@suse.de>,
-        Dor Laor <dlaor@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Christian Hoff <christian.hoff@de.ibm.com>,
-        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
-References: <20120213130005.GB26773@redhat.com> <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com> <20120213131848.GD26773@redhat.com> <4F39287A.9030808@suse.de> <CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com> <CAN05THT6t_w=9Zt+o-B4s8E3jUMWsxiBvTyySxNEK2QfvLe-BA@mail.gmail.com> <20120213225623.GA2988@redhat.com> <CAN05THS_zTf2VRz6QdccHbkOacnE86LNhtxp7b8twe+XezBU6Q@mail.gmail.com> <20120213233334.GC4430@redhat.com> <CAN05THTTva709Dab9f_PBWxehMWnP9Gg4T7Nnmg7Swk3xuz7aQ@mail.gmail.com> <20120214011144.GB5192@redhat.com>
-In-Reply-To: <20120214011144.GB5192@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 05:21:26 -0500
+From: Xi Wang <xi.wang@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>, Daniel Mack <zonque@gmail.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Xi Wang <xi.wang@gmail.com>
+Subject: [PATCH] ALSA: usb-audio: avoid integer overflow in create_fixed_stream_quirk()
+Date: Tue, 14 Feb 2012 05:18:48 -0500
+Message-Id: <1329214728-14355-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2012 02:11 AM, Michael S. Tsirkin wrote:
-> On Tue, Feb 14, 2012 at 11:49:55AM +1100, ronnie sahlberg wrote:
->> By just exposing this device to the kernel, the kernel keeps sending,
->> or if not the kernel maybe some other process trying to poll the
->> status?
->>
->> every few seconds :
->> PREVENT_ALLOW_MEDIUM_REMOVAL  prevent removal
->> PREVENT_ALLOW_MEDIUM_REMOVAL  to immediatel change it back to allow
->> removal again
->> TEST_UNIT_READY
->>
->>
->> After I run this
->> mount /dev/sdd1 /mnt
->>
->> The kernel sends a single
->> PREVENT_ALLOW_MEDIUM_REMOVAL to prevent removal
->> then every few seconds a
->> TEST_UNIT_READY
+A malicious USB device could feed in a large nr_rates value.  This would
+cause the subsequent call to kmemdup() to allocate a smaller buffer than
+expected, leading to out-of-bounds access.
 
-Sorry to interrupt you again guys, but: the discussion started with 
-virtio-blk hotplug and now we're talking about SCSI commands?  Sure 
-somebody switched topic at some point :) and anyway this is irrelevant 
-to what virtio-blk can/cannot do.
+This patch validates the nr_rates value and reuses the limit introduced
+in commit 4fa0e81b ("ALSA: usb-audio: fix possible hang and overflow
+in parse_uac2_sample_rate_range()").
 
-BTW, for virtio-scsi the spec provides a way to do hotplug and hotunplug 
-without any polling, though it's not implemented yet in the driver.
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ sound/usb/card.h   |    1 +
+ sound/usb/format.c |    4 +---
+ sound/usb/quirks.c |    6 +++++-
+ 3 files changed, 7 insertions(+), 4 deletions(-)
 
-Paolo
+diff --git a/sound/usb/card.h b/sound/usb/card.h
+index a39edcc..da5fa1a 100644
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -1,6 +1,7 @@
+ #ifndef __USBAUDIO_CARD_H
+ #define __USBAUDIO_CARD_H
+ 
++#define MAX_NR_RATES	1024
+ #define MAX_PACKS	20
+ #define MAX_PACKS_HS	(MAX_PACKS * 8)	/* in high speed mode */
+ #define MAX_URBS	8
+diff --git a/sound/usb/format.c b/sound/usb/format.c
+index e09aba1..ddfef57 100644
+--- a/sound/usb/format.c
++++ b/sound/usb/format.c
+@@ -209,8 +209,6 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
+ 	return 0;
+ }
+ 
+-#define MAX_UAC2_NR_RATES 1024
+-
+ /*
+  * Helper function to walk the array of sample rate triplets reported by
+  * the device. The problem is that we need to parse whole array first to
+@@ -255,7 +253,7 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
+ 			fp->rates |= snd_pcm_rate_to_rate_bit(rate);
+ 
+ 			nr_rates++;
+-			if (nr_rates >= MAX_UAC2_NR_RATES) {
++			if (nr_rates >= MAX_NR_RATES) {
+ 				snd_printk(KERN_ERR "invalid uac2 rates\n");
+ 				break;
+ 			}
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index a3ddac0..2781726 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -132,10 +132,14 @@ static int create_fixed_stream_quirk(struct snd_usb_audio *chip,
+ 	unsigned *rate_table = NULL;
+ 
+ 	fp = kmemdup(quirk->data, sizeof(*fp), GFP_KERNEL);
+-	if (! fp) {
++	if (!fp) {
+ 		snd_printk(KERN_ERR "cannot memdup\n");
+ 		return -ENOMEM;
+ 	}
++	if (fp->nr_rates > MAX_NR_RATES) {
++		kfree(fp);
++		return -EINVAL;
++	}
+ 	if (fp->nr_rates > 0) {
+ 		rate_table = kmemdup(fp->rate_table,
+ 				     sizeof(int) * fp->nr_rates, GFP_KERNEL);
+-- 
+1.7.5.4
+
