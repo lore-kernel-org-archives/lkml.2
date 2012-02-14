@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759912Ab2BNJSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 04:18:49 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8648 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759877Ab2BNJSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 04:18:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 14 Feb 2012 01:18:45 -0800
-Message-ID: <4F3A267D.5020407@nvidia.com>
-Date: Tue, 14 Feb 2012 14:46:45 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "dunlap@xenotime.net" <dunlap@xenotime.net>, "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	id S1759920Ab2BNJVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 04:21:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330Ab2BNJU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 04:20:59 -0500
+Date: Tue, 14 Feb 2012 10:20:21 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+Cc: wwguy <wey-yi.w.guy@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1 2/3] Documentation: gpio: Add details of open-drain
- configuration
-References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com> <1329114588-15430-3-git-send-email-ldewangan@nvidia.com> <20120213211809.GI11077@ponder.secretlab.ca>
-In-Reply-To: <20120213211809.GI11077@ponder.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Johannes Berg <johannes@sipsolutions.net>, security@kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20120214092020.GB12905@redhat.com>
+References: <20111110163051.GA24533@nomi.cz>
+ <20111111054731.GA2292@redhat.com>
+ <20111111150105.GA25437@nomi.cz>
+ <20111114140714.GD2513@redhat.com>
+ <20111119181106.GA5515@nomi.cz>
+ <1321755233.22510.1.camel@wwguy-ubuntu>
+ <20111120032016.GA14520@nomi.cz>
+ <1321763314.22510.4.camel@wwguy-ubuntu>
+ <20111120204007.GA7273@nomi.cz>
+ <20120210180929.GA17733@nomi.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120210180929.GA17733@nomi.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 February 2012 02:48 AM, Grant Likely wrote:
-> On Mon, Feb 13, 2012 at 11:59:47AM +0530, Laxman Dewangan wrote:
->> Adding details of open drain configuration of the gpio so that
->> client can set the pin as open drain at the time of gpio request.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
+On Fri, Feb 10, 2012 at 07:09:29PM +0100, Tomáš Janoušek wrote:
+> For the last few months, I've happily used a 64-bit kernel and have had no
+> problems whatsoever. About a week ago, I started using virtual machines in
+> KVM. And today I found that I have exactly the same problem, but only _inside_
+> the virtual machine. I can't reliably scp a file from the internet to my
+> virtual machine. It works fine when I scp to the host, it works fine when I'm
+> on a WPA-PSK network. And it happens even if I tell kvm to emulate e1000, not
+> only with virtio-net. How strange is that?
+> 
+> And while this is happening, the host is running just fine. The host has a
+> 64-bit kernel with a 32-bit userspace, so if something was wrong with the
+> 32-bit mode of my processor, it would've appeared on the host as well, no?
+> 
+> It's also worth mentioning that if I build openssl with "no-asm 386", scp
+> works just fine.
+Good hint.
+
+> So it doesn't look like a memory corruption after all. It
+> seems as if certain CPU instructions didn't work properly if running on a
+> 32-bit kernel with a WiFi adapter doing something. But how can it be
+> that those same CPU instructions work on a 64-bit host with 32-bit userspace?
+> At the same time! That's just completely insane, and I can't think of an
+> explanation. Shall I get a new CPU perhaps? :-)
 >
-> Linus mentioned that this should be part of pinctrl instead of the gpio API,
-> but I think there is an argument for making it part of the gpio API,
-> particularly since open-drain is pretty much a universal concept that all
-> gpio controllers can support (unlike driver strength) and as I said above, it
-> is already implicitly supported by gpiolib.
+> 
+> Please, give me any ideas that you might have.
 
-I am not sure about other soc but taking Tegra as example, the gpio 
-controller is almost same for same series of soc. It does not very much 
-about different version of the socs. The pins, number of pins. pin 
-controls, pin is OD or not etc vary from variant of socs and so it is 
-much more depends on the particular soc rather than  the major family.
-Bringing pincontrol information in gpio driver will make the gpio driver 
-complex which need to take care of every variant of chips.
+That make sense! Your "CPU instructions break things" theory sounds crazy,
+but I think it's logical. WPA enterprise differ from WPA-PSA (pre shared
+key) that the key changed periodically, SSL is used when keys are changed
+(via wpa_supplicant). So looks like 32-bit openssl generate object code
+that trigger bug on CPU, which crash other processes.
 
->    The difference with this
-> method is it would allow drivers like the gpio-i2c.c driver to set the
-> flag at gpio request time and then be able to always use gpio_set_value()
-> regardless of the pin mode.
->
-> However, I'm not thrilled about adding things to the already-horrible sysfs
-> abi.  Please drop that hunk entirely or put it into a separate patch so it
-> doesn't block the core functionality.
->
+Please forward details about this issue to security@kernel.org and proper
+vendor engineer in non public manner, as this hw bug could be possibly
+exploitable (hardware bug can not be fixed, but kernel could disable
+appropriate functionality or use some other workaround).
 
-I will split the change in two parts one for core driver and other for 
-the sysfs interface if all changes are fine here.
-
-> Have you though about support for lines that are pulled low instead of
-> high?  Those aren't as common, but it is conceivable that some
-> hardware would need it.
-I think open drain pin should not be pulled low otherwise it will not be 
-possible to make the pin as HIGH with the assumption that the OD pin 
-should never be driven to HIGH
-
-But if it is there in any case then it should be handle differently at  
-client level without letting the gpio driver that it is open-drain.
-
+Thanks
+Stanislaw
