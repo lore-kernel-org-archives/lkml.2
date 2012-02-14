@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab2BNF43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:56:29 -0500
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:44590
-	"EHLO l.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab2BNF4Z (ORCPT
+	id S1754930Ab2BNF6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:58:18 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60096 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2BNF6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:56:25 -0500
-Message-ID: <4F39F75D.6030107@chelsio.com>
-Date: Mon, 13 Feb 2012 21:55:41 -0800
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Tue, 14 Feb 2012 00:58:17 -0500
+X-AuditID: 9c930197-b7cdbae000001518-91-4f39f7f6c7b4
+Message-ID: <4F39F7F3.9050302@lge.com>
+Date: Tue, 14 Feb 2012 14:58:11 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>, nhorman@tuxdriver.com
-Subject: Re: [patch net-next] cxgb3: update firmware version
-References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com> <1329165817.2092.62.camel@shinybook.infradead.org> <4F398303.1030606@chelsio.com> <1329184754.3048.33.camel@deadeye> <4F39E7C9.20901@chelsio.com> <1329196116.3048.66.camel@deadeye>
-In-Reply-To: <1329196116.3048.66.camel@deadeye>
+Newsgroups: gmane.linux.kernel
+To: David Ahern <dsahern@gmail.com>
+CC: Joerg Roedel <joerg.roedel@amd.com>, Namhyung Kim <namhyung@gmail.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Arun Sharma <asharma@fb.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Wang <jasowang@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roberto Agostino Vitillo <ravitillo@lbl.gov>,
+        Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vweaver1@eecs.utk.edu>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
+References: <1329184375-27911-1-git-send-email-acme@infradead.org> <4F39CBE0.6050806@gmail.com> <4F39D00D.2060206@gmail.com> <4F39ECDB.5090609@lge.com> <4F39EFBB.2010301@gmail.com> <4F39F5BC.6000605@lge.com> <4F39F6A7.6000107@gmail.com>
+In-Reply-To: <4F39F6A7.6000107@gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/13/2012 9:08 PM, Ben Hutchings wrote:
-> On Mon, 2012-02-13 at 20:49 -0800, Divy Le Ray wrote:
->> On Monday, February 13, 2012 5:59:14 PM, Ben Hutchings wrote:
->>> On Mon, 2012-02-13 at 13:39 -0800, Divy Le Ray wrote:
->>>> On Monday, February 13, 2012 12:43:37 PM, David Woodhouse wrote:
->>>>>
->>>>> On Mon, 2012-02-13 at 12:28 -0800, Divy Le Ray wrote:
->>>>>>
->>>>>> This patch updates the firmware version cxgb3 is requesting to 7.12.0.
->>>>>
->>>>>
->>>>> I'm confused. Your patch doesn't change anything in the driver, except
->>>>> the firmware version. So why is it a "major" change?
->>>>
->>>> Hi David,
->>>>
->>>> cxgb3 embeds the firmware file name it will request at load time.
->>>> It uses the FW_VERSION_* defs to construct the firmware name FW_FNAME
->>>> before calling request_firmware().
->>>> Hence the need to update the firmware minor version.
->>>>
->>>> On the other hand, the driver version update is not a strict requirement
->>>> here.
->>>> I would prefer keeping it though.
->>>
->>> The problems with this are:
->>> 1. Older kernel versions don't benefit from the firmware update.
->>> 2. The old firmware has to be kept in linux-firmware to support those
->>> old kernel versions, and distributions may have to package more
->>> versions.
->>>
->>> To avoid this, the firmware filename should only be changed if you make
->>> incompatible changes in the driver/firmware interface.
->> Hi Ben,
+2012-02-14 2:52 PM, David Ahern wrote:
+> On 2/13/12 10:48 PM, Namhyung Kim wrote:
+>> Hi,
 >>
->> The scheme for cxgb3 firmware update was designed in coordination with
->> OEMs in the early stages of the driver existence back in 2007.
-> I'm aware that some OEMs have specifications for flash firmware updates
-> and version numbers.  I don't recall seeing anything about naming
-> firmware files that are loaded by the driver at boot.
+>> 2012-02-14 2:23 PM, David Ahern wrote:
+>>> On 2/13/12 10:10 PM, Namhyung Kim wrote:
+>>>>>
+>>>>
+>>>> It happened because I used old kernel version that isn't aware of the
+>>>> exclude_guest bit. So the check on attr->__reserved_1 in
+>>>> core.c::perf_copy_attr() failed and then ended up seeing EINVAL at
+>>>> perf_evsel__open().
+>>>
+>>> comes back to 1aed2671738785e8f5aea663a6fda91aa7ef59b5 again. See
+>>>
+>>> https://lkml.org/lkml/2012/2/8/234
+>>>
+>>
+>> Thanks for the pointer, then I'll wait until the guys figure out what
+>> the correct fix is :)
+>>
+>> Thanks,
+>> Namhyung
 >
-> In any case, whatever your OEMs want in out-of-tree driver packages is
-> not necessarily relevant to mainline Linux.
-
-Ben, it was about the driver committed to mainline linux.
-
->> Committing FW 7.12.0 under the name of t3fw-7.10.0.bin would be
->> confusing, in my mind.
-> Indeed it would, but I was speaking in general terms - that it would be
-> preferable to use something like t3fw-<major>.bin.
-
-Okay, I understand now. We'd have to discuss it with the original OEMS 
-and distributions.
-I'd rather stick to the current scheme for the time being and update it 
-once we have agreement from all parties.
-
-> I assume that the firmware blob has a version embedded in it, so that
-> the driver would still be able to report the exact version through
-> ethtool_ops::get_drvinfo.
+> Resetting that default was it. :-)
 >
->> Some distributions have explicitly requested the FW rev number to be
->> appended to the firmware file name.
-> Did they really want the full version there or did they want you to
-> distinguish incompatible versions?  Did they assume that the file would
-> be installed by a package (so that the package carries a version number)
-> or not?
+> Does reverting the entire patch fix your problem?
+>
+> David
 
-Our orginal approach for cxgb4 was to commit its firmware under a 
-constant name.
-Following minor FW updates overwrite the existing firmware file, and it 
-raised some negative feedback.
-The cxgb3 scheme had not raised any concern until today, it seemed 
-natural to get back to
-a similar approach for cxgb4, at least partially.
+Yes, of course.
 
-Cheers,
-Divy
+OK, then I'll start to rework perf target cleanups after reverting it.
 
+Thanks,
+Namhyung
