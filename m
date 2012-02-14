@@ -1,141 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab2BNRZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 12:25:40 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57780 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab2BNRZj (ORCPT
+	id S1756833Ab2BNRaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 12:30:04 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:21141 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab2BNRaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 12:25:39 -0500
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH] of: Only compile OF_DYNAMIC on PowerPC pseries and iseries
-Date: Tue, 14 Feb 2012 10:25:30 -0700
-Message-Id: <1329240330-3539-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.9
+	Tue, 14 Feb 2012 12:30:02 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 14 Feb 2012 12:30:00 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] ARM: cache-v7: Disable preemption when reading CCSIDR
+In-reply-to: <20120214141524.GB3310@debian>
+Message-id: <alpine.LFD.2.02.1202141228580.24536@xanadu.home>
+References: <alpine.LFD.2.02.1202022016480.2759@xanadu.home>
+ <1328234629-32735-1-git-send-email-sboyd@codeaurora.org>
+ <CAH+eYFCKcPzMMp_Ef5iX0Xp=xK8MdvJoUBRgKGT56SVjY5DXoA@mail.gmail.com>
+ <alpine.LFD.2.02.1202131307430.24536@xanadu.home>
+ <4F3952C7.3040502@codeaurora.org>
+ <20120213181501.GD25655@n2100.arm.linux.org.uk>
+ <4F398D61.9080501@codeaurora.org>
+ <20120213232901.GG25655@n2100.arm.linux.org.uk> <20120214141524.GB3310@debian>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only two architectures use the OF node reference counting and reclaim bits.
-There is no need to compile it for the rest of the PowerPC platforms or for
-any of the other architectures.  This patch makes iseries and pseries
-select CONFIG_OF_DYNAMIC, and makes it default to off for everything else.
+On Tue, 14 Feb 2012, Rabin Vincent wrote:
 
-It is still safe to turn on CONFIG_OF_DYNAMIC on all architectures, it just
-isn't necessary.
+> On Mon, Feb 13, 2012 at 11:29:01PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Feb 13, 2012 at 02:23:29PM -0800, Stephen Boyd wrote:
+> > > On 02/13/12 10:15, Russell King - ARM Linux wrote:
+> > > > On Mon, Feb 13, 2012 at 10:13:27AM -0800, Stephen Boyd wrote:
+> > > >> Thanks. Russell has already merged the original patch to the fixes
+> > > >> branch. Hopefully he can fold this one in.
+> > > > Nope, I've asked Linus to pull it.
+> > > >
+> > > > So do we conclude that the original patch wasn't properly tested? :P
+> > > 
+> > > Sigh. Lockdep strikes again! I promise I tested it with lockdep disabled.
+> > > 
+> > > It looks like Linus' hasn't pulled yet but maybe he just hasn't
+> > > published it.
+> > 
+> > It's not nice to change something after you've sent a pull request -
+> > there's no way of knowing when Linus actually pulls it before he's
+> > published it, and if he gets something different then it can raise
+> > questions.
+> > 
+> > So, it's gone in as-is, and, as I'm now intending asking for another
+> > pull request soo soon after my previous one, this is something that
+> > we will have to live with probably for the remainder of the week.
+> 
+> OK, since it can't be folded in, here is a proper patch:
+> 
+> 8<---------
+> >From 26f02624a20a61ed1997a4e8648e4c766a54d91d Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin@rab.in>
+> Date: Tue, 14 Feb 2012 19:22:07 +0530
+> Subject: [PATCH] ARM: fix v7 boot with lockdep enabled
+> 
+> Bootup with lockdep enabled has been broken on v7 since b46c0f74657d
+> ("ARM: 7321/1: cache-v7: Disable preemption when reading CCSIDR").
+> 
+> This is because v7_setup (which is called very early during boot) calls
+> v7_flush_dcache_all, and the save_and_disable_irqs added by that patch
+> ends up attempting to call into lockdep C code (trace_hardirqs_off())
+> when we are in no position to execute it (no stack, MMU off).
+> 
+> Fix this by using a notrace variant of save_and_disable_irqs.  The code
+> already uses the notrace variant of restore_irqs.
+> 
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Nicolas Pitre <nico@linaro.org>
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rob Herring <rob.herring@calxeda.com>
----
- arch/powerpc/platforms/iseries/Kconfig |    1 +
- arch/powerpc/platforms/pseries/Kconfig |    1 +
- drivers/of/Kconfig                     |    5 +++--
- drivers/of/base.c                      |    4 ++--
- include/linux/of.h                     |   14 ++++++--------
- 5 files changed, 13 insertions(+), 12 deletions(-)
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
 
-diff --git a/arch/powerpc/platforms/iseries/Kconfig b/arch/powerpc/platforms/iseries/Kconfig
-index b57cda3..63835e0 100644
---- a/arch/powerpc/platforms/iseries/Kconfig
-+++ b/arch/powerpc/platforms/iseries/Kconfig
-@@ -1,6 +1,7 @@
- config PPC_ISERIES
- 	bool "IBM Legacy iSeries"
- 	depends on PPC64 && PPC_BOOK3S
-+	select OF_DYNAMIC
- 	select PPC_SMP_MUXED_IPI
- 	select PPC_INDIRECT_PIO
- 	select PPC_INDIRECT_MMIO
-diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-index 31f22c1..f255625 100644
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -3,6 +3,7 @@ config PPC_PSERIES
- 	bool "IBM pSeries & new (POWER5-based) iSeries"
- 	select HAVE_PCSPKR_PLATFORM
- 	select MPIC
-+	select OF_DYNAMIC
- 	select PCI_MSI
- 	select PPC_XICS
- 	select PPC_ICP_NATIVE
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index 268163d..6ea51dc 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -35,9 +35,10 @@ config OF_EARLY_FLATTREE
- config OF_PROMTREE
- 	bool
- 
-+# Hardly any platforms need this.  It is safe to select, but only do so if you
-+# need it.
- config OF_DYNAMIC
--	def_bool y
--	depends on PPC_OF
-+	bool
- 
- config OF_ADDRESS
- 	def_bool y
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 133908a..df6da08 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -88,7 +88,7 @@ int of_n_size_cells(struct device_node *np)
- }
- EXPORT_SYMBOL(of_n_size_cells);
- 
--#if !defined(CONFIG_SPARC)   /* SPARC doesn't do ref counting (yet) */
-+#if defined(CONFIG_OF_DYNAMIC)
- /**
-  *	of_node_get - Increment refcount of a node
-  *	@node:	Node to inc refcount, NULL is supported to
-@@ -161,7 +161,7 @@ void of_node_put(struct device_node *node)
- 		kref_put(&node->kref, of_node_release);
- }
- EXPORT_SYMBOL(of_node_put);
--#endif /* !CONFIG_SPARC */
-+#endif /* CONFIG_OF_DYNAMIC */
- 
- struct property *of_find_property(const struct device_node *np,
- 				  const char *name,
-diff --git a/include/linux/of.h b/include/linux/of.h
-index a75a831..b6ff1f7 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -72,19 +72,17 @@ struct of_phandle_args {
- 	uint32_t args[MAX_PHANDLE_ARGS];
- };
- 
--#if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
-+#ifdef CONFIG_OF_DYNAMIC
-+extern struct device_node *of_node_get(struct device_node *node);
-+extern void of_node_put(struct device_node *node);
-+#else /* CONFIG_OF_DYNAMIC */
- /* Dummy ref counting routines - to be implemented later */
- static inline struct device_node *of_node_get(struct device_node *node)
- {
- 	return node;
- }
--static inline void of_node_put(struct device_node *node)
--{
--}
--#else
--extern struct device_node *of_node_get(struct device_node *node);
--extern void of_node_put(struct device_node *node);
--#endif
-+static inline void of_node_put(struct device_node *node) { }
-+#endif /* !CONFIG_OF_DYNAMIC */
- 
- #ifdef CONFIG_OF
- 
--- 
-1.7.9
-
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+>  arch/arm/include/asm/assembler.h |    5 +++++
+>  arch/arm/mm/cache-v7.S           |    2 +-
+>  2 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
+> index 62f8095..23371b1 100644
+> --- a/arch/arm/include/asm/assembler.h
+> +++ b/arch/arm/include/asm/assembler.h
+> @@ -137,6 +137,11 @@
+>  	disable_irq
+>  	.endm
+>  
+> +	.macro	save_and_disable_irqs_notrace, oldcpsr
+> +	mrs	\oldcpsr, cpsr
+> +	disable_irq_notrace
+> +	.endm
+> +
+>  /*
+>   * Restore interrupt state previously stored in a register.  We don't
+>   * guarantee that this will preserve the flags.
+> diff --git a/arch/arm/mm/cache-v7.S b/arch/arm/mm/cache-v7.S
+> index 7a24d396..a655d3d 100644
+> --- a/arch/arm/mm/cache-v7.S
+> +++ b/arch/arm/mm/cache-v7.S
+> @@ -55,7 +55,7 @@ loop1:
+>  	cmp	r1, #2				@ see what cache we have at this level
+>  	blt	skip				@ skip if no cache, or just i-cache
+>  #ifdef CONFIG_PREEMPT
+> -	save_and_disable_irqs r9		@ make cssr&csidr read atomic
+> +	save_and_disable_irqs_notrace r9	@ make cssr&csidr read atomic
+>  #endif
+>  	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
+>  	isb					@ isb to sych the new cssr&csidr
+> -- 
+> 1.7.9
+> 
