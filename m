@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761380Ab2BNXgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 18:36:07 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37636 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab2BNXgE (ORCPT
+	id S1761399Ab2BNXg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 18:36:29 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49516 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761348Ab2BNXgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 18:36:04 -0500
+	Tue, 14 Feb 2012 18:36:23 -0500
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
         konrad.wilk@oracle.com, kurt.hackel@oracle.com,
         sjenning@linux.vnet.ibm.com, chris.mason@oracle.com,
         dan.magenheimer@oracle.com
-Subject: [PATCH 3/6] staging: ramster: xvmalloc allocation files
-Date: Tue, 14 Feb 2012 15:35:52 -0800
-Message-Id: <1329262552-25660-1-git-send-email-dan.magenheimer@oracle.com>
+Subject: [PATCH 5/6] staging: ramster: ramster-specific new files
+Date: Tue, 14 Feb 2012 15:36:12 -0800
+Message-Id: <1329262572-25892-1-git-send-email-dan.magenheimer@oracle.com>
 X-Mailer: git-send-email 1.7.5.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F3AEFDC.0035,ss=1,re=-2.300,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020203.4F3AEFF0.0024,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,674 +27,604 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 RAMster implements peer-to-peer transcendent memory, allowing a "cluster"
 of kernels to dynamically pool their RAM.
 
-Zcache is in the process of converting allocators, from xvmalloc to zsmalloc.
-Further, RAMster V5 testing to date has been done only with xvmalloc.
-To avoid merging problems, a linux-3.2 copy of xvmalloc is incorporated by
-this patch.  Later patches will be able to eliminate xvmalloc and use zsmalloc.
+This patch adds new files necessary for ramster support:  The file
+ramster.h declares externs and some pampd bitfield manipulation.  The
+file zcache.h declares some zcache functions that now must be accessed
+from the ramster glue code.  The file r2net.c is the glue between zcache
+and the messaging layer, providing routines called from zcache that
+initiate messages, and routines that handle messages by calling zcache.
+TODO explains future plans for merging.
 
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 ---
- drivers/staging/ramster/xvmalloc.c     |  510 ++++++++++++++++++++++++++++++++
- drivers/staging/ramster/xvmalloc.h     |   30 ++
- drivers/staging/ramster/xvmalloc_int.h |   95 ++++++
- 3 files changed, 635 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/ramster/xvmalloc.c
- create mode 100644 drivers/staging/ramster/xvmalloc.h
- create mode 100644 drivers/staging/ramster/xvmalloc_int.h
+ drivers/staging/ramster/TODO      |   13 ++
+ drivers/staging/ramster/r2net.c   |  401 +++++++++++++++++++++++++++++++++++++
+ drivers/staging/ramster/ramster.h |  118 +++++++++++
+ drivers/staging/ramster/zcache.h  |   22 ++
+ 4 files changed, 554 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/ramster/TODO
+ create mode 100644 drivers/staging/ramster/r2net.c
+ create mode 100644 drivers/staging/ramster/ramster.h
+ create mode 100644 drivers/staging/ramster/zcache.h
 
-diff --git a/drivers/staging/ramster/xvmalloc.c b/drivers/staging/ramster/xvmalloc.c
+diff --git a/drivers/staging/ramster/TODO b/drivers/staging/ramster/TODO
 new file mode 100644
-index 0000000..1f9c508
+index 0000000..46fcf0c
 --- /dev/null
-+++ b/drivers/staging/ramster/xvmalloc.c
-@@ -0,0 +1,510 @@
++++ b/drivers/staging/ramster/TODO
+@@ -0,0 +1,13 @@
++For this staging driver, RAMster duplicates code from drivers/staging/zcache
++then incorporates changes to the local copy of the code.  For V5, it also
++directly incorporates the soon-to-be-removed drivers/staging/zram/xvmalloc.[ch]
++as all testing has been done with xvmalloc rather than the new zsmalloc.
++Before RAMster can be promoted from staging, the zcache and RAMster drivers
++should be either merged or reorganized to separate out common code.
++
++Until V4, RAMster duplicated code from fs/ocfs2/cluster, but this made
++RAMster incompatible with ocfs2 running in the same kernel and included
++lots of code that could be removed.  As of V5, the ocfs2 code has been
++mined and made RAMster-specific, made to communicate with a userland
++ramster-tools package rather than ocfs2-tools, and can co-exist with ocfs2
++both in the same kernel and in userland on the same machine.
+diff --git a/drivers/staging/ramster/r2net.c b/drivers/staging/ramster/r2net.c
+new file mode 100644
+index 0000000..2ee0220
+--- /dev/null
++++ b/drivers/staging/ramster/r2net.c
+@@ -0,0 +1,401 @@
 +/*
-+ * xvmalloc memory allocator
++ * r2net.c
 + *
-+ * Copyright (C) 2008, 2009, 2010  Nitin Gupta
++ * Copyright (c) 2011, Dan Magenheimer, Oracle Corp.
 + *
-+ * This code is released using a dual license strategy: BSD/GPL
-+ * You can choose the licence that better fits your requirements.
++ * Ramster_r2net provides an interface between zcache and r2net.
 + *
-+ * Released under the terms of 3-clause BSD License
-+ * Released under the terms of GNU General Public License Version 2.0
++ * FIXME: support more than two nodes
 + */
 +
-+#ifdef CONFIG_ZRAM_DEBUG
-+#define DEBUG
++#include <linux/list.h>
++#include "cluster/tcp.h"
++#include "cluster/nodemanager.h"
++#include "tmem.h"
++#include "zcache.h"
++#include "ramster.h"
++
++#define RAMSTER_TESTING
++
++#define RMSTR_KEY	0x77347734
++
++enum {
++	RMSTR_TMEM_PUT_EPH = 100,
++	RMSTR_TMEM_PUT_PERS,
++	RMSTR_TMEM_ASYNC_GET_REQUEST,
++	RMSTR_TMEM_ASYNC_GET_AND_FREE_REQUEST,
++	RMSTR_TMEM_ASYNC_GET_REPLY,
++	RMSTR_TMEM_FLUSH,
++	RMSTR_TMEM_FLOBJ,
++	RMSTR_TMEM_DESTROY_POOL,
++};
++
++#define RMSTR_R2NET_MAX_LEN \
++		(R2NET_MAX_PAYLOAD_BYTES - sizeof(struct tmem_xhandle))
++
++#include "cluster/tcp_internal.h"
++
++static struct r2nm_node *r2net_target_node;
++static int r2net_target_nodenum;
++
++int r2net_remote_target_node_set(int node_num)
++{
++	int ret = -1;
++
++	r2net_target_node = r2nm_get_node_by_num(node_num);
++	if (r2net_target_node != NULL) {
++		r2net_target_nodenum = node_num;
++		r2nm_node_put(r2net_target_node);
++		ret = 0;
++	}
++	return ret;
++}
++
++/* FIXME following buffer should be per-cpu, protected by preempt_disable */
++static char ramster_async_get_buf[R2NET_MAX_PAYLOAD_BYTES];
++
++static int ramster_remote_async_get_request_handler(struct r2net_msg *msg,
++				u32 len, void *data, void **ret_data)
++{
++	char *pdata;
++	struct tmem_xhandle xh;
++	int found;
++	size_t size = RMSTR_R2NET_MAX_LEN;
++	u16 msgtype = be16_to_cpu(msg->msg_type);
++	bool get_and_free = (msgtype == RMSTR_TMEM_ASYNC_GET_AND_FREE_REQUEST);
++	unsigned long flags;
++
++	xh = *(struct tmem_xhandle *)msg->buf;
++	if (xh.xh_data_size > RMSTR_R2NET_MAX_LEN)
++		BUG();
++	pdata = ramster_async_get_buf;
++	*(struct tmem_xhandle *)pdata = xh;
++	pdata += sizeof(struct tmem_xhandle);
++	local_irq_save(flags);
++	found = zcache_get(xh.client_id, xh.pool_id, &xh.oid, xh.index,
++				pdata, &size, 1, get_and_free ? 1 : -1);
++	local_irq_restore(flags);
++	if (found < 0) {
++		/* a zero size indicates the get failed */
++		size = 0;
++	}
++	if (size > RMSTR_R2NET_MAX_LEN)
++		BUG();
++	*ret_data = pdata - sizeof(struct tmem_xhandle);
++	/* now make caller (r2net_process_message) handle specially */
++	r2net_force_data_magic(msg, RMSTR_TMEM_ASYNC_GET_REPLY, RMSTR_KEY);
++	return size + sizeof(struct tmem_xhandle);
++}
++
++static int ramster_remote_async_get_reply_handler(struct r2net_msg *msg,
++				u32 len, void *data, void **ret_data)
++{
++	char *in = (char *)msg->buf;
++	int datalen = len - sizeof(struct r2net_msg);
++	int ret = -1;
++	struct tmem_xhandle *xh = (struct tmem_xhandle *)in;
++
++	in += sizeof(struct tmem_xhandle);
++	datalen -= sizeof(struct tmem_xhandle);
++	BUG_ON(datalen < 0 || datalen > PAGE_SIZE);
++	ret = zcache_localify(xh->pool_id, &xh->oid, xh->index,
++				in, datalen, xh->extra);
++#ifdef RAMSTER_TESTING
++	if (ret == -EEXIST)
++		pr_err("TESTING ArrgREP, aborted overwrite on racy put\n");
 +#endif
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/bitops.h>
-+#include <linux/errno.h>
-+#include <linux/highmem.h>
-+#include <linux/init.h>
-+#include <linux/string.h>
-+#include <linux/slab.h>
-+
-+#include "xvmalloc.h"
-+#include "xvmalloc_int.h"
-+
-+static void stat_inc(u64 *value)
-+{
-+	*value = *value + 1;
++	return ret;
 +}
 +
-+static void stat_dec(u64 *value)
++int ramster_remote_put_handler(struct r2net_msg *msg,
++				u32 len, void *data, void **ret_data)
 +{
-+	*value = *value - 1;
++	struct tmem_xhandle *xh;
++	char *p = (char *)msg->buf;
++	int datalen = len - sizeof(struct r2net_msg) -
++				sizeof(struct tmem_xhandle);
++	u16 msgtype = be16_to_cpu(msg->msg_type);
++	bool ephemeral = (msgtype == RMSTR_TMEM_PUT_EPH);
++	unsigned long flags;
++	int ret;
++
++	xh = (struct tmem_xhandle *)p;
++	p += sizeof(struct tmem_xhandle);
++	zcache_autocreate_pool(xh->client_id, xh->pool_id, ephemeral);
++	local_irq_save(flags);
++	ret = zcache_put(xh->client_id, xh->pool_id, &xh->oid, xh->index,
++				p, datalen, 1, ephemeral ? 1 : -1);
++	local_irq_restore(flags);
++	return ret;
 +}
 +
-+static int test_flag(struct block_header *block, enum blockflags flag)
++int ramster_remote_flush_handler(struct r2net_msg *msg,
++				u32 len, void *data, void **ret_data)
 +{
-+	return block->prev & BIT(flag);
-+}
++	struct tmem_xhandle *xh;
++	char *p = (char *)msg->buf;
 +
-+static void set_flag(struct block_header *block, enum blockflags flag)
-+{
-+	block->prev |= BIT(flag);
-+}
-+
-+static void clear_flag(struct block_header *block, enum blockflags flag)
-+{
-+	block->prev &= ~BIT(flag);
-+}
-+
-+/*
-+ * Given <page, offset> pair, provide a dereferencable pointer.
-+ * This is called from xv_malloc/xv_free path, so it
-+ * needs to be fast.
-+ */
-+static void *get_ptr_atomic(struct page *page, u16 offset, enum km_type type)
-+{
-+	unsigned char *base;
-+
-+	base = kmap_atomic(page, type);
-+	return base + offset;
-+}
-+
-+static void put_ptr_atomic(void *ptr, enum km_type type)
-+{
-+	kunmap_atomic(ptr, type);
-+}
-+
-+static u32 get_blockprev(struct block_header *block)
-+{
-+	return block->prev & PREV_MASK;
-+}
-+
-+static void set_blockprev(struct block_header *block, u16 new_offset)
-+{
-+	block->prev = new_offset | (block->prev & FLAGS_MASK);
-+}
-+
-+static struct block_header *BLOCK_NEXT(struct block_header *block)
-+{
-+	return (struct block_header *)
-+		((char *)block + block->size + XV_ALIGN);
-+}
-+
-+/*
-+ * Get index of free list containing blocks of maximum size
-+ * which is less than or equal to given size.
-+ */
-+static u32 get_index_for_insert(u32 size)
-+{
-+	if (unlikely(size > XV_MAX_ALLOC_SIZE))
-+		size = XV_MAX_ALLOC_SIZE;
-+	size &= ~FL_DELTA_MASK;
-+	return (size - XV_MIN_ALLOC_SIZE) >> FL_DELTA_SHIFT;
-+}
-+
-+/*
-+ * Get index of free list having blocks of size greater than
-+ * or equal to requested size.
-+ */
-+static u32 get_index(u32 size)
-+{
-+	if (unlikely(size < XV_MIN_ALLOC_SIZE))
-+		size = XV_MIN_ALLOC_SIZE;
-+	size = ALIGN(size, FL_DELTA);
-+	return (size - XV_MIN_ALLOC_SIZE) >> FL_DELTA_SHIFT;
-+}
-+
-+/**
-+ * find_block - find block of at least given size
-+ * @pool: memory pool to search from
-+ * @size: size of block required
-+ * @page: page containing required block
-+ * @offset: offset within the page where block is located.
-+ *
-+ * Searches two level bitmap to locate block of at least
-+ * the given size. If such a block is found, it provides
-+ * <page, offset> to identify this block and returns index
-+ * in freelist where we found this block.
-+ * Otherwise, returns 0 and <page, offset> params are not touched.
-+ */
-+static u32 find_block(struct xv_pool *pool, u32 size,
-+			struct page **page, u32 *offset)
-+{
-+	ulong flbitmap, slbitmap;
-+	u32 flindex, slindex, slbitstart;
-+
-+	/* There are no free blocks in this pool */
-+	if (!pool->flbitmap)
-+		return 0;
-+
-+	/* Get freelist index correspoding to this size */
-+	slindex = get_index(size);
-+	slbitmap = pool->slbitmap[slindex / BITS_PER_LONG];
-+	slbitstart = slindex % BITS_PER_LONG;
-+
-+	/*
-+	 * If freelist is not empty at this index, we found the
-+	 * block - head of this list. This is approximate best-fit match.
-+	 */
-+	if (test_bit(slbitstart, &slbitmap)) {
-+		*page = pool->freelist[slindex].page;
-+		*offset = pool->freelist[slindex].offset;
-+		return slindex;
-+	}
-+
-+	/*
-+	 * No best-fit found. Search a bit further in bitmap for a free block.
-+	 * Second level bitmap consists of series of 32-bit chunks. Search
-+	 * further in the chunk where we expected a best-fit, starting from
-+	 * index location found above.
-+	 */
-+	slbitstart++;
-+	slbitmap >>= slbitstart;
-+
-+	/* Skip this search if we were already at end of this bitmap chunk */
-+	if ((slbitstart != BITS_PER_LONG) && slbitmap) {
-+		slindex += __ffs(slbitmap) + 1;
-+		*page = pool->freelist[slindex].page;
-+		*offset = pool->freelist[slindex].offset;
-+		return slindex;
-+	}
-+
-+	/* Now do a full two-level bitmap search to find next nearest fit */
-+	flindex = slindex / BITS_PER_LONG;
-+
-+	flbitmap = (pool->flbitmap) >> (flindex + 1);
-+	if (!flbitmap)
-+		return 0;
-+
-+	flindex += __ffs(flbitmap) + 1;
-+	slbitmap = pool->slbitmap[flindex];
-+	slindex = (flindex * BITS_PER_LONG) + __ffs(slbitmap);
-+	*page = pool->freelist[slindex].page;
-+	*offset = pool->freelist[slindex].offset;
-+
-+	return slindex;
-+}
-+
-+/*
-+ * Insert block at <page, offset> in freelist of given pool.
-+ * freelist used depends on block size.
-+ */
-+static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
-+			struct block_header *block)
-+{
-+	u32 flindex, slindex;
-+	struct block_header *nextblock;
-+
-+	slindex = get_index_for_insert(block->size);
-+	flindex = slindex / BITS_PER_LONG;
-+
-+	block->link.prev_page = NULL;
-+	block->link.prev_offset = 0;
-+	block->link.next_page = pool->freelist[slindex].page;
-+	block->link.next_offset = pool->freelist[slindex].offset;
-+	pool->freelist[slindex].page = page;
-+	pool->freelist[slindex].offset = offset;
-+
-+	if (block->link.next_page) {
-+		nextblock = get_ptr_atomic(block->link.next_page,
-+					block->link.next_offset, KM_USER1);
-+		nextblock->link.prev_page = page;
-+		nextblock->link.prev_offset = offset;
-+		put_ptr_atomic(nextblock, KM_USER1);
-+		/* If there was a next page then the free bits are set. */
-+		return;
-+	}
-+
-+	__set_bit(slindex % BITS_PER_LONG, &pool->slbitmap[flindex]);
-+	__set_bit(flindex, &pool->flbitmap);
-+}
-+
-+/*
-+ * Remove block from freelist. Index 'slindex' identifies the freelist.
-+ */
-+static void remove_block(struct xv_pool *pool, struct page *page, u32 offset,
-+			struct block_header *block, u32 slindex)
-+{
-+	u32 flindex = slindex / BITS_PER_LONG;
-+	struct block_header *tmpblock;
-+
-+	if (block->link.prev_page) {
-+		tmpblock = get_ptr_atomic(block->link.prev_page,
-+				block->link.prev_offset, KM_USER1);
-+		tmpblock->link.next_page = block->link.next_page;
-+		tmpblock->link.next_offset = block->link.next_offset;
-+		put_ptr_atomic(tmpblock, KM_USER1);
-+	}
-+
-+	if (block->link.next_page) {
-+		tmpblock = get_ptr_atomic(block->link.next_page,
-+				block->link.next_offset, KM_USER1);
-+		tmpblock->link.prev_page = block->link.prev_page;
-+		tmpblock->link.prev_offset = block->link.prev_offset;
-+		put_ptr_atomic(tmpblock, KM_USER1);
-+	}
-+
-+	/* Is this block is at the head of the freelist? */
-+	if (pool->freelist[slindex].page == page
-+	   && pool->freelist[slindex].offset == offset) {
-+
-+		pool->freelist[slindex].page = block->link.next_page;
-+		pool->freelist[slindex].offset = block->link.next_offset;
-+
-+		if (pool->freelist[slindex].page) {
-+			struct block_header *tmpblock;
-+			tmpblock = get_ptr_atomic(pool->freelist[slindex].page,
-+					pool->freelist[slindex].offset,
-+					KM_USER1);
-+			tmpblock->link.prev_page = NULL;
-+			tmpblock->link.prev_offset = 0;
-+			put_ptr_atomic(tmpblock, KM_USER1);
-+		} else {
-+			/* This freelist bucket is empty */
-+			__clear_bit(slindex % BITS_PER_LONG,
-+				    &pool->slbitmap[flindex]);
-+			if (!pool->slbitmap[flindex])
-+				__clear_bit(flindex, &pool->flbitmap);
-+		}
-+	}
-+
-+	block->link.prev_page = NULL;
-+	block->link.prev_offset = 0;
-+	block->link.next_page = NULL;
-+	block->link.next_offset = 0;
-+}
-+
-+/*
-+ * Allocate a page and add it to freelist of given pool.
-+ */
-+static int grow_pool(struct xv_pool *pool, gfp_t flags)
-+{
-+	struct page *page;
-+	struct block_header *block;
-+
-+	page = alloc_page(flags);
-+	if (unlikely(!page))
-+		return -ENOMEM;
-+
-+	stat_inc(&pool->total_pages);
-+
-+	spin_lock(&pool->lock);
-+	block = get_ptr_atomic(page, 0, KM_USER0);
-+
-+	block->size = PAGE_SIZE - XV_ALIGN;
-+	set_flag(block, BLOCK_FREE);
-+	clear_flag(block, PREV_FREE);
-+	set_blockprev(block, 0);
-+
-+	insert_block(pool, page, 0, block);
-+
-+	put_ptr_atomic(block, KM_USER0);
-+	spin_unlock(&pool->lock);
-+
++	xh = (struct tmem_xhandle *)p;
++	p += sizeof(struct tmem_xhandle);
++	(void)zcache_flush(xh->client_id, xh->pool_id, &xh->oid, xh->index);
 +	return 0;
 +}
 +
-+/*
-+ * Create a memory pool. Allocates freelist, bitmaps and other
-+ * per-pool metadata.
-+ */
-+struct xv_pool *xv_create_pool(void)
++int ramster_remote_flobj_handler(struct r2net_msg *msg,
++				u32 len, void *data, void **ret_data)
 +{
-+	u32 ovhd_size;
-+	struct xv_pool *pool;
++	struct tmem_xhandle *xh;
++	char *p = (char *)msg->buf;
 +
-+	ovhd_size = roundup(sizeof(*pool), PAGE_SIZE);
-+	pool = kzalloc(ovhd_size, GFP_KERNEL);
-+	if (!pool)
-+		return NULL;
-+
-+	spin_lock_init(&pool->lock);
-+
-+	return pool;
-+}
-+EXPORT_SYMBOL_GPL(xv_create_pool);
-+
-+void xv_destroy_pool(struct xv_pool *pool)
-+{
-+	kfree(pool);
-+}
-+EXPORT_SYMBOL_GPL(xv_destroy_pool);
-+
-+/**
-+ * xv_malloc - Allocate block of given size from pool.
-+ * @pool: pool to allocate from
-+ * @size: size of block to allocate
-+ * @page: page no. that holds the object
-+ * @offset: location of object within page
-+ *
-+ * On success, <page, offset> identifies block allocated
-+ * and 0 is returned. On failure, <page, offset> is set to
-+ * 0 and -ENOMEM is returned.
-+ *
-+ * Allocation requests with size > XV_MAX_ALLOC_SIZE will fail.
-+ */
-+int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
-+		u32 *offset, gfp_t flags)
-+{
-+	int error;
-+	u32 index, tmpsize, origsize, tmpoffset;
-+	struct block_header *block, *tmpblock;
-+
-+	*page = NULL;
-+	*offset = 0;
-+	origsize = size;
-+
-+	if (unlikely(!size || size > XV_MAX_ALLOC_SIZE))
-+		return -ENOMEM;
-+
-+	size = ALIGN(size, XV_ALIGN);
-+
-+	spin_lock(&pool->lock);
-+
-+	index = find_block(pool, size, page, offset);
-+
-+	if (!*page) {
-+		spin_unlock(&pool->lock);
-+		if (flags & GFP_NOWAIT)
-+			return -ENOMEM;
-+		error = grow_pool(pool, flags);
-+		if (unlikely(error))
-+			return error;
-+
-+		spin_lock(&pool->lock);
-+		index = find_block(pool, size, page, offset);
-+	}
-+
-+	if (!*page) {
-+		spin_unlock(&pool->lock);
-+		return -ENOMEM;
-+	}
-+
-+	block = get_ptr_atomic(*page, *offset, KM_USER0);
-+
-+	remove_block(pool, *page, *offset, block, index);
-+
-+	/* Split the block if required */
-+	tmpoffset = *offset + size + XV_ALIGN;
-+	tmpsize = block->size - size;
-+	tmpblock = (struct block_header *)((char *)block + size + XV_ALIGN);
-+	if (tmpsize) {
-+		tmpblock->size = tmpsize - XV_ALIGN;
-+		set_flag(tmpblock, BLOCK_FREE);
-+		clear_flag(tmpblock, PREV_FREE);
-+
-+		set_blockprev(tmpblock, *offset);
-+		if (tmpblock->size >= XV_MIN_ALLOC_SIZE)
-+			insert_block(pool, *page, tmpoffset, tmpblock);
-+
-+		if (tmpoffset + XV_ALIGN + tmpblock->size != PAGE_SIZE) {
-+			tmpblock = BLOCK_NEXT(tmpblock);
-+			set_blockprev(tmpblock, tmpoffset);
-+		}
-+	} else {
-+		/* This block is exact fit */
-+		if (tmpoffset != PAGE_SIZE)
-+			clear_flag(tmpblock, PREV_FREE);
-+	}
-+
-+	block->size = origsize;
-+	clear_flag(block, BLOCK_FREE);
-+
-+	put_ptr_atomic(block, KM_USER0);
-+	spin_unlock(&pool->lock);
-+
-+	*offset += XV_ALIGN;
-+
++	xh = (struct tmem_xhandle *)p;
++	p += sizeof(struct tmem_xhandle);
++	(void)zcache_flush_object(xh->client_id, xh->pool_id, &xh->oid);
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(xv_malloc);
++
++int ramster_remote_async_get(struct tmem_xhandle *xh, bool free, int remotenode,
++				size_t expect_size, uint8_t expect_cksum,
++				void *extra)
++{
++	int ret = -1, status;
++	struct r2nm_node *node = NULL;
++	struct kvec vec[1];
++	size_t veclen = 1;
++	u32 msg_type;
++
++	node = r2nm_get_node_by_num(remotenode);
++	if (node == NULL)
++		goto out;
++	xh->client_id = r2nm_this_node(); /* which node is getting */
++	xh->xh_data_cksum = expect_cksum;
++	xh->xh_data_size = expect_size;
++	xh->extra = extra;
++	vec[0].iov_len = sizeof(*xh);
++	vec[0].iov_base = xh;
++	if (free)
++		msg_type = RMSTR_TMEM_ASYNC_GET_AND_FREE_REQUEST;
++	else
++		msg_type = RMSTR_TMEM_ASYNC_GET_REQUEST;
++	ret = r2net_send_message_vec(msg_type, RMSTR_KEY,
++					vec, veclen, remotenode, &status);
++	r2nm_node_put(node);
++	if (ret < 0) {
++		/* FIXME handle bad message possibilities here? */
++		pr_err("UNTESTED ret<0 in ramster_remote_async_get\n");
++	}
++	ret = status;
++out:
++	return ret;
++}
++
++#ifdef RAMSTER_TESTING
++/* leave me here to see if it catches a weird crash */
++static void ramster_check_irq_counts(void)
++{
++	static int last_hardirq_cnt, last_softirq_cnt, last_preempt_cnt;
++	int cur_hardirq_cnt, cur_softirq_cnt, cur_preempt_cnt;
++
++	cur_hardirq_cnt = hardirq_count() >> HARDIRQ_SHIFT;
++	if (cur_hardirq_cnt > last_hardirq_cnt) {
++		last_hardirq_cnt = cur_hardirq_cnt;
++		if (!(last_hardirq_cnt&(last_hardirq_cnt-1)))
++			pr_err("RAMSTER TESTING RRP hardirq_count=%d\n",
++				last_hardirq_cnt);
++	}
++	cur_softirq_cnt = softirq_count() >> SOFTIRQ_SHIFT;
++	if (cur_softirq_cnt > last_softirq_cnt) {
++		last_softirq_cnt = cur_softirq_cnt;
++		if (!(last_softirq_cnt&(last_softirq_cnt-1)))
++			pr_err("RAMSTER TESTING RRP softirq_count=%d\n",
++				last_softirq_cnt);
++	}
++	cur_preempt_cnt = preempt_count() & PREEMPT_MASK;
++	if (cur_preempt_cnt > last_preempt_cnt) {
++		last_preempt_cnt = cur_preempt_cnt;
++		if (!(last_preempt_cnt&(last_preempt_cnt-1)))
++			pr_err("RAMSTER TESTING RRP preempt_count=%d\n",
++				last_preempt_cnt);
++	}
++}
++#endif
++
++int ramster_remote_put(struct tmem_xhandle *xh, char *data, size_t size,
++				bool ephemeral, int *remotenode)
++{
++	int nodenum, ret = -1, status;
++	struct r2nm_node *node = NULL;
++	struct kvec vec[2];
++	size_t veclen = 2;
++	u32 msg_type;
++#ifdef RAMSTER_TESTING
++	struct r2net_node *nn;
++#endif
++
++	BUG_ON(size > RMSTR_R2NET_MAX_LEN);
++	xh->client_id = r2nm_this_node(); /* which node is putting */
++	vec[0].iov_len = sizeof(*xh);
++	vec[0].iov_base = xh;
++	vec[1].iov_len = size;
++	vec[1].iov_base = data;
++	node = r2net_target_node;
++	if (!node)
++		goto out;
++
++	nodenum = r2net_target_nodenum;
++
++	r2nm_node_get(node);
++
++#ifdef RAMSTER_TESTING
++	nn = r2net_nn_from_num(nodenum);
++	WARN_ON_ONCE(nn->nn_persistent_error || !nn->nn_sc_valid);
++#endif
++
++	if (ephemeral)
++		msg_type = RMSTR_TMEM_PUT_EPH;
++	else
++		msg_type = RMSTR_TMEM_PUT_PERS;
++#ifdef RAMSTER_TESTING
++	/* leave me here to see if it catches a weird crash */
++	ramster_check_irq_counts();
++#endif
++
++	ret = r2net_send_message_vec(msg_type, RMSTR_KEY, vec, veclen,
++						nodenum, &status);
++#ifdef RAMSTER_TESTING
++	if (ret != 0) {
++		static unsigned long cnt;
++		cnt++;
++		if (!(cnt&(cnt-1)))
++			pr_err("ramster_remote_put: message failed, "
++				"ret=%d, cnt=%lu\n", ret, cnt);
++		ret = -1;
++	}
++#endif
++	if (ret < 0)
++		ret = -1;
++	else {
++		ret = status;
++		*remotenode = nodenum;
++	}
++
++	r2nm_node_put(node);
++out:
++	return ret;
++}
++
++int ramster_remote_flush(struct tmem_xhandle *xh, int remotenode)
++{
++	int ret = -1, status;
++	struct r2nm_node *node = NULL;
++	struct kvec vec[1];
++	size_t veclen = 1;
++
++	node = r2nm_get_node_by_num(remotenode);
++	BUG_ON(node == NULL);
++	xh->client_id = r2nm_this_node(); /* which node is flushing */
++	vec[0].iov_len = sizeof(*xh);
++	vec[0].iov_base = xh;
++	BUG_ON(irqs_disabled());
++	BUG_ON(in_softirq());
++	ret = r2net_send_message_vec(RMSTR_TMEM_FLUSH, RMSTR_KEY,
++					vec, veclen, remotenode, &status);
++	r2nm_node_put(node);
++	return ret;
++}
++
++int ramster_remote_flush_object(struct tmem_xhandle *xh, int remotenode)
++{
++	int ret = -1, status;
++	struct r2nm_node *node = NULL;
++	struct kvec vec[1];
++	size_t veclen = 1;
++
++	node = r2nm_get_node_by_num(remotenode);
++	BUG_ON(node == NULL);
++	xh->client_id = r2nm_this_node(); /* which node is flobjing */
++	vec[0].iov_len = sizeof(*xh);
++	vec[0].iov_base = xh;
++	ret = r2net_send_message_vec(RMSTR_TMEM_FLOBJ, RMSTR_KEY,
++					vec, veclen, remotenode, &status);
++	r2nm_node_put(node);
++	return ret;
++}
 +
 +/*
-+ * Free block identified with <page, offset>
++ * Handler registration
 + */
-+void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
++
++static LIST_HEAD(r2net_unreg_list);
++
++static void r2net_unregister_handlers(void)
 +{
-+	void *page_start;
-+	struct block_header *block, *tmpblock;
-+
-+	offset -= XV_ALIGN;
-+
-+	spin_lock(&pool->lock);
-+
-+	page_start = get_ptr_atomic(page, 0, KM_USER0);
-+	block = (struct block_header *)((char *)page_start + offset);
-+
-+	/* Catch double free bugs */
-+	BUG_ON(test_flag(block, BLOCK_FREE));
-+
-+	block->size = ALIGN(block->size, XV_ALIGN);
-+
-+	tmpblock = BLOCK_NEXT(block);
-+	if (offset + block->size + XV_ALIGN == PAGE_SIZE)
-+		tmpblock = NULL;
-+
-+	/* Merge next block if its free */
-+	if (tmpblock && test_flag(tmpblock, BLOCK_FREE)) {
-+		/*
-+		 * Blocks smaller than XV_MIN_ALLOC_SIZE
-+		 * are not inserted in any free list.
-+		 */
-+		if (tmpblock->size >= XV_MIN_ALLOC_SIZE) {
-+			remove_block(pool, page,
-+				    offset + block->size + XV_ALIGN, tmpblock,
-+				    get_index_for_insert(tmpblock->size));
-+		}
-+		block->size += tmpblock->size + XV_ALIGN;
-+	}
-+
-+	/* Merge previous block if its free */
-+	if (test_flag(block, PREV_FREE)) {
-+		tmpblock = (struct block_header *)((char *)(page_start) +
-+						get_blockprev(block));
-+		offset = offset - tmpblock->size - XV_ALIGN;
-+
-+		if (tmpblock->size >= XV_MIN_ALLOC_SIZE)
-+			remove_block(pool, page, offset, tmpblock,
-+				    get_index_for_insert(tmpblock->size));
-+
-+		tmpblock->size += block->size + XV_ALIGN;
-+		block = tmpblock;
-+	}
-+
-+	/* No used objects in this page. Free it. */
-+	if (block->size == PAGE_SIZE - XV_ALIGN) {
-+		put_ptr_atomic(page_start, KM_USER0);
-+		spin_unlock(&pool->lock);
-+
-+		__free_page(page);
-+		stat_dec(&pool->total_pages);
-+		return;
-+	}
-+
-+	set_flag(block, BLOCK_FREE);
-+	if (block->size >= XV_MIN_ALLOC_SIZE)
-+		insert_block(pool, page, offset, block);
-+
-+	if (offset + block->size + XV_ALIGN != PAGE_SIZE) {
-+		tmpblock = BLOCK_NEXT(block);
-+		set_flag(tmpblock, PREV_FREE);
-+		set_blockprev(tmpblock, offset);
-+	}
-+
-+	put_ptr_atomic(page_start, KM_USER0);
-+	spin_unlock(&pool->lock);
++	r2net_unregister_handler_list(&r2net_unreg_list);
 +}
-+EXPORT_SYMBOL_GPL(xv_free);
 +
-+u32 xv_get_object_size(void *obj)
++int r2net_register_handlers(void)
 +{
-+	struct block_header *blk;
++	int status;
 +
-+	blk = (struct block_header *)((char *)(obj) - XV_ALIGN);
-+	return blk->size;
-+}
-+EXPORT_SYMBOL_GPL(xv_get_object_size);
++	status = r2net_register_handler(RMSTR_TMEM_PUT_EPH, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_put_handler,
++				NULL, NULL, &r2net_unreg_list);
++	if (status)
++		goto bail;
 +
-+/*
-+ * Returns total memory used by allocator (userdata + metadata)
-+ */
-+u64 xv_get_total_size_bytes(struct xv_pool *pool)
-+{
-+	return pool->total_pages << PAGE_SHIFT;
++	status = r2net_register_handler(RMSTR_TMEM_PUT_PERS, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_put_handler,
++				NULL, NULL, &r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	status = r2net_register_handler(RMSTR_TMEM_ASYNC_GET_REQUEST, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_async_get_request_handler,
++				NULL, NULL,
++				&r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	status = r2net_register_handler(RMSTR_TMEM_ASYNC_GET_AND_FREE_REQUEST,
++				RMSTR_KEY, RMSTR_R2NET_MAX_LEN,
++				ramster_remote_async_get_request_handler,
++				NULL, NULL,
++				&r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	status = r2net_register_handler(RMSTR_TMEM_ASYNC_GET_REPLY, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_async_get_reply_handler,
++				NULL, NULL,
++				&r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	status = r2net_register_handler(RMSTR_TMEM_FLUSH, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_flush_handler,
++				NULL, NULL,
++				&r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	status = r2net_register_handler(RMSTR_TMEM_FLOBJ, RMSTR_KEY,
++				RMSTR_R2NET_MAX_LEN,
++				ramster_remote_flobj_handler,
++				NULL, NULL,
++				&r2net_unreg_list);
++	if (status)
++		goto bail;
++
++	pr_info("ramster: r2net handlers registered\n");
++
++bail:
++	if (status) {
++		r2net_unregister_handlers();
++		pr_err("ramster: couldn't register r2net handlers\n");
++	}
++	return status;
 +}
-+EXPORT_SYMBOL_GPL(xv_get_total_size_bytes);
-diff --git a/drivers/staging/ramster/xvmalloc.h b/drivers/staging/ramster/xvmalloc.h
+diff --git a/drivers/staging/ramster/ramster.h b/drivers/staging/ramster/ramster.h
 new file mode 100644
-index 0000000..5b1a81a
+index 0000000..0c9455e
 --- /dev/null
-+++ b/drivers/staging/ramster/xvmalloc.h
-@@ -0,0 +1,30 @@
++++ b/drivers/staging/ramster/ramster.h
+@@ -0,0 +1,118 @@
 +/*
-+ * xvmalloc memory allocator
++ * ramster.h
 + *
-+ * Copyright (C) 2008, 2009, 2010  Nitin Gupta
++ * Peer-to-peer transcendent memory
 + *
-+ * This code is released using a dual license strategy: BSD/GPL
-+ * You can choose the licence that better fits your requirements.
-+ *
-+ * Released under the terms of 3-clause BSD License
-+ * Released under the terms of GNU General Public License Version 2.0
++ * Copyright (c) 2009-2012, Dan Magenheimer, Oracle Corp.
 + */
 +
-+#ifndef _XV_MALLOC_H_
-+#define _XV_MALLOC_H_
++#ifndef _RAMSTER_H_
++#define _RAMSTER_H_
 +
-+#include <linux/types.h>
++/*
++ * format of remote pampd:
++ *   bit 0 == intransit
++ *   bit 1 == is_remote... if this bit is set, then
++ *   bit 2-9 == remotenode
++ *   bit 10-22 == size
++ *   bit 23-30 == cksum
++ */
++#define FAKE_PAMPD_INTRANSIT_BITS	1
++#define FAKE_PAMPD_ISREMOTE_BITS	1
++#define FAKE_PAMPD_REMOTENODE_BITS	8
++#define FAKE_PAMPD_REMOTESIZE_BITS	13
++#define FAKE_PAMPD_CHECKSUM_BITS	8
 +
-+struct xv_pool;
++#define FAKE_PAMPD_INTRANSIT_SHIFT	0
++#define FAKE_PAMPD_ISREMOTE_SHIFT	(FAKE_PAMPD_INTRANSIT_SHIFT + \
++					 FAKE_PAMPD_INTRANSIT_BITS)
++#define FAKE_PAMPD_REMOTENODE_SHIFT	(FAKE_PAMPD_ISREMOTE_SHIFT + \
++					 FAKE_PAMPD_ISREMOTE_BITS)
++#define FAKE_PAMPD_REMOTESIZE_SHIFT	(FAKE_PAMPD_REMOTENODE_SHIFT + \
++					 FAKE_PAMPD_REMOTENODE_BITS)
++#define FAKE_PAMPD_CHECKSUM_SHIFT	(FAKE_PAMPD_REMOTESIZE_SHIFT + \
++					 FAKE_PAMPD_REMOTESIZE_BITS)
 +
-+struct xv_pool *xv_create_pool(void);
-+void xv_destroy_pool(struct xv_pool *pool);
++#define FAKE_PAMPD_MASK(x)		((1UL << (x)) - 1)
 +
-+int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
-+			u32 *offset, gfp_t flags);
-+void xv_free(struct xv_pool *pool, struct page *page, u32 offset);
++static inline void *pampd_make_remote(int remotenode, size_t size,
++					unsigned char cksum)
++{
++	unsigned long fake_pampd = 0;
++	fake_pampd |= 1UL << FAKE_PAMPD_ISREMOTE_SHIFT;
++	fake_pampd |= ((unsigned long)remotenode &
++			FAKE_PAMPD_MASK(FAKE_PAMPD_REMOTENODE_BITS)) <<
++				FAKE_PAMPD_REMOTENODE_SHIFT;
++	fake_pampd |= ((unsigned long)size &
++			FAKE_PAMPD_MASK(FAKE_PAMPD_REMOTESIZE_BITS)) <<
++				FAKE_PAMPD_REMOTESIZE_SHIFT;
++	fake_pampd |= ((unsigned long)cksum &
++			FAKE_PAMPD_MASK(FAKE_PAMPD_CHECKSUM_BITS)) <<
++				FAKE_PAMPD_CHECKSUM_SHIFT;
++	return (void *)fake_pampd;
++}
 +
-+u32 xv_get_object_size(void *obj);
-+u64 xv_get_total_size_bytes(struct xv_pool *pool);
++static inline unsigned int pampd_remote_node(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++	return (fake_pampd >> FAKE_PAMPD_REMOTENODE_SHIFT) &
++		FAKE_PAMPD_MASK(FAKE_PAMPD_REMOTENODE_BITS);
++}
 +
-+#endif
-diff --git a/drivers/staging/ramster/xvmalloc_int.h b/drivers/staging/ramster/xvmalloc_int.h
++static inline unsigned int pampd_remote_size(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++	return (fake_pampd >> FAKE_PAMPD_REMOTESIZE_SHIFT) &
++		FAKE_PAMPD_MASK(FAKE_PAMPD_REMOTESIZE_BITS);
++}
++
++static inline unsigned char pampd_remote_cksum(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++	return (fake_pampd >> FAKE_PAMPD_CHECKSUM_SHIFT) &
++		FAKE_PAMPD_MASK(FAKE_PAMPD_CHECKSUM_BITS);
++}
++
++static inline bool pampd_is_remote(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++	return (fake_pampd >> FAKE_PAMPD_ISREMOTE_SHIFT) &
++		FAKE_PAMPD_MASK(FAKE_PAMPD_ISREMOTE_BITS);
++}
++
++static inline bool pampd_is_intransit(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++	return (fake_pampd >> FAKE_PAMPD_INTRANSIT_SHIFT) &
++		FAKE_PAMPD_MASK(FAKE_PAMPD_INTRANSIT_BITS);
++}
++
++/* note that it is a BUG for intransit to be set without isremote also set */
++static inline void *pampd_mark_intransit(void *pampd)
++{
++	unsigned long fake_pampd = (unsigned long)pampd;
++
++	fake_pampd |= 1UL << FAKE_PAMPD_ISREMOTE_SHIFT;
++	fake_pampd |= 1UL << FAKE_PAMPD_INTRANSIT_SHIFT;
++	return (void *)fake_pampd;
++}
++
++static inline void *pampd_mask_intransit_and_remote(void *marked_pampd)
++{
++	unsigned long pampd = (unsigned long)marked_pampd;
++
++	pampd &= ~(1UL << FAKE_PAMPD_INTRANSIT_SHIFT);
++	pampd &= ~(1UL << FAKE_PAMPD_ISREMOTE_SHIFT);
++	return (void *)pampd;
++}
++
++extern int ramster_remote_async_get(struct tmem_xhandle *,
++				bool, int, size_t, uint8_t, void *extra);
++extern int ramster_remote_put(struct tmem_xhandle *, char *, size_t,
++				bool, int *);
++extern int ramster_remote_flush(struct tmem_xhandle *, int);
++extern int ramster_remote_flush_object(struct tmem_xhandle *, int);
++extern int r2net_register_handlers(void);
++extern int r2net_remote_target_node_set(int);
++
++#endif /* _TMEM_H */
+diff --git a/drivers/staging/ramster/zcache.h b/drivers/staging/ramster/zcache.h
 new file mode 100644
-index 0000000..b5f1f7f
+index 0000000..250b121
 --- /dev/null
-+++ b/drivers/staging/ramster/xvmalloc_int.h
-@@ -0,0 +1,95 @@
++++ b/drivers/staging/ramster/zcache.h
+@@ -0,0 +1,22 @@
 +/*
-+ * xvmalloc memory allocator
++ * zcache.h
 + *
-+ * Copyright (C) 2008, 2009, 2010  Nitin Gupta
++ * External zcache functions
 + *
-+ * This code is released using a dual license strategy: BSD/GPL
-+ * You can choose the licence that better fits your requirements.
-+ *
-+ * Released under the terms of 3-clause BSD License
-+ * Released under the terms of GNU General Public License Version 2.0
++ * Copyright (c) 2009-2012, Dan Magenheimer, Oracle Corp.
 + */
 +
-+#ifndef _XV_MALLOC_INT_H_
-+#define _XV_MALLOC_INT_H_
++#ifndef _ZCACHE_H_
++#define _ZCACHE_H_
 +
-+#include <linux/kernel.h>
-+#include <linux/types.h>
++extern int zcache_put(int, int, struct tmem_oid *, uint32_t,
++			char *, size_t, bool, int);
++extern int zcache_autocreate_pool(int, int, bool);
++extern int zcache_get(int, int, struct tmem_oid *, uint32_t,
++			char *, size_t *, bool, int);
++extern int zcache_flush(int, int, struct tmem_oid *, uint32_t);
++extern int zcache_flush_object(int, int, struct tmem_oid *);
++extern int zcache_localify(int, struct tmem_oid *, uint32_t,
++			char *, size_t, void *);
 +
-+/* User configurable params */
-+
-+/* Must be power of two */
-+#ifdef CONFIG_64BIT
-+#define XV_ALIGN_SHIFT 3
-+#else
-+#define XV_ALIGN_SHIFT	2
-+#endif
-+#define XV_ALIGN	(1 << XV_ALIGN_SHIFT)
-+#define XV_ALIGN_MASK	(XV_ALIGN - 1)
-+
-+/* This must be greater than sizeof(link_free) */
-+#define XV_MIN_ALLOC_SIZE	32
-+#define XV_MAX_ALLOC_SIZE	(PAGE_SIZE - XV_ALIGN)
-+
-+/*
-+ * Free lists are separated by FL_DELTA bytes
-+ * This value is 3 for 4k pages and 4 for 64k pages, for any
-+ * other page size, a conservative (PAGE_SHIFT - 9) is used.
-+ */
-+#if PAGE_SHIFT == 16
-+#define FL_DELTA_SHIFT 4
-+#else
-+#define FL_DELTA_SHIFT (PAGE_SHIFT - 9)
-+#endif
-+#define FL_DELTA	(1 << FL_DELTA_SHIFT)
-+#define FL_DELTA_MASK	(FL_DELTA - 1)
-+#define NUM_FREE_LISTS	((XV_MAX_ALLOC_SIZE - XV_MIN_ALLOC_SIZE) \
-+				/ FL_DELTA + 1)
-+
-+#define MAX_FLI		DIV_ROUND_UP(NUM_FREE_LISTS, BITS_PER_LONG)
-+
-+/* End of user params */
-+
-+enum blockflags {
-+	BLOCK_FREE,
-+	PREV_FREE,
-+	__NR_BLOCKFLAGS,
-+};
-+
-+#define FLAGS_MASK	XV_ALIGN_MASK
-+#define PREV_MASK	(~FLAGS_MASK)
-+
-+struct freelist_entry {
-+	struct page *page;
-+	u16 offset;
-+	u16 pad;
-+};
-+
-+struct link_free {
-+	struct page *prev_page;
-+	struct page *next_page;
-+	u16 prev_offset;
-+	u16 next_offset;
-+};
-+
-+struct block_header {
-+	union {
-+		/* This common header must be XV_ALIGN bytes */
-+		u8 common[XV_ALIGN];
-+		struct {
-+			u16 size;
-+			u16 prev;
-+		};
-+	};
-+	struct link_free link;
-+};
-+
-+struct xv_pool {
-+	ulong flbitmap;
-+	ulong slbitmap[MAX_FLI];
-+	u64 total_pages;	/* stats */
-+	struct freelist_entry freelist[NUM_FREE_LISTS];
-+	spinlock_t lock;
-+};
-+
-+#endif
++#endif /* _ZCACHE_H */
 -- 
 1.7.1
 
