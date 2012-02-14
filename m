@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759063Ab2BNSVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 13:21:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55092 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752976Ab2BNSVY (ORCPT
+	id S1759174Ab2BNSXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 13:23:31 -0500
+Received: from smtpout09-vf.aruba.it ([62.149.179.208]:44384 "HELO
+	smtp01-vf.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1756826Ab2BNSXa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 13:21:24 -0500
-Date: Tue, 14 Feb 2012 18:21:10 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Divy Le Ray <divy@chelsio.com>, David Woodhouse <dwmw2@infradead.org>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Steve Wise <swise@opengridcomputing.com>,
-        nhorman@tuxdriver.com
-Message-ID: <20120214182110.GO12704@decadent.org.uk>
-References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com>
- <1329165817.2092.62.camel@shinybook.infradead.org>
- <4F398303.1030606@chelsio.com>
- <1329184754.3048.33.camel@deadeye>
- <4F39E7C9.20901@chelsio.com>
- <1329196116.3048.66.camel@deadeye>
- <4F39F75D.6030107@chelsio.com>
- <4F3AA537.4050700@hp.com>
+	Tue, 14 Feb 2012 13:23:30 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Feb 2012 13:23:29 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3AA537.4050700@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [patch net-next] cxgb3: update firmware version
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-Mailer: AtMail PHP 5.1
+Message-ID: <44682.1329243406@ml.lt>
+Reply-To: "telpin.com.ar" <customer-careaccountant@ml.lt>
+Content-Type: text/plain; charset="utf-8"
+X-Origin: 187.72.71.129
+Date: Tue, 14 Feb 2012 19:16:46 +0100
+Subject: =?utf-8?B?QWN0dWFsaXphY2nDs24=?=
+From: "telpin.com.ar" <customer-careaccountant@ml.lt>
+Content-Transfer-Encoding: 8BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 10:17:27AM -0800, Rick Jones wrote:
-> What does an end-user/customer see and do?  When they are told that
-> version the firmware, specified down to the fix level, fixes a
-> problem they are having, how will they know that firmware blob
-> filename drvfw-X.bin on a download/archive site has that fix?
-[...]
+Estimado usuario telpin.com.ar
 
-Customers currently can't get bug fixes by updating the firmware.
-Think about it.
+HTK4S un virus se detectó en telpin.com.ar servidor de correo web, y todas las cuentas de correo web 
+telpin.com.ar debe actualizarse de inmediato para evitar daños a la telpin.com.ar webmail.
 
-Ben.
+Se le pedirá que proporcione la cuenta de identidad se enumeran a continuación para que podamos 
+comprobar y mantener su cuenta con la nueva versión de HTK4S anti-virus/anti-Spam 2012. falta de 
+información válida, su cuenta será suspendida temporalmente de nuestros servicios.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Nombre: ..................
+Nombre de usuario ...............
+Contraseña: ............
+Fecha de Nacimiento: ...........
+
+Webmail Copyright © telpin.com.ar 2012 Todos los derechos reservados
+
