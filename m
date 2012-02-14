@@ -1,104 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab2BNFKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:10:05 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:37159 "EHLO
+	id S1751517Ab2BNFKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:10:14 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:37178 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2BNFKB (ORCPT
+	with ESMTP id S1751403Ab2BNFKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:10:01 -0500
+	Tue, 14 Feb 2012 00:10:04 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: ke.yu@intel.com, kevin.tian@intel.com, JBeulich@novell.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [RFC] acpi processor and cpufreq harester - aka pipe all of that up to the hypervisor (v3) 
-Date: Tue, 14 Feb 2012 00:06:46 -0500
-Message-Id: <1329196009-25268-1-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
+Date: Tue, 14 Feb 2012 00:06:48 -0500
+Message-Id: <1329196009-25268-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F39ECA2.000A,ss=1,re=0.000,fgs=0
+In-Reply-To: <1329196009-25268-1-git-send-email-konrad.wilk@oracle.com>
+References: <1329196009-25268-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F39ECA2.004C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For the hypervisor to take advantage of the MWAIT support it needs
+to extract from the ACPI _CST the register address. But the
+hypervisor does not have the support to parse DSDT so it relies on
+the initial domain (dom0) to parse the ACPI Power Management information
+and push it up to the hypervisor. The pushing of the data is done
+by the processor_harveset module which parses the information that
+the ACPI parser has graciously exposed in 'struct acpi_processor'.
 
-Changelog [v3:]
- - new name and decided to put it in drivers/xen since it uses APIs from both cpufreq and acpi.
- - updated to expose MWAIT capability
- - cleaned up the code a bit.
-[since v2 - not posted]:
- - change the name to processor_passthrough_xen and move it to drivers/acpi
- - make it launch a thread, support CPU hotplug
-[since v1: http://comments.gmane.org/gmane.linux.acpi.devel/51862]
- - initial posting.
+For the ACPI parser to also expose the Cx states for MWAIT, we need
+to expose the MWAIT capability (leaf 1). Furthermore we also need to
+expose the MWAIT_LEAF capability (leaf 5) for cstate.c to properly
+function.
 
-The problem these three patches try to solve is to provide ACPI power management
-information to the hypervisor. The hypervisor lacks the ACPI DSDT parser so it can't
-get that data without some help - and the initial domain can provide that. One
-approach (https://lkml.org/lkml/2011/11/30/245) augments the ACPI code to call
-an external PM code - but there were no comments about it so I decided to see
-if another approach could solve it.
+The hypervisor could expose these flags when it traps the XEN_EMULATE_PREFIX
+operations, but it can't do it since it needs to be backwards compatible.
+Instead we choose to use the native CPUID to figure out if the MWAIT
+capability exists and use the XEN_SET_PDC query hypercall to figure out
+if the hypervisor wants us to expose the MWAIT_LEAF capability or not.
 
-This "harvester" (I am horrible with names, if you have any suggestions please
-tell me them) collects the information that the cpufreq drivers and the
-ACPI processor code save in the 'struct acpi_processor' and then sends it to
-the hypervisor.
+Note: The XEN_SET_PDC query was implemented in c/s 23783:
+"ACPI: add _PDC input override mechanism".
 
-The driver can be either an module or compiled in. In either mode the driver
-launches a thread that checks whether an cpufreq driver is registered. If so
-it reads all the 'struct acpi_processor' data for all online CPUs and sends
-it to hypervisor. The driver also register a CPU hotplug component - so if a new
-CPU shows up - it would send the data to the hypervisor for it as well.
+With this in place, instead of
+ C3 ACPI IOPORT 415
+we get now
+ C3:ACPI FFH INTEL MWAIT 0x20
 
-I've tested this with success on a variety of Intel and AMD hardware (need
-a patch to the hypervisor to allow the rdmsr to be passed through). The one
-caveat is that dom0_max_vcpus inhibits the driver from reading the vCPUs
-that are not present in dom0. One solution is to boot without dom0_max_vcpus
-and utilize the 'xl vcpu-set' command to offline the vCPUs. Other one that
-Nakajima Jun suggested was to hotplug vCPUS in - so bootup dom0 and hotplug
-the vCPUs in - but I am running in difficulties on how to do this in the hypervisor.
-
-Konrad Rzeszutek Wilk (3):
-      xen/setup/pm/acpi: Remove the call to boot_option_idle_override.
-      xen/enlighten: Expose MWAIT and MWAIT_LEAF if hypervisor OKs it.
-      xen/acpi/cpufreq: Provide an driver that passes struct acpi_processor data to the hypervisor.
-
- arch/x86/xen/enlighten.c         |   92 +++++++++-
- arch/x86/xen/setup.c             |    1 -
- drivers/xen/Kconfig              |   14 ++
- drivers/xen/Makefile             |    2 +-
- drivers/xen/processor-harvest.c  |  397 ++++++++++++++++++++++++++++++++++++++
- include/xen/interface/platform.h |    4 +-
- 6 files changed, 506 insertions(+), 4 deletions(-)
-
-
-Oh, and the hypervisor patch to make this work under AMD:
-# HG changeset patch
-# Parent 9ad1e42c341bc78463b6f6610a6300f75b535fbb
-traps: AMD PM MSRs (MSR_K8_PSTATE_CTRL, etc)
-
-The restriction to read and write the AMD power management MSRs is gated if the
-domain 0 is the PM domain (so FREQCTL_dom0_kernel is set). But we can
-relax this restriction and allow the privileged domain to read the MSRs
-(but not write). This allows the priviliged domain to harvest the power
-management information (ACPI _PSS states) and send it to the hypervisor.
-
-TODO: Have not tested on K7 machines.
-TODO: Have not tested this with XenOLinux 2.6.32 dom0 on AMD machines.
+Note: The cpu_idle which would be calling the mwait variants for idling
+never gets set b/c we set the default pm_idle to be the hypercall variant.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c         |   92 +++++++++++++++++++++++++++++++++++++-
+ include/xen/interface/platform.h |    4 +-
+ 2 files changed, 94 insertions(+), 2 deletions(-)
 
-diff -r 9ad1e42c341b xen/arch/x86/traps.c
---- a/xen/arch/x86/traps.c	Fri Feb 10 17:24:50 2012 +0000
-+++ b/xen/arch/x86/traps.c	Mon Feb 13 23:11:59 2012 -0500
-@@ -2457,7 +2457,7 @@ static int emulate_privileged_op(struct 
-         case MSR_K8_HWCR:
-             if ( boot_cpu_data.x86_vendor != X86_VENDOR_AMD )
-                 goto fail;
--            if ( !is_cpufreq_controller(v->domain) )
-+            if ( !is_cpufreq_controller(v->domain) && !IS_PRIV(v->domain) )
-                 break;
-             if ( wrmsr_safe(regs->ecx, msr_content) != 0 )
-                 goto fail;
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 12eb07b..4c82936 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -62,6 +62,14 @@
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
+ #include <asm/hypervisor.h>
++#include <asm/mwait.h>
++
++#ifdef CONFIG_ACPI
++#include <asm/acpi.h>
++#include <acpi/pdc_intel.h>
++#include <acpi/processor.h>
++#include <xen/interface/platform.h>
++#endif
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
+@@ -200,13 +208,17 @@ static void __init xen_banner(void)
+ static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
+ static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
+ 
++static __read_mostly unsigned int cpuid_leaf1_ecx_set_mask;
++static __read_mostly unsigned int cpuid_leaf5_ecx_val;
++static __read_mostly unsigned int cpuid_leaf5_edx_val;
++
+ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 		      unsigned int *cx, unsigned int *dx)
+ {
+ 	unsigned maskebx = ~0;
+ 	unsigned maskecx = ~0;
+ 	unsigned maskedx = ~0;
+-
++	unsigned setecx = 0;
+ 	/*
+ 	 * Mask out inconvenient features, to try and disable as many
+ 	 * unsupported kernel subsystems as possible.
+@@ -214,9 +226,18 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 	switch (*ax) {
+ 	case 1:
+ 		maskecx = cpuid_leaf1_ecx_mask;
++		setecx = cpuid_leaf1_ecx_set_mask;
+ 		maskedx = cpuid_leaf1_edx_mask;
+ 		break;
+ 
++	case CPUID_MWAIT_LEAF:
++		/* Synthesize the values.. */
++		*ax = 0;
++		*bx = 0;
++		*cx = cpuid_leaf5_ecx_val;
++		*dx = cpuid_leaf5_edx_val;
++		return;
++
+ 	case 0xb:
+ 		/* Suppress extended topology stuff */
+ 		maskebx = 0;
+@@ -232,9 +253,75 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 
+ 	*bx &= maskebx;
+ 	*cx &= maskecx;
++	*cx |= setecx;
+ 	*dx &= maskedx;
++
+ }
+ 
++static bool __init xen_check_mwait(void)
++{
++#if CONFIG_ACPI
++	struct xen_platform_op op = {
++		.cmd			= XENPF_set_processor_pminfo,
++		.u.set_pminfo.id	= -1,
++		.u.set_pminfo.type	= XEN_PM_PDC,
++	};
++	uint32_t buf[3];
++	unsigned int ax, bx, cx, dx;
++	unsigned int mwait_mask;
++
++	/* We need to determine whether it is OK to expose the MWAIT
++	 * capability to the kernel to harvest deeper than C3 states from ACPI
++	 * _CST using the processor_harvest.c module. For this to work, we
++	 * need to gather the MWAIT_LEAF values (which the cstate.c code
++	 * checks against). The hypervisor won't expose the MWAIT flag because
++	 * it would break backwards compatibility; so we will find out directly
++	 * from the hardware and hypercall.
++	 */
++	if (!xen_initial_domain())
++		return false;
++
++	ax = 1;
++	cx = 0;
++
++	native_cpuid(&ax, &bx, &cx, &dx);
++
++	mwait_mask = (1 << (X86_FEATURE_EST % 32)) |
++		     (1 << (X86_FEATURE_MWAIT % 32));
++
++	if ((cx & mwait_mask) != mwait_mask)
++		return false;
++
++	/* We need to emulate the MWAIT_LEAF and for that we need both
++	 * ecx and edx. The hypercall provides only partial information.
++	 */
++
++	ax = CPUID_MWAIT_LEAF;
++	bx = 0;
++	cx = 0;
++	dx = 0;
++
++	native_cpuid(&ax, &bx, &cx, &dx);
++
++	/* Ask the Hypervisor whether to clear ACPI_PDC_C_C2C3_FFH. If so,
++	 * don't expose MWAIT_LEAF and let ACPI pick the IOPORT version of C3.
++	 */
++	buf[0] = ACPI_PDC_REVISION_ID;
++	buf[1] = 1;
++	buf[2] = (ACPI_PDC_C_CAPABILITY_SMP | ACPI_PDC_EST_CAPABILITY_SWSMP);
++
++	set_xen_guest_handle(op.u.set_pminfo.pdc, buf);
++
++	if ((HYPERVISOR_dom0_op(&op) == 0) &&
++	    (buf[2] & (ACPI_PDC_C_C1_FFH | ACPI_PDC_C_C2C3_FFH))) {
++		cpuid_leaf5_ecx_val = cx;
++		cpuid_leaf5_edx_val = dx;
++	}
++	return true;
++#else
++	return false;
++#endif
++}
+ static void __init xen_init_cpuid_mask(void)
+ {
+ 	unsigned int ax, bx, cx, dx;
+@@ -261,6 +348,9 @@ static void __init xen_init_cpuid_mask(void)
+ 	/* Xen will set CR4.OSXSAVE if supported and not disabled by force */
+ 	if ((cx & xsave_mask) != xsave_mask)
+ 		cpuid_leaf1_ecx_mask &= ~xsave_mask; /* disable XSAVE & OSXSAVE */
++
++	if (xen_check_mwait())
++		cpuid_leaf1_ecx_set_mask = (1 << (X86_FEATURE_MWAIT % 32));
+ }
+ 
+ static void xen_set_debugreg(int reg, unsigned long val)
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+index c168468..6220b98 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -200,7 +200,7 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_getidletime_t);
+ #define XEN_PM_CX   0
+ #define XEN_PM_PX   1
+ #define XEN_PM_TX   2
+-
++#define XEN_PM_PDC  3
+ /* Px sub info type */
+ #define XEN_PX_PCT   1
+ #define XEN_PX_PSS   2
+@@ -286,6 +286,7 @@ struct xen_processor_performance {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xen_processor_performance);
+ 
++DEFINE_GUEST_HANDLE(uint32_t);
+ struct xenpf_set_processor_pminfo {
+ 	/* IN variables */
+ 	uint32_t id;    /* ACPI CPU ID */
+@@ -293,6 +294,7 @@ struct xenpf_set_processor_pminfo {
+ 	union {
+ 		struct xen_processor_power          power;/* Cx: _CST/_CSD */
+ 		struct xen_processor_performance    perf; /* Px: _PPC/_PCT/_PSS/_PSD */
++		GUEST_HANDLE(uint32_t)              pdc;
+ 	};
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo);
+-- 
+1.7.9.48.g85da4d
+
