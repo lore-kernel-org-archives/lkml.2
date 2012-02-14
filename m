@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2BNHV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:21:26 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37121 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab2BNHVY (ORCPT
+	id S1756928Ab2BNHVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:21:36 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39050 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab2BNHVe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:21:24 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Feb 2012 16:19:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [PATCHv21 02/16] mm: compaction: introduce
- isolate_migratepages_range()
-Message-Id: <20120214161944.351244c4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1328895151-5196-3-git-send-email-m.szyprowski@samsung.com>
-References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
-	<1328895151-5196-3-git-send-email-m.szyprowski@samsung.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 02:21:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120214120640.ef2ef23a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20120214120414.025625c2.kamezawa.hiroyu@jp.fujitsu.com> <20120214120640.ef2ef23a.kamezawa.hiroyu@jp.fujitsu.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Mon, 13 Feb 2012 23:21:13 -0800
+Message-ID: <CAHH2K0a8h5dSWp2-TXW3s2LKnv2d0c6Z9fTBc0UxKdx=H6pSRg@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v4] memcg: remove EXPORT_SYMBOL(mem_cgroup_update_page_stat)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 18:32:17 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Mon, Feb 13, 2012 at 7:06 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> This is just a cleanup.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 2 Feb 2012 12:05:41 +0900
+> Subject: [PATCH 1/6] memcg: remove EXPORT_SYMBOL(mem_cgroup_update_page_stat)
+>
+> From the log, I guess EXPORT was for preparing dirty accounting.
+> But _now_, we don't need to export this. Remove this for now.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> This commit introduces isolate_migratepages_range() function which
-> extracts functionality from isolate_migratepages() so that it can be
-> used on arbitrary PFN ranges.
-> 
-> isolate_migratepages() function is implemented as a simple wrapper
-> around isolate_migratepages_range().
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Tested-by: Rob Clark <rob.clark@linaro.org>
-> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Looks good to me.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Greg Thelen <gthelen@google.com>
 
+> ---
+>  mm/memcontrol.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index ab315ab..4c2b759 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1897,7 +1897,6 @@ out:
+>                move_unlock_page_cgroup(pc, &flags);
+>        rcu_read_unlock();
+>  }
+> -EXPORT_SYMBOL(mem_cgroup_update_page_stat);
+>
+>  /*
+>  * size of first charge trial. "32" comes from vmscan.c's magic value.
+> --
+> 1.7.4.1
