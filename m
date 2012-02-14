@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761357Ab2BNXdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 18:33:46 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:52332 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757405Ab2BNXdn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 18:33:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120214223758.GA21350@kroah.com>
-References: <20120210154806.4a81ec53dc24a40cf91a758a@canb.auug.org.au>
-	<20120210053036.GC2068@kroah.com>
-	<CAB-zwWggC696WKszdkFvE+7azu5LtuVK8__SUcjBX3UP4ieV-g@mail.gmail.com>
-	<20120214223758.GA21350@kroah.com>
-Date: Tue, 14 Feb 2012 17:33:40 -0600
-Message-ID: <CAB-zwWiA8a_N2FkdjoO47p-74CjSSY9ARqkbiW=fmy6Ka_Bi0A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with Linus' tree
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?V=EDctor_Manuel_J=E1quez?= <vjaquez@igalia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1761354Ab2BNXfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 18:35:37 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:34798 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab2BNXfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 18:35:36 -0500
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        konrad.wilk@oracle.com, kurt.hackel@oracle.com,
+        sjenning@linux.vnet.ibm.com, chris.mason@oracle.com,
+        dan.magenheimer@oracle.com
+Subject: [PATCH V5 0/6] staging: ramster: multi-machine memory capacity management
+Date: Tue, 14 Feb 2012 15:35:21 -0800
+Message-Id: <1329262521-25318-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020208.4F3AEFBE.000C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 4:37 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Feb 14, 2012 at 03:31:39PM -0600, Ramirez Luna, Omar wrote:
->> Hi,
->>
->> On Thu, Feb 9, 2012 at 11:30 PM, Greg KH <greg@kroah.com> wrote:
->> > On Fri, Feb 10, 2012 at 03:48:06PM +1100, Stephen Rothwell wrote:
->> >> Hi Greg,
->> >>
->> >> Today's linux-next merge of the staging tree got a conflict in
->> >> drivers/staging/tidspbridge/rmgr/drv_interface.c between commit
->> >> 5a63177a6967 ("staging: tidspbridge: fix bridge_open memory leaks") from
->> >> Linus' tree and commit 518761dba127 ("staging: tidspbridge: remove unused
->> >> header") from the staging tree.
->> >>
->> >> I fixed it up (I think - see below) and can carry the fix as necessary.
->> >
->> > Thanks, I'll try to fix this up with a merge tomorrow to get this in
->> > sync.
->>
->> 5a63177a6967 ("staging: tidspbridge: fix bridge_open memory leaks")
->> was accidentally reverted with the merge of staging-3.3-rc3 on
->> staging-next branch, the same patch still applies since the previous
->> patch touching this code moves it some lines above.
->
-> Ok, so what should I do here?  What patch should I apply to the
-> staging-next tree?  Just reapply 5a63177a6967?
+HIGH LEVEL OVERVIEW
 
-Yes, reapplying 5a63177a6967 worked for me.
+RAMster implements peer-to-peer transcendent memory, allowing a "cluster" of
+kernels to dynamically pool their RAM so that a RAM-hungry workload on one
+machine can temporarily and transparently utilize RAM on another machine which
+is presumably idle or running a non-RAM-hungry workload.  Other than the
+already-merged cleancache patchset and the not-yet-merged frontswap patchset,
+no core kernel changes are currently required.
 
-Regards,
+(Note that, unlike previous public descriptions of RAMster, this implementation
+does NOT require synchronous "gets" or core networking changes. As of V5,
+it also co-exists with ocfs2.)
 
-Omar
+RAMster combines a clustering and messaging foundation based on the ocfs2
+cluster layer with the in-kernel compression implementation of zcache, and
+adds code to glue them together.  When a page is "put" to RAMster, it is
+compressed and stored locally.  Periodically, a thread will "remotify" these
+pages by sending them via messages to a remote machine.  When the page is
+later needed as indicated by a page fault, a "get" is issued.  If the data
+is local, it is uncompressed and the fault is resolved.  If the data is
+remote, a message is sent to fetch the data and the faulting thread sleeps;
+when the data arrives, the thread awakens, the data is decompressed and
+the fault is resolved.
+
+As of V5, clusters up to eight nodes are supported; each node can remotify
+pages to one specified node, so clusters can be configured as clients to
+a "memory server".  Some simple policy is in place that will need to be
+refined over time.  Larger clusters and fault-resistant protocols can also
+be added over time.
+
+A git branch containing these patches built on linux-3.2 can be found at:
+git://oss.oracle.com/git/djm/tmem.git #ramster-v5
+Note that that tree also includes frontswap-v11 and "WasActive" patches
+
+A HOW-TO is available at:
+http://oss.oracle.com/projects/tmem/dist/files/RAMster/HOWTO-v5-120214
+
+v4->v5: support multi-node clusters (up to 8 nodes)
+v4->v5: add settable to choose remotify target node for memory server config
+v4->v5: incorporate ocfs2 cluster layer directly to allow co-exist with ocfs2
+v4->v5: incorporate xvmalloc directly to avoid upstream zsmalloc conflicts
+v4->v5: support ramster-tools (instead of ocfs2-tools) in userland
+v3->v4: rebase to 3.2 (including updates in zcache)
+v3->v4: fix a couple of bad memory leaks to get cleancache fully working
+v3->v4: fix preemption calls to remove dependency on CONFIG_PREEMPT_NONE
+v3->v4: various cleanup
+v2->v3: documentation and commit message changes required [gregkh]
+
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+
+---
+
+Diffstat:
+
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ drivers/staging/ramster/Kconfig                    |   13 +
+ drivers/staging/ramster/Makefile                   |    1 +
+ drivers/staging/ramster/TODO                       |   13 +
+ drivers/staging/ramster/cluster/Makefile           |    3 +
+ drivers/staging/ramster/cluster/heartbeat.c        |  464 +++
+ drivers/staging/ramster/cluster/heartbeat.h        |   87 +
+ drivers/staging/ramster/cluster/masklog.c          |  155 +
+ drivers/staging/ramster/cluster/masklog.h          |  220 ++
+ drivers/staging/ramster/cluster/nodemanager.c      |  992 ++++++
+ drivers/staging/ramster/cluster/nodemanager.h      |   88 +
+ .../staging/ramster/cluster/ramster_nodemanager.h  |   39 +
+ drivers/staging/ramster/cluster/tcp.c              | 2256 +++++++++++++
+ drivers/staging/ramster/cluster/tcp.h              |  159 +
+ drivers/staging/ramster/cluster/tcp_internal.h     |  248 ++
+ drivers/staging/ramster/r2net.c                    |  401 +++
+ drivers/staging/ramster/ramster.h                  |  118 +
+ drivers/staging/ramster/tmem.c                     |  851 +++++
+ drivers/staging/ramster/tmem.h                     |  244 ++
+ drivers/staging/ramster/xvmalloc.c                 |  510 +++
+ drivers/staging/ramster/xvmalloc.h                 |   30 +
+ drivers/staging/ramster/xvmalloc_int.h             |   95 +
+ drivers/staging/ramster/zcache-main.c              | 3320 ++++++++++++++++++++
+ drivers/staging/ramster/zcache.h                   |   22 +
+ 25 files changed, 10332 insertions(+), 0 deletions(-)
