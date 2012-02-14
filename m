@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761180Ab2BNU40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 15:56:26 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51577 "EHLO
+	id S1761004Ab2BNU4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 15:56:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51574 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760946Ab2BNUzA (ORCPT
+	with ESMTP id S1760922Ab2BNUy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 15:55:00 -0500
+	Tue, 14 Feb 2012 15:54:59 -0500
 From: Richard Weinberger <rw@linutronix.de>
 To: linux-mtd@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, tim.bird@am.sony.com,
         dedekind1@gmail.com, Richard Weinberger <rw@linutronix.de>
-Subject: [RFC][PATCH 4/7] MTD: UBI: Make wl subsystem checkpoint aware
-Date: Tue, 14 Feb 2012 21:06:43 +0100
-Message-Id: <1329250006-22944-5-git-send-email-rw@linutronix.de>
+Subject: [RFC][PATCH 3/7] MTD: UBI: Export next_sqnum()
+Date: Tue, 14 Feb 2012 21:06:42 +0100
+Message-Id: <1329250006-22944-4-git-send-email-rw@linutronix.de>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1329250006-22944-1-git-send-email-rw@linutronix.de>
 References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
@@ -24,322 +24,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Integrates checkpointing into the wl subsystem.
-Checkpointing deals with PEBs, it has to tell the wl subsystem
-which PEBs are currently used and must not touched by the wl thread.
+The checkpointing subsystem needs to read the next sequence nummber
+directly.
 
 Signed-off-by: Richard Weinberger <rw@linutronix.de>
 ---
- drivers/mtd/ubi/ubi.h |    5 +
- drivers/mtd/ubi/wl.c  |  208 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 211 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/eba.c |   18 +++++++++---------
+ drivers/mtd/ubi/ubi.h |    1 +
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
-index b4dca54..4e8e8d2 100644
---- a/drivers/mtd/ubi/ubi.h
-+++ b/drivers/mtd/ubi/ubi.h
-@@ -567,6 +567,11 @@ int ubi_wl_scrub_peb(struct ubi_device *ubi, int pnum);
- int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si);
- void ubi_wl_close(struct ubi_device *ubi);
- int ubi_thread(void *u);
-+int ubi_wl_get_cp_peb(struct ubi_device *ubi, int max_pnum);
-+int ubi_wl_put_cp_peb(struct ubi_device *ubi, int pnum, int torture);
-+#define is_cp_block(__ubi__, __e__) __is_cp_block(__ubi__, __e__->pnum)
-+int __is_cp_block(struct ubi_device *ubi, int pnum);
-+void ubi_flush_prot_queue(struct ubi_device *ubi);
- 
- /* io.c */
- int ubi_io_read(const struct ubi_device *ubi, void *buf, int pnum, int offset,
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 0696e36..b3884fa 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -175,6 +175,32 @@ static int paranoid_check_in_pq(const struct ubi_device *ubi,
- #define paranoid_check_in_pq(ubi, e) 0
- #endif
- 
-+#ifdef CONFIG_MTD_UBI_CHECKPOINT
-+/**
-+ *  __is_cp_block - returns 1 if a PEB is currently used for checkpointing
-+ *  @ubi: UBI device description object
-+ *  @pnum: The to be checked PEB
-+ */
-+int __is_cp_block(struct ubi_device *ubi, int pnum)
-+{
-+	int i;
-+
-+	if (!ubi->cp)
-+		return 0;
-+
-+	for (i = 0; i < ubi->cp->used_blocks; i++)
-+		if (ubi->cp->peb[i] == pnum)
-+			return 1;
-+
-+	return 0;
-+}
-+#else
-+int __is_cp_block(struct ubi_device *ubi, int pnum)
-+{
-+	return 0;
-+}
-+#endif
-+
- /**
-  * wl_tree_add - add a wear-leveling entry to a WL RB-tree.
-  * @e: the wear-leveling entry to add
-@@ -379,15 +405,74 @@ static struct ubi_wl_entry *find_wl_entry(struct rb_root *root, int max)
- 	return e;
- }
- 
-+#ifdef CONFIG_MTD_UBI_CHECKPOINT
- /**
-- * ubi_wl_get_peb - get a physical eraseblock.
-+ * find_early_wl_entry - find wear-leveling entry with a low pnum.
-+ * @root: the RB-tree where to look for
-+ * @max_pnum: highest possible pnum
-+ *
-+ * This function looks for a wear leveling entry containing a eb which
-+ * is in front of the memory.
-+ */
-+static struct ubi_wl_entry *find_early_wl_entry(struct rb_root *root, int max_pnum)
-+{
-+	struct rb_node *p;
-+	struct ubi_wl_entry *e, *victim = NULL;
-+
-+	ubi_rb_for_each_entry(p, e, root, u.rb) {
-+		if (e->pnum < max_pnum) {
-+			victim = e;
-+			max_pnum = e->pnum;
-+		}
-+	}
-+
-+	return victim;
-+}
-+
-+/**
-+ * ubi_wl_get_cp_peb - find a physical erase block with a given maximal number
-+ * @ubi: UBI device description object
-+ * @max_pnum: the highest acceptable erase block number
-+ *
-+ * The function returns a physical erase block with a given maximal number
-+ * and removes it from the wl subsystem.
-+ * Must be called with wl_lock held!
-+ */
-+int ubi_wl_get_cp_peb(struct ubi_device *ubi, int max_pnum)
-+{
-+	int ret = -ENOSPC;
-+	struct ubi_wl_entry *e;
-+
-+	if (!ubi->free.rb_node) {
-+		ubi_err("no free eraseblocks");
-+
-+		goto out;
-+	}
-+
-+	e = find_early_wl_entry(&ubi->free, max_pnum);
-+	if (!e)
-+		goto out;
-+
-+	ret = e->pnum;
-+
-+	/* remove it from the free list,
-+	 * the wl subsystem does no longer know this erase block */
-+	rb_erase(&e->u.rb, &ubi->free);
-+out:
-+
-+	return ret;
-+}
-+#endif
-+
-+/**
-+ * __ubi_wl_get_peb - get a physical eraseblock.
-  * @ubi: UBI device description object
-  * @dtype: type of data which will be stored in this physical eraseblock
-  *
-  * This function returns a physical eraseblock in case of success and a
-  * negative error code in case of failure. Might sleep.
+diff --git a/drivers/mtd/ubi/eba.c b/drivers/mtd/ubi/eba.c
+index cd26da8..4dae50c 100644
+--- a/drivers/mtd/ubi/eba.c
++++ b/drivers/mtd/ubi/eba.c
+@@ -57,7 +57,7 @@
+  * global sequence counter value. It also increases the global sequence
+  * counter.
   */
--int ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
-+static int __ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
+-static unsigned long long next_sqnum(struct ubi_device *ubi)
++unsigned long long ubi_next_sqnum(struct ubi_device *ubi)
  {
- 	int err, medium_ec;
- 	struct ubi_wl_entry *e, *first, *last;
-@@ -473,6 +558,48 @@ retry:
- 	return e->pnum;
- }
+ 	unsigned long long sqnum;
  
-+#ifdef CONFIG_MTD_UBI_CHECKPOINT
-+/* ubi_wl_get_peb - works exaclty like __ubi_wl_get_peb but keeps track of
-+ * all checkpointing pools.
-+ */
-+int ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
-+{
-+	struct ubi_cp_pool *pool;
-+
-+	if (dtype == UBI_LONGTERM)
-+		pool = &ubi->long_pool;
-+	else if (dtype == UBI_SHORTTERM)
-+		pool = &ubi->short_pool;
-+	else if (dtype == UBI_UNKNOWN)
-+		pool = &ubi->unk_pool;
-+	else
-+		BUG();
-+
-+	/* pool contains no free blocks, create a new one and write a checkoint */
-+	if (pool->used == pool->size) {
-+		for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
-+			pool->pebs[pool->size] = __ubi_wl_get_peb(ubi, dtype);
-+			if (pool->pebs[pool->size] < 0)
-+				break;
-+		}
-+
-+		pool->used = 0;
-+		ubi_update_checkpoint(ubi);
-+	}
-+
-+	/* we got not a single free PEB */
-+	if (!pool->size)
-+		return -1;
-+
-+	return pool->pebs[pool->used++];
-+}
-+#else
-+int ubi_wl_get_peb(struct ubi_device *ubi, int dtype)
-+{
-+	return __ubi_wl_get_peb(ubi, dtype);
-+}
-+#endif
-+
- /**
-  * prot_queue_del - remove a physical eraseblock from the protection queue.
-  * @ubi: UBI device description object
-@@ -603,6 +730,21 @@ repeat:
- }
- 
- /**
-+ * ubi_flush_prot_queue - flushes the protection queue
-+ * @ubi: UBI device description object
-+ *
-+ * This function flushes the protection queue such that checkpointing
-+ * gets aware of them.
-+ */
-+void ubi_flush_prot_queue(struct ubi_device *ubi)
-+{
-+	int i;
-+
-+	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++)
-+		serve_prot_queue(ubi);
-+}
-+
-+/**
-  * schedule_ubi_work - schedule a work.
-  * @ubi: UBI device description object
-  * @wrk: the work to schedule
-@@ -638,6 +780,9 @@ static int schedule_erase(struct ubi_device *ubi, struct ubi_wl_entry *e,
- {
- 	struct ubi_work *wl_wrk;
- 
-+	ubi_assert(e);
-+	ubi_assert(!is_cp_block(ubi, e));
-+
- 	dbg_wl("schedule erasure of PEB %d, EC %d, torture %d",
- 	       e->pnum, e->ec, torture);
- 
-@@ -653,6 +798,53 @@ static int schedule_erase(struct ubi_device *ubi, struct ubi_wl_entry *e,
- 	return 0;
- }
- 
-+#ifdef CONFIG_MTD_UBI_CHECKPOINT
-+/**
-+ * ubi_wl_put_cp_peb - return a CP PEB to the wear-leveling sub-system
-+ *
-+ * see: ubi_wl_put_peb()
-+ */
-+int ubi_wl_put_cp_peb(struct ubi_device *ubi, int pnum, int torture)
-+{
-+	int i, err = 0;
-+	struct ubi_wl_entry *e;
-+
-+	dbg_wl("PEB %d", pnum);
-+	ubi_assert(pnum >= 0);
-+	ubi_assert(pnum < ubi->peb_count);
-+
-+	spin_lock(&ubi->wl_lock);
-+	e = ubi->lookuptbl[pnum];
-+
-+	/* This can happen if we recovered from a checkpoint the very 
-+	 * frist time and writing now a new one. In this case the wl system
-+	 * has never seen any PEB used by the original checkpoint.
-+	 */
-+	if (!e) {
-+		e = kmem_cache_alloc(ubi_wl_entry_slab, GFP_ATOMIC);
-+		if (!e) {
-+			spin_unlock(&ubi->wl_lock);
-+			return -ENOMEM;
-+		}
-+
-+		e->pnum = pnum;
-+		/* use the ec value from the checkpoint */
-+		for (i = 0; i < UBI_CP_MAX_BLOCKS; i++) {
-+			if (pnum == ubi->cp->peb[i]) {
-+				e->ec = ubi->cp->ec[i];
-+				break;
-+			}
-+		}
-+	}
-+
-+	spin_unlock(&ubi->wl_lock);
-+
-+	err = schedule_erase(ubi, e, torture);
-+
-+	return err;
-+}
-+#endif
-+
- /**
-  * wear_leveling_worker - wear-leveling worker function.
-  * @ubi: UBI device description object
-@@ -1030,6 +1222,8 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
- 
- 	dbg_wl("erase PEB %d EC %d", pnum, e->ec);
- 
-+	ubi_assert(!is_cp_block(ubi, e));
-+
- 	err = sync_erase(ubi, e, wl_wrk->torture);
- 	if (!err) {
- 		/* Fine, we've erased it successfully */
-@@ -1464,6 +1658,9 @@ int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si)
- 
- 		e->pnum = seb->pnum;
- 		e->ec = seb->ec;
-+
-+		ubi_assert(!is_cp_block(ubi, e));
-+
- 		ubi->lookuptbl[e->pnum] = e;
- 		if (schedule_erase(ubi, e, 0)) {
- 			kmem_cache_free(ubi_wl_entry_slab, e);
-@@ -1481,7 +1678,10 @@ int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si)
- 		e->pnum = seb->pnum;
- 		e->ec = seb->ec;
- 		ubi_assert(e->ec >= 0);
-+		ubi_assert(!is_cp_block(ubi, e));
-+
- 		wl_tree_add(e, &ubi->free);
-+
- 		ubi->lookuptbl[e->pnum] = e;
+@@ -522,7 +522,7 @@ retry:
+ 		goto out_put;
  	}
  
-@@ -1496,6 +1696,10 @@ int ubi_wl_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si)
- 			e->pnum = seb->pnum;
- 			e->ec = seb->ec;
- 			ubi->lookuptbl[e->pnum] = e;
-+
-+			if (__is_cp_block(ubi, seb->pnum))
-+				continue;
-+
- 			if (!seb->scrub) {
- 				dbg_wl("add PEB %d EC %d to the used tree",
- 				       e->pnum, e->ec);
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	err = ubi_io_write_vid_hdr(ubi, new_pnum, vid_hdr);
+ 	if (err)
+ 		goto write_error;
+@@ -634,7 +634,7 @@ int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
+ 	}
+ 
+ 	vid_hdr->vol_type = UBI_VID_DYNAMIC;
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	vid_hdr->vol_id = cpu_to_be32(vol_id);
+ 	vid_hdr->lnum = cpu_to_be32(lnum);
+ 	vid_hdr->compat = ubi_get_compat(ubi, vol_id);
+@@ -695,7 +695,7 @@ write_error:
+ 		return err;
+ 	}
+ 
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	ubi_msg("try another PEB");
+ 	goto retry;
+ }
+@@ -750,7 +750,7 @@ int ubi_eba_write_leb_st(struct ubi_device *ubi, struct ubi_volume *vol,
+ 		return err;
+ 	}
+ 
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	vid_hdr->vol_id = cpu_to_be32(vol_id);
+ 	vid_hdr->lnum = cpu_to_be32(lnum);
+ 	vid_hdr->compat = ubi_get_compat(ubi, vol_id);
+@@ -815,7 +815,7 @@ write_error:
+ 		return err;
+ 	}
+ 
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	ubi_msg("try another PEB");
+ 	goto retry;
+ }
+@@ -868,7 +868,7 @@ int ubi_eba_atomic_leb_change(struct ubi_device *ubi, struct ubi_volume *vol,
+ 	if (err)
+ 		goto out_mutex;
+ 
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	vid_hdr->vol_id = cpu_to_be32(vol_id);
+ 	vid_hdr->lnum = cpu_to_be32(lnum);
+ 	vid_hdr->compat = ubi_get_compat(ubi, vol_id);
+@@ -936,7 +936,7 @@ write_error:
+ 		goto out_leb_unlock;
+ 	}
+ 
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 	ubi_msg("try another PEB");
+ 	goto retry;
+ }
+@@ -1096,7 +1096,7 @@ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
+ 		vid_hdr->data_size = cpu_to_be32(data_size);
+ 		vid_hdr->data_crc = cpu_to_be32(crc);
+ 	}
+-	vid_hdr->sqnum = cpu_to_be64(next_sqnum(ubi));
++	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+ 
+ 	err = ubi_io_write_vid_hdr(ubi, to, vid_hdr);
+ 	if (err) {
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index 4fe3638..b4dca54 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -557,6 +557,7 @@ int ubi_eba_atomic_leb_change(struct ubi_device *ubi, struct ubi_volume *vol,
+ int ubi_eba_copy_leb(struct ubi_device *ubi, int from, int to,
+ 		     struct ubi_vid_hdr *vid_hdr);
+ int ubi_eba_init_scan(struct ubi_device *ubi, struct ubi_scan_info *si);
++unsigned long long ubi_next_sqnum(struct ubi_device *ubi);
+ 
+ /* wl.c */
+ int ubi_wl_get_peb(struct ubi_device *ubi, int dtype);
 -- 
 1.7.7
 
