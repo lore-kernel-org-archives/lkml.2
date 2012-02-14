@@ -1,178 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab2BNFEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:04:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43626 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab2BNFEO convert rfc822-to-8bit (ORCPT
+	id S1751364Ab2BNFIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:08:42 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49758 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750744Ab2BNFIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:04:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
-Date: Tue, 14 Feb 2012 14:04:13 +0900
-Message-ID: <CAJ0PZbT4Sux6a8keUrDvinkQ9Q9L+99qbyDda04TKTc0VXEq4A@mail.gmail.com>
-Subject: Re: [RFC PATCH] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Jean Pihet <j-pihet@ti.com>, markgross <markgross@thegnar.org>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Feb 2012 00:08:40 -0500
+Message-ID: <1329196116.3048.66.camel@deadeye>
+Subject: Re: [patch net-next] cxgb3: update firmware version
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Divy Le Ray <divy@chelsio.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steve Wise <swise@opengridcomputing.com>, nhorman@tuxdriver.com
+Date: Tue, 14 Feb 2012 05:08:36 +0000
+In-Reply-To: <4F39E7C9.20901@chelsio.com>
+References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com>
+	 <1329165817.2092.62.camel@shinybook.infradead.org>
+	 <4F398303.1030606@chelsio.com> <1329184754.3048.33.camel@deadeye>
+	 <4F39E7C9.20901@chelsio.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-o8dUtXgdbcJ2K7I9fOCr"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 11:26 AM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> 1. CPU_DMA_THROUGHPUT
->
-> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
-> blocks that creates QoS requirement based on DMA throughput, not
-> latency, while their (those QoS requester H/W blocks) services are
-> short-term bursts that cannot be effectively responsed by DVFS
-> mechanisms (CPUFreq and Devfreq).
->
-> In the Exynos4412 systems that are being tested, such H/W blocks include
-> MFC (multi-function codec)'s decoding and enconding features, TV-out
-> (including HDMI), and Cameras. When the display is operated at 60Hz,
-> each chunk of task should be done within 16ms and the workload on DMA is
-> not well spread and fluctuates between frames; some frame requires more
-> and some do not and within a frame, the workload also fluctuates
-> heavily and the tasks within a frame are usually not parallelized; they
-> are processed through specific H/W blocks, not CPU cores. They often
-> have PPMU capabilities; however, they need to be polled very frequently
-> in order to let DVFS mechanisms react properly. (less than 5ms).
->
-> For such specific tasks, allowing them to request QoS requirements seems
-> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
-> longer) cannot follow up with them. Besides, the device drivers know
-> when to request and cancel QoS exactly.
->
-> 2. DVFS_LATENCY
->
-> Both CPUFreq and Devfreq have response latency to a sudden workload
-> increase. With near-100% (e.g., 95%) up-threshold, the average response
-> latency is approximately 1.5 x polling-rate.
->
-> A specific polling rate (e.g., 100ms) may generally fit for its system;
-> however, there could be exceptions for that. For example,
-> - When a user input suddenly starts: typing, clicking, moving cursors, and
->  such, the user might need the full performance immediately. However,
->  we do not know whether the full performance is actually needed or not
->  until we calculate the utilization; thus, we need to calculate it
->  faster with user inputs or any similar events. Specifying QoS on CPU
->  processing power or Memory bandwidth at every user input is an
->  overkill because there are many cases where such speed-up isn't
->  necessary.
-> - When a device driver needs a faster performance response from DVFS
->  mechanism. This could be addressed by simply putting QoS requests.
->  However, such QoS requests may keep the system running fast
->  unnecessary in some cases, especially if a) the device's resource
->  usage bursts with some duration (e.g., 100ms-long bursts) and
->  b) the driver doesn't know when such burst come. MMC/WiFi often had
->  such behaviors although there are possibilities that part (b) might
->  be addressed with further efforts.
->
-> The cases shown above can be tackled with putting QoS requests on the
-> response time or latency of DVFS mechanism, which is directly related to
-> its polling interval (if the DVFS mechanism is polling based).
->
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-In this PM-QoS patch, register_pm_qos_misc() for the new classes in
-pm_qos_power_init() is missing.
+--=-o8dUtXgdbcJ2K7I9fOCr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Those will be included in the next version of the patch.
+On Mon, 2012-02-13 at 20:49 -0800, Divy Le Ray wrote:
+> On Monday, February 13, 2012 5:59:14 PM, Ben Hutchings wrote:
+> >
+> > On Mon, 2012-02-13 at 13:39 -0800, Divy Le Ray wrote:
+> >>
+> >> On Monday, February 13, 2012 12:43:37 PM, David Woodhouse wrote:
+> >>>
+> >>>
+> >>> On Mon, 2012-02-13 at 12:28 -0800, Divy Le Ray wrote:
+> >>>>
+> >>>>
+> >>>> This patch updates the firmware version cxgb3 is requesting to 7.12.=
+0.
+> >>>
+> >>>
+> >>>
+> >>> I'm confused. Your patch doesn't change anything in the driver, excep=
+t
+> >>> the firmware version. So why is it a "major" change?
+> >>
+> >>
+> >> Hi David,
+> >>
+> >> cxgb3 embeds the firmware file name it will request at load time.
+> >> It uses the FW_VERSION_* defs to construct the firmware name FW_FNAME
+> >> before calling request_firmware().
+> >> Hence the need to update the firmware minor version.
+> >>
+> >> On the other hand, the driver version update is not a strict requireme=
+nt
+> >> here.
+> >> I would prefer keeping it though.
+> >
+> >
+> > The problems with this are:
+> > 1. Older kernel versions don't benefit from the firmware update.
+> > 2. The old firmware has to be kept in linux-firmware to support those
+> > old kernel versions, and distributions may have to package more
+> > versions.
+> >
+> > To avoid this, the firmware filename should only be changed if you make
+> > incompatible changes in the driver/firmware interface.
+>=20
+> Hi Ben,
+>=20
+> The scheme for cxgb3 firmware update was designed in coordination with=
+=20
+> OEMs in the early stages of the driver existence back in 2007.
 
+I'm aware that some OEMs have specifications for flash firmware updates
+and version numbers.  I don't recall seeing anything about naming
+firmware files that are loaded by the driver at boot.
 
+In any case, whatever your OEMs want in out-of-tree driver packages is
+not necessarily relevant to mainline Linux.
 
-> ---
->  include/linux/pm_qos.h |    6 +++++-
->  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
->  2 files changed, 35 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index e5bbcba..f8ccb7b 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -13,13 +13,17 @@
->  #define PM_QOS_CPU_DMA_LATENCY 1
->  #define PM_QOS_NETWORK_LATENCY 2
->  #define PM_QOS_NETWORK_THROUGHPUT 3
-> +#define PM_QOS_CPU_DMA_THROUGHPUT 4
-> +#define PM_QOS_DVFS_RESPONSE_LATENCY 5
->
-> -#define PM_QOS_NUM_CLASSES 4
-> +#define PM_QOS_NUM_CLASSES 6
->  #define PM_QOS_DEFAULT_VALUE -1
->
->  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE       (2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE       (2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE        0
-> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE        0
-> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE  (2000 * USEC_PER_SEC)
->  #define PM_QOS_DEV_LAT_DEFAULT_VALUE           0
->
->  struct pm_qos_request {
-> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> index 995e3bd..b15e0b7 100644
-> --- a/kernel/power/qos.c
-> +++ b/kernel/power/qos.c
-> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  };
->
->
-> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
-> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
-> +       .list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
-> +       .target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +       .default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +       .type = PM_QOS_MAX,
-> +       .notifiers = &cpu_dma_throughput_notifier,
-> +};
-> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
-> +       .constraints = &cpu_dma_tput_constraints,
-> +       .name = "cpu_dma_throughput",
-> +};
-> +
-> +
-> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
-> +static struct pm_qos_constraints dvfs_lat_constraints = {
-> +       .list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
-> +       .target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +       .default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +       .type = PM_QOS_MIN,
-> +       .notifiers = &dvfs_lat_notifier,
-> +};
-> +static struct pm_qos_object dvfs_lat_pm_qos = {
-> +       .constraints = &dvfs_lat_constraints,
-> +       .name = "dvfs_latency",
-> +};
-> +
->  static struct pm_qos_object *pm_qos_array[] = {
->        &null_pm_qos,
->        &cpu_dma_pm_qos,
->        &network_lat_pm_qos,
-> -       &network_throughput_pm_qos
-> +       &network_throughput_pm_qos,
-> +       &cpu_dma_throughput_pm_qos,
-> +       &dvfs_lat_pm_qos,
->  };
->
->  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Committing FW 7.12.0 under the name of t3fw-7.10.0.bin would be=20
+> confusing, in my mind.
 
+Indeed it would, but I was speaking in general terms - that it would be
+preferable to use something like t3fw-<major>.bin.
 
+I assume that the firmware blob has a version embedded in it, so that
+the driver would still be able to report the exact version through
+ethtool_ops::get_drvinfo.
 
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
+> Some distributions have explicitly requested the FW rev number to be=20
+> appended to the firmware file name.
+
+Did they really want the full version there or did they want you to
+distinguish incompatible versions?  Did they assume that the file would
+be installed by a package (so that the package carries a version number)
+or not?
+
+Ben.
+
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
+
+--=-o8dUtXgdbcJ2K7I9fOCr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATznsVOe/yOyVhhEJAQqUDg//W3vYY+91SCM0xDD+7vUNmtnwRpTk+giL
+zRt3GJoDtfFEfJ+s0YysfFVPDnDvcQcuKS276Z1IEvEZboMn/HdsWeR2bo6L9pK9
+B7bUFLKmGpQqRZTf24+ukLfWQMmTy1d/Vv6EedfTExYNYmL1SU/b71R4bzSTY/d9
+g5A1tQcciYJDXs6Zb2RbRnzaJJcsCw0GeV5zYjLarqLb3ofPsxt2iX09yu2uuJea
+YkNzWc+bI7mN4tDdVuqUu6yxHrs+N8NRMViOsigCGGlXrUGeOSqWDwM3ZiXbyLww
+dV5miczlIheSDd2fyO3Amqxe3uS1w6BIFgZjLoYlfWUGneZ0wYQ7BEFSyisqMQYV
+vhiCtMpSP9Q9hW0jnHIIcfQ6ZVyvFFdLl3ViIYz9yXDXSsic+th93BYKGSNqccfY
+5glApn8v7zVFO3jnVG+iGEEMoigcN8gEI7kRfJefSB0vnVGlOF7f0q9vm6D/rbxa
+BjMsUvuq15JV3O9T//asbU833yHnrblbHYm2ElJm2Z5B6TdgoG9BrtKsb2iT0LO9
+nrj59Io5VB4ng0rckBWB3429WxSZriHHgOn48Em5FMPovVeSer4MqBQEx9ztRx+y
+VxHTT836Q2IYLEEJeYxIP9NBqQ75W6BwJ958/FqQW1QXNyc5SujL1Ulzok3YhNdp
+slsWYsRnEN0=
+=sAYl
+-----END PGP SIGNATURE-----
+
+--=-o8dUtXgdbcJ2K7I9fOCr--
