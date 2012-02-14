@@ -1,188 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2BNQgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 11:36:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55477 "EHLO
+	id S932276Ab2BNQgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 11:36:20 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55474 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757587Ab2BNQgR (ORCPT
+	with ESMTP id S1752528Ab2BNQgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 11:36:17 -0500
+	Tue, 14 Feb 2012 11:36:15 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] perf tools: Invert the sample_id_all logic
-Date: Tue, 14 Feb 2012 14:35:56 -0200
-Message-Id: <1329237356-907-3-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/2] perf/core fixes and improvements
+Date: Tue, 14 Feb 2012 14:35:54 -0200
+Message-Id: <1329237356-907-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.123.g65da0
-In-Reply-To: <1329237356-907-1-git-send-email-acme@infradead.org>
-References: <1329237356-907-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+The following changes since commit c98fdeaa92731308ed80386261fa2589addefa47:
 
-Instead of requiring that users of perf_record_opts set
-.sample_id_all_avail to true, just invert the logic, using
-.sample_id_all_missing, that doesn't need to be explicitely initialized
-since gcc will zero members ommitted in a struct initialization.
+  x86/sched/perf/AMD: Set sched_clock_stable (2012-02-07 13:12:08 +0100)
 
-Just like the newly introduced .exclude_{guest,host} feature test.
+are available in the git repository at:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ab772uzk78cwybihf0vt7kxw@git.kernel.org
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf-core-for-mingo
+
+for you to fetch changes up to 808e122630d45a7f036d25582474d70548a87e2c:
+
+  perf tools: Invert the sample_id_all logic (2012-02-14 14:18:57 -0200)
+
+----------------------------------------------------------------
+perf core fixes and improvements.
+
+Includes the previous pull request + the exclude_{host,guest} feature test and
+fallback to handle older kernels.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |    7 +++----
- tools/perf/builtin-test.c   |    1 -
- tools/perf/builtin-top.c    |    7 +++----
- tools/perf/perf.h           |    2 +-
- tools/perf/util/evsel.c     |    4 ++--
- tools/perf/util/top.h       |    2 +-
- 6 files changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d6c10e8..75d230f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -209,7 +209,7 @@ fallback_missing_features:
- 		if (opts->exclude_guest_missing)
- 			attr->exclude_guest = attr->exclude_host = 0;
- retry_sample_id:
--		attr->sample_id_all = opts->sample_id_all_avail ? 1 : 0;
-+		attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
- try_again:
- 		if (perf_evsel__open(pos, evlist->cpus, evlist->threads,
- 				     opts->group, group_fd) < 0) {
-@@ -228,11 +228,11 @@ try_again:
- 						 "guest or host samples.\n");
- 					opts->exclude_guest_missing = true;
- 					goto fallback_missing_features;
--				} else if (opts->sample_id_all_avail) {
-+				} else if (!opts->sample_id_all_missing) {
- 					/*
- 					 * Old kernel, no attr->sample_id_type_all field
- 					 */
--					opts->sample_id_all_avail = false;
-+					opts->sample_id_all_missing = true;
- 					if (!opts->sample_time && !opts->raw_samples && !time_needed)
- 						attr->sample_type &= ~PERF_SAMPLE_TIME;
- 
-@@ -660,7 +660,6 @@ static struct perf_record record = {
- 		.user_freq	     = UINT_MAX,
- 		.user_interval	     = ULLONG_MAX,
- 		.freq		     = 1000,
--		.sample_id_all_avail = true,
- 	},
- 	.write_mode = WRITE_FORCE,
- 	.file_new   = true,
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 0f15195..3e087ce 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -1013,7 +1013,6 @@ static int test__PERF_RECORD(void)
- 		.no_delay   = true,
- 		.freq	    = 10,
- 		.mmap_pages = 256,
--		.sample_id_all_avail = true,
- 	};
- 	cpu_set_t *cpu_mask = NULL;
- 	size_t cpu_mask_size = 0;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 02e11ff..e3c63ae 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -876,7 +876,7 @@ fallback_missing_features:
- 		if (top->exclude_guest_missing)
- 			attr->exclude_guest = attr->exclude_host = 0;
- retry_sample_id:
--		attr->sample_id_all = top->sample_id_all_avail ? 1 : 0;
-+		attr->sample_id_all = top->sample_id_all_missing ? 0 : 1;
- try_again:
- 		if (perf_evsel__open(counter, top->evlist->cpus,
- 				     top->evlist->threads, top->group,
-@@ -893,11 +893,11 @@ try_again:
- 						 "guest or host samples.\n");
- 					top->exclude_guest_missing = true;
- 					goto fallback_missing_features;
--				} else if (top->sample_id_all_avail) {
-+				} else if (!top->sample_id_all_missing) {
- 					/*
- 					 * Old kernel, no attr->sample_id_type_all field
- 					 */
--					top->sample_id_all_avail = false;
-+					top->sample_id_all_missing = true;
- 					goto retry_sample_id;
- 				}
- 			}
-@@ -1122,7 +1122,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		.delay_secs	     = 2,
- 		.uid		     = UINT_MAX,
- 		.freq		     = 1000, /* 1 KHz */
--		.sample_id_all_avail = true,
- 		.mmap_pages	     = 128,
- 		.sym_pcnt_filter     = 5,
- 	};
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 8b9c436..f0227e9 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -198,7 +198,7 @@ struct perf_record_opts {
- 	bool	     raw_samples;
- 	bool	     sample_address;
- 	bool	     sample_time;
--	bool	     sample_id_all_avail;
-+	bool	     sample_id_all_missing;
- 	bool	     exclude_guest_missing;
- 	bool	     system_wide;
- 	bool	     period;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f910f50..302d49a 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -68,7 +68,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
- 
--	attr->sample_id_all = opts->sample_id_all_avail ? 1 : 0;
-+	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
- 	attr->inherit	    = !opts->no_inherit;
- 	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
- 			      PERF_FORMAT_TOTAL_TIME_RUNNING |
-@@ -111,7 +111,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
- 	if (opts->period)
- 		attr->sample_type	|= PERF_SAMPLE_PERIOD;
- 
--	if (opts->sample_id_all_avail &&
-+	if (!opts->sample_id_all_missing &&
- 	    (opts->sample_time || opts->system_wide ||
- 	     !opts->no_inherit || opts->cpu_list))
- 		attr->sample_type	|= PERF_SAMPLE_TIME;
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 7dea891..ce61cb2 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -34,7 +34,7 @@ struct perf_top {
- 	bool		   vmlinux_warned;
- 	bool		   inherit;
- 	bool		   group;
--	bool		   sample_id_all_avail;
-+	bool		   sample_id_all_missing;
- 	bool		   exclude_guest_missing;
- 	bool		   dump_symtab;
- 	const char	   *cpu_list;
--- 
-1.7.9.123.g65da0
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (2):
+      perf tools: Handle kernels that don't support attr.exclude_{guest,host}
+      perf tools: Invert the sample_id_all logic
 
+David Ahern (3):
+      perf record: No build id option fails
+      perf tools: Fix out of tree compiles
+      perf tools: Allow multiple threads or processes in record, stat, top
+
+Jiri Olsa (3):
+      perf tools: Remove unused functions from debugfs object
+      perf tools: Add sysfs mountpoint interface
+      perf tools: Add bitmap_or function into bitmap object
+
+Joerg Roedel (2):
+      perf top: Don't process samples with no valid machine object
+      perf tools: Change perf_guest default back to false
+
+Namhyung Kim (4):
+      perf tools: Fix build dependency of perf python extension
+      perf tools: Implement islower/isupper macro into util.h
+      perf tools: ctype.c only wants util.h
+      perf tools: Get rid of ctype.h in symbol.c
+
+Robert Richter (2):
+      perf tools: Moving code in header.c
+      perf tools: Factor out feature op to process header sections
+
+Stephane Eranian (2):
+      perf tools: fix endianness detection in perf.data
+      perf tools: cleanup initialization of attr->size
+
+ tools/perf/Documentation/perf-record.txt |    4 +-
+ tools/perf/Documentation/perf-stat.txt   |    4 +-
+ tools/perf/Documentation/perf-top.txt    |    4 +-
+ tools/perf/MANIFEST                      |    1 +
+ tools/perf/Makefile                      |    7 +-
+ tools/perf/builtin-record.c              |   46 ++--
+ tools/perf/builtin-stat.c                |   31 ++-
+ tools/perf/builtin-test.c                |    3 -
+ tools/perf/builtin-top.c                 |   44 ++-
+ tools/perf/perf.h                        |    8 +-
+ tools/perf/util/bitmap.c                 |   10 +
+ tools/perf/util/ctype.c                  |    2 +-
+ tools/perf/util/debugfs.c                |  141 ----------
+ tools/perf/util/debugfs.h                |    6 -
+ tools/perf/util/evlist.c                 |   10 +-
+ tools/perf/util/evlist.h                 |    4 +-
+ tools/perf/util/evsel.c                  |    6 +-
+ tools/perf/util/header.c                 |  421 +++++++++++++++++-------------
+ tools/perf/util/hist.h                   |    1 +
+ tools/perf/util/include/linux/bitmap.h   |   11 +
+ tools/perf/util/python-ext-sources       |   19 ++
+ tools/perf/util/session.c                |   10 +
+ tools/perf/util/setup.py                 |    8 +-
+ tools/perf/util/symbol.c                 |    2 +-
+ tools/perf/util/sysfs.c                  |   60 +++++
+ tools/perf/util/sysfs.h                  |    6 +
+ tools/perf/util/thread_map.c             |  128 +++++++++
+ tools/perf/util/thread_map.h             |    4 +
+ tools/perf/util/top.c                    |   10 +-
+ tools/perf/util/top.h                    |    5 +-
+ tools/perf/util/usage.c                  |    6 +-
+ tools/perf/util/util.c                   |    4 +-
+ tools/perf/util/util.h                   |    6 +-
+ 33 files changed, 616 insertions(+), 416 deletions(-)
+ create mode 100644 tools/perf/util/python-ext-sources
+ create mode 100644 tools/perf/util/sysfs.c
+ create mode 100644 tools/perf/util/sysfs.h
