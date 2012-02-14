@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760471Ab2BNNLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 08:11:18 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60280 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760196Ab2BNNLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 08:11:17 -0500
-Date: Tue, 14 Feb 2012 11:10:46 -0200
-From: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roberto Agostino Vitillo <ravitillo@lbl.gov>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vweaver1@eecs.utk.edu>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-Message-ID: <20120214131046.GA28614@infradead.org>
-References: <1329184375-27911-1-git-send-email-acme@infradead.org>
- <4F39CBE0.6050806@gmail.com>
- <4F39D00D.2060206@gmail.com>
- <4F39ECDB.5090609@lge.com>
- <4F39EFBB.2010301@gmail.com>
- <20120214105018.GV22598@amd.com>
+	id S1760424Ab2BNNTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 08:19:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756203Ab2BNNTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 08:19:39 -0500
+Message-ID: <4F3A5F0B.2090309@redhat.com>
+Date: Tue, 14 Feb 2012 15:18:03 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214105018.GV22598@amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+References: <4F2AB66C.2030309@redhat.com> <20120202170134.GM2518@linux.vnet.ibm.com> <4F2AC69B.7000704@redhat.com> <20120202175155.GV2518@linux.vnet.ibm.com> <4F2E7311.8060808@redhat.com> <20120205165927.GH2467@linux.vnet.ibm.com> <20120209152155.GA22552@somewhere.redhat.com> <4F33EEB3.4080807@redhat.com> <20120209182216.GG22552@somewhere.redhat.com> <20120209234144.GC2458@linux.vnet.ibm.com> <20120210013911.GM22552@somewhere.redhat.com>
+In-Reply-To: <20120210013911.GM22552@somewhere.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Feb 14, 2012 at 11:50:18AM +0100, Joerg Roedel escreveu:
-> On Mon, Feb 13, 2012 at 10:23:07PM -0700, David Ahern wrote:
-> > On 2/13/12 10:10 PM, Namhyung Kim wrote:
-> > >It happened because I used old kernel version that isn't aware of the
-> > >exclude_guest bit. So the check on attr->__reserved_1 in
-> > >core.c::perf_copy_attr() failed and then ended up seeing EINVAL at
-> > >perf_evsel__open().
+On 02/10/2012 03:39 AM, Frederic Weisbecker wrote:
+> > 
+> > As long as the code doesn't enter RCU read-side critical sections in
+> > the time between rcu_idle_enter() and rcu_idle_exit(), this should
+> > work fine.
+>
+> This should work fine yeah but further the correctness, I wonder if this
+> is going to be a win.
+>
+> We use rcu_idle_enter() in idle to avoid to keep the tick for RCU. But
+> what about falling into guest mode? I guess the tick is kept there
+> so is it going to be a win in throughput or something to use rcu_idle_enter()?
 
-> > comes back to 1aed2671738785e8f5aea663a6fda91aa7ef59b5 again. See
+We could disable the tick while in guest mode as well.  Interrupts in
+guest mode are even more expensive than interrupts in user mode.
 
-> > https://lkml.org/lkml/2012/2/8/234
+-- 
+error compiling committee.c: too many arguments to function
 
-> Grr. I totally forgot that issue. Is there some way to detect the perf
-> kernel-features? Otherwise the only fix seems to be to drop the patch
-> changing the default. The crashes should be fixed by the other patch
-> already.
-
-Well, we need to detect it like we do with sample_id_all. In this case
-we would try with exclude_guest, if it fails with EINVAL, we realise it
-is not available, clean that bit and try again.
-
-- Arnaldo
