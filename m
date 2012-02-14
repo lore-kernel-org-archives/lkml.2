@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750Ab2BNRNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 12:13:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756793Ab2BNRNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 12:13:05 -0500
-Message-ID: <4F3A95E9.9@redhat.com>
-Date: Tue, 14 Feb 2012 18:12:09 +0100
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1758767Ab2BNRPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 12:15:22 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46215 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758281Ab2BNRPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 12:15:21 -0500
+X-Sasl-enc: dqkc+QVqrkUlxAEA0ZyFruNSn0GKTQzp3tNK9fcqQT88 1329239720
+Date: Tue, 14 Feb 2012 09:14:34 -0800
+From: Greg KH <greg@kroah.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sysfs: Remove CPP abuse
+Message-ID: <20120214171434.GA1698@kroah.com>
+References: <1329237367.2293.17.camel@twins>
 MIME-Version: 1.0
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-Subject: [PATCH] cciss: add some older controllers to the kdump blacklist
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329237367.2293.17.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some other older controllers also do have problems to perform a kdump.
-Adding controllers to this list means that the driver will signal
-this non-ability via a resettable flag correctly. 
-The unsupported list was created after a consultation with HP.
+On Tue, Feb 14, 2012 at 05:36:07PM +0100, Peter Zijlstra wrote:
+> There's absolutely no reason to abuse CPP to shorten a common sub
+> expression, C has variables for this.
+> 
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  fs/sysfs/dir.c |    6 ++++--
 
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
+This is all fixed up already in linux-next, thanks though.
 
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 2047978..e394f2c 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -585,6 +585,12 @@ static u32 unresettable_controller[] = {
- 	0x40800E11, /* Smart Array 5i */
- 	0x409C0E11, /* Smart Array 6400 */
- 	0x409D0E11, /* Smart Array 6400 EM */
-+	0x40700E11, /* Smart Array 5300 */
-+	0x40820E11, /* Smart Array 532 */
-+	0x40830E11, /* Smart Array 5312 */
-+	0x409A0E11, /* Smart Array 641 */
-+	0x409B0E11, /* Smart Array 642 */
-+	0x40910E11, /* Smart Array 6i */
- };
- 
- /* List of controllers which cannot even be soft reset */
-@@ -592,6 +598,12 @@ static u32 soft_unresettable_controller[] = {
- 	0x40800E11, /* Smart Array 5i */
- 	0x409C0E11, /* Smart Array 6400 */
- 	0x409D0E11, /* Smart Array 6400 EM */
-+	0x40700E11, /* Smart Array 5300 */
-+	0x40820E11, /* Smart Array 532 */
-+	0x40830E11, /* Smart Array 5312 */
-+	0x409A0E11, /* Smart Array 641 */
-+	0x409B0E11, /* Smart Array 642 */
-+	0x40910E11, /* Smart Array 6i */
- };
- 
- static int ctlr_is_hard_resettable(u32 board_id)
-
-
+greg k-h
