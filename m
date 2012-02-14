@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760774Ab2BNOoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:44:14 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56725 "EHLO
+	id S1760826Ab2BNOsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:48:16 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:56961 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751007Ab2BNOoM (ORCPT
+	by vger.kernel.org with ESMTP id S1760781Ab2BNOsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:44:12 -0500
+	Tue, 14 Feb 2012 09:48:14 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] leds-lp5523: fix compiler warning
-Date: Tue, 14 Feb 2012 15:44:00 +0100
-Message-Id: <1329230640-27265-1-git-send-email-danny.kukawka@bisect.de>
+To: Roland Dreier <roland@kernel.org>
+Cc: Danny Kukawka <dkukawka@suse.de>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Oren Duer <oren@mellanox.co.il>,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mlx4: fix -Wuninitialized warning
+Date: Tue, 14 Feb 2012 15:47:57 +0100
+Message-Id: <1329230877-27457-1-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.7.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230652;012e214b;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329230894;8ecf4ae2;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for some -Wuninitialized compiler warnings related to not
-checking lp5523_read() return values but using to the function
-passed variables later.
+Fix for:
+drivers/infiniband/hw/mlx4/qp.c: In function ‘build_mlx_header’:
+drivers/infiniband/hw/mlx4/qp.c:1441:30: warning: ‘vlan’ may be
+  used uninitialized in this function [-Wuninitialized]
 
-v3: handle the error cases from lp5523_read()
+Initialize vlan with 0. Check return value of ib_get_cached_gid()
+and return out of build_mlx_header() in error case.
+
+v2: handle also error cases
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/leds/leds-lp5523.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/mlx4/qp.c |   18 +++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 73e791a..2b2d10b 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -243,7 +243,13 @@ static int lp5523_configure(struct i2c_client *client)
+diff --git a/drivers/infiniband/hw/mlx4/qp.c b/drivers/infiniband/hw/mlx4/qp.c
+index aa2aefa..4b889d9 100644
+--- a/drivers/infiniband/hw/mlx4/qp.c
++++ b/drivers/infiniband/hw/mlx4/qp.c
+@@ -1363,7 +1363,8 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
+ 	int is_eth;
+ 	int is_vlan = 0;
+ 	int is_grh;
+-	u16 vlan;
++	u16 vlan = 0;
++	int ret;
  
- 	/* Let the programs run for couple of ms and check the engine status */
- 	usleep_range(3000, 6000);
--	lp5523_read(client, LP5523_REG_STATUS, &status);
-+	ret = lp5523_read(client, LP5523_REG_STATUS, &status);
-+
-+	if (ret) {
-+		dev_err(&client->dev, "could not read status\n");
-+		return -1;
-+	}
-+
- 	status &= LP5523_ENG_STATUS_MASK;
- 
- 	if (status == LP5523_ENG_STATUS_MASK) {
-@@ -256,7 +262,7 @@ static int lp5523_configure(struct i2c_client *client)
- 
- 	dev_info(&client->dev, "disabling engines\n");
- 
--	ret |= lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
-+	ret = lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
- 
- 	return ret;
- }
-@@ -458,10 +464,16 @@ static ssize_t lp5523_selftest(struct device *dev,
- 				    LP5523_EN_LEDTEST | 16);
- 	usleep_range(3000, 6000); /* ADC conversion time is typically 2.7 ms */
- 	ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
-+	if (ret)
-+		goto fail;
-+
- 	if (!(status & LP5523_LEDTEST_DONE))
- 		usleep_range(3000, 6000); /* Was not ready. Wait little bit */
- 
--	ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
-+	ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
-+	if (ret)
-+		goto fail;
-+
- 	vdd--;	/* There may be some fluctuation in measurement */
- 
- 	for (i = 0; i < LP5523_LEDS; i++) {
-@@ -483,9 +495,14 @@ static ssize_t lp5523_selftest(struct device *dev,
- 		/* ADC conversion time is 2.7 ms typically */
- 		usleep_range(3000, 6000);
- 		ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
+ 	send_size = 0;
+ 	for (i = 0; i < wr->num_sge; ++i)
+@@ -1372,8 +1373,12 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
+ 	is_eth = rdma_port_get_link_layer(sqp->qp.ibqp.device, sqp->qp.port) == IB_LINK_LAYER_ETHERNET;
+ 	is_grh = mlx4_ib_ah_grh_present(ah);
+ 	if (is_eth) {
+-		ib_get_cached_gid(ib_dev, be32_to_cpu(ah->av.ib.port_pd) >> 24,
++		ret = ib_get_cached_gid(ib_dev,
++				  be32_to_cpu(ah->av.ib.port_pd) >> 24,
+ 				  ah->av.ib.gid_index, &sgid);
 +		if (ret)
-+			goto fail;
++			return ret;
 +
- 		if (!(status & LP5523_LEDTEST_DONE))
- 			usleep_range(3000, 6000);/* Was not ready. Wait. */
--		ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
-+		ret = lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
+ 		vlan = rdma_get_vlan_id(&sgid);
+ 		is_vlan = vlan < 0x1000;
+ 	}
+@@ -1392,8 +1396,13 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
+ 		sqp->ud_header.grh.flow_label    =
+ 			ah->av.ib.sl_tclass_flowlabel & cpu_to_be32(0xfffff);
+ 		sqp->ud_header.grh.hop_limit     = ah->av.ib.hop_limit;
+-		ib_get_cached_gid(ib_dev, be32_to_cpu(ah->av.ib.port_pd) >> 24,
+-				  ah->av.ib.gid_index, &sqp->ud_header.grh.source_gid);
++		ret = ib_get_cached_gid(ib_dev,
++					be32_to_cpu(ah->av.ib.port_pd) >> 24,
++					ah->av.ib.gid_index,
++					&sqp->ud_header.grh.source_gid);
 +		if (ret)
-+			goto fail;
- 
- 		if (adc >= vdd || adc < LP5523_ADC_SHORTCIRC_LIM)
- 			pos += sprintf(buf + pos, "LED %d FAIL\n", i);
++			return ret;
++
+ 		memcpy(sqp->ud_header.grh.destination_gid.raw,
+ 		       ah->av.ib.dgid, 16);
+ 	}
 -- 
 1.7.7.3
 
