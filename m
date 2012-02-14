@@ -1,91 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759320Ab2BNSRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 13:17:39 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57824 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759141Ab2BNSRh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 13:17:37 -0500
+	id S1759416Ab2BNSSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 13:18:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63783 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758884Ab2BNSSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 13:18:05 -0500
+Date: Tue, 14 Feb 2012 10:17:52 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>, mroos@linux.ee,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH block/for-linus 3/3] block: exit_io_context() should call
+ elevator_exit_icq_fn()
+Message-ID: <20120214181752.GU12117@google.com>
+References: <20120214181245.GS12117@google.com>
+ <20120214181623.GT12117@google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
-References: <4DE6264A.2040901@gmail.com>
-	<CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
-	<CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
-	<201112211325.53648.roucaries.bastien@gmail.com>
-	<CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
-	<CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
-Date: Tue, 14 Feb 2012 19:17:35 +0100
-Message-ID: <CAE2SPAYN1fmQG05GhOVhwBSBqWyXfVxZw2iEbC=YXoegTpkKCA@mail.gmail.com>
-Subject: Re: Kerneloops.org defunct?
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Arjan van de Ven <arjan@linux.intel.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120214181623.GT12117@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping**5
+While updating locking, b2efa05265 "block, cfq: unlink
+cfq_io_context's immediately" moved elevator_exit_icq_fn() invocation
+from exit_io_context() to the final ioc put.  While this doesn't cause
+catastrophic failure, it effectively removes task exit notification to
+elevator and cause noticeable IO performance degradation with CFQ.
 
-On Tue, Jan 31, 2012 at 10:50 AM, Bastien ROUCARIES
-<roucaries.bastien@gmail.com> wrote:
-> Ping**4
->
-> Any news of this ?
->
-> Can we access to code ? (public git)
->
-> On Wed, Jan 18, 2012 at 7:20 PM, Bastien ROUCARIES
-> <roucaries.bastien@gmail.com> wrote:
->> Ping**3
->>
->> On Wed, Dec 21, 2011 at 1:25 PM, bastien ROUCARIES
->> <roucaries.bastien@gmail.com> wrote:
->>> Le Wednesday 12 October 2011 14:35:44, Bastien ROUCARIES a écrit :
->>>> Any news now that the fiasco is going to be resolved.
->>>>
->>>> Bastien
->>>>
->>>> On Wed, Sep 28, 2011 at 10:51 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
->>>> > On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->>>
->>>> >> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
->>>> >>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
->>>> >>>> Is the code available somewhere, or will it need to be rewritten ?
->>>> >>>
->>>> >>> we have the code on the server/etc... if someone signs up to help he
->>>> >>> will be on the server of course
->>>> >>
->>>> >> It looks like there are some volunteers. Did you have a chance to talk
->>>> >> to each other and make any progress?
->>>> >>
->>>> >> If not, may we have at least a backup of the database published, please?
->>>> >> There are very valuable data you collected over time and I'm sure there
->>>> >> are more people than me who would appreciate that.
->>>
->>> Any news of this ?
->>>
->>> Can we access to code ? (public git)
->>>
->>> Bastien
->>>
->>>> >> thanks,
->>>> >> --
->>>> >> js
->>>> >> --
->>>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>>> >> in the body of a message to majordomo@vger.kernel.org
->>>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> >> Please read the FAQ at  http://www.tux.org/lkml/
->>>> >
->>>> > Apparently kerneoops.org is hosted by kernel.org so there will be no
->>>> > progress until that fiasco is resolved. I'm still up for working on it
->>>> > if and when the site is back online.
->>>> >
->>>> > --
->>>> > Josh
+On task exit, CFQ used to immediately expire the slice if it was being
+used by the exiting task as no more IO would be issued by the task;
+however, after b2efa05265, the notification is lost and disk could sit
+idle needlessly, leading to noticeable IO performance degradation for
+certain workloads.
+
+This patch renames ioc_exit_icq() to ioc_destroy_icq(), separates
+elevator_exit_icq_fn() invocation into ioc_exit_icq() and invokes it
+from exit_io_context().  ICQ_EXITED flag is added to avoid invoking
+the callback more than once for the same icq.
+
+Walking icq_list from ioc side and invoking elevator callback requires
+reverse double locking.  This may be better implemented using RCU;
+unfortunately, using RCU isn't trivial.  e.g. RCU protection would
+need to cover request_queue and queue_lock switch on cleanup makes
+grabbing queue_lock from RCU unsafe.  Reverse double locking should
+do, at least for now.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-and-bisected-by: Shaohua Li <shli@kernel.org>
+LKML-Reference: <CANejiEVzs=pUhQSTvUppkDcc2TNZyfohBRLygW5zFmXyk5A-xQ@mail.gmail.com>
+---
+ block/blk-ioc.c           |   55 +++++++++++++++++++++++++++++++++++++++-------
+ include/linux/iocontext.h |    1 
+ 2 files changed, 48 insertions(+), 8 deletions(-)
+
+Index: work/block/blk-ioc.c
+===================================================================
+--- work.orig/block/blk-ioc.c
++++ work/block/blk-ioc.c
+@@ -36,11 +36,23 @@ static void icq_free_icq_rcu(struct rcu_
+ 	kmem_cache_free(icq->__rcu_icq_cache, icq);
+ }
+ 
+-/*
+- * Exit and free an icq.  Called with both ioc and q locked.
+- */
++/* Exit an icq. Called with both ioc and q locked. */
+ static void ioc_exit_icq(struct io_cq *icq)
+ {
++	struct elevator_type *et = icq->q->elevator->type;
++
++	if (icq->flags & ICQ_EXITED)
++		return;
++
++	if (et->ops.elevator_exit_icq_fn)
++		et->ops.elevator_exit_icq_fn(icq);
++
++	icq->flags |= ICQ_EXITED;
++}
++
++/* Release an icq.  Called with both ioc and q locked. */
++static void ioc_destroy_icq(struct io_cq *icq)
++{
+ 	struct io_context *ioc = icq->ioc;
+ 	struct request_queue *q = icq->q;
+ 	struct elevator_type *et = q->elevator->type;
+@@ -60,8 +72,7 @@ static void ioc_exit_icq(struct io_cq *i
+ 	if (rcu_dereference_raw(ioc->icq_hint) == icq)
+ 		rcu_assign_pointer(ioc->icq_hint, NULL);
+ 
+-	if (et->ops.elevator_exit_icq_fn)
+-		et->ops.elevator_exit_icq_fn(icq);
++	ioc_exit_icq(icq);
+ 
+ 	/*
+ 	 * @icq->q might have gone away by the time RCU callback runs
+@@ -95,7 +106,7 @@ static void ioc_release_fn(struct work_s
+ 		struct request_queue *q = icq->q;
+ 
+ 		if (spin_trylock(q->queue_lock)) {
+-			ioc_exit_icq(icq);
++			ioc_destroy_icq(icq);
+ 			spin_unlock(q->queue_lock);
+ 		} else {
+ 			spin_unlock_irqrestore(&ioc->lock, flags);
+@@ -142,13 +153,41 @@ EXPORT_SYMBOL(put_io_context);
+ void exit_io_context(struct task_struct *task)
+ {
+ 	struct io_context *ioc;
++	struct io_cq *icq;
++	struct hlist_node *n;
++	unsigned long flags;
+ 
+ 	task_lock(task);
+ 	ioc = task->io_context;
+ 	task->io_context = NULL;
+ 	task_unlock(task);
+ 
+-	atomic_dec(&ioc->nr_tasks);
++	if (!atomic_dec_and_test(&ioc->nr_tasks)) {
++		put_io_context(ioc);
++		return;
++	}
++
++	/*
++	 * Need ioc lock to walk icq_list and q lock to exit icq.  Perform
++	 * reverse double locking.  Read comment in ioc_release_fn() for
++	 * explanation on the nested locking annotation.
++	 */
++retry:
++	spin_lock_irqsave_nested(&ioc->lock, flags, 1);
++	hlist_for_each_entry(icq, n, &ioc->icq_list, ioc_node) {
++		if (icq->flags & ICQ_EXITED)
++			continue;
++		if (spin_trylock(icq->q->queue_lock)) {
++			ioc_exit_icq(icq);
++			spin_unlock(icq->q->queue_lock);
++		} else {
++			spin_unlock_irqrestore(&ioc->lock, flags);
++			cpu_relax();
++			goto retry;
++		}
++	}
++	spin_unlock_irqrestore(&ioc->lock, flags);
++
+ 	put_io_context(ioc);
+ }
+ 
+@@ -168,7 +207,7 @@ void ioc_clear_queue(struct request_queu
+ 		struct io_context *ioc = icq->ioc;
+ 
+ 		spin_lock(&ioc->lock);
+-		ioc_exit_icq(icq);
++		ioc_destroy_icq(icq);
+ 		spin_unlock(&ioc->lock);
+ 	}
+ }
+Index: work/include/linux/iocontext.h
+===================================================================
+--- work.orig/include/linux/iocontext.h
++++ work/include/linux/iocontext.h
+@@ -8,6 +8,7 @@
+ enum {
+ 	ICQ_IOPRIO_CHANGED	= 1 << 0,
+ 	ICQ_CGROUP_CHANGED	= 1 << 1,
++	ICQ_EXITED		= 1 << 2,
+ 
+ 	ICQ_CHANGED_MASK	= ICQ_IOPRIO_CHANGED | ICQ_CGROUP_CHANGED,
+ };
