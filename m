@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760303Ab2BNTbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 14:31:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759855Ab2BNTbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 14:31:11 -0500
-From: Bill Nottingham <notting@redhat.com>
-To: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net
-Subject: [PATCH] Make 'Thermal Table has changed' a debug message.
-Date: Tue, 14 Feb 2012 14:30:29 -0500
-Message-Id: <1329247829-28099-1-git-send-email-notting@redhat.com>
+	id S1760353Ab2BNTcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 14:32:04 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64487 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757126Ab2BNTcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 14:32:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdWofPn9gUdPJwUDm0rqWrzKAnc=yqzDwQqrr7ZCDz6VkA@mail.gmail.com>
+References: <20120120131243.7c867c7b96c75819b68aec8d@canb.auug.org.au>
+	<4F1A0783.9010501@xenotime.net>
+	<CAMuHMdX8=x-=DQu0SCbqYK00+sP8a-kR=9KrUptAq-gqOXHAhA@mail.gmail.com>
+	<CAMuHMdWofPn9gUdPJwUDm0rqWrzKAnc=yqzDwQqrr7ZCDz6VkA@mail.gmail.com>
+Date: Tue, 14 Feb 2012 17:31:58 -0200
+Message-ID: <CAOMZO5BxFi8z-6B4GNLfibHPjBz1viH0tacoUEfVA-pjDhZjdA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 20 (drivers/media/radio/wl128x/)
+From: Fabio Estevam <festevam@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the recommended action is "do nothing", we shouldn't be cluttering
-the logs with it.
+On 2/14/12, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-Signed-off-by: Bill Nottingham <notting@redhat.com>
----
- drivers/platform/x86/thinkpad_acpi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Ping?
+>
+> Build breakage in mainline since at least 3 weeks.
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index ea0c607..a96983e 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -3605,7 +3605,7 @@ static bool hotkey_notify_6xxx(const u32 hkey,
- 
- 	switch (hkey) {
- 	case TP_HKEY_EV_THM_TABLE_CHANGED:
--		pr_info("EC reports that Thermal Table has changed\n");
-+		pr_debug("EC reports that Thermal Table has changed\n");
- 		/* recommended action: do nothing, we don't have
- 		 * Lenovo ATM information */
- 		return true;
--- 
-1.7.7.6
-
+>From what I recall Randy proposed a patch for fixing this issue:
+http://patchwork.linuxtv.org/patch/9750/
