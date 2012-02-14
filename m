@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab2BNB7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:59:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48520 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751399Ab2BNB7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 20:59:20 -0500
-Message-ID: <1329184754.3048.33.camel@deadeye>
-Subject: Re: [patch net-next] cxgb3: update firmware version
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Divy Le Ray <divy@chelsio.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>, nhorman@tuxdriver.com
-Date: Tue, 14 Feb 2012 01:59:14 +0000
-In-Reply-To: <4F398303.1030606@chelsio.com>
-References: <20120213202846.631.30806.stgit@speedy5.asicdesigners.com>
-	 <1329165817.2092.62.camel@shinybook.infradead.org>
-	 <4F398303.1030606@chelsio.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FfgOr2VYUq0CLg4M5W9K"
-X-Mailer: Evolution 3.2.2-1 
+	id S1758757Ab2BNCCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 21:02:47 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33441 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751191Ab2BNCCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 21:02:44 -0500
+Message-ID: <1329184963.8143.2.camel@joe2Laptop>
+Subject: Re: [PATCH 1/2] bluetooth: Use more current logging styles
+From: Joe Perches <joe@perches.com>
+To: Gustavo Padovan <padovan@profusion.mobi>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Mon, 13 Feb 2012 18:02:43 -0800
+In-Reply-To: <20120213215603.GA27753@joana>
+References: <cover.1329102581.git.joe@perches.com>
+	 <44b8744770a55924c68f8ad0ca274816d2d6148f.1329102581.git.joe@perches.com>
+	 <1329114913.28848.50.camel@aeonflux> <20120213215603.GA27753@joana>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-02-13 at 19:56 -0200, Gustavo Padovan wrote:
+> it is not really a good idea to change BT_INFO to
+> bt_info and BT_ERR to bt_err. I understand that capital letters are not the
+> standard here but such a change is painful for all Bluetooth developers and I
+> don't wanna give more trouble to them.
 
---=-FfgOr2VYUq0CLg4M5W9K
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hello Gustavo.
 
-On Mon, 2012-02-13 at 13:39 -0800, Divy Le Ray wrote:
-> On Monday, February 13, 2012 12:43:37 PM, David Woodhouse wrote:
-> >
-> > On Mon, 2012-02-13 at 12:28 -0800, Divy Le Ray wrote:
-> >>
-> >> This patch updates the firmware version cxgb3 is requesting to 7.12.0.
-> >
-> >
-> > I'm confused. Your patch doesn't change anything in the driver, except
-> > the firmware version. So why is it a "major" change?
->=20
-> Hi David,
->=20
-> cxgb3 embeds the firmware file name it will request at load time.
-> It uses the FW_VERSION_* defs to construct the firmware name FW_FNAME=20
-> before calling request_firmware().
-> Hence the need to update the firmware minor version.
->=20
-> On the other hand, the driver version update is not a strict requirement=
-=20
-> here.
-> I would prefer keeping it though.
+Standardization of use and style is a good thing.
 
-The problems with this are:
-1. Older kernel versions don't benefit from the firmware update.
-2. The old firmware has to be kept in linux-firmware to support those
-   old kernel versions, and distributions may have to package more
-   versions.
+What kind of trouble is a case conversion?
+Out of tree modules?
 
-To avoid this, the firmware filename should only be changed if you make
-incompatible changes in the driver/firmware interface.
+> I'm ok if we only change bluetooth.h here.
 
-Ben.
+I sent the patch I think appropriate.
+If you want to strip out only the parts you
+want, be my guest.
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
+cheers, Joe
 
---=-FfgOr2VYUq0CLg4M5W9K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATzm/8ue/yOyVhhEJAQoQ4xAAuHYB3waPJPC2G/UdXr+7bEeGB+hpVTRs
-34laoEl6PMarS2SAmheb3sXNgMiiYW1YJ452C9lJ+HhbSmEWZJgHZz4g6GKziOlf
-eQRrn98tbb65qhfK8UV1mShxSkgy1YJsS9CwIhHc6ETL52enForGLc4L+yKr19Ae
-+AiSrldGrv33TcVCfIUca9hIxg9y3+mJ4wRJQHUY/oEtT3WwwfYtG3CdtJb1eJ67
-8WI3b1z0yRrCQ7JfAy4AIoRBd4I1TVD869ltp+5ylsCB7Pmzkc2ouJkV26CrKdtm
-REYFZNLJvoktXy+BjtZTaApxY9T3717HEgNVRex1TznX7pTcZGOAlrdRU2IPJymX
-YBFX4NKyq/OTVklUyPu7JioMIL/sF4dDYcfJvwQrBp3HVxHZnApvZzom73Mi9zUj
-iTU833o0Tw4Q91VjruK0tjJcXxv3RagaVvNmfnq+fP22SXmAla0zUKW+uDSL+naG
-vY+WAF9WG7SMdUtVUgP9E8V0onA2wtHQWY6yWpF36gE+6UE4klNvzTToxQ/BkEH5
-LMuZtl1h/CCCQX9pLYytmYxwv4IOLSMkOrWHzUtdspHRopkXfzodMpUK17wI4+BV
-+P4ey3Mx/H2nLF2RPJSyuO4t9bod4G/ZQ2SnZBpi7UjsCMk92S5jyq5yfEMjSQI9
-cHK16lCq+cQ=
-=qgtQ
------END PGP SIGNATURE-----
-
---=-FfgOr2VYUq0CLg4M5W9K--
