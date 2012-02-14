@@ -1,108 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760159Ab2BNLl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:41:27 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44703 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755154Ab2BNLlY (ORCPT
+	id S1760003Ab2BNLvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:51:44 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51732 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751619Ab2BNLvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:41:24 -0500
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-arch@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 02/40] arm: Use set_current_blocked() and block_sigmask()
-Date: Tue, 14 Feb 2012 11:40:35 +0000
-Message-Id: <1329219673-28711-3-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
+	Tue, 14 Feb 2012 06:51:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1328884300-18801-1-git-send-email-javier.martin@vista-silicon.com>
+Date: Tue, 14 Feb 2012 12:51:41 +0100
+Message-ID: <CACKLOr1Gn_NR8HPhmyK6DW9W+7CGG8y7yoZm6PE3bH2zt6Ej-g@mail.gmail.com>
+Subject: Re: [PATCH 0/4] dmaengine: i.MX DMA series.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk, vinod.koul@intel.com,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On 10 February 2012 15:31, Javier Martin
+<javier.martin@vista-silicon.com> wrote:
+> Patches 1-3 have already been sent to the list (not merged yet)
+> but they are submitted so that everyone can get the whole picture
+> of what we're trying to do here.
+>
+> A new patch(4) has been added which adds support for multiple
+> descriptors.
+>
+> [PATCH 1/4] dmaengine: Add support for MEMCPY for imx-dma.
+> [PATCH 2/4] i.MX DMA: Add support for 2D transfers.
+> [PATCH 3/4] dmaengine: i.MX: Add support for interleaved transfers.
+> [PATCH 4/4] dmaengine: Add support for multiple descriptors for imx-dma.
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check for shared signals we're about to block.
+Hi,
+what do you think of this series?
 
-Also, use the new helper function introduced in commit 5e6292c0f28f
-("signal: add block_sigmask() for adding sigmask to current->blocked")
-which centralises the code for updating current->blocked after
-successfully delivering a signal and reduces the amount of duplicate
-code across architectures. In the past some architectures got this
-code wrong, so using this helper function should stop that from
-happening again.
+Vinod: your concern about patch 1 is solved in patch 4
+Sascha: I know you are not comfortable with patch 2 since it adds code
+to a file which is meant to be removed. However, is there a chance you
+accept it without me having to rewrite the whole series?
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Dave Martin <dave.martin@linaro.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/arm/kernel/signal.c |   24 ++++++++----------------
- 1 files changed, 8 insertions(+), 16 deletions(-)
-
-diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
-index 9e617bd..7cb532f 100644
---- a/arch/arm/kernel/signal.c
-+++ b/arch/arm/kernel/signal.c
-@@ -66,12 +66,13 @@ const unsigned long syscall_restart_code[2] = {
-  */
- asmlinkage int sys_sigsuspend(int restart, unsigned long oldmask, old_sigset_t mask)
- {
--	mask &= _BLOCKABLE;
--	spin_lock_irq(&current->sighand->siglock);
-+	sigset_t blocked;
-+
- 	current->saved_sigmask = current->blocked;
--	siginitset(&current->blocked, mask);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+
-+	mask &= _BLOCKABLE;
-+	siginitset(&blocked, mask);
-+	set_current_blocked(&blocked);
- 
- 	current->state = TASK_INTERRUPTIBLE;
- 	schedule();
-@@ -280,10 +281,7 @@ static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
- 	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
- 	if (err == 0) {
- 		sigdelsetmask(&set, ~_BLOCKABLE);
--		spin_lock_irq(&current->sighand->siglock);
--		current->blocked = set;
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
-+		set_current_blocked(&set);
- 	}
- 
- 	__get_user_error(regs->ARM_r0, &sf->uc.uc_mcontext.arm_r0, err);
-@@ -636,13 +634,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
- 	/*
- 	 * Block the signal if we were successful.
- 	 */
--	spin_lock_irq(&tsk->sighand->siglock);
--	sigorsets(&tsk->blocked, &tsk->blocked,
--		  &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&tsk->blocked, sig);
--	recalc_sigpending();
--	spin_unlock_irq(&tsk->sighand->siglock);
-+	block_sigmask(ka, sig);
- 
- 	return 0;
- }
+Regards.
 -- 
-1.7.4.4
-
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
