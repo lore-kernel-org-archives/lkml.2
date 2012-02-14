@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab2BNIw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 03:52:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34656 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab2BNIw4 (ORCPT
+	id S1759658Ab2BNIyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 03:54:55 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:49660 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756454Ab2BNIyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 03:52:56 -0500
-Date: Tue, 14 Feb 2012 00:53:01 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yang Bai <hamo.by@gmail.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: warning if total alloc size overflow
-Message-Id: <20120214005301.a9d5be1a.akpm@linux-foundation.org>
-In-Reply-To: <1329204499-2671-1-git-send-email-hamo.by@gmail.com>
-References: <1329204499-2671-1-git-send-email-hamo.by@gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 03:54:53 -0500
+MIME-Version: 1.0
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] arm: omap: usb-host: fix compile warning
+Date: Tue, 14 Feb 2012 10:54:46 +0200
+Message-Id: <1329209686-25551-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.9
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Feb 2012 15:28:19 +0800 Yang Bai <hamo.by@gmail.com> wrote:
+when commit 3528c58 (OMAP: omap_device: when
+building return platform_device instead of
+omap_device) started returning a platform_device
+instead of a omap_device pointer when building
+a device, it failed to convert all users introducing
+a compile warning when building
+arch/arm/mach-omap2/usb-host.c.
 
-> Before, if the total alloc size is overflow,
-> we just return NULL like alloc fail. But they
-> are two different type problems. The former looks
-> more like a programming problem. So add a warning
-> here.
-> 
-> Signed-off-by: Yang Bai <hamo.by@gmail.com>
-> ---
->  include/linux/slab.h |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 573c809..5865237 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -242,8 +242,10 @@ size_t ksize(const void *);
->   */
->  static inline void *kcalloc(size_t n, size_t size, gfp_t flags)
->  {
-> -	if (size != 0 && n > ULONG_MAX / size)
-> +	if (size != 0 && n > ULONG_MAX / size) {
-> +		WARN(1, "Alloc memory size (%lu * %lu) overflow.", n, size);
->  		return NULL;
-> +	}
->  	return __kmalloc(n * size, flags | __GFP_ZERO);
->  }
+This patch fixes that warning.
 
-One of the applications of kcalloc() is to prevent userspace from
-causing a multiplicative overflow (and then perhaps causing an
-overwrite beyond the end of the allocated memory).
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/usb-host.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-With this patch, we've just handed the user a way of spamming the logs
-at 1MHz.  This is bad.
+diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+index 771dc78..f51348d 100644
+--- a/arch/arm/mach-omap2/usb-host.c
++++ b/arch/arm/mach-omap2/usb-host.c
+@@ -486,7 +486,7 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
+ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ {
+ 	struct omap_hwmod	*oh[2];
+-	struct omap_device	*od;
++	struct platform_device	*pdev;
+ 	int			bus_id = -1;
+ 	int			i;
+ 
+@@ -522,11 +522,11 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 		return;
+ 	}
+ 
+-	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
++	pdev = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
+ 				(void *)&usbhs_data, sizeof(usbhs_data),
+ 				omap_uhhtll_latency,
+ 				ARRAY_SIZE(omap_uhhtll_latency), false);
+-	if (IS_ERR(od)) {
++	if (IS_ERR(pdev)) {
+ 		pr_err("Could not build hwmod devices %s,%s\n",
+ 			USBHS_UHH_HWMODNAME, USBHS_TLL_HWMODNAME);
+ 		return;
+-- 
+1.7.9
 
-
-Also, please let's not randomly add debug stuff in places where we've
-never demonstrated a need for it.
