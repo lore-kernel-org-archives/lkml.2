@@ -1,78 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761260Ab2BNVdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:33:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42290 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab2BNVdi (ORCPT
+	id S1761257Ab2BNVgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:36:36 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:43989 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757182Ab2BNVgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:33:38 -0500
-Date: Tue, 14 Feb 2012 13:33:37 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Tue, 14 Feb 2012 16:36:33 -0500
+Message-ID: <4F3AD3B6.8070409@linux.vnet.ibm.com>
+Date: Wed, 15 Feb 2012 03:05:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Tony Luck <tony.luck@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
-Message-Id: <20120214133337.9de7835b.akpm@linux-foundation.org>
-In-Reply-To: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Re: [PATCH] Avoid mask based num_possible_cpus and num_online_cpus
+ -v5
+References: <CABeCy1aPp4=v90v_wAsw-KWDwNs59CwwYSJ-36+4t8kMuCaK0w@mail.gmail.com> <1328055439-9441-1-git-send-email-venki@google.com> <20120201140125.c656df41.akpm@linux-foundation.org> <87d39xj955.fsf@rustcorp.com.au> <CA+8MBbJcTgj7X-7RZAgWk8a3Qyaz1FxFzu3ZLk-8LHKD7M8h-Q@mail.gmail.com> <4F3971A1.5010305@linux.vnet.ibm.com> <4F39763D.3070609@linux.vnet.ibm.com> <CA+8MBbLR+rcJqe2z9tAt7Oav4wqgZA3k8Te6zcXNOs+zv2wAaA@mail.gmail.com> <87wr7pbwbz.fsf@rustcorp.com.au>
+In-Reply-To: <87wr7pbwbz.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12021421-3864-0000-0000-000001644FD4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Feb 2012 01:21:35 +0100
-Andrea Righi <andrea@betterlinux.com> wrote:
+On 02/14/2012 02:55 PM, Rusty Russell wrote:
 
-> The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
-> drop-behind policy where applications can mark certain intervals of a file as
-> FADV_NOREUSE before accessing the data.
+> On Mon, 13 Feb 2012 13:57:45 -0800, Tony Luck <tony.luck@gmail.com> wrote:
+>> On Mon, Feb 13, 2012 at 12:44 PM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> IOW, what output do you see from the following printk from
+>>> arch/ia64/kernel/smpboot.c?
+>>>
+>>> printk(KERN_INFO "Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
+>>>         (int)num_online_cpus(), bogosum/(500000/HZ), (bogosum/(5000/HZ))%100);
+>>
+>> That is a complicated question - because linux-next also has patches
+>> by Arjan that
+>> change how (when) cpus are brought online. Initially I blamed his
+>> patches and tried
+>> reverting them ... and saw the symptom you are wondering about (message said
+>> "Total of 1 processors", but the BogoMIPs was a number big enough to be all of
+>> them. Thanks to you, I can now understand why.
+>>
+>> Fix will be to stop ia64 from messing directly with cpu_online_map?
+> 
+> Yes, and the other architectures.
+> 
 
-I think you and John need to talk to each other, please.  The amount of
-duplication here is extraordinary.
 
-Both patchsets add fields to the address_space (and hence inode), which
-is significant - we should convince ourselves that we're getting really
-good returns from a feature which does this.
+Right. And we should also ensure that nobody messes directly with
+cpu_possible_map as well. I have written up a patch for ia64 (see below).
+Sorry, I haven't even compile tested it - I neither have the toolchain nor the
+hardware. I hope it works!
 
+But don't expect the above printk statement to print the right value if you are
+running a kernel which has the patch posted at https://lkml.org/lkml/2012/1/31/286
+applied. That is another patch that can alter boot-up time and many related
+things. So, it would be best to test Venki's patch + following fix without having
+Arjan's patch applied.
 
+---
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] ia64: Don't use cpu_set()/cpu_clear() over cpu_[online|possible]_map
 
-Regarding the use of fadvise(): I suppose it's a reasonable thing to do
-in the long term - if the feature works well, popular data streaming
-applications will eventually switch over.  But I do think we should
-explore interfaces which don't require modification of userspace source
-code.  Because there will always be unconverted applications, and the
-feature becomes available immediately.
+Directly using cpu_set() and cpu_clear() on cpu_online_map or cpu_possible_map
+is strongly discouraged. Use the functions set_cpu_online() and
+set_cpu_possible() instead. This also means that the new implementation of
+num_[online|possible]_cpus can track all changes to cpu_[online|possible]_mask
+and hence give the correct results always.
 
-One such interface would be to toss the offending application into a
-container which has a modified drop-behind policy.  And here we need to
-drag out the crystal ball: what *is* the best way of tuning application
-pagecache behaviour?  Will we gravitate towards containerization, or
-will we gravitate towards finer-tuned fadvise/sync_page_range/etc
-behaviour?  Thus far it has been the latter, and I don't think that has
-been a great success.
+Reported-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Finally, are the problems which prompted these patchsets already
-solved?  What happens if you take the offending streaming application
-and toss it into a 16MB memcg?  That *should* avoid perturbing other
-things running on that machine.
+ 0 files changed, 0 insertions(+), 0 deletions(-)
 
-And yes, a container-based approach is pretty crude, and one can
-envision applications which only want modified reclaim policy for one
-particualr file.  But I suspect an application-wide reclaim policy
-solves 90% of the problems.
+diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+index cd57d73..4d1a550 100644
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -486,7 +486,7 @@ mark_bsp_online (void)
+ {
+ #ifdef CONFIG_SMP
+ 	/* If we register an early console, allow CPU 0 to printk */
+-	cpu_set(smp_processor_id(), cpu_online_map);
++	set_cpu_online(smp_processor_id(), true);
+ #endif
+ }
+ 
+diff --git a/arch/ia64/kernel/smp.c b/arch/ia64/kernel/smp.c
+index 0bd537b..8551979 100644
+--- a/arch/ia64/kernel/smp.c
++++ b/arch/ia64/kernel/smp.c
+@@ -77,7 +77,7 @@ stop_this_cpu(void)
+ 	/*
+ 	 * Remove this CPU:
+ 	 */
+-	cpu_clear(smp_processor_id(), cpu_online_map);
++	set_cpu_online(smp_processor_id(), false);
+ 	max_xtp();
+ 	local_irq_disable();
+ 	cpu_halt();
+diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
+index 5590979..35f6e3c 100644
+--- a/arch/ia64/kernel/smpboot.c
++++ b/arch/ia64/kernel/smpboot.c
+@@ -401,7 +401,7 @@ smp_callin (void)
+ 	/* Setup the per cpu irq handling data structures */
+ 	__setup_vector_irq(cpuid);
+ 	notify_cpu_starting(cpuid);
+-	cpu_set(cpuid, cpu_online_map);
++	set_cpu_online(cpuid, true);
+ 	per_cpu(cpu_state, cpuid) = CPU_ONLINE;
+ 	spin_unlock(&vector_lock);
+ 	ipi_call_unlock_irq();
+@@ -548,7 +548,7 @@ do_rest:
+ 	if (!cpu_isset(cpu, cpu_callin_map)) {
+ 		printk(KERN_ERR "Processor 0x%x/0x%x is stuck.\n", cpu, sapicid);
+ 		ia64_cpu_to_sapicid[cpu] = -1;
+-		cpu_clear(cpu, cpu_online_map);  /* was set in smp_callin() */
++		set_cpu_online(cpu, false);  /* was set in smp_callin() */
+ 		return -EINVAL;
+ 	}
+ 	return 0;
+@@ -609,7 +609,7 @@ smp_prepare_cpus (unsigned int max_cpus)
+ 	/*
+ 	 * We have the boot CPU online for sure.
+ 	 */
+-	cpu_set(0, cpu_online_map);
++	set_cpu_online(0, true);
+ 	cpu_set(0, cpu_callin_map);
+ 
+ 	local_cpu_data->loops_per_jiffy = loops_per_jiffy;
+@@ -633,7 +633,7 @@ smp_prepare_cpus (unsigned int max_cpus)
+ 
+ void __devinit smp_prepare_boot_cpu(void)
+ {
+-	cpu_set(smp_processor_id(), cpu_online_map);
++	set_cpu_online(smp_processor_id(), true);
+ 	cpu_set(smp_processor_id(), cpu_callin_map);
+ 	set_numa_node(cpu_to_node_map[smp_processor_id()]);
+ 	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+@@ -732,10 +732,10 @@ int __cpu_disable(void)
+ 			return -EBUSY;
+ 	}
+ 
+-	cpu_clear(cpu, cpu_online_map);
++	set_cpu_online(cpu, false);
+ 
+ 	if (migrate_platform_irqs(cpu)) {
+-		cpu_set(cpu, cpu_online_map);
++		set_cpu_online(cpu, true);
+ 		return -EBUSY;
+ 	}
+ 
+
 
