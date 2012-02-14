@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2BNFvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:51:55 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:49912 "HELO
+	id S1754176Ab2BNFwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:52:09 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:50389 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753004Ab2BNFvx (ORCPT
+	with SMTP id S1752580Ab2BNFwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:51:53 -0500
+	Tue, 14 Feb 2012 00:52:03 -0500
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18ZzAg9As4ZFHDipQbZyeUxWeDfNiwWcj/AbOPVOa
-	UvSfEiTQvmXvQk
+X-Provags-ID: V01U2FsdGVkX1+AwVx1yemAmWP/TQT0o4Fs/UAdZ8Uk9VvDpZSfci
+	N51GmBUTI8BYJr
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 3/4] viafb: make single framebuffer multiple adapter mode work
-Date: Tue, 14 Feb 2012 06:12:04 +0000
-Message-Id: <532f9169db21fbffd07cc44075c7ea1859c07806.1329194838.git.FlorianSchandinat@gmx.de>
+Subject: [PATCH 4/4] viafb: make SAMM to also work on LCD
+Date: Tue, 14 Feb 2012 06:12:05 +0000
+Message-Id: <4e5527c9d1f373cb7dda6eec3af1d7b9659cdf85.1329194838.git.FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1329194838.git.FlorianSchandinat@gmx.de>
 References: <cover.1329194838.git.FlorianSchandinat@gmx.de>
@@ -25,162 +25,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implementes this mode (viafb_SAMM_ON set and
-viafb_dual_fb not set) in a useful way for CRT and DVI devices.
-The same content is shown on both devices in different video modes.
-The first (primary) resolution must not be bigger than the secondary
-one and determines the visible region. The same content is shown
-centered on the secondary output.
+This patch enables LCD to handle SAMM without dual fb.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/dvi.c |    5 +++--
- drivers/video/via/dvi.h |    3 ++-
- drivers/video/via/hw.c  |   41 +++++++++++++++++++++++------------------
- drivers/video/via/hw.h  |    3 ++-
- 4 files changed, 30 insertions(+), 22 deletions(-)
+ drivers/video/via/chip.h |    2 --
+ drivers/video/via/hw.c   |   27 +++++++++++----------------
+ drivers/video/via/lcd.c  |   18 +++++++++---------
+ drivers/video/via/lcd.h  |    3 ++-
+ 4 files changed, 22 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/video/via/dvi.c b/drivers/video/via/dvi.c
-index 9138e51..3312c81 100644
---- a/drivers/video/via/dvi.c
-+++ b/drivers/video/via/dvi.c
-@@ -172,7 +172,8 @@ static int tmds_register_read_bytes(int index, u8 *buff, int buff_len)
- }
+diff --git a/drivers/video/via/chip.h b/drivers/video/via/chip.h
+index 3ebf20c..c2ecdb5 100644
+--- a/drivers/video/via/chip.h
++++ b/drivers/video/via/chip.h
+@@ -146,8 +146,6 @@ struct tmds_setting_information {
  
- /* DVI Set Mode */
--void viafb_dvi_set_mode(const struct fb_var_screeninfo *var, int iga)
-+void viafb_dvi_set_mode(const struct fb_var_screeninfo *var,
-+	u16 cxres, u16 cyres, int iga)
- {
- 	struct fb_var_screeninfo dvi_var = *var;
- 	struct crt_mode_table *rb_mode;
-@@ -185,7 +186,7 @@ void viafb_dvi_set_mode(const struct fb_var_screeninfo *var, int iga)
- 			viafb_fill_var_timing_info(&dvi_var, rb_mode);
- 	}
- 
--	viafb_fill_crtc_timing(&dvi_var, iga);
-+	viafb_fill_crtc_timing(&dvi_var, cxres, cyres, iga);
- }
- 
- /* Sense DVI Connector */
-diff --git a/drivers/video/via/dvi.h b/drivers/video/via/dvi.h
-index e2116aa..db75785 100644
---- a/drivers/video/via/dvi.h
-+++ b/drivers/video/via/dvi.h
-@@ -59,6 +59,7 @@ void viafb_dvi_enable(void);
- bool __devinit viafb_tmds_trasmitter_identify(void);
- void __devinit viafb_init_dvi_size(struct tmds_chip_information *tmds_chip,
- 	struct tmds_setting_information *tmds_setting);
--void viafb_dvi_set_mode(const struct fb_var_screeninfo *var, int iga);
-+void viafb_dvi_set_mode(const struct fb_var_screeninfo *var,
-+	u16 cxres, u16 cyres, int iga);
- 
- #endif /* __DVI_H__ */
+ struct lvds_setting_information {
+ 	int iga_path;
+-	int h_active;
+-	int v_active;
+ 	int bpp;
+ 	int lcd_panel_hres;
+ 	int lcd_panel_vres;
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 399d507..e8725c5 100644
+index e8725c5..d35ced7 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -1467,28 +1467,31 @@ void viafb_set_vclock(u32 clk, int set_iga)
- 	via_write_misc_reg_mask(0x0C, 0x0C); /* select external clock */
+@@ -1530,11 +1530,7 @@ void viafb_update_device_setting(int hres, int vres, int bpp, int flag)
+ 		viaparinfo->tmds_setting_info->h_active = hres;
+ 		viaparinfo->tmds_setting_info->v_active = vres;
+ 
+-		viaparinfo->lvds_setting_info->h_active = hres;
+-		viaparinfo->lvds_setting_info->v_active = vres;
+ 		viaparinfo->lvds_setting_info->bpp = bpp;
+-		viaparinfo->lvds_setting_info2->h_active = hres;
+-		viaparinfo->lvds_setting_info2->v_active = vres;
+ 		viaparinfo->lvds_setting_info2->bpp = bpp;
+ 	} else {
+ 
+@@ -1543,16 +1539,11 @@ void viafb_update_device_setting(int hres, int vres, int bpp, int flag)
+ 			viaparinfo->tmds_setting_info->v_active = vres;
+ 		}
+ 
+-		if (viaparinfo->lvds_setting_info->iga_path == IGA2) {
+-			viaparinfo->lvds_setting_info->h_active = hres;
+-			viaparinfo->lvds_setting_info->v_active = vres;
++		if (viaparinfo->lvds_setting_info->iga_path == IGA2)
+ 			viaparinfo->lvds_setting_info->bpp = bpp;
+-		}
+-		if (IGA2 == viaparinfo->lvds_setting_info2->iga_path) {
+-			viaparinfo->lvds_setting_info2->h_active = hres;
+-			viaparinfo->lvds_setting_info2->v_active = vres;
++
++		if (IGA2 == viaparinfo->lvds_setting_info2->iga_path)
+ 			viaparinfo->lvds_setting_info2->bpp = bpp;
+-		}
+ 	}
  }
  
--static struct display_timing var_to_timing(const struct fb_var_screeninfo *var)
-+static struct display_timing var_to_timing(const struct fb_var_screeninfo *var, u16 cxres, u16 cyres)
- {
- 	struct display_timing timing;
-+	u16 dx = (var->xres - cxres) / 2, dy = (var->yres - cyres) / 2;
+@@ -1933,7 +1924,8 @@ int viafb_setmode(int video_bpp, int video_bpp1)
+ 		if (viafb_SAMM_ON &&
+ 			(viaparinfo->lvds_setting_info->iga_path == IGA2)) {
+ 			viaparinfo->lvds_setting_info->bpp = video_bpp1;
+-			viafb_lcd_set_mode(viaparinfo->lvds_setting_info,
++			viafb_lcd_set_mode(&var2, cxres, cyres,
++				viaparinfo->lvds_setting_info,
+ 				&viaparinfo->chip_info->lvds_chip_info);
+ 		} else {
+ 			/* IGA1 doesn't have LCD scaling, so set it center. */
+@@ -1942,7 +1934,8 @@ int viafb_setmode(int video_bpp, int video_bpp1)
+ 				    LCD_CENTERING;
+ 			}
+ 			viaparinfo->lvds_setting_info->bpp = video_bpp;
+-			viafb_lcd_set_mode(viaparinfo->lvds_setting_info,
++			viafb_lcd_set_mode(&viafbinfo->var, 0, 0,
++				viaparinfo->lvds_setting_info,
+ 				&viaparinfo->chip_info->lvds_chip_info);
+ 		}
+ 	}
+@@ -1950,7 +1943,8 @@ int viafb_setmode(int video_bpp, int video_bpp1)
+ 		if (viafb_SAMM_ON &&
+ 			(viaparinfo->lvds_setting_info2->iga_path == IGA2)) {
+ 			viaparinfo->lvds_setting_info2->bpp = video_bpp1;
+-			viafb_lcd_set_mode(viaparinfo->lvds_setting_info2,
++			viafb_lcd_set_mode(&var2, cxres, cyres,
++				viaparinfo->lvds_setting_info2,
+ 				&viaparinfo->chip_info->lvds_chip_info2);
+ 		} else {
+ 			/* IGA1 doesn't have LCD scaling, so set it center. */
+@@ -1959,7 +1953,8 @@ int viafb_setmode(int video_bpp, int video_bpp1)
+ 				    LCD_CENTERING;
+ 			}
+ 			viaparinfo->lvds_setting_info2->bpp = video_bpp;
+-			viafb_lcd_set_mode(viaparinfo->lvds_setting_info2,
++			viafb_lcd_set_mode(&viafbinfo->var, 0, 0,
++				viaparinfo->lvds_setting_info2,
+ 				&viaparinfo->chip_info->lvds_chip_info2);
+ 		}
+ 	}
+diff --git a/drivers/video/via/lcd.c b/drivers/video/via/lcd.c
+index 5f3b4e3..02cfdc8 100644
+--- a/drivers/video/via/lcd.c
++++ b/drivers/video/via/lcd.c
+@@ -55,8 +55,7 @@ static void load_lcd_scaling(int set_hres, int set_vres, int panel_hres,
+ 		      int panel_vres);
+ static void via_pitch_alignment_patch_lcd(
+ 	struct lvds_setting_information *plvds_setting_info,
+-				   struct lvds_chip_information
+-				   *plvds_chip_info);
++	struct lvds_chip_information *plvds_chip_info, int hres);
+ static void lcd_patch_skew_dvp0(struct lvds_setting_information
+ 			 *plvds_setting_info,
+ 			 struct lvds_chip_information *plvds_chip_info);
+@@ -456,14 +455,13 @@ static void load_lcd_scaling(int set_hres, int set_vres, int panel_hres,
  
--	timing.hor_addr = var->xres;
--	timing.hor_sync_start = timing.hor_addr + var->right_margin;
-+	timing.hor_addr = cxres;
-+	timing.hor_sync_start = timing.hor_addr + var->right_margin + dx;
- 	timing.hor_sync_end = timing.hor_sync_start + var->hsync_len;
--	timing.hor_total = timing.hor_sync_end + var->left_margin;
--	timing.hor_blank_start = timing.hor_addr;
--	timing.hor_blank_end = timing.hor_total;
--	timing.ver_addr = var->yres;
--	timing.ver_sync_start = timing.ver_addr + var->lower_margin;
-+	timing.hor_total = timing.hor_sync_end + var->left_margin + dx;
-+	timing.hor_blank_start = timing.hor_addr + dx;
-+	timing.hor_blank_end = timing.hor_total - dy;
-+	timing.ver_addr = cyres;
-+	timing.ver_sync_start = timing.ver_addr + var->lower_margin + dy;
- 	timing.ver_sync_end = timing.ver_sync_start + var->vsync_len;
--	timing.ver_total = timing.ver_sync_end + var->upper_margin;
--	timing.ver_blank_start = timing.ver_addr;
--	timing.ver_blank_end = timing.ver_total;
-+	timing.ver_total = timing.ver_sync_end + var->upper_margin + dy;
-+	timing.ver_blank_start = timing.ver_addr + dy;
-+	timing.ver_blank_end = timing.ver_total - dy;
- 	return timing;
+ static void via_pitch_alignment_patch_lcd(
+ 	struct lvds_setting_information *plvds_setting_info,
+-				   struct lvds_chip_information
+-				   *plvds_chip_info)
++	struct lvds_chip_information *plvds_chip_info, int hres)
+ {
+ 	unsigned char cr13, cr35, cr65, cr66, cr67;
+ 	unsigned long dwScreenPitch = 0;
+ 	unsigned long dwPitch;
+ 
+-	dwPitch = plvds_setting_info->h_active * (plvds_setting_info->bpp >> 3);
++	dwPitch = hres * (plvds_setting_info->bpp >> 3);
+ 	if (dwPitch & 0x1F) {
+ 		dwScreenPitch = ((dwPitch + 31) & ~31) >> 3;
+ 		if (plvds_setting_info->iga_path == IGA2) {
+@@ -548,13 +546,14 @@ static void lcd_patch_skew(struct lvds_setting_information
  }
  
--void viafb_fill_crtc_timing(const struct fb_var_screeninfo *var, int iga)
-+void viafb_fill_crtc_timing(const struct fb_var_screeninfo *var,
-+	u16 cxres, u16 cyres, int iga)
+ /* LCD Set Mode */
+-void viafb_lcd_set_mode(struct lvds_setting_information *plvds_setting_info,
++void viafb_lcd_set_mode(const struct fb_var_screeninfo *var, u16 cxres,
++	u16 cyres, struct lvds_setting_information *plvds_setting_info,
+ 	struct lvds_chip_information *plvds_chip_info)
  {
--	struct display_timing crt_reg = var_to_timing(var);
-+	struct display_timing crt_reg = var_to_timing(var,
-+		cxres ? cxres : var->xres, cyres ? cyres : var->yres);
+ 	int set_iga = plvds_setting_info->iga_path;
+ 	int mode_bpp = plvds_setting_info->bpp;
+-	int set_hres = plvds_setting_info->h_active;
+-	int set_vres = plvds_setting_info->v_active;
++	int set_hres = cxres ? cxres : var->xres;
++	int set_vres = cyres ? cyres : var->yres;
+ 	int panel_hres = plvds_setting_info->lcd_panel_hres;
+ 	int panel_vres = plvds_setting_info->lcd_panel_vres;
+ 	u32 clock;
+@@ -613,7 +612,8 @@ void viafb_lcd_set_mode(struct lvds_setting_information *plvds_setting_info,
+ 		viafb_write_reg_mask(CR6A, VIACR, 0x01, BIT0);
  
- 	if (iga == IGA1)
- 		via_set_primary_timing(&crt_reg);
-@@ -1842,7 +1845,7 @@ static void hw_init(void)
+ 	/* Patch for non 32bit alignment mode */
+-	via_pitch_alignment_patch_lcd(plvds_setting_info, plvds_chip_info);
++	via_pitch_alignment_patch_lcd(plvds_setting_info, plvds_chip_info,
++		set_hres);
+ }
  
- int viafb_setmode(int video_bpp, int video_bpp1)
- {
--	int j;
-+	int j, cxres = 0, cyres = 0;
- 	int port;
- 	u32 devices = viaparinfo->shared->iga1_devices
- 		| viaparinfo->shared->iga2_devices;
-@@ -1891,6 +1894,8 @@ int viafb_setmode(int video_bpp, int video_bpp1)
- 	} else if (viafb_SAMM_ON) {
- 		viafb_fill_var_timing_info(&var2, viafb_get_best_mode(
- 			viafb_second_xres, viafb_second_yres, viafb_refresh1));
-+		cxres = viafbinfo->var.xres;
-+		cyres = viafbinfo->var.yres;
- 		var2.bits_per_pixel = viafbinfo->var.bits_per_pixel;
- 	}
- 
-@@ -1898,9 +1903,9 @@ int viafb_setmode(int video_bpp, int video_bpp1)
- 	if (viafb_CRT_ON) {
- 		if (viaparinfo->shared->iga2_devices & VIA_CRT
- 			&& viafb_SAMM_ON)
--			viafb_fill_crtc_timing(&var2, IGA2);
-+			viafb_fill_crtc_timing(&var2, cxres, cyres, IGA2);
- 		else
--			viafb_fill_crtc_timing(&viafbinfo->var,
-+			viafb_fill_crtc_timing(&viafbinfo->var, 0, 0,
- 				(viaparinfo->shared->iga1_devices & VIA_CRT)
- 				? IGA1 : IGA2);
- 
-@@ -1918,9 +1923,9 @@ int viafb_setmode(int video_bpp, int video_bpp1)
- 	if (viafb_DVI_ON) {
- 		if (viaparinfo->shared->tmds_setting_info.iga_path == IGA2
- 			&& viafb_SAMM_ON)
--			viafb_dvi_set_mode(&var2, IGA2);
-+			viafb_dvi_set_mode(&var2, cxres, cyres, IGA2);
- 		else
--			viafb_dvi_set_mode(&viafbinfo->var,
-+			viafb_dvi_set_mode(&viafbinfo->var, 0, 0,
- 				viaparinfo->tmds_setting_info->iga_path);
- 	}
- 
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index 4db5b6e..f8129e4 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -637,7 +637,8 @@ extern int viafb_LCD_ON;
- extern int viafb_DVI_ON;
- extern int viafb_hotplug;
- 
--void viafb_fill_crtc_timing(const struct fb_var_screeninfo *var, int iga);
-+void viafb_fill_crtc_timing(const struct fb_var_screeninfo *var,
-+	u16 cxres, u16 cyres, int iga);
- void viafb_set_vclock(u32 CLK, int set_iga);
- void viafb_load_reg(int timing_value, int viafb_load_reg_num,
- 	struct io_register *reg,
+ static void integrated_lvds_disable(struct lvds_setting_information
+diff --git a/drivers/video/via/lcd.h b/drivers/video/via/lcd.h
+index 77ca7b8..8f3e4e0 100644
+--- a/drivers/video/via/lcd.h
++++ b/drivers/video/via/lcd.h
+@@ -76,7 +76,8 @@ void __devinit viafb_init_lvds_output_interface(struct lvds_chip_information
+ 				*plvds_chip_info,
+ 				struct lvds_setting_information
+ 				*plvds_setting_info);
+-void viafb_lcd_set_mode(struct lvds_setting_information *plvds_setting_info,
++void viafb_lcd_set_mode(const struct fb_var_screeninfo *var, u16 cxres,
++	u16 cyres, struct lvds_setting_information *plvds_setting_info,
+ 	struct lvds_chip_information *plvds_chip_info);
+ bool __devinit viafb_lvds_trasmitter_identify(void);
+ void viafb_init_lvds_output_interface(struct lvds_chip_information
 -- 
 1.7.9
 
