@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab2BNHtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:49:03 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54704 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab2BNHs7 (ORCPT
+	id S1757078Ab2BNHwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:52:00 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55811 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab2BNHv7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:48:59 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Feb 2012 16:47:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [PATCHv21 05/16] mm: compaction: export some of the functions
-Message-Id: <20120214164716.371623c0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1328895151-5196-6-git-send-email-m.szyprowski@samsung.com>
-References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
-	<1328895151-5196-6-git-send-email-m.szyprowski@samsung.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 02:51:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1202140929040.2721@tux.localdomain>
+References: <1329204499-2671-1-git-send-email-hamo.by@gmail.com> <alpine.LFD.2.02.1202140929040.2721@tux.localdomain>
+From: Yang Bai <hamo.by@gmail.com>
+Date: Tue, 14 Feb 2012 15:51:39 +0800
+Message-ID: <CAO_0yfPtibyYKZWtf0y3nFaijcuEKZbejaWsOFebrEinv_O0_Q@mail.gmail.com>
+Subject: Re: [PATCH] slab: warning if total alloc size overflow
+To: Pekka Enberg <penberg@kernel.org>
+Cc: cl@linux-foundation.org, mpm@selenic.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 18:32:20 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Tue, Feb 14, 2012 at 3:31 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Tue, 14 Feb 2012, Yang Bai wrote:
+>
+> Did you check how much kernel text size increases? I'm pretty sure we'd need
+> to wrap this with CONFIG_SLAB_OVERFLOW ifdef.
+>
+>                        Pekka
 
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> This commit exports some of the functions from compaction.c file
-> outside of it adding their declaration into internal.h header
-> file so that other mm related code can use them.
-> 
-> This forced compaction.c to always be compiled (as opposed to being
-> compiled only if CONFIG_COMPACTION is defined) but as to avoid
-> introducing code that user did not ask for, part of the compaction.c
-> is now wrapped in on #ifdef.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Tested-by: Rob Clark <rob.clark@linaro.org>
-> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Hi Pekka,
 
-Reivewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I did not find anything like SLAB_OVERFLOW using grep. Could you
+explain it more in detail?
 
-Onto linux-next(Feb13), becasue of a patch
-" mm: compaction: make compact_control order signed", 
- (41f0810873917dc3a05ec955651f6d7edf1e8946)
+-- 
+    """
+    Keep It Simple,Stupid.
+    """
 
-compaction_control.order should be changed to be signed.
-
-
+Chinese Name: 白杨
+Nick Name: Hamo
+Homepage: http://hamobai.com/
+GPG KEY ID: 0xA4691A33
+Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
