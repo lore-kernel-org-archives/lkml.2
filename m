@@ -1,116 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758933Ab2BNByN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:54:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42599 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758715Ab2BNBx0 (ORCPT
+	id S1758912Ab2BNByK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:54:10 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758410Ab2BNBxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 20:53:26 -0500
+	Mon, 13 Feb 2012 20:53:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/16] perf tools: Fix build dependency of perf python extension
-Date: Mon, 13 Feb 2012 23:52:42 -0200
-Message-Id: <1329184375-27911-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/16] perf tools: Remove unused functions from debugfs object
+Date: Mon, 13 Feb 2012 23:52:50 -0200
+Message-Id: <1329184375-27911-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.123.g65da0
 In-Reply-To: <1329184375-27911-1-git-send-email-acme@infradead.org>
 References: <1329184375-27911-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The perf python extention (perf.so) file lacks its dependencies in the
-Makefile so that it cannot be refreshed if one of source files it depends
-is changed. Fix it by putting them in a separate file and processing it in
-both of Makefile and setup.py.
+Following debugfs object functions are not referenced
+within the code:
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+  int debugfs_valid_entry(const char *path);
+  int debugfs_umount(void);
+  int debugfs_write(const char *entry, const char *value);
+  int debugfs_read(const char *entry, char *buffer, size_t size);
+  void debugfs_force_cleanup(void);
+  int debugfs_make_path(const char *element, char *buffer, int size);
+
+Removing them.
+
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1329043524-12470-1-git-send-email-namhyung@gmail.com
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Link: http://lkml.kernel.org/r/1327674868-10486-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                |    5 ++++-
- tools/perf/util/python-ext-sources |   17 +++++++++++++++++
- tools/perf/util/setup.py           |    8 ++++----
- 3 files changed, 25 insertions(+), 5 deletions(-)
- create mode 100644 tools/perf/util/python-ext-sources
+ tools/perf/util/debugfs.c |  141 ---------------------------------------------
+ tools/perf/util/debugfs.h |    6 --
+ 2 files changed, 0 insertions(+), 147 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 64df5de..8359fa1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -183,7 +183,10 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
+diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
+index ffc35e7..dd8b193 100644
+--- a/tools/perf/util/debugfs.c
++++ b/tools/perf/util/debugfs.c
+@@ -15,32 +15,6 @@ static const char *debugfs_known_mountpoints[] = {
+ 	0,
+ };
  
--$(OUTPUT)python/perf.so: $(PYRF_OBJS)
-+PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
-+PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
-+
-+$(OUTPUT)python/perf.so: $(PYRF_OBJS) $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
- 	mkdir -p $(OUTPUT)python && \
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-new file mode 100644
-index 0000000..ff606f4
---- /dev/null
-+++ b/tools/perf/util/python-ext-sources
-@@ -0,0 +1,17 @@
-+#
-+# List of files needed by perf python extention
-+#
-+# Each source file must be placed on its own line so that it can be
-+# processed by Makefile and util/setup.py accordingly.
-+#
-+
-+util/python.c
-+util/ctype.c
-+util/evlist.c
-+util/evsel.c
-+util/cpumap.c
-+util/thread_map.c
-+util/util.c
-+util/xyarray.c
-+util/cgroup.c
-+util/debugfs.c
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 36d4c56..d0f9f29 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -24,11 +24,11 @@ cflags += getenv('CFLAGS', '').split()
- build_lib = getenv('PYTHON_EXTBUILD_LIB')
- build_tmp = getenv('PYTHON_EXTBUILD_TMP')
+-/* use this to force a umount */
+-void debugfs_force_cleanup(void)
+-{
+-	debugfs_find_mountpoint();
+-	debugfs_premounted = 0;
+-	debugfs_umount();
+-}
+-
+-/* construct a full path to a debugfs element */
+-int debugfs_make_path(const char *element, char *buffer, int size)
+-{
+-	int len;
+-
+-	if (strlen(debugfs_mountpoint) == 0) {
+-		buffer[0] = '\0';
+-		return -1;
+-	}
+-
+-	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
+-	if (len >= size)
+-		return len+1;
+-
+-	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
+-	return 0;
+-}
+-
+ static int debugfs_found;
  
-+ext_sources = [f.strip() for f in file('util/python-ext-sources')
-+				if len(f.strip()) > 0 and f[0] != '#']
-+
- perf = Extension('perf',
--		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
--			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
--			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c',
--			     'util/debugfs.c'],
-+		  sources = ext_sources,
- 		  include_dirs = ['util/include'],
- 		  extra_compile_args = cflags,
-                  )
+ /* find the path to the mounted debugfs */
+@@ -97,17 +71,6 @@ int debugfs_valid_mountpoint(const char *debugfs)
+ 	return 0;
+ }
+ 
+-
+-int debugfs_valid_entry(const char *path)
+-{
+-	struct stat st;
+-
+-	if (stat(path, &st))
+-		return -errno;
+-
+-	return 0;
+-}
+-
+ static void debugfs_set_tracing_events_path(const char *mountpoint)
+ {
+ 	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
+@@ -149,107 +112,3 @@ void debugfs_set_path(const char *mountpoint)
+ 	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
+ 	debugfs_set_tracing_events_path(mountpoint);
+ }
+-
+-/* umount the debugfs */
+-
+-int debugfs_umount(void)
+-{
+-	char umountcmd[128];
+-	int ret;
+-
+-	/* if it was already mounted, leave it */
+-	if (debugfs_premounted)
+-		return 0;
+-
+-	/* make sure it's a valid mount point */
+-	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
+-	if (ret)
+-		return ret;
+-
+-	snprintf(umountcmd, sizeof(umountcmd),
+-		 "/bin/umount %s", debugfs_mountpoint);
+-	return system(umountcmd);
+-}
+-
+-int debugfs_write(const char *entry, const char *value)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret, count;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* get how many chars we're going to write */
+-	count = strlen(value);
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDWR);
+-	if (fd < 0)
+-		return -errno;
+-
+-	while (count > 0) {
+-		/* write it */
+-		ret = write(fd, value, count);
+-		if (ret <= 0) {
+-			if (ret == EAGAIN)
+-				continue;
+-			close(fd);
+-			return -errno;
+-		}
+-		count -= ret;
+-	}
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* return success */
+-	return 0;
+-}
+-
+-/*
+- * read a debugfs entry
+- * returns the number of chars read or a negative errno
+- */
+-int debugfs_read(const char *entry, char *buffer, size_t size)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
+-		return -errno;
+-
+-	do {
+-		/* read it */
+-		ret = read(fd, buffer, size);
+-		if (ret == 0) {
+-			close(fd);
+-			return EOF;
+-		}
+-	} while (ret < 0 && errno == EAGAIN);
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* make *sure* there's a null character at the end */
+-	buffer[ret] = '\0';
+-
+-	/* return the number of chars read */
+-	return ret;
+-}
+diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
+index 4a878f7..68f3e87 100644
+--- a/tools/perf/util/debugfs.h
++++ b/tools/perf/util/debugfs.h
+@@ -3,14 +3,8 @@
+ 
+ const char *debugfs_find_mountpoint(void);
+ int debugfs_valid_mountpoint(const char *debugfs);
+-int debugfs_valid_entry(const char *path);
+ char *debugfs_mount(const char *mountpoint);
+-int debugfs_umount(void);
+ void debugfs_set_path(const char *mountpoint);
+-int debugfs_write(const char *entry, const char *value);
+-int debugfs_read(const char *entry, char *buffer, size_t size);
+-void debugfs_force_cleanup(void);
+-int debugfs_make_path(const char *element, char *buffer, int size);
+ 
+ extern char debugfs_mountpoint[];
+ extern char tracing_events_path[];
 -- 
 1.7.9.123.g65da0
 
