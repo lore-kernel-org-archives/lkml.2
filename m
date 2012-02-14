@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760201Ab2BNLla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 06:41:30 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44708 "EHLO
+	id S1760235Ab2BNLlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:41:37 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57633 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760128Ab2BNLl0 (ORCPT
+	by vger.kernel.org with ESMTP id S1760192Ab2BNLlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 06:41:26 -0500
+	Tue, 14 Feb 2012 06:41:35 -0500
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-arch@vger.kernel.org
 Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        linux-kernel@vger.kernel.org,
         Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH 03/40] avr32: Don't mask signals in the error path
-Date: Tue, 14 Feb 2012 11:40:36 +0000
-Message-Id: <1329219673-28711-4-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 04/40] avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
+Date: Tue, 14 Feb 2012 11:40:37 +0000
+Message-Id: <1329219673-28711-5-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
 References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
@@ -22,60 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-The current handle_signal() implementation is broken - it will mask
-signals if we fail to setup the signal stack frame, which isn't the
-desired behaviour, we should only be masking signals if we succeed in
-setting up the stack frame. It looks like this code was copied from
-the old (broken) arm implementation but wasn't updated when the arm
-code was fixed in commit a6c61e9dfdd0 ("[ARM] 3168/1: Update ARM
-signal delivery and masking").
+It is wrong to change ->blocked directly, see e6fa16ab.
+Change  handle_signal() and sys_rt_sigreturn() to use
+the right helper, set_current_blocked().
 
 Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reviewed-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/avr32/kernel/signal.c |   25 ++++++++++++-------------
- 1 files changed, 12 insertions(+), 13 deletions(-)
+ arch/avr32/kernel/signal.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index 64f886f..9c075e1 100644
+index 9c075e1..06f4293 100644
 --- a/arch/avr32/kernel/signal.c
 +++ b/arch/avr32/kernel/signal.c
-@@ -238,22 +238,21 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	 */
- 	ret |= !valid_user_regs(regs);
+@@ -87,10 +87,7 @@ asmlinkage int sys_rt_sigreturn(struct pt_regs *regs)
+ 		goto badframe;
  
-+	if (ret != 0) {
-+		force_sigsegv(sig, current);
-+		return;
-+	}
-+
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+@@ -226,6 +223,7 @@ static inline void
+ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+ 	      sigset_t *oldset, struct pt_regs *regs, int syscall)
+ {
++	sigset_t blocked;
+ 	int ret;
+ 
  	/*
--	 * Block the signal if we were unsuccessful.
-+	 * Block the signal if we were successful.
+@@ -246,13 +244,10 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+ 	/*
+ 	 * Block the signal if we were successful.
  	 */
--	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked, &current->blocked,
--			  &ka->sa.sa_mask);
-+	spin_lock_irq(&current->sighand->siglock);
-+	sigorsets(&current->blocked, &current->blocked,
-+		  &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
- 		sigaddset(&current->blocked, sig);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
--	}
--
--	if (ret == 0)
--		return;
--
--	force_sigsegv(sig, current);
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
+-	spin_lock_irq(&current->sighand->siglock);
+-	sigorsets(&current->blocked, &current->blocked,
+-		  &ka->sa.sa_mask);
++	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+ 	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&current->blocked, sig);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++		sigaddset(&blocked, sig);
++	set_current_blocked(&blocked);
  }
  
  /*
