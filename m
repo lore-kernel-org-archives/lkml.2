@@ -1,141 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab2BNWZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:25:31 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52454 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761299Ab2BNWZZ convert rfc822-to-8bit (ORCPT
+	id S932604Ab2BNW1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:27:33 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:33358 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329Ab2BNW1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:25:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH 1/6] ACPI: Introduce ACPI D3_COLD state support
-Date: Tue, 14 Feb 2012 23:29:16 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com> <201202132125.15537.rjw@sisk.pl> <1329203228.19384.35.camel@rui.sh.intel.com>
-In-Reply-To: <1329203228.19384.35.camel@rui.sh.intel.com>
+	Tue, 14 Feb 2012 17:27:30 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202142329.16516.rjw@sisk.pl>
+In-Reply-To: <20120214.144622.678577766818888054.davem@davemloft.net>
+References: <1329230375-25508-1-git-send-email-toby.gray@realvnc.com>
+	<20120214.144622.678577766818888054.davem@davemloft.net>
+Date: Tue, 14 Feb 2012 23:27:29 +0100
+Message-ID: <CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
+Subject: Re: [PATCH 1/1] usb: cdc-ncm: Increase maximum allowed datagram size
+From: Alexey Orishko <alexey.orishko@gmail.com>
+To: David Miller <davem@davemloft.net>, toby.gray@realvnc.com
+Cc: oliver@neukum.name, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 14, 2012, Zhang Rui wrote:
-> Hi, Rafael,
-> 
-> On 一, 2012-02-13 at 21:25 +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 13, 2012, Lin Ming wrote:
-> > > From: Zhang Rui <rui.zhang@intel.com>
-> > > 
-> > > If a device has _PR3._ON, it means the device supports D3_HOT.
-> > > If a device has _PR3._OFF, it means the device supports D3_COLD.
-> > > Add the ability to validate and enter D3_COLD state in ACPI.
-> > > 
-> > > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > 
-> > This is supposed to be ACPI 5.0 support, right?
-> > 
-> No, D3_HOT is introduced in ACPI spec 4.0.
-> According to the spec, _PR3 is used for devices that support both
-> D3(D3_COLD) and D3HOT.
+On Tue, Feb 14, 2012 at 8:46 PM, David Miller <davem@davemloft.net> wrote:
+>
+> Can a USB expert please sanity check this before I apply it?
 
-Yes, it does.
+I would recommend to change CDC_NCM_NTB_MAX_SIZE_TX(RX) to 32K and
+simply set MAX_DATAGRAM_SIZE to 16K
 
-> The confusion here is that Linux D3 equals ACPICA D3HOT and Linux
-> D3_COLD equals ACPICA D3.
-> For example, when enter Linux ACPI D3, the reference count of ACPI Power
-> Resources in _PR3 is increased by one.
-
-That's correct.
-
-> > So can anyone please tell me what part of the ACPI 5.0 spec is the
-> > basis of this patch, because I can't see that immediately?
-> > 
-> > The only places where D3Cold is _mentioned_ are Section 7.2.12 (_PRE, which
-> > appears to be new in 5.0), Section 7.2.20 (_S0W), Section 7.2.21 (_S1W),
-> > Section 7.2.22 (_S2W), Section 7.2.23 (_S3W) and Section 7.2.24 (_S4W).
-> > None of them mentions those _PR3._ON and _PR3._OFF things above.
-> > 
-> > Moreover, my understanding of the spec is that D3Cold means all of the
-> > power resources returned by _PR3 are "off" (whereas some of them will be
-> > "on" in D3hot).
-> > 
-> Agreed.
-> 
-> > > ---
-> > >  drivers/acpi/power.c |    4 ++--
-> > >  drivers/acpi/scan.c  |   10 +++++++++-
-> > >  2 files changed, 11 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> > > index 9ac2a9f..0d681fb 100644
-> > > --- a/drivers/acpi/power.c
-> > > +++ b/drivers/acpi/power.c
-> > > @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
-> > >  {
-> > >  	int result;
-> > >  
-> > > -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
-> > > +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
-> > >  		return -EINVAL;
-> > >  
-> > >  	if (device->power.state == state)
-> > >  		return 0;
-> > >  
-> > >  	if ((device->power.state < ACPI_STATE_D0)
-> > > -	    || (device->power.state > ACPI_STATE_D3))
-> > > +	    || (device->power.state > ACPI_STATE_D3_COLD))
-> > >  		return -ENODEV;
-> > >  
-> > >  	/* TBD: Resources must be ordered. */
-> > > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > > index 8ab80ba..a9d4391 100644
-> > > --- a/drivers/acpi/scan.c
-> > > +++ b/drivers/acpi/scan.c
-> > > @@ -881,8 +881,16 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
-> > >  
-> > >  			device->power.flags.power_resources = 1;
-> > >  			ps->flags.valid = 1;
-> > > -			for (j = 0; j < ps->resources.count; j++)
-> > > +			for (j = 0; j < ps->resources.count; j++) {
-> > >  				acpi_bus_add_power_resource(ps->resources.handles[j]);
-> > > +				/* Check for D3_COLD support. _PR3._OFF equals D3_COLD ? */
-> > > +				if (i == ACPI_STATE_D3) {
-> > > +					if (j == 0)
-> > > +						device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> > > +					status = acpi_get_handle(ps->resources.handles[j], "_OFF",  &handle);
-> > > +					device->power.states[ACPI_STATE_D3_COLD].flags.valid &= ACPI_SUCCESS(status);
-> > > +				}
-> > > +			}
-> > 
-> > Sorry, but this doesn't make sense to me.  Power resources always have
-> > the _OFF method, right?
-> > 
-> I'm not sure.
-
-That would be explicitly against the spec that says that power resources
-are *required* to have _ON, _OFF and _STA.
-
-> I thought I had seen ACPI Power Resources without _OFF
-> control method somewhere in bugzilla, but I can not find it out now.
-
-That, clearly, is a firmware bug.
-
-> Hmm, how about set D3_COLD support if _PR3 exists, but leave a warning
-> message if _OFF doesn't exist, for now?
-
-I don't think we need to set D3_COLD support at all.  In fact, it is always
-supported (as I said, if all power resources used by a device are off, the
-device is in D3_COLD pretty much by definition).
-
-Thanks,
-Rafael
+/alexey
