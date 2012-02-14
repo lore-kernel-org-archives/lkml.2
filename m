@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760870Ab2BNOtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:49:42 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:51168
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760781Ab2BNOtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:49:39 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] scsi: Fix typo in mv_sas.c
-Date: Tue, 14 Feb 2012 23:49:12 +0900
-Message-Id: <1329230952-2201-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1760864Ab2BNOuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:50:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751076Ab2BNOuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 09:50:35 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Enable the compat keyctl wrapper on s390x
+To: keyrings@linux-nfs.org
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        dan@danny.cz, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux-s390@vger.kernel.org, stable@vger.kernel.org
+Date: Tue, 14 Feb 2012 14:50:22 +0000
+Message-ID: <20120214145022.12531.16731.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "internel" to "internal" in
-drivers/scsi/mvsas/mv_sas.c
+Enable the compat keyctl wrapper on s390x so that 32-bit s390 userspace can
+call the keyctl() syscall.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+There's an s390x assembly wrapper that truncates all the register values to
+32-bits and this then calls compat_sys_keyctl() - but the latter only exists if
+CONFIG_KEYS_COMPAT is enabled, and the s390 Kconfig doesn't enable it.
+
+Without this patch, 32-bit calls to the keyctl() syscall are given an ENOSYS
+error:
+
+	[root@devel4 ~]# keyctl show
+	Session Keyring
+	-3: key inaccessible (Function not implemented)
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: dan@danny.cz
+cc: Carsten Otte <cotte@de.ibm.com>
+cc: Christian Borntraeger <borntraeger@de.ibm.com>
+cc: linux-s390@vger.kernel.org
+cc: stable@vger.kernel.org
 ---
- drivers/scsi/mvsas/mv_sas.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index a4884a5..1c910c7 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -1411,7 +1411,7 @@ static int mvs_exec_internal_tmf_task(struct domain_device *dev,
+ arch/s390/Kconfig |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index d172758..6d99a5f 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -227,6 +227,9 @@ config COMPAT
+ config SYSVIPC_COMPAT
+ 	def_bool y if COMPAT && SYSVIPC
  
- 		if (res) {
- 			del_timer(&task->timer);
--			mv_printk("executing internel task failed:%d\n", res);
-+			mv_printk("executing internal task failed:%d\n", res);
- 			goto ex_err;
- 		}
++config KEYS_COMPAT
++	def_bool y if COMPAT && KEYS
++
+ config AUDIT_ARCH
+ 	def_bool y
  
--- 
-1.7.6.5
 
