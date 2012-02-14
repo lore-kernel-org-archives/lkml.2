@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2BNKu0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 05:50:26 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:3727 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753566Ab2BNKuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 05:50:25 -0500
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2dI9371I1432N98dKzz1202hzz15d4R8275dhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZDQ3U-02-31U-02
-X-M-MSG: 
-Date: Tue, 14 Feb 2012 11:50:18 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: David Ahern <dsahern@gmail.com>
-CC: Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Arun Sharma <asharma@fb.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wang <jasowang@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roberto Agostino Vitillo <ravitillo@lbl.gov>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, <arnaldo.melo@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-Message-ID: <20120214105018.GV22598@amd.com>
-References: <1329184375-27911-1-git-send-email-acme@infradead.org>
- <4F39CBE0.6050806@gmail.com>
- <4F39D00D.2060206@gmail.com>
- <4F39ECDB.5090609@lge.com>
- <4F39EFBB.2010301@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F39EFBB.2010301@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1756538Ab2BNLDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 06:03:34 -0500
+Received: from skyrme.org ([193.175.80.135]:34709 "EHLO skyrme.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751442Ab2BNLDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 06:03:31 -0500
+X-Greylist: delayed 1734 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Feb 2012 06:03:31 EST
+Date: 14 Feb 2012 10:34:25 +0000
+Message-Id: <1329215672-15706-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: sameo@linux.intel.com
+Cc: dmitry.torokhov@gmail.com, kernel@pengutronix.de,
+        u.kleine-koenig@pengutronix.de, philippe.retornaz@epfl.ch,
+        michael.thalmeier@hale.at, linux-kernel@vger.kernel.org,
+        "Oskar Schirmer" <oskar@scara.com>
+Subject: [PATCH 0/7] add support for mc13892 I2C based touch panel for mx35_3ds
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 10:23:07PM -0700, David Ahern wrote:
-> On 2/13/12 10:10 PM, Namhyung Kim wrote:
-> >>
-> >
-> >It happened because I used old kernel version that isn't aware of the
-> >exclude_guest bit. So the check on attr->__reserved_1 in
-> >core.c::perf_copy_attr() failed and then ended up seeing EINVAL at
-> >perf_evsel__open().
-> 
-> comes back to 1aed2671738785e8f5aea663a6fda91aa7ef59b5 again. See
-> 
-> https://lkml.org/lkml/2012/2/8/234
+mc13xxx touch panel support is limited to SPI based solutions
+and to mc13783 based systems when it is about touch panel.
 
-Grr. I totally forgot that issue. Is there some way to detect the perf
-kernel-features? Otherwise the only fix seems to be to drop the patch
-changing the default. The crashes should be fixed by the other patch
-already.
+Add both I2C support to the mfd mc13xxx-core driver
+and mc13892 specific support to the mc13xxx touch driver,
+including calibration support for the latter.
 
+Insert declarations needed for use with mx35_3ds development board.
 
-	Joerg
+Oskar Schirmer (7):
+  mfd: move mc13xxx global declarations to header file
+  mfd: split off mc13xxx SPI specifica from core
+  mfd: add I2C handling to mc13xxx driver
+  input/touchscreen: rename mc13783_ts.c
+  input/touchscreen: add support for mc13892
+  input/touchscreen: add calibration functionality with mc13xxx series
+  arm/imx: add mc13892 I2C based touch panel support for mx35_3ds
+
+ arch/arm/mach-imx/mach-mx35_3ds.c      |   27 ++
+ drivers/input/touchscreen/Kconfig      |   11 +-
+ drivers/input/touchscreen/Makefile     |    2 +-
+ drivers/input/touchscreen/mc13783_ts.c |  259 -------------------
+ drivers/input/touchscreen/mc13xxx_ts.c |  428 ++++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig                    |   23 ++-
+ drivers/mfd/Makefile                   |    2 +
+ drivers/mfd/mc13xxx-core.c             |  183 ++------------
+ drivers/mfd/mc13xxx-i2c.c              |  149 +++++++++++
+ drivers/mfd/mc13xxx-spi.c              |  172 +++++++++++++
+ include/linux/mfd/mc13xxx.h            |   77 ++++--
+ 11 files changed, 882 insertions(+), 451 deletions(-)
+ delete mode 100644 drivers/input/touchscreen/mc13783_ts.c
+ create mode 100644 drivers/input/touchscreen/mc13xxx_ts.c
+ create mode 100644 drivers/mfd/mc13xxx-i2c.c
+ create mode 100644 drivers/mfd/mc13xxx-spi.c
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.7.5.4
 
