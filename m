@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759189Ab2BNERB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 23:17:01 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36737 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756171Ab2BNERA (ORCPT
+	id S1759360Ab2BNEXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 23:23:41 -0500
+Received: from mail4.aviatnet.com ([192.147.115.31]:58161 "EHLO
+	mail4.aviatnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759300Ab2BNEXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 23:17:00 -0500
-X-Sasl-enc: DXCZCO2m72zKZBv5MExXQz5e2tpO5VAWmWyLRx2cyws6 1329193019
-Date: Mon, 13 Feb 2012 20:05:46 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: Staging: bcm: Don't leak 'pstAddIndication' in
- CmHost.c::StoreCmControlResponseMessage()
-Message-ID: <20120214040546.GA17165@kroah.com>
-References: <alpine.LNX.2.00.1201242338500.27508@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1201242346380.27508@swampdragon.chaosbits.net>
- <20120209175217.GA13959@kroah.com>
- <alpine.LNX.2.00.1202092329110.32491@swampdragon.chaosbits.net>
- <20120210180037.GA588@kroah.com>
- <alpine.LNX.2.00.1202120051310.7100@swampdragon.chaosbits.net>
+	Mon, 13 Feb 2012 23:23:40 -0500
+Subject: Re: [PATCH v4] rtc: ds1307: generalise ram size and offset
+From: Austin Boyle <Austin.Boyle@aviatnet.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, <rtc-linux@googlegroups.com>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120213143613.GA9537@pengutronix.de>
+References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
+	 <20120111110650.GC2605@pengutronix.de>
+	 <1326320516.3096.64.camel@pc786-ubu.gnet.global.vpn>
+	 <20120119194541.GA32483@pengutronix.de>
+	 <1328143057.3159.34.camel@pc786-ubu.gnet.global.vpn>
+	 <1328221704.3159.50.camel@pc786-ubu.gnet.global.vpn>
+	 <20120207145652.GH2539@pengutronix.de>
+	 <1328739796.3117.77.camel@pc786-ubu.gnet.global.vpn>
+	 <20120208143624.592303f5.akpm@linux-foundation.org>
+	 <20120213143613.GA9537@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Feb 2012 17:23:34 +1300
+Message-ID: <1329193414.3229.27.camel@pc786-ubu.gnet.global.vpn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1202120051310.7100@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.1.34]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 12:54:31AM +0100, Jesper Juhl wrote:
-> On Fri, 10 Feb 2012, Greg KH wrote:
-> 
-> > On Thu, Feb 09, 2012 at 11:33:25PM +0100, Jesper Juhl wrote:
-> > > From: Jesper Juhl <jj@codesealer.com>
-> > > 
-> > > We allocate memory for 'pstAddIndication' with kmalloc() in
-> > > drivers/staging/bcm/CmHost.c::StoreCmControlResponseMessage() and then
-> > > neglect to free it on a number of exit paths from that function.
-> > > 
-> > > This could probably be resolved cleaner/nicer, but this file needs a
-> > > serious overhaul in any case, so I opted for just fixing the problem
-> > > as directly as I could and then we can clean it up generally
-> > > later... This at least makes it stop bleeding..
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@codesealer.com>
-> > 
-> > Odd, didn't I already apply this patch?
-> > 
-> > confused,
-> > 
-> 
-> Well, you were the one who (in email message with Message-ID: 
-> <20120209175217.GA13959@kroah.com>) said that it no longer applied and 
-> asked for a resubmit against linux-next:
-> 
->   "This patch no longer applies, care to redo it against the latest
->   linux-next tree?"
-> 
-> So I just did what you asked :-)
+Hi Wolfram,
 
-Yes, but...
+> > Wolfram, that tree appears not to be in linux-next?  If so, please
+> > let's get it in there.
+Let me know if there is anything I can do to assist.
 
-> Whether or not you have already applied it somewhere else I have no 
-> idea...
+> This is a temporary tree to coordinate the works between David, Austin
+> and me. I wanted to resend all the patches to the rtc-list once Austin
+> fixed the last flaws I spotted.
+Do you have any comments/objections regarding v4?
 
-I tried to apply this, and it said it was already applied.  So either I
-already merged it, or someone else made the same patch, or you created
-it reverted.
+Cheers,
+Austin.
 
-I'm confused, sorry.
-
-greg k-h
