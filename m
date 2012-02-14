@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab2BNVrc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 16:47:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64585 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932487Ab2BNVr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 16:47:29 -0500
-Date: Tue, 14 Feb 2012 19:47:08 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: Re: [PATCH v6 13/18] perf: add support for taken branch sampling
-	to perf report
-Message-ID: <20120214214708.GC27941@infradead.org>
-References: <1328826068-11713-1-git-send-email-eranian@google.com> <1328826068-11713-14-git-send-email-eranian@google.com>
-MIME-Version: 1.0
+	id S1761282Ab2BNVyx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 16:54:53 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:43119 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757319Ab2BNVyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 16:54:52 -0500
+Date: Tue, 14 Feb 2012 22:54:50 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+Message-ID: <20120214215450.GA22014@one.firstfloor.org>
+References: <4DE6264A.2040901@gmail.com> <CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com> <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com> <201112211325.53648.roucaries.bastien@gmail.com> <CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com> <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com> <CAE2SPAYN1fmQG05GhOVhwBSBqWyXfVxZw2iEbC=YXoegTpkKCA@mail.gmail.com> <4F3AD5F5.7010402@linux.intel.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1328826068-11713-14-git-send-email-eranian@google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4F3AD5F5.7010402@linux.intel.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 09, 2012 at 11:21:03PM +0100, Stephane Eranian escreveu:
-> From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
-> 
-> This patch adds support for taken branch sampling, i.e, the
-> PERF_SAMPLE_BRANCH_STACK feature to perf report. In other
-> words, to display histograms based on taken branches rather
-> than executed instructions addresses.
-> 
-> The new option is called -b and it takes no argument. To
-> generate meaningful output, the perf.data must have been
-> obtained using perf record -b xxx ... where xxx is a branch
-> filter option.
-> 
-> The output shows symbols, modules, sorted by 'who branches
-> where' the most often. The percentages reported in the first
-> column refer to the total number of branches captured and
-> not the usual number of samples.
-> 
-> Here is a quick example.
-> Here branchy is simple test program which looks as follows:
+On Tue, Feb 14, 2012 at 01:45:25PM -0800, Arjan van de Ven wrote:
+> On 2/14/2012 10:17 AM, Bastien ROUCARIES wrote:
+> > ping**5
+> > 
+> so.. with Fedora not really submitting oopses anymore, and the box
+> wiped/down from kernel.org...  what's the point still ??
 
-Thanks for addressing the comments, looks good now,
+Just scanning the mailing lists would be good.
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+But I assume Fedora may be willing to fix their submission?
 
-- Arnaldo
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
