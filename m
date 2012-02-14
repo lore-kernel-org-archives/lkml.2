@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab2BNDk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 22:40:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63772 "EHLO
+	id S1759284Ab2BNDkW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 22:40:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:58422 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062Ab2BNDkL (ORCPT
+	with ESMTP id S1759137Ab2BNDkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 22:40:11 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=Gihb1u4KezEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=UPm3pfgAAAAA:8 a=meVymXHHAAAA:8 a=iu57WdsQ5xXjiqTCFUwA:9 a=ZqOzGO9ICRuq6nBLeRsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=mOio7EKfaG4A:10 a=jeBq3FmKZ4MA:10 a=WQh05Z7aEuoJH3FBF5kA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 13 Feb 2012 22:40:10 -0500
+X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=M5MS61warqwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=hD80L64hAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=68eEZQRoAAAA:8 a=meVymXHHAAAA:8 a=myv_Yk9xFnth4SWAUDYA:9 a=QEXdDO2ut3YA:10 a=T7Kugy-_emkA:10 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=7YLhZ6jOsBkA:10 a=jeBq3FmKZ4MA:10 a=zz4HsAYYGNUsNhryIuQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120214034006.895838443@goodmis.org>
+Message-Id: <20120214034008.199010807@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Mon, 13 Feb 2012 22:39:13 -0500
+Date: Mon, 13 Feb 2012 22:39:16 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 4/9] x86/tracing: Denote the power and cpuidle tracepoints as _rcuidle()
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Geunsik Lim <geunsik.lim@samsung.com>
+Subject: [PATCH 7/9] ftrace: Append wakeup_rt description of ftrace doc
 References: <20120214033909.904564921@goodmis.org>
-Content-Disposition: inline; filename=0004-x86-tracing-Denote-the-power-and-cpuidle-tracepoints.patch
+Content-Disposition: inline; filename=0007-ftrace-Append-wakeup_rt-description-of-ftrace-doc.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,99 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Geunsik Lim <geunsik.lim@samsung.com>
 
-The power and cpuidle tracepoints are called within a rcu_idle_exit()
-section, and must be denoted with the _rcuidle() version of the tracepoint.
+Append and update the description about wakeup/wakeup_rt usage.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Link: http://lkml.kernel.org/r/1328695537-15081-2-git-send-email-geunsik.li=
+m@gmail.com
+
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/process.c    |   24 ++++++++++++------------
- include/trace/events/power.h |    2 ++
- 2 files changed, 14 insertions(+), 12 deletions(-)
+ Documentation/trace/ftrace.txt |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 15763af..44eefde 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -377,8 +377,8 @@ static inline int hlt_use_halt(void)
- void default_idle(void)
- {
- 	if (hlt_use_halt()) {
--		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
--		trace_cpu_idle(1, smp_processor_id());
-+		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle_rcuidle(1, smp_processor_id());
- 		current_thread_info()->status &=3D ~TS_POLLING;
- 		/*
- 		 * TS_POLLING-cleared state must be visible before we
-@@ -391,8 +391,8 @@ void default_idle(void)
- 		else
- 			local_irq_enable();
- 		current_thread_info()->status |=3D TS_POLLING;
--		trace_power_end(smp_processor_id());
--		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
-+		trace_power_end_rcuidle(smp_processor_id());
-+		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- 	} else {
- 		local_irq_enable();
- 		/* loop is done by the caller */
-@@ -450,8 +450,8 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
- static void mwait_idle(void)
- {
- 	if (!need_resched()) {
--		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
--		trace_cpu_idle(1, smp_processor_id());
-+		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle_rcuidle(1, smp_processor_id());
- 		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 1ebc24c..6f51fed 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -226,6 +226,13 @@ Here is the list of current tracers that may be config=
+ured.
+ 	Traces and records the max latency that it takes for
+ 	the highest priority task to get scheduled after
+ 	it has been woken up.
++        Traces all tasks as an average developer would expect.
++
++  "wakeup_rt"
++
++        Traces and records the max latency that it takes for just
++        RT tasks (as the current "wakeup" does). This is useful
++        for those interested in wake up timings of RT tasks.
 =20
-@@ -461,8 +461,8 @@ static void mwait_idle(void)
- 			__sti_mwait(0, 0);
- 		else
- 			local_irq_enable();
--		trace_power_end(smp_processor_id());
--		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
-+		trace_power_end_rcuidle(smp_processor_id());
-+		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- 	} else
- 		local_irq_enable();
- }
-@@ -474,13 +474,13 @@ static void mwait_idle(void)
-  */
- static void poll_idle(void)
- {
--	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
--	trace_cpu_idle(0, smp_processor_id());
-+	trace_power_start_rcuidle(POWER_CSTATE, 0, smp_processor_id());
-+	trace_cpu_idle_rcuidle(0, smp_processor_id());
- 	local_irq_enable();
- 	while (!need_resched())
- 		cpu_relax();
--	trace_power_end(smp_processor_id());
--	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
-+	trace_power_end_rcuidle(smp_processor_id());
-+	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- }
-=20
- /*
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 1bcc2a8..14b3894 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -151,6 +151,8 @@ enum {
-    events get removed */
- static inline void trace_power_start(u64 type, u64 state, u64 cpuid) {};
- static inline void trace_power_end(u64 cpuid) {};
-+static inline void trace_power_start_rcuidle(u64 type, u64 state, u64 cpui=
-d) {};
-+static inline void trace_power_end_rcuidle(u64 cpuid) {};
- static inline void trace_power_frequency(u64 type, u64 state, u64 cpuid) {=
-};
- #endif /* _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED */
+   "hw-branch-tracer"
 =20
 --=20
 1.7.8.3
@@ -136,19 +75,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPOdeWAAoJEIy3vGnGbaoA87cP/2qZ7ZKbVrdFb0uC6gNJ9TOn
-08Si/ogmUw8fYjWQbrEiUwWEQHteCH7tY9OEVewP8PiA8AQh9rsg6lWC3P/uBeDi
-wrtX61/z7Bqf+4whAByxG7mvRlspLjv6QP6RTR0KmQP9BVLyh9i6ItMTmBZ90z50
-B+OooK7HOTvuqFAv47ry9eIt7OmIRZYWkFCt/Mlffh953r5lOK2WN/N3rCBxahrF
-PXDAQtfuVEiWm5R4wDs+IK8YKDU+R61KGRg7EqPeOVVlnk9xyYndq0+fmmHJZ63/
-CnmhiGZ1COKXrwPIBWcsH07dMRq8akg7vy4qVyhOZMPD029sVMz/DWe6wKcPP07G
-2e3RTf0sigTVC3GEzsSuRns8eiQDPJbO+aZU8San/zyV4SyGlTSnradlsSkhqj5Q
-gD1sE94Vhscbog8YB8SZqIb82tbH2SvO+ELglED4cV07MIKzYAB1AbBmkZwmkx+p
-PK32fzToduZWA2J5F5wKSIodhncunm+yzSR+qLxFBUi/bOn3VGmQ6Kb714l1wBbo
-NTwi7m/maJIw7yjMhsUKcOFTOXoPYEJMYr9X5nr5KLVxws2bpvC8QXNnJgmX4n7G
-LOYzyQDZhP2bKm0WaGku15IS/PVl9KpzPtE6HwDIW7IvIGluLm/cxIN8wTmVytdu
-ngqZhP6HZ5dQkONYz1VI
-=bxS7
+iQIcBAABAgAGBQJPOdeYAAoJEIy3vGnGbaoAjKwQAOgCfASYwdM7oh5mtud2+pNS
+Kq+PQ96oWSaRt5+eFkJntOWHc4EwnMgIf8tvm51UAhB9bdKtX+8Hwjc3I+lKtMPE
+wUk3lspdFrm4uJaKKlKqHC6moahvgnVR7bn9chEC+BaoMyq+CoUa/ruoRssCuWXH
+Dcl7cC8p1g9CoQzmyTE6N9YJjE9EVW4P1XCIgGnsOVMQsxvyfE5AW3NCheVq+UO8
+eF18fLJdVP4tviKUn9S8pbFL6XMnSjHnOMfC946iIPvew7n9yNGbMc+FMkY1lFf0
+v/Pax6EWdN8KXSzJfC4FcPs5LaLTKiVaSMWHR/LtaPzJQQ3vvyYg7Cc38ZgPMwQT
+56w6VmLLOk2h7ilgUkwYpJojmdl0hfgyOSHi0JYihlWbrJFTZLtibWbStyjthF4X
+qyVsGSDn2Jak0U88AvqiATtPM4U95taEC//g7fsJnd4hRsXxLtQSwo/4hPIiri6U
+vOBRTl/ywCDVCXVeKK/X7URtQnIKMjb7DjhXlGxrOUNG+EV3UnfqxsFebBTIDji+
+jobVLAkB9Sjf+MsqoWjns0g/BWVTtk5WQPCBcip3URm24jtKzR8/aQaevpLtDy50
+xqSOd5mQVp6PWQ4MNXgcADO2SJzIEZ3tYzeAw5n0KAkPUjRVXT3OlMV+AyvEZKBJ
+4RBoLajsWwMbJdojBRCt
+=b/+x
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
