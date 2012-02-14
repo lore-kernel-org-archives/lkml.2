@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2BNFt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 00:49:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12892 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2BNFt4 convert rfc822-to-8bit (ORCPT
+	id S1752241Ab2BNFvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 00:51:14 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:48461 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751466Ab2BNFvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 00:49:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 13 Feb 2012 21:49:54 -0800
-From: Alok Chauhan <alokc@nvidia.com>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "bones@secretlab.ca" <bones@secretlab.ca>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "dgreid@google.com" <dgreid@google.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 14 Feb 2012 11:19:48 +0530
-Subject: RE: [PATCH v2] i2c: tegra: Add delay before reset the controller
-Thread-Topic: [PATCH v2] i2c: tegra: Add delay before reset the controller
-Thread-Index: Aczn10lWpb5PShHDQf2cM1OgAjqKtwDBOvTQ
-Message-ID: <7A0BFCFE3DA5CD47B0FB7984326F201A13689D386F@BGMAIL01.nvidia.com>
-References: <1324898081-10308-1-git-send-email-alokc@nvidia.com>
- <CAM=Q2cs+myCvph7OXvCDTG7y48oNTfRtjsDzQaKiEXzjdu3pzA@mail.gmail.com>
-In-Reply-To: <CAM=Q2cs+myCvph7OXvCDTG7y48oNTfRtjsDzQaKiEXzjdu3pzA@mail.gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Feb 2012 00:51:13 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX190LENNulF0ANzSth/fIxhJvMnZFCVawrSZiFbQcb
+	0a1g340RBrLrkA
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 0/4] implement viafb SAMM mode
+Date: Tue, 14 Feb 2012 06:12:01 +0000
+Message-Id: <cover.1329194838.git.FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.7.9
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shubhrajyot,
+Hi all,
 
-On Mon, Dec 26, 2011 at 4:44 PM, Alok Chauhan <alokc@nvidia.com> wrote:
-> From: Alok Chauhan <alokc@nvidia.com>
->
-> In NACK error condition, I2C controller violates clock-to-data setup 
-> time before stop. In Software, because of this reset of controller is 
-> happening before I2C controller could complete STOP condition.
->
-> Added delay of 2 clock period before reset the controller in case of 
-> NACK error.
->
-> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
-> ---
-> Instead of setting constant value for delay as was in previous patch, 
-> now in the current modification delay will be calculated based on clock frequency of the bus.
->  drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-tegra.c 
-> b/drivers/i2c/busses/i2c-tegra.c index 6381604..62e197c 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -517,6 +517,14 @@ static int tegra_i2c_xfer_msg(struct 
-> tegra_i2c_dev *i2c_dev,
->        if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
->                return 0;
->
-> +       /*
-> +        * In NACK error condition resetting of I2C controller happens
-> +        * before STOP condition is properly completed by I2C 
-> + controller,
-> +        * so wait for 2 clock cycle to complete STOP condition.
-> +        */
-
->>>>Why do you need to reset the controller in case of a NACK.
-This is required because of hardware limitations. Without reset we can't flus the internal hardware registers.
+this patch series implements viafb single adapter multiple monitor 
+mode in a useful way. It allows showing the same image on 2 devices 
+with different video modes by centering the smaller image.
+It is useful for presentation or similar tasks, whenever dual fb is 
+not desired. I have now used it for quite some time.
 
 
-> +       if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
-> +               udelay(DIV_ROUND_UP(2 * 1000000, 
-> + i2c_dev->bus_clk_rate));
-> +
->        tegra_i2c_init(i2c_dev);
->        if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
->                if (msg->flags & I2C_M_IGNORE_NAK)
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" 
-> in the body of a message to majordomo@vger.kernel.org More majordomo 
-> info at  http://vger.kernel.org/majordomo-info.html
+Best regards,
+
+Florian Tobias Schandinat
+
+
+Florian Tobias Schandinat (4):
+  viafb: set correct polarity for second adapter
+  viafb: fill xres and yres
+  viafb: make single framebuffer multiple adapter mode work
+  viafb: make SAMM to also work on LCD
+
+ drivers/video/via/chip.h |    2 -
+ drivers/video/via/dvi.c  |    5 ++-
+ drivers/video/via/dvi.h  |    3 +-
+ drivers/video/via/hw.c   |   85 +++++++++++++++++++++++----------------------
+ drivers/video/via/hw.h   |    3 +-
+ drivers/video/via/lcd.c  |   18 +++++-----
+ drivers/video/via/lcd.h  |    3 +-
+ 7 files changed, 61 insertions(+), 58 deletions(-)
+
+-- 
+1.7.9
+
