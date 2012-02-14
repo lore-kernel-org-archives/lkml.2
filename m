@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760864Ab2BNOuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 09:50:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17222 "EHLO mx1.redhat.com"
+	id S1760895Ab2BNOup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 09:50:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31642 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab2BNOuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 09:50:35 -0500
+	id S1760691Ab2BNOum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 09:50:42 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] KEYS: Enable the compat keyctl wrapper on s390x
+Subject: [PATCH] KEYS: Use the compat keyctl() syscall wrapper on Sparc64 for
+ Sparc32 compat
 To: keyrings@linux-nfs.org
 Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        dan@danny.cz, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-s390@vger.kernel.org, stable@vger.kernel.org
-Date: Tue, 14 Feb 2012 14:50:22 +0000
-Message-ID: <20120214145022.12531.16731.stgit@warthog.procyon.org.uk>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Tue, 14 Feb 2012 14:50:34 +0000
+Message-ID: <20120214145034.12531.79418.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,43 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the compat keyctl wrapper on s390x so that 32-bit s390 userspace can
-call the keyctl() syscall.
+Use the 32-bit compat keyctl() syscall wrapper on Sparc64 for Sparc32 binary
+compatibility.
 
-There's an s390x assembly wrapper that truncates all the register values to
-32-bits and this then calls compat_sys_keyctl() - but the latter only exists if
-CONFIG_KEYS_COMPAT is enabled, and the s390 Kconfig doesn't enable it.
+Without this, keyctl(KEYCTL_INSTANTIATE_IOV) is liable to malfunction as it
+uses an iovec array read from userspace - though the kernel should survive this
+as it checks pointers and sizes anyway.
 
-Without this patch, 32-bit calls to the keyctl() syscall are given an ENOSYS
-error:
+I think all the other keyctl() function should just work, provided (a) the top
+32-bits of each 64-bit argument register are cleared prior to invoking the
+syscall routine, and the 32-bit address space is right at the 0-end of the
+64-bit address space.  Most of the arguments are 32-bit anyway, and so for
+those clearing is not required.
 
-	[root@devel4 ~]# keyctl show
-	Session Keyring
-	-3: key inaccessible (Function not implemented)
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: dan@danny.cz
-cc: Carsten Otte <cotte@de.ibm.com>
-cc: Christian Borntraeger <borntraeger@de.ibm.com>
-cc: linux-s390@vger.kernel.org
+Signed-off-by: David Howells <dhowells@redhat.com
+cc: "David S. Miller" <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org
 cc: stable@vger.kernel.org
 ---
 
- arch/s390/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/sparc/Kconfig             |    3 +++
+ arch/sparc/kernel/systbls_64.S |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index d172758..6d99a5f 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -227,6 +227,9 @@ config COMPAT
- config SYSVIPC_COMPAT
- 	def_bool y if COMPAT && SYSVIPC
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index ca5580e..312fd5f 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -582,6 +582,9 @@ config SYSVIPC_COMPAT
+ 	depends on COMPAT && SYSVIPC
+ 	default y
  
 +config KEYS_COMPAT
 +	def_bool y if COMPAT && KEYS
 +
- config AUDIT_ARCH
- 	def_bool y
+ endmenu
  
+ source "net/Kconfig"
+diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+index db86b1a..3a58e0d 100644
+--- a/arch/sparc/kernel/systbls_64.S
++++ b/arch/sparc/kernel/systbls_64.S
+@@ -74,7 +74,7 @@ sys_call_table32:
+ 	.word sys_timer_delete, compat_sys_timer_create, sys_ni_syscall, compat_sys_io_setup, sys_io_destroy
+ /*270*/	.word sys32_io_submit, sys_io_cancel, compat_sys_io_getevents, sys32_mq_open, sys_mq_unlink
+ 	.word compat_sys_mq_timedsend, compat_sys_mq_timedreceive, compat_sys_mq_notify, compat_sys_mq_getsetattr, compat_sys_waitid
+-/*280*/	.word sys32_tee, sys_add_key, sys_request_key, sys_keyctl, compat_sys_openat
++/*280*/	.word sys32_tee, sys_add_key, sys_request_key, compat_sys_keyctl, compat_sys_openat
+ 	.word sys_mkdirat, sys_mknodat, sys_fchownat, compat_sys_futimesat, compat_sys_fstatat64
+ /*290*/	.word sys_unlinkat, sys_renameat, sys_linkat, sys_symlinkat, sys_readlinkat
+ 	.word sys_fchmodat, sys_faccessat, compat_sys_pselect6, compat_sys_ppoll, sys_unshare
 
