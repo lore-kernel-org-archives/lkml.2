@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab2BNWMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:12:49 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:55371 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757338Ab2BNWMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:12:45 -0500
-Date: Tue, 14 Feb 2012 17:12:40 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Kerneloops.org defunct?
-Message-ID: <20120214221240.GC11382@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Andi Kleen <andi@firstfloor.org>,
-	Arjan van de Ven <arjan@linux.intel.com>,
-	Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-	Josh Hunt <joshhunt00@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-	Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-	Randy Dunlap <rdunlap@xenotime.net>
-References: <4DE6264A.2040901@gmail.com>
- <CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
- <CAE2SPAYuYTYj9ukDzitKs+d2uKZacJ5eFo7N+-p9pWgf1MWW2w@mail.gmail.com>
- <201112211325.53648.roucaries.bastien@gmail.com>
- <CAE2SPAbYQnoc8CGzQizFq6tCvuks57z2tLCwTjPLhxmViJeBLw@mail.gmail.com>
- <CAE2SPAbx3hJfn_fMU24sEfg6_UFXmRrk1AGznkHZN7YTNiGwCQ@mail.gmail.com>
- <CAE2SPAYN1fmQG05GhOVhwBSBqWyXfVxZw2iEbC=YXoegTpkKCA@mail.gmail.com>
- <4F3AD5F5.7010402@linux.intel.com>
- <20120214215450.GA22014@one.firstfloor.org>
+	id S1761315Ab2BNWNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:13:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36439 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757338Ab2BNWNS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 17:13:18 -0500
+Date: Tue, 14 Feb 2012 14:13:14 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, lars@metafoo.de, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V5 2/2] regmap: add regmap_bulk_write() for register write
+Message-ID: <20120214221313.GB4035@opensource.wolfsonmicro.com>
+References: <1329056383-20312-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5/uDoXvLw7AC5HRs"
 Content-Disposition: inline
-In-Reply-To: <20120214215450.GA22014@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1329056383-20312-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 10:54:50PM +0100, Andi Kleen wrote:
-> On Tue, Feb 14, 2012 at 01:45:25PM -0800, Arjan van de Ven wrote:
-> > On 2/14/2012 10:17 AM, Bastien ROUCARIES wrote:
-> > > ping**5
-> > > 
-> > so.. with Fedora not really submitting oopses anymore, and the box
-> > wiped/down from kernel.org...  what's the point still ??
-> 
-> Just scanning the mailing lists would be good.
-> 
-> But I assume Fedora may be willing to fix their submission?
 
-I hear Fedora just got a new project leader; maybe it's time to
-approach them again?
+--5/uDoXvLw7AC5HRs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-					- Ted
+On Sun, Feb 12, 2012 at 07:49:43PM +0530, Laxman Dewangan wrote:
+> The bulk_write() supports the data transfer to multi
+> register which takes the data into cpu_endianness format
+> and does formatting of data to device format before
+> sending to device.
+> The transfer can be completed in single transfer or multiple
+> transfer based on data formatting.
+
+Applied, thanks.  When posting patches you should only number things for
+the patch series you're currently posting - this isn't patch 2/2, this
+is a single isolated patch.  The numbering is only there to help people
+and tools figure out which order to apply things in.
+
+--5/uDoXvLw7AC5HRs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPOtxTAAoJEBus8iNuMP3dZCwQAIFEp5dbX290LiXUYEHefOCd
+Afbwm1g/6ir5S0EaleILmxyQd6RqpjJ5QSW2ynYe6AqLWBdO9sAS1IaSNk6DQH/w
++WrqdIrCJz9H4RsavhQ9SgNOHRgCsWCki1EYeJ1JQdVhbudhVWH3CfpIrrNpL+Hq
+uE7Y1mmo9BVDU8EpUDoA/aZOeJYcKRDdp/yvg2dAaAqU8yMGZ/ecoKbzHY5SloRp
+EJu2ucSKsn2uijMF9alEOoOMjfSjvDK+0zWLiVnBhGIg9kUSKVuYFCve0L7KuuVP
+hYhssdf1Q6EtSXkKqy82fr08axp8g4VtUqZzYesJ6iNW6qAsVKGQk37wiBnyWYdA
+FI10WWgy5fGoCYinwVvJAiRWdo4kTpipQKYMqWJnMEjdHXhRcevsKy6xDA+xjdtH
+SXm74YmyhX+k++s8p+K+hFOCg4c4FYvEFt19rFYTUMEVIkJlKdSqheDjM11Oomj2
+75r3LQJ0GCOvqBI9bFss7l67RbWou8ey4JTyIesoMb+UuieLkCsBgDAFESKdD8xv
+qTgcSWwMYy3VGY9AEdG5CiQsILBv+qsOayQF0x0jyPZlplvpwndNV5G0sK17MWQe
+C5DfdiPR+5fOAHZcalNcJ3mIbyEsGSlTXjlXtL7ukeGXuBRBVHO0SQaYu1b6p9iR
+T0fEe/IRoxwvJfyLwFy6
+=+2a/
+-----END PGP SIGNATURE-----
+
+--5/uDoXvLw7AC5HRs--
