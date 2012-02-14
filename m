@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2BNA7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 19:59:18 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:39953 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2BNA7P (ORCPT
+	id S1758168Ab2BNA7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 19:59:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53236 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756923Ab2BNA70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 19:59:15 -0500
-Date: Mon, 13 Feb 2012 19:58:35 -0500 (EST)
-Message-Id: <20120213.195835.1573147101037168145.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: mroos@linux.ee, rob.herring@calxeda.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120213214623.GJ11077@ponder.secretlab.ca>
-References: <20120213080618.GA11077@ponder.secretlab.ca>
-	<alpine.SOC.1.00.1202131119040.1488@math.ut.ee>
-	<20120213214623.GJ11077@ponder.secretlab.ca>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 13 Feb 2012 19:59:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.3-rc4
+Date: Tue, 14 Feb 2012 00:52:39 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Ryan Mallon <rmallon@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+References: <4F394D34.6000604@atmel.com>
+In-Reply-To: <4F394D34.6000604@atmel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 13 Feb 2012 16:58:40 -0800 (PST)
+Message-Id: <201202140052.39979.arnd@arndb.de>
+X-Provags-ID: V02:K0:MUC3WQAl6qbetQfGmpZdmxlZvGHmY8pRB6Rg9DjoAs0
+ RTOoN9uK3rCKaYPVCaJHwbgMD7hC8oqmK46yJnr5Dw6L5fvuum
+ xsM9iCxx+Hbw7Y750wWdbIO2G9LC+46Krl09sc5aAitJwVxPoC
+ nGMfnIhK6/X2fv5LjEdJzgu2Jh01XiyJOYfBQgpko12L+kYLF0
+ oMswdwDwianCnHgGeqQqXLIv98jg6cxX7rtC72Hqy9wSOsAnts
+ tkEvmlBlS1q8liTgHZiLkWY7aivPgnTKbcjtoppJLYF7vIAqRw
+ bWL8XxsoFoJ205YasjbIwhqiVoENu55cAHwcq04WRyBUvkMonr
+ TolIsdIbd+0UoDRplRCc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 13 Feb 2012 14:46:23 -0700
+On Monday 13 February 2012, Nicolas Ferre wrote:
+> Olof, Arnd,
+> 
+> Here is the second "fixes" pull request. It collects a simple #ifdef fix, the
+> proper use of ioremap() in the RTC driver and a set of SMC related
+> modifications.
+> The SMC has been modified recently and has broken the pata_at91 driver. The
+> new accessors are fixing this situation. Finally, the old at91_ide driver is
+> removed because it is not maintained anymore, the IDE tree is frozen and PATA
+> should be used instead.
+> 
+> I have also verified that it merges correctly with depends/rmk/for-armsoc and all
+> at91 related 3.4 material...
+> 
+> You can find all this here:
+> 
+> The following changes since commit d65b4e98d7ea3038b767b70fe8be959b2913f16d:
 
-> Ugh; that looks bad.  If it failed there, then the global device node list
-> is corrupted.  I hate to ask you this, but would you be able to git bisect to
-> narrow down the commit that causes the problem?
+Hmm, this is a bit bigger than I would have hoped for an -rc4 pull request.
 
-Wild guess on all of these bugs, bad OF node reference counting and a
-OF node is free'd up prematurely.
+I've applied it now to the fixes branch because it seems necessary, I hope
+this doesn't come back to us in a bad way. Olof, please have a look over
+these patches as well. If you're ok with these, I'll send the entire batch
+to Linus.
 
-If you look at the sparc code that has been subsumed into the generic
-drivers/of/ stuff over the past few years, you'll see that we never
-consistently did any of the reference counting bits on the sparc side.
+	Arnd
 
-I never did it, because I don't anticipate ever having hot-plug
-support for OF nodes.
-
-Anyways, if you now start to mix the drivers/of/ stuff which
-religiously does the reference counting with of_node_{get,put}()
-with the remaining scraps of sparc code that doesn't... it might
-not be pretty.
-
-In the crash dump after your test patch, we are in
-of_find_node_by_phandle() with a 'np' pointer in the allnodes list
-equal to 0x50.
-
-The signature in the original crash dump is identical, except
-that time we were in of_find_node_by_path(), but again the 'np'
-pointer was 0x50.
-
-Something else that might be suspicious were the memblock changes
-that happened this release cycle, so I wouldn't be surprised if
-a bisect turned up something in there.
-
-FWIW I've been running current kernels on my niagara boxes without
-incident for several weeks.
