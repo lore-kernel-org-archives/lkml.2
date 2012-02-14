@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab2BNBJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Feb 2012 20:09:54 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57395 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757611Ab2BNBJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Feb 2012 20:09:52 -0500
-Date: Mon, 13 Feb 2012 17:09:47 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regulator enable/disable delay based on board design: How to
- handle?
-Message-ID: <20120214010946.GE11931@opensource.wolfsonmicro.com>
-References: <4F38D55A.5020208@nvidia.com>
- <20120213163711.GD3494@opensource.wolfsonmicro.com>
- <4F394F28.70709@nvidia.com>
+	id S1758643Ab2BNBL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Feb 2012 20:11:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751048Ab2BNBLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Feb 2012 20:11:55 -0500
+Date: Tue, 14 Feb 2012 03:11:45 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: ronnie sahlberg <ronniesahlberg@gmail.com>
+Cc: Hannes Reinecke <hare@suse.de>, Dor Laor <dlaor@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Christian Hoff <christian.hoff@de.ibm.com>,
+        borntrae@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rusty@rustcorp.com.au, Stefan Hajnoczi <stefanha@gmail.com>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: Pe: [PATCH v5 1/3] virtio-scsi: first version
+Message-ID: <20120214011144.GB5192@redhat.com>
+References: <20120213130005.GB26773@redhat.com>
+ <CAN05THTOY894httm5PjzsHELBB-P8DmpZ4bGoBR7FH1s6Tmcrg@mail.gmail.com>
+ <20120213131848.GD26773@redhat.com>
+ <4F39287A.9030808@suse.de>
+ <CAN05THT=7xJhqAMrAvDsK2Z1_4d+=tV9yhOFkr5Z-i43k5hAGA@mail.gmail.com>
+ <CAN05THT6t_w=9Zt+o-B4s8E3jUMWsxiBvTyySxNEK2QfvLe-BA@mail.gmail.com>
+ <20120213225623.GA2988@redhat.com>
+ <CAN05THS_zTf2VRz6QdccHbkOacnE86LNhtxp7b8twe+XezBU6Q@mail.gmail.com>
+ <20120213233334.GC4430@redhat.com>
+ <CAN05THTTva709Dab9f_PBWxehMWnP9Gg4T7Nnmg7Swk3xuz7aQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C94crkcyjafcjHxo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F394F28.70709@nvidia.com>
-X-Cookie: Your present plans will be successful.
+In-Reply-To: <CAN05THTTva709Dab9f_PBWxehMWnP9Gg4T7Nnmg7Swk3xuz7aQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 14, 2012 at 11:49:55AM +1100, ronnie sahlberg wrote:
+> By just exposing this device to the kernel, the kernel keeps sending,
+> or if not the kernel maybe some other process trying to poll the
+> status?
+> 
+> every few seconds :
+> PREVENT_ALLOW_MEDIUM_REMOVAL  prevent removal
+> PREVENT_ALLOW_MEDIUM_REMOVAL  to immediatel change it back to allow
+> removal again
+> TEST_UNIT_READY
+> 
+> 
+> After I run this
+> mount /dev/sdd1 /mnt
+> 
+> The kernel sends a single
+> PREVENT_ALLOW_MEDIUM_REMOVAL to prevent removal
+> then every few seconds a
+> TEST_UNIT_READY
+> 
+> 
+> This is what it does for removable SBC disks. Maybe it does something
+> differently for "permanent" SBC disks.
+> 
+> regards
+> ronnie sahlberg
 
---C94crkcyjafcjHxo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+There used to be a daemon for this.
 
-On Mon, Feb 13, 2012 at 11:28:00PM +0530, Laxman Dewangan wrote:
-
-> Interesting, Many regulator driver is written like it just take the
-> regulator_init_data as the platform data and does not leave any
-> option to add any new platform parameters.
-> Not sure how can we add platform data without too much tempering on
-> the existing user, but if we can add parameter of delay(settling
-> time) in struct regulator_init_data then almost all driver can
-> support such platform specific delay.
-
-This is part of the reason why the driver_data field is present in the
-constraints - the driver can take that and use it as a pdata within
-pdata structure.  It's not terribly nice to do that but it's possible.
-A standard parameter might cause too much complexity as drivers try to
-implement it even if they don't really need to (for example, due to
-having soft control of this stuff already).
-
---C94crkcyjafcjHxo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPObRUAAoJEBus8iNuMP3dK8wQAI8xnI0usIyEhgli8drPwusw
-1rSYZClk1DCs5Y8sAsb9fZCxwxK+J5Z484/3cVwiH7IV9+2Jh/pVaWzMOeVc0AqH
-cbeIrfqqiXbM/YfR1yE1+W5yYTHB0VzYwISwigAlIHFzNwwncnpCNATqZ/2gclAF
-DaUQASFNWFoebbDChk+3PtqSg0iqeWDbQ84eoNz1QeE37xMgIay0MdN8xhBsuYAY
-8mjyeeNDa6pvtlFQxRsV97vy5YiY/OcvgT2HVhExGjjpEAnN00bWPNWMBJATLYZv
-S9w4f45Ol3zyA4iYCsGZgGwj+92+9AzFWZWBY1jTA7t9uF4I0UocPvNeQ1xYUlOC
-xfGvtgsallinf/RHEvZM9QJDcdWNBKS5cPPvgR3U2EdktTxADCcnYZNJJhb9yd5y
-+z7gNIXNUJBBJIReJVyQdWBDCrUIalULXrWqgzAjeQi5+0/FCWuJHuVtS1+OI41s
-R/CrYC9PFZdTqiDTCCdTQDwesrExYkBTfyi4cQ6ZxphKya1PT05KgP2t6Wbrwa91
-mJZlUmSrpeEiLk23tn2TDXQmFWlsUxSQJ2+Y9AJ6+msNgHRo7wkluNtUdpmLbM89
-3uF3HX9gXdnMXQhhyIzwM6Rl1KwLy5l3MvHCQ/ZOzwn6T0pXNipRzZq2SNaSEYTy
-IJ8e832ml+j4ShFsA4PM
-=hl9e
------END PGP SIGNATURE-----
-
---C94crkcyjafcjHxo--
