@@ -1,161 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab2BNWcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 17:32:39 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:52470 "EHLO ogre.sisk.pl"
+	id S932636Ab2BNWeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 17:34:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52483 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab2BNWch convert rfc822-to-8bit (ORCPT
+	id S932081Ab2BNWeU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 17:32:37 -0500
+	Tue, 14 Feb 2012 17:34:20 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
-Date: Tue, 14 Feb 2012 23:36:28 +0100
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+Date: Tue, 14 Feb 2012 23:38:13 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
         Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
         linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-pm@vger.kernel.org
-References: <1329124271-29464-1-git-send-email-ming.m.lin@intel.com> <201202132148.04961.rjw@sisk.pl> <1329206396.19384.58.camel@rui.sh.intel.com>
-In-Reply-To: <1329206396.19384.58.camel@rui.sh.intel.com>
+References: <Pine.LNX.4.44L0.1202131534040.11382-100000@iolanthe.rowland.org> <1329203489.19384.39.camel@rui.sh.intel.com>
+In-Reply-To: <1329203489.19384.39.camel@rui.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201202142336.28706.rjw@sisk.pl>
+Message-Id: <201202142338.13516.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tuesday, February 14, 2012, Zhang Rui wrote:
-> On 一, 2012-02-13 at 21:48 +0100, Rafael J. Wysocki wrote:
-> > On Monday, February 13, 2012, Lin Ming wrote:
-> > > From: Zhang Rui <rui.zhang@intel.com>
+> Hi, Alan,
+> 
+> On 一, 2012-02-13 at 15:41 -0500, Alan Stern wrote:
+> > On Mon, 13 Feb 2012, Rafael J. Wysocki wrote:
+> > 
+> > > > I'm not sure if this is really the right approach.  What you're trying 
+> > > > to do is implement two different low-power states, basically D3hot and 
+> > > > D3cold.  Currently the runtime PM core doesn't support such things; all 
+> > > > it knows about is low power and full power.
 > > > 
-> > > ACPI Power Resource can power on/off a couple of devices.
-> > > Introduce interfaces to register/unregister a device to/from
-> > > an ACPI Power Resource.
+> > > I'd rather say all it knows about is "suspended" and "active", which mean
+> > > "the device is not processing I/O" and "the device may be processing I/O",
+> > > respectively.  A "suspended" device may or may not be in a low-power state,
+> > > but the runtime PM core doesn't care about that.
+> > 
+> > Yes, okay.  We can say that this patch tries to implement two different 
+> > "suspended" states, basically "low power" and "power off" (or D3hot and 
+> > D3cold).
+> > 
+> Right!
+> 
+> > > > Before doing an ad-hoc implementation, it would be best to step back
+> > > > and think about other subsystems.  Other sorts of devices may well have
+> > > > multiple low-power states.  What's the best way for this to be
+> > > > supported by the PM core?
 > > > 
-> > > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > > ---
-> > >  drivers/acpi/power.c    |  128 +++++++++++++++++++++++++++++++++++++++++++++++
-> > >  include/acpi/acpi_bus.h |    2 +
-> > >  2 files changed, 130 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> > > index 0d681fb..a7e2305 100644
-> > > --- a/drivers/acpi/power.c
-> > > +++ b/drivers/acpi/power.c
-> > > @@ -84,10 +84,25 @@ struct acpi_power_resource {
-> > >  	u32 order;
-> > >  	unsigned int ref_count;
-> > >  	struct mutex resource_lock;
-> > > +	struct list_head devices; /* list for devices powered by this PR */
-> > >  };
-> > >  
-> > >  static struct list_head acpi_power_resource_list;
-> > >  
-> > > +/*
-> > > + * When a power resource is turned on, all the devices are put to an uninitialized
-> > > + * state although their ACPI states are still D0.
-> > > + * To handle this, we need to keep a list of all devices powered by the power resource,
-> > > + * and resume all of them.
-> > > + * Currently, we only support this case:
-> > > + * 1) multiple devices share the same power resoruce,
-> > > + * 2) One device uses One Power Resource ONLY.
+> > > Well, I honestly don't think there's any way they all can be covered at the
+> > > same time and that's why we chose to support only "suspended" and "active"
+> > > as defined above.  The handling of multiple low-power states must be
+> > > implemented outside of the runtime PM core (like in the PCI core, for example).
 > > 
-> > This is incorrect.  We actually support all combinations.
-> 
-> Agreed.
-> 
-> >   However, we don't
-> > generally support checking what devices depend on the given power resource.
+> > That's the point.  If this is to be implemented outside of the runtime
+> > PM core, should the patch be allowed to add new fields to struct
+> > dev_pm_info (which has to be shared among all subsystems)?
 > > 
-> Yes.
-> But all the code in this patch is for runtime D3_COLD support only.
-> At least for the BIOS code on hand, a device that support runtime
-> D3_COLD uses one ACPI Power Resource only.
-> We can add the support for all combinations if there are such kind of
-> BIOS in the market, which I do not think there would be.
+> Surely it shouldn't in this case.
 > 
-> Besides, as a RFC version, I do not want to make a over designed
-> proposal at the beginning.
-> 
-> > > + */
-> > > +struct acpi_powered_device {
-> > > +	struct list_head node;
-> > > +	struct device *dev;
-> > > +};
-> > > +
-> > >  /* --------------------------------------------------------------------------
-> > >                               Power Resource Management
-> > >     -------------------------------------------------------------------------- */
-> > > @@ -455,6 +470,118 @@ int acpi_disable_wakeup_device_power(struct acpi_device *dev)
-> > >                               Device Power Management
-> > >     -------------------------------------------------------------------------- */
-> > >  
-> > > +int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-> > > +{
-> > > +	struct acpi_power_resource *resource;
-> > > +	struct acpi_device *acpi_dev, *res_dev;
-> > > +	acpi_handle res_handle = NULL;
-> > > +	struct acpi_powered_device *apd;
-> > > +	int i;
-> > > +	int ret;
-> > > +
-> > > +	if (!handle || !dev)
-> > > +		return -EINVAL;
-> > > +
-> > > +	ret = acpi_bus_get_device(handle, &acpi_dev);
-> > > +	if (ret)
-> > > +		goto no_power_resource;
-> > > +
-> > > +	if (!acpi_dev->power.flags.power_resources)
-> > > +		goto no_power_resource;
-> > > +
-> > > +	for (i = 0; i <= ACPI_STATE_D3; i++) {
-> > > +		struct acpi_device_power_state *ps = &acpi_dev->power.states[i];
-> > > +
-> > > +		if (!ps->flags.valid)
-> > > +			continue;
-> > > +
-> > > +		if (ps->resources.count > 1)
-> > > +			return 0;
-> > > +
-> > > +		if (!res_handle)
-> > > +			res_handle = ps->resources.handles[0];
-> > > +		else if (res_handle != ps->resources.handles[0])
-> > > +			return 0;
-> > > +	}
+> > Or to put it another way, if we do add new fields to struct dev_pm_info
+> > (like can_power_off) in order to help support multiple "suspended"  
+> > states, shouldn't these new fields be such that they can be used by
+> > many different subsystems rather than being special for the
+> > full-power/no-power situation?
 > > 
-> > I'm not sure what the above checks are needed for.  It seems that this function
-> > will only be called from acpi_bus_add_power_resource() (which needs to be
-> > modified for this purpose, BTW), so it doesn't need to check all those things
-> > (those checks have been made already).
-> > 
-> No. These two APIs are introduced to support the runtime D3_COLD remote
-> wakeup. And they should be invoked by drivers, either in driver code or
-> via bus layer code.
-> 
-> Say, ATA port, who has _PR3 in its ACPI node, knows that it can enter
-> D3_COLD at run time, and it supports remote wakeup in D3_COLD because it
-> has _S0W (return value 4).
-> When remote wakeup event is triggered, there is an ACPI event sent to
-> the ATA controller/port, which sets the ATA controller/port back to D0
-> state.
-> At this time, what we actually need is to resume the ZPODD, rather than
-> the ATA controller/port. To follow the runtime PM model (runtime resume
-> starts from leaf devices),
+> My opinion is that the concept of "no-power state" is unique for all
+> devices/buses/platforms.
 
-Well, this isn't the case.  Parents are always resumed first.
+No, it is not, basically because of power domains.  If they are used,
+then individual device power states are not well defined at all.
 
-> ATA code can use these two APIs to tell ACPI
-> to runtime resume ZPODD device directly, because ZPODD is powered by
-> this Power Resource as well.
+> If any of them support this, they can use the routines without any
+> confusion.
 
-I'm not exactly sure what you're trying to achieve and what you mean by
-"resume a device directly"?  Do you want to run the device's resume
-callback at the time when another device is being resumed?
+No, they can't.
 
+Thanks,
 Rafael
