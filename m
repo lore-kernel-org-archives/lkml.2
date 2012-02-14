@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab2BNIdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 03:33:09 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34023 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2BNIdG (ORCPT
+	id S1756503Ab2BNIeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 03:34:20 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:55774 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab2BNIeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 03:33:06 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 14 Feb 2012 17:31:17 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [PATCHv21 09/16] mm: page_isolation: MIGRATE_CMA isolation
- functions added
-Message-Id: <20120214173117.3f0bf523.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1328895151-5196-10-git-send-email-m.szyprowski@samsung.com>
-References: <1328895151-5196-1-git-send-email-m.szyprowski@samsung.com>
-	<1328895151-5196-10-git-send-email-m.szyprowski@samsung.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 03:34:18 -0500
+Date: Tue, 14 Feb 2012 19:34:07 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+Cc: davem@davemloft.net, linux-geode@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] Correcting some style issues in
+	drivers/crypto/geode-aes.c
+Message-ID: <20120214083407.GA28942@gondor.apana.org.au>
+References: <1328190031.6508.1.camel@blackout-netbook> <20120205041424.GB8219@gondor.apana.org.au> <1328648765.29061.3.camel@blackout-netbook>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1328648765.29061.3.camel@blackout-netbook>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 18:32:24 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Tue, Feb 07, 2012 at 10:06:05PM +0100, Tristan Pourcelot wrote:
+> Le dimanche 05 février 2012 à 15:14 +1100, Herbert Xu a écrit :
+> > On Thu, Feb 02, 2012 at 02:40:31PM +0100, Tristan Pourcelot wrote:
+> > > >From d50e5530201aa02a5232ca9f2458a7fdd18de374 Mon Sep 17 00:00:00 2001
+> > > From: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+> > > Date: Thu, 2 Feb 2012 14:01:03 +0100
+> > > Subject: [PATCH] Correcting some style errors in
+> > >  drivers/crypto/geode-aes.c 
+> > > Signed-off-by: Tristan Pourcelot <tristan.pourcelot@gmail.com>
+> > 
+> > Sorry, your patch doesn't apply against cryptodev:
+> Sorry, I messed up my patch.
+> Here is a correct version that should apply correctly.
 
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> This commit changes various functions that change pages and
-> pageblocks migrate type between MIGRATE_ISOLATE and
-> MIGRATE_MOVABLE in such a way as to allow to work with
-> MIGRATE_CMA migrate type.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Tested-by: Rob Clark <rob.clark@linaro.org>
-> Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+Sigh, it's still broken.  Please try applying the patch the list
+sends back to you.  Your mailer is wrapping long lines.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
