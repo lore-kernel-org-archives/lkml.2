@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab2BNHV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 02:21:57 -0500
+	id S1756553Ab2BNHWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 02:22:08 -0500
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:39050 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab2BNHVy convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751317Ab2BNHWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 02:21:54 -0500
+	Tue, 14 Feb 2012 02:22:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120214120756.0a42f065.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20120214120414.025625c2.kamezawa.hiroyu@jp.fujitsu.com> <20120214120756.0a42f065.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120214121314.6216e0aa.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20120214120414.025625c2.kamezawa.hiroyu@jp.fujitsu.com> <20120214121314.6216e0aa.kamezawa.hiroyu@jp.fujitsu.com>
 From: Greg Thelen <gthelen@google.com>
-Date: Mon, 13 Feb 2012 23:21:34 -0800
-Message-ID: <CAHH2K0Ynh6o5fMXnkbaYOSwYYvJhc7F3f48TsJ34hki6WDJF6Q@mail.gmail.com>
-Subject: Re: [PATCH 2/6 v4] memcg: simplify move_account() check
+Date: Mon, 13 Feb 2012 23:21:45 -0800
+Message-ID: <CAHH2K0a051EnNQbtsx9ztTbcHxKGu8u1tQD60w06aQwUA0nyAw@mail.gmail.com>
+Subject: Re: [PATCH 3/6 v4] memcg: remove PCG_MOVE_LOCK flag from page_cgroup.
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -28,46 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 7:07 PM, KAMEZAWA Hiroyuki
+On Mon, Feb 13, 2012 at 7:13 PM, KAMEZAWA Hiroyuki
 <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> From 9cdb3b63dc8d08cc2220c54c80438c13433a0d12 Mon Sep 17 00:00:00 2001
+> From ffd1b013fe294a80c12e3f30e85386135a6fb284 Mon Sep 17 00:00:00 2001
 > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 2 Feb 2012 10:02:39 +0900
-> Subject: [PATCH 2/6] memcg: simplify move_account() check.
+> Date: Thu, 2 Feb 2012 11:49:59 +0900
+> Subject: [PATCH 3/6] memcg: remove PCG_MOVE_LOCK flag from page_cgroup.
 >
-> In memcg, for avoiding take-lock-irq-off at accessing page_cgroup,
-> a logic, flag + rcu_read_lock(), is used. This works as following
+> PCG_MOVE_LOCK is used for bit spinlock to avoid race between overwriting
+> pc->mem_cgroup and page statistics accounting per memcg.
+> This lock helps to avoid the race but the race is very rare because moving
+> tasks between cgroup is not a usual job.
+> So, it seems using 1bit per page is too costly.
 >
->     CPU-A                     CPU-B
->                             rcu_read_lock()
->    set flag
->                             if(flag is set)
->                                   take heavy lock
->                             do job.
->    synchronize_rcu()        rcu_read_unlock()
-
-I assume that CPU-A will take heavy lock after synchronize_rcu() when
-updating variables read by CPU-B.
-
->  memcontrol.c |   65 ++++++++++++++++++++++-------------------------------------
->  1 file changed, 25 insertions(+), 40 deletions(-)
+> This patch changes this lock as per-memcg spinlock and removes PCG_MOVE_LOCK.
+>
+> If smaller lock is required, we'll be able to add some hashes but
+> I'd like to start from this.
+>
+> Changelog:
+>  - fixed to pass memcg as an argument rather than page_cgroup.
+>    and renamed from move_lock_page_cgroup() to move_lock_mem_cgroup()
 >
 > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+Seems good.  Thanks.
+
 Acked-by: Greg Thelen <gthelen@google.com>
-
-> ---
->  mm/memcontrol.c |   70 +++++++++++++++++++++++-------------------------------
->  1 files changed, 30 insertions(+), 40 deletions(-)
-
-> @@ -2089,11 +2082,8 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
->        struct memcg_stock_pcp *stock;
->        struct mem_cgroup *iter;
->
-> -       if ((action == CPU_ONLINE)) {
-> -               for_each_mem_cgroup(iter)
-> -                       synchronize_mem_cgroup_on_move(iter, cpu);
-> +       if ((action == CPU_ONLINE))
-
-Extra parenthesis.  I recommend:
-+       if (action == CPU_ONLINE)
