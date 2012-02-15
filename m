@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab2BOTPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:15:47 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38819 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2BOTPp (ORCPT
+	id S1754816Ab2BOTQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:16:26 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9192 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754680Ab2BOTQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:15:45 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 15 Feb 2012 20:15:09 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 04/11] firewire-sbp-target: Add sbp_base.h header
-Message-ID: <20120215201509.37949cb0@stein>
-In-Reply-To: <1329317248-94128-5-git-send-email-bootc@bootc.net>
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-5-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+	Wed, 15 Feb 2012 14:16:24 -0500
+X-Authority-Analysis: v=2.0 cv=T9kOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=JW920i4TZMwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=VwQbUJbxAAAA:8 a=D19gQVrFAAAA:8 a=H09E7gtIAA9GHUcujMgA:9 a=hPmmItWqbasD5vG-fjsA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 0/3][RFC] tracing/rcu: Add _rcuidle() tracepoint to
+ handle rcu_idle_exit() tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kevin Hilman <khilman@ti.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20120214180947.GA30057@smp.if.uj.edu.pl>
+References: <20120214180947.GA30057@smp.if.uj.edu.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Feb 2012 14:16:19 -0500
+Message-ID: <1329333379.10311.3.camel@acer.local.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 15 Chris Boot wrote:
-> --- /dev/null
-> +++ b/drivers/target/sbp/sbp_base.h
-> @@ -0,0 +1,204 @@
-[...]
-> +struct sbp2_pointer {
-> +	__be32 high;
-> +	__be32 low;
-> +};
-[...]
-> +struct sbp_tport {
-> +	/* Target Unit Identifier (EUI-64) */
-> +	u64 guid;
-> +	/* Target port name */
-> +	char tport_name[SBP_NAMELEN];
-> +	/* Returned by sbp_make_tport() */
-> +	struct se_wwn tport_wwn;
-> +
-> +	struct sbp_tpg *tpg;
-> +
-> +	/* FireWire unit directory */
-> +	struct fw_descriptor unit_directory;
-> +
-> +	/* SBP Management Agent */
-> +	struct sbp_management_agent *mgt_agt;
-> +
-> +	/* Parameters */
-> +	int enable;
-> +	s32 directory_id;
-> +	int mgt_orb_timeout;
-> +	int max_reconnect_timeout;
-> +	int max_logins_per_lun;
-> +};
-> +
-> +extern struct target_fabric_configfs *sbp_fabric_configfs;
-> +extern const struct fw_address_region sbp_register_region;
-> +extern struct workqueue_struct *sbp_workqueue;
-[...]
+On Tue, 2012-02-14 at 19:09 +0100, Witold Baryluk wrote:
+> Hi,
+> 
+> I have some problem with cpuidle tracing:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=42742
+> 
+> so I applied 3 patches from https://lkml.org/lkml/headers/2012/2/7/231
+> 
+> > Steven Rostedt (3):
+> >      tracing/rcu: Add trace_##name##__rcuidle() static tracepoint for inside rcu_idle_exit() sections
+> >      x86/tracing: Denote the power and cpuidle tracepoints as _rcuidle()
+> >      cpuidle/tracing: Denote the tracepoints as being in rcu_idle_exit() section
+> 
+> All 3 patches applied cleanly but for unknown reasons to me compilation fails:
 
-Generally, any source file (.c or .h) is meant to be self-contained WRT
-type definitions etc., meaning that they should have all required
-#include's in themselves rather than rely on indirect includes.
+Yeah, my testing hit this issue and I fixed it up. I pushed out my
+patches to Ingo that have passed all my tests. You can get them here:
 
-So here you should include the headers which define __be32, u64, struct
-se_wwn, struct workqueue and so on.
--- 
-Stefan Richter
--=====-===-- --=- -====
-http://arcgraph.de/sr/
+https://lkml.org/lkml/2012/2/13/528
+
+You only need to apply patches 3,4 and 5.
+
+-- Steve
+
+> 
+> CC      arch/x86/kernel/process.o
+>   arch/x86/kernel/process.c: In function ‘default_idle’:
+>   arch/x86/kernel/process.c:380:3: error: implicit declaration of function ‘trace_power_start_rcuidle’ [-Werror=implicit-function-declaration]
+>   arch/x86/kernel/process.c:394:3: error: implicit declaration of function ‘trace_power_end_rcuidle’ [-Werror=implicit-function-declaration]
+>   cc1: some warnings being treated as errors
+> 
+
+
