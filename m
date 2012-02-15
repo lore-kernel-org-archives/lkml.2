@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab2BOHUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 02:20:12 -0500
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:36423 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751295Ab2BOHUI (ORCPT
+	id S1757877Ab2BOHUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 02:20:51 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44362 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab2BOHUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 02:20:08 -0500
-Message-ID: <1329290402.19569.24.camel@cumari>
-Subject: Re: [PATCH 3.3 v2] OMAP4: PRM: fix build breakage when CONFIG_OF is
- not defined
-From: Luciano Coelho <coelho@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tero Kristo <t-kristo@ti.com>
-Date: Wed, 15 Feb 2012 09:20:02 +0200
-In-Reply-To: <20120214203801.GU1426@atomide.com>
-References: <1328699683-19357-1-git-send-email-coelho@ti.com>
-	 <20120214203801.GU1426@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-
+	Wed, 15 Feb 2012 02:20:49 -0500
+Message-ID: <4F3B5BB3.9030907@linux.vnet.ibm.com>
+Date: Wed, 15 Feb 2012 12:46:03 +0530
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: masami.hiramatsu.pt@hitachi.com, ananth@in.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+CC: jbaron@redhat.com, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
+        stable@vger.kernel.org
+Subject: [PATCH v2] Return proper error code from register_kprobe()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021507-7282-0000-0000-000006867D60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Missed lkml in my previous posting, hence resending....
 
-On Tue, 2012-02-14 at 12:38 -0800, Tony Lindgren wrote: 
-> * Luciano Coelho <coelho@ti.com> [120208 02:43]:
-> > Since 3.3-rc1, prm44xx.c build breaks if CONFIG_OF is not set:
-> > 
-> > arch/arm/mach-omap2/prm44xx.c:41: error: 'OMAP44XX_IRQ_PRCM' undeclared here (not in a function)
-> > make[1]: *** [arch/arm/mach-omap2/prm44xx.o] Error 1
-> > 
-> > This is because of a missing include, which is added indirectly if
-> > CONFIG_OF is defined.  This problem was introduced in commit
-> > 2f31b51 (ARM: OMAP4: PRM: use PRCM interrupt handler).
-> > 
-> > Cc: Tero Kristo <t-kristo@ti.com>
-> > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> > Reviewed-by: Felipe Balbi <balbi@ti.com>
-> 
-> A similar patch should be already in mainline kernel queued by Russell.
+register_kprobe() aborts if the address of the new request falls in a
+prohibited area (such as ftrace pouch, __kprobes annotated functions,
+non-kernel text addresses, jump label text). We however don't return the
+right error on this abort, resulting in a silent failure - incorrect 
+adding/reporting of kprobes ('perf probe do_fork+18' or
+'perf probe mcount' for instance).
 
-Right, someone pointed this out to me after I sent the two patches.
-Sorry for the trouble, I should have looked more carefully before
-jumping in to fix this stuff. ;)
+In V2 we are incorporating Masami Hiramatsu's  feedback.
 
--- 
-Cheers,
-Luca.
+This patch fixes it by returning -EINVAL upon failure.
+
+While we are here, rename the label used for exit to be more appropriate.
+
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Signed-off-by: Prashanth K Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: stable@vger.kernel.org
+---
+
+ kernel/kprobes.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+Index: linux-14feb/kernel/kprobes.c
+===================================================================
+--- linux-14feb.orig/kernel/kprobes.c
++++ linux-14feb/kernel/kprobes.c
+@@ -1334,8 +1334,10 @@ int __kprobes register_kprobe(struct kpr
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+ 	    ftrace_text_reserved(p->addr, p->addr) ||
+-	    jump_label_text_reserved(p->addr, p->addr))
+-		goto fail_with_jump_label;
++	    jump_label_text_reserved(p->addr, p->addr)) {
++		ret = -EINVAL;
++		goto cannot_probe;
++	}
+
+ 	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+ 	p->flags &= KPROBE_FLAG_DISABLED;
+@@ -1352,7 +1354,7 @@ int __kprobes register_kprobe(struct kpr
+ 		 * its code to prohibit unexpected unloading.
+ 		 */
+ 		if (unlikely(!try_module_get(probed_mod)))
+-			goto fail_with_jump_label;
++			goto cannot_probe;
+
+ 		/*
+ 		 * If the module freed .init.text, we couldn't insert
+@@ -1361,7 +1363,7 @@ int __kprobes register_kprobe(struct kpr
+ 		if (within_module_init((unsigned long)p->addr, probed_mod) &&
+ 		    probed_mod->state != MODULE_STATE_COMING) {
+ 			module_put(probed_mod);
+-			goto fail_with_jump_label;
++			goto cannot_probe;
+ 		}
+ 		/* ret will be updated by following code */
+ 	}
+@@ -1409,7 +1411,7 @@ int __kprobes register_kprobe(struct kpr
+
+ 	return ret;
+
+-fail_with_jump_label:
++cannot_probe:
+ 	preempt_enable();
+ 	jump_label_unlock();
+ 	return ret;
 
