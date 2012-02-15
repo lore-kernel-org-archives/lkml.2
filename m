@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2BOT4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:56:37 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63900 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab2BOT4f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:56:35 -0500
-Date: Wed, 15 Feb 2012 11:56:28 -0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: vinod.koul@intel.com, artem.bityutskiy@intel.com, w.sang@pengutronix.de,
-        LW@KARO-electronics.de, broonie@opensource.wolfsonmicro.com,
-        lrg@ti.com, cjb@laptop.org, linux-arm-kernel@lists.infradead.org,
-        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] mxs-dma : move the mxs dma.h to a more common
- place
-Message-ID: <20120215195627.GC2399@r65073-Latitude-D630>
-References: <1329110756-14434-1-git-send-email-b32955@freescale.com>
- <1329110756-14434-2-git-send-email-b32955@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329110756-14434-2-git-send-email-b32955@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754795Ab2BOT6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:58:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753264Ab2BOT6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 14:58:18 -0500
+Message-ID: <1329335879.2337.18.camel@localhost>
+Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
+From: Eric Paris <eparis@redhat.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Nathaniel Husted <nhusted@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 15 Feb 2012 14:57:59 -0500
+In-Reply-To: <20120215173443.GF27825@n2100.arm.linux.org.uk>
+References: <1329284188.12708.1.camel@phoenix>
+	 <20120215083609.GD13673@n2100.arm.linux.org.uk>
+	 <1329325622.2337.13.camel@localhost>
+	 <20120215173443.GF27825@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 01:25:55PM +0800, Huang Shijie wrote:
-> Move the header to a more common place.
-> The mxs dma engine is not only used in mx23/mx28, but also used
-> in mx50/mx6q.  It will also be used in the future chips.
+On Wed, 2012-02-15 at 17:34 +0000, Russell King - ARM Linux wrote:
+> On Wed, Feb 15, 2012 at 12:07:02PM -0500, Eric Paris wrote:
+> > So if someone tells me how the code knows it's endianness I'll gladly
+> > write the ifdef to switch from AUDIT_ARCH_ARMEB to AUDIT_ARCH_ARM when
+> > appropriate....
 > 
-> Rename it to mxs-dma.h, and create a new folder include/linux/fsl/ to
-> store the Freescale's header files.
+> An easy way would be:
 > 
-> change mxs-dma driver, mxs-mmc driver, gpmi-nand driver, mxs-saif driver
-> to the new header file.
-> 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> #ifndef __ARMEB__
+> #define AUDIT_ARCH_NR AUDIT_ARCH_ARMEB
+> #else
+> #define AUDIT_ARCH_NR AUDIT_ARCH_ARM
+> #endif
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Is that actually exactly backwards?  ifndef?  (I don't have a clue when
+__ARMEB__ is set)
+
