@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2BOJzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 04:55:40 -0500
-Received: from 124-248-200-46.sunnyvision.com ([124.248.200.46]:43454 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751647Ab2BOJzh (ORCPT
+	id S1757601Ab2BOKJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 05:09:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44113 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab2BOKJR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 04:55:37 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 94FBB52856
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 1C69C4FAF5
-Message-ID: <QA8fPes6cBH0NM@giga.net.tw>
-From: dedicatedhk@yahoo.com.hk
-Subject: Dedicated Server
-X-Mailer: fIWBcPljj5ukx4bZ
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Wed, 15 Feb 2012 17:16:48 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 15 Feb 2012 05:09:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120213172633.GA1426@atomide.com>
+References: <CAM8FrK++W4ScR-htTDXeA7iniz9LTXB_29yzhDNfOu5=VLC+mQ@mail.gmail.com>
+	<20120213172633.GA1426@atomide.com>
+Date: Wed, 15 Feb 2012 11:09:16 +0100
+Message-ID: <CAM8FrKLH5pRmuedp90B4rqHPbdduCmKYPnkN4Nz9ofc8YXq6mw@mail.gmail.com>
+Subject: Re: Internal timers in deep sleep
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1F9tlYW015324
 
-ear All,
+Hi Tony,
 
-We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
+Thanks for your answer.
 
-Dell? PowerEdge? EnterpriseRack Mount Server
--Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
--8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
--500GB, 3.5", 6Gbps SAS x 2
--Raid 1 Mirroring Protection
--Remote KVM (iDRAC6 Enterprise)
+The CPU goes down to Idle- or Wait For Interrupt-state but never to
+any deeper state.
+OMAP-L138 has only two possibilities to wake up from deep-sleep;
+either from an RTC alarm or from an external wakeup-source.
 
-Dell(TM) PowerEdge(TM) R410 Rack Mount Server
--Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
--4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
--500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
--iDRAC6 Enterprise or Express (Remote KVM Management)
+The RTC has too low resolution (1s) for our application, so we need to
+us the external interrupt as wakeup-source.
 
-Every Dedicated Server Hosting Solution Also Includes: 
- 
-Software Specification 
-- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
-- Full root-level access 
-- Data Center Facilities 
-- Shared Local & International Bandwidth 
-- 2 IP Addresses Allocation 
-- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
-- FM200¡§based fire suppression system 
-- 24x7 CRAC Air Conditioning and Humidity Control 
-- 24x7 Security Control 
-- 24x7 Remote Hand Service 
-
-Pls send us email for further information.Thanks,
-
-Boris 
-boris@dedicatedserver.com.hk 
-
-If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+I have printed out the expire time for the next timer in queue (in
+kernel/time/tick-sched.c:tick_nohz_stop_sched_tick()) and it is about
+~10-200ms to next tick. (HZ=100). With this tight interval its not
+possible to goto deepsleep with the latancies we have seen.
 
 
+Med vänliga hälsningar / Best regards
+Marcus Folkesson
+
+
+
+2012/2/13 Tony Lindgren <tony@atomide.com>:
+> Hi Marcus,
+>
+> * Marcus Folkesson <marcus.folkesson@gmail.com> [120211 03:37]:
+>> Is it possible to speed up the time it takes to go to/from deepsleep?
+>> The pm_suspend() does a lot of things, eg. freeze processes, suspend
+>> drivers and so on.
+>
+> Depending on the omap, you can already do suspend while idle or off
+> while idle. This means the RAM is in self-refresh and the omap is
+> either suspended or powered off in the idle loop. This is typically
+> done with a combination of constantly running 32 KiHz clocksource and
+> wake-up capable GPT1 clockevent timer.
+>
+> If you have similar timers on your hardware, this may be the way to go.
+> In this case there's no need to freeze processes, so the latency is
+> quite minimal.
+>
+> Regards,
+>
+> Tony
