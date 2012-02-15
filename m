@@ -1,181 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab2BONXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:23:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:34289 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758201Ab2BONXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:23:46 -0500
+	id S1758908Ab2BON3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:29:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757957Ab2BON3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 08:29:45 -0500
+Message-ID: <4F3BB33C.1000908@redhat.com>
+Date: Wed, 15 Feb 2012 15:29:32 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Date: Wed, 15 Feb 2012 14:23:44 +0100
-Message-ID: <CAMJ=MEe8AMsrEawPO1h_dpc01WvmHUaDv3OMqw3xMRgk-dvMqQ@mail.gmail.com>
-Subject: Question [heap] section on /proc/maps
-From: Ronny Meeus <ronny.meeus@gmail.com>
-To: linux-kernel@vger.kernel.org
+To: Alexander Graf <agraf@suse.de>
+CC: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de>
+In-Reply-To: <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On 02/15/2012 01:57 PM, Alexander Graf wrote:
+> > 
+> > Is an extra syscall for copying TLB entries to user space prohibitively
+> > expensive?
+>
+> The copying can be very expensive, yes. We want to have the possibility of exposing a very large TLB to the guest, in the order of multiple kentries. Every entry is a struct of 24 bytes.
 
-I have a question about the [heap] section in the /proc/x/maps file.
+You don't need to copy the entire TLB, just the way that maps the
+address you're interested in.
 
-I tracked all allocations of my build using the mtrace mechanism
-provided by the libc library.
-The total amount of memory that my application allocates is something
-like 15Mb.
-If I look to the maps information in the /proc, I see that almost 35Mb
-is reported in the [heap] section.
+btw, why are you interested in virtual addresses in userspace at all?
 
-Please note that I started the tracking (call to mtrace();) only in
-the beginning of the main so that are most probably some calls to
-malloc done before this but I assume that this is not so much.
+> >>> 
+> >>> It works for the really simple cases, yes, but if the guest wants to set up one-shot timers, it fails.  
+> >> 
+> >> I don't understand. Why would anything fail here? 
+> > 
+> > It fails to provide a benefit, I didn't mean it causes guest failures.
+> > 
+> > You also have to make sure the kernel part and the user part use exactly
+> > the same time bases.
+>
+> Right. It's an optional performance accelerator. If anything doesn't align, don't use it. But if you happen to have a system where everything's cool, you're faster. Sounds like a good deal to me ;).
 
-Can somebody help me to identify where the 20Mb of heap memory is
-allocated/used for?
+Depends on how much the alignment relies on guest knowledge.  I guess
+with a simple device like HPET, it's simple, but with a complex device,
+different guests (or different versions of the same guest) could drive
+it very differently.
 
-Next to this there are also a large number of areas (from 4802f000
-till 494d1000) in the map below. This is another 21Mb of memory that I
-cannot explain.
-Many thanks.
+> >>>> 
+> >>>> Because not every guest supports them. Virtio-blk needs 3rd party drivers. AHCI needs 3rd party drivers on w2k3 and wxp. 
+> > 
+> > 3rd party drivers are a way of life for Windows users; and the
+> > incremental benefits of IDE acceleration are still far behind virtio.
+>
+> The typical way of life for Windows users are all-included drivers. Which is the case for AHCI, where we're getting awesome performance for Vista and above guests. The iDE thing was just an idea for legacy ones.
+>
+> It'd be great to simply try and see how fast we could get by handling a few special registers in kernel space vs heavyweight exiting to QEMU. If it's only 10%, I wouldn't even bother with creating an interface for it. I'd bet the benefits are a lot bigger though.
+>
+> And the main point was that specific partial device emulation buys us more than pseudo-generic accelerators like coalesced mmio, which are also only used by 1 or 2 devices.
 
-# cat /proc/24160/maps
-00100000-00102000 r-xp 00000000 00:00 0          [vdso]
-0fb13000-0fb1e000 r-xp 00000000 00:01 26         /lib/libnss_files-2.10.1.so
-0fb1e000-0fb2d000 ---p 0000b000 00:01 26         /lib/libnss_files-2.10.1.so
-0fb2d000-0fb2e000 r--p 0000a000 00:01 26         /lib/libnss_files-2.10.1.so
-0fb2e000-0fb2f000 rwxp 0000b000 00:01 26         /lib/libnss_files-2.10.1.so
-0fb3f000-0fb54000 r-xp 00000000 00:01 66         /lib/libpthread-2.10.1.so
-0fb54000-0fb63000 ---p 00015000 00:01 66         /lib/libpthread-2.10.1.so
-0fb63000-0fb64000 r--p 00014000 00:01 66         /lib/libpthread-2.10.1.so
-0fb64000-0fb65000 rwxp 00015000 00:01 66         /lib/libpthread-2.10.1.so
-0fb65000-0fb67000 rwxp 00000000 00:00 0
-0fb77000-0fcdf000 r-xp 00000000 00:01 73         /lib/libc-2.10.1.so
-0fcdf000-0fcef000 ---p 00168000 00:01 73         /lib/libc-2.10.1.so
-0fcef000-0fcf1000 r--p 00168000 00:01 73         /lib/libc-2.10.1.so
-0fcf1000-0fcf4000 rwxp 0016a000 00:01 73         /lib/libc-2.10.1.so
-0fcf4000-0fcf7000 rwxp 00000000 00:00 0
-0fd07000-0fd1e000 r-xp 00000000 00:01 72         /lib/libgcc_s.so.1
-0fd1e000-0fd2d000 ---p 00017000 00:01 72         /lib/libgcc_s.so.1
-0fd2d000-0fd2e000 r--p 00016000 00:01 72         /lib/libgcc_s.so.1
-0fd2e000-0fd2f000 rwxp 00017000 00:01 72         /lib/libgcc_s.so.1
-0fd3f000-0fe2b000 r-xp 00000000 00:01 30         /lib/libm-2.10.1.so
-0fe2b000-0fe3a000 ---p 000ec000 00:01 30         /lib/libm-2.10.1.so
-0fe3a000-0fe3b000 r--p 000eb000 00:01 30         /lib/libm-2.10.1.so
-0fe3b000-0fe3c000 rwxp 000ec000 00:01 30         /lib/libm-2.10.1.so
-0fe4c000-0ff2f000 r-xp 00000000 00:01 535        /usr/lib/libstdc++.so.6.0.13
-0ff2f000-0ff3f000 ---p 000e3000 00:01 535        /usr/lib/libstdc++.so.6.0.13
-0ff3f000-0ff43000 r--p 000e3000 00:01 535        /usr/lib/libstdc++.so.6.0.13
-0ff43000-0ff44000 rwxp 000e7000 00:01 535        /usr/lib/libstdc++.so.6.0.13
-0ff44000-0ff4d000 rwxp 00000000 00:00 0
-0ff5d000-0ff60000 r-xp 00000000 00:01 544        /usr/lib/libUIO.so.0.0.0
-0ff60000-0ff6f000 ---p 00003000 00:01 544        /usr/lib/libUIO.so.0.0.0
-0ff6f000-0ff70000 r--p 00002000 00:01 544        /usr/lib/libUIO.so.0.0.0
-0ff70000-0ff71000 rwxp 00003000 00:01 544        /usr/lib/libUIO.so.0.0.0
-0ff81000-0ff88000 r-xp 00000000 00:01 25         /lib/librt-2.10.1.so
-0ff88000-0ff97000 ---p 00007000 00:01 25         /lib/librt-2.10.1.so
-0ff97000-0ff98000 r--p 00006000 00:01 25         /lib/librt-2.10.1.so
-0ff98000-0ff99000 rwxp 00007000 00:01 25         /lib/librt-2.10.1.so
-0ffa9000-0ffb4000 r-xp 00000000 00:01 546
-/usr/lib/libcopperplate.so.0.0.0
-0ffb4000-0ffc4000 ---p 0000b000 00:01 546
-/usr/lib/libcopperplate.so.0.0.0
-0ffc4000-0ffc5000 r--p 0000b000 00:01 546
-/usr/lib/libcopperplate.so.0.0.0
-0ffc5000-0ffc6000 rwxp 0000c000 00:01 546
-/usr/lib/libcopperplate.so.0.0.0
-0ffd6000-0ffdd000 r-xp 00000000 00:01 571        /usr/lib/libpsos.so.0.0.0
-0ffdd000-0ffec000 ---p 00007000 00:01 571        /usr/lib/libpsos.so.0.0.0
-0ffec000-0ffed000 r--p 00006000 00:01 571        /usr/lib/libpsos.so.0.0.0
-0ffed000-0ffee000 rwxp 00007000 00:01 571        /usr/lib/libpsos.so.0.0.0
-0ffee000-0fff0000 rwxp 00000000 00:00 0
-10000000-10300000 r-xp 00000000 00:01 62595
-/isam/user/isam_nt_app.nostrip.exe
-10300000-10301000 r--p 00300000 00:01 62595
-/isam/user/isam_nt_app.nostrip.exe
-10301000-10305000 rwxp 00301000 00:01 62595
-/isam/user/isam_nt_app.nostrip.exe
-10305000-123dd000 rwxp 00000000 00:00 0          [heap]
-48000000-4801d000 r-xp 00000000 00:01 78         /lib/ld-2.10.1.so
-4801d000-4801f000 rw-p 00000000 00:00 0
-4801f000-48022000 rw-p 00000000 00:00 0
-4802d000-4802e000 r--p 0001d000 00:01 78         /lib/ld-2.10.1.so
-4802e000-4802f000 rwxp 0001e000 00:01 78         /lib/ld-2.10.1.so
-4802f000-48030000 ---p 00000000 00:00 0
-48030000-480af000 rw-p 00000000 00:00 0
-480af000-480b0000 ---p 00000000 00:00 0
-480b0000-48ed1000 rw-p 00000000 00:00 0
-48ed1000-48ed2000 ---p 00000000 00:00 0
-48ed2000-48ef1000 rw-p 00000000 00:00 0
-48ef1000-48ef2000 ---p 00000000 00:00 0
-48ef2000-48f11000 rw-p 00000000 00:00 0
-48f11000-48f12000 ---p 00000000 00:00 0
-48f12000-48f31000 rw-p 00000000 00:00 0
-48f31000-48f32000 ---p 00000000 00:00 0
-48f32000-48f51000 rw-p 00000000 00:00 0
-48f51000-48f52000 ---p 00000000 00:00 0
-48f52000-48f71000 rw-p 00000000 00:00 0
-48f71000-48f72000 ---p 00000000 00:00 0
-48f72000-48f91000 rw-p 00000000 00:00 0
-48f91000-48f92000 ---p 00000000 00:00 0
-48f92000-48fb1000 rw-p 00000000 00:00 0
-48fb1000-48fb2000 ---p 00000000 00:00 0
-48fb2000-48fd1000 rw-p 00000000 00:00 0
-48fd1000-48fd2000 ---p 00000000 00:00 0
-48fd2000-48ff1000 rw-p 00000000 00:00 0
-48ff1000-48ff2000 ---p 00000000 00:00 0
-48ff2000-49011000 rw-p 00000000 00:00 0
-49011000-49012000 ---p 00000000 00:00 0
-49012000-49031000 rw-p 00000000 00:00 0
-49031000-49032000 ---p 00000000 00:00 0
-49032000-49051000 rw-p 00000000 00:00 0
-49051000-49052000 ---p 00000000 00:00 0
-49052000-49071000 rw-p 00000000 00:00 0
-49071000-49072000 ---p 00000000 00:00 0
-49072000-49091000 rw-p 00000000 00:00 0
-49091000-49092000 ---p 00000000 00:00 0
-49092000-490b1000 rw-p 00000000 00:00 0
-490b1000-490b2000 ---p 00000000 00:00 0
-490b2000-490d1000 rw-p 00000000 00:00 0
-490d1000-490d2000 ---p 00000000 00:00 0
-490d2000-490f1000 rw-p 00000000 00:00 0
-490f1000-490f2000 ---p 00000000 00:00 0
-490f2000-49111000 rw-p 00000000 00:00 0
-49111000-49112000 ---p 00000000 00:00 0
-49112000-49131000 rw-p 00000000 00:00 0
-49131000-49132000 ---p 00000000 00:00 0
-49132000-49151000 rw-p 00000000 00:00 0
-49151000-49152000 ---p 00000000 00:00 0
-49152000-49351000 rw-p 00000000 00:00 0
-49351000-49352000 ---p 00000000 00:00 0
-49352000-49371000 rw-p 00000000 00:00 0
-49371000-49372000 ---p 00000000 00:00 0
-49372000-49391000 rw-p 00000000 00:00 0
-49391000-49392000 ---p 00000000 00:00 0
-49392000-493b1000 rw-p 00000000 00:00 0
-493b1000-493b2000 ---p 00000000 00:00 0
-493b2000-493d1000 rw-p 00000000 00:00 0
-493d1000-493d2000 ---p 00000000 00:00 0
-493d2000-493f1000 rw-p 00000000 00:00 0
-493f1000-493f2000 ---p 00000000 00:00 0
-493f2000-49411000 rw-p 00000000 00:00 0
-49411000-49412000 ---p 00000000 00:00 0
-49412000-49431000 rw-p 00000000 00:00 0
-49431000-49432000 ---p 00000000 00:00 0
-49432000-49451000 rw-p 00000000 00:00 0
-49451000-49452000 ---p 00000000 00:00 0
-49452000-49471000 rw-p 00000000 00:00 0
-49471000-49472000 ---p 00000000 00:00 0
-49472000-49491000 rw-p 00000000 00:00 0
-49491000-49492000 ---p 00000000 00:00 0
-49492000-494b1000 rw-p 00000000 00:00 0
-494b1000-494b2000 ---p 00000000 00:00 0
-494b2000-494d1000 rw-p 00000000 00:00 0
-a0000000-a2000000 rw-s 7e000000 00:01 265        /dev/mem
-bff5b000-bff7c000 rw-p 00000000 00:00 0          [stack]
+Ok.
+
+> > 
+> >> I'm pretty sure non-Linux non-Windows systems won't get QXL drivers. 
+> > 
+> > Cirrus or vesa should be okay for them, I don't see what we could do for
+> > them in the kernel, or why.
+>
+> That's my point. You need fast emulation of standard devices to get a good baseline. Do PV on top, but keep the baseline as fast as is reasonable.
+>
+> > 
+> >> Same for virtio.
+> >>>> 
+> >>>> Please don't do the Xen mistake again of claiming that all we care about is Linux as a guest.
+> >>> 
+> >>> Rest easy, there's no chance of that.  But if a guest is important enough, virtio drivers will get written.  IDE has no chance in hell of approaching virtio-blk performance, no matter how much effort we put into it.
+> >> 
+> >> Ever used VMware? They basically get virtio-blk performance out of ordinary IDE for linear workloads.
+> > 
+> > For linear loads, so should we, perhaps with greater cpu utliization.
+> > 
+> > If we DMA 64 kB at a time, then 128 MB/sec (to keep the numbers simple)
+> > means 0.5 msec/transaction.  Spending 30 usec on some heavyweight exits
+> > shouldn't matter.
+>
+> *shrug* last time I checked we were a lot slower. But maybe there's more stuff making things slow than the exit path ;).
+
+One thing that's different is that virtio offloads itself to a thread
+very quickly, while IDE does a lot of work in vcpu thread context.
+
+> > 
+> >>> 
+> >>>> KVM's strength has always been its close resemblance to hardware.
+> >>> 
+> >>> This will remain.  But we can't optimize everything.
+> >> 
+> >> That's my point. Let's optimize the hot paths and be good. As long as we default to IDE for disk, we should have that be fast, no?
+> > 
+> > We should make sure that we don't default to IDE.  Qemu has no knowledge
+> > of the guest, so it can't default to virtio, but higher level tools can
+> > and should.
+>
+> You can only default to virtio on recent Linux. Windows, BSD, etc don't include drivers, so you can't assume it working. You can default to AHCI for basically any recent guest, but that still won't work for XP and the likes :(.
+
+The all-knowing management tool can provide a virtio driver disk, or
+even slip-stream the driver into the installation CD.
 
 
-Best regards,
-Ronny
+>  
+> >> Ah, because you're on NPT and you can have MMIO hints in the nested page table. Nifty. Yeah, we don't have that luxury :).
+> > 
+> > Well the real reason is we have an extra bit reported by page faults
+> > that we can control.  Can't you set up a hashed pte that is configured
+> > in a way that it will fault, no matter what type of access the guest
+> > does, and see it in your page fault handler?
+>
+> I might be able to synthesize a PTE that is !readable and might throw a permission exception instead of a miss exception. I might be able to synthesize something similar for booke. I don't however get any indication on why things failed.
+>
+> So for MMIO reads, I can assume that this is an MMIO because I would never write a non-readable entry. For writes, I'm overloading the bit that also means "guest entry is not readable" so there I'd have to walk the guest PTEs/TLBs and check if I find a read-only entry. Right now I can just forward write faults to the guest. Since COW is probably a hotter path for the guest than MMIO, this might end up being ineffective.
+
+COWs usually happen from guest userspace, while mmio is usually from the
+guest kernel, so you can switch on that, maybe.
+
+> >> 
+> >> I think we're talking about the same thing really.
+> > 
+> > So what's your objection to slots?
+>
+> I was merely saying that having slots internally keeps us from speeding things up. I don't mind the external interface though.
+
+Ah, but it doesn't.  We can sort them, convert them to a radix tree,
+basically do anything with them.
+
+>
+> > 
+> >>>>  http://www.mail-archive.com/kvm@vger.kernel.org/msg66155.html
+> >>>> 
+> >>> 
+> >>> Yeah - s390 is always different.  On the current interface synchronous registers are easy, so why not.  But I wonder if it's really critical.
+> >> 
+> >> It's certainly slick :). We do the same for the TLB on e500, just with a separate ioctl to set the sharing up.
+> > 
+> > It's also dangerous wrt future hardware, as noted above.
+>
+> Yes and no. I see the capability system as two things in one:
+>
+>   1) indicate features we learn later
+>   2) indicate missing features in our current model
+>
+> So if a new model comes out that can't do something, just scratch off the CAP and be good ;). If somehow you ended up with multiple bits in a single CAP, remove the CAP, create a new one with the subset, set that for the new hardware.
+>
+> We will have the same situation when we get nested TLBs for booke. We just unlearn a CAP then. User space needs to cope with its unavailability anyways.
+>
+
+At least qemu tends to assume a certain baseline and won't run without
+it.  We also need to make sure that the feature is available in some
+other way (non-shared memory), which means duplication to begin with.
+
+-- 
+error compiling committee.c: too many arguments to function
+
