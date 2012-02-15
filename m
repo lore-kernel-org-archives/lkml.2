@@ -1,70 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab2BOQVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:21:17 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:35507 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab2BOQVP (ORCPT
+	id S1752437Ab2BOQYu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:24:50 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43480 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab2BOQYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:21:15 -0500
-Date: Wed, 15 Feb 2012 11:17:41 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Noonan <steven@uplinklabs.net>, Ben Guthro <ben@guthro.net>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: bisected: 'perf top' causing soft lockups under Xen
-Message-ID: <20120215161741.GC4093@phenom.dumpdata.com>
-References: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
- <1328894901.25989.20.camel@laptop>
- <20120210190412.GB12975@phenom.dumpdata.com>
- <CAOvdn6WcdrLHOPJc0Hv53+0trEFnU=RQJL5+xUMhAO3C3HWqbw@mail.gmail.com>
- <20120212205016.GA2794@asmodeus>
- <20120215085737.GA13722@asmodeus>
- <1329297944.2293.36.camel@twins>
+	Wed, 15 Feb 2012 11:24:47 -0500
+Subject: [PATCH] memcg: rework inactive_ratio logic
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 15 Feb 2012 20:24:42 +0400
+Message-ID: <20120215162442.13588.21790.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329297944.2293.36.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090207.4F3BDB66.0049,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 10:25:44AM +0100, Peter Zijlstra wrote:
-> On Wed, 2012-02-15 at 00:57 -0800, Steven Noonan wrote:
-> > It seems to me that there are two options for fixing this, but I'm
-> > probably lacking the necessary context (or experience with Xen). Either:
-> > 
-> > - The patch provided by Ben needs to have additional work to specially
-> >   handle IRQ_WORK_VECTOR, since it seems to be a special case where
-> >   there's no event channel attached for it. Perhaps adding an event
-> >   channel for this is the fix? Seems high-overhead, but I lack a good
-> >   understanding of how interrupts are handled in Xen.
-> 
-> So that's a self-IPI, is Xen failing to implement this?
+This patch adds mem_cgroup->inactive_ratio calculated from hierarchical memory limit.
+It updated at each limit change before shrinking cgroup to this new limit.
+Ratios for all child cgroups are updated too, because parent limit can affect them.
+Update precedure can be greatly optimized if its performance becomes the problem.
+Inactive ratio for unlimited or huge limit does not matter, because we'll never hit it.
 
-It does have self-IPIs.
-> 
-> > or
-> > 
-> > - Perf needs to be "enlightened" about Xen and avoid sending an IPI in
-> >   the first place.
-> 
-> Uhm, no. If anything Xen should simply not implement
-> arch_irq_work_raise(). The callbacks are then ran from the timer
-> interrupt.
+At global reclaim always use global ratio from zone->inactive_ratio.
+At mem-cgroup reclaim use inactive_ratio from target memory cgroup,
+this is cgroup which hit its limit and cause this reclaimer invocation.
 
-Looks like that wouldn't be too difficult - meaning implement a similar
-form of IRQ_WORKER that would call
+Thus, global memory reclaimer will try to keep ratio for all lru lists in zone
+above one mark, this guarantee that total ratio in this zone will be above too.
+Meanwhile mem-cgroup will do the same thing for its lru lists in all zones, and
+for all lru lists in all sub-cgroups in hierarchy.
 
- inc_irq_stat(apic_irq_work_irqs);
- irq_work_run();
+Also this patch removes some redundant code.
 
-.. along with the rest of the stuff from Ben's patch. Let me see if I can
-prep a patch.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/memcontrol.h |   16 ++------
+ mm/memcontrol.c            |   85 ++++++++++++++++++++++++--------------------
+ mm/vmscan.c                |   82 +++++++++++++++++++++++-------------------
+ 3 files changed, 93 insertions(+), 90 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4d34356..453a3dd 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -113,10 +113,7 @@ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+ /*
+  * For memory reclaim.
+  */
+-int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg,
+-				    struct zone *zone);
+-int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
+-				    struct zone *zone);
++unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg);
+ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+ unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
+ 					int nid, int zid, unsigned int lrumask);
+@@ -319,16 +316,9 @@ static inline bool mem_cgroup_disabled(void)
+ 	return true;
+ }
+ 
+-static inline int
+-mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	return 1;
+-}
+-
+-static inline int
+-mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
++static inline unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg)
+ {
+-	return 1;
++	return 0;
+ }
+ 
+ static inline unsigned long
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 6728a7a..343324a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -212,6 +212,8 @@ struct mem_cgroup_eventfd_list {
+ 
+ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
++static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
++		unsigned long long *mem_limit, unsigned long long *memsw_limit);
+ 
+ /*
+  * The memory controller data structure. The memory controller controls both
+@@ -256,6 +258,10 @@ struct mem_cgroup {
+ 	atomic_t	refcnt;
+ 
+ 	int	swappiness;
++
++	/* The target ratio of ACTIVE_ANON to INACTIVE_ANON pages */
++	unsigned int inactive_ratio;
++
+ 	/* OOM-Killer disable */
+ 	int		oom_kill_disable;
+ 
+@@ -1155,44 +1161,6 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
+ 	return ret;
+ }
+ 
+-int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	unsigned long inactive_ratio;
+-	int nid = zone_to_nid(zone);
+-	int zid = zone_idx(zone);
+-	unsigned long inactive;
+-	unsigned long active;
+-	unsigned long gb;
+-
+-	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-						BIT(LRU_INACTIVE_ANON));
+-	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-					      BIT(LRU_ACTIVE_ANON));
+-
+-	gb = (inactive + active) >> (30 - PAGE_SHIFT);
+-	if (gb)
+-		inactive_ratio = int_sqrt(10 * gb);
+-	else
+-		inactive_ratio = 1;
+-
+-	return inactive * inactive_ratio < active;
+-}
+-
+-int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	unsigned long active;
+-	unsigned long inactive;
+-	int zid = zone_idx(zone);
+-	int nid = zone_to_nid(zone);
+-
+-	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-						BIT(LRU_INACTIVE_FILE));
+-	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-					      BIT(LRU_ACTIVE_FILE));
+-
+-	return (active > inactive);
+-}
+-
+ struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
+ 						      struct zone *zone)
+ {
+@@ -3373,6 +3341,32 @@ void mem_cgroup_print_bad_page(struct page *page)
+ 
+ static DEFINE_MUTEX(set_limit_mutex);
+ 
++/*
++ * Update inactive_ratio accoring to new memory limit
++ */
++static void mem_cgroup_update_inactive_ratio(struct mem_cgroup *memcg,
++					     unsigned long long target)
++{
++	unsigned long long mem_limit, memsw_limit, gb;
++	struct mem_cgroup *iter;
++
++	for_each_mem_cgroup_tree(iter, memcg) {
++		memcg_get_hierarchical_limit(iter, &mem_limit, &memsw_limit);
++		mem_limit = min(mem_limit, target);
++
++		gb = mem_limit >> 30;
++		if (gb && 10 * gb < INT_MAX)
++			iter->inactive_ratio = int_sqrt(10 * gb);
++		else
++			iter->inactive_ratio = 1;
++	}
++}
++
++unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg)
++{
++	return memcg->inactive_ratio;
++}
++
+ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 				unsigned long long val)
+ {
+@@ -3422,6 +3416,7 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 			else
+ 				memcg->memsw_is_minimum = false;
+ 		}
++		mem_cgroup_update_inactive_ratio(memcg, val);
+ 		mutex_unlock(&set_limit_mutex);
+ 
+ 		if (!ret)
+@@ -3439,6 +3434,12 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+ 	if (!ret && enlarge)
+ 		memcg_oom_recover(memcg);
+ 
++	if (ret) {
++		mutex_lock(&set_limit_mutex);
++		mem_cgroup_update_inactive_ratio(memcg, RESOURCE_MAX);
++		mutex_unlock(&set_limit_mutex);
++	}
++
+ 	return ret;
+ }
+ 
+@@ -4155,6 +4156,8 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
+ 	}
+ 
+ #ifdef CONFIG_DEBUG_VM
++	cb->fill(cb, "inactive_ratio", mem_cont->inactive_ratio);
++
+ 	{
+ 		int nid, zid;
+ 		struct mem_cgroup_per_zone *mz;
+@@ -4936,8 +4939,12 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
+ 
+-	if (parent)
++	if (parent) {
+ 		memcg->swappiness = mem_cgroup_swappiness(parent);
++		memcg->inactive_ratio = parent->inactive_ratio;
++	} else
++		memcg->inactive_ratio = 1;
++
+ 	atomic_set(&memcg->refcnt, 1);
+ 	memcg->move_charge_at_immigrate = 0;
+ 	mutex_init(&memcg->thresholds_lock);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 4061e91..531abcc 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1788,19 +1788,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ }
+ 
+ #ifdef CONFIG_SWAP
+-static int inactive_anon_is_low_global(struct zone *zone)
+-{
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_ANON);
+-	inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+-
+-	if (inactive * zone->inactive_ratio < active)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ /**
+  * inactive_anon_is_low - check if anonymous pages need to be deactivated
+  * @zone: zone to check
+@@ -1809,8 +1796,12 @@ static int inactive_anon_is_low_global(struct zone *zone)
+  * Returns true if the zone does not have enough inactive anon pages,
+  * meaning some active anon pages need to be deactivated.
+  */
+-static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
++static int inactive_anon_is_low(struct mem_cgroup_zone *mz,
++				struct scan_control *sc)
+ {
++	unsigned long active, inactive;
++	unsigned int ratio;
++
+ 	/*
+ 	 * If we don't have swap space, anonymous page deactivation
+ 	 * is pointless.
+@@ -1818,29 +1809,33 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+ 	if (!total_swap_pages)
+ 		return 0;
+ 
+-	if (!scanning_global_lru(mz))
+-		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
+-						       mz->zone);
++	if (global_reclaim(sc))
++		ratio = mz->zone->inactive_ratio;
++	else
++		ratio = mem_cgroup_inactive_ratio(sc->target_mem_cgroup);
+ 
+-	return inactive_anon_is_low_global(mz->zone);
++	if (scanning_global_lru(mz)) {
++		active = zone_page_state(mz->zone, NR_ACTIVE_ANON);
++		inactive = zone_page_state(mz->zone, NR_INACTIVE_ANON);
++	} else {
++		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_ACTIVE_ANON));
++		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_INACTIVE_ANON));
++	}
++
++	return inactive * ratio < active;
+ }
+ #else
+-static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
++static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz,
++				       struct scan_control *sc)
+ {
+ 	return 0;
+ }
+ #endif
+ 
+-static int inactive_file_is_low_global(struct zone *zone)
+-{
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_FILE);
+-	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+-
+-	return (active > inactive);
+-}
+-
+ /**
+  * inactive_file_is_low - check if file pages need to be deactivated
+  * @mz: memory cgroup and zone to check
+@@ -1857,19 +1852,30 @@ static int inactive_file_is_low_global(struct zone *zone)
+  */
+ static int inactive_file_is_low(struct mem_cgroup_zone *mz)
+ {
+-	if (!scanning_global_lru(mz))
+-		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
+-						       mz->zone);
++	unsigned long active, inactive;
++
++	if (scanning_global_lru(mz)) {
++		active = zone_page_state(mz->zone, NR_ACTIVE_FILE);
++		inactive = zone_page_state(mz->zone, NR_INACTIVE_FILE);
++	} else {
++		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_ACTIVE_FILE));
++		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_INACTIVE_FILE));
++	}
+ 
+-	return inactive_file_is_low_global(mz->zone);
++	return inactive < active;
+ }
+ 
+-static int inactive_list_is_low(struct mem_cgroup_zone *mz, int file)
++static int inactive_list_is_low(struct mem_cgroup_zone *mz,
++				struct scan_control *sc, int file)
+ {
+ 	if (file)
+ 		return inactive_file_is_low(mz);
+ 	else
+-		return inactive_anon_is_low(mz);
++		return inactive_anon_is_low(mz, sc);
+ }
+ 
+ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+@@ -1879,7 +1885,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ 	int file = is_file_lru(lru);
+ 
+ 	if (is_active_lru(lru)) {
+-		if (inactive_list_is_low(mz, file))
++		if (inactive_list_is_low(mz, sc, file))
+ 			shrink_active_list(nr_to_scan, mz, sc, priority, file);
+ 		return 0;
+ 	}
+@@ -2129,7 +2135,7 @@ restart:
+ 	 * Even if we did not try to evict anon pages at all, we want to
+ 	 * rebalance the anon lru active/inactive ratio.
+ 	 */
+-	if (inactive_anon_is_low(mz))
++	if (inactive_anon_is_low(mz, sc))
+ 		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
+ 
+ 	/* reclaim/compaction might need reclaim to continue */
+@@ -2558,7 +2564,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc,
+ 			.zone = zone,
+ 		};
+ 
+-		if (inactive_anon_is_low(&mz))
++		if (inactive_anon_is_low(&mz, sc))
+ 			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
+ 					   sc, priority, 0);
+ 
 
