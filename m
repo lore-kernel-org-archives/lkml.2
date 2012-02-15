@@ -1,180 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2BOUJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:09:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35648 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2BOUJN (ORCPT
+	id S1755268Ab2BOUOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:14:34 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54875 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2BOUOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:09:13 -0500
-Date: Wed, 15 Feb 2012 13:09:10 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: balbi@ti.com, Linus Walleij <linus.walleij@stericsson.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Possible circular locking dependency (3.3-rc2)
-Message-ID: <20120215200910.GE25779@ponder.secretlab.ca>
-References: <20120208124147.GF16334@legolas.emea.dhcp.ti.com>
- <CACVXFVMfmabcH57da-prx=J950KEoFtfb-zsuBWn7VY3NaMUUQ@mail.gmail.com>
+	Wed, 15 Feb 2012 15:14:32 -0500
+Date: Wed, 15 Feb 2012 21:14:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+In-Reply-To: <20120215145225.GA21448@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.02.1202152059230.2794@ionos>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com> <alpine.LFD.2.02.1202151537500.2794@ionos> <20120215145225.GA21448@srcf.ucam.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVMfmabcH57da-prx=J950KEoFtfb-zsuBWn7VY3NaMUUQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe, can you confirm whether or not Ming's patch below solves your
-problem?
+On Wed, 15 Feb 2012, Matthew Garrett wrote:
 
-g.
+> On Wed, Feb 15, 2012 at 03:40:24PM +0100, Thomas Gleixner wrote:
+> > > +	 * be scheduled. Special case that to avoid actually putting them
+> > > +	 * to sleep for the duration of the slack.
+> > > +	 */
+> > > +	if (rqtp->tv_sec == 0 && rqtp->tv_nsec == 0)
+> > > +		slack = 0;
+> > 
+> > That's pretty pointless. You can simply return 0 here as
+> > do_nanosleep() will not call the scheduler on an already expired
+> > timer, which is always true for a relative timer with delta 0.
+> 
+> I'm actually starting to wonder about the applications doing this. We 
+> default to adding a small amount of slack even if the application has 
+> done sleep(0), which will mean that the timer hasn't expired at this 
+> point. Do we then go through the scheduler differently? Are these 
 
-On Mon, Feb 13, 2012 at 10:53:20PM +0800, Ming Lei wrote:
-> Hi,
-> 
-> On Wed, Feb 8, 2012 at 8:41 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi guys,
-> >
-> > I have just triggered the folllowing:
-> >
-> > [   84.860321] ======================================================
-> > [   84.860321] [ INFO: possible circular locking dependency detected ]
-> > [   84.860321] 3.3.0-rc2-00026-ge4e8a39 #474 Not tainted
-> > [   84.860321] -------------------------------------------------------
-> > [   84.860321] bash/949 is trying to acquire lock:
-> > [   84.860321]  (sysfs_lock){+.+.+.}, at: [<c0275358>] gpio_value_store+0x24/0xcc
-> > [   84.860321]
-> > [   84.860321] but task is already holding lock:
-> > [   84.860321]  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_file+0xdc/0x184
-> > [   84.911468]
-> > [   84.911468] which lock already depends on the new lock.
-> > [   84.911468]
-> > [   84.920043]
-> > [   84.920043] the existing dependency chain (in reverse order) is:
-> > [   84.920043]
-> > [   84.927886] -> #1 (s_active#22){++++.+}:
-> > [   84.927886]        [<c008f640>] check_prevs_add+0xdc/0x150
-> > [   84.927886]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-> > [   84.927886]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-> > [   84.951660]        [<c0091838>] lock_acquire+0x98/0x100
-> > [   84.951660]        [<c016a8e8>] sysfs_deactivate+0xb0/0x100
-> > [   84.962982]        [<c016b1b4>] sysfs_addrm_finish+0x2c/0x6c
-> > [   84.962982]        [<c016b8bc>] sysfs_remove_dir+0x84/0x98
-> > [   84.962982]        [<c02590d8>] kobject_del+0x10/0x78
-> > [   84.974670]        [<c02c29e8>] device_del+0x140/0x170
-> > [   84.974670]        [<c02c2a24>] device_unregister+0xc/0x18
-> > [   84.985382]        [<c0276894>] gpio_unexport+0xbc/0xdc
-> > [   84.985382]        [<c02768c8>] gpio_free+0x14/0xfc
-> > [   85.001708]        [<c0276a28>] unexport_store+0x78/0x8c
-> > [   85.001708]        [<c02c5af8>] class_attr_store+0x18/0x24
-> > [   85.007293]        [<c0169990>] sysfs_write_file+0x100/0x184
-> > [   85.018981]        [<c0109d48>] vfs_write+0xb4/0x148
-> > [   85.018981]        [<c0109fd0>] sys_write+0x40/0x70
-> > [   85.018981]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-> > [   85.035003]
-> > [   85.035003] -> #0 (sysfs_lock){+.+.+.}:
-> > [   85.035003]        [<c008f54c>] check_prev_add+0x680/0x698
-> > [   85.035003]        [<c008f640>] check_prevs_add+0xdc/0x150
-> > [   85.052093]        [<c008fc18>] validate_chain.clone.24+0x564/0x694
-> > [   85.052093]        [<c0090cdc>] __lock_acquire+0x49c/0x980
-> > [   85.052093]        [<c0091838>] lock_acquire+0x98/0x100
-> > [   85.069885]        [<c047e280>] mutex_lock_nested+0x3c/0x2f4
-> > [   85.069885]        [<c0275358>] gpio_value_store+0x24/0xcc
-> > [   85.069885]        [<c02c18dc>] dev_attr_store+0x18/0x24
-> > [   85.087158]        [<c0169990>] sysfs_write_file+0x100/0x184
-> > [   85.087158]        [<c0109d48>] vfs_write+0xb4/0x148
-> > [   85.098297]        [<c0109fd0>] sys_write+0x40/0x70
-> > [   85.098297]        [<c0013cc0>] ret_fast_syscall+0x0/0x3c
-> > [   85.109069]
-> > [   85.109069] other info that might help us debug this:
-> > [   85.109069]
-> > [   85.117462]  Possible unsafe locking scenario:
-> > [   85.117462]
-> > [   85.117462]        CPU0                    CPU1
-> > [   85.128417]        ----                    ----
-> > [   85.128417]   lock(s_active#22);
-> > [   85.128417]                                lock(sysfs_lock);
-> > [   85.128417]                                lock(s_active#22);
-> > [   85.142486]   lock(sysfs_lock);
-> > [   85.151794]
-> > [   85.151794]  *** DEADLOCK ***
-> > [   85.151794]
-> > [   85.151794] 2 locks held by bash/949:
-> > [   85.158020]  #0:  (&buffer->mutex){+.+.+.}, at: [<c01698b8>] sysfs_write_file+0x28/0x184
-> > [   85.170349]  #1:  (s_active#22){++++.+}, at: [<c016996c>] sysfs_write_file+0xdc/0x184
-> > [   85.170349]
-> > [   85.178588] stack backtrace:
-> > [   85.178588] [<c001b824>] (unwind_backtrace+0x0/0xf0) from [<c008de64>] (print_circular_bug+0x100/0x114)
-> > [   85.193023] [<c008de64>] (print_circular_bug+0x100/0x114) from [<c008f54c>] (check_prev_add+0x680/0x698)
-> > [   85.193023] [<c008f54c>] (check_prev_add+0x680/0x698) from [<c008f640>] (check_prevs_add+0xdc/0x150)
-> > [   85.212524] [<c008f640>] (check_prevs_add+0xdc/0x150) from [<c008fc18>] (validate_chain.clone.24+0x564/0x694)
-> > [   85.212524] [<c008fc18>] (validate_chain.clone.24+0x564/0x694) from [<c0090cdc>] (__lock_acquire+0x49c/0x980)
-> > [   85.233306] [<c0090cdc>] (__lock_acquire+0x49c/0x980) from [<c0091838>] (lock_acquire+0x98/0x100)
-> > [   85.233306] [<c0091838>] (lock_acquire+0x98/0x100) from [<c047e280>] (mutex_lock_nested+0x3c/0x2f4)
-> > [   85.242614] [<c047e280>] (mutex_lock_nested+0x3c/0x2f4) from [<c0275358>] (gpio_value_store+0x24/0xcc)
-> > [   85.261840] [<c0275358>] (gpio_value_store+0x24/0xcc) from [<c02c18dc>] (dev_attr_store+0x18/0x24)
-> > [   85.261840] [<c02c18dc>] (dev_attr_store+0x18/0x24) from [<c0169990>] (sysfs_write_file+0x100/0x184)
-> > [   85.271240] [<c0169990>] (sysfs_write_file+0x100/0x184) from [<c0109d48>] (vfs_write+0xb4/0x148)
-> > [   85.290008] [<c0109d48>] (vfs_write+0xb4/0x148) from [<c0109fd0>] (sys_write+0x40/0x70)
-> > [   85.298400] [<c0109fd0>] (sys_write+0x40/0x70) from [<c0013cc0>] (ret_fast_syscall+0x0/0x3c)
-> > -bash: echo: write error: Operation not permitted
-> >
-> > the way to trigger is:
-> >
-> >
-> > root@legolas:~# cd /sys/class/gpio/
-> > root@legolas:/sys/class/gpio# echo 2 > export
-> > root@legolas:/sys/class/gpio# echo 2 > unexport
-> > root@legolas:/sys/class/gpio# echo 2 > export
-> > root@legolas:/sys/class/gpio# cd gpio2/
-> > root@legolas:/sys/class/gpio/gpio2# echo 1 > value
-> 
-> Looks 'sysfs_lock' needn't to be held for unregister, so the patch below may
-> fix the problem.
-> 
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 17fdf4b..d773540 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -873,6 +873,7 @@ void gpio_unexport(unsigned gpio)
->  {
->  	struct gpio_desc	*desc;
->  	int			status = 0;
-> +	struct device		*dev = NULL;
-> 
->  	if (!gpio_is_valid(gpio)) {
->  		status = -EINVAL;
-> @@ -884,19 +885,20 @@ void gpio_unexport(unsigned gpio)
->  	desc = &gpio_desc[gpio];
-> 
->  	if (test_bit(FLAG_EXPORT, &desc->flags)) {
-> -		struct device	*dev = NULL;
-> 
->  		dev = class_find_device(&gpio_class, NULL, desc, match_export);
->  		if (dev) {
->  			gpio_setup_irq(desc, dev, 0);
->  			clear_bit(FLAG_EXPORT, &desc->flags);
-> -			put_device(dev);
-> -			device_unregister(dev);
->  		} else
->  			status = -ENODEV;
->  	}
-> 
->  	mutex_unlock(&sysfs_lock);
-> +	if (dev) {
-> +		device_unregister(dev);
-> +		put_device(dev);
-> +	}
->  done:
->  	if (status)
->  		pr_debug("%s: gpio%d status %d\n", __func__, gpio, status);
-> 
-> 
-> thanks,
-> -- 
-> Ming Lei
+When the slack is large enough that the timer is actually not expired
+right away, which is usually the case, then we end up in schedule()
+and the task gets scheduled out until the timer fires. With your
+approach of making the slack 0 for sleep(0) calls the code does not
+call schedule() because the timer is definitely expired.
+
+> applications actually relying on an invalid assumption?
+
+Oh yes. sleep(0) has no guarantee about its behaviour at all. The only
+guarantee of sleep() is that it wont return before the requested time
+has elapsed, but there is no upper bound when it returns after the
+sleep time is over. So it's perfectly fine from the standards POV that
+sleep(0) actually sleeps and puts the tasks for some random time away.
+It's also correct when it returns right away w/o going through
+schedule(). The fact that sleep(0) ended up in schedule() even when
+the timer was already and the task state therefor was RUNNING on some
+unix implementations does not change that at all.
+
+Just for the extended fun of it: The pre hrtimer implementation in
+Linux put the task on sleep as well up to the next jiffies boundary,
+so anything which used sleep(0) on a pre hrtimer kernel was going to
+sleep. That's also the case today when high resolution timers are
+disabled (compile or runtime).
+
+So anything which relies on sleep(0) as a fast scheduling point is and
+has been broken forever.
+
+Thanks,
+
+	tglx
