@@ -1,295 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab2BOVAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 16:00:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12890 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab2BOVAt (ORCPT
+	id S1755642Ab2BOVBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 16:01:36 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39460 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab2BOVBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 16:00:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 15 Feb 2012 13:00:49 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] pinctrl: Store mapping table as a list of chunks
-Date: Wed, 15 Feb 2012 14:00:46 -0700
-Message-Id: <1329339646-19472-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Wed, 15 Feb 2012 16:01:33 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 15 Feb 2012 22:00:52 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 08/11] firewire-sbp-target: Add sbp_login.{c,h}
+Message-ID: <20120215220052.040e680a@stein>
+In-Reply-To: <1329317248-94128-9-git-send-email-bootc@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-9-git-send-email-bootc@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of storing a single array of mapping table entries, which
-requires realloc()ing that array each time it's extended and copying
-the new data, simply store a list of pointers to the individual chunks.
-This also removes the need to copy the mapping table at all; a pointer
-is maintained to the original table, this saving memory.
+On Feb 15 Chris Boot wrote:
+> This file contains the implementation of the login, reconnect and logout
+> management ORBs in SBP-2.
+> 
+> Signed-off-by: Chris Boot <bootc@bootc.net>
+> Cc: Andy Grover <agrover@redhat.com>
+> Cc: Clemens Ladisch <clemens@ladisch.de>
+> Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> ---
+>  drivers/target/sbp/sbp_login.c |  665 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/target/sbp/sbp_login.h |   14 +
+>  2 files changed, 679 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/target/sbp/sbp_login.c
+>  create mode 100644 drivers/target/sbp/sbp_login.h
+> 
+> diff --git a/drivers/target/sbp/sbp_login.c b/drivers/target/sbp/sbp_login.c
+> new file mode 100644
+> index 0000000..74b5eaf
+> --- /dev/null
+> +++ b/drivers/target/sbp/sbp_login.c
+> @@ -0,0 +1,665 @@
+> +/*
+> + * SBP2 target driver (SCSI over IEEE1394 in target mode)
+> + *
+> + * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software Foundation,
+> + * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+> + */
+> +
+> +#define KMSG_COMPONENT "sbp_target"
+> +#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+> +
+> +#include <linux/kref.h>
+> +#include <linux/firewire.h>
+> +#include <linux/firewire-constants.h>
+> +#include <linux/slab.h>
+> +
+> +#include <target/target_core_base.h>
+> +#include <target/target_core_fabric.h>
+> +
+> +#include "sbp_base.h"
+> +#include "sbp_management_agent.h"
+> +#include "sbp_login.h"
+> +#include "sbp_target_agent.h"
+> +
+> +#define SESSION_MAINTENANCE_INTERVAL HZ
+> +
+> +static atomic_t login_id = ATOMIC_INIT(0);
+> +
+> +static void session_maintenance_work(struct work_struct *work);
+> +
+> +static int read_peer_guid(u64 *guid, const struct sbp_management_request *req)
+> +{
+> +	int ret;
+> +	__be32 high, low;
+> +
+> +	ret = fw_run_transaction(req->card, TCODE_READ_QUADLET_REQUEST,
+> +			req->node_addr, req->generation, req->speed,
+> +			(CSR_REGISTER_BASE | CSR_CONFIG_ROM) + 3 * 4,
+> +			&high, sizeof(high));
+> +	if (ret != RCODE_COMPLETE)
+> +		return ret;
+> +
+> +	ret = fw_run_transaction(req->card, TCODE_READ_QUADLET_REQUEST,
+> +			req->node_addr, req->generation, req->speed,
+> +			(CSR_REGISTER_BASE | CSR_CONFIG_ROM) + 4 * 4,
+> +			&low, sizeof(low));
+> +	if (ret != RCODE_COMPLETE)
+> +		return ret;
+> +
+> +	*guid = (u64)be32_to_cpu(high) << 32 | be32_to_cpu(low);
+> +
+> +	return RCODE_COMPLETE;
+> +}
+> +
+> +static struct sbp_session *sbp_session_find_by_guid(
+> +	struct sbp_tpg *tpg, u64 guid)
+> +{
+> +	struct se_session *se_sess;
+> +
+> +	spin_lock(&tpg->se_tpg.session_lock);
+> +	list_for_each_entry(se_sess, &tpg->se_tpg.tpg_sess_list, sess_list) {
+> +		struct sbp_session *sess = se_sess->fabric_sess_ptr;
+> +		if (sess->guid == guid) {
+> +			spin_unlock(&tpg->se_tpg.session_lock);
+> +			return sess;
+> +		}
+> +	}
+> +	spin_unlock(&tpg->se_tpg.session_lock);
+> +
+> +	return NULL;
+> +}
 
-A macro for_each_maps() is introduced to hide the additional complexity
-of iterating over the map entries.
+Another form to write this would be
 
-This change will also simplify removing chunks of entries from the mapping
-table. This isn't important right now, but will be in the future, when
-mapping table entries are dynamically added when parsing them from the
-device tree, and removed when drivers no longer need to interact with
-pinctrl.
+static struct sbp_session *sbp_session_find_by_guid(
+		struct sbp_tpg *tpg, u64 guid)
+{
+	struct se_session *se_sess;
+	struct sbp_session *s, *session = NULL;
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-This depends on my previous patch "pinctrl: Make "hog" mapping table
-entries work", since both touch the same line in pinctrl_hog_map.
+	spin_lock(&tpg->se_tpg.session_lock);
+	list_for_each_entry(se_sess, &tpg->se_tpg.tpg_sess_list, sess_list) {
+		s = se_sess->fabric_sess_ptr;
+		if (s->guid == guid) {
+			session = s;
+			break;
+		}
+	}
+	spin_unlock(&tpg->se_tpg.session_lock);
 
- arch/arm/mach-u300/core.c |    2 +-
- drivers/pinctrl/core.c    |  104 +++++++++++++++++++++++++++-----------------
- 2 files changed, 65 insertions(+), 41 deletions(-)
+	return session;
+}
 
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index d66bc97..5af05fb 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -1552,7 +1552,7 @@ static struct platform_device pinmux_device = {
- };
- 
- /* Pinmux settings */
--static struct pinctrl_map __initdata u300_pinmux_map[] = {
-+static struct pinctrl_map u300_pinmux_map[] = {
- 	/* anonymous maps for chip power and EMIFs */
- 	PIN_MAP_SYS_HOG("POWER", "pinmux-u300", "power"),
- 	PIN_MAP_SYS_HOG("EMIF0", "pinmux-u300", "emif0"),
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 8a91eb2..2a61b43 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -7,6 +7,8 @@
-  *
-  * Author: Linus Walleij <linus.walleij@linaro.org>
-  *
-+ * Copyright (C) 2012 NVIDIA CORPORATION. All rights reserved.
-+ *
-  * License terms: GNU General Public License (GPL) version 2
-  */
- #define pr_fmt(fmt) "pinctrl core: " fmt
-@@ -31,6 +33,18 @@
- #include "pinconf.h"
- 
- /**
-+ * struct pinctrl_maps - a list item containing part of the mapping table
-+ * @node: mapping table list node
-+ * @maps: array of mapping table entries
-+ * @num_maps: the number of entries in @maps
-+ */
-+struct pinctrl_maps {
-+	struct list_head node;
-+	struct pinctrl_map const *maps;
-+	unsigned num_maps;
-+};
-+
-+/**
-  * struct pinctrl_hog - a list item to stash control hogs
-  * @node: pin control hog list node
-  * @map: map entry responsible for this hogging
-@@ -51,8 +65,14 @@ static DEFINE_MUTEX(pinctrl_list_mutex);
- static LIST_HEAD(pinctrl_list);
- 
- /* Global pinctrl maps */
--static struct pinctrl_map *pinctrl_maps;
--static unsigned pinctrl_maps_num;
-+static DEFINE_MUTEX(pinctrl_maps_mutex);
-+static LIST_HEAD(pinctrl_maps);
-+
-+#define for_each_maps(_maps_node_, _i_, _map_) \
-+	list_for_each_entry(_maps_node_, &pinctrl_maps, node) \
-+		for (_i_ = 0, _map_ = &_maps_node_->maps[_i_]; \
-+			_i_ < _maps_node_->num_maps; \
-+			i++, _map_ = &_maps_node_->maps[_i_])
- 
- const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev)
- {
-@@ -455,22 +475,23 @@ int pinctrl_gpio_direction_output(unsigned gpio)
- EXPORT_SYMBOL_GPL(pinctrl_gpio_direction_output);
- 
- /**
-- * pinctrl_get() - retrieves the pin controller handle for a certain device
-+ * pinctrl_get_locked() - retrieves the pin controller handle for a certain device
-  * @dev: the device to get the pin controller handle for
-  * @name: an optional specific control mapping name or NULL, the name is only
-  *	needed if you want to have more than one mapping per device, or if you
-  *	need an anonymous pin control (not tied to any specific device)
-  */
--struct pinctrl *pinctrl_get(struct device *dev, const char *name)
-+struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
- {
--	struct pinctrl_map const *map = NULL;
- 	struct pinctrl_dev *pctldev = NULL;
- 	const char *devname = NULL;
- 	struct pinctrl *p;
- 	bool found_map;
- 	unsigned num_maps = 0;
- 	int ret = -ENODEV;
-+	struct pinctrl_maps *maps_node;
- 	int i;
-+	struct pinctrl_map const *map;
- 
- 	/* We must have dev or ID or both */
- 	if (!dev && !name)
-@@ -494,8 +515,7 @@ struct pinctrl *pinctrl_get(struct device *dev, const char *name)
- 	pinmux_init_pinctrl_handle(p);
- 
- 	/* Iterate over the pin control maps to locate the right ones */
--	for (i = 0; i < pinctrl_maps_num; i++) {
--		map = &pinctrl_maps[i];
-+	for_each_maps(maps_node, i, map) {
- 		found_map = false;
- 
- 		/*
-@@ -515,7 +535,6 @@ struct pinctrl *pinctrl_get(struct device *dev, const char *name)
- 		pr_debug("in map, found pctldev %s to handle function %s",
- 			 dev_name(pctldev->dev), map->function);
- 
--
- 		/*
- 		 * If we're looking for a specific named map, this must match,
- 		 * else we loop and look for the next.
-@@ -574,6 +593,17 @@ struct pinctrl *pinctrl_get(struct device *dev, const char *name)
- 
- 	return p;
- }
-+
-+struct pinctrl *pinctrl_get(struct device *dev, const char *name)
-+{
-+	struct pinctrl *p;
-+
-+	mutex_lock(&pinctrl_maps_mutex);
-+	p = pinctrl_get_locked(dev, name);
-+	mutex_unlock(&pinctrl_maps_mutex);
-+
-+	return p;
-+}
- EXPORT_SYMBOL_GPL(pinctrl_get);
- 
- /**
-@@ -654,8 +684,8 @@ EXPORT_SYMBOL_GPL(pinctrl_disable);
- int __init pinctrl_register_mappings(struct pinctrl_map const *maps,
- 				     unsigned num_maps)
- {
--	void *tmp_maps;
- 	int i;
-+	struct pinctrl_maps *maps_node;
- 
- 	pr_debug("add %d pinmux maps\n", num_maps);
- 
-@@ -689,31 +719,17 @@ int __init pinctrl_register_mappings(struct pinctrl_map const *maps,
- 				 maps[i].function);
- 	}
- 
--	/*
--	 * Make a copy of the map array - string pointers will end up in the
--	 * kernel const section anyway so these do not need to be deep copied.
--	 */
--	if (!pinctrl_maps_num) {
--		/* On first call, just copy them */
--		tmp_maps = kmemdup(maps,
--				   sizeof(struct pinctrl_map) * num_maps,
--				   GFP_KERNEL);
--		if (!tmp_maps)
--			return -ENOMEM;
--	} else {
--		/* Subsequent calls, reallocate array to new size */
--		size_t oldsize = sizeof(struct pinctrl_map) * pinctrl_maps_num;
--		size_t newsize = sizeof(struct pinctrl_map) * num_maps;
-+	maps_node = kzalloc(sizeof(*maps), GFP_KERNEL);
-+	if (!maps_node)
-+		return -ENOMEM;
- 
--		tmp_maps = krealloc(pinctrl_maps,
--				    oldsize + newsize, GFP_KERNEL);
--		if (!tmp_maps)
--			return -ENOMEM;
--		memcpy((tmp_maps + oldsize), maps, newsize);
--	}
-+	maps_node->maps = maps;
-+	maps_node->num_maps = num_maps;
-+
-+	mutex_lock(&pinctrl_maps_mutex);
-+	list_add(&maps_node->node, &pinctrl_maps);
-+	mutex_unlock(&pinctrl_maps_mutex);
- 
--	pinctrl_maps = tmp_maps;
--	pinctrl_maps_num += num_maps;
- 	return 0;
- }
- 
-@@ -729,7 +745,7 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
- 	if (!hog)
- 		return -ENOMEM;
- 
--	p = pinctrl_get(pctldev->dev, map->name);
-+	p = pinctrl_get_locked(pctldev->dev, map->name);
- 	if (IS_ERR(p)) {
- 		kfree(hog);
- 		dev_err(pctldev->dev,
-@@ -773,23 +789,28 @@ int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
- 	struct device *dev = pctldev->dev;
- 	const char *devname = dev_name(dev);
- 	int ret;
-+	struct pinctrl_maps *maps_node;
- 	int i;
-+	struct pinctrl_map const *map;
- 
- 	INIT_LIST_HEAD(&pctldev->pinctrl_hogs);
- 	mutex_init(&pctldev->pinctrl_hogs_lock);
- 
--	for (i = 0; i < pinctrl_maps_num; i++) {
--		struct pinctrl_map const *map = &pinctrl_maps[i];
--
-+	mutex_lock(&pinctrl_maps_mutex);
-+	for_each_maps(maps_node, i, map) {
- 		if (map->ctrl_dev_name &&
- 		    !strcmp(map->ctrl_dev_name, devname) &&
- 		    !strcmp(map->dev_name, devname)) {
- 			/* OK time to hog! */
- 			ret = pinctrl_hog_map(pctldev, map);
--			if (ret)
-+			if (ret) {
-+				mutex_unlock(&pinctrl_maps_mutex);
- 				return ret;
-+			}
- 		}
- 	}
-+	mutex_unlock(&pinctrl_maps_mutex);
-+
- 	return 0;
- }
- 
-@@ -905,13 +926,14 @@ static int pinctrl_gpioranges_show(struct seq_file *s, void *what)
- 
- static int pinctrl_maps_show(struct seq_file *s, void *what)
- {
-+	struct pinctrl_maps *maps_node;
- 	int i;
-+	struct pinctrl_map const *map;
- 
- 	seq_puts(s, "Pinctrl maps:\n");
- 
--	for (i = 0; i < pinctrl_maps_num; i++) {
--		struct pinctrl_map const *map = &pinctrl_maps[i];
--
-+	mutex_lock(&pinctrl_maps_mutex);
-+	for_each_maps(maps_node, i, map) {
- 		seq_printf(s, "%s:\n", map->name);
- 		if (map->dev_name)
- 			seq_printf(s, "  device: %s\n",
-@@ -924,6 +946,8 @@ static int pinctrl_maps_show(struct seq_file *s, void *what)
- 		seq_printf(s, "  group: %s\n", map->group ? map->group :
- 			   "(default)");
- 	}
-+	mutex_unlock(&pinctrl_maps_mutex);
-+
- 	return 0;
- }
- 
+But since your function is very small, the dual unlock-and-exit paths are
+not a problem for readability.
+
+As an aside, here is a variation of the theme, though weirdly looking if
+one never came across it before:
+
+static struct sbp_session *sbp_session_find_by_guid(
+		struct sbp_tpg *tpg, u64 guid)
+{
+	struct se_session *s;
+
+	spin_lock(&tpg->se_tpg.session_lock);
+	list_for_each_entry(s, &tpg->se_tpg.tpg_sess_list, sess_list)
+		if (s->fabric_sess_ptr->guid == guid)
+			break;
+	spin_unlock(&tpg->se_tpg.session_lock);
+
+	if (&s->sess_list != &tpg->se_tpg.tpg_sess_list)
+		return s->fabric_sess_ptr;
+	else
+		return NULL;
+}
+
+[...]
+> +static struct sbp_login_descriptor *sbp_login_find_by_id(
+> +	struct sbp_tpg *tpg, int login_id)
+> +{
+> +	struct se_session *se_sess;
+> +
+> +	spin_lock(&tpg->se_tpg.session_lock);
+> +	list_for_each_entry(se_sess, &tpg->se_tpg.tpg_sess_list, sess_list) {
+> +		struct sbp_session *sess = se_sess->fabric_sess_ptr;
+> +		struct sbp_login_descriptor *login;
+> +
+> +		spin_lock(&sess->login_list_lock);
+> +		list_for_each_entry(login, &sess->login_list, link) {
+> +			if (login->login_id == login_id) {
+> +				spin_unlock(&sess->login_list_lock);
+> +				spin_unlock(&tpg->se_tpg.session_lock);
+> +				return login;
+> +			}
+> +		}
+> +		spin_unlock(&sess->login_list_lock);
+> +	}
+> +	spin_unlock(&tpg->se_tpg.session_lock);
+> +
+> +	return NULL;
+> +}
+
+This function on the other hand might indeed benefit from a style
+involving a single unlock-and-exit path.
+
+[...]
+> +static void sbp_session_release(struct sbp_session *sess, bool cancel_work)
+> +{
+> +	spin_lock(&sess->login_list_lock);
+> +	if (!list_empty(&sess->login_list)) {
+> +		spin_unlock(&sess->login_list_lock);
+> +		return;
+> +	}
+> +	spin_unlock(&sess->login_list_lock);
+> +
+> +	transport_deregister_session_configfs(sess->se_sess);
+> +	transport_deregister_session(sess->se_sess);
+> +
+> +	if (sess->card)
+> +		fw_card_put(sess->card);
+> +
+> +	if (cancel_work)
+> +		cancel_delayed_work_sync(&sess->maint_work);
+> +
+> +	kfree(sess);
+> +}
+
+What prevents that an entry is added to sess->login_list right after
+you tested for it being empty?
+
+If there is something external which prevents this, then you don't
+need to take the lock just for this test.
+
+If there is no such external measure of serialization, then the
+spinlock-protected section is too small.
+
+By the way, the use of spin_lock()/spin_unlock() is quite atypical.
+This API restricts you
+  - not to call a possibly sleeping function within the lock-
+    protected section,
+  - not to take the lock in tasklet context or IRQ context.
+
+So this locking API is quite rarely used:  Anywhere where a mutex
+/could/ be used, but none of the locked sections ever need to sleep.
+This is a rather narrow use case.
+
+Maybe you know all this but I thought I mention it anyway.
+
+> +static void session_check_for_reset(struct sbp_session *sess)
+> +{
+> +	bool card_valid = false;
+> +
+> +	if (sess->card) {
+> +		spin_lock_irq(&sess->card->lock);
+> +		card_valid = (sess->card->local_node != NULL);
+> +		spin_unlock_irq(&sess->card->lock);
+> +
+> +		if (!card_valid) {
+> +			fw_card_put(sess->card);
+> +			sess->card = NULL;
+> +		}
+> +	}
+> +
+> +	if (!card_valid || (sess->generation != sess->card->generation)) {
+> +		pr_info("Waiting for reconnect from node: %016llx\n",
+> +			sess->guid);
+> +
+> +		sess->node_id = -1;
+> +		sess->reconnect_expires = get_jiffies_64() +
+> +			((sess->reconnect_hold + 1) * HZ);
+> +	}
+> +}
+
+[Note to self:  When more awake, carefully review this peeking into
+fw_card internals, the generation accesses, and the card refcounting.]
+
+> +static void session_reconnect_expired(struct sbp_session *sess)
+> +{
+> +	struct sbp_login_descriptor *login, *temp;
+> +
+> +	pr_info("Reconnect timer expired for node: %016llx\n", sess->guid);
+> +
+> +	spin_lock(&sess->login_list_lock);
+> +	list_for_each_entry_safe(login, temp, &sess->login_list, link) {
+> +		spin_unlock(&sess->login_list_lock);
+> +		sbp_login_release(login, false);
+> +		spin_lock(&sess->login_list_lock);
+> +	}
+> +	spin_unlock(&sess->login_list_lock);
+> +
+> +	/* sbp_login_release() calls sbp_session_release() */
+> +}
+
+This is wrong.  Either something external protects the
+session_reconnect_expired() executing context from concurrent
+manipulations of sess->login_list.  Then you don't need to
+take the lock here in the first place.
+
+Or there is no such external serialization measure.  Then you
+must not drop the list lock in the loop body.
+
+In the latter case, an easy fix would be to move the expired
+logins to a local temporary list while holding the lock, then
+release each item from the temporary list without holding the
+lock.
 -- 
-1.7.0.4
-
+Stefan Richter
+-=====-===-- --=- -====
+http://arcgraph.de/sr/
