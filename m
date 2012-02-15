@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286Ab2BOOhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:37:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55313 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab2BOOhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:37:02 -0500
-Message-ID: <4F3BC30A.4030301@monstr.eu>
-Date: Wed, 15 Feb 2012 15:36:58 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1758755Ab2BOOjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:39:41 -0500
+Received: from gw.danplanet.com ([50.43.125.66]:41552 "EHLO mail.danplanet.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754257Ab2BOOjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 09:39:40 -0500
+From: Dan Smith <danms@us.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are page-aligned
+References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
+	<alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
+	<87zkcm23az.fsf@caffeine.danplanet.com>
+	<alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
+	<87pqdh1mvs.fsf@caffeine.danplanet.com>
+	<alpine.DEB.2.00.1202141259420.28450@chino.kir.corp.google.com>
+Date: Wed, 15 Feb 2012 06:39:37 -0800
+In-Reply-To: <alpine.DEB.2.00.1202141259420.28450@chino.kir.corp.google.com>
+	(David Rientjes's message of "Tue, 14 Feb 2012 13:04:45 -0800 (PST)")
+Message-ID: <87lio417py.fsf@caffeine.danplanet.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory
- location
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com> <4F3BA962.9040109@monstr.eu>
-In-Reply-To: <4F3BA962.9040109@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek wrote:
-> Ohad Ben-Cohen wrote:
->> On Mon, Feb 13, 2012 at 3:20 PM, Michal Simek <monstr@monstr.eu> wrote:
->>> Here is how it is achieve
->>>        ret = dma_declare_coherent_memory(&zynq_freertos.dev, 0,
->>>                                0, 0x10000000, DMA_MEMORY_MAP);
->>>
->>> which is fully compatible with remoteproc.
->>
->> Great, this is what we've been doing with davinci too.
-> 
-> Cool.
-> 
->>
->>> Do you have any example of using it?
->>
->> What exactly are you looking for ? RTOS or Linux side ?
-> 
-> Both side will be great. Rtos is freertos.
-> 
->>
->> On the Linux side, you can just make the rpmsg sample work (it's part
->> of the rpmsg patch set). For the RTOS side, feel free to just take our
->> code (it's BSD licensed and hosted on github) and adapt it to your
->> environment.
-> 
-> You mean that server_sample and rpmsg_omx right?
-> I have also found rpmsg-omx demo application.
-> What I am missing is how to probe rpmsg bus.
-> Do you have any working example?
-> 
-> Communication between cpus is done through swirqs. I have test sending 
-> it from linux to rtos.
+DR> And do what if they're not?  What behavior are you trying to fix
+DR> from the pagewalk code with respect to page-aligned addresses?  Any
+DR> specific examples?
 
-ok. How that rpmsg channels are created? Is it based on data sent from remoteproc?
-Or based on resource table?
+Sorry, I thought I detailed this in the patch header.
 
-Thanks,
-Michal
+In walk_pte_entry(), the exit condition is when the end address is equal
+to the start address + n*PAGE_SIZE. If they're not both page aligned,
+then we'll never exit the loop and we'll start handing bad pte entries
+to the handler function.
 
+As was pointed out earlier in the thread, we could "solve" this by
+making the exit condition be > instead of ==. However, that changes the
+entirety of walk_page_range() from requiring page-aligned attributes to
+silently tolerating them. IMHO, it's better to just
+declare/check/enforce that they are.
+
+I hit this recently because I was working with a prototype syscall that
+took an address range from userspace and walked the pages. I ended up
+passing non-page-aligned addresses, not knowing that walk_page_range()
+needed it, and it took me a few days to figure out why my pte_entry
+handler got a few good entries and then garbage until I crashed. I
+turned on DEBUG_VM and got zero additional help. With the proposed
+patch, I would have received a helpful smack in the head.
+
+Does that make sense?
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Dan Smith
+IBM Linux Technology Center
+email: danms@us.ibm.com
