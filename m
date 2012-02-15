@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759853Ab2BOJXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 04:23:55 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:57188 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758660Ab2BOJXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 04:23:53 -0500
-Message-ID: <4F3B79A2.3070709@linux.vnet.ibm.com>
-Date: Wed, 15 Feb 2012 14:53:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S932186Ab2BOJYl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 04:24:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43246 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754004Ab2BOJYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 04:24:37 -0500
+Date: Wed, 15 Feb 2012 10:24:23 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
+Message-ID: <20120215092423.GB1664@m.brq.redhat.com>
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+ <1329236924.2293.13.camel@twins>
+ <1329237838.2293.20.camel@twins>
+ <1329250830.2293.24.camel@twins>
+ <1329253030.2293.27.camel@twins>
+ <1329253391.2293.31.camel@twins>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, davej@redhat.com,
-        jonas.aberg@stericsson.com, martin.persson@stericsson.com,
-        sundar.iyer@stericsson.com, Venkatesh Pallipadi <venki@google.com>,
-        "akpm >> \"akpm@linux-foundation.org\"" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 10/12] drivers/cpufreq/db8500-cpufreq: remove references
- to cpu_*_map.
-References: <1329281884.20530.rusty@rustcorp.com.au>
-In-Reply-To: <1329281884.20530.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12021423-1396-0000-0000-000000ADABD5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329253391.2293.31.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 10:28 AM, Rusty Russell wrote:
-
-> From: Rusty Russell <rusty@rustcorp.com.au>
+On Tue, Feb 14, 2012 at 10:03:11PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-14 at 21:57 +0100, Peter Zijlstra wrote:
+> > On Tue, 2012-02-14 at 21:20 +0100, Peter Zijlstra wrote:
+> > > OK, this one works. the attributes thing wants NULL termination.
+> > > Thanks
+> > > for mentioning that Jiri. 
+> > 
+> > OK, it mostly works, except:
+> > 
+> > perf record -e "cpu/config=0x108000c0/upp" ./loop_1b_locks
+> > 
+> > doesn't seem to work...
 > 
-> This has been obsolescent for a while; time for the final push.
+> This seems to come back to hardcoding config* vs including it in every
+> single format description.
 > 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: cpufreq@vger.kernel.org
-> Cc: Sundar Iyer <sundar.iyer@stericsson.com>
-> Cc: Martin Persson <martin.persson@stericsson.com>
-> Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
-> ---
+> I prefer to have all perf_event_attr fields (of interest) hard-coded in
+> the parser so that we can omit them for all actual format descriptions.
+> 
+> These would be: period, config, config1, config2 and stephane's new
+> branch_sample_type, although that might want to get a shorter name.
 
+right, for pmu/.../ syntax there are allowed only fields from 'format'
+directory are so far.. with exceptions like: cycles/period=100000/
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+so I'll hardcode following config fields:
+	config
+	config1
+	config2
+	period
+	branch_sample_type (branch, branch_type, branch_st  ???)
 
-Regards,
-Srivatsa S. Bhat
+to be used in xxx/.../ syntax
 
+also we need to choose some strategy of format field name shadowing
+with hardcoded fields:
+
+- BUILD_BUG in kernel PMU_FORMAT_ATTR
+- not allowed.. report error in perf runtime
+- allowed - hardcoded field have precedence
+- allowed - format field values have precedence
+
+I'd say either allow shadowing(with whatever precedence we this is better),
+or have the BUILD_BUG line in kernel..
+
+jirka
