@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab2BOUkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:40:00 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:60471 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab2BOUj5 (ORCPT
+	id S1755464Ab2BOUkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:40:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58172 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595Ab2BOUko convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:39:57 -0500
-Date: Wed, 15 Feb 2012 15:34:45 -0500 (EST)
-Message-Id: <20120215.153445.1279062916210043775.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: dkukawka@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, nicolas.ferre@atmel.com,
-        hsweeten@visionengravers.com, florian@openwrt.org, venza@brownhat.org,
-        steve.glendinning@smsc.com, peppe.cavallaro@st.com, rl@hellgate.ch,
-        gregkh@linuxfoundation.org, rusty@rustcorp.com.au, mst@redhat.com,
-        khc@pm.waw.pl, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v2 1/2] net: replace random_ether_addr() with
- eth_hw_addr_random()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1329324340-13461-2-git-send-email-danny.kukawka@bisect.de>
-References: <1329324340-13461-1-git-send-email-danny.kukawka@bisect.de>
-	<1329324340-13461-2-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 15 Feb 2012 15:40:44 -0500
+Message-ID: <1329338428.2293.176.camel@twins>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Date: Wed, 15 Feb 2012 21:40:28 +0100
+In-Reply-To: <20120215203814.GA29795@srcf.ucam.org>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+	 <alpine.LFD.2.02.1202151537500.2794@ionos>
+	 <20120215145225.GA21448@srcf.ucam.org>
+	 <alpine.LFD.2.02.1202152059230.2794@ionos>
+	 <20120215202221.GA29552@srcf.ucam.org>
+	 <alpine.LFD.2.02.1202152125500.2794@ionos>
+	 <20120215203814.GA29795@srcf.ucam.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 15 Feb 2012 12:34:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Wed, 15 Feb 2012 17:45:39 +0100
+On Wed, 2012-02-15 at 20:38 +0000, Matthew Garrett wrote:
+> Application authors do seem to have ended up under the belief 
+> that sleep(0) is a meaningful thing to do, and the internet seems to be 
+> full of suggestions to use it rather than sched_yield().
 
-> Replace usage of random_ether_addr() with eth_hw_addr_random()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
-> 
-> Change the trivial cases.
-> 
-> v2: adapt to renamed eth_hw_addr_random()
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-
-Applied.
+http://xkcd.com/386/
