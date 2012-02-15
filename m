@@ -1,246 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2BOQDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:03:08 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45427 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2BOQDH (ORCPT
+	id S1751857Ab2BOQEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:04:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42898 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750935Ab2BOQEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:03:07 -0500
-Date: Wed, 15 Feb 2012 17:03:02 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
- in perf
-Message-ID: <20120215160259.GA24080@somewhere>
-References: <1329317514-8131-1-git-send-email-jolsa@redhat.com>
- <1329317514-8131-6-git-send-email-jolsa@redhat.com>
+	Wed, 15 Feb 2012 11:04:44 -0500
+Date: Wed, 15 Feb 2012 08:04:38 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Saravana Kannan <skannan@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Todd Poynor <toddpoynor@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Oleg Nesterov <oleg@redhat.com>,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        linaro-kernel@lists.linaro.org, Mike Chan <mike@android.com>,
+        Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        kernel-team@android.com, linux-arm-kernel@lists.infradead.org,
+        Arjan Van De Ven <arjan@infradead.org>
+Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
+Message-ID: <20120215160437.GD2996@opensource.wolfsonmicro.com>
+References: <20120208013959.GA24535@panacea>
+ <1328670355.2482.68.camel@laptop>
+ <20120208202314.GA28290@redhat.com>
+ <1328736834.2903.33.camel@pasglop>
+ <20120209075106.GB18387@elte.hu>
+ <4F35DD3E.4020406@codeaurora.org>
+ <20120211143951.GA24564@sirena.org.uk>
+ <1328971983.11320.5.camel@laptop>
+ <20120211153324.GC31887@opensource.wolfsonmicro.com>
+ <1329313084.2293.105.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="osDK9TLjxFScVI/L"
 Content-Disposition: inline
-In-Reply-To: <1329317514-8131-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1329313084.2293.105.camel@twins>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 03:51:52PM +0100, Jiri Olsa wrote:
-> Adding perf registration support for the ftrace function event,
-> so it is now possible to register it via perf interface.
-> 
-> The perf_event struct statically contains ftrace_ops as a handle
-> for function tracer. The function tracer is registered/unregistered
-> in open/close actions.
-> 
-> To be efficient, we enable/disable ftrace_ops each time the traced
-> process is scheduled in/out (via TRACE_REG_PERF_(ADD|DELL) handlers).
-> This way tracing is enabled only when the process is running.
-> Intentionally using this way instead of the event's hw state
-> PERF_HES_STOPPED, which would not disable the ftrace_ops.
-> 
-> It is now possible to use function trace within perf commands
-> like:
-> 
->   perf record -e ftrace:function ls
->   perf stat -e ftrace:function ls
-> 
-> Allowed only for root.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+--osDK9TLjxFScVI/L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  include/linux/perf_event.h      |    3 +
->  kernel/trace/trace.h            |   11 +++++
->  kernel/trace/trace_entries.h    |    6 ++-
->  kernel/trace/trace_event_perf.c |   86 +++++++++++++++++++++++++++++++++++++++
->  kernel/trace/trace_export.c     |    5 ++
->  5 files changed, 109 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 412b790..92a056f 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -859,6 +859,9 @@ struct perf_event {
->  #ifdef CONFIG_EVENT_TRACING
->  	struct ftrace_event_call	*tp_event;
->  	struct event_filter		*filter;
-> +#ifdef CONFIG_FUNCTION_TRACER
-> +	struct ftrace_ops               ftrace_ops;
-> +#endif
->  #endif
->  
->  #ifdef CONFIG_CGROUP_PERF
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 638476a..76a1c50 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -595,6 +595,8 @@ static inline int ftrace_trace_task(struct task_struct *task)
->  static inline int ftrace_is_dead(void) { return 0; }
->  #endif
->  
-> +int ftrace_event_is_function(struct ftrace_event_call *call);
-> +
->  /*
->   * struct trace_parser - servers for reading the user input separated by spaces
->   * @cont: set if the input is not complete - no final space char was found
-> @@ -832,4 +834,13 @@ extern const char *__stop___trace_bprintk_fmt[];
->  	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
->  #include "trace_entries.h"
->  
-> +#ifdef CONFIG_PERF_EVENTS
-> +#ifdef CONFIG_FUNCTION_TRACER
-> +int perf_ftrace_event_register(struct ftrace_event_call *call,
-> +			       enum trace_reg type, void *data);
-> +#else
-> +#define perf_ftrace_event_register NULL
-> +#endif /* CONFIG_FUNCTION_TRACER */
-> +#endif /* CONFIG_PERF_EVENTS */
-> +
->  #endif /* _LINUX_KERNEL_TRACE_H */
-> diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
-> index 9336590..47db7ed 100644
-> --- a/kernel/trace/trace_entries.h
-> +++ b/kernel/trace/trace_entries.h
-> @@ -55,7 +55,7 @@
->  /*
->   * Function trace entry - function address and parent function address:
->   */
-> -FTRACE_ENTRY(function, ftrace_entry,
-> +FTRACE_ENTRY_REG(function, ftrace_entry,
->  
->  	TRACE_FN,
->  
-> @@ -64,7 +64,9 @@ FTRACE_ENTRY(function, ftrace_entry,
->  		__field(	unsigned long,	parent_ip	)
->  	),
->  
-> -	F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip)
-> +	F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip),
-> +
-> +	perf_ftrace_event_register
->  );
->  
->  /* Function call entry */
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index d72af0b..fdeeb5c 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -24,6 +24,11 @@ static int	total_ref_count;
->  static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
->  				 struct perf_event *p_event)
->  {
-> +	/* The ftrace function trace is allowed only for root. */
-> +	if (ftrace_event_is_function(tp_event) &&
-> +	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-> +		return -EPERM;
-> +
->  	/* No tracing, just counting, so no obvious leak */
->  	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
->  		return 0;
-> @@ -250,3 +255,84 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
->  	return raw_data;
->  }
->  EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
-> +
-> +#ifdef CONFIG_FUNCTION_TRACER
-> +static void
-> +perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
-> +{
-> +	struct ftrace_entry *entry;
-> +	struct hlist_head *head;
-> +	struct pt_regs regs;
-> +	int rctx;
-> +
-> +#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
-> +		    sizeof(u64)) - sizeof(u32))
-> +
-> +	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
-> +
-> +	perf_fetch_caller_regs(&regs);
-> +
-> +	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
-> +	if (!entry)
-> +		return;
-> +
-> +	entry->ip = ip;
-> +	entry->parent_ip = parent_ip;
-> +
-> +	head = this_cpu_ptr(event_function.perf_events);
-> +	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
-> +			      1, &regs, head);
-> +
-> +#undef ENTRY_SIZE
-> +}
-> +
-> +static int perf_ftrace_function_register(struct perf_event *event)
-> +{
-> +	struct ftrace_ops *ops = &event->ftrace_ops;
-> +
-> +	ops->flags |= FTRACE_OPS_FL_CONTROL;
-> +	ops->func = perf_ftrace_function_call;
-> +	return register_ftrace_function(ops);
-> +}
-> +
-> +static int perf_ftrace_function_unregister(struct perf_event *event)
-> +{
-> +	struct ftrace_ops *ops = &event->ftrace_ops;
-> +	return unregister_ftrace_function(ops);
-> +}
-> +
-> +static void perf_ftrace_function_enable(struct perf_event *event)
-> +{
-> +	ftrace_function_local_enable(&event->ftrace_ops);
-> +}
-> +
-> +static void perf_ftrace_function_disable(struct perf_event *event)
-> +{
-> +	ftrace_function_local_disable(&event->ftrace_ops);
-> +}
-> +
-> +int perf_ftrace_event_register(struct ftrace_event_call *call,
-> +			       enum trace_reg type, void *data)
-> +{
-> +	switch (type) {
-> +	case TRACE_REG_REGISTER:
-> +	case TRACE_REG_UNREGISTER:
-> +		break;
-> +	case TRACE_REG_PERF_REGISTER:
-> +	case TRACE_REG_PERF_UNREGISTER:
-> +		return 0;
-> +	case TRACE_REG_PERF_OPEN:
-> +		return perf_ftrace_function_register(data);
-> +	case TRACE_REG_PERF_CLOSE:
-> +		return perf_ftrace_function_unregister(data);
-> +	case TRACE_REG_PERF_ADD:
-> +		perf_ftrace_function_enable(data);
-> +		return 0;
-> +	case TRACE_REG_PERF_DEL:
-> +		perf_ftrace_function_disable(data);
-> +		return 0;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +#endif /* CONFIG_FUNCTION_TRACER */
-> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> index f74de86..a3dbee6 100644
-> --- a/kernel/trace/trace_export.c
-> +++ b/kernel/trace/trace_export.c
-> @@ -184,4 +184,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
->  	FTRACE_ENTRY_REG(call, struct_name, etype,			\
->  			 PARAMS(tstruct), PARAMS(print), NULL)
->  
-> +int ftrace_event_is_function(struct ftrace_event_call *call)
-> +{
-> +	return call == &event_function;
-> +}
-> +
->  #include "trace_entries.h"
-> -- 
-> 1.7.1
-> 
+On Wed, Feb 15, 2012 at 02:38:04PM +0100, Peter Zijlstra wrote:
+> On Sat, 2012-02-11 at 15:33 +0000, Mark Brown wrote:
+
+> >  There's use cases for having this
+> > stuff offloaded but if you're not doing that stuff then why deal with
+> > the complication of designing the hardware?=20
+
+> Because doing it in software is more expensive?
+
+> Penny-wise pound-foolish like thing.. you make the software requirements
+> more complex, which results in more bugs (more cost in debugging), more
+> runtime (for doing the 'software' thing), less power savings.
+
+> Esp since all this uC/system-controller stuff is already available and
+> validated.
+
+It's really not - like I say most of the times people have tried to
+deploy this on embedded systems it's just made everyone more miserable
+and typically winds up getting turned off or bypassed.  The PMICs are
+much more decoupled from the CPUs and the power control on the SoCs is
+more fine grained than you seem to see in the desktop market.  There's
+software effort but people are willing to spend that for microamps and
+all other things being equal they'd typically rather spend it in the
+software stack they're already working with rather than in a separate
+stack for a microcontroller.
+
+--osDK9TLjxFScVI/L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPO9eOAAoJEBus8iNuMP3dIFQP/j6N0/AYlrCYqKT0Uujt6S26
+ifZdkc4w8Egox3etMb9nNXhcqohs5og/APuE61ITvflVd0WwRTgDxjx5lFA+5W94
+KFJ6t1G+bByC28NfgnRKU0iMZT/uXH4rKWE7pRuxpCnjOetCY6UHqdDQZ+HAe3kP
+r45tcE7j7OVSP9uHWLAJHiQ4DhfDoWUMNuxGfEOGNhH6qzzM0PuX+cNsrymGTGlc
+1hKYP8bfkZzkjh6/HDzKWp+uoB+BMQsrK/YpS98Hor7MRBLoZyduI+DAwg/j6Yug
+E588ChgrEZTSfMER2NUluPv8i+DhEyzYcGlkTOlh4EnNNS+s0e6M7YexkUestMgZ
+ac0yuJdmFIUdhuAfGtlw7mc6esIZ1lfEcp8uzmhg7MxoFheoZ0YZd8/l9/O+T199
+/NMVXctkRiWPACelBTWhng6DN7Ve4CCReuqL4ZFmMWHE1sZI0ShdGjo6j4mf7Yht
+XKBETcIKdKbA6NXc9aByMBfPgL3m2O4EOM3mEdoouqiRRwTZBYJYxZ4+JXSxM1d8
+Xw+1hrdZDORhJWKsy7j/erwMYN0TC6VscifGa3Mf576eTmKyTMoMXL+8O50RkbRS
+iAaHhLEV9wHnk10BVdp1vR0d/cPgyNKfyAmlabVvMHdgbMii5cnTju8/w5MQVpY0
+MOMtlgCP0277Eltx4d6j
+=qMnv
+-----END PGP SIGNATURE-----
+
+--osDK9TLjxFScVI/L--
