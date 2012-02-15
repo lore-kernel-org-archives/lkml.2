@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab2BOXg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:36:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49157 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab2BOXg0 convert rfc822-to-8bit (ORCPT
+	id S1756218Ab2BOXhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:37:23 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33286 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab2BOXhW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 18:36:26 -0500
-Message-ID: <1329348972.2293.189.camel@twins>
-Subject: Re: [RFC PATCH 08/14] sched: normalize tg load contributions
- against runnable time
+	Wed, 15 Feb 2012 18:37:22 -0500
+Message-ID: <1329349028.2293.190.camel@twins>
+Subject: Re: [RFC PATCH 01/14] sched: track the runnable average on a
+ per-task entitiy basis
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Paul Turner <pjt@google.com>
 Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
@@ -17,10 +17,10 @@ Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Thu, 16 Feb 2012 00:36:12 +0100
-In-Reply-To: <20120202013826.20844.39042.stgit@kitami.mtv.corp.google.com>
+Date: Thu, 16 Feb 2012 00:37:08 +0100
+In-Reply-To: <20120202013826.20844.8708.stgit@kitami.mtv.corp.google.com>
 References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	 <20120202013826.20844.39042.stgit@kitami.mtv.corp.google.com>
+	 <20120202013826.20844.8708.stgit@kitami.mtv.corp.google.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -30,45 +30,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
-> Entities of equal weight should receive equitable distribution of cpu time.
-> This is challenging in the case of a task_group's shares as execution may be
-> occurring on multiple cpus simultaneously.
-> 
-> To handle this we divide up the shares into weights proportionate with the load
-> on each cfs_rq.  This does not however, account for the fact that the sum of
-> the parts may be less than one cpu and so we need to normalize:
->   load(tg) = min(runnable_avg(tg), 1) * tg->shares
-> Where runnable_avg is the aggregate time in which the task_group had runnable
-> children.
-
-
->  static inline void __update_group_entity_contrib(struct sched_entity *se)
->  {
->         struct cfs_rq *cfs_rq = group_cfs_rq(se);
->         struct task_group *tg = cfs_rq->tg;
-> +       int runnable_avg;
->  
->         se->avg.load_avg_contrib = (cfs_rq->tg_load_contrib * tg->shares);
->         se->avg.load_avg_contrib /= atomic64_read(&tg->load_avg) + 1;
-> +
 > +       /*
-> +        * Unlike a task-entity, a group entity may be using >=1 cpu globally.
-> +        * However, in the case that it's using <1 cpu we need to form a
-> +        * correction term so that we contribute the same load as a task of
-> +        * equal weight. (Global runnable time is taken as a fraction over 2^12.)
+> +        * Use 1024us as the unit of measurement since it's a reasonable
+> +        * approximation of 1ms and fast to compute.
 > +        */
-> +       runnable_avg = atomic_read(&tg->runnable_avg);
-> +       if (runnable_avg < (1<<12)) {
-> +               se->avg.load_avg_contrib *= runnable_avg;
-> +               se->avg.load_avg_contrib /= (1<<12);
-> +       }
->  } 
+> +       delta >>= 10;
 
-This seems weird, and the comments don't explain anything.
+ns -> us ?, text talks about ms, slightly confusing
 
-Ah,.. you can count runnable multiple times (on each cpu), this also
-means that the number you're using (when below 1) can still be utter
-crap.
+> +       if (!delta)
+> +               return 0;
+> +       sa->last_runnable_update = now;
+> +
+> +       delta_w = sa->runnable_avg_period % 1024;
 
-Neither the comment nor the changelog mention this, it should, it should
-also mention why it doesn't matter (does it?).
+so delta_w is the chunk of this p we already accounted.
+
+> +       if (delta + delta_w >= 1024) {
+
+if delta pushes us over 1024*1024 ns (~1ms) we roll a window.
+
+> +               /* period roll-over */
+> +               decayed = 1;
+> +
+> +               delta_w = 1024 - delta_w;
+
+The distance we need to reach the next window.
+
+> +               BUG_ON(delta_w > delta); 
+
+somehow reading this code took forever, this suggests clarification,
+either through better variable names or more comments. Could also mean
+I'm a moron and should get more sleep or so :-)
