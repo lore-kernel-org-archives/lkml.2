@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2BOT6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:58:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10137 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753264Ab2BOT6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:58:18 -0500
-Message-ID: <1329335879.2337.18.camel@localhost>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-From: Eric Paris <eparis@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Nathaniel Husted <nhusted@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 15 Feb 2012 14:57:59 -0500
-In-Reply-To: <20120215173443.GF27825@n2100.arm.linux.org.uk>
-References: <1329284188.12708.1.camel@phoenix>
-	 <20120215083609.GD13673@n2100.arm.linux.org.uk>
-	 <1329325622.2337.13.camel@localhost>
-	 <20120215173443.GF27825@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754885Ab2BOUAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:00:36 -0500
+Received: from fep27.mx.upcmail.net ([62.179.121.47]:44910 "EHLO
+	fep27.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab2BOUAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 15:00:35 -0500
+X-Greylist: delayed 1115 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Feb 2012 15:00:34 EST
+X-SourceIP: 178.83.228.246
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <4F3C0A96.3050105@odi.ch>
+Date: Wed, 15 Feb 2012 20:42:14 +0100
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: regulators: dummy.c vs. REGULATOR_DUMMY
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 17:34 +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 15, 2012 at 12:07:02PM -0500, Eric Paris wrote:
-> > So if someone tells me how the code knows it's endianness I'll gladly
-> > write the ifdef to switch from AUDIT_ARCH_ARMEB to AUDIT_ARCH_ARM when
-> > appropriate....
-> 
-> An easy way would be:
-> 
-> #ifndef __ARMEB__
-> #define AUDIT_ARCH_NR AUDIT_ARCH_ARMEB
-> #else
-> #define AUDIT_ARCH_NR AUDIT_ARCH_ARM
-> #endif
+Hi,
 
-Is that actually exactly backwards?  ifndef?  (I don't have a clue when
-__ARMEB__ is set)
+I have REGULATOR_DUMMY unset, but still get the dummy regulator registered. As 
+far as I can see, dummy.c is always built regardless of the config option. 
+Either the option should be removed or the Makefile should be changed to 
+actually use it.
 
+Thanks,
+
+Ortwin
