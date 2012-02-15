@@ -1,209 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab2BOGf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 01:35:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52941 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab2BOGf0 (ORCPT
+	id S1756600Ab2BOGjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 01:39:12 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36217 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab2BOGjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 01:35:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] arm-soc fixes for 3.3-rc4
-Date: Wed, 15 Feb 2012 06:32:40 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+	Wed, 15 Feb 2012 01:39:08 -0500
+Date: Wed, 15 Feb 2012 09:40:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jorgyano Vieira <jorgyano@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: crystalhd: crystalhd_misc: improved debug macros
+Message-ID: <20120215064059.GO4141@mwanda>
+References: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202150632.40316.arnd@arndb.de>
-X-Provags-ID: V02:K0:sNAfVNro1B3p9xtKNdIgCkt5/lnq6I7pntv6o/EP2gd
- P/fF3Il3P7aDPacX6dTObPraAfhbkkv1ZjwdIzYngiEx0rdLYI
- ti93F6WiN4X10/k/GFZRB2HMorJ26JA+QZMOn9nxRKfSkBnRTK
- 64GGEo0ETCc3A1CgoBOweLj5lKfgCp0Lt/axVDHLWOwJwTWWxI
- 8UCS7BIwrCZeIH7JgCPNTGOIdWFGylkbermP9znQrDBgyEvKBn
- 7P7aNAWOsBp169b5L4DQUPtzoUGPV0mQGyt9w5FnrpbV27zHK2
- SJ3nWgQjMEFIz7DYdKXwqZttHgHPQH90u7UH4EpZ6Y/lMZCiT8
- AGFruZxwqCmCHuImsmc0=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eQyCKlb8USywWNtC"
+Content-Disposition: inline
+In-Reply-To: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F3B5307.007C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-We've got a number of new patches queued up for 3.3. The majority of these
-are regression fixes for stuff that broke during the merge window.
+--eQyCKlb8USywWNtC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The notable ones are:
+On Wed, Feb 15, 2012 at 12:20:06AM -0200, Jorgyano Vieira wrote:
+> Improvement of debug macros to ensure safe use on if/else statements.
+>=20
 
-* The at91 ata drivers both broke because of an earlier cleanup patch that
-  some other patches were based on. Jean-Christophe decided to remove
-  the legacy at91_ide driver and fix the new-style at91-pata driver while
-  keeping the cleanup patch. I almost rejected the patches for being too
-  late and too big but in the end decided to accept them because they
-  fix a regression.
+How are the originals unsafe?  The changelog should say how this is
+an improvement.  Something like "I put do { ... } while(0) around
+the macros so it matches the rest of the kernel."
 
-* A patch fixing build breakage from the sysdev-to-device conversion
-  colliding with other changes touches a number of mach-s3c files.
+Really we want to get rid of these.  It would be easy to delete
+BCMLOG_ENTER and BCMLOG_LEAVE right now.  They're only used for five
+functions.  BCMLOG() is slightly complicated.  BCMLOG_ERR() could
+be sed replaced with pr_err().
 
-* b0654037 "ARM: orion: Fix Orion5x GPIO regression from MPP cleanup"
-  is a mechanical change that unfortunately touches a lot of lines
-  that should up in the diffstat.
+So could you do that instead?  Send a patch to remove BCMLOG_ENTER
+and BCMLOG_LEAVE?  Then send another patch to replace BCMLOG_ERR()
+with pr_err().  Take a look at how the pr_fmt macro is used for
+this.  Don't actually do it with sed.  Take the time and review each
+printk() and notice bugs as you go along.  You could replace them
+file by file if you wanted or all at once, which ever is easier for
+you.  Then send a third patch to add the do {} while(0) block to
+BCMLOG() until someone works up enough motivation to fix it
+properly?
 
-	Arnd
+regards,
+dan carpenter
 
-The following changes since commit d65b4e98d7ea3038b767b70fe8be959b2913f16d:
 
-  Linux 3.3-rc3 (2012-02-08 19:21:53 -0800)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes (branch)
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes-3.3-rc4 (tag)
 
-Andrew Lunn (2):
-      ARM: orion: Fix Orion5x GPIO regression from MPP cleanup
-      ARM: orion: Fix USB phy for orion5x.
+--eQyCKlb8USywWNtC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Arnd Bergmann (4):
-      Merge branch 'fixes' of git://git.kernel.org/.../olof/tegra into fixes
-      Merge branch 'v3.3-samsung-fixes-3' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge branch 'fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge branch 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Benoit Cousson (1):
-      ARM: OMAP2+: board-generic: Add missing handle_irq callbacks
+iQIcBAEBAgAGBQJPO1N6AAoJEOnZkXI/YHqRj+cQAI91Nik36JvZ6NMbKfH2i3A8
+grvv9FOOkdB7zUYOpjvvS39fgNcKfrKW8yt9cSgVY++okRAnDWthNyyYHpgl5Sf4
+klkmUT+iHoiC/g2xFNDxMPghMtUzGjlvV0DMhWAd1hj1a6PahngUEi2riqozt0Gs
+7GMX/CH/P38yatx+wdkokRB8f9E/p0Vs2b3j2rlFzkbHUq46w1+WuanW6AfdF51J
+NWxx0rpPzUBtAXgP9uDXRzhIbtht2b5W8mlMN72SS1qRmhDM4c6ceBHGxEMpBcRU
+81Xb6QzHAqTgOGYAkmBCjoDW7BGxxHU8hjQeYbOXDAS+IDOrYE/Ulunx8t2AYpKB
+0dIwU3F4NN9eBM6dqPk6TTTNDwPxt+jaPQIUBUA86mUBhqrRV81iJwe1ZvOX0R2l
+dG43Kg/KDXwCbt2JTiEtr6EFwRdZgVwJcUJSrrSogInSBqWiOIEKsiJZSJK5ZnOr
+qh5V2kAMzGdNAW+RtZuOZQ3YNdxaBwC4aKiHsE9ksg5S5jtdyQTBPXiMYgOIpz0j
+LVBGhS20JMi7xViTWa3JWozv5ruIjd3/N9Mpnmukml5oKyY2JvKi7j0VgDlE2s9Y
+4C3ddWd9ZhQ64cIbi9e3kbXNqOUKRUl/LdBnls/QRFdtfCP9OecZ+I7s/oYBNqj0
+GBh3BmRKLwlEgEcWxSzG
+=x4ZC
+-----END PGP SIGNATURE-----
 
-H Hartley Sweeten (1):
-      ep93xx: fix build of vision_ep93xx.c
-
-Heiko Stuebner (1):
-      ARM: SAMSUNG: Fix missing api-change from subsys_interface change
-
-Igor Grinberg (1):
-      ARM: OMAP3: cm-t35: fix section mismatch warning
-
-Jean-Christophe PLAGNIOL-VILLARD (4):
-      ARM: at91:rtc/rtc-at91sam9: ioremap register bank
-      ARM: at91: add accessor to manage SMC
-      pata/at91: use newly introduced SMC accessors
-      ARM: at91: drop ide driver in favor of the pata one
-
-Jonghwan Choi (1):
-      ARM: EXYNOS: Fix "warning: initialization from incompatible pointer type"
-
-Karol Lewandowski (1):
-      ARM: EXYNOS: Bring exynos4-dt up to date
-
-Kukjin Kim (2):
-      ARM: EXYNOS: Remove build warning without enabling PM
-      ARM: S5PV210: Fix the name of exynos4_clk_hdmiphy_ctrl() for S5PV210
-
-Marc Dietrich (2):
-      ARM: tegra: paz00: fix wrong SD1 power gpio
-      ARM: tegra: paz00: fix wrong UART port on mini-pcie plug
-
-Marek Szyprowski (1):
-      ARM: EXYNOS: fix non-SMP builds for EXYNOS4
-
-Mark Brown (2):
-      ARM: S3C64XX: Make s3c64xx_init_uarts() static
-      ARM: S3C6410: Use device names for both I2C clocks
-
-Nicolas Ferre (1):
-      ARM: at91: USB AT91 gadget registration for module
-
-Olof Johansson (2):
-      ARM: tegra: dma: fix buildbreak for !CONFIG_TEGRA_SYSTEM_DMA
-      Merge branch 'v3.3-samsung-fixes-2' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-
-Paul Walmsley (1):
-      ARM: OMAP2xxx: PM: fix OMAP2xxx-specific UART idle bug in v3.3
-
-Santosh Shilimkar (1):
-      ARM: OMAP2: Fix the OMAP2 only build break seen with 2011+ ARM tool-chains
-
-Shubhrajyoti Datta (1):
-      i2c: tegra: Add devexit_p() for remove
-
-Sylwester Nawrocki (3):
-      ARM: SAMSUNG: Fix platform data setup for I2C adapter 0
-      ARM: EXYNOS: Correct framebuffer window size on Nuri board
-      ARM: EXYNOS: Correct M-5MOLS sensor clock frequency on Universal C210 board
-
-Thomas Abraham (1):
-      ARM: EXYNOS: Add cpu-offset property in gic device tree node
-
-Tony Lindgren (1):
-      Merge branch 'fixes-dt' into fixes
-
- arch/arm/boot/dts/exynos4210.dtsi              |    1 +
- arch/arm/boot/dts/tegra-paz00.dts              |    6 +-
- arch/arm/mach-at91/at91rm9200_devices.c        |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c       |    9 +-
- arch/arm/mach-at91/at91sam9261_devices.c       |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c       |    8 +-
- arch/arm/mach-at91/include/mach/at91sam9_smc.h |   29 ++
- arch/arm/mach-at91/sam9_smc.c                  |   76 +++++-
- arch/arm/mach-at91/sam9_smc.h                  |   23 --
- arch/arm/mach-dove/common.c                    |    3 +-
- arch/arm/mach-ep93xx/vision_ep9307.c           |    4 +-
- arch/arm/mach-exynos/clock-exynos4210.c        |    2 +
- arch/arm/mach-exynos/clock-exynos4212.c        |    2 +
- arch/arm/mach-exynos/clock.c                   |    2 +
- arch/arm/mach-exynos/mach-exynos4-dt.c         |    8 +-
- arch/arm/mach-exynos/mach-nuri.c               |    8 +-
- arch/arm/mach-exynos/mach-universal_c210.c     |    2 +-
- arch/arm/mach-exynos/pm.c                      |    4 +-
- arch/arm/mach-kirkwood/common.c                |    3 +-
- arch/arm/mach-kirkwood/mpp.h                   |  320 +++++++++++-----------
- arch/arm/mach-mv78xx0/common.c                 |    3 +-
- arch/arm/mach-mv78xx0/mpp.h                    |  226 ++++++++--------
- arch/arm/mach-omap2/Makefile                   |    4 +-
- arch/arm/mach-omap2/board-cm-t35.c             |    2 +-
- arch/arm/mach-omap2/board-generic.c            |    4 +
- arch/arm/mach-omap2/pm24xx.c                   |    8 +-
- arch/arm/mach-orion5x/common.c                 |    4 +-
- arch/arm/mach-s3c2410/cpu-freq.c               |    8 +-
- arch/arm/mach-s3c2410/dma.c                    |    5 +-
- arch/arm/mach-s3c2410/pll.c                    |    2 +-
- arch/arm/mach-s3c2410/pm.c                     |    2 +-
- arch/arm/mach-s3c2412/cpu-freq.c               |    3 +-
- arch/arm/mach-s3c2412/dma.c                    |    3 +-
- arch/arm/mach-s3c2412/irq.c                    |    2 +-
- arch/arm/mach-s3c2412/pm.c                     |    2 +-
- arch/arm/mach-s3c2416/irq.c                    |    3 +-
- arch/arm/mach-s3c2416/pm.c                     |    2 +-
- arch/arm/mach-s3c2440/clock.c                  |    2 +-
- arch/arm/mach-s3c2440/dma.c                    |    3 +-
- arch/arm/mach-s3c2440/irq.c                    |    2 +-
- arch/arm/mach-s3c2440/s3c2440-cpufreq.c        |    3 +-
- arch/arm/mach-s3c2440/s3c2440-pll-12000000.c   |    2 +-
- arch/arm/mach-s3c2440/s3c2440-pll-16934400.c   |    3 +-
- arch/arm/mach-s3c2440/s3c2442.c                |    2 +-
- arch/arm/mach-s3c2440/s3c244x-clock.c          |    2 +-
- arch/arm/mach-s3c2440/s3c244x-irq.c            |    2 +-
- arch/arm/mach-s3c2443/dma.c                    |    3 +-
- arch/arm/mach-s3c2443/irq.c                    |    3 +-
- arch/arm/mach-s3c64xx/clock.c                  |    5 +
- arch/arm/mach-s3c64xx/common.c                 |    2 +-
- arch/arm/mach-s5p64x0/pm.c                     |    2 +-
- arch/arm/mach-s5pv210/clock.c                  |    4 +-
- arch/arm/mach-s5pv210/pm.c                     |    2 +-
- arch/arm/mach-tegra/board-paz00.c              |    8 +-
- arch/arm/mach-tegra/board-paz00.h              |    2 +-
- arch/arm/mach-tegra/include/mach/dma.h         |   10 +-
- arch/arm/plat-omap/include/plat/omap-secure.h  |    2 +-
- arch/arm/plat-orion/common.c                   |    9 +-
- arch/arm/plat-orion/include/plat/common.h      |    3 +-
- arch/arm/plat-orion/mpp.c                      |    3 +-
- arch/arm/plat-samsung/devs.c                   |    4 +-
- drivers/ata/pata_at91.c                        |   48 ++--
- drivers/i2c/busses/i2c-tegra.c                 |    2 +-
- drivers/ide/Makefile                           |    1 -
- drivers/ide/at91_ide.c                         |  366 ------------------------
- drivers/rtc/rtc-at91sam9.c                     |   13 +-
- 66 files changed, 524 insertions(+), 786 deletions(-)
- delete mode 100644 drivers/ide/at91_ide.c
+--eQyCKlb8USywWNtC--
