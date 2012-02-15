@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2BOFAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 00:00:17 -0500
-Received: from ozlabs.org ([203.10.76.45]:52846 "EHLO ozlabs.org"
+	id S1751493Ab2BOFAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 00:00:15 -0500
+Received: from ozlabs.org ([203.10.76.45]:60353 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab2BOFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750924Ab2BOFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Feb 2012 00:00:12 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1329281884.20530.rusty@rustcorp.com.au>
-Date: Wed, 15 Feb 2012 15:28:04 +1030
-Subject: [PATCH 10/12] drivers/cpufreq/db8500-cpufreq: remove references to cpu_*_map.
-Cc: cpufreq@vger.kernel.org
-Cc: davej@redhat.com
-Cc: jonas.aberg@stericsson.com
-Cc: martin.persson@stericsson.com
-Cc: sundar.iyer@stericsson.com
+CC: linux-kernel@vger.kernel.org
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net
+Message-ID: <1329281883.31681.rusty@rustcorp.com.au>
+Date: Wed, 15 Feb 2012 15:28:03 +1030
+Subject: [PATCH 1/12] arch/um: remove references to cpu_*_map.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,25 +23,60 @@ From: Rusty Russell <rusty@rustcorp.com.au>
 This has been obsolescent for a while; time for the final push.
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Dave Jones <davej@redhat.com>
-Cc: cpufreq@vger.kernel.org
-Cc: Sundar Iyer <sundar.iyer@stericsson.com>
-Cc: Martin Persson <martin.persson@stericsson.com>
-Cc: Jonas Aaberg <jonas.aberg@stericsson.com>
+Cc: user-mode-linux-devel@lists.sourceforge.net
 ---
- drivers/cpufreq/db8500-cpufreq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/um/kernel/skas/process.c |    2 +-
+ arch/um/kernel/smp.c          |    9 ++++-----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/db8500-cpufreq.c b/drivers/cpufreq/db8500-cpufreq.c
---- a/drivers/cpufreq/db8500-cpufreq.c
-+++ b/drivers/cpufreq/db8500-cpufreq.c
-@@ -145,7 +145,7 @@ static int __cpuinit db8500_cpufreq_init
- 	policy->cpuinfo.transition_latency = 20 * 1000; /* in ns */
+diff --git a/arch/um/kernel/skas/process.c b/arch/um/kernel/skas/process.c
+--- a/arch/um/kernel/skas/process.c
++++ b/arch/um/kernel/skas/process.c
+@@ -41,7 +41,7 @@ static int __init start_kernel_proc(void
+ 	cpu_tasks[0].pid = pid;
+ 	cpu_tasks[0].task = current;
+ #ifdef CONFIG_SMP
+-	cpu_online_map = cpumask_of_cpu(0);
++	init_cpu_online(get_cpu_mask(0));
+ #endif
+ 	start_kernel();
+ 	return 0;
+diff --git a/arch/um/kernel/smp.c b/arch/um/kernel/smp.c
+--- a/arch/um/kernel/smp.c
++++ b/arch/um/kernel/smp.c
+@@ -76,7 +76,7 @@ static int idle_proc(void *cpup)
+ 		cpu_relax();
  
- 	/* policy sharing between dual CPUs */
--	cpumask_copy(policy->cpus, &cpu_present_map);
-+	cpumask_copy(policy->cpus, cpu_present_mask);
+ 	notify_cpu_starting(cpu);
+-	cpu_set(cpu, cpu_online_map);
++	set_cpu_online(cpu, true);
+ 	default_idle();
+ 	return 0;
+ }
+@@ -110,8 +110,7 @@ void smp_prepare_cpus(unsigned int maxcp
+ 	for (i = 0; i < ncpus; ++i)
+ 		set_cpu_possible(i, true);
  
- 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
+-	cpu_clear(me, cpu_online_map);
+-	cpu_set(me, cpu_online_map);
++	set_cpu_online(me, true);
+ 	cpu_set(me, cpu_callin_map);
  
+ 	err = os_pipe(cpu_data[me].ipi_pipe, 1, 1);
+@@ -138,13 +137,13 @@ void smp_prepare_cpus(unsigned int maxcp
+ 
+ void smp_prepare_boot_cpu(void)
+ {
+-	cpu_set(smp_processor_id(), cpu_online_map);
++	set_cpu_online(smp_processor_id(), true);
+ }
+ 
+ int __cpu_up(unsigned int cpu)
+ {
+ 	cpu_set(cpu, smp_commenced_mask);
+-	while (!cpu_isset(cpu, cpu_online_map))
++	while (!cpu_online(cpu))
+ 		mb();
+ 	return 0;
+ }
 
