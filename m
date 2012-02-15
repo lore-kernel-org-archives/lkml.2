@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2BOTOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:14:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61568 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab2BOTOp (ORCPT
+	id S1754802Ab2BOTPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:15:47 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38819 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab2BOTPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:14:45 -0500
-Message-ID: <4F3C0421.20506@lwfinger.net>
-Date: Wed, 15 Feb 2012 13:14:41 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: "John W. Linville" <linville@tuxdriver.com>
-CC: Tim Gardner <tim.gardner@canonical.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] rtlwifi: rtl8192se firmware load can overflow target
- buffer
-References: <1328833192-10681-1-git-send-email-Larry.Finger@lwfinger.net> <20120215185525.GE4379@tuxdriver.com>
-In-Reply-To: <20120215185525.GE4379@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 15 Feb 2012 14:15:45 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 15 Feb 2012 20:15:09 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 04/11] firewire-sbp-target: Add sbp_base.h header
+Message-ID: <20120215201509.37949cb0@stein>
+In-Reply-To: <1329317248-94128-5-git-send-email-bootc@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-5-git-send-email-bootc@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 12:55 PM, John W. Linville wrote:
-> Is this a fix that should go to 3.3?
+On Feb 15 Chris Boot wrote:
+> --- /dev/null
+> +++ b/drivers/target/sbp/sbp_base.h
+> @@ -0,0 +1,204 @@
+[...]
+> +struct sbp2_pointer {
+> +	__be32 high;
+> +	__be32 low;
+> +};
+[...]
+> +struct sbp_tport {
+> +	/* Target Unit Identifier (EUI-64) */
+> +	u64 guid;
+> +	/* Target port name */
+> +	char tport_name[SBP_NAMELEN];
+> +	/* Returned by sbp_make_tport() */
+> +	struct se_wwn tport_wwn;
+> +
+> +	struct sbp_tpg *tpg;
+> +
+> +	/* FireWire unit directory */
+> +	struct fw_descriptor unit_directory;
+> +
+> +	/* SBP Management Agent */
+> +	struct sbp_management_agent *mgt_agt;
+> +
+> +	/* Parameters */
+> +	int enable;
+> +	s32 directory_id;
+> +	int mgt_orb_timeout;
+> +	int max_reconnect_timeout;
+> +	int max_logins_per_lun;
+> +};
+> +
+> +extern struct target_fabric_configfs *sbp_fabric_configfs;
+> +extern const struct fw_address_region sbp_register_region;
+> +extern struct workqueue_struct *sbp_workqueue;
+[...]
 
-That code has been in the driver since 3.0 and it should probably be packported. 
-On the other hand, Tim's report is the first one. My suggestion is that it go 
-into 3.4.
+Generally, any source file (.c or .h) is meant to be self-contained WRT
+type definitions etc., meaning that they should have all required
+#include's in themselves rather than rely on indirect includes.
 
-In addition, I am working on a fix that will completely eliminate all this fixed 
-storage.
-
-Larry
-
-
+So here you should include the headers which define __be32, u64, struct
+se_wwn, struct workqueue and so on.
+-- 
+Stefan Richter
+-=====-===-- --=- -====
+http://arcgraph.de/sr/
