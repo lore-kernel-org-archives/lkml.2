@@ -1,48 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2BOD51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 22:57:27 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:51990 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab2BOD5Z (ORCPT
+	id S1755745Ab2BOEKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 23:10:21 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:41414 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754752Ab2BOEKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 22:57:25 -0500
-Date: Tue, 14 Feb 2012 22:57:13 -0500 (EST)
-Message-Id: <20120214.225713.1807433250606231046.davem@davemloft.net>
-To: matt@console-pimps.org
-Cc: linux-arch@vger.kernel.org, oleg@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, matt.fleming@intel.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH 32/40] sparc: Use block_sigmask()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1329219673-28711-33-git-send-email-matt@console-pimps.org>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-	<1329219673-28711-33-git-send-email-matt@console-pimps.org>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 14 Feb 2012 19:57:18 -0800 (PST)
+	Tue, 14 Feb 2012 23:10:18 -0500
+Date: Tue, 14 Feb 2012 23:10:14 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: [PATCH] char random: fix boot id uniqueness race (v2)
+Message-ID: <20120215041014.GA15846@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 23:06:40 up 448 days,  9:09,  5 users,  load average: 0.22, 0.19,
+	0.12
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt@console-pimps.org>
-Date: Tue, 14 Feb 2012 11:41:05 +0000
+The proc file /proc/sys/kernel/random/boot_id can be read concurrently
+by user-space processes. If two (or more) user-space processes
+concurrently read boot_id when sysctl_bootid is not yet assigned, a race
+can occur making boot_id differ between the reads. Because the whole
+point of the boot id is to be unique across a kernel execution, fix this
+by protecting this operation with a mutex, and introduce a
+boot_id_generated flag, along with appropriate memory barriers, to let
+the fast-path know if the boot ID has been generated without having to
+hold the mutex.
 
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> Use the new helper function introduced in commit 5e6292c0f28f
-> ("signal: add block_sigmask() for adding sigmask to current->blocked")
-> which centralises the code for updating current->blocked after
-> successfully delivering a signal and reduces the amount of duplicate
-> code across architectures. In the past some architectures got this
-> code wrong, so using this helper function should stop that from
-> happening again.
-> 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: sparclinux@vger.kernel.org
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+I propose this approach rather than setting it up within an initcall(),
+because letting execution randomness add to entropy before populating
+the boot id seems to be a wanted property. Also, populating it lazily
+rather than at boot time only makes the performance hit be taken when
+boot_id is being read.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+
+Q: Why are these memory barriers required ? Aren't the mutexes already
+   dealing with ordering ?
+
+The need for memory barriers is a consequence of letting the fast-path
+run without holding this mutex.
+
+Here is the race dealt with by the smp_rmb()/smp_wmb(). I'm showing the
+result of reversed write order here:
+
+CPU A                             CPU B
+
+Load boot_id_generated            
+  (test -> false)
+mutex_lock(&boot_id_mutex)
+  (implied memory barrier
+   with acquire semantic)
+Load boot_id_generated again
+   (test -> false)
+boot_id_generated = 1
+  (both the compiler and
+   CPU are free to reorder
+   the boot_id_generated
+   store before uuid stores)
+                                  Load boot_id_generated
+                                    (test -> true)
+                                  Load uuid content
+                                    (races with generate_random_uuid:
+                                     result either 0 or corrupted)
+                                  Return corrupted uuid.
+generate_random_uuid(uuid)
+mutex_unlock(&boot_id_mutex)
+
+I prefer not requiring the fast-path to take a mutex, because this
+would transform a read-mostly operation into an operation that
+requires cache-line exchanges (the mutex). However, if we want the
+fast-path to be mutex-free, we need to enforce order with
+memory barriers: smp_rmb on the read-side, smp_wmb on the
+update-side. Failure to do so leads to the race shown above, where
+a corrupted boot_id can be returned.
+
+
+* Changelog since v1:
+- boot_id_mutex is now declared within the proc_do_uuid scope.
+- added explanation for memory barriers.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>
+CC: Matt Mackall <mpm@selenic.com>
+CC: Greg Kroah-Hartman <greg@kroah.com>
+---
+ drivers/char/random.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
+
+Index: linux-2.6-lttng/drivers/char/random.c
+===================================================================
+--- linux-2.6-lttng.orig/drivers/char/random.c
++++ linux-2.6-lttng/drivers/char/random.c
+@@ -1244,16 +1244,30 @@ static char sysctl_bootid[16];
+ static int proc_do_uuid(ctl_table *table, int write,
+ 			void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
++	static int boot_id_generated;
++	static DEFINE_MUTEX(boot_id_mutex);
+ 	ctl_table fake_table;
+ 	unsigned char buf[64], tmp_uuid[16], *uuid;
+ 
+ 	uuid = table->data;
+ 	if (!uuid) {
+ 		uuid = tmp_uuid;
+-		uuid[8] = 0;
+-	}
+-	if (uuid[8] == 0)
+ 		generate_random_uuid(uuid);
++	} else {
++		if (unlikely(!ACCESS_ONCE(boot_id_generated))) {
++			mutex_lock(&boot_id_mutex);
++			if (!boot_id_generated) {
++				generate_random_uuid(uuid);
++				/* Store uuid before boot_id_generated. */
++				smp_wmb();
++				boot_id_generated = 1;
++			}
++			mutex_unlock(&boot_id_mutex);
++		} else {
++			/* Load boot_id_generated before uuid */
++			smp_rmb();
++		}
++	}
+ 
+ 	sprintf(buf, "%pU", uuid);
+ 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
