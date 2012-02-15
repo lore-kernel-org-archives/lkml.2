@@ -1,105 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab2BOXr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:47:27 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54636 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756349Ab2BOXrY convert rfc822-to-8bit (ORCPT
+	id S1756435Ab2BOXrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:47:39 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:59178 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756340Ab2BOXrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 18:47:24 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH] Input: Add ioctl to block suspend while event queue is not empty.
-Date: Thu, 16 Feb 2012 00:51:15 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-References: <1327112659-31145-1-git-send-email-arve@android.com> <201202120028.23364.rjw@sisk.pl> <CAMP5XgfrG=3qeFasg4prBu88-Ox59_PtFw-rpgb=PN=uo6VPuw@mail.gmail.com>
-In-Reply-To: <CAMP5XgfrG=3qeFasg4prBu88-Ox59_PtFw-rpgb=PN=uo6VPuw@mail.gmail.com>
+	Wed, 15 Feb 2012 18:47:36 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com C4BC9821A9
+Date: Thu, 16 Feb 2012 00:47:24 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120215234724.GA21685@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
+ <20120215233537.GA20724@dev3310.snc6.facebook.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202160051.16011.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120215233537.GA20724@dev3310.snc6.facebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tuesday, February 14, 2012, Arve Hjønnevåg wrote:
-> 2012/2/11 Rafael J. Wysocki <rjw@sisk.pl>:
-> > Hi,
-> >
-> > On Saturday, January 21, 2012, Arve Hjønnevåg wrote:
-> >> Add an ioctl, EVIOCSSUSPENDBLOCK, to block suspend while the event
-> >> queue is not empty. This allows userspace code to process input
-> >> events while the device appears to be asleep.
-> >
-> > I have two questions to start with, if you don't mind:
-> >
-> > (1) Does Android user space use an analogous interface right now or is it
-> >    a prototype?
-> >
+On Wed, Feb 15, 2012 at 03:35:37PM -0800, Arun Sharma wrote:
+> On Sun, Feb 12, 2012 at 01:21:38AM +0100, Andrea Righi wrote:
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index 386da09..624a73e 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -9,6 +9,7 @@
+> >  #include <linux/limits.h>
+> >  #include <linux/ioctl.h>
+> >  #include <linux/blk_types.h>
+> > +#include <linux/kinterval.h>
+> >  #include <linux/types.h>
 > 
-> Yes (for the next version), but with a wakelock based implementation.
-
-That's exactly what I wanted to know. :-)
-
-> > (2) What exactly are the use cases for it (ie. what problem does it address
-> >    that cannot be addressed in a different way)?
-> >
+> fs.h is an exported header file, whereas kinterval.h is not. So this
+> fails scripts/header_check.pl.
 > 
-> The reason for adding an ioctl versus the old android version with
-> used a wakelock for all input events, is that not all input events are
-> wakeup events. Specifically some sensors generate input events at such
-> a high rate that they prevent suspend while the sensor is on even
-> though the driver has a suspend hook that turns the sensor off.
+> I used the workaround below.
 > 
-> If you are asking why input events need to block suspend at all, this
-> was the example used in the suspend blocker documentation:
-> - The Keypad driver gets an interrupt. It then calls suspend_block on the
->   keypad-scan suspend_blocker and starts scanning the keypad matrix.
-> - The keypad-scan code detects a key change and reports it to the input-event
->   driver.
-> - The input-event driver sees the key change, enqueues an event, and calls
->   suspend_block on the input-event-queue suspend_blocker.
-> - The keypad-scan code detects that no keys are held and calls suspend_unblock
->   on the keypad-scan suspend_blocker.
-> - The user-space input-event thread returns from select/poll, calls
->   suspend_block on the process-input-events suspend_blocker and then calls read
->   on the input-event device.
-> - The input-event driver dequeues the key-event and, since the queue is now
->   empty, it calls suspend_unblock on the input-event-queue suspend_blocker.
-> - The user-space input-event thread returns from read. If it determines that
->   the key should be ignored, it calls suspend_unblock on the
->   process_input_events suspend_blocker and then calls select or poll. The
->   system will automatically suspend again, since now no suspend blockers are
->   active.
+>  -Arun
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index d27dbee..1335a5f 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/ima.h>
+>  #include <linux/cred.h>
+>  #include <linux/buffer_head.h> /* for inode_has_buffers */
+> +#include <linux/kinterval.h>
+>  #include "internal.h"
+>  
+>  /*
+> @@ -279,7 +280,7 @@ void address_space_init_once(struct address_space *mapping)
+>  	spin_lock_init(&mapping->private_lock);
+>  	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+>  	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
+> -	INIT_KINTERVAL_TREE_ROOT(&mapping->nocache_tree);
+> +	INIT_KINTERVAL_TREE_ROOT((struct rb_root *) &mapping->nocache_tree);
+>  	rwlock_init(&mapping->nocache_lock);
+>  }
+>  EXPORT_SYMBOL(address_space_init_once);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 74b6a97..b4e45e6 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -9,7 +9,6 @@
+>  #include <linux/limits.h>
+>  #include <linux/ioctl.h>
+>  #include <linux/blk_types.h>
+> -#include <linux/kinterval.h>
+>  #include <linux/types.h>
+>  
+>  /*
+> @@ -656,7 +655,7 @@ struct address_space {
+>  	spinlock_t		private_lock;	/* for use by the address_space */
+>  	struct list_head	private_list;	/* ditto */
+>  	struct address_space	*assoc_mapping;	/* ditto */
+> -	struct rb_root		nocache_tree;	/* noreuse cache range tree */
+> +	void			*nocache_tree;	/* noreuse cache range tree */
+>  	rwlock_t		nocache_lock;	/* protect the nocache_tree */
+>  } __attribute__((aligned(sizeof(long))));
+>  	/*
 
-That looks reasonable to me.
-
-Still, I have one issue with adding those ioctls.  Namely, wouldn't it be
-simpler to treat all events coming from wakeup devices as wakeup events?
-
-With the new ioctls user space can "mark" a queue of events coming out of
-a device that's not a wakeup one as a "wakeup source", which doesn't seem to
-be correct.
-
-Conversely, with those ioctls user space can effectively turn events coming
-out of a wakeup device into non-wakeup ones, which doesn't seem to be correct
-either.
-
-So, I think evdev client queue's wakeup source (or wakelock) should stay active
-if there are any events in the queue and the underlying device is a wakeup one,
-i.e. device_may_wakeup() returns true for it.  Then, we won't need the new
-ioctls at all and user space will still be able to control which events are to
-be regarded as wakeup ones by changing the wakeup settings of the devices that
-generate them.
+mmh.. a forward declaration of rb_root in fs.h shouldn't be better than
+this?
 
 Thanks,
-Rafael
+-Andrea
