@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab2BOIoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 03:44:05 -0500
-Received: from anubis.se.axis.com ([195.60.68.12]:47089 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525Ab2BOIoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 03:44:01 -0500
-Date: Wed, 15 Feb 2012 09:43:54 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 08/40] cris: Use set_current_blocked() and
-	block_sigmask()
-Message-ID: <20120215084354.GD8176@axis.com>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org> <1329219673-28711-9-git-send-email-matt@console-pimps.org>
+	id S1758082Ab2BOIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 03:50:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37989 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755995Ab2BOIux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 03:50:53 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Alexey Orishko <alexey.orishko@gmail.com>
+Subject: Re: [PATCH 1/1] usb: cdc-ncm: Increase maximum allowed datagram size
+Date: Wed, 15 Feb 2012 09:53:20 +0100
+User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: David Miller <davem@davemloft.net>, toby.gray@realvnc.com,
+        oliver@neukum.name, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1329230375-25508-1-git-send-email-toby.gray@realvnc.com> <20120214.144622.678577766818888054.davem@davemloft.net> <CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
+In-Reply-To: <CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329219673-28711-9-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202150953.20341.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 12:40:41PM +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+Am Dienstag, 14. Februar 2012, 23:27:29 schrieb Alexey Orishko:
+> On Tue, Feb 14, 2012 at 8:46 PM, David Miller <davem@davemloft.net> wrote:
+> >
+> > Can a USB expert please sanity check this before I apply it?
 > 
-> As described in e6fa16ab ("signal: sigprocmask() should do
-> retarget_shared_pending()") the modification of current->blocked is
-> incorrect as we need to check whether the signal we're about to block
-> is pending in the shared queue.
-> 
-> Also, use the new helper function introduced in commit 5e6292c0f28f
-> ("signal: add block_sigmask() for adding sigmask to current->blocked")
-> which centralises the code for updating current->blocked after
-> successfully delivering a signal and reduces the amount of duplicate
-> code across architectures. In the past some architectures got this
-> code wrong, so using this helper function should stop that from
-> happening again.
-> 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Mikael Starvik <starvik@axis.com>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> I would recommend to change CDC_NCM_NTB_MAX_SIZE_TX(RX) to 32K and
+> simply set MAX_DATAGRAM_SIZE to 16K
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Have you tried that under severe memory presssure?
 
-> Cc: linux-cris-kernel@axis.com
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+	Regards
+		Oliver
