@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab2BOPB2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:01:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45132 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2BOPBZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:01:25 -0500
-Message-ID: <1329318063.2293.136.camel@twins>
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Saravana Kannan <skannan@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
-        linaro-kernel@lists.linaro.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Oleg Nesterov <oleg@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Chan <mike@android.com>, Dave Jones <davej@redhat.com>,
-        Todd Poynor <toddpoynor@google.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org,
-        Arjan Van De Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 15 Feb 2012 16:01:03 +0100
-In-Reply-To: <20120215140245.GB27825@n2100.arm.linux.org.uk>
-References: <20120208013959.GA24535@panacea>
-	 <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com>
-	 <1328736834.2903.33.camel@pasglop> <20120209075106.GB18387@elte.hu>
-	 <4F35DD3E.4020406@codeaurora.org> <20120211144530.GA497@elte.hu>
-	 <4F3AEC4E.9000303@codeaurora.org> <1329313085.2293.106.camel@twins>
-	 <20120215140245.GB27825@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1751493Ab2BOPCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:02:44 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:7582 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab2BOPCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 10:02:42 -0500
+Message-ID: <4F3BC8FC.5000806@parallels.com>
+Date: Wed, 15 Feb 2012 19:02:20 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "criu@openvz.org" <criu@openvz.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] IPC: message queue stealing feature introduced
+References: <20120215090711.11586.5396.stgit@localhost6.localdomain6> <1329298813.2437.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1329298813.2437.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 14:02 +0000, Russell King - ARM Linux wrote:
+15.02.2012 13:40, Eric Dumazet пишет:
+> Le mercredi 15 février 2012 à 13:08 +0400, Stanislav Kinsbursky a
+> écrit :
+>> This patch is required for checkpoint/restore in userspace project.
+>> C/r requires some way to get all pending IPC messages without deleting them for
+>> the queue (checkpoint can fail and in this case tasks will be resumed, so queue
+>> have to be valid).
+>> To achive this, new operation flag MSG_STEAL for sys_msgrcv() system call
+>> introduced.
+>> If this flag is set, then passed struct msgbuf pointer will be used for storing
+>> array of structures:
+>>
+>> struct msgbuf_a {
+>> 	long mtype;         /* type of message */
+>> 	size_t msize;       /* size of message */
+>> 	char mtext[0];      /* message text */
+>> };
+>>
+>
+> This structure is not 32/64 bit safe and will need compat tricks.
+>
+> +                       ret = do_steal_msg(mtext, arrsz, msg);
+> +                       if (ret<  0) {
+> +                               msg = ERR_PTR(ret);
+> +                               goto out_unlock;
+> +                       }
+> +                       mtext += ret + sizeof(struct msgbuf_a);
+> +                       arrsz -= ret + sizeof(struct msgbuf_a);
+>
+> I cant see where alignement requirements are met.
+>
+> (ret should be rounded up to a multiple of alignof(struct msgbuf_a)
+>
 
-> There's a problem with that: SA11x0 platforms (for which cpufreq was
-> _originally_ written for before it spouted all the policy stuff which
-> Linus demanded) need to notify drivers when the CPU frequency changes so
-> that drivers can readjust stuff to keep within the bounds of the hardware.
-> 
-> Unfortunately, there's embedded platforms out there where the CPU core
-> clock is not just the CPU core clock, but also is the memory bus clock,
-> PCMCIA clock, and some peripheral clocks.  All these peripherals need
-> their timing registers rewritten when the CPU core clock changes.
-> 
-> Even more unfortunately, some of these peripherals can't be adjusted
-> with the click of your fingers: you have to wait for them to finish
-> what they're doing.  In the case of a LCD controller, that means the
-> hardware must finish displaying the current frame before the LCD
-> controller will shut down and let you change its registers.
-> 
-> We _could_ make it atomic, but in return we'd have to spin in the driver
-> for maybe 20+ ms, during which time the system would not be able to do
-> anything else, not even those threaded IRQs. 
 
-Thing is, the scheduler doesn't care about completion, all it needs is
-to be able to kick-start the thing atomically. So you really have to
-wait for it or can you do an interrupt driven state machine?
+Thanks for reply, Eric.
+Will fix and resend soon.
 
-Anyway, one possibility is to keep cpufreq in its current state and use
-that for this 'interesting' class of hardware -- clearly its current
-state is good enough for it. And transition all sane hardware over to a
-new scheme.
-
-Another possibility is we'll try and fudge something in the scheduler
-that either wakes a special per-cpu thread or allow enqueueing work and
-make this CONFIG_goo available to these platforms so as not to add to
-fast-path overhead of others.
-
-A third possibility is to self-IPI and take it from there.. assuming
-these platforms can actually self-IPI.
-
->  That's on top of however
-> long it takes for the CPU core clock PLL to re-lock at the requested
-> frequency.  That might not be too bad if the CPU clock rate changes
-> only occasionally, but if we're talking about doing that more often
-> then I think there's something wrong with the cpufreq policy design.
-
-I guess that all will depend on the hardware.. there'll still be some
-sort of governor in between taking the per-cpu/task load-tracking data
-and scheduler events and using that to compute some volt/freq setting.
-
->From what I've heard there's a number of different classes of hardware
-out there, some like race to idle, some can power gate more than others
-etc.. I'm not particularly bothered by those details, I'm sure there's
-people who are.
-
-All I really want is to consolidate all the various statistics we have
-across cpufreq/cpuidle/sched and provide cpufreq with scheduler
-callbacks because they've been telling me their current polling stuff
-sucks rocks.
-
-Also the current state of affairs is that the cpufreq stuff is trying to
-guess what the scheduler is doing, and people are feeding that back into
-the scheduler. This I need to stop from happening ;-)
+-- 
+Best regards,
+Stanislav Kinsbursky
