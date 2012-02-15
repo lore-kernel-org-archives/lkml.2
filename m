@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2BOXPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:15:09 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54577 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab2BOXPG convert rfc822-to-8bit (ORCPT
+	id S1755743Ab2BOXSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:18:43 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36682 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab2BOXSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 18:15:06 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: Re: [PATCH] Input: Add ioctl to block suspend while event queue is not empty.
-Date: Thu, 16 Feb 2012 00:18:59 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-References: <1327112659-31145-1-git-send-email-arve@android.com>
-In-Reply-To: <1327112659-31145-1-git-send-email-arve@android.com>
+	Wed, 15 Feb 2012 18:18:41 -0500
+Date: Thu, 16 Feb 2012 00:18:53 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [BUG] Intel HD Graphic QM57 chipset: Dell U3011 monitor turns to
+ power saving mode
+Message-ID: <20120215231853.GE26578@phenom.ffwll.local>
+Mail-Followup-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <20120121185621.GA31106@Krystal>
+ <86ehuskc4j.fsf@sumi.keithp.com>
+ <20120122174829.GA8789@Krystal>
+ <20120215201652.GA20425@Krystal>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202160018.59187.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120215201652.GA20425@Krystal>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Saturday, January 21, 2012, Arve Hjønnevåg wrote:
-> Add an ioctl, EVIOCSSUSPENDBLOCK, to block suspend while the event
-> queue is not empty. This allows userspace code to process input
-> events while the device appears to be asleep.
+On Wed, Feb 15, 2012 at 03:16:52PM -0500, Mathieu Desnoyers wrote:
+> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> > Hi Keith,
+> > 
+> > * Keith Packard (keithp@keithp.com) wrote:
+> > > On Sat, 21 Jan 2012 13:56:21 -0500, Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > 
+> > > > Dell U3011 monitor turns to power saving mode when resolution set to 2560 x 1600
+> > > > (intermittent)
+> > > > 
+> > > > Reproduced with:
+> > > > Linux 2.6.38-1-amd64 (Debian kernel)
+> > > > Linux 3.1.0-1-amd64  (Debian kernel)
+> > > > Linux 3.2.0-1-amd64  (Debian kernel)
+> > > > 
+> > > > The computer is a Lenovo X201 Tablet (Intel QM57 chipset), on a X200
+> > > > docking station. The docking station uses a DisplayPort cable to connect
+> > > > to the monitor.  I tried upgrading my Bios from 1.34/1.13 to 1.38/1.14
+> > > > (latest), which did not fix the problem. I cannot use anything else
+> > > > than DisplayPort in this case to connect the monitor at 2560 x 1600,
+> > > > because this resolution requires either the bandwidth provided by a
+> > > > dual-link DVI (which I cannot connect in my docking station), or
+> > > > DisplayPort.
+> > > 
+> > > I use this same monitor, and have run it with an X200 in the past.
+> > > 
+> > > Can you capture a dmesg output with the kernel parameter drm.debug=0xe
+> > > set? That will let us see the DP link training adventure and see what's
+> > > broken. If you can, separate traces of working and non-working tries
+> > > would be nice.
+> > > 
+> > > And, of course, trying 3.3-rc1 would be helpful as that's what any
+> > > test patches would be developed on top of.
+> > 
+> > I've compiled and launched a 3.3-rc1 kernel for the following tests. The
+> > dmesg log follows.
+> > 
+> > FWIW, when I get the screen to run, if I launch this 1080p video with
+> > either mplayer or vlc (http://www.bigbuckbunny.org/index.php/download/,
+> > 1920x1080, mp4 format) in full screen, I get an horizontal line of blur
+> > at about 7/8 of the screen (from the top) when there is a lot of
+> > movement in the movie.  This looks like a vertical refresh sync issue
+> > and/or too small buffers for double(/triple)-buffering. I'm aware that
+> > this is a separate issue, but it might help the current investigation.
+> > The xrandr -q --verbose gives "+HSync -VSync" for the monitor, even
+> > though its EDID (taken with get-edid/parse-edid) specifies "Flags
+> > "-HSync" "+VSync"". So hsync and vsync +/- seems to be mixed up.
 > 
-> Signed-off-by: Arve Hjønnevåg <arve@android.com>
-
-Minor nit below.
-
-> ---
->  drivers/input/evdev.c |   63 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/input.h |    3 ++
->  2 files changed, 66 insertions(+), 0 deletions(-)
+> Another piece of information on this issue: I tried the monitor with an
+> Apple PowerBook running MacOS X, and the monitor works flawlessly
+> (monitor always brought up, and the same video works without glitch with
+> vlc).
 > 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 76457d5..e212757 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -43,6 +43,7 @@ struct evdev_client {
->  	unsigned int tail;
->  	unsigned int packet_head; /* [future] position of the first element of next packet */
->  	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-> +	struct wakeup_source *wakeup_source;
->  	struct fasync_struct *fasync;
->  	struct evdev *evdev;
->  	struct list_head node;
-> @@ -75,10 +76,14 @@ static void evdev_pass_event(struct evdev_client *client,
->  		client->buffer[client->tail].value = 0;
->  
->  		client->packet_head = client->tail;
-> +		if (client->wakeup_source)
-> +			__pm_relax(client->wakeup_source);
->  	}
->  
->  	if (event->type == EV_SYN && event->code == SYN_REPORT) {
->  		client->packet_head = client->head;
-> +		if (client->wakeup_source)
-> +			__pm_stay_awake(client->wakeup_source);
->  		kill_fasync(&client->fasync, SIGIO, POLL_IN);
->  	}
->  
-> @@ -255,6 +260,10 @@ static int evdev_release(struct inode *inode, struct file *file)
->  	mutex_unlock(&evdev->mutex);
->  
->  	evdev_detach_client(evdev, client);
-> +	if (client->wakeup_source) {
-> +		__pm_relax(client->wakeup_source);
-> +		wakeup_source_unregister(client->wakeup_source);
-> +	}
->  	kfree(client);
->  
->  	evdev_close_device(evdev);
-> @@ -373,6 +382,9 @@ static int evdev_fetch_next_event(struct evdev_client *client,
->  	if (have_event) {
->  		*event = client->buffer[client->tail++];
->  		client->tail &= client->bufsize - 1;
-> +		if (client->wakeup_source &&
-> +		    client->packet_head == client->tail)
-> +			__pm_relax(client->wakeup_source);
->  	}
+> I also simplified my routine that successfully bring the monitor into a
+> working state: running 5 to 20 times the following script ends up doing
+> the trick:
+> 
+> xrandr --output DP1 --off
+> sleep 1
+> xrandr --output DP1 --mode 2560x1600
+> 
+> Please let me know if I can provide more information on the issue than
+> the detailed logs (success/fail) below. I would also like to know if
+> there is a knob somewhere in the Intel driver I could play with to
+> provide more time for the screen to send its EDID information. Based on
+> this info: http://www.intel.com/support/graphics/sb/CS-028366.htm, Intel
+> provide a modified Windows driver that might target this kind of issue,
+> and I assume they possibly let more time than the spec requires for the
+> screen to send EDID info.
 
-Since __pm_relax(), __pm_stay_awake() and wakeup_source_unregister() all
-check if the argument is not NULL, you can simply drop the
-client->wakeup_source checks.
+Well, we unfortunately have a bunch of dp link training issues left. But
+currently I'm not aware of any patches that might help. The best way
+forward is likely to file a bugzilla on bugs.freedesktop.org with all the
+information you've already gathered (against DRI, DRM/Intel) so that this
+won't get lost.
 
-Also with the fix I've just posted:
-
-http://marc.info/?l=linux-pm&m=132934445508717&w=4
-
-I think it won't be necessary to call __pm_relax() before
-wakeup_source_unregister() any more.
-
-Thanks,
-Rafael
+Thanks, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
