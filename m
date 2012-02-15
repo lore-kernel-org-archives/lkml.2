@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab2BOSSa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 13:18:30 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64906 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab2BOSS2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 13:18:28 -0500
+	id S1753341Ab2BOSTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 13:19:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab2BOSTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 13:19:39 -0500
+Date: Wed, 15 Feb 2012 19:12:45 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
+        arjan@linux.intel.com, fhrbata@redhat.com, john.johansen@canonical.com,
+        penguin-kernel@I-love.SAKURA.ne.jp, rientjes@google.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] usermodehelper: kill umh_wait, renumber UMH_*
+	constants
+Message-ID: <20120215181245.GA22588@redhat.com>
+References: <20120214164709.GA21178@redhat.com> <20120214164821.GC21185@redhat.com> <87ty2sc37m.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <20120211232740.GM23916@ZenIV.linux.org.uk>
-References: <20110817163457.878854582@codeaurora.org> <20110817163521.165013232@codeaurora.org>
- <20120211232740.GM23916@ZenIV.linux.org.uk>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Wed, 15 Feb 2012 12:18:07 -0600
-Message-ID: <CAHrUA35E=0bfbe=4NS5FUcGqSGv-OEhP_6DM4+K4E1or9FyhdA@mail.gmail.com>
-Subject: Re: hexagon: signal handling bugs
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ty2sc37m.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 February 2012 17:27, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        1) unless I'm seriously misreading hexagon vm_entry.S, once we'd
-> called do_notify_resume, we do *not* recheck if there's more work to
-> be done.
+On 02/15, Rusty Russell wrote:
+>
+> On Tue, 14 Feb 2012 17:48:21 +0100, Oleg Nesterov <oleg@redhat.com> wrote:
+> > No functional changes. It is not sane to use UMH_KILLABLE with
+> > enum umh_wait, but obviously we do not want another argument in
+> > call_usermodehelper_* helpers. Kill this enum, use the plain int.
+>
+> Seems like a step backwards.  Perhaps reorder the enum, but implying an
+> explicit range of values explicit by using an enum seems good.
 
->        2) sigreturn should *NOT* be restartable at all, or you'll get
-....
+The problem is, the things like "UMH_WAIT_EXEC | UMH_KILLABLE" do not
+look like enum to me, even if they both are enums and the resulting
+code is correct.
 
-Is there an architecture that "does this best"?  I (re-)wrote a
-significant part of the hexagon sig-handling code, and I did it via
-"surgical hacking": by reading the code for 4-6 other arches, and
-trying to pick out the "best practices" of each.  But its easy to
-build a Frankenstein when using body parts from mis-matched places, so
-perhaps many of these mistakes were mine...
+OTOH, something like
 
-Perhaps its desirable to modify most/all architectures, so as to evoke
-more commonality?  Some of the other, more minor arches sure did look
-incomplete to me...
+	enum umh_wait {
+		UMH_NO_WAIT,
+		UMH_WAIT_EXEC,
+		UMH_WAIT_PROC,
+		UMH_WAIT_EXEC_KILLABLE,
+		UMH_WAIT_PROC_KILLABLE,
+	};
 
--- Linas
+doesn't look very nice/convenient too.
+
+But. This is the cleanup, and thus it should not disturb the maintainer.
+I do not mind to redo it either way, just tell me what you prefer.
+
+This change doesn't create any dependency, it can be reverted/reworked
+at any moment. It could be the last patch in series, probably I should
+have sent it as 6/6.
+
+Or,
+
+> But it's a minor gripe, feel free to ignore.
+
+works for me too ;)
+
+> Entire series:
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+Thanks!
+
+Oleg.
+
