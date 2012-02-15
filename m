@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2BOWKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:10:05 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60956 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab2BOWKB (ORCPT
+	id S1755885Ab2BOWPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:15:40 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:20292 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755115Ab2BOWPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:10:01 -0500
-Date: Thu, 16 Feb 2012 02:09:56 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "hpanvin@gmail.com" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [patch 2/4] syscalls, x86: Add __NR_kcmp syscall v8
-Message-ID: <20120215220956.GN4533@moon>
-References: <20120213164822.227219834@openvz.org>
- <20120213165137.903318774@openvz.org>
- <20120214151312.92afd44a.akpm@linux-foundation.org>
- <20120215065245.GB1894@moon>
- <bb6e15c8-1b6b-4809-a796-cdfac39bc8b4@email.android.com>
- <20120215070427.GE1894@moon>
- <20120215072454.GA4533@moon>
- <20120215135313.0e22d1bf.akpm@linux-foundation.org>
- <20120215220040.GA26668@moon>
+	Wed, 15 Feb 2012 17:15:39 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: C6c1ef8VM1mJyegP2TDEkmiXzPeUT1iVXdffGp2NJlwT5QB
+ h.fkqwgL7LrjBrP99NuSEfePxso_jIoO8q33zuW4c6NeiUN2rFqGNRmcIk7v
+ ebaJgHJlS2ddZUivJ9h5SwD_tldPBxoGT4ZOn.HJz.QWgL7oYka3alvk1AmV
+ NrczvuaBrf6Trltlp8r9fhNopqn3mfrFgiBj0K97GHBICPYndtWiL_VhfUGp
+ gExedy6nNsyhXJB18_k4a2Nk1xufdRWX4XRz2cKnZ_2oPDGVlR78iZyrj6Mi
+ sgnjp7AQWYhh0kuC70Mu.HCBEjNxWe7tLzDtJcrlnxBR1SH7J2HvdFylbPLm
+ UMHdhMtEQJEAH3Cn3gjNe3_GBBavneGJPrmK8nR0KNfayGY9HOZ7FSyBMvlx
+ dsVwt3NcXbuZjFMm_2R.f6jTzxI2vzQlYf2upEqfIKKvSBm01BDrcwpF1Ea4
+ Wxzz2gcX_3zuMMG9K4wxPGnsp1Q6h5raYuaNwC1cISx20zOZskRgeejvbyGL
+ Yxzg-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 15 Feb 2012 16:15:33 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+In-Reply-To: <4F3C28AF.9080005@tilera.com>
+Message-ID: <alpine.DEB.2.00.1202151614510.28225@router.home>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>  <1327591185.2446.102.camel@twins>  <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>  <20120201170443.GE6731@somewhere.redhat.com>  <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+  <4F2AAEB9.9070302@tilera.com> <1328898816.25989.33.camel@laptop> <4F3C28AF.9080005@tilera.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215220040.GA26668@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 02:00:40AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Feb 15, 2012 at 01:53:13PM -0800, Andrew Morton wrote:
-> > That worked.
-> > 
-> > What's with all those warnings, btw?
-> > 
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > Subject: syscalls-x86-add-__nr_kcmp-syscall-v8-fix-fix-fix
-> > 
-> > kcmp_test.c: In function 'main':
-> > kcmp_test.c:69: warning: format '%2d' expects type 'int', but argument 4 has type 'long int'
-> 
-> Indeed it's nit, wonder why I've not beed warned by compiler before
-> (nothing serious since results do fit integer anyway but _must_
->  be fixed). I'll update shortly. Sorry for that.
-> 
+On Wed, 15 Feb 2012, Chris Metcalf wrote:
 
-Heh, I just realized that you've fixed it already. Thanks a lot!
+> The Tilera dataplane code is available on the "dataplane" branch (off of
+> 3.3-rc3 at the moment):
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
 
-	Cyrill
+Looks like that patch is only for the tile architecture. Is there a
+x86 version?
