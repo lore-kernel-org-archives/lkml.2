@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2BOUVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:21:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47934 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab2BOUVt (ORCPT
+	id S1755348Ab2BOUWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:22:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54904 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab2BOUWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:21:49 -0500
-Date: Wed, 15 Feb 2012 13:21:45 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: devicetree-discuss@lists.ozlabs.org, Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 24/25] irq_domain: remove "hint" when allocating irq
- numbers
-Message-ID: <20120215202145.GH25779@ponder.secretlab.ca>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-25-git-send-email-grant.likely@secretlab.ca>
- <4F316848.4060100@atmel.com>
- <4F3BC97C.6030203@atmel.com>
+	Wed, 15 Feb 2012 15:22:03 -0500
+Date: Wed, 15 Feb 2012 21:22:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+In-Reply-To: <20120215145857.GA21755@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.02.1202152114510.2794@ionos>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com> <alpine.LFD.2.02.1202151537500.2794@ionos> <1329317650.2293.129.camel@twins> <20120215145857.GA21755@srcf.ucam.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3BC97C.6030203@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 04:04:28PM +0100, Nicolas Ferre wrote:
-> On 02/07/2012 07:07 PM, Nicolas Ferre :
-> > On 01/27/2012 10:36 PM, Grant Likely :
-> >> The 'hint' used to try and line up irq numbers with hw irq numbers is
-> >> rather a hack and not very useful.  Now that /proc/interrupts also outputs
-> >> the hwirq number, it is even less useful to keep around the 'hint' heuristic.
-> >>
-> >> This patch removes it.
-> > 
-> > Grant,
-> > 
-> > While trying your patch series in conjunction with Rob one, I do not
-> > find this patch in your irqdomain/next branch (and a couple of others).
-> > Can you tell me if this v3 series is available as a git tree?
-> 
-> I am still interested by patch 24-25 of this series but still cannot
-> find them in your irqdomain/next branch:
-> Are they also expected to join the 3.4 merge window material?
+On Wed, 15 Feb 2012, Matthew Garrett wrote:
 
-I've held off on putting them in irqdomain/next because they are a bit more
-risky than the other patches, and I want an explicit ack from Ben for patches
-24 & 25.  However, that shouldn't really cause any issues since the changes
-in 24 & 25 don't impact the irq_domain functionality or API.  They are just
-optimizations.
+> Regardless of whether userspace should be concerning itself about this 
+> kind of thing or not, there's plenty of userspace that calls sleep(0) on 
+> the assumption that it'll get rescheduled. This makes using whole-system 
 
-Also on 25, I'm not yet convinced that breaking out the revmap functions
-into ops is the right thing to do.  It actually makes the .text size quite
-a bit larger.  I may very well rewrite it.
+Right. And it got always rescheduled because the old pre hrtimer
+implementation put it to sleep unconditionally. The hrtimer code
+before we introduced the slack stuff returned right away when the
+relative delta was 0. Slack changed that back to the pre hrtimer
+behaviour. Also if you disable high res timers (compile or runtime)
+you go to sleep unconditionally until the next jiffies boundary.
 
-g.
+> timer slack difficult, because there are some applications that do this 
+> even if they're event-driven and sleeping for significant lengths of 
+> time here breaks them. I'd certainly understand the argument for fixing 
 
+What is significant? If the app relies on sleep(0) returning
+instantly, then it's going to malfunction on a highres=n kernel with
+HZ=100 as well. Also when there are actually other runnable tasks and
+it gets scheduled away, then there is no guarantee that it comes back
+to the cpu within a defined boundary. 
+
+> userspace instead, but that's a massive task for something that's easily 
+> special-cased in the kernel.
+
+So what's the correct special case solution? Return right away, call
+schedule() with state RUNNING or some other magic crap?
+
+Again, if a SCHED_OTHER task cannot cope with the fact that it gets
+scheduled away for unbound amount of time, then changing the behaviour
+of sleep(0) to some magic yield() variant does not help at all. It's
+still broken and no special case in the kernel can fix that.
+
+Thanks,
+
+	tglx
