@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab2BOOBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:01:41 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37856 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab2BOOBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:01:37 -0500
-Message-ID: <1329314492.2437.32.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH 2/2] Netfilter: xt_LOG: Add timestamp support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jengelh@medozas.de, rostedt@goodmis.org,
-        pablo@netfilter.org, basti@b-bl.de
-Date: Wed, 15 Feb 2012 15:01:32 +0100
-In-Reply-To: <1329314115-6899-2-git-send-email-richard@nod.at>
-References: <1329314115-6899-1-git-send-email-richard@nod.at>
-	 <1329314115-6899-2-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1759321Ab2BOOCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:02:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296Ab2BOOCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 09:02:14 -0500
+Message-ID: <4F3BBADC.7020305@redhat.com>
+Date: Wed, 15 Feb 2012 16:02:04 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, riel@redhat.com, amit.shah@redhat.com,
+        mtosatti@redhat.com
+Subject: Re: [PATCH] BUG in pv_clock when overflow condition is detected
+References: <1329157256-19926-1-git-send-email-imammedo@redhat.com> <4F3B8DC9.8040100@redhat.com> <4F3B95A5.3050704@redhat.com>
+In-Reply-To: <4F3B95A5.3050704@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 15 février 2012 à 14:55 +0100, Richard Weinberger a écrit :
-> Using XT_LOG_ADD_TIMESTAMP it is possible to have a timestamp
-> directly in the log message.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  include/linux/netfilter/xt_LOG.h |    1 +
->  net/netfilter/xt_LOG.c           |    9 +++++++++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/netfilter/xt_LOG.h b/include/linux/netfilter/xt_LOG.h
-> index e4b1177..d84710c 100644
-> --- a/include/linux/netfilter/xt_LOG.h
-> +++ b/include/linux/netfilter/xt_LOG.h
-> @@ -8,6 +8,7 @@
->  #define XT_LOG_UID		0x08	/* Log UID owning local socket */
->  #define XT_LOG_NFLOG		0x10	/* Unsupported, don't reuse */
->  #define XT_LOG_MACDECODE	0x20	/* Decode MAC header */
-> +#define XT_LOG_ADD_TIMESTAMP	0x40	/* Add a timestamp */
->  #define XT_LOG_MASK		0x6f
->  
->  struct xt_log_info {
-> diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-> index 211d341..2af2621 100644
-> --- a/net/netfilter/xt_LOG.c
-> +++ b/net/netfilter/xt_LOG.c
-> @@ -490,6 +490,15 @@ log_packet_common(struct sbuff *m,
->  	if (loginfo->type == NF_LOG_TYPE_LOG)
->  		sb_add(m, "<%d>", loginfo->u.log.level);
->  
-> +	if (loginfo->u.log.logflags & XT_LOG_ADD_TIMESTAMP) {
-> +		struct timespec tv;
-> +		unsigned int msec;
-> +
-> +		getnstimeofday(&tv);
-> +		msec = tv.tv_nsec / NSEC_PER_MSEC;
-> +		sb_add(m, "TIMESTAMP=%li.%03li ", tv.tv_sec, msec);
+On 02/15/2012 01:23 PM, Igor Mammedov wrote:
+>>>   static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time
+>>> *shadow)
+>>>   {
+>>> -    u64 delta = native_read_tsc() - shadow->tsc_timestamp;
+>>> +    u64 delta;
+>>> +    u64 tsc = native_read_tsc();
+>>> +    BUG_ON(tsc<  shadow->tsc_timestamp);
+>>> +    delta = tsc - shadow->tsc_timestamp;
+>>>       return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
+>>>                      shadow->tsc_shift);
+>>
+>> Maybe a WARN_ON_ONCE()?  Otherwise a relatively minor hypervisor bug can
+>> kill the guest.
+>
+>
+> An attempt to print from this place is not perfect since it often leads
+> to recursive calling to this very function and it hang there anyway.
+> But if you insist I'll re-post it with WARN_ON_ONCE,
+> It won't make much difference because guest will hang/stall due overflow
+> anyway.
 
-Since you want to use this temp variable "unsigned int msec" (I have no
-idea why...), you must change printf format accordingly : %03u instead
-of %03li
+Won't a BUG_ON() also result in a printk?
 
-> +	}
-> +
->  	sb_add(m, "%sIN=%s OUT=%s ", prefix, in ? in->name : "",
->  	       out ? out->name : "");
->  #ifdef CONFIG_BRIDGE_NETFILTER
+>
+> If there is an intention to keep guest functional after the event then
+> maybe this patch is a way to go
+>   http://www.spinics.net/lists/kvm/msg68463.html
+> this way clock will be re-silent to this kind of errors, like bare-metal
+> one is.
 
+It's the same patch... do you mean something that detects the overflow
+and uses the last value?
+
+-- 
+error compiling committee.c: too many arguments to function
 
