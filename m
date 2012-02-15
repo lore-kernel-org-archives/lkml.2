@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2BOROp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:14:45 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59672 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905Ab2BOROo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:14:44 -0500
-Date: Wed, 15 Feb 2012 17:14:15 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nathaniel Husted <nhusted@gmail.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-Message-ID: <20120215171415.GE29319@mudshark.cambridge.arm.com>
-References: <1329284188.12708.1.camel@phoenix>
- <20120215083609.GD13673@n2100.arm.linux.org.uk>
- <1329325622.2337.13.camel@localhost>
+	id S1753513Ab2BORQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:16:15 -0500
+Received: from seven.medozas.de ([188.40.89.202]:39990 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229Ab2BORQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 12:16:13 -0500
+Date: Wed, 15 Feb 2012 18:16:12 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Richard Weinberger <richard@nod.at>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, netfilter-devel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, pablo@netfilter.org, basti@b-bl.de
+Subject: Re: [PATCH 2/2] Netfilter: xt_LOG: Add timestamp support
+In-Reply-To: <4F3BBC11.1030308@nod.at>
+Message-ID: <alpine.LNX.2.01.1202151815270.15357@frira.zrqbmnf.qr>
+References: <1329314115-6899-1-git-send-email-richard@nod.at>  <1329314115-6899-2-git-send-email-richard@nod.at> <1329314492.2437.32.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <4F3BBC11.1030308@nod.at>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329325622.2337.13.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 05:07:02PM +0000, Eric Paris wrote:
-> Fixing the arch flag to be correct means we could do that translation
-> properly.  I haven't seen the patches to support translation of arm raw
-> bits to something higher level in audit userspace, but I assume it's
-> coming as soon as someone cares.
-> 
-> So if someone tells me how the code knows it's endianness I'll gladly
-> write the ifdef to switch from AUDIT_ARCH_ARMEB to AUDIT_ARCH_ARM when
-> appropriate....
 
-You should just be able to use #ifdef __ARMEB__ for the big-endian case (we
-don't support a little-endian kernel with a big-endian userspace or anything
-funky like that). If Russell has reverted the original patch your best bet is
-probably to spin a v2 of the ARM bits and post it to LAK.
+On Wednesday 2012-02-15 15:07, Richard Weinberger wrote:
+>>> +		struct timespec tv;
+>>> +		unsigned int msec;
+>>> +
+>>> +		getnstimeofday(&tv);
+>>> +		msec = tv.tv_nsec / NSEC_PER_MSEC;
+>>> +		sb_add(m, "TIMESTAMP=%li.%03li ", tv.tv_sec, msec);
+>>
+>> Since you want to use this temp variable "unsigned int msec" (I have no
+>> idea why...), you must change printf format accordingly : %03u instead
+>> of %03li
+>
+> *grml*.
+> I'll remove the temp variable and use %03u.
 
-Will
+Why not just print the nsecs directly (with %09 of course)?
