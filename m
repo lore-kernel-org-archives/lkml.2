@@ -1,87 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab2BOGjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 01:39:12 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36217 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2BOGjI (ORCPT
+	id S1757796Ab2BOGoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 01:44:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38550 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab2BOGoR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 01:39:08 -0500
-Date: Wed, 15 Feb 2012 09:40:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jorgyano Vieira <jorgyano@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: crystalhd: crystalhd_misc: improved debug macros
-Message-ID: <20120215064059.GO4141@mwanda>
-References: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
+	Wed, 15 Feb 2012 01:44:17 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eQyCKlb8USywWNtC"
-Content-Disposition: inline
-In-Reply-To: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4F3B5307.007C,ss=1,re=0.000,fgs=0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201202142308.14165.rjw@sisk.pl>
+References: <1329196614-6218-1-git-send-email-myungjoo.ham@samsung.com>
+	<201202142308.14165.rjw@sisk.pl>
+Date: Wed, 15 Feb 2012 15:44:16 +0900
+X-Google-Sender-Auth: tjGscCaFKfEAcxMchhfcSCN903o
+Message-ID: <CAJ0PZbQLK4R0VJDebdkEF2iE0CyFfR9qEDfZ0YJV4Ob1CzPpfw@mail.gmail.com>
+Subject: Re: [RFC PATCH] PM / QoS: add pm_qos_update_request_timeout API
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/2/15 Rafael J. Wysocki <rjw@sisk.pl>:
+> Hi,
+>
+> On Tuesday, February 14, 2012, MyungJoo Ham wrote:
+>> The new API, pm_qos_update_request_timeout() is to provide a timeout
+>> with pm_qos_update_request.
+>
+> I need to know what the other people in the CC list think about that.  It would
+> definitely help if you described a use case.
 
---eQyCKlb8USywWNtC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Use case (current implementation in local repositories) w/ user inputs
+(touch screen)
 
-On Wed, Feb 15, 2012 at 12:20:06AM -0200, Jorgyano Vieira wrote:
-> Improvement of debug macros to ensure safe use on if/else statements.
->=20
+Run DVFS mechanism (both CPUfreq and Devfreq) or devices faster when a
+user starts an input.
+(default: polling every 100ms. with user inputs: polling every 10ms)
+or (depending on projects)
+(default: 200MHz ~ 1.5GHz. with user inputs: 800MHz ~ 1.5GHz)
 
-How are the originals unsafe?  The changelog should say how this is
-an improvement.  Something like "I put do { ... } while(0) around
-the macros so it matches the rest of the kernel."
-
-Really we want to get rid of these.  It would be easy to delete
-BCMLOG_ENTER and BCMLOG_LEAVE right now.  They're only used for five
-functions.  BCMLOG() is slightly complicated.  BCMLOG_ERR() could
-be sed replaced with pr_err().
-
-So could you do that instead?  Send a patch to remove BCMLOG_ENTER
-and BCMLOG_LEAVE?  Then send another patch to replace BCMLOG_ERR()
-with pr_err().  Take a look at how the pr_fmt macro is used for
-this.  Don't actually do it with sed.  Take the time and review each
-printk() and notice bugs as you go along.  You could replace them
-file by file if you wanted or all at once, which ever is easier for
-you.  Then send a third patch to add the do {} while(0) block to
-BCMLOG() until someone works up enough motivation to fix it
-properly?
-
-regards,
-dan carpenter
+Run DVFS mechanism faster (shorter polling interval) when the
+userspace expects a sudden and temporal utilization changes or
+fluctuations soon (but the utilization may and may not rise much, so
+DVFS mechanism needs to react faster, not to increase frequency
+unconditionally.): a new application is being loaded or a bulky task
+is being loaded.
 
 
+>
+>> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+>> QoS request on req with value 100 will be active for 1000 jiffies.
+>
+> Could that be a different time unit instead of jiffies?
+
+Um.. yes.. I guess usec would fit here.
+
+>
+[]
+>>
+>>  #define PM_QOS_RESERVED 0
+>>  #define PM_QOS_CPU_DMA_LATENCY 1
+>> @@ -29,6 +30,8 @@
+>>  struct pm_qos_request {
+>>       struct plist_node node;
+>>       int pm_qos_class;
+>> +     s32 value; /* the back-up value for pm_qos_update_request_timeout */
+>
+> Well, what about "saved_value"?
+
+Yes.. it looks better.
+
+>
+>>  /**
+>> + * pm_qos_timeout - the timeout handler of pm_qos_update_request_timeout
+>> + * @work: work struct for the delayed work (timeout)
+>> + *
+>> + * This cancels the timeout request and rolls the request value back.
+>> + */
+>> +static void pm_qos_timeout(struct work_struct *work)
+>
+> I'd call it pm_qos_work_fn(), so that it's clear what it is.
+
+Ok.. I'll modify it.. How about pm_qos_timeout_work_fn()?
+
+>
+[]
+>>
+>> -     if (new_value != req->node.prio)
+>> +     if (delayed_work_pending(&req->work))
+>> +             cancel_delayed_work_sync(&req->work);
+>> +
+>
+> That may result in setting the target value to an unwanted one temporarily.
+> Namely, if pm_qos_timeout() is already running, it will switch back to the
+> "original" target value before the new one is set.  The PM QoS users may see
+> the "restored" value and use it in their decision making.  Do we care?
+
+If pm_qos_timeout is already running at this point, QoS-value will be
+restored and PM-QoS users (handlers) will react based on the restored
+value. And then, these PM-QoS users (handlers) will again react to the
+new_value below.
+
+Having one additional and unnecessary PM-QoS users/handers' side
+reaction is surely an overhead; however, it happens only if
+pm_qos_timeout is already running at the point of this function call.
+It pm_qos_timeout is awaiting for "timeout", then it will simply be
+canceled.
+
+If we do cancel_delayed_work rather than cancel_delayed_work_sync
+here, we then may have serialization problem; the value set by
+pm_qos_update_request() is overriden by pm_qos_timeout().
+
+The purpose of modification here is to guarantee that the
+pm_qos_timeout(), which is roll-back capability of
+pm_qos_update_request_timeout(), won't override QoS request values set
+by another pm_qos_update_request() calls.
+
+Or, we may need to add mutexes in request-updating functions and let
+the functions serialized.
+
+>
+>> +     req->value = new_value;
+>> +     if (new_value != req->node.prio) {
+>>               pm_qos_update_target(
+>>                       pm_qos_array[req->pm_qos_class]->constraints,
+>>                       &req->node, PM_QOS_UPDATE_REQ, new_value);
+>> +     }
+>
+> Adding brances here doesn't belong to this patch.
+
+Oops.. I'll remove these braces.
+
+>
+>>  }
+>>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+>>
+>>  /**
+>> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
+>> + * @req : handle to list element holding a pm_qos request to use
+>> + * @new_value: defines the temporal qos request
+>> + * @timeout: the effective duration of this qos request in jiffies
+>> + *
+>> + * After timeout, this qos request is cancelled automatically.
+>> + */
+>> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
+>> +                                unsigned long timeout)
+>> +{
+>> +     if (!req)
+>> +             return;
+>> +     if (WARN(!pm_qos_request_active(req),
+>> +              "pm_qos_update_request_timeout() called for unknown object."))
+>
+> Please use __func__ in messages like this.
+
+Oh.. yes, I'll. In fact, because it is WARN(), the function name
+itself won't be necessary.
+
+>
+>> +             return;
+>> +
+>> +     if (new_value != req->node.prio) {
+>> +             pm_qos_update_target(
+>> +                     pm_qos_array[req->pm_qos_class]->constraints,
+>> +                     &req->node, PM_QOS_UPDATE_REQ, new_value);
+>> +             if (delayed_work_pending(&req->work))
+>> +                     cancel_delayed_work_sync(&req->work);
+>
+> It seems that if pm_qos_timeout() has been started already, it will overwrite
+> the value that we've just set, or am I missing something?
+
+No, you are not.
+
+I should've put cancel_delayed_work_sync before pm_qos_update_target().
 
 
---eQyCKlb8USywWNtC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>
+>> +             schedule_delayed_work(&req->work, timeout);
+>> +     }
+>> +}
+>> +
+>> +/**
+>>   * pm_qos_remove_request - modifies an existing qos request
+>>   * @req: handle to request list element
+>>   *
+>> @@ -334,6 +383,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+>>               return;
+>>       }
+>>
+>> +     if (delayed_work_pending(&req->work))
+>> +             cancel_delayed_work_sync(&req->work);
+>> +
+>>       pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+>>                            &req->node, PM_QOS_REMOVE_REQ,
+>>                            PM_QOS_DEFAULT_VALUE);
+>>
+>
+> Thanks,
+> Rafael
 
-iQIcBAEBAgAGBQJPO1N6AAoJEOnZkXI/YHqRj+cQAI91Nik36JvZ6NMbKfH2i3A8
-grvv9FOOkdB7zUYOpjvvS39fgNcKfrKW8yt9cSgVY++okRAnDWthNyyYHpgl5Sf4
-klkmUT+iHoiC/g2xFNDxMPghMtUzGjlvV0DMhWAd1hj1a6PahngUEi2riqozt0Gs
-7GMX/CH/P38yatx+wdkokRB8f9E/p0Vs2b3j2rlFzkbHUq46w1+WuanW6AfdF51J
-NWxx0rpPzUBtAXgP9uDXRzhIbtht2b5W8mlMN72SS1qRmhDM4c6ceBHGxEMpBcRU
-81Xb6QzHAqTgOGYAkmBCjoDW7BGxxHU8hjQeYbOXDAS+IDOrYE/Ulunx8t2AYpKB
-0dIwU3F4NN9eBM6dqPk6TTTNDwPxt+jaPQIUBUA86mUBhqrRV81iJwe1ZvOX0R2l
-dG43Kg/KDXwCbt2JTiEtr6EFwRdZgVwJcUJSrrSogInSBqWiOIEKsiJZSJK5ZnOr
-qh5V2kAMzGdNAW+RtZuOZQ3YNdxaBwC4aKiHsE9ksg5S5jtdyQTBPXiMYgOIpz0j
-LVBGhS20JMi7xViTWa3JWozv5ruIjd3/N9Mpnmukml5oKyY2JvKi7j0VgDlE2s9Y
-4C3ddWd9ZhQ64cIbi9e3kbXNqOUKRUl/LdBnls/QRFdtfCP9OecZ+I7s/oYBNqj0
-GBh3BmRKLwlEgEcWxSzG
-=x4ZC
------END PGP SIGNATURE-----
+Thank you so much!
 
---eQyCKlb8USywWNtC--
+
+Cheers!
+MyungJoo
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
