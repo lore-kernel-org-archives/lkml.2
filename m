@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab2BOPtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:49:09 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:33805 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751838Ab2BOPtH (ORCPT
+	id S1751984Ab2BOPvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:51:52 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:58055
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751792Ab2BOPvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:49:07 -0500
-Subject: Re: [PATCH 21/40] OpenRISC: Don't reimplement force_sigsegv()
-From: Matt Fleming <matt@console-pimps.org>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux-arch@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux@openrisc.net
-In-Reply-To: <1329320456.2670.86.camel@crucifix>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-	 <1329219673-28711-22-git-send-email-matt@console-pimps.org>
-	 <1329320456.2670.86.camel@crucifix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Feb 2012 15:49:05 +0000
-Message-ID: <1329320945.3675.149.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 10:51:49 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] scsi: Fix typo in pmcraid.h
+Date: Thu, 16 Feb 2012 00:48:38 +0900
+Message-Id: <1329320918-2745-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 16:40 +0100, Jonas Bonn wrote:
-> Acked-by: Jonas Bonn <jonas@southpole.se>
-> 
-> ...for OpenRISC, all 4 patches (20-23 in this series).
-> 
-> Should I take these in the OpenRISC tree or how did you want to do?
+Correct spelling "thresold" to "threshold" in
+drivers/scsi/pmraid.h
 
-Whatever you prefer. Feel free to take them through the OpenRISC tree.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/scsi/pmcraid.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/scsi/pmcraid.h b/drivers/scsi/pmcraid.h
+index ca496c7..e1d150f 100644
+--- a/drivers/scsi/pmcraid.h
++++ b/drivers/scsi/pmcraid.h
+@@ -857,11 +857,11 @@ static struct pmcraid_ioasc_error pmcraid_ioasc_error_table[] = {
+ 	{0x01180600, IOASC_LOG_LEVEL_HARD,
+ 	 "Recovered Error, soft media error, sector reassignment suggested"},
+ 	{0x015D0000, IOASC_LOG_LEVEL_HARD,
+-	 "Recovered Error, failure prediction thresold exceeded"},
++	 "Recovered Error, failure prediction threshold exceeded"},
+ 	{0x015D9200, IOASC_LOG_LEVEL_HARD,
+-	 "Recovered Error, soft Cache Card Battery error thresold"},
++	 "Recovered Error, soft Cache Card Battery error threshold"},
+ 	{0x015D9200, IOASC_LOG_LEVEL_HARD,
+-	 "Recovered Error, soft Cache Card Battery error thresold"},
++	 "Recovered Error, soft Cache Card Battery error threshold"},
+ 	{0x02048000, IOASC_LOG_LEVEL_HARD,
+ 	 "Not Ready, IOA Reset Required"},
+ 	{0x02408500, IOASC_LOG_LEVEL_HARD,
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.6.5
 
