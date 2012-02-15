@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2BOPj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:39:56 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:20915 "EHLO multi.imgtec.com"
+	id S1750915Ab2BOPnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:43:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726Ab2BOPjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:39:51 -0500
-X-Greylist: delayed 924 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Feb 2012 10:39:51 EST
-Message-ID: <4F3BCE25.9040905@imgtec.com>
-Date: Wed, 15 Feb 2012 15:24:21 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
+	id S1751433Ab2BOPnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 10:43:50 -0500
+Date: Wed, 15 Feb 2012 10:43:41 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, avi@redhat.com,
+        nate@cpanel.net, cl@linux-foundation.org, oleg@redhat.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
+ fix blkcg percpu alloc deadlock
+Message-ID: <20120215154341.GB27312@redhat.com>
+References: <20111222175834.66559c8b.akpm@linux-foundation.org>
+ <20111223025629.GE12738@redhat.com>
+ <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111227175249.GE17712@google.com>
+ <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111228004102.GK17712@google.com>
+ <20120105012842.GQ31746@google.com>
+ <20120209235845.GH19392@google.com>
+ <20120210162658.GC3150@redhat.com>
+ <20120213223156.GG12117@google.com>
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] rc/ir-raw: use kfifo_rec_ptr_1 instead of kfifo
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Feb 2012 15:24:21.0962 (UTC) FILETIME=[E47A0AA0:01CCEBF5]
-X-SEF-Processed: 7_3_0_01181__2012_02_15_15_24_23
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120213223156.GG12117@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Raw IR events are passed to the raw event thread through a kfifo. The
-size of the event struct is 12 bytes, and space for 512 events is
-reserved in the kfifo (6144 bytes), however this is rounded down to 4096
-bytes (the next power of 2) by __kfifo_alloc().
+On Mon, Feb 13, 2012 at 02:31:56PM -0800, Tejun Heo wrote:
+> Hello, Vivek.
+> 
+> On Fri, Feb 10, 2012 at 11:26:58AM -0500, Vivek Goyal wrote:
+> > The only difference is that by putting this logic in per cpu counters,
+> > we make it somewhat generic so that other users who can't do GFP_KERNEL
+> > allocation of per cpu data, can use it. I can live with that.
+> 
+> Also, it has fallback mechanism while percpu data isn't there, so the
+> counts are guaranteed to be right.  Probably doesn't matter all that
+> much for blkcg stats.
 
-4096 bytes is not divisible by 12 therefore if the fifo fills up a third
-of a record will be written in the end of the kfifo by
-ir_raw_event_store() because the recsize of the fifo is 0 (it doesn't
-have records). When this is read by ir_raw_event_thread() a corrupted or
-partial record will be read, and in the case of a partial record the
-BUG_ON(retval != sizeof(ev)) gets hit too.
+Ok, I had missed that part. Nice.
 
-According to samples/kfifo/record-example.c struct kfifo_rec_ptr_1 can
-handle records of a length between 0 and 255 bytes, so change struct
-ir_raw_event_ctrl to use that instead of struct kfifo.
+I have no objections to making this lazy allocation in per cpu counter
+idea work and migrate blkcg per cpu stats to use per cpu counters. If
+this patchset is not too intrusive, it might even be backportable to
+stable kernels.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- drivers/media/rc/rc-core-priv.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Andrew does not seem to like mempool idea, so instead of not making
+any progress, it is better to go with this idea. We need to fix this
+issue. More poeple might run into this.
 
-diff --git a/drivers/media/rc/rc-core-priv.h b/drivers/media/rc/rc-core-priv.h
-index c6ca870..989ea08 100644
---- a/drivers/media/rc/rc-core-priv.h
-+++ b/drivers/media/rc/rc-core-priv.h
-@@ -35,7 +35,7 @@ struct ir_raw_event_ctrl {
- 	struct list_head		list;		/* to keep track of raw clients */
- 	struct task_struct		*thread;
- 	spinlock_t			lock;
--	struct kfifo			kfifo;		/* fifo for the pulse/space durations */
-+	struct kfifo_rec_ptr_1		kfifo;		/* fifo for the pulse/space durations */
- 	ktime_t				last_event;	/* when last event occurred */
- 	enum raw_event_type		last_type;	/* last event type */
- 	struct rc_dev			*dev;		/* pointer to the parent rc_dev */
--- 
-1.7.2.3
-
-
+Thanks
+Vivek
