@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758692Ab2BOM63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 07:58:29 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45996 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2BOM62 (ORCPT
+	id S1758735Ab2BONAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:00:40 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40217 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758005Ab2BONAi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 07:58:28 -0500
-Message-ID: <4F3BABF1.8050204@gmail.com>
-Date: Wed, 15 Feb 2012 21:58:25 +0900
-From: Akio Idehara <zbe64533@gmail.com>
-MIME-Version: 1.0
-To: linux-input@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix ALPS touchpad detection
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 08:00:38 -0500
+Message-ID: <1329310763.2293.78.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
+ implementation
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org, Avi Kiviti <avi@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>, Eric Paris <eparis@redhat.com>
+Date: Wed, 15 Feb 2012 13:59:23 +0100
+In-Reply-To: <20120213020951.GA12138@linux.vnet.ibm.com>
+References: <20120213020951.GA12138@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ALPS touchpad detection fails if some buttons of ALPS are pressed.
-The reason is that the query response byte is different from what is expected.
-This was tested on a Toshiba Portege R500.
+On Sun, 2012-02-12 at 18:09 -0800, Paul E. McKenney wrote:
+> The current implementation of synchronize_srcu_expedited() can cause
+> severe OS jitter due to its use of synchronize_sched(), which in turn
+> invokes try_stop_cpus(), which causes each CPU to be sent an IPI.
+> This can result in severe performance degradation for real-time workloads
+> and especially for short-interation-length HPC workloads.  Furthermore,
+> because only one instance of try_stop_cpus() can be making forward progress
+> at a given time, only one instance of synchronize_srcu_expedited() can
+> make forward progress at a time, even if they are all operating on
+> distinct srcu_struct structures.
+> 
+> This commit, inspired by an earlier implementation by Peter Zijlstra
+> (https://lkml.org/lkml/2012/1/31/211) and by further offline discussions,
+> takes a strictly algorithmic bits-in-memory approach.  This has the
+> disadvantage of requiring one explicit memory-barrier instruction in
+> each of srcu_read_lock() and srcu_read_unlock(), but on the other hand
+> completely dispenses with OS jitter and furthermore allows SRCU to be
+> used freely by CPUs that RCU believes to be idle or offline.
+> 
+> The update-side implementation handles the single read-side memory
+> barrier by rechecking the per-CPU counters after summing them and
+> by running through the update-side state machine twice.
 
-Signed-off-by: Akio Idehara <zbe64533@gmail.com>
----
-  Documentation/input/alps.txt |    3 ++-
-  drivers/input/mouse/alps.c   |    5 +++--
-  2 files changed, 5 insertions(+), 3 deletions(-)
+Yeah, getting rid of that second memory barrier in srcu_read_lock() is
+pure magic :-)
 
-diff --git a/Documentation/input/alps.txt b/Documentation/input/alps.txt
-index f274c28..2f95308 100644
---- a/Documentation/input/alps.txt
-+++ b/Documentation/input/alps.txt
-@@ -13,7 +13,8 @@ Detection
+> This implementation has passed moderate rcutorture testing on both 32-bit
+> x86 and 64-bit Power.  A call_srcu() function will be present in a later
+> version of this patch.
 
-  All ALPS touchpads should respond to the "E6 report" command sequence:
-  E8-E6-E6-E6-E9. An ALPS touchpad should respond with either 00-00-0A or
--00-00-64.
-+00-00-64 if no buttons are pressed. The bits 0-2 of the first byte will be 1s
-+if some buttons are pressed.
+Goodness ;-)
 
-  If the E6 report is successful, the touchpad model is identified using the "E7
-  report" sequence: E8-E7-E7-E7-E9. The response is the model signature and is
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index bd87380..d161831 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -952,7 +952,8 @@ static const struct alps_model_info *alps_get_model(struct psmouse *psmouse, int
+> @@ -131,10 +214,11 @@ int __srcu_read_lock(struct srcu_struct *sp)
+>  	int idx;
+>  
+>  	preempt_disable();
+> -	idx = sp->completed & 0x1;
+> -	barrier();  /* ensure compiler looks -once- at sp->completed. */
+> -	per_cpu_ptr(sp->per_cpu_ref, smp_processor_id())->c[idx]++;
+> -	srcu_barrier();  /* ensure compiler won't misorder critical section. */
+> +	idx = rcu_dereference_index_check(sp->completed,
+> +					  rcu_read_lock_sched_held()) & 0x1;
+> +	ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, smp_processor_id())->c[idx]) +=
+> +		SRCU_USAGE_COUNT + 1;
+> +	smp_mb(); /* B */  /* Avoid leaking the critical section. */
+>  	preempt_enable();
+>  	return idx;
+>  }
 
-  	/*
-  	 * First try "E6 report".
--	 * ALPS should return 0,0,10 or 0,0,100
-+	 * ALPS should return 0,0,10 or 0,0,100 if no buttons are pressed.
-+	 * The bits 0-2 of the first byte will be 1s if some buttons are pressed.
-  	 */
-  	param[0] = 0;
-  	if (ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) ||
-@@ -968,7 +969,7 @@ static const struct alps_model_info *alps_get_model(struct psmouse *psmouse, int
-  	psmouse_dbg(psmouse, "E6 report: %2.2x %2.2x %2.2x",
-  		    param[0], param[1], param[2]);
+You could use __this_cpu_* muck to shorten some of that.
 
--	if (param[0] != 0 || param[1] != 0 || (param[2] != 10 && param[2] != 100))
-+	if ((param[0] & 0xf8) != 0 || param[1] != 0 || (param[2] != 10 && param[2] != 100))
-  		return NULL;
-
-  	/*
--- 
-1.7.9
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
