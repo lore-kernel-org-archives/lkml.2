@@ -1,234 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2BOXAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:00:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56730 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991Ab2BOW5P (ORCPT
+	id S1756157Ab2BOXDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:03:41 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54555 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755991Ab2BOXDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:57:15 -0500
-Subject: [PATCH RFC 02/15] mm: memory bookkeeping core
-To: linux-mm@kvack.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 16 Feb 2012 02:57:11 +0400
-Message-ID: <20120215225711.22050.54656.stgit@zurg>
-In-Reply-To: <20120215224221.22050.80605.stgit@zurg>
-References: <20120215224221.22050.80605.stgit@zurg>
-User-Agent: StGit/0.15
+	Wed, 15 Feb 2012 18:03:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Date: Thu, 16 Feb 2012 00:07:32 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <201202150022.26072.rjw@sisk.pl> <CAMP5XgfgZphvsoFr62=oNoDUxXSeRXmu21Co3fGWXhZ17DgO_A@mail.gmail.com>
+In-Reply-To: <CAMP5XgfgZphvsoFr62=oNoDUxXSeRXmu21Co3fGWXhZ17DgO_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202160007.33131.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-core blueprint
+On Wednesday, February 15, 2012, Arve Hjønnevåg wrote:
+> 2012/2/14 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Tuesday, February 14, 2012, Arve Hjønnevåg wrote:
+> >> On Mon, Feb 6, 2012 at 5:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> ...
+> >> but the wake-source timeout feature has some bugs or incompatible apis. An
+> >> init api would also be useful for embedding wake-sources in other data
+> >> structures without adding another memory allocation. Your patch to
+> >> move the spinlock init to wakeup_source_add still require the struct
+> >> to be zero initialized and the name set manually.
+> >
+> > That should be easy to fix.  What about the appended patch?
+> >
+> 
+> That works, but I still have to call more than one function before I
+> can use the wakeup-source (wakeup_source_init and wakeup_source_add)
+> and more than one function before I can free it (__pm_relax,
+> wakeup_source_remove and wakeup_source_drop). Is there any reason to
+> keep these separate?
 
-TODO:
-* add direct link from page to book in page->flags instead of zoneid and nodeid
-* atomic switching page book-id in page->flags bits
-  [ something like atomic_long_xor(&page->flags, old_book_id ^ new_book_id) ]
-* move freed pages into root book (zone->book)
-* don't free struct book, reuse them after rcu grace period to keep rcu-iterating
+Yes, there is.  I think that wakeup_source_create/_destroy() should
+use the same initialization functions internally that will be used for
+externally allocated wakeup sources (to make sure that all wakeup source
+objects are initialized in exactly the same way).
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Also, not copying the name when the caller provides the memory for the
+> wakeup-source would be a closer match to the wakelock api. Most of our
+> wakelocks pass a string constant as the name, and making a copy of
+> that string is not useful. wake_lock_init is also safe to call from
+> atomic context, but I don't know if anyone relies on this.
+
+OK, below is another go.  It doesn't copy the name if wakeup_source_init() is
+used (which also does the _add this time).  I think, though, that copying
+the name is generally safer, because someone might use wakeup_source_init()
+with the name string allocated on the stack or otherwise temporary, which would
+be a bug with the new version.
+
+Thanks,
+Rafael
+
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- include/linux/mm_inline.h |   36 ++++++++++++++++++++++++++++++++++
- include/linux/mmzone.h    |    8 ++++++++
- init/Kconfig              |    4 ++++
- mm/memcontrol.c           |   48 ++++++++++++++++++++++++++++++++++++++++++++-
- mm/page_alloc.c           |    6 ++++++
- 5 files changed, 101 insertions(+), 1 deletions(-)
+ drivers/base/power/wakeup.c |   41 ++++++++++++++++++++++++++++++++++-------
+ include/linux/pm_wakeup.h   |   20 ++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-index e0b78ca..6f42819 100644
---- a/include/linux/mm_inline.h
-+++ b/include/linux/mm_inline.h
-@@ -3,6 +3,42 @@
- 
- #include <linux/huge_mm.h>
- 
-+#ifdef CONFIG_MEMORY_BOOKKEEPING
-+
-+extern struct book *page_book(struct page *book);
-+
-+static inline struct zone *book_zone(struct book *book)
-+{
-+	return book->zone;
-+}
-+
-+static inline struct pglist_data *book_node(struct book *book)
-+{
-+	return book->node;
-+}
-+
-+#else /* CONFIG_MEMORY_BOOKKEEPING */
-+
-+static inline struct book *page_book(struct page *page)
-+{
-+	return &page_zone(page)->book;
-+}
-+
-+static inline struct zone *book_zone(struct book *book)
-+{
-+	return container_of(book, struct zone, book);
-+}
-+
-+static inline struct pglist_data *book_node(struct book *book)
-+{
-+	return book_zone(book)->zone_pgdat;
-+}
-+
-+#endif /* CONFIG_MEMORY_BOOKKEEPING */
-+
-+#define for_each_book(book, zone) \
-+	list_for_each_entry_rcu(book, &zone->book_list, list)
-+
- /**
-  * page_is_file_cache - should the page be on a file LRU or anon LRU?
-  * @page: the page to test
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 0b6e5d4..e05b003 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -297,7 +297,12 @@ struct zone_reclaim_stat {
- };
- 
- struct book {
-+#ifdef CONFIG_MEMORY_BOOKKEEPING
-+	struct pglist_data	*node;
-+	struct zone		*zone;
-+#endif
- 	struct list_head	pages_lru[NR_LRU_LISTS];
-+	struct list_head	list;	/* for zone->book_list */
- };
- 
- struct zone {
-@@ -442,6 +447,9 @@ struct zone {
- 	unsigned long		spanned_pages;	/* total size, including holes */
- 	unsigned long		present_pages;	/* amount of memory (excluding holes) */
- 
-+	/* RCU-protected list of all books in this zone */
-+	struct list_head	book_list;
-+
- 	/*
- 	 * rarely used fields:
- 	 */
-diff --git a/init/Kconfig b/init/Kconfig
-index ab0d680..70c3cef 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -651,10 +651,14 @@ config RESOURCE_COUNTERS
- 	  This option enables controller independent resource accounting
- 	  infrastructure that works with cgroups.
- 
-+config MEMORY_BOOKKEEPING
-+	bool
-+
- config CGROUP_MEM_RES_CTLR
- 	bool "Memory Resource Controller for Control Groups"
- 	depends on RESOURCE_COUNTERS
- 	select MM_OWNER
-+	select MEMORY_BOOKKEEPING
- 	help
- 	  Provides a memory resource controller that manages both anonymous
- 	  memory and page cache. (See Documentation/cgroups/memory.txt)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 578118b..06d946f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -152,6 +152,7 @@ struct mem_cgroup_per_zone {
- 
- struct mem_cgroup_per_node {
- 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
-+	struct rcu_head		rcu_head;
- };
- 
- struct mem_cgroup_lru_info {
-@@ -990,6 +991,32 @@ out:
- EXPORT_SYMBOL(mem_cgroup_count_vm_event);
+Index: linux/drivers/base/power/wakeup.c
+===================================================================
+--- linux.orig/drivers/base/power/wakeup.c
++++ linux/drivers/base/power/wakeup.c
+@@ -53,6 +53,23 @@ static void pm_wakeup_timer_fn(unsigned
+ static LIST_HEAD(wakeup_sources);
  
  /**
-+ * page_book - get the book there this page is located
-+ * @page: the struct page pointer with stable reference
++ * wakeup_source_prepare - Prepare a new wakeup source for initialization.
++ * @ws: Wakeup source to prepare.
++ * @name: Pointer to the name of the new wakeup source.
 + *
-+ * Returns pointer to struct book.
-+ *
-+ * FIXME optimized this translation, add direct link from page to book.
++ * Callers must ensure that the @name string won't be freed when @ws is still in
++ * use.
 + */
-+struct book *page_book(struct page *page)
++void wakeup_source_prepare(struct wakeup_source *ws, const char *name)
 +{
-+	struct mem_cgroup_per_zone *mz;
-+	struct page_cgroup *pc;
-+
-+	if (mem_cgroup_disabled())
-+		return &page_zone(page)->book;
-+
-+	pc = lookup_page_cgroup(page);
-+	if (!PageCgroupUsed(pc))
-+		return &page_zone(page)->book;
-+	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-+	smp_rmb();
-+	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-+			page_to_nid(page), page_zonenum(page));
-+	return &mz->book;
++	if (ws) {
++		memset(ws, 0, sizeof(*ws));
++		ws->name = name;
++	}
 +}
++EXPORT_SYMBOL_GPL(wakeup_source_prepare);
 +
 +/**
-  * mem_cgroup_zone_book - get the lru list vector for a zone and memcg
-  * @zone: zone of the wanted book
-  * @mem: memcg of the wanted book
-@@ -4740,6 +4767,11 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- 		mz = &pn->zoneinfo[zone];
- 		for_each_lru(l)
- 			INIT_LIST_HEAD(&mz->book.pages_lru[l]);
-+		mz->book.node = NODE_DATA(node);
-+		mz->book.zone = &NODE_DATA(node)->node_zones[zone];
-+		spin_lock(&mz->book.zone->lock);
-+		list_add_tail_rcu(&mz->book.list, &mz->book.zone->book_list);
-+		spin_unlock(&mz->book.zone->lock);
- 		mz->usage_in_excess = 0;
- 		mz->on_tree = false;
- 		mz->mem = memcg;
-@@ -4750,7 +4782,21 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
- 
- static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+  * wakeup_source_create - Create a struct wakeup_source object.
+  * @name: Name of the new wakeup source.
+  */
+@@ -60,31 +77,41 @@ struct wakeup_source *wakeup_source_crea
  {
--	kfree(memcg->info.nodeinfo[node]);
-+	struct mem_cgroup_per_node *pn;
-+	struct mem_cgroup_per_zone *mz;
-+	int zone;
+ 	struct wakeup_source *ws;
+ 
+-	ws = kzalloc(sizeof(*ws), GFP_KERNEL);
++	ws = kmalloc(sizeof(*ws), GFP_KERNEL);
+ 	if (!ws)
+ 		return NULL;
+ 
+-	if (name)
+-		ws->name = kstrdup(name, GFP_KERNEL);
+-
++	wakeup_source_prepare(ws, name ? kstrdup(name, GFP_KERNEL) : NULL);
+ 	return ws;
+ }
+ EXPORT_SYMBOL_GPL(wakeup_source_create);
+ 
+ /**
+- * wakeup_source_destroy - Destroy a struct wakeup_source object.
+- * @ws: Wakeup source to destroy.
++ * wakeup_source_drop - Prepare a struct wakeup_source object for destruction.
++ * @ws: Wakeup source to prepare for destruction.
+  *
+  * Callers must ensure that __pm_stay_awake() or __pm_wakeup_event() will never
+  * be run in parallel with this function for the same wakeup source object.
+  */
+-void wakeup_source_destroy(struct wakeup_source *ws)
++void wakeup_source_drop(struct wakeup_source *ws)
+ {
+ 	if (!ws)
+ 		return;
+ 
+ 	del_timer_sync(&ws->timer);
+ 	__pm_relax(ws);
++}
++EXPORT_SYMBOL_GPL(wakeup_source_drop);
 +
-+	pn = memcg->info.nodeinfo[node];
-+	if (!pn)
-+		return;
-+
-+	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
-+		mz = mem_cgroup_zoneinfo(memcg, node, zone);
-+		spin_lock(&mz->book.zone->lock);
-+		list_del_rcu(&mz->book.list);
-+		spin_unlock(&mz->book.zone->lock);
-+	}
-+	kfree_rcu(pn, rcu_head);
++/**
++ * wakeup_source_destroy - Destroy a struct wakeup_source object.
++ * @ws: Wakeup source to destroy.
++ *
++ * Use only for wakeup source objects created with wakeup_source_create().
++ */
++void wakeup_source_destroy(struct wakeup_source *ws)
++{
++	wakeup_source_drop(ws);
+ 	kfree(ws->name);
+ 	kfree(ws);
+ }
+Index: linux/include/linux/pm_wakeup.h
+===================================================================
+--- linux.orig/include/linux/pm_wakeup.h
++++ linux/include/linux/pm_wakeup.h
+@@ -73,7 +73,9 @@ static inline bool device_may_wakeup(str
  }
  
- static struct mem_cgroup *mem_cgroup_alloc(void)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 08b4e4b..ead327b 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4312,6 +4312,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone_pcp_init(zone);
- 		for_each_lru(lru)
- 			INIT_LIST_HEAD(&zone->book.pages_lru[lru]);
-+#ifdef CONFIG_MEMORY_BOOKKEEPING
-+		zone->book.node = pgdat;
-+		zone->book.zone = zone;
-+#endif
-+		INIT_LIST_HEAD(&zone->book_list);
-+		list_add(&zone->book.list, &zone->book_list);
- 		zone->reclaim_stat.recent_rotated[0] = 0;
- 		zone->reclaim_stat.recent_rotated[1] = 0;
- 		zone->reclaim_stat.recent_scanned[0] = 0;
-
+ /* drivers/base/power/wakeup.c */
++extern void wakeup_source_prepare(struct wakeup_source *ws, const char *name);
+ extern struct wakeup_source *wakeup_source_create(const char *name);
++extern void wakeup_source_drop(struct wakeup_source *ws);
+ extern void wakeup_source_destroy(struct wakeup_source *ws);
+ extern void wakeup_source_add(struct wakeup_source *ws);
+ extern void wakeup_source_remove(struct wakeup_source *ws);
+@@ -103,11 +105,16 @@ static inline bool device_can_wakeup(str
+ 	return dev->power.can_wakeup;
+ }
+ 
++static inline void wakeup_source_prepare(struct wakeup_source *ws,
++					 const char *name) {}
++
+ static inline struct wakeup_source *wakeup_source_create(const char *name)
+ {
+ 	return NULL;
+ }
+ 
++static inline void wakeup_source_drop(struct wakeup_source *ws) {}
++
+ static inline void wakeup_source_destroy(struct wakeup_source *ws) {}
+ 
+ static inline void wakeup_source_add(struct wakeup_source *ws) {}
+@@ -165,4 +172,17 @@ static inline void pm_wakeup_event(struc
+ 
+ #endif /* !CONFIG_PM_SLEEP */
+ 
++static inline void wakeup_source_init(struct wakeup_source *ws,
++				      const char *name)
++{
++	wakeup_source_prepare(ws, name);
++	wakeup_source_add(ws);
++}
++
++static inline void wakeup_source_trash(struct wakeup_source *ws)
++{
++	wakeup_source_remove(ws);
++	wakeup_source_drop(ws);
++}
++
+ #endif /* _LINUX_PM_WAKEUP_H */
