@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab2BOLXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 06:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757300Ab2BOLXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 06:23:30 -0500
-Message-ID: <4F3B95A5.3050704@redhat.com>
-Date: Wed, 15 Feb 2012 12:23:17 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S932259Ab2BOL0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 06:26:47 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34724 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab2BOL0q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 06:26:46 -0500
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, riel@redhat.com, amit.shah@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [PATCH] BUG in pv_clock when overflow condition is detected
-References: <1329157256-19926-1-git-send-email-imammedo@redhat.com> <4F3B8DC9.8040100@redhat.com>
-In-Reply-To: <4F3B8DC9.8040100@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120215064059.GO4141@mwanda>
+References: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
+	<20120215064059.GO4141@mwanda>
+Date: Wed, 15 Feb 2012 09:26:45 -0200
+Message-ID: <CABRD5hLWn_hxC-ZzDJycw4=hDVuOiUiwxaz5Ljuxbgk1KAkpGw@mail.gmail.com>
+Subject: Re: [PATCH] Staging: crystalhd: crystalhd_misc: improved debug macros
+From: Jorgyano vieira <jorgyano@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 11:49 AM, Avi Kivity wrote:
-> On 02/13/2012 08:20 PM, Igor Mammedov wrote:
->> BUG when overflow occurs at pvclock.c:pvclock_get_nsec_offset
+On Wed, Feb 15, 2012 at 4:40 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Wed, Feb 15, 2012 at 12:20:06AM -0200, Jorgyano Vieira wrote:
+>> Improvement of debug macros to ensure safe use on if/else statements.
 >>
->>      u64 delta = native_read_tsc() - shadow->tsc_timestamp;
->>
->> this might happen at an attempt to read an uninitialized yet clock.
->> It won't prevent stalls and hangs but at least it won't do it silently.
->>
->> Signed-off-by: Igor Mammedov<imammedo@redhat.com>
->> ---
->>   arch/x86/kernel/pvclock.c |    5 ++++-
->>   1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
->> index 42eb330..35a6190 100644
->> --- a/arch/x86/kernel/pvclock.c
->> +++ b/arch/x86/kernel/pvclock.c
->> @@ -43,7 +43,10 @@ void pvclock_set_flags(u8 flags)
->>
->>   static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
->>   {
->> -	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
->> +	u64 delta;
->> +	u64 tsc = native_read_tsc();
->> +	BUG_ON(tsc<  shadow->tsc_timestamp);
->> +	delta = tsc - shadow->tsc_timestamp;
->>   	return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
->>   				   shadow->tsc_shift);
 >
-> Maybe a WARN_ON_ONCE()?  Otherwise a relatively minor hypervisor bug can
-> kill the guest.
+> How are the originals unsafe?
+for example If you have something like:
+if(foo)
+        BCMLOG(...);
+else
+       do that
 
-An attempt to print from this place is not perfect since it often leads
-to recursive calling to this very function and it hang there anyway.
-But if you insist I'll re-post it with WARN_ON_ONCE,
-It won't make much difference because guest will hang/stall due overflow
-anyway.
+> Really we want to get rid of these.  It would be easy to delete
+> BCMLOG_ENTER and BCMLOG_LEAVE right now.  They're only used for five
+> functions.  BCMLOG() is slightly complicated.  BCMLOG_ERR() could
+> be sed replaced with pr_err().
+>
+> So could you do that instead?  Send a patch to remove BCMLOG_ENTER
+> and BCMLOG_LEAVE?  Then send another patch to replace BCMLOG_ERR()
+> with pr_err().  Take a look at how the pr_fmt macro is used for
+> this.  Don't actually do it with sed.  Take the time and review each
+> printk() and notice bugs as you go along.  You could replace them
+> file by file if you wanted or all at once, which ever is easier for
+> you.  Then send a third patch to add the do {} while(0) block to
+> BCMLOG() until someone works up enough motivation to fix it
+> properly?
+yes, this patch don't make the entire work,
+I intend to make the remaining work on the next patches.
+thanks for the suggestions.
 
-If there is an intention to keep guest functional after the event then
-maybe this patch is a way to go
-   http://www.spinics.net/lists/kvm/msg68463.html
-this way clock will be re-silent to this kind of errors, like bare-metal
-one is.
-
--- 
-Thanks,
-  Igor
+regards,
+Jorgyano Vieira
