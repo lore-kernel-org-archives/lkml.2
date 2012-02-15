@@ -1,340 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760370Ab2BOOvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:51:46 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:42144 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab2BOOuv (ORCPT
+	id S1761503Ab2BOOvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:51:52 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:27459 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759404Ab2BOOvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:50:51 -0500
-From: Chris Boot <bootc@bootc.net>
-To: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org, stefanr@s5r6.in-berlin.de,
-        Chris Boot <bootc@bootc.net>
-Subject: [PATCH v2 07/11] firewire-sbp-target: add sbp_management_agent.{c,h}
-Date: Wed, 15 Feb 2012 14:47:24 +0000
-Message-Id: <1329317248-94128-8-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329317248-94128-1-git-send-email-bootc@bootc.net>
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
- <1329317248-94128-1-git-send-email-bootc@bootc.net>
+	Wed, 15 Feb 2012 09:51:46 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAP/FO0/O+Ip3/2dsb2JhbABDsEuBCIFyAQEEAScTGwEjEAsYLhQlJBOHf7l6i2oBAxoECwkOAQICCQwCCgIEg18FBQMtAxWCTGMEiE2MaI4thFo
+X-IronPort-AV: E=Sophos;i="4.73,423,1325480400"; 
+   d="scan'208";a="163199461"
+Date: Wed, 15 Feb 2012 09:51:44 -0500
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
+	implementation
+Message-ID: <20120215145144.GA6277@Krystal>
+References: <20120213020951.GA12138@linux.vnet.ibm.com> <20120215143116.GA1696@Krystal>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20120215143116.GA1696@Krystal>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 09:45:08 up 7 days,  1:42,  2 users,  load average: 0.42, 0.12,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code implements the SBP-2 Management Agent. This is the first of
-two firewire address handlers that are used to communicate with the
-target. The Management Agent is used to handle login, reconnect and
-logout to a SCSI LUN as well as task management functions.
+* Mathieu Desnoyers (mathieu.desnoyers@polymtl.ca) wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> [...]
+> > +/*
+> > + * To be called from the update side after an index flip.  Returns true
+> > + * if the modulo sum of the counters is stably zero, false if there is
+> > + * some possibility of non-zero.
+> > + */
+> > +static bool srcu_readers_active_idx_check(struct srcu_struct *sp, int idx)
+> >  {
+> >  	int cpu;
+> > -	int sum;
+> >  
+> > -	sum = 0;
+> > +	/*
+> > +	 * Note that srcu_readers_active_idx() can incorrectly return
+> > +	 * zero even though there is a pre-existing reader throughout.
+> > +	 * To see this, suppose that task A is in a very long SRCU
+> > +	 * read-side critical section that started on CPU 0, and that
+> > +	 * no other reader exists, so that the modulo sum of the counters
+> > +	 * is equal to one.  Then suppose that task B starts executing
+> > +	 * srcu_readers_active_idx(), summing up to CPU 1, and then that
+> > +	 * task C starts reading on CPU 0, so that its increment is not
+> > +	 * summed, but finishes reading on CPU 2, so that its decrement
+> > +	 * -is- summed.  Then when task B completes its sum, it will
+> > +	 * incorrectly get zero, despite the fact that task A has been
+> > +	 * in its SRCU read-side critical section the whole time.
+> > +	 *
+> > +	 * We therefore do a validation step should srcu_readers_active_idx()
+> > +	 * return zero.
+> > +	 */
+> > +	if (srcu_readers_active_idx(sp, idx) != 0)
+> > +		return false;
+> > +
+> > +	/*
+> > +	 * Since the caller recently flipped ->completed, we can see at
+> > +	 * most one increment of each CPU's counter from this point
+> > +	 * forward.  The reason for this is that the reader CPU must have
+> > +	 * fetched the index before srcu_readers_active_idx checked
+> > +	 * that CPU's counter, but not yet incremented its counter.
+> > +	 * Its eventual counter increment will follow the read in
+> > +	 * srcu_readers_active_idx(), and that increment is immediately
+> > +	 * followed by smp_mb() B.  Because smp_mb() D is between
+> > +	 * the ->completed flip and srcu_readers_active_idx()'s read,
+> > +	 * that CPU's subsequent load of ->completed must see the new
+> > +	 * value, and therefore increment the counter in the other rank.
+> > +	 */
+> > +	smp_mb(); /* A */
+> > +
+> > +	/*
+> > +	 * Now, we check the ->snap array that srcu_readers_active_idx()
+> > +	 * filled in from the per-CPU counter values.  Since both
+> > +	 * __srcu_read_lock() and __srcu_read_unlock() increment the
+> > +	 * upper bits of the per-CPU counter, an increment/decrement
+> > +	 * pair will change the value of the counter.  Since there is
+> > +	 * only one possible increment, the only way to wrap the counter
+> > +	 * is to have a huge number of counter decrements, which requires
+> > +	 * a huge number of tasks and huge SRCU read-side critical-section
+> > +	 * nesting levels, even on 32-bit systems.
+> > +	 *
+> > +	 * All of the ways of confusing the readings require that the scan
+> > +	 * in srcu_readers_active_idx() see the read-side task's decrement,
+> > +	 * but not its increment.  However, between that decrement and
+> > +	 * increment are smb_mb() B and C.  Either or both of these pair
+> > +	 * with smp_mb() A above to ensure that the scan below will see
+> > +	 * the read-side tasks's increment, thus noting a difference in
+> > +	 * the counter values between the two passes.
+> 
+> Hi Paul,
+> 
+> I think the implementation is correct, but the explanation above might
+> be improved. Let's consider the following a scenario, where a reader is
+> migrated between increment of the counter and issuing the memory barrier
+> in the read lock:
+> 
+> A,B,C are readers
+> D is synchronize_rcu (one flip'n'wait)
+> 
+> CPU A               CPU B           CPU C         CPU D
+>                                     c[1]++
+>                                     smp_mb(1)
+>                                                   read c[0] -> 0
+> c[0]++
+> (implicit smp_mb (2))
+>       -> migrated ->
+>                     (implicit smp_mb (3))
+>                     smp_mb (4)
+>                     smp_mb (5)
+>                     c[1]--
+>                                                   read c[1] -> -1
+>                                                   read c[2] -> 1
+>                                                   (false 0 sum)
+>                                                   smp_mb (6)
+>                                                   re-check each.
+>                                     c[1]--
+> 
+> re-check: because we observed c[1] == -1, thanks to the implicit memory
+> barriers within thread migration (2 and 3), we can assume that we _will_
+> observe the updated value of c[0] after smp_mb (6).
+> 
+> The current explanation states that memory barriers 4 and 5, along with  
+> 6, are responsible for ensuring that the increment will be observed by 
+> the re-check. However, I doubt they have anything to do with it: it's 
+> rather the implicit memory barriers in thread migration, along with
+> program order guarantees on writes to the same address, that seems to be
+> the reason why we can do this ordering assumption.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Cc: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/target/sbp/sbp_management_agent.c |  260 +++++++++++++++++++++++++++++
- drivers/target/sbp/sbp_management_agent.h |   23 +++
- 2 files changed, 283 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/sbp/sbp_management_agent.c
- create mode 100644 drivers/target/sbp/sbp_management_agent.h
+Please disregard the part about program order: CPU A writes to c[0], and
+CPU B writes to c[1], which are two different memory locations. The rest
+of my discussion stands though.
 
-diff --git a/drivers/target/sbp/sbp_management_agent.c b/drivers/target/sbp/sbp_management_agent.c
-new file mode 100644
-index 0000000..04e4df8
---- /dev/null
-+++ b/drivers/target/sbp/sbp_management_agent.c
-@@ -0,0 +1,260 @@
-+/*
-+ * SBP2 target driver (SCSI over IEEE1394 in target mode)
-+ *
-+ * Copyright (C) 2011  Chris Boot <bootc@bootc.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+
-+#define KMSG_COMPONENT "sbp_target"
-+#define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
-+
-+#include <linux/firewire.h>
-+#include <linux/firewire-constants.h>
-+#include <linux/kref.h>
-+
-+#include <target/target_core_base.h>
-+
-+#include "sbp_base.h"
-+#include "sbp_management_agent.h"
-+#include "sbp_login.h"
-+
-+static void sbp_mgt_agent_process(struct work_struct *work)
-+{
-+	struct sbp_management_agent *agent =
-+		container_of(work, struct sbp_management_agent, work);
-+	struct sbp_management_request *req = agent->request;
-+	int ret;
-+	int status_data_len = 0;
-+
-+	/* fetch the ORB from the initiator */
-+	ret = fw_run_transaction(req->card, TCODE_READ_BLOCK_REQUEST,
-+		req->node_addr, req->generation, req->speed,
-+		agent->orb_offset, &req->orb, sizeof(req->orb));
-+	if (ret != RCODE_COMPLETE) {
-+		pr_debug("mgt_orb fetch failed: %x\n", ret);
-+		goto out;
-+	}
-+
-+	pr_debug("mgt_orb ptr1:0x%llx ptr2:0x%llx misc:0x%x len:0x%x status_fifo:0x%llx\n",
-+		sbp2_pointer_to_addr(&req->orb.ptr1),
-+		sbp2_pointer_to_addr(&req->orb.ptr2),
-+		be32_to_cpu(req->orb.misc), be32_to_cpu(req->orb.length),
-+		sbp2_pointer_to_addr(&req->orb.status_fifo));
-+
-+	if (!ORB_NOTIFY(be32_to_cpu(req->orb.misc)) ||
-+		ORB_REQUEST_FORMAT(be32_to_cpu(req->orb.misc)) != 0) {
-+		pr_err("mgt_orb bad request\n");
-+		goto out;
-+	}
-+
-+	switch (MANAGEMENT_ORB_FUNCTION(be32_to_cpu(req->orb.misc))) {
-+	case MANAGEMENT_ORB_FUNCTION_LOGIN:
-+		sbp_management_request_login(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_QUERY_LOGINS:
-+		sbp_management_request_query_logins(agent, req,
-+				&status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_RECONNECT:
-+		sbp_management_request_reconnect(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_SET_PASSWORD:
-+		pr_notice("SET PASSWORD not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_LOGOUT:
-+		sbp_management_request_logout(agent, req, &status_data_len);
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_ABORT_TASK:
-+		pr_notice("ABORT TASK not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_ABORT_TASK_SET:
-+		pr_notice("ABORT TASK SET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_LOGICAL_UNIT_RESET:
-+		pr_notice("LOGICAL UNIT RESET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	case MANAGEMENT_ORB_FUNCTION_TARGET_RESET:
-+		pr_notice("TARGET RESET not implemented\n");
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+
-+	default:
-+		pr_notice("unknown management function 0x%x\n",
-+			MANAGEMENT_ORB_FUNCTION(be32_to_cpu(req->orb.misc)));
-+
-+		req->status.status = cpu_to_be32(
-+			STATUS_BLOCK_RESP(STATUS_RESP_REQUEST_COMPLETE) |
-+			STATUS_BLOCK_SBP_STATUS(SBP_STATUS_REQ_TYPE_NOTSUPP));
-+
-+		break;
-+	}
-+
-+	req->status.status |= cpu_to_be32(
-+		STATUS_BLOCK_SRC(1) | /* Response to ORB, next_ORB absent */
-+		STATUS_BLOCK_LEN(DIV_ROUND_UP(status_data_len, 4) + 1) |
-+		STATUS_BLOCK_ORB_OFFSET_HIGH(agent->orb_offset >> 32));
-+	req->status.orb_low = cpu_to_be32(agent->orb_offset);
-+
-+	/* write the status block back to the initiator */
-+	ret = fw_run_transaction(req->card, TCODE_WRITE_BLOCK_REQUEST,
-+		req->node_addr, req->generation, req->speed,
-+		sbp2_pointer_to_addr(&req->orb.status_fifo),
-+		&req->status, 8 + status_data_len);
-+	if (ret != RCODE_COMPLETE) {
-+		pr_debug("mgt_orb status write failed: %x\n", ret);
-+		goto out;
-+	}
-+
-+out:
-+	fw_card_put(req->card);
-+	kfree(req);
-+	atomic_set(&agent->state, MANAGEMENT_AGENT_STATE_IDLE);
-+}
-+
-+static void sbp_mgt_agent_rw(struct fw_card *card,
-+	struct fw_request *request, int tcode, int destination, int source,
-+	int generation, unsigned long long offset, void *data, size_t length,
-+	void *callback_data)
-+{
-+	struct sbp_management_agent *agent = callback_data;
-+	struct sbp2_pointer *ptr = data;
-+
-+	if (!agent->tport->enable) {
-+		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
-+		return;
-+	}
-+
-+	if ((offset != agent->handler.offset) || (length != 8)) {
-+		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
-+		return;
-+	}
-+
-+	if (tcode == TCODE_WRITE_BLOCK_REQUEST) {
-+		struct sbp_management_request *req;
-+		int ret;
-+
-+		smp_wmb();
-+		if (atomic_cmpxchg(&agent->state,
-+					MANAGEMENT_AGENT_STATE_IDLE,
-+					MANAGEMENT_AGENT_STATE_BUSY) !=
-+				MANAGEMENT_AGENT_STATE_IDLE) {
-+			pr_notice("ignoring management request while busy\n");
-+
-+			fw_send_response(card, request, RCODE_CONFLICT_ERROR);
-+			return;
-+		}
-+
-+		req = kzalloc(sizeof(*req), GFP_ATOMIC);
-+		if (!req) {
-+			fw_send_response(card, request, RCODE_CONFLICT_ERROR);
-+			return;
-+		}
-+
-+		req->card = fw_card_get(card);
-+		req->generation = generation;
-+		req->node_addr = source;
-+		req->speed = fw_get_request_speed(request);
-+
-+		agent->orb_offset = sbp2_pointer_to_addr(ptr);
-+		agent->request = req;
-+
-+		ret = queue_work(sbp_workqueue, &agent->work);
-+		if (!ret) {
-+			/* pretend we're busy */
-+			kfree(req);
-+			fw_send_response(card, request, RCODE_CONFLICT_ERROR);
-+			return;
-+		}
-+
-+		fw_send_response(card, request, RCODE_COMPLETE);
-+	} else if (tcode == TCODE_READ_BLOCK_REQUEST) {
-+		addr_to_sbp2_pointer(agent->orb_offset, ptr);
-+		fw_send_response(card, request, RCODE_COMPLETE);
-+	} else {
-+		fw_send_response(card, request, RCODE_TYPE_ERROR);
-+	}
-+}
-+
-+struct sbp_management_agent *sbp_management_agent_register(
-+		struct sbp_tport *tport)
-+{
-+	int ret;
-+	struct sbp_management_agent *agent;
-+
-+	agent = kmalloc(sizeof(*agent), GFP_KERNEL);
-+	if (!agent)
-+		return ERR_PTR(-ENOMEM);
-+
-+	agent->tport = tport;
-+	agent->handler.length = 0x08;
-+	agent->handler.address_callback = sbp_mgt_agent_rw;
-+	agent->handler.callback_data = agent;
-+	atomic_set(&agent->state, MANAGEMENT_AGENT_STATE_IDLE);
-+	INIT_WORK(&agent->work, sbp_mgt_agent_process);
-+	agent->orb_offset = 0;
-+	agent->request = NULL;
-+
-+	ret = fw_core_add_address_handler(&agent->handler,
-+			&sbp_register_region);
-+	if (ret < 0) {
-+		kfree(agent);
-+		return ERR_PTR(ret);
-+	}
-+
-+	return agent;
-+}
-+
-+void sbp_management_agent_unregister(struct sbp_management_agent *agent)
-+{
-+	if (atomic_read(&agent->state) != MANAGEMENT_AGENT_STATE_IDLE)
-+		flush_work_sync(&agent->work);
-+
-+	fw_core_remove_address_handler(&agent->handler);
-+	kfree(agent);
-+}
-+
-diff --git a/drivers/target/sbp/sbp_management_agent.h b/drivers/target/sbp/sbp_management_agent.h
-new file mode 100644
-index 0000000..615b90e
---- /dev/null
-+++ b/drivers/target/sbp/sbp_management_agent.h
-@@ -0,0 +1,23 @@
-+
-+struct sbp_management_agent {
-+	struct sbp_tport *tport;
-+	struct fw_address_handler handler;
-+	atomic_t state;
-+	struct work_struct work;
-+	u64 orb_offset;
-+	struct sbp_management_request *request;
-+};
-+
-+struct sbp_management_request {
-+	struct sbp_management_orb orb;
-+	struct sbp_status_block status;
-+	struct fw_card *card;
-+	int generation;
-+	int node_addr;
-+	int speed;
-+};
-+
-+struct sbp_management_agent *sbp_management_agent_register(
-+		struct sbp_tport *tport);
-+void sbp_management_agent_unregister(struct sbp_management_agent *agent);
-+
+Simply reasoning about write to c[0], memory barriers 2-3, write to
+c[1], along with c[1] read, memory barrier 6, and then c[0] read is
+enough to explain the ordering guarantees you need, without invoking
+program order.
+
+Thanks,
+
+Mathieu
+
+> 
+> Does it make sense, or shall I get another coffee to wake myself up ?
+> ;)
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> > +	 *
+> > +	 * Therefore, if srcu_readers_active_idx() returned zero, and
+> > +	 * none of the counters changed, we know that the zero was the
+> > +	 * correct sum.
+> > +	 *
+> > +	 * Of course, it is possible that a task might be delayed
+> > +	 * for a very long time in __srcu_read_lock() after fetching
+> > +	 * the index but before incrementing its counter.  This
+> > +	 * possibility will be dealt with in __synchronize_srcu().
+> > +	 */
+> >  	for_each_possible_cpu(cpu)
+> > -		sum += per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx];
+> > -	return sum;
+> > +		if (sp->snap[cpu] !=
+> > +		    ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx]))
+> > +			return false;  /* False zero reading! */
+> > +	return true;
+> >  }
+> 
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+
 -- 
-1.7.9
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
