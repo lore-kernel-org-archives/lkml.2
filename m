@@ -1,141 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2BOKo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 05:44:29 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64484 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab2BOKo2 convert rfc822-to-8bit (ORCPT
+	id S1758170Ab2BOKsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 05:48:25 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54491 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757080Ab2BOKsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 05:44:28 -0500
+	Wed, 15 Feb 2012 05:48:23 -0500
+Date: Wed, 15 Feb 2012 11:48:37 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Benson Leung <bleung@chromium.org>
+Cc: keithp@keithp.com, airlied@linux.ie, chris@chris-wilson.co.uk,
+        djkurtz@chromium.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
+Message-ID: <20120215104837.GB4095@phenom.ffwll.local>
+Mail-Followup-To: Benson Leung <bleung@chromium.org>, keithp@keithp.com,
+	airlied@linux.ie, chris@chris-wilson.co.uk, djkurtz@chromium.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1328817797-4026-1-git-send-email-bleung@chromium.org>
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <201202142311.41483.rjw@sisk.pl>
-References: <1329186372-2376-1-git-send-email-myungjoo.ham@samsung.com>
-	<201202142311.41483.rjw@sisk.pl>
-Date: Wed, 15 Feb 2012 19:44:26 +0900
-X-Google-Sender-Auth: Z2KEtAPrjzU57LkX7QUdd4BVjPs
-Message-ID: <CAJ0PZbSODSJvV-_Gje9Hm9Ek22Z9m+PAcsf071OCmAOtsnKzyg@mail.gmail.com>
-Subject: Re: [RFC PATCH] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328817797-4026-1-git-send-email-bleung@chromium.org>
+X-Operating-System: Linux phenom 3.2.0-1-amd64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/15 Rafael J. Wysocki <rjw@sisk.pl>:
-> Hi,
->
-> On Tuesday, February 14, 2012, MyungJoo Ham wrote:
->> 1. CPU_DMA_THROUGHPUT
->> 2. DVFS_LATENCY
-> Who's going to use the new classes?
->
-> Rafael
->
+On Thu, Feb 09, 2012 at 12:03:17PM -0800, Benson Leung wrote:
+> gmbus_xfer with a single message (particularly a single message write) would
+> set Bus Cycle Select to 100b, the Gen Stop cycle, instead of 101b,
+> No Index, Stop cycle. This would not start single message i2c transactions.
+> 
+> Also, gmbus_xfer done: will disable the interface without checking if
+> it is idle. In the case of writes, there will be no wait on status or delay
+> to ensure the write starts and completes before the interface is turned off.
+> 
+> Fixed the former issue by using the same cycle selection as used in the
+> I2C_M_RD for the write case.
+> GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0)
+> Fixed the latter by waiting on GMBUS_ACTIVE to deassert before disable.
+> 
+> Signed-off-by: Benson Leung <bleung@chromium.org>
 
-Hello,
+Can you clarify the commit message a bit and say that the first hunk is
+just for optics and the issue is only with the write path (because the
+read path is correct already). Silly me is just to easily confused ;-)
 
-1. CPU_DMA_THROUGHPUT:
-QoS-request handler: bus/memory devfreq driver.
-QoS-requester: multimedia block device drivers (MFC decoder, MFC
-endoder, TV-out, Camera, ...)
+Btw, I've reworked the gmbus -> gpio bit-banging fallback code a bit and
+if that passes review and all I'll reenable gmbus by default again. See
 
-2. DVFS_LATENCY:
-QoS-request handler: devfreq framework and cpufreq governors
-(ondemand/conservative).
-QoS-requester: those who need faster DVFS reactions temporarily as
-mentioned in the thread of pm_qos_update_request_timeout().
+http://cgit.freedesktop.org/~danvet/drm/log/?h=gmbus
 
+Yours, Daniel
 
-Cheers!
-MyungJoo.
-
->
->> ---
->>  include/linux/pm_qos.h |    6 +++++-
->>  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
->>  2 files changed, 35 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
->> index e5bbcba..f8ccb7b 100644
->> --- a/include/linux/pm_qos.h
->> +++ b/include/linux/pm_qos.h
->> @@ -13,13 +13,17 @@
->>  #define PM_QOS_CPU_DMA_LATENCY 1
->>  #define PM_QOS_NETWORK_LATENCY 2
->>  #define PM_QOS_NETWORK_THROUGHPUT 3
->> +#define PM_QOS_CPU_DMA_THROUGHPUT 4
->> +#define PM_QOS_DVFS_RESPONSE_LATENCY 5
->>
->> -#define PM_QOS_NUM_CLASSES 4
->> +#define PM_QOS_NUM_CLASSES 6
->>  #define PM_QOS_DEFAULT_VALUE -1
->>
->>  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE     (2000 * USEC_PER_SEC)
->>  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE     (2000 * USEC_PER_SEC)
->>  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE      0
->> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE      0
->> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE        (2000 * USEC_PER_SEC)
->>  #define PM_QOS_DEV_LAT_DEFAULT_VALUE         0
->>
->>  struct pm_qos_request {
->> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
->> index 995e3bd..b15e0b7 100644
->> --- a/kernel/power/qos.c
->> +++ b/kernel/power/qos.c
->> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
->>  };
->>
->>
->> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
->> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
->> +     .list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
->> +     .target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
->> +     .default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
->> +     .type = PM_QOS_MAX,
->> +     .notifiers = &cpu_dma_throughput_notifier,
->> +};
->> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
->> +     .constraints = &cpu_dma_tput_constraints,
->> +     .name = "cpu_dma_throughput",
->> +};
->> +
->> +
->> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
->> +static struct pm_qos_constraints dvfs_lat_constraints = {
->> +     .list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
->> +     .target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
->> +     .default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
->> +     .type = PM_QOS_MIN,
->> +     .notifiers = &dvfs_lat_notifier,
->> +};
->> +static struct pm_qos_object dvfs_lat_pm_qos = {
->> +     .constraints = &dvfs_lat_constraints,
->> +     .name = "dvfs_latency",
->> +};
->> +
->>  static struct pm_qos_object *pm_qos_array[] = {
->>       &null_pm_qos,
->>       &cpu_dma_pm_qos,
->>       &network_lat_pm_qos,
->> -     &network_throughput_pm_qos
->> +     &network_throughput_pm_qos,
->> +     &cpu_dma_throughput_pm_qos,
->> +     &dvfs_lat_pm_qos,
->>  };
->>
->>  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
->>
->
-
-
+> ---
+>  drivers/gpu/drm/i915/intel_i2c.c |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+> index d30cccc..64bb9cd 100644
+> --- a/drivers/gpu/drm/i915/intel_i2c.c
+> +++ b/drivers/gpu/drm/i915/intel_i2c.c
+> @@ -249,7 +249,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
+>  
+>  		if (msgs[i].flags & I2C_M_RD) {
+>  			I915_WRITE(GMBUS1 + reg_offset,
+> -				   GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+> +				   GMBUS_CYCLE_WAIT |
+> +				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+>  				   (len << GMBUS_BYTE_COUNT_SHIFT) |
+>  				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+>  				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
+> @@ -278,7 +279,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
+>  
+>  			I915_WRITE(GMBUS3 + reg_offset, val);
+>  			I915_WRITE(GMBUS1 + reg_offset,
+> -				   (i + 1 == num ? GMBUS_CYCLE_STOP : GMBUS_CYCLE_WAIT) |
+> +				   GMBUS_CYCLE_WAIT |
+> +				   (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+>  				   (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
+>  				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+>  				   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+> @@ -317,9 +319,12 @@ clear_err:
+>  	I915_WRITE(GMBUS1 + reg_offset, 0);
+>  
+>  done:
+> -	/* Mark the GMBUS interface as disabled. We will re-enable it at the
+> -	 * start of the next xfer, till then let it sleep.
+> +	/* Mark the GMBUS interface as disabled after waiting for idle.
+> +	 * We will re-enable it at the start of the next xfer,
+> +	 * till then let it sleep.
+>  	 */
+> +	if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
+> +		DRM_INFO("GMBUS timed out waiting for idle\n");
+>  	I915_WRITE(GMBUS0 + reg_offset, 0);
+>  	return i;
+>  
+> -- 
+> 1.7.1
+> 
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
 -- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
