@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab2BOH3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 02:29:49 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:34161
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751295Ab2BOH3p (ORCPT
+	id S1757916Ab2BOHm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 02:42:29 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33525 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757625Ab2BOHm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 02:29:45 -0500
-X-SpamScore: -8
-X-BigFish: VS-8(zz9371I542M1432N98dKzz1202hzz8275bh8275dha509lz2dh2a8h668h839h8e2h8e3h93fhbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Qiang-B32616 <B32616@freescale.com>
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Topic: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Index: AQHM66YJdm8vLXgwC0qeBDGVItKLnJY98mYA//+chbA=
-Date: Wed, 15 Feb 2012 07:29:36 +0000
-Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB702B124@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1329284944-17943-1-git-send-email-qiang.liu@freescale.com>
- <CADRPPNQ8LUr13J4k8fsBYSSxXVuxFdEvKyL4abxZpY32Meh=uQ@mail.gmail.com>
-In-Reply-To: <CADRPPNQ8LUr13J4k8fsBYSSxXVuxFdEvKyL4abxZpY32Meh=uQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.94]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 15 Feb 2012 02:42:28 -0500
+Date: Wed, 15 Feb 2012 11:42:24 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [patch 0/4] Resending, c/r series v2
+Message-ID: <20120215074224.GB4533@moon>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3B3A14.7000305@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1F7U1DS014664
 
-> -----Original Message-----
-> From: linux-ide-owner@vger.kernel.org [mailto:linux-ide-
-> owner@vger.kernel.org] On Behalf Of Li Yang
-> Sent: Wednesday, February 15, 2012 3:22 PM
-> To: Liu Qiang-B32616
-> Cc: jgarzik@pobox.com; linux-ide@vger.kernel.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+On Wed, Feb 15, 2012 at 08:52:36AM +0400, Pavel Emelyanov wrote:
+> On 02/15/2012 02:51 AM, Andrew Morton wrote:
+> > On Mon, 13 Feb 2012 20:48:22 +0400
+> > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > 
+> >> Hi, this series hopefully in a good shape
+> >>
+> >>  - sys_kcmp now depends on CONFIG_CHECKPOINT_RESTORE
+> >>
+> >>  - the extension of /proc/pid/stat now done against
+> >>    linux-next/master
+> >>
+> >> Please letme know if I've missed something.
+> > 
+> > Thus far our (my) approach has been to trickle the c/r support code
+> > into mainline as it is developed.  Under the assumption that the end
+> > result will be acceptable and useful kernel code.
+> > 
+> > I'm afraid that I'm losing confidence in that approach.  We have this
+> > patchset, we have Stanislav's "IPC: checkpoint/restore in userspace
+> > enhancements" (which apparently needs to get more complex to support
+> > LSM context c/r).  I simply *don't know* what additional patchsets are
+> > expected.  And from what you told me it sounds like networking support
+> > is at a very early stage and I fear for what the end result of that
+> > will look like.
 > 
-> On Wed, Feb 15, 2012 at 1:49 PM, Qiang Liu <qiang.liu@freescale.com>
-> wrote:
+> I understand. But there was a confidence that nobody wanted the c/r stuff to 
+> be the "one big kernel subsystem", but it should rather be "a bunch of small 
+> API-s for what is required". The amount of code for the initial C/R attempt was
+> ~100 patches. The amount of code to support our user-space C/R implementation
+> *only* is ~10 and the feature-set of both is already comparable.
 > 
-> Hi Liu Qiang,
-> 
-> The patch is fine except for the title and comment.  It's too vague to
-> say I/O load balancing.  You need explicit description like "add
-> interrupt coalescing support" as title.
-> 
-> > Reduce interrupt signals through reset Interrupt Coalescing Control Reg.
-> > Provide dynamic method to adjust interrupt signals and timer ticks by
-> sysfs.
-> > It is a tradeoff for different applications.
-> 
-> How about:
-> 
-> Adds support for interrupt coalescing feature to reduce interrupt events.
-> Provides mechanism of adjusting coalescing count and timeout tick by
-> sysfs on runtime, so that tradeoff of latency and CPU load can be made
-> depending on applications.
-> 
-Ok, I will change the title and comments more specifically.
 
-> - Leo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+Andrew, I hope Pavel has addressed all your concerns? What I personally
+trying to achieve mostly -- the patches should be as minimum as possible,
+still usable. I believe the patches which are already in tree are useful for
+other projects as well (for example -- /proc/pid/task/tid/"children" to find
+all children and build process topology fast). prctl extension look a bit
+redundant for kernel in general, but they are easily turnable off via Kconfig
+option. /proc/pid/map_files/ might be redundant too but it could be eliminated
+via Kconfig as well. So I think the both series actually do not bring much noise
+into kernel itself.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Cyrill
