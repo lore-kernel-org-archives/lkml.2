@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2BOW7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:59:30 -0500
+	id S1756152Ab2BOW53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:57:29 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:56730 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756003Ab2BOW5g (ORCPT
+	with ESMTP id S1756122Ab2BOW5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:57:36 -0500
-Subject: [PATCH RFC 07/15] mm: move page-to-book translation upper
+	Wed, 15 Feb 2012 17:57:19 -0500
+Subject: [PATCH RFC 03/15] mm: add book->pages_count
 To: linux-mm@kvack.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-kernel@vger.kernel.org
-Date: Thu, 16 Feb 2012 02:57:32 +0400
-Message-ID: <20120215225732.22050.17460.stgit@zurg>
+Date: Thu, 16 Feb 2012 02:57:15 +0400
+Message-ID: <20120215225715.22050.70811.stgit@zurg>
 In-Reply-To: <20120215224221.22050.80605.stgit@zurg>
 References: <20120215224221.22050.80605.stgit@zurg>
 User-Agent: StGit/0.15
@@ -23,302 +23,376 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move page_book() out of add_page_to_lru_list() and del_page_from_lru_list()
-switch its first argument from zone to book.
+Move lru pages counter from mem_cgroup_per_zone->count[] to book->pages_count[]
+
+Account pages in all books, incuding root,
+this isn't a huge overhead, but it greatly simplifies all code.
+
+redundant page -> book translations will be optimized in further patches.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- include/linux/mm_inline.h |   10 ++++------
- mm/compaction.c           |    4 +++-
- mm/memcontrol.c           |    7 +++++--
- mm/swap.c                 |   30 ++++++++++++++++++++----------
- mm/vmscan.c               |   16 +++++++++++-----
- 5 files changed, 43 insertions(+), 24 deletions(-)
+ include/linux/memcontrol.h |   29 -------------
+ include/linux/mm_inline.h  |   14 ++++--
+ include/linux/mmzone.h     |    2 +
+ mm/memcontrol.c            |   98 ++------------------------------------------
+ mm/page_alloc.c            |    4 +-
+ mm/swap.c                  |    7 +--
+ mm/vmscan.c                |   21 +++++++--
+ 7 files changed, 36 insertions(+), 139 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index c97fff9..4183753 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -63,12 +63,6 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 					gfp_t gfp_mask);
+ 
+ struct book *mem_cgroup_zone_book(struct zone *, struct mem_cgroup *);
+-struct book *mem_cgroup_lru_add_list(struct zone *, struct page *,
+-				       enum lru_list);
+-void mem_cgroup_lru_del_list(struct page *, enum lru_list);
+-void mem_cgroup_lru_del(struct page *);
+-struct book *mem_cgroup_lru_move_lists(struct zone *, struct page *,
+-					 enum lru_list, enum lru_list);
+ 
+ /* For coalescing uncharge for reducing memcg' overhead*/
+ extern void mem_cgroup_uncharge_start(void);
+@@ -220,29 +214,6 @@ static inline struct book *mem_cgroup_zone_book(struct zone *zone,
+ 	return &zone->book;
+ }
+ 
+-static inline struct book *mem_cgroup_lru_add_list(struct zone *zone,
+-						     struct page *page,
+-						     enum lru_list lru)
+-{
+-	return &zone->book;
+-}
+-
+-static inline void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
+-{
+-}
+-
+-static inline void mem_cgroup_lru_del(struct page *page)
+-{
+-}
+-
+-static inline struct book *mem_cgroup_lru_move_lists(struct zone *zone,
+-						       struct page *page,
+-						       enum lru_list from,
+-						       enum lru_list to)
+-{
+-	return &zone->book;
+-}
+-
+ static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ {
+ 	return NULL;
 diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-index 9c484c0..286da9b 100644
+index 6f42819..9c484c0 100644
 --- a/include/linux/mm_inline.h
 +++ b/include/linux/mm_inline.h
-@@ -58,25 +58,23 @@ static inline int page_is_file_cache(struct page *page)
- }
- 
+@@ -60,19 +60,23 @@ static inline int page_is_file_cache(struct page *page)
  static inline void
--add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
-+add_page_to_lru_list(struct book *book, struct page *page, enum lru_list lru)
+ add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
  {
--	struct book *book = page_book(page);
- 	int numpages = hpage_nr_pages(page);
+-	struct book *book;
++	struct book *book = page_book(page);
++	int numpages = hpage_nr_pages(page);
  
+-	book = mem_cgroup_lru_add_list(zone, page, lru);
  	list_add(&page->lru, &book->pages_lru[lru]);
- 	book->pages_count[lru] += numpages;
--	__mod_zone_page_state(zone, NR_LRU_BASE + lru, numpages);
-+	__mod_zone_page_state(book_zone(book), NR_LRU_BASE + lru, numpages);
+-	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
++	book->pages_count[lru] += numpages;
++	__mod_zone_page_state(zone, NR_LRU_BASE + lru, numpages);
  }
  
  static inline void
--del_page_from_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
-+del_page_from_lru_list(struct book *book, struct page *page, enum lru_list lru)
+ del_page_from_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
  {
--	struct book *book = page_book(page);
- 	int numpages = hpage_nr_pages(page);
- 
+-	mem_cgroup_lru_del_list(page, lru);
++	struct book *book = page_book(page);
++	int numpages = hpage_nr_pages(page);
++
  	list_del(&page->lru);
- 	book->pages_count[lru] -= numpages;
--	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -numpages);
-+	__mod_zone_page_state(book_zone(book), NR_LRU_BASE + lru, -numpages);
+-	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -hpage_nr_pages(page));
++	book->pages_count[lru] -= numpages;
++	__mod_zone_page_state(zone, NR_LRU_BASE + lru, -numpages);
  }
  
  /**
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 177f0d3..680a725 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -269,6 +269,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 	unsigned long nr_scanned = 0, nr_isolated = 0;
- 	struct list_head *migratelist = &cc->migratepages;
- 	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
-+	struct book *book;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e05b003..ef4b984 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -302,6 +302,8 @@ struct book {
+ 	struct zone		*zone;
+ #endif
+ 	struct list_head	pages_lru[NR_LRU_LISTS];
++	unsigned long		pages_count[NR_LRU_LISTS];
++
+ 	struct list_head	list;	/* for zone->book_list */
+ };
  
- 	/* Do not scan outside zone boundaries */
- 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-@@ -388,7 +389,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 		VM_BUG_ON(PageTransCompound(page));
- 
- 		/* Successfully isolated */
--		del_page_from_lru_list(zone, page, page_lru(page));
-+		book = page_book(page);
-+		del_page_from_lru_list(book, page, page_lru(page));
- 		list_add(&page->lru, migratelist);
- 		cc->nr_migratepages++;
- 		nr_isolated++;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ff82d6e..5136017 100644
+index 06d946f..8e1765a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -2536,6 +2536,7 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
- {
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
- 	struct zone *zone = page_zone(page);
-+	struct book *book;
- 	unsigned long flags;
- 	bool removed = false;
+@@ -135,7 +135,6 @@ struct mem_cgroup_reclaim_iter {
+  */
+ struct mem_cgroup_per_zone {
+ 	struct book		book;
+-	unsigned long		count[NR_LRU_LISTS];
  
-@@ -2546,13 +2547,15 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
- 	 */
- 	spin_lock_irqsave(&zone->lru_lock, flags);
- 	if (PageLRU(page)) {
--		del_page_from_lru_list(zone, page, page_lru(page));
-+		book = page_book(page);
-+		del_page_from_lru_list(book, page, page_lru(page));
- 		ClearPageLRU(page);
- 		removed = true;
+ 	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
+ 
+@@ -147,8 +146,6 @@ struct mem_cgroup_per_zone {
+ 	struct mem_cgroup	*mem;		/* Back pointer, we cannot */
+ 						/* use container_of	   */
+ };
+-/* Macro for accessing counter */
+-#define MEM_CGROUP_ZSTAT(mz, idx)	((mz)->count[(idx)])
+ 
+ struct mem_cgroup_per_node {
+ 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
+@@ -715,7 +712,7 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+ 
+ 	for_each_lru(l) {
+ 		if (BIT(l) & lru_mask)
+-			ret += MEM_CGROUP_ZSTAT(mz, l);
++			ret += mz->book.pages_count[l];
  	}
- 	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
- 	if (removed) {
--		add_page_to_lru_list(zone, page, page_lru(page));
-+		book = page_book(page);
-+		add_page_to_lru_list(book, page, page_lru(page));
- 		SetPageLRU(page);
- 	}
- 	spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 	return ret;
+ }
+@@ -1051,93 +1048,6 @@ struct book *mem_cgroup_zone_book(struct zone *zone,
+  * When moving account, the page is not on LRU. It's isolated.
+  */
+ 
+-/**
+- * mem_cgroup_lru_add_list - account for adding an lru page and return book
+- * @zone: zone of the page
+- * @page: the page
+- * @lru: current lru
+- *
+- * This function accounts for @page being added to @lru, and returns
+- * the book for the given @zone and the memcg @page is charged to.
+- *
+- * The callsite is then responsible for physically linking the page to
+- * the returned book->pages_lru[@lru].
+- */
+-struct book *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+-				       enum lru_list lru)
+-{
+-	struct mem_cgroup_per_zone *mz;
+-	struct mem_cgroup *memcg;
+-	struct page_cgroup *pc;
+-
+-	if (mem_cgroup_disabled())
+-		return &zone->book;
+-
+-	pc = lookup_page_cgroup(page);
+-	memcg = pc->mem_cgroup;
+-	mz = page_cgroup_zoneinfo(memcg, page);
+-	/* compound_order() is stabilized through lru_lock */
+-	MEM_CGROUP_ZSTAT(mz, lru) += 1 << compound_order(page);
+-	return &mz->book;
+-}
+-
+-/**
+- * mem_cgroup_lru_del_list - account for removing an lru page
+- * @page: the page
+- * @lru: target lru
+- *
+- * This function accounts for @page being removed from @lru.
+- *
+- * The callsite is then responsible for physically unlinking
+- * @page->lru.
+- */
+-void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
+-{
+-	struct mem_cgroup_per_zone *mz;
+-	struct mem_cgroup *memcg;
+-	struct page_cgroup *pc;
+-
+-	if (mem_cgroup_disabled())
+-		return;
+-
+-	pc = lookup_page_cgroup(page);
+-	memcg = pc->mem_cgroup;
+-	VM_BUG_ON(!memcg);
+-	mz = page_cgroup_zoneinfo(memcg, page);
+-	/* huge page split is done under lru_lock. so, we have no races. */
+-	VM_BUG_ON(MEM_CGROUP_ZSTAT(mz, lru) < (1 << compound_order(page)));
+-	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+-}
+-
+-void mem_cgroup_lru_del(struct page *page)
+-{
+-	mem_cgroup_lru_del_list(page, page_lru(page));
+-}
+-
+-/**
+- * mem_cgroup_lru_move_lists - account for moving a page between lrus
+- * @zone: zone of the page
+- * @page: the page
+- * @from: current lru
+- * @to: target lru
+- *
+- * This function accounts for @page being moved between the lrus @from
+- * and @to, and returns the book for the given @zone and the memcg
+- * @page is charged to.
+- *
+- * The callsite is then responsible for physically relinking
+- * @page->lru to the returned book->lists[@to].
+- */
+-struct book *mem_cgroup_lru_move_lists(struct zone *zone,
+-					 struct page *page,
+-					 enum lru_list from,
+-					 enum lru_list to)
+-{
+-	/* XXX: Optimize this, especially for @from == @to */
+-	mem_cgroup_lru_del_list(page, from);
+-	return mem_cgroup_lru_add_list(zone, page, to);
+-}
+-
+ /*
+  * Checks whether given mem is same or in the root_mem_cgroup's
+  * hierarchy subtree
+@@ -3639,7 +3549,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+ 	list = &mz->book.pages_lru[lru];
+ 
+-	loop = MEM_CGROUP_ZSTAT(mz, lru);
++	loop = mz->book.pages_count[lru];
+ 	/* give some margin against EBUSY etc...*/
+ 	loop += 256;
+ 	busy = NULL;
+@@ -4765,8 +4675,10 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+ 		mz = &pn->zoneinfo[zone];
+-		for_each_lru(l)
++		for_each_lru(l) {
+ 			INIT_LIST_HEAD(&mz->book.pages_lru[l]);
++			mz->book.pages_count[l] = 0;
++		}
+ 		mz->book.node = NODE_DATA(node);
+ 		mz->book.zone = &NODE_DATA(node)->node_zones[zone];
+ 		spin_lock(&mz->book.zone->lock);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ead327b..c62a1d2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4310,8 +4310,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 		zone->zone_pgdat = pgdat;
+ 
+ 		zone_pcp_init(zone);
+-		for_each_lru(lru)
++		for_each_lru(lru) {
+ 			INIT_LIST_HEAD(&zone->book.pages_lru[lru]);
++			zone->book.pages_count[lru] = 0;
++		}
+ #ifdef CONFIG_MEMORY_BOOKKEEPING
+ 		zone->book.node = pgdat;
+ 		zone->book.zone = zone;
 diff --git a/mm/swap.c b/mm/swap.c
-index 2268ee7..4e00463 100644
+index d7c4c8f..ba29c3c 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -49,11 +49,13 @@ static void __page_cache_release(struct page *page)
- 	if (PageLRU(page)) {
- 		unsigned long flags;
- 		struct zone *zone = page_zone(page);
-+		struct book *book;
+@@ -234,10 +234,8 @@ static void pagevec_move_tail_fn(struct page *page, void *arg)
  
- 		spin_lock_irqsave(&zone->lru_lock, flags);
- 		VM_BUG_ON(!PageLRU(page));
- 		__ClearPageLRU(page);
--		del_page_from_lru_list(zone, page, page_off_lru(page));
-+		book = page_book(page);
-+		del_page_from_lru_list(book, page, page_off_lru(page));
- 		spin_unlock_irqrestore(&zone->lru_lock, flags);
- 	}
- }
-@@ -293,11 +295,13 @@ static void __activate_page(struct page *page, void *arg)
  	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
- 		int file = page_is_file_cache(page);
- 		int lru = page_lru_base_type(page);
--		del_page_from_lru_list(zone, page, lru);
+ 		enum lru_list lru = page_lru_base_type(page);
+-		struct book *book;
 +		struct book *book = page_book(page);
-+
-+		del_page_from_lru_list(book, page, lru);
  
- 		SetPageActive(page);
- 		lru += LRU_ACTIVE;
--		add_page_to_lru_list(zone, page, lru);
-+		add_page_to_lru_list(book, page, lru);
- 		__count_vm_event(PGACTIVATE);
- 
- 		update_page_reclaim_stat(zone, page, file, 1);
-@@ -404,11 +408,13 @@ void lru_cache_add_lru(struct page *page, enum lru_list lru)
- void add_page_to_unevictable_list(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
-+	struct book *book;
- 
- 	spin_lock_irq(&zone->lru_lock);
- 	SetPageUnevictable(page);
- 	SetPageLRU(page);
--	add_page_to_lru_list(zone, page, LRU_UNEVICTABLE);
-+	book = page_book(page);
-+	add_page_to_lru_list(book, page, LRU_UNEVICTABLE);
- 	spin_unlock_irq(&zone->lru_lock);
- }
- 
-@@ -438,6 +444,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
- 	int lru, file;
- 	bool active;
- 	struct zone *zone = page_zone(page);
-+	struct book *book;
- 
- 	if (!PageLRU(page))
- 		return;
-@@ -453,10 +460,11 @@ static void lru_deactivate_fn(struct page *page, void *arg)
- 
- 	file = page_is_file_cache(page);
- 	lru = page_lru_base_type(page);
--	del_page_from_lru_list(zone, page, lru + active);
-+	book = page_book(page);
-+	del_page_from_lru_list(book, page, lru + active);
- 	ClearPageActive(page);
- 	ClearPageReferenced(page);
--	add_page_to_lru_list(zone, page, lru);
-+	add_page_to_lru_list(book, page, lru);
- 
- 	if (PageWriteback(page) || PageDirty(page)) {
- 		/*
-@@ -466,7 +474,6 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+-		book = mem_cgroup_lru_move_lists(page_zone(page),
+-						   page, lru, lru);
+ 		list_move_tail(&page->lru, &book->pages_lru[lru]);
+ 		(*pgmoved)++;
+ 	}
+@@ -476,12 +474,11 @@ static void lru_deactivate_fn(struct page *page, void *arg)
  		 */
  		SetPageReclaim(page);
  	} else {
--		struct book *book = page_book(page);
+-		struct book *book;
++		struct book *book = page_book(page);
  		/*
  		 * The page's writeback ends up during pagevec
  		 * We moves tha page into tail of inactive.
-@@ -596,6 +603,7 @@ void release_pages(struct page **pages, int nr, int cold)
- 
- 		if (PageLRU(page)) {
- 			struct zone *pagezone = page_zone(page);
-+			struct book *book = page_book(page);
- 
- 			if (pagezone != zone) {
- 				if (zone)
-@@ -606,7 +614,7 @@ void release_pages(struct page **pages, int nr, int cold)
- 			}
- 			VM_BUG_ON(!PageLRU(page));
- 			__ClearPageLRU(page);
--			del_page_from_lru_list(zone, page, page_off_lru(page));
-+			del_page_from_lru_list(book, page, page_off_lru(page));
- 		}
- 
- 		list_add(&page->lru, &pages_to_free);
-@@ -644,6 +652,7 @@ void lru_add_page_tail(struct zone* zone,
- 	int active;
- 	enum lru_list lru;
- 	const int file = 0;
-+	struct book *book = page_book(page);
- 
- 	VM_BUG_ON(!PageHead(page));
- 	VM_BUG_ON(PageCompound(page_tail));
-@@ -678,7 +687,7 @@ void lru_add_page_tail(struct zone* zone,
- 		 * Use the standard add function to put page_tail on the list,
- 		 * but then correct its position so they all end up in order.
  		 */
--		add_page_to_lru_list(zone, page_tail, lru);
-+		add_page_to_lru_list(book, page_tail, lru);
- 		list_head = page_tail->lru.prev;
- 		list_move_tail(&page_tail->lru, list_head);
+-		book = mem_cgroup_lru_move_lists(zone, page, lru, lru);
+ 		list_move_tail(&page->lru, &book->pages_lru[lru]);
+ 		__count_vm_event(PGROTATED);
  	}
-@@ -689,6 +698,7 @@ static void __pagevec_lru_add_fn(struct page *page, void *arg)
- {
- 	enum lru_list lru = (enum lru_list)arg;
- 	struct zone *zone = page_zone(page);
-+	struct book *book = page_book(page);
- 	int file = is_file_lru(lru);
- 	int active = is_active_lru(lru);
- 
-@@ -700,7 +710,7 @@ static void __pagevec_lru_add_fn(struct page *page, void *arg)
- 	if (active)
- 		SetPageActive(page);
- 	update_page_reclaim_stat(zone, page, file, active);
--	add_page_to_lru_list(zone, page, lru);
-+	add_page_to_lru_list(book, page, lru);
- }
- 
- /*
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c59d4f7..0e0bbe2 100644
+index fba9dfd..eddf617 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1291,6 +1291,7 @@ int isolate_lru_page(struct page *page)
+@@ -1188,7 +1188,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
  
- 	if (PageLRU(page)) {
- 		struct zone *zone = page_zone(page);
-+		struct book *book;
+ 		switch (__isolate_lru_page(page, mode, file)) {
+ 		case 0:
+-			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+ 			nr_taken += hpage_nr_pages(page);
+ 			break;
+@@ -1246,10 +1245,14 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
  
- 		spin_lock_irq(&zone->lru_lock);
- 		if (PageLRU(page)) {
-@@ -1298,8 +1299,8 @@ int isolate_lru_page(struct page *page)
- 			ret = 0;
- 			get_page(page);
- 			ClearPageLRU(page);
--
--			del_page_from_lru_list(zone, page, lru);
-+			book = page_book(page);
-+			del_page_from_lru_list(book, page, lru);
- 		}
- 		spin_unlock_irq(&zone->lru_lock);
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+ 				unsigned int isolated_pages;
++				struct book *cursor_book;
++				int cursor_lru = page_lru(cursor_page);
+ 
+-				mem_cgroup_lru_del(cursor_page);
+ 				list_move(&cursor_page->lru, dst);
+ 				isolated_pages = hpage_nr_pages(cursor_page);
++				cursor_book = page_book(cursor_page);
++				cursor_book->pages_count[cursor_lru] -=
++								isolated_pages;
+ 				nr_taken += isolated_pages;
+ 				nr_lumpy_taken += isolated_pages;
+ 				if (PageDirty(cursor_page))
+@@ -1281,6 +1284,8 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			nr_lumpy_failed++;
  	}
-@@ -1349,6 +1350,7 @@ putback_inactive_pages(struct book *book,
- 	 */
- 	while (!list_empty(page_list)) {
- 		struct page *page = lru_to_page(page_list);
-+		struct book *book;
- 		int lru;
  
- 		VM_BUG_ON(PageLRU(page));
-@@ -1361,7 +1363,10 @@ putback_inactive_pages(struct book *book,
- 		}
- 		SetPageLRU(page);
- 		lru = page_lru(page);
--		add_page_to_lru_list(zone, page, lru);
++	book->pages_count[lru] -= nr_taken - nr_lumpy_taken;
 +
-+		/* can differ only on lumpy reclaim */
-+		book = page_book(page);
-+		add_page_to_lru_list(book, page, lru);
- 		if (is_active_lru(lru)) {
- 			int file = is_file_lru(lru);
- 			int numpages = hpage_nr_pages(page);
-@@ -1370,7 +1375,7 @@ putback_inactive_pages(struct book *book,
- 		if (put_page_testzero(page)) {
- 			__ClearPageLRU(page);
- 			__ClearPageActive(page);
--			del_page_from_lru_list(zone, page, lru);
-+			del_page_from_lru_list(book, page, lru);
+ 	*nr_scanned = scan;
  
- 			if (unlikely(PageCompound(page))) {
- 				spin_unlock_irq(&zone->lru_lock);
-@@ -1644,6 +1649,7 @@ static void move_active_pages_to_lru(struct zone *zone,
+ 	trace_mm_vmscan_lru_isolate(order,
+@@ -1670,15 +1675,18 @@ static void move_active_pages_to_lru(struct zone *zone,
+ 
+ 	while (!list_empty(list)) {
+ 		struct book *book;
++		int numpages;
+ 
+ 		page = lru_to_page(list);
+ 
  		VM_BUG_ON(PageLRU(page));
  		SetPageLRU(page);
  
-+		/* can differ only on lumpy reclaim */
- 		book = page_book(page);
+-		book = mem_cgroup_lru_add_list(zone, page, lru);
++		book = page_book(page);
  		list_move(&page->lru, &book->pages_lru[lru]);
- 		numpages = hpage_nr_pages(page);
-@@ -1653,7 +1659,7 @@ static void move_active_pages_to_lru(struct zone *zone,
+-		pgmoved += hpage_nr_pages(page);
++		numpages = hpage_nr_pages(page);
++		book->pages_count[lru] += numpages;
++		pgmoved += numpages;
+ 
  		if (put_page_testzero(page)) {
  			__ClearPageLRU(page);
- 			__ClearPageActive(page);
--			del_page_from_lru_list(zone, page, lru);
-+			del_page_from_lru_list(book, page, lru);
- 
- 			if (unlikely(PageCompound(page))) {
- 				spin_unlock_irq(&zone->lru_lock);
+@@ -3542,8 +3550,9 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
+ 			VM_BUG_ON(PageActive(page));
+ 			ClearPageUnevictable(page);
+ 			__dec_zone_state(zone, NR_UNEVICTABLE);
+-			book = mem_cgroup_lru_move_lists(zone, page,
+-						LRU_UNEVICTABLE, lru);
++			book = page_book(page);
++			book->pages_count[LRU_UNEVICTABLE]--;
++			book->pages_count[lru]++;
+ 			list_move(&page->lru, &book->pages_lru[lru]);
+ 			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
+ 			pgrescued++;
 
