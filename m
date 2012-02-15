@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab2BOJwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 04:52:46 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38899 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751647Ab2BOJwm (ORCPT
+	id S1757418Ab2BOJzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 04:55:40 -0500
+Received: from 124-248-200-46.sunnyvision.com ([124.248.200.46]:43454 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751647Ab2BOJzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 04:52:42 -0500
-Date: Wed, 15 Feb 2012 09:52:16 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nathaniel Husted <nhusted@gmail.com>, Eric Paris <eparis@redhat.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-Message-ID: <20120215095216.GA29319@mudshark.cambridge.arm.com>
-References: <1329284188.12708.1.camel@phoenix>
- <20120215083609.GD13673@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215083609.GD13673@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Feb 2012 04:55:37 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 94FBB52856
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 1C69C4FAF5
+Message-ID: <QA8fPes6cBH0NM@giga.net.tw>
+From: dedicatedhk@yahoo.com.hk
+Subject: Dedicated Server
+X-Mailer: fIWBcPljj5ukx4bZ
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Wed, 15 Feb 2012 17:16:48 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1F9tlYW015324
 
-On Wed, Feb 15, 2012 at 08:36:09AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 15, 2012 at 01:36:28PM +0800, Axel Lin wrote:
-> > Include linux/audit.h to fix below build errors:
-> > 
-> >   CC      arch/arm/kernel/ptrace.o
-> > arch/arm/kernel/ptrace.c: In function 'syscall_trace':
-> > arch/arm/kernel/ptrace.c:919: error: implicit declaration of function 'audit_syscall_exit'
-> > arch/arm/kernel/ptrace.c:921: error: implicit declaration of function 'audit_syscall_entry'
-> > arch/arm/kernel/ptrace.c:921: error: 'AUDIT_ARCH_ARMEB' undeclared (first use in this function)
-> 
-> Err, can someone explain why we seem to tell the audit code that we're
-> always big endian?
+ear All,
 
-I can't see this patch in the linux-arm-kernel archives, so that's probably
-why we missed it. The fix should be pretty straightforward though - Axel,
-care to add the appropriate ifdeffery?
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-Will
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
+
+Dell(TM) PowerEdge(TM) R410 Rack Mount Server
+-Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
+-4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
+-500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
+-iDRAC6 Enterprise or Express (Remote KVM Management)
+
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
+
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@dedicatedserver.com.hk 
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+
+
