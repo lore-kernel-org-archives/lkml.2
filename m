@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab2BOTh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:37:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53062 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab2BOThy (ORCPT
+	id S1755089Ab2BOTiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:38:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40833 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab2BOTh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:37:54 -0500
-Date: Wed, 15 Feb 2012 11:36:53 -0800
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-77b0d60c5adf39c74039e2142a1d3cd1e4d53799@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1320452301.15071.16.camel@sbsiddha-desk.sc.intel.com>
-References: <1320452301.15071.16.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] clockevents:
-  Leave the broadcast device in shutdown mode when not needed
-Git-Commit-ID: 77b0d60c5adf39c74039e2142a1d3cd1e4d53799
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 15 Feb 2012 14:37:58 -0500
+Message-ID: <4F3C098B.4050308@pengutronix.de>
+Date: Wed, 15 Feb 2012 20:37:47 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 15 Feb 2012 11:37:33 -0800 (PST)
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Wolfgang Grandegger <wg@grandegger.com>, Danny Kukawka <dkukawka@suse.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cc770: linux/can/dev.h included twice
+References: <1329328501-4737-1-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1329328501-4737-1-git-send-email-danny.kukawka@bisect.de>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig66A4AFC2ED99B78C6F209036"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  77b0d60c5adf39c74039e2142a1d3cd1e4d53799
-Gitweb:     http://git.kernel.org/tip/77b0d60c5adf39c74039e2142a1d3cd1e4d53799
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Fri, 4 Nov 2011 17:18:21 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 15 Feb 2012 15:23:09 +0100
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig66A4AFC2ED99B78C6F209036
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-clockevents: Leave the broadcast device in shutdown mode when not needed
+On 02/15/2012 06:55 PM, Danny Kukawka wrote:
+> drivers/net/can/cc770/cc770.c included 'linux/can/dev.h' twice,
+> remove the duplicate.
+>=20
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-Platforms with Always Running APIC Timer doesn't use the broadcast timer
-but the kernel is leaving the broadcast timer (HPET in this case)
-in oneshot mode.
+Thanks, applied to can-next.
 
-On these platforms, before the switch to oneshot mode, broadcast device is
-actually in shutdown mode. Code checks for empty tick_broadcast_mask and
-avoids going into the periodic mode.
+Marc
 
-During switch to oneshot mode, add the same tick_broadcast_mask checks in the
-tick_broadcast_switch_to_oneshot() and avoid the broadcast device going into
-the oneshot mode.
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: john stultz <johnstul@us.ibm.com>
-Cc: venki@google.com
-Link: http://lkml.kernel.org/r/1320452301.15071.16.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-broadcast.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index fd4a7b1..e883f57 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -575,11 +575,15 @@ void tick_broadcast_switch_to_oneshot(void)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-+	if (cpumask_empty(tick_get_broadcast_mask()))
-+		goto end;
- 
- 	tick_broadcast_device.mode = TICKDEV_MODE_ONESHOT;
- 	bc = tick_broadcast_device.evtdev;
- 	if (bc)
- 		tick_broadcast_setup_oneshot(bc);
-+
-+end:
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
- 
+--------------enig66A4AFC2ED99B78C6F209036
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk88CY4ACgkQjTAFq1RaXHMYQACgjRVbyF5L1w3ZJ5DRBDhCYedb
+A34AnRTM/RxyM9R99EfxxiCq9aBREh7r
+=Dof9
+-----END PGP SIGNATURE-----
+
+--------------enig66A4AFC2ED99B78C6F209036--
