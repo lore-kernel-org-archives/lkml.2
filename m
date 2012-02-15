@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2BOL0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 06:26:47 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34724 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab2BOL0q convert rfc822-to-8bit (ORCPT
+	id S1759135Ab2BOL1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 06:27:06 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39338 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757294Ab2BOL1E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 06:26:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120215064059.GO4141@mwanda>
-References: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
-	<20120215064059.GO4141@mwanda>
-Date: Wed, 15 Feb 2012 09:26:45 -0200
-Message-ID: <CABRD5hLWn_hxC-ZzDJycw4=hDVuOiUiwxaz5Ljuxbgk1KAkpGw@mail.gmail.com>
-Subject: Re: [PATCH] Staging: crystalhd: crystalhd_misc: improved debug macros
-From: Jorgyano vieira <jorgyano@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 Feb 2012 06:27:04 -0500
+Message-ID: <1329305197.2293.50.camel@twins>
+Subject: Re: [PATCH 2/2] x86, reschedule: check to see if system is shutting
+ down
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com,
+        seiji.aguchi@hds.com, ak@linux.intel.com, mjg@redhat.com,
+        levinsasha928@gmail.com
+Date: Wed, 15 Feb 2012 12:26:37 +0100
+In-Reply-To: <1329164860-668-3-git-send-email-dzickus@redhat.com>
+References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
+	 <1329164860-668-3-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 4:40 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Wed, Feb 15, 2012 at 12:20:06AM -0200, Jorgyano Vieira wrote:
->> Improvement of debug macros to ensure safe use on if/else statements.
->>
->
-> How are the originals unsafe?
-for example If you have something like:
-if(foo)
-        BCMLOG(...);
-else
-       do that
+On Mon, 2012-02-13 at 15:27 -0500, Don Zickus wrote:
+> Due to reschedule changes in v3.3, a WARN_ON has popped up
+> because a cpu suddenly became offline without letting anyone
+> know.
+> 
+> This results in the schedule trying to move something to another
+> cpu only to find out it isn't there and getting confused.  The splat
+> looks something like:
 
-> Really we want to get rid of these.  It would be easy to delete
-> BCMLOG_ENTER and BCMLOG_LEAVE right now.  They're only used for five
-> functions.  BCMLOG() is slightly complicated.  BCMLOG_ERR() could
-> be sed replaced with pr_err().
->
-> So could you do that instead?  Send a patch to remove BCMLOG_ENTER
-> and BCMLOG_LEAVE?  Then send another patch to replace BCMLOG_ERR()
-> with pr_err().  Take a look at how the pr_fmt macro is used for
-> this.  Don't actually do it with sed.  Take the time and review each
-> printk() and notice bugs as you go along.  You could replace them
-> file by file if you wanted or all at once, which ever is easier for
-> you.  Then send a third patch to add the do {} while(0) block to
-> BCMLOG() until someone works up enough motivation to fix it
-> properly?
-yes, this patch don't make the entire work,
-I intend to make the remaining work on the next patches.
-thanks for the suggestions.
+<snip>
 
-regards,
-Jorgyano Vieira
+> I solved this by re-using the atomic global variable that is set during
+> native_smp_stop_other_cpus().  This is the piece of code that causes the
+> problem and it sets stopping_cpu to reflect the system is going down.
+> 
+> If the variable is set do not yell with the WARN_ON, just return.
+> 
+> v2:  use if-condition for WARN-ON instead of if {WARN_ON(1)}
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/kernel/smp.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index 48d2b7d..54d570e 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -120,7 +120,8 @@ static bool smp_no_nmi_ipi = false;
+>  static void native_smp_send_reschedule(int cpu)
+>  {
+>  	if (unlikely(cpu_is_offline(cpu))) {
+> -		WARN_ON(1);
+> +		/* system is not shutting down.. yell */
+> +		WARN_ON(atomic_read(&stopping_cpu) == -1)
+>  		return;
+>  	}
+>  	apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+
+
+Right, so this fixes this one particular case, I imagine there's tons of
+places that could go splat due to this (but don't quite yet for some
+reason).
+
+We can't go around annotating everything, nor would we want to simply
+shut up all warnings for fear of missing an actual error.
+
+Why can't the normal shut-down path use a less crazy approach to going
+down?
