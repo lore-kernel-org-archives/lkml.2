@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab2BOKTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 05:19:13 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37568 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929Ab2BOKTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 05:19:11 -0500
-Date: Wed, 15 Feb 2012 10:18:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nathaniel Husted <nhusted@gmail.com>, Eric Paris <eparis@redhat.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-Message-ID: <20120215101832.GF13673@n2100.arm.linux.org.uk>
-References: <1329284188.12708.1.camel@phoenix> <20120215083609.GD13673@n2100.arm.linux.org.uk> <20120215095216.GA29319@mudshark.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215095216.GA29319@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758920Ab2BOKTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 05:19:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40222 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757787Ab2BOKTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 05:19:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="107904441"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: [RESEND PATCH v2 2/3] ahci: add runtime PM callbacks
+Date: Wed, 15 Feb 2012 18:18:51 +0800
+Message-Id: <1329301132-3687-3-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1329301132-3687-1-git-send-email-ming.m.lin@intel.com>
+References: <1329301132-3687-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 09:52:16AM +0000, Will Deacon wrote:
-> On Wed, Feb 15, 2012 at 08:36:09AM +0000, Russell King - ARM Linux wrote:
-> > On Wed, Feb 15, 2012 at 01:36:28PM +0800, Axel Lin wrote:
-> > > Include linux/audit.h to fix below build errors:
-> > > 
-> > >   CC      arch/arm/kernel/ptrace.o
-> > > arch/arm/kernel/ptrace.c: In function 'syscall_trace':
-> > > arch/arm/kernel/ptrace.c:919: error: implicit declaration of function 'audit_syscall_exit'
-> > > arch/arm/kernel/ptrace.c:921: error: implicit declaration of function 'audit_syscall_entry'
-> > > arch/arm/kernel/ptrace.c:921: error: 'AUDIT_ARCH_ARMEB' undeclared (first use in this function)
-> > 
-> > Err, can someone explain why we seem to tell the audit code that we're
-> > always big endian?
-> 
-> I can't see this patch in the linux-arm-kernel archives, so that's probably
-> why we missed it. The fix should be pretty straightforward though - Axel,
-> care to add the appropriate ifdeffery?
+Add ahci controller runtime PM callbacks.
 
-In which case the BIG QUESTION is how the hell this ever got into mainline
-without being seen by any ARM people.  I've checked my mailboxes and, like
-you, can find no trace of this patch.  The only trace of it I can find is:
+Call pm_runtime_put_noidle() in its probe routine and
+pm_runtime_get_noresume() in its remove routine.
 
-http://www.redhat.com/archives/linux-audit/2011-August/msg00000.html
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/ata/ahci.c |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
 
-and a repost as part of a patch set in November.
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 183c8b2..f70f030 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -46,6 +46,7 @@
+ #include <scsi/scsi_host.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <linux/libata.h>
++#include <linux/pm_runtime.h>
+ #include "ahci.h"
+ 
+ #define DRV_NAME	"ahci"
+@@ -79,6 +80,7 @@ enum board_ids {
+ };
+ 
+ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
++static void ahci_remove_one(struct pci_dev *pdev);
+ static int ahci_vt8251_hardreset(struct ata_link *link, unsigned int *class,
+ 				 unsigned long deadline);
+ static int ahci_p5wdh_hardreset(struct ata_link *link, unsigned int *class,
+@@ -88,6 +90,7 @@ static int ahci_pci_device_suspend(struct device *dev);
+ static int ahci_pci_device_resume(struct device *dev);
+ static int ahci_pci_device_freeze(struct device *dev);
+ static int ahci_pci_device_poweroff(struct device *dev);
++static int ahci_pci_device_runtime_idle(struct device *dev);
+ #endif
+ 
+ static struct scsi_host_template ahci_sht = {
+@@ -409,13 +412,16 @@ static const struct dev_pm_ops ahci_pci_pm_ops = {
+ 	.thaw			= ahci_pci_device_resume,
+ 	.poweroff		= ahci_pci_device_poweroff,
+ 	.restore		= ahci_pci_device_resume,
++	.runtime_suspend	= ahci_pci_device_suspend,
++	.runtime_resume		= ahci_pci_device_resume,
++	.runtime_idle		= ahci_pci_device_runtime_idle
+ };
+ 
+ static struct pci_driver ahci_pci_driver = {
+ 	.name			= DRV_NAME,
+ 	.id_table		= ahci_pci_tbl,
+ 	.probe			= ahci_init_one,
+-	.remove			= ata_pci_remove_one,
++	.remove			= ahci_remove_one,
+ #ifdef CONFIG_PM
+ 	.driver			= {
+ 		.pm = &ahci_pci_pm_ops
+@@ -650,6 +656,11 @@ static int ahci_pci_device_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++
++static int ahci_pci_device_runtime_idle(struct device *dev)
++{
++	return pm_runtime_suspend(dev);
++}
+ #endif
+ 
+ static int ahci_configure_dma_masks(struct pci_dev *pdev, int using_dac)
+@@ -1239,10 +1250,20 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ahci_pci_print_info(host);
+ 
+ 	pci_set_master(pdev);
++	pm_runtime_put_noidle(dev);
++	pm_runtime_allow(dev);
+ 	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
+ 				 &ahci_sht);
+ }
+ 
++static void ahci_remove_one(struct pci_dev *pdev)
++{
++	pm_runtime_forbid(&pdev->dev);
++	pm_runtime_get_noresume(&pdev->dev);
++
++	ata_pci_remove_one(pdev);
++}
++
+ static int __init ahci_init(void)
+ {
+ 	return pci_register_driver(&ahci_pci_driver);
+-- 
+1.7.2.5
 
-This is a patch which should have been reviewed by ARM folk to catch bugs
-like the above.
-
-So, this gives us two options: either we revert the damned thing and start
-over with it (and hopefully audit folk will start co-operating with ARM
-folk) or we try to fix up their mess (and potentially they learn they can
-dump crap on us.)
