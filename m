@@ -1,73 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916Ab2BOHm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 02:42:29 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33525 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757625Ab2BOHm2 (ORCPT
+	id S1757914Ab2BOHoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 02:44:22 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:18294 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab2BOHoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 02:42:28 -0500
-Date: Wed, 15 Feb 2012 11:42:24 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [patch 0/4] Resending, c/r series v2
-Message-ID: <20120215074224.GB4533@moon>
+	Wed, 15 Feb 2012 02:44:19 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zz13e6Kc8kzz1202hzz8275bh84d07hz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Qiang Liu <qiang.liu@freescale.com>
+To: <jgarzik@pobox.com>, <linux-ide@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        Qiang Liu <qiang.liu@freescale.com>
+Subject: [PATCH V3] fsl-sata: add support for interrupt coalsecing feature
+Date: Wed, 15 Feb 2012 15:40:34 +0800
+Message-ID: <1329291634-883-1-git-send-email-qiang.liu@freescale.com>
+X-Mailer: git-send-email 1.7.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3B3A14.7000305@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 08:52:36AM +0400, Pavel Emelyanov wrote:
-> On 02/15/2012 02:51 AM, Andrew Morton wrote:
-> > On Mon, 13 Feb 2012 20:48:22 +0400
-> > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > 
-> >> Hi, this series hopefully in a good shape
-> >>
-> >>  - sys_kcmp now depends on CONFIG_CHECKPOINT_RESTORE
-> >>
-> >>  - the extension of /proc/pid/stat now done against
-> >>    linux-next/master
-> >>
-> >> Please letme know if I've missed something.
-> > 
-> > Thus far our (my) approach has been to trickle the c/r support code
-> > into mainline as it is developed.  Under the assumption that the end
-> > result will be acceptable and useful kernel code.
-> > 
-> > I'm afraid that I'm losing confidence in that approach.  We have this
-> > patchset, we have Stanislav's "IPC: checkpoint/restore in userspace
-> > enhancements" (which apparently needs to get more complex to support
-> > LSM context c/r).  I simply *don't know* what additional patchsets are
-> > expected.  And from what you told me it sounds like networking support
-> > is at a very early stage and I fear for what the end result of that
-> > will look like.
-> 
-> I understand. But there was a confidence that nobody wanted the c/r stuff to 
-> be the "one big kernel subsystem", but it should rather be "a bunch of small 
-> API-s for what is required". The amount of code for the initial C/R attempt was
-> ~100 patches. The amount of code to support our user-space C/R implementation
-> *only* is ~10 and the feature-set of both is already comparable.
-> 
+Adds support for interrupt coalescing feature to reduce interrupt events.
+Provides a mechanism of adjusting coalescing count and timeout tick by sysfs
+at runtime, so that tradeoff of latency and CPU load can be made depending
+on different applications.
 
-Andrew, I hope Pavel has addressed all your concerns? What I personally
-trying to achieve mostly -- the patches should be as minimum as possible,
-still usable. I believe the patches which are already in tree are useful for
-other projects as well (for example -- /proc/pid/task/tid/"children" to find
-all children and build process topology fast). prctl extension look a bit
-redundant for kernel in general, but they are easily turnable off via Kconfig
-option. /proc/pid/map_files/ might be redundant too but it could be eliminated
-via Kconfig as well. So I think the both series actually do not bring much noise
-into kernel itself.
+Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+---
+change for V3
+	change the title and comments according the feedback
+	support dynamic config interrupt coalescing register by /sysfs
+	test random small file with iometer
+	adjust kernel source baseline for apply upstream
+Description:
+  1. fsl-sata interrupt will be raised 130 thousand times when write 8G file
+    (dd if=/dev/zero of=/dev/sda2 bs=128K count=65536);
+  2. most of interrupts raised because of only 1-4 commands completed;
+  3. only 30 thousand times will be raised after set max interrupt threshold,
+    more interrupts are coalesced as the description of ICC;
+Test methods and results:
+  1. test sequential large file performance,
+  [root@p2020ds root]# echo 31 524287 > \
+	/sys/devices/soc.0/ffe18000.sata/intr_coalescing
+  [root@p2020ds root]# dd if=/dev/zero of=/dev/sda2 bs=128K count=65536 &
+  [root@p2020ds root]# top
 
-	Cyrill
+   CPU %  |  dd   |  flush-8:0 | softirq
+   ---------------------------------------
+   before | 20-22 |    17-19   |    7
+   ---------------------------------------
+   after  | 18-21 |    15-16   |    5
+   ---------------------------------------
+   2. test random small file with iometer,
+   iometer paramters:
+   4 I/Os burst length, 1MB transfer request size, 100% write, 2MB file size
+     as default configuration of interrupt coalescing register, 1 interrupts and
+   no timeout config, total write performance is 119MB per second,
+     after config with the maximum value, write performance is 110MB per second.
+
+   After compare the test results, a configuable interrupt coalescing should be
+   better when cope with flexible context.
+
+
+ drivers/ata/sata_fsl.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 107 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index 0120b0d..d6577b9 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -6,7 +6,7 @@
+  * Author: Ashish Kalra <ashish.kalra@freescale.com>
+  * Li Yang <leoli@freescale.com>
+  *
+- * Copyright (c) 2006-2007, 2011 Freescale Semiconductor, Inc.
++ * Copyright (c) 2006-2007, 2011-2012 Freescale Semiconductor, Inc.
+  *
+  * This program is free software; you can redistribute  it and/or modify it
+  * under  the terms of  the GNU General  Public License as published by the
+@@ -26,6 +26,15 @@
+ #include <asm/io.h>
+ #include <linux/of_platform.h>
+
++static unsigned int intr_coalescing_count;
++module_param(intr_coalescing_count, int, S_IRUGO);
++MODULE_PARM_DESC(intr_coalescing_count,
++				 "INT coalescing count threshold (1..31)");
++
++static unsigned int intr_coalescing_ticks;
++module_param(intr_coalescing_ticks, int, S_IRUGO);
++MODULE_PARM_DESC(intr_coalescing_ticks,
++				 "INT coalescing timer threshold in AHB ticks");
+ /* Controller information */
+ enum {
+ 	SATA_FSL_QUEUE_DEPTH	= 16,
+@@ -83,6 +92,16 @@ enum {
+ };
+
+ /*
++ * Interrupt Coalescing Control Register bitdefs  */
++enum {
++	ICC_MIN_INT_COUNT_THRESHOLD	= 1,
++	ICC_MAX_INT_COUNT_THRESHOLD	= ((1 << 5) - 1),
++	ICC_MIN_INT_TICKS_THRESHOLD	= 0,
++	ICC_MAX_INT_TICKS_THRESHOLD	= ((1 << 19) - 1),
++	ICC_SAFE_INT_TICKS		= 1,
++};
++
++/*
+ * Host Controller command register set - per port
+ */
+ enum {
+@@ -263,8 +282,65 @@ struct sata_fsl_host_priv {
+ 	void __iomem *csr_base;
+ 	int irq;
+ 	int data_snoop;
++	struct device_attribute intr_coalescing;
+ };
+
++static void fsl_sata_set_irq_coalescing(struct ata_host *host,
++		unsigned int count, unsigned int ticks)
++{
++	struct sata_fsl_host_priv *host_priv = host->private_data;
++	void __iomem *hcr_base = host_priv->hcr_base;
++
++	if (count > ICC_MAX_INT_COUNT_THRESHOLD)
++		count = ICC_MAX_INT_COUNT_THRESHOLD;
++	else if (count < ICC_MIN_INT_COUNT_THRESHOLD)
++		count = ICC_MIN_INT_COUNT_THRESHOLD;
++
++	if (ticks > ICC_MAX_INT_TICKS_THRESHOLD)
++		ticks = ICC_MAX_INT_TICKS_THRESHOLD;
++	else if ((ICC_MIN_INT_TICKS_THRESHOLD == ticks) &&
++			(count > ICC_MIN_INT_COUNT_THRESHOLD))
++		ticks = ICC_SAFE_INT_TICKS;
++
++	spin_lock(&host->lock);
++	iowrite32((count << 24 | ticks), hcr_base + ICC);
++
++	intr_coalescing_count = count;
++	intr_coalescing_ticks = ticks;
++	spin_unlock(&host->lock);
++
++	DPRINTK("intrrupt coalescing, count = 0x%x, ticks = %x\n",
++			intr_coalescing_count, intr_coalescing_ticks);
++	DPRINTK("ICC register status: (hcr base: 0x%x) = 0x%x\n",
++			hcr_base, ioread32(hcr_base + ICC));
++}
++
++static ssize_t fsl_sata_intr_coalescing_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d	%d\n",
++			intr_coalescing_count, intr_coalescing_ticks);
++}
++
++static ssize_t fsl_sata_intr_coalescing_store(struct device *dev,
++		struct device_attribute *attr,
++		const char *buf, size_t count)
++{
++	unsigned int coalescing_count,	coalescing_ticks;
++
++	if (sscanf(buf, "%d%d",
++				&coalescing_count,
++				&coalescing_ticks) != 2) {
++		printk(KERN_ERR "fsl-sata: wrong parameter format.\n");
++		return -EINVAL;
++	}
++
++	fsl_sata_set_irq_coalescing(dev_get_drvdata(dev),
++			coalescing_count, coalescing_ticks);
++
++	return strlen(buf);
++}
++
+ static inline unsigned int sata_fsl_tag(unsigned int tag,
+ 					void __iomem *hcr_base)
+ {
+@@ -346,10 +422,10 @@ static unsigned int sata_fsl_fill_sg(struct ata_queued_cmd *qc, void *cmd_desc,
+ 			(unsigned long long)sg_addr, sg_len);
+
+ 		/* warn if each s/g element is not dword aligned */
+-		if (sg_addr & 0x03)
++		if (unlikely(sg_addr & 0x03))
+ 			ata_port_err(qc->ap, "s/g addr unaligned : 0x%llx\n",
+ 				     (unsigned long long)sg_addr);
+-		if (sg_len & 0x03)
++		if (unlikely(sg_len & 0x03))
+ 			ata_port_err(qc->ap, "s/g len unaligned : 0x%x\n",
+ 				     sg_len);
+
+@@ -1245,6 +1321,13 @@ static int sata_fsl_init_controller(struct ata_host *host)
+ 	iowrite32(0x00000FFFF, hcr_base + CE);
+ 	iowrite32(0x00000FFFF, hcr_base + DE);
+
++ 	/*
++	 * reset the number of command complete bits which will cause the
++	 * interrupt to be signaled
++	 */
++	fsl_sata_set_irq_coalescing(host, intr_coalescing_count,
++			intr_coalescing_ticks);
++
+ 	/*
+ 	 * host controller will be brought on-line, during xx_port_start()
+ 	 * callback, that should also initiate the OOB, COMINIT sequence
+@@ -1309,7 +1392,7 @@ static int sata_fsl_probe(struct platform_device *ofdev)
+ 	void __iomem *csr_base = NULL;
+ 	struct sata_fsl_host_priv *host_priv = NULL;
+ 	int irq;
+-	struct ata_host *host;
++	struct ata_host *host = NULL;
+ 	u32 temp;
+
+ 	struct ata_port_info pi = sata_fsl_port_info[0];
+@@ -1356,6 +1439,10 @@ static int sata_fsl_probe(struct platform_device *ofdev)
+
+ 	/* allocate host structure */
+ 	host = ata_host_alloc_pinfo(&ofdev->dev, ppi, SATA_FSL_MAX_PORTS);
++	if (!host) {
++		retval = -ENOMEM;
++		goto error_exit_with_cleanup;
++	}
+
+ 	/* host->iomap is not used currently */
+ 	host->private_data = host_priv;
+@@ -1373,10 +1460,24 @@ static int sata_fsl_probe(struct platform_device *ofdev)
+
+ 	dev_set_drvdata(&ofdev->dev, host);
+
++	host_priv->intr_coalescing.show = fsl_sata_intr_coalescing_show;
++	host_priv->intr_coalescing.store = fsl_sata_intr_coalescing_store;
++	sysfs_attr_init(&host_priv->intr_coalescing.attr);
++	host_priv->intr_coalescing.attr.name = "intr_coalescing";
++	host_priv->intr_coalescing.attr.mode = S_IRUGO | S_IWUSR;
++	retval = device_create_file(host->dev, &host_priv->intr_coalescing);
++	if (retval)
++		goto error_exit_with_cleanup;
++
+ 	return 0;
+
+ error_exit_with_cleanup:
+
++	if (host) {
++		dev_set_drvdata(&ofdev->dev, NULL);
++		ata_host_detach(host);
++	}
++
+ 	if (hcr_base)
+ 		iounmap(hcr_base);
+ 	if (host_priv)
+@@ -1390,6 +1491,8 @@ static int sata_fsl_remove(struct platform_device *ofdev)
+ 	struct ata_host *host = dev_get_drvdata(&ofdev->dev);
+ 	struct sata_fsl_host_priv *host_priv = host->private_data;
+
++	device_remove_file(&ofdev->dev, &host_priv->intr_coalescing);
++
+ 	ata_host_detach(host);
+
+ 	dev_set_drvdata(&ofdev->dev, NULL);
+--
+1.6.4
+
+
