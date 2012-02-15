@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648Ab2BOPhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:37:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:51324 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab2BOPg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:36:56 -0500
-Message-ID: <4F3BD0E9.5070305@corscience.de>
-Date: Wed, 15 Feb 2012 16:36:09 +0100
-From: Thomas Weber <weber@corscience.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120213 Thunderbird/10.0.1
+	id S1751958Ab2BOPj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:39:56 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:20915 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750726Ab2BOPjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 10:39:51 -0500
+X-Greylist: delayed 924 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Feb 2012 10:39:51 EST
+Message-ID: <4F3BCE25.9040905@imgtec.com>
+Date: Wed, 15 Feb 2012 15:24:21 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, zbr@ioremap.net
-CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] Fix w1_bq27000
-References: <20111230004947.11559.81184.stgit@notabene.brown> <20111230005849.11559.79397.stgit@notabene.brown>
-In-Reply-To: <20111230005849.11559.79397.stgit@notabene.brown>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] rc/ir-raw: use kfifo_rec_ptr_1 instead of kfifo
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:y2ddRr/8pXd4u/7TCaCZhxxTgQDJN/wBxTfNKjVe+Kg
- DW2S/SaI0g+utOofuWN9Qb1fwj7ymKT3ADu4IpuxdltZJNq9YF
- 9KDXcNPwEzOS0Y6yy+yRlo37IOTazA4ggRstVK94b7MW3yX0cq
- dq96HPg3K6IUI3yI5QiDVLGsnbwPI+IWZXkj5J6UzmGqXNJaEk
- VL5/a6dBL7rFKeAE27cZVaah2VSS4+PULCPMp0Ueve76G877sl
- CSy82tXgmEBq56T+z9oRFgqqiiZooVPNWllzY8Rh9w+GWFt9p4
- 4AnNOwmOeuuaOoZUJQ6s7HClWfoE9qD6q7s5EjlzAOJDRb/Ss/
- j287Zr6ndUxm+8meV+Nw=
+X-OriginalArrivalTime: 15 Feb 2012 15:24:21.0962 (UTC) FILETIME=[E47A0AA0:01CCEBF5]
+X-SEF-Processed: 7_3_0_01181__2012_02_15_15_24_23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Neil,
+Raw IR events are passed to the raw event thread through a kfifo. The
+size of the event struct is 12 bytes, and space for 512 events is
+reserved in the kfifo (6144 bytes), however this is rounded down to 4096
+bytes (the next power of 2) by __kfifo_alloc().
 
-On 30.12.2011 01:58, NeilBrown wrote:
-> w1_bq27000 adds a bq27000-battery platform device but does not provide
-> platform data for it. This causes the bq27x00 driver to dereference a NULL
-> pointer.
-> So provide the appropriate platform data.  This requires modifying
-> w1_bq27000_read so that it find the w1 device as the parent of the bq device.
-> 
-> Also there is no point exporting w1_bq27000_read as nothing else uses it
-> or could use it.  So make it static.
-> 
-> Finally, as there is no way to track how many batteries have been found, and
-> we will probably only find one, use an id number of '-1' to assert that this
-> is a unique instance.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
-> 
->  drivers/w1/slaves/w1_bq27000.c |   17 ++++++++++++-----
->  1 files changed, 12 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/w1/slaves/w1_bq27000.c b/drivers/w1/slaves/w1_bq27000.c
-> index 8f4c91f..8f10fd2 100644
-> --- a/drivers/w1/slaves/w1_bq27000.c
-> +++ b/drivers/w1/slaves/w1_bq27000.c
-> @@ -15,6 +15,7 @@
->  #include <linux/types.h>
->  #include <linux/platform_device.h>
->  #include <linux/mutex.h>
-> +#include <linux/power/bq27x00_battery.h>
->  
->  #include "../w1.h"
->  #include "../w1_int.h"
-> @@ -39,10 +40,10 @@ void w1_bq27000_write(struct device *dev, u8 buf, u8 reg)
->  }
->  EXPORT_SYMBOL(w1_bq27000_write);
->  
-> -int w1_bq27000_read(struct device *dev, u8 reg)
-> +static int w1_bq27000_read(struct device *dev, unsigned int reg)
->  {
->  	u8 val;
-> -	struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
-> +	struct w1_slave *sl = container_of(dev->parent, struct w1_slave, dev);
->  
->  	if (!dev)
->  		return 0;
-> @@ -52,19 +53,25 @@ int w1_bq27000_read(struct device *dev, u8 reg)
->  
->  	return val;
->  }
-> -EXPORT_SYMBOL(w1_bq27000_read);
-> +
-> +static struct bq27000_platform_data bq27000_battery_info = {
-> +	.read   = w1_bq27000_read,
-> +	.name   = "bq27000-battery",
-> +};
->  
->  static int w1_bq27000_add_slave(struct w1_slave *sl)
->  {
->  	int ret;
-> -	int id = 1;
->  	struct platform_device *pdev;
->  
-> -	pdev = platform_device_alloc("bq27000-battery", id);
-> +	pdev = platform_device_alloc("bq27000-battery", -1);
->  	if (!pdev) {
->  		ret = -ENOMEM;
->  		return ret;
->  	}
-> +	ret = platform_device_add_data(pdev,
-> +				       &bq27000_battery_info,
-> +				       sizeof(bq27000_battery_info));
->  	pdev->dev.parent = &sl->dev;
->  
->  	ret = platform_device_add(pdev);
-> 
-> 
+4096 bytes is not divisible by 12 therefore if the fifo fills up a third
+of a record will be written in the end of the kfifo by
+ir_raw_event_store() because the recsize of the fifo is 0 (it doesn't
+have records). When this is read by ir_raw_event_thread() a corrupted or
+partial record will be read, and in the case of a partial record the
+BUG_ON(retval != sizeof(ev)) gets hit too.
 
-Tested-by: Thomas Weber <weber@corscience.de>
+According to samples/kfifo/record-example.c struct kfifo_rec_ptr_1 can
+handle records of a length between 0 and 255 bytes, so change struct
+ir_raw_event_ctrl to use that instead of struct kfifo.
 
-Thanks for the patch, now the platform data of the bq27000 are found.
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ drivers/media/rc/rc-core-priv.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-before:
+diff --git a/drivers/media/rc/rc-core-priv.h b/drivers/media/rc/rc-core-priv.h
+index c6ca870..989ea08 100644
+--- a/drivers/media/rc/rc-core-priv.h
++++ b/drivers/media/rc/rc-core-priv.h
+@@ -35,7 +35,7 @@ struct ir_raw_event_ctrl {
+ 	struct list_head		list;		/* to keep track of raw clients */
+ 	struct task_struct		*thread;
+ 	spinlock_t			lock;
+-	struct kfifo			kfifo;		/* fifo for the pulse/space durations */
++	struct kfifo_rec_ptr_1		kfifo;		/* fifo for the pulse/space durations */
+ 	ktime_t				last_event;	/* when last event occurred */
+ 	enum raw_event_type		last_type;	/* last event type */
+ 	struct rc_dev			*dev;		/* pointer to the parent rc_dev */
+-- 
+1.7.2.3
 
-omap_hdq omap_hdq.0: OMAP HDQ Hardware Rev 0.5. Driver in Interrupt mode
-w1_master_driver w1_bus_master1: Family 1 for 01.000000000000.3d is not
-registered.
-bq27000-battery bq27000-battery.1: no platform_data supplied
-bq27000-battery: probe of bq27000-battery.1 failed with error -22
 
-after:
-
-omap_hdq omap_hdq.0: OMAP HDQ Hardware Rev 0.5. Driver in Interrupt mode
-w1_master_driver w1_bus_master1: Family 1 for 01.000000000000.3d is not
-registered.
-bq27000-battery bq27000-battery: support ver. 1.2.0 enabled
-
-Regards,
-Thomas
