@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab2BOOeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:34:14 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53468 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab2BOOeN (ORCPT
+	id S1759620Ab2BOOhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:37:09 -0500
+Received: from webbox1416.server-home.net ([77.236.96.61]:42993 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756162Ab2BOOhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:34:13 -0500
-Date: Wed, 15 Feb 2012 15:34:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ido Yariv <ido@wizery.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
-In-Reply-To: <20120213094329.GA29428@WorkStation>
-Message-ID: <alpine.LFD.2.02.1202151533450.2794@ionos>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com> <alpine.LFD.2.02.1112022345300.2735@ionos> <20111204190932.GO32400@WorkStation> <20111216104828.GB18877@WorkStation> <20120213094329.GA29428@WorkStation>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 15 Feb 2012 09:37:03 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH v2] i2c-isch: Add module parameter which actually set the clock divider
+Date: Wed, 15 Feb 2012 15:36:49 +0100
+Message-Id: <1329316609-14570-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Ido Yariv wrote:
+It was observed the Host Clock Divider was not written by the driver. It
+was still set to (default) 0, if not already set by BIOS, which caused
+garbage on SMBus.
+This driver adds 2 parameters which are used to calculate the divider
+appropriately. This new divider is only applied if the clock divider is
+still default 0.
 
-> Hi Thomas,
-> 
-> On Sun, Dec 04, 2011 at 09:09:32PM +0200, Ido Yariv wrote:
-> > Hi Thomas,
-> > 
-> > On Sat, Dec 03, 2011 at 12:21:46AM +0100, Thomas Gleixner wrote:
-> > > I can see your problem, but this might lead to threads_active leaks
-> > > under certain conditions. desc->threads_active was only meant to deal
-> > > with shared interrupts.
-> > > 
-> > > We explicitely allow a design where the primary handler can leave the
-> > > device interrupt enabled and allow further interrupts to occur while
-> > > the handler is running. We only have a single bit to note that the
-> > > thread should run, but your wakeup would up the threads_active count
-> > > in that scenario several times w/o a counterpart which decrements it.
-> > > 
-> > > The solution for this is to keep the current threads_active semantics
-> > > and make the wait function different. Instead of waiting for
-> > > threads_active to become 0 it should wait for threads_active == 0 and
-> > > the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
-> > > over the actions, we can take a similar approach as we take with the
-> > > desc->threads_oneshot bitfield.
-> > 
-> > Thanks for reviewing this.
-> > 
-> > I might be missing something, but I don't see any potential
-> > threads_active leaks in this approach. We wont increase threads_active
-> > if IRQTF_RUNTHREAD was already set beforehand (as test_and_set_bit()
-> > will return 1).
-> > 
-> > If irq_wake_thread is called multiple times before irq_thread has had a
-> > chance to run, threads_active will only be increased once and decreased
-> > back when IRQTF_RUNTHREAD is cleared.
-> > 
-> > Am I missing something? If not, do you see any other issues with this
-> > implementation?
-> 
-> Any thoughts on this?
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Tested-by: Adam Pribyl <pribyl@lowlevel.cz>
+---
+Changes in v2:
+* HSTCLK register is 16 Bit, not 8 Bit. Thanks to Adam for detecting
 
-Sorry, went of my radar. Will have a look later today.
+ drivers/i2c/busses/i2c-isch.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-Thanks,
+diff --git a/drivers/i2c/busses/i2c-isch.c b/drivers/i2c/busses/i2c-isch.c
+index 6561d27..bdfddf8 100644
+--- a/drivers/i2c/busses/i2c-isch.c
++++ b/drivers/i2c/busses/i2c-isch.c
+@@ -40,6 +40,7 @@
+ /* SCH SMBus address offsets */
+ #define SMBHSTCNT	(0 + sch_smba)
+ #define SMBHSTSTS	(1 + sch_smba)
++#define SMBHSTCLK	(2 + sch_smba)
+ #define SMBHSTADD	(4 + sch_smba) /* TSA */
+ #define SMBHSTCMD	(5 + sch_smba)
+ #define SMBHSTDAT0	(6 + sch_smba)
+@@ -58,6 +59,8 @@
+ 
+ static unsigned short sch_smba;
+ static struct i2c_adapter sch_adapter;
++static int smbus_speed = 100; /* SMBus bus speed in Kbps */
++static int backbone_speed = 33000; /* backbone speed in KHz */
+ 
+ /*
+  * Start the i2c transaction -- the i2c_access will prepare the transaction
+@@ -156,6 +159,13 @@ static s32 sch_access(struct i2c_adapter *adap, u16 addr,
+ 		dev_dbg(&sch_adapter.dev, "SMBus busy (%02x)\n", temp);
+ 		return -EAGAIN;
+ 	}
++	temp = inw(SMBHSTCLK);
++	if (!temp) {
++		dev_notice(&sch_adapter.dev, "clock divider unitialized. Setting module defaults\n");
++		dev_dbg(&sch_adapter.dev, "access speed: %d KHz\n", smbus_speed);
++		outw((backbone_speed / 4) / smbus_speed, SMBHSTCLK);
++	}
++
+ 	dev_dbg(&sch_adapter.dev, "access size: %d %s\n", size,
+ 		(read_write)?"READ":"WRITE");
+ 	switch (size) {
+@@ -312,3 +322,5 @@ MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@intel.com>");
+ MODULE_DESCRIPTION("Intel SCH SMBus driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:isch_smbus");
++module_param(smbus_speed, int, (S_IRUSR | S_IWUSR));
++module_param(backbone_speed, int, (S_IRUSR | S_IWUSR));
+-- 
+1.7.3.4
 
-	tglx
