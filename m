@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab2BOO7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:59:01 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:33303 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2BOO7A (ORCPT
+	id S1750904Ab2BOO7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:59:24 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:42328 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2BOO7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:59:00 -0500
-Date: Wed, 15 Feb 2012 14:58:58 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
-Message-ID: <20120215145857.GA21755@srcf.ucam.org>
-References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
- <alpine.LFD.2.02.1202151537500.2794@ionos>
- <1329317650.2293.129.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329317650.2293.129.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 15 Feb 2012 09:59:18 -0500
+From: Chris Boot <bootc@bootc.net>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH v2 2/3] firewire-sbp2: Ignore SBP-2 targets on the local node
+Date: Wed, 15 Feb 2012 14:59:09 +0000
+Message-Id: <1329317950-101579-3-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329317950-101579-1-git-send-email-bootc@bootc.net>
+References: <1328881314-26544-1-git-send-email-bootc@bootc.net>
+ <1329317950-101579-1-git-send-email-bootc@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regardless of whether userspace should be concerning itself about this 
-kind of thing or not, there's plenty of userspace that calls sleep(0) on 
-the assumption that it'll get rescheduled. This makes using whole-system 
-timer slack difficult, because there are some applications that do this 
-even if they're event-driven and sleeping for significant lengths of 
-time here breaks them. I'd certainly understand the argument for fixing 
-userspace instead, but that's a massive task for something that's easily 
-special-cased in the kernel.
+The firewire-sbp2 module tries to login to an SBP-2/3 target even when
+it is running on the local node, which fails because of the inability to
+fetch data from DMA mapped regions using firewire transactions on the
+local node. It also doesn't make much sense to have the initiator and
+target on the same node, so this patch prevents this behaviour.
 
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Clemens Ladisch <clemens@ladisch.de>
+---
+ drivers/firewire/sbp2.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index a8f43d2..9e9631f 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1133,6 +1133,10 @@ static int sbp2_probe(struct device *dev)
+ 	struct Scsi_Host *shost;
+ 	u32 model, firmware_revision;
+ 
++	/* ignore targets on the local node */
++	if (device->is_local)
++		return -ENODEV;
++
+ 	if (dma_get_max_seg_size(device->card->device) > SBP2_MAX_SEG_SIZE)
+ 		BUG_ON(dma_set_max_seg_size(device->card->device,
+ 					    SBP2_MAX_SEG_SIZE));
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.9
+
