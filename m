@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2BORkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:40:17 -0500
-Received: from blackhole.sdinet.de ([176.9.52.58]:52468 "EHLO mail.sdinet.de"
+	id S1753971Ab2BORon (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:44:43 -0500
+Received: from mail.gnuher.de ([78.47.12.54]:49763 "EHLO mail.gnuher.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab2BORkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:40:16 -0500
-Date: Wed, 15 Feb 2012 18:40:14 +0100 (CET)
-From: Sven-Haegar Koch <haegar@sdinet.de>
-X-X-Sender: haegar@aurora64
-To: Sven Geggus <lists@fuchsschwanzdomain.de>
-cc: linux-kernel@vger.kernel.org
+	id S1751511Ab2BORom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 12:44:42 -0500
+To: linux-kernel@vger.kernel.org
+Path: not-for-mail
+From: Sven Geggus <lists@fuchsschwanzdomain.de>
 Subject: Re: Core i7-3960X Only 4 cores detected
-In-Reply-To: <jhgq81$s95$1@ultimate100.geggus.net>
-Message-ID: <alpine.DEB.2.02.1202151837150.31643@aurora64>
-References: <jhgq81$s95$1@ultimate100.geggus.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Wed, 15 Feb 2012 17:44:38 +0000 (UTC)
+Organization: Geggus clan, virtual section
+Message-ID: <jhgqu6$snf$1@ultimate100.geggus.net>
+References: <jhgq81$s95$1@ultimate100.geggus.net> <alpine.DEB.2.02.1202151837150.31643@aurora64>
+NNTP-Posting-Host: ultimate100.geggus.net
+X-Trace: ultimate100.geggus.net 1329327878 29423 192.168.3.1 (15 Feb 2012 17:44:38 GMT)
+X-Complaints-To: usenet@geggus.net
+NNTP-Posting-Date: Wed, 15 Feb 2012 17:44:38 +0000 (UTC)
+Cancel-Lock: sha1:fXlIOHvVqIsIyqfJdOtuTAyQ9T0=
+X-TERMINAL: rxvt-unicode
+X-OS: Debian GNU/Linux (Kernel 2.6.27.52-ztdummy)
+User-Agent: tin/2.0.0-20110823 ("Ardenistiel") (UNIX) (Linux/2.6.27.52-ztdummy (x86_64))
+X-remote-host: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Feb 2012, Sven Geggus wrote:
+Sven-Haegar Koch <haegar@sdinet.de> wrote:
 
-> I just booted Linux (vanilla kernel 3.2.5) on an i7-3960X machine.
+>> CONFIG_NR_CPUS=8
+> 
+> Increase this value.
 
-> CONFIG_NR_CPUS=8
+CONFIG_NR_CPUS="Maximum number of CPUs"
 
-Increase this value.
+Up to now I did not even know that this Option existed :(
 
-c'ya
-sven-haegar
+Thanks and sorry for the noise.
+
+Sven
 
 -- 
-Three may keep a secret, if two of them are dead.
-- Ben F.
+"Those who do not understand Unix are condemned to reinvent it, poorly"
+(Henry Spencer)
+
+/me is giggls@ircnet, http://sven.gegg.us/ on the Web
