@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2BOUhF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:37:05 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56681 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab2BOUhD (ORCPT
+	id S1755394Ab2BOUiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:38:21 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:49827 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595Ab2BOUiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:37:03 -0500
-Message-ID: <4F3C1771.1050204@gmail.com>
-Date: Wed, 15 Feb 2012 15:37:05 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 15 Feb 2012 15:38:16 -0500
+Date: Wed, 15 Feb 2012 20:38:14 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+Message-ID: <20120215203814.GA29795@srcf.ucam.org>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+ <alpine.LFD.2.02.1202151537500.2794@ionos>
+ <20120215145225.GA21448@srcf.ucam.org>
+ <alpine.LFD.2.02.1202152059230.2794@ionos>
+ <20120215202221.GA29552@srcf.ucam.org>
+ <alpine.LFD.2.02.1202152125500.2794@ionos>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: kill dead prev_priority stubs
-References: <20120215192708.31690.2819.stgit@zurg>
-In-Reply-To: <20120215192708.31690.2819.stgit@zurg>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1202152125500.2794@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2/15/12 2:27 PM), Konstantin Khlebnikov wrote:
-> This code was removed in v2.6.35-5854-g25edde0
-> ("vmscan: kill prev_priority completely")
->
-> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> ---
->   include/linux/memcontrol.h |   15 ---------------
->   1 files changed, 0 insertions(+), 15 deletions(-)
+On Wed, Feb 15, 2012 at 09:30:20PM +0100, Thomas Gleixner wrote:
+> On Wed, 15 Feb 2012, Matthew Garrett wrote:
+> > Excellent. So the real question is what /should/ sleep(0) do - nothing, 
+> > schedule or sleep for an arbitrary period of time that could be years?
+> 
+> Well, I don't expect slack to be set to years and I really don't want
+> to special case sleep(0), because then we might end up discussing
+> special casing usleep(1) or nanosleep(1ns) as well.
 
-Oh, thank you.
+Increasing slack to the seconds range has measureable power management 
+benefits, but there's some code that ends up broken as a result even 
+when they're nominally event driven. I've no problem with us just 
+declaring that code as broken, but it would be less effort to special 
+case it. Application authors do seem to have ended up under the belief 
+that sleep(0) is a meaningful thing to do, and the internet seems to be 
+full of suggestions to use it rather than sched_yield().
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
