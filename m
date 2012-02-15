@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2BORpe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:45:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11559 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab2BORpc (ORCPT
+	id S1754142Ab2BORsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:48:03 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51980 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab2BORr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:45:32 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CvlS4R1r7kYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=0L0fD38RAAAA:8 a=VPITGj-Wx_x99NTzypQA:9 a=inKsXQS5WXIiikbx5UsA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: ftrace_enabled set to 1 on bootup, slow downs with
- CONFIG_FUNCTION_TRACER in virt environments?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-In-Reply-To: <20120214152955.GA17671@phenom.dumpdata.com>
-References: <20120214152955.GA17671@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Feb 2012 13:22:02 -0500
-Message-ID: <1329243722.7469.7.camel@acer.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 12:47:59 -0500
+Date: Wed, 15 Feb 2012 15:47:48 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Luigi Semenzato <semenzato@chromium.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Subject: Re: [PATCH] Perf: bug fix: distinguish between rename and exec
+Message-ID: <20120215174748.GN28614@infradead.org>
+References: <1329195360-10699-1-git-send-email-semenzato@chromium.org>
+ <1329310113.2293.72.camel@twins>
+ <20120215134733.GL28614@infradead.org>
+ <CAA25o9SW+EqsUhv-Ze6fX5-DyZ4fTHXL5CZd0rHnTLsOBxV7xg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAA25o9SW+EqsUhv-Ze6fX5-DyZ4fTHXL5CZd0rHnTLsOBxV7xg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-14 at 10:29 -0500, Konrad Rzeszutek Wilk wrote: 
-> Hey,
+Em Wed, Feb 15, 2012 at 09:07:47AM -0800, Luigi Semenzato escreveu:
+> On Wed, Feb 15, 2012 at 5:47 AM, Arnaldo Carvalho de Melo
+> <acme@ghostprotocols.net> wrote:
+> > Em Wed, Feb 15, 2012 at 01:48:33PM +0100, Peter Zijlstra escreveu:
+> >> I really dislike changing generic code purely for the purpose of
+> >> instrumentation like this. Better to pull perf_event_comm() out of here
+> >> if you want to change semantics.
+> >>
+> >> Personally I couldn't care less about renames, I think they're a waste
+> >> of time, so I'm ok with the simple patch moving the perf_event_comm()
+> >> into setup_new_exec() and possibly renaming it to perf_event_exec().
+> >>
+> >> Acme, do you care about renames?
+> >
+> > I like your idea of keeping the semantics of PERF_RECORD_COMM and
+> > introducing a PERF_RECORD_EXEC, just have to think about how to handle
+> > that in a way that the tools detect that we have PERF_RECORD_EXEC...
 > 
-> I was running some benchmarks (netserver/netperf) where the init script just launched
-> the netserver and nothing else and was concerned to see the performance not up to par.
-> This was an HVM guest running with PV drivers.
+> I considered this but I don't know how important it is to be backward
+> compatible.  Adding a new record type makes old "perf report" fail to
+> parse new perf.data files.  (Unless we pad the new record to a
+
+Hey, old perf record would still see the PERF_RECORD_COMM, i.e. we would
+continue asking for PERF_RECORD_COMM in new versions. Together with
+PERF_RECORD_EXEC.
+
+> multiple of 8 bytes, but I don't think we want to go down that path).
 > 
-> If I compile the kernel without CONFIG_FUNCTION_TRACER it is much better
+> If looking forward is more important, I agree a new new record type is
+> best.  We might want to consider adding a PERF_RECORD_RENAME for
 
-There is a known performance degrade of 1 or 2% with function tracing
-enabled, on some work loads. Anything more that needs to be
-investigated.
+PERF_RECORD_COMM is good enough, well, it always was confusing for most
+people that asked "hey, that means an EXEC, right?"
 
-Did you also keep FRAME_POINTERS enabled? FUNCTION_TRACER selects frame
-pointers which can also slow down the system.
+First thing pople think is "hey, this is when it sets the thread COMM,
+right?"
 
-> - but it was 
-> my understanding that the tracing code does not impact the machine unless it is enabled.
-> And when I inserted a bunch of print_dump_bytes I do see instructions such as
-> e8 6a 90 60 e1 get replaced with 66 66 66 90 so I see the the instructions getting
-> patched over.
-
-Right on boot up (and module load) the calls do get changed to nops. Now
-note that there's some calls that do not get changed at boot up, but the
-most recent scripts/recordmcount.c should change them to nops at compile
-time.
+> renames, and leaving the COMM record to its historical meaning (exec),
+> possibly renaming it to PERF_RECORD_EXEC for clarity.  And yes, the
+> perf instrumentation should not be in set_task_comm(), that's why the
+> bug exists in the first place.
 > 
-> To get a better feel for this I tried this on baremetal, and (this is going
-> to sound a bit round-about way, but please bear with me), I was working on making
-> the pte_flags be paravirt (so it is a function instead of being a macro) and noticed
-> that on on an AMD A8-3850, with a CONFIG_PARAVIRT and CONFIG_FUNCTION_TRACER and
-> running kernelbench it would run slower than without CONFIG_FUNCTION_TRACER.
+> We might also want to change the parsing of perf.data so that in the
+> future it is more tolerant of new record types.
 
-Have you tried what the difference is between !CONFIG_PARAVIRT and with
-and without CONFIG_FUNCTION_TRACER?
+Yes, what is the behaviour now? Lemme see... Well, difficult, I'm barely
+reading this, just after magnifying it, dilated pupils two hours ago,
+grrr
 
-> 
-> I am not really sure what the problem is, but based on those experiments
-> four things come to my mind:
->  - Lots of nops and we choke the CPU instruction decoder with 20-30 bytes
->    of 'nop', so the CPU is stalling waiting for some real instructions.
-
-But the nop is only placed at the beginning of functions.
-
-> - The compiler has choosen to compile most of the paravirt instructions as
->    functions making the call to mcount (which gets patched over), but the
->    end result is that we have an extra 'call' in the chain.
-
-You mean that we get a lot more functions because the compiler made them
-functions? Maybe we should add "notrace" to all paravirt functions? Then
-they wont have the calls or nops.
-
-> - Somehow the low-level para-virt (like the assembler ones) calls don't get
->    patched over and still end up calling mcount? (but I really doubt that is the
->    case - but you never know).
-
-We only live patch code in a white list of sections. But with the latest
-scripts/recordmcount.c, as I stated above, the ones that don't get
-patched at boot up, should be patched at compile time. But that still
-keeps the nops there.
-
-> - Something else?
-> 
-> My thought was to crash the kernel as it is up and running and look at the
-> diassembled core to see what the instructions end up looking to get a further feel
-> for this.  But before I go with this are there some other ideas of what I should look
-> for?
-
-You can just look at the objdump of vmlinux, as the recordmcount.c would
-have already patched the code that is not whitelisted, and you can also
-see if things are function calls.
-
--- Steve
-
-> 
-> Thanks!
-> 
-> Note: The "working on making the pte_flags be paravirt" patches are here:
-> http://darnok.org/results/baseline_pte_flags_pte_attrs/ if you are interested.
-
-
-
+Wiĺl check later, but IIRC it just warns and skips the record, right?
+ 
+> > Humm, will be yet another fallback for setting an perf_event_attr bit,
+> > just like with .sample_id_all and .exclude_{guest,host}...
+> >
+> > That together with the per class errnos + __strerror() method will allow
+> > to move all the event creation finally to perf_evlist__open() where all
+> > this gets nicely hidden away from poor tools.
+> >
+> > We can then even have an ui__evlist_perror() method that does all the
+> > ui__warning calls, etc.
+> >
+> > So, yes, from a tooling perspective, I want to be notified of renames
+> > and being able to stop relying on PERF_RECORD_COMM to call
+> > map_groups__flush and instead do it at PERF_RECORD_EXEC seems a
+> > bonus.
+> >
+> > - Arnaldo
