@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2BOCcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 21:32:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41222 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab2BOCcO (ORCPT
+	id S932719Ab2BOCca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 21:32:30 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43718
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932129Ab2BOCc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 21:32:14 -0500
+	Tue, 14 Feb 2012 21:32:28 -0500
+Date: Tue, 14 Feb 2012 21:32:19 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Ben Myers <bpm@sgi.com>, Alex Elder <aelder@sgi.com>,
+        Christoph Hellwig <hch@lst.de>, Alex Elder <elder@kernel.org>,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, xfs-masters@oss.sgi.com,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -v2 1/3] xfs: change available ranges of softlimit and
+ hardlimit in quota check
+Message-ID: <20120215023219.GA17149@infradead.org>
+References: <20120206124951.12624.88233.stgit@ltc219.sdl.hitachi.co.jp>
+ <20120206125007.12624.58454.stgit@ltc219.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <1329227537.2293.1.camel@twins>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
-	<1328901567.25989.51.camel@laptop>
-	<CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
-	<20120213053410.GB24636@zhy>
-	<1329227537.2293.1.camel@twins>
-Date: Tue, 14 Feb 2012 18:32:13 -0800
-Message-ID: <CABeCy1aC3-nFZBOPufsqqAPki7s-yfDw3m5uMCoCkTNQiE3k0w@mail.gmail.com>
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-From: Venki Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120206125007.12624.58454.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 5:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-02-13 at 13:34 +0800, Yong Zhang wrote:
->> Yeah, most of the things could be shared. Such as the added logic when
->> return from idle and the hooks into ttwu_queue_remote() and
->> generic_exec_single().
->>
->
-> The thing is, those last two should not have hooks. Nor am I convinced
-> anything outside of the arch idle loop should have any.
->
+On Mon, Feb 06, 2012 at 09:50:07PM +0900, Mitsuo Hayasaka wrote:
+> In general, quota allows us to use disk blocks and inodes up to each
+> limit, that is, they are available if they don't exceed their limitations.
+> Current xfs sets their available ranges to lower than them except disk
+> inode quota check. So, this patch changes the ranges to not beyond them.
 
-OK. Will put stuff in arch and respin soon..
+Looks good,
 
--Venki
+Reviewed-by: Christoph Hellwig <hch@lst.de>
