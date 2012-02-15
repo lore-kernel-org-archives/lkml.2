@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761471Ab2BOBRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 20:17:14 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43546 "EHLO
+	id S1761499Ab2BOBRR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 20:17:17 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43548 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761447Ab2BOBOG (ORCPT
+	by vger.kernel.org with ESMTP id S1761446Ab2BOBOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Feb 2012 20:14:06 -0500
 From: "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
 To: linux-kernel@vger.kernel.org
 Cc: vm-crosstalk@vmware.com, dtor@vmware.com, cschamp@vmware.com,
         "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Subject: [PATCH 10/14] Add accessor methods for Queue Pairs in VMCI
-Date: Tue, 14 Feb 2012 17:05:51 -0800
-Message-Id: <1329267955-32367-11-git-send-email-astiegmann@vmware.com>
+Subject: [PATCH 02/14] Add vmciDatagram.*
+Date: Tue, 14 Feb 2012 17:05:43 -0800
+Message-Id: <1329267955-32367-3-git-send-email-astiegmann@vmware.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1329267955-32367-1-git-send-email-astiegmann@vmware.com>
 References: <1329267955-32367-1-git-send-email-astiegmann@vmware.com>
@@ -22,20 +22,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- drivers/misc/vmw_vmci/vmciQPair.c | 1164 +++++++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmciQueue.h |  108 ++++
- 2 files changed, 1272 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmciQPair.c
- create mode 100644 drivers/misc/vmw_vmci/vmciQueue.h
+ drivers/misc/vmw_vmci/vmciDatagram.c |  842 ++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmciDatagram.h |   42 ++
+ 2 files changed, 884 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmciDatagram.c
+ create mode 100644 drivers/misc/vmw_vmci/vmciDatagram.h
 
-diff --git a/drivers/misc/vmw_vmci/vmciQPair.c b/drivers/misc/vmw_vmci/vmciQPair.c
+diff --git a/drivers/misc/vmw_vmci/vmciDatagram.c b/drivers/misc/vmw_vmci/vmciDatagram.c
 new file mode 100644
-index 0000000..3cb5dbd
+index 0000000..e8a95de
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmciQPair.c
-@@ -0,0 +1,1164 @@
++++ b/drivers/misc/vmw_vmci/vmciDatagram.c
+@@ -0,0 +1,842 @@
 +/*
-+ *
 + * VMware VMCI Driver
 + *
 + * Copyright (C) 2012 VMware, Inc. All rights reserved.
@@ -52,226 +51,417 @@ index 0000000..3cb5dbd
 + * You should have received a copy of the GNU General Public License along
 + * with this program; if not, write to the Free Software Foundation, Inc.,
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
-+ *
-+ *
-+ *      This file implements Queue accessor methods.
-+ *
-+ *      VMCIQPair is a new interface that hides the queue pair internals.
-+ *      Rather than access each queue in a pair directly, operations are now
-+ *      performed on the queue as a whole.  This is simpler and less
-+ *      error-prone, and allows for future queue pair features to be added
-+ *      under the hood with no change to the client code.
-+ *
-+ *      This also helps in a particular case on Windows hosts, where the memory
-+ *      allocated by the client (e.g., VMX) will disappear when the client does
-+ *      (e.g., abnormal termination).  The kernel can't lock user memory into
-+ *      its address space indefinitely.  By guarding access to the queue
-+ *      contents we can correctly handle the case where the client disappears.
-+ *
-+ *      On code style:
-+ *
-+ *      + This entire file started its life as a cut-and-paste of the
-+ *        static inline functions in bora/public/vmci_queue_pair.h.
-+ *        From there, new copies of the routines were made named
-+ *        without the prefix VMCI, without the underscore (the one
-+ *        that followed struct vmci_queue_).  The no-underscore versions of
-+ *        the routines require that the mutexes are held.
-+ *
-+ *      + The code -always- uses the xyzLocked() version of any given
-+ *        routine even when the wrapped function is a one-liner.  The
-+ *        reason for this decision was to ensure that we didn't have
-+ *        copies of logic lying around that needed to be maintained.
-+ *
-+ *      + Note that we still pass around 'const struct vmci_queue *'s.
-+ *
-+ *      + Note that mutex is a field within struct vmci_queue.  We skirt the
-+ *        issue of passing around a const struct vmci_queue, even though the
-+ *        mutex field (__mutex, specifically) will get modified by not
-+ *        ever referring to the mutex -itself- except during
-+ *        initialization.  Beyond that, the code only passes the
-+ *        pointer to the mutex, which is also a member of struct vmci_queue,
-+ *        obviously, and which doesn't change after initialization.
-+ *        This eliminates having to redefine all the functions that
-+ *        are currently taking const struct vmci_queue's so that these
-+ *        functions are compatible with those definitions.
 + */
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/sched.h>
 +
 +#include "vmci_defs.h"
++#include "vmci_infrastructure.h"
 +#include "vmci_kernel_if.h"
-+#include "vmci_handle_array.h"
++#include "vmciCommonInt.h"
++#include "vmciContext.h"
++#include "vmciDatagram.h"
++#include "vmciDriver.h"
++#include "vmciEvent.h"
++#include "vmciHashtable.h"
 +#include "vmciKernelAPI.h"
-+#include "vmciQueuePair.h"
++#include "vmciResource.h"
 +#include "vmciRoute.h"
 +
-+/*
-+ * VMCIQPair
-+ *
-+ *      This structure is opaque to the clients.
-+ */
++#define LGPFX "VMCIDatagram: "
 +
-+struct VMCIQPair {
-+	struct vmci_handle handle;
-+	struct vmci_queue *produceQ;
-+	struct vmci_queue *consumeQ;
-+	uint64_t produceQSize;
-+	uint64_t consumeQSize;
-+	uint32_t peer;
++/*
++ * struct datagram_entry describes the datagram entity. It is used for datagram
++ * entities created only on the host.
++ */
++struct datagram_entry {
++	struct vmci_resource resource;
 +	uint32_t flags;
++	bool runDelayed;
++	VMCIDatagramRecvCB recvCB;
++	void *clientData;
++	wait_queue_head_t destroyEvent;
 +	uint32_t privFlags;
-+	bool guestEndpoint;
-+	uint32_t blocked;
-+	wait_queue_head_t event;
 +};
 +
++struct delayed_datagram_info {
++	bool inDGHostQueue;
++	struct datagram_entry *entry;
++	struct vmci_datagram msg;
++};
++
++static atomic_t delayedDGHostQueueSize;
++
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPairMapQueueHeaders --
++ *  DatagramFreeCB --
++ *     Callback to free datagram structure when resource is no longer used,
++ *     ie. the reference count reached 0.
 + *
-+ *      The queue headers may not be mapped at all times. If a queue is
-+ *      currently not mapped, it will be attempted to do so.
++ *  Result:
++ *     None.
 + *
-+ * Results:
-+ *      VMCI_SUCCESS if queues were validated, appropriate error code otherwise.
-+ *
-+ * Side effects:
-+ *      May attempt to map in guest memory.
-+ *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+static int VMCIQPairMapQueueHeaders(struct vmci_queue *produceQ,	// IN
-+				    struct vmci_queue *consumeQ)	// IN
++static void DatagramFreeCB(void *clientData)
 +{
-+	int result;
-+
-+	if (NULL == produceQ->qHeader || NULL == consumeQ->qHeader) {
-+		result = VMCIHost_MapQueueHeaders(produceQ, consumeQ);
-+		if (result < VMCI_SUCCESS) {
-+			if (produceQ->savedHeader && consumeQ->savedHeader) {
-+				return VMCI_ERROR_QUEUEPAIR_NOT_READY;
-+			} else {
-+				return VMCI_ERROR_QUEUEPAIR_NOTATTACHED;
-+			}
-+		}
-+	}
-+
-+	return VMCI_SUCCESS;
++	struct datagram_entry *entry = (struct datagram_entry *)clientData;
++	ASSERT(entry);
++	/* Entry is freed in VMCIDatagram_DestroyHnd, who waits for the signal */
++	wake_up(&entry->destroyEvent);
 +}
 +
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPairGetQueueHeaders --
++ *  DatagramReleaseCB --
 + *
-+ *      Helper routine that will retrieve the produce and consume
-+ *      headers of a given queue pair. If the guest memory of the
-+ *      queue pair is currently not available, the saved queue headers
-+ *      will be returned, if these are available.
++ *     Callback to release the resource reference. It is called by the
++ *     VMCI_WaitOnEvent function before it blocks.
 + *
-+ * Results:
-+ *      VMCI_SUCCESS if either current or saved queue headers are found.
-+ *      Appropriate error code otherwise.
++ *  Result:
++ *     None.
 + *
-+ * Side effects:
-+ *      May block.
-+ *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+static int VMCIQPairGetQueueHeaders(const VMCIQPair * qpair,	// IN
-+				    struct vmci_queue_header **produceQHeader,	// OUT
-+				    struct vmci_queue_header **consumeQHeader)	// OUT
++static int DatagramReleaseCB(void *clientData)
 +{
-+	int result;
-+
-+	result = VMCIQPairMapQueueHeaders(qpair->produceQ, qpair->consumeQ);
-+	if (result == VMCI_SUCCESS) {
-+		*produceQHeader = qpair->produceQ->qHeader;
-+		*consumeQHeader = qpair->consumeQ->qHeader;
-+	} else if (qpair->produceQ->savedHeader && qpair->consumeQ->savedHeader) {
-+		ASSERT(!qpair->guestEndpoint);
-+		*produceQHeader = qpair->produceQ->savedHeader;
-+		*consumeQHeader = qpair->consumeQ->savedHeader;
-+		result = VMCI_SUCCESS;
-+	}
-+
-+	return result;
-+}
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPairWakeupCB --
-+ *
-+ *      Callback from VMCI queue pair broker indicating that a queue
-+ *      pair that was previously not ready, now either is ready or
-+ *      gone forever.
-+ *
-+ * Results:
-+ *      VMCI_SUCCESS always.
-+ *
-+ * Side effects:
-+ *      None.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+static int VMCIQPairWakeupCB(void *clientData)
-+{
-+	VMCIQPair *qpair = (VMCIQPair *) clientData;
-+	ASSERT(qpair);
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	while (qpair->blocked > 0) {
-+		qpair->blocked--;
-+		wake_up(&qpair->event);
-+	}
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPairReleaseMutexCB --
-+ *
-+ *      Callback from VMCI_WaitOnEvent releasing the queue pair mutex
-+ *      protecting the queue pair header state.
-+ *
-+ * Results:
-+ *      0 always.
-+ *
-+ * Side effects:
-+ *      None.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+static int VMCIQPairReleaseMutexCB(void *clientData)
-+{
-+	VMCIQPair *qpair = (VMCIQPair *) clientData;
-+	ASSERT(qpair);
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
++	struct datagram_entry *entry = (struct datagram_entry *)clientData;
++	ASSERT(entry);
++	VMCIResource_Release(&entry->resource);
 +	return 0;
 +}
 +
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPairWaitForReadyQueue --
++ * DatagramCreateHnd --
 + *
-+ *      Makes the calling thread wait for the queue pair to become
-+ *      ready for host side access.
++ *      Internal function to create a datagram entry given a handle.
 + *
 + * Results:
-+ *     true when thread is woken up after queue pair state change.
-+ *     false otherwise.
++ *      VMCI_SUCCESS if created, negative errno value otherwise.
++ *
++ * Side effects:
++ *      None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++static int DatagramCreateHnd(uint32_t resourceID,	// IN:
++			     uint32_t flags,	// IN:
++			     uint32_t privFlags,	// IN:
++			     VMCIDatagramRecvCB recvCB,	// IN:
++			     void *clientData,	// IN:
++			     struct vmci_handle *outHandle)	// OUT:
++{
++	int result;
++	uint32_t contextID;
++	struct vmci_handle handle;
++	struct datagram_entry *entry;
++
++	ASSERT(recvCB != NULL);
++	ASSERT(outHandle != NULL);
++	ASSERT(!(privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS));
++
++	if ((flags & VMCI_FLAG_WELLKNOWN_DG_HND) != 0) {
++		return VMCI_ERROR_INVALID_ARGS;
++	} else {
++		if ((flags & VMCI_FLAG_ANYCID_DG_HND) != 0) {
++			contextID = VMCI_INVALID_ID;
++		} else {
++			contextID = VMCI_GetContextID();
++			if (contextID == VMCI_INVALID_ID) {
++				return VMCI_ERROR_NO_RESOURCES;
++			}
++		}
++
++		if (resourceID == VMCI_INVALID_ID) {
++			resourceID = VMCIResource_GetID(contextID);
++			if (resourceID == VMCI_INVALID_ID) {
++				return VMCI_ERROR_NO_HANDLE;
++			}
++		}
++
++		handle = VMCI_MAKE_HANDLE(contextID, resourceID);
++	}
++
++	entry = kmalloc(sizeof *entry, GFP_KERNEL);
++	if (entry == NULL) {
++		VMCI_WARNING((LGPFX
++			      "Failed allocating memory for datagram entry.\n"));
++		return VMCI_ERROR_NO_MEM;
++	}
++
++	entry->runDelayed = (flags & VMCI_FLAG_DG_DELAYED_CB) ? true : false;
++	entry->flags = flags;
++	entry->recvCB = recvCB;
++	entry->clientData = clientData;
++	init_waitqueue_head(&entry->destroyEvent);
++	entry->privFlags = privFlags;
++
++	/* Make datagram resource live. */
++	result =
++	    VMCIResource_Add(&entry->resource, VMCI_RESOURCE_TYPE_DATAGRAM,
++			     handle, DatagramFreeCB, entry);
++	if (result != VMCI_SUCCESS) {
++		VMCI_WARNING((LGPFX
++			      "Failed to add new resource (handle=0x%x:0x%x).\n",
++			      handle.context, handle.resource));
++		kfree(entry);
++		return result;
++	}
++	*outHandle = handle;
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ *  VMCIDatagram_Init --
++ *
++ *     Initialize Datagram API, ie. register the API functions with their
++ *     corresponding vectors.
++ *
++ *  Result:
++ *     None.
++ *
++ * Side effects:
++ *      None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++int VMCIDatagram_Init(void)
++{
++	atomic_set(&delayedDGHostQueueSize, 0);
++	return VMCI_SUCCESS;
++}
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ * VMCIDatagram_CreateHnd --
++ *
++ *      Creates a host context datagram endpoint and returns a handle to it.
++ *
++ * Results:
++ *      VMCI_SUCCESS if created, negative errno value otherwise.
++ *
++ * Side effects:
++ *      None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++int VMCIDatagram_CreateHnd(uint32_t resourceID,	// IN: Optional, generated
++			   //     if VMCI_INVALID_ID
++			   uint32_t flags,	// IN:
++			   VMCIDatagramRecvCB recvCB,	// IN:
++			   void *clientData,	// IN:
++			   struct vmci_handle *outHandle)	// OUT: newly created handle
++{
++	if (outHandle == NULL)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (recvCB == NULL) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"Client callback needed when creating datagram.\n"));
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	return DatagramCreateHnd(resourceID, flags,
++				 VMCI_DEFAULT_PROC_PRIVILEGE_FLAGS, recvCB,
++				 clientData, outHandle);
++}
++
++EXPORT_SYMBOL(VMCIDatagram_CreateHnd);
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ * VMCIDatagram_CreateHndPriv --
++ *
++ *      Creates a host context datagram endpoint and returns a handle to it.
++ *
++ * Results:
++ *      VMCI_SUCCESS if created, negative errno value otherwise.
++ *
++ * Side effects:
++ *      None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++int VMCIDatagram_CreateHndPriv(uint32_t resourceID,	// IN: Optional, generated
++			       //     if VMCI_INVALID_ID
++			       uint32_t flags,	// IN:
++			       uint32_t privFlags,	// IN:
++			       VMCIDatagramRecvCB recvCB,	// IN:
++			       void *clientData,	// IN:
++			       struct vmci_handle *outHandle)	// OUT: newly created handle
++{
++	if (outHandle == NULL) {
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	if (recvCB == NULL) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"Client callback needed when creating datagram.\n"));
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	if (privFlags & ~VMCI_PRIVILEGE_ALL_FLAGS) {
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	return DatagramCreateHnd(resourceID, flags, privFlags, recvCB,
++				 clientData, outHandle);
++}
++
++EXPORT_SYMBOL(VMCIDatagram_CreateHndPriv);
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ * VMCIDatagram_DestroyHnd --
++ *
++ *      Destroys a handle.
++ *
++ * Results:
++ *      None.
++ *
++ * Side effects:
++ *      None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++int VMCIDatagram_DestroyHnd(struct vmci_handle handle)	// IN
++{
++	struct datagram_entry *entry;
++	struct vmci_resource *resource = VMCIResource_Get(handle,
++							  VMCI_RESOURCE_TYPE_DATAGRAM);
++	if (resource == NULL) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"Failed to destroy datagram (handle=0x%x:0x%x).\n",
++				handle.context, handle.resource));
++		return VMCI_ERROR_NOT_FOUND;
++	}
++	entry = RESOURCE_CONTAINER(resource, struct datagram_entry, resource);
++
++	VMCIResource_Remove(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
++
++	/*
++	 * We now wait on the destroyEvent and release the reference we got
++	 * above.
++	 */
++	VMCI_WaitOnEvent(&entry->destroyEvent, DatagramReleaseCB, entry);
++
++	/*
++	 * We know that we are now the only reference to the above entry so
++	 * can safely free it.
++	 */
++	kfree(entry);
++
++	return VMCI_SUCCESS;
++}
++
++EXPORT_SYMBOL(VMCIDatagram_DestroyHnd);
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ *  VMCIDatagramGetPrivFlagsInt --
++ *
++ *     Internal utilility function with the same purpose as
++ *     VMCIDatagram_GetPrivFlags that also takes a contextID.
++ *
++ *  Result:
++ *     VMCI_SUCCESS on success, VMCI_ERROR_INVALID_ARGS if handle is invalid.
++ *
++ *  Side effects:
++ *     None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++static int VMCIDatagramGetPrivFlagsInt(uint32_t contextID,	// IN
++				       struct vmci_handle handle,	// IN
++				       uint32_t * privFlags)	// OUT
++{
++	ASSERT(privFlags);
++	ASSERT(contextID != VMCI_INVALID_ID);
++
++	if (contextID == VMCI_HOST_CONTEXT_ID) {
++		struct datagram_entry *srcEntry;
++		struct vmci_resource *resource;
++
++		resource =
++		    VMCIResource_Get(handle, VMCI_RESOURCE_TYPE_DATAGRAM);
++		if (resource == NULL) {
++			return VMCI_ERROR_INVALID_ARGS;
++		}
++		srcEntry =
++		    RESOURCE_CONTAINER(resource, struct datagram_entry,
++				       resource);
++		*privFlags = srcEntry->privFlags;
++		VMCIResource_Release(resource);
++	} else if (contextID == VMCI_HYPERVISOR_CONTEXT_ID) {
++		*privFlags = VMCI_MAX_PRIVILEGE_FLAGS;
++	} else {
++		*privFlags = VMCIContext_GetPrivFlags(contextID);
++	}
++
++	return VMCI_SUCCESS;
++}
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ *  VMCIDatagram_GetPrivFlags --
++ *
++ *     Utilility function that retrieves the privilege flags
++ *     associated with a given datagram handle. For hypervisor and
++ *     guest endpoints, the privileges are determined by the context
++ *     ID, but for host endpoints privileges are associated with the
++ *     complete handle.
++ *
++ *  Result:
++ *     VMCI_SUCCESS on success, VMCI_ERROR_INVALID_ARGS if handle is invalid.
++ *
++ *  Side effects:
++ *     None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++int VMCIDatagram_GetPrivFlags(struct vmci_handle handle,	// IN
++			      uint32_t * privFlags)	// OUT
++{
++	if (privFlags == NULL || handle.context == VMCI_INVALID_ID)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	return VMCIDatagramGetPrivFlagsInt(handle.context, handle, privFlags);
++}
++
++/*
++ *-----------------------------------------------------------------------------
++ *
++ * VMCIDatagramDelayedDispatchCB --
++ *
++ *      Calls the specified callback in a delayed context.
++ *
++ * Results:
++ *      None.
 + *
 + * Side effects:
 + *      None.
@@ -279,931 +469,419 @@ index 0000000..3cb5dbd
 + *-----------------------------------------------------------------------------
 + */
 +
-+static bool VMCIQPairWaitForReadyQueue(VMCIQPair * qpair)
++static void VMCIDatagramDelayedDispatchCB(void *data)	// IN
 +{
-+	if (unlikely(qpair->guestEndpoint))
-+		ASSERT(false);
++	bool inDGHostQueue;
++	struct delayed_datagram_info *dgInfo =
++	    (struct delayed_datagram_info *)data;
 +
-+	if (qpair->flags & VMCI_QPFLAG_NONBLOCK)
-+		return false;
++	ASSERT(data);
 +
-+	qpair->blocked++;
-+	VMCI_WaitOnEvent(&qpair->event, VMCIQPairReleaseMutexCB, qpair);
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	return true;
++	dgInfo->entry->recvCB(dgInfo->entry->clientData, &dgInfo->msg);
++
++	VMCIResource_Release(&dgInfo->entry->resource);
++
++	inDGHostQueue = dgInfo->inDGHostQueue;
++	kfree(dgInfo);
++
++	if (inDGHostQueue)
++		atomic_dec(&delayedDGHostQueueSize);
 +}
 +
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPair_Alloc --
++ *  VMCIDatagramDispatchAsHost --
 + *
-+ *      This is the client interface for allocating the memory for a
-+ *      VMCIQPair structure and then attaching to the underlying
-+ *      queue.  If an error occurs allocating the memory for the
-+ *      VMCIQPair structure, no attempt is made to attach.  If an
-+ *      error occurs attaching, then there's the VMCIQPair structure
-+ *      is freed.
++ *     Dispatch datagram as a host, to the host or other vm context. This
++ *     function cannot dispatch to hypervisor context handlers. This should
++ *     have been handled before we get here by VMCIDatagramDispatch.
 + *
-+ * Results:
-+ *      An err, if < 0.
++ *  Result:
++ *     Number of bytes sent on success, appropriate error code otherwise.
 + *
-+ * Side effects:
-+ *      Windows blocking call.
++ *  Side effects:
++ *     None.
 + *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+int VMCIQPair_Alloc(VMCIQPair ** qpair,	// OUT
-+		    struct vmci_handle *handle,	// OUT
-+		    uint64_t produceQSize,	// IN
-+		    uint64_t consumeQSize,	// IN
-+		    uint32_t peer,	// IN
-+		    uint32_t flags,	// IN
-+		    uint32_t privFlags)	// IN
++static int VMCIDatagramDispatchAsHost(uint32_t contextID,	// IN:
++				      struct vmci_datagram *dg)	// IN:
 +{
-+	VMCIQPair *myQPair;
 +	int retval;
-+	struct vmci_handle src = VMCI_INVALID_HANDLE;
-+	struct vmci_handle dst = VMCI_MAKE_HANDLE(peer, VMCI_INVALID_ID);
-+	enum vmci_route route;
-+	VMCIEventReleaseCB wakeupCB;
-+	void *clientData;
++	size_t dgSize;
++	uint32_t srcPrivFlags;
 +
-+	/*
-+	 * Restrict the size of a queuepair.  The device already enforces a limit
-+	 * on the total amount of memory that can be allocated to queuepairs for a
-+	 * guest.  However, we try to allocate this memory before we make the
-+	 * queuepair allocation hypercall.  On Windows and Mac OS, we request a
-+	 * single, continguous block, and it will fail if the OS cannot satisfy the
-+	 * request. On Linux, we allocate each page separately, which means rather
-+	 * than fail, the guest will thrash while it tries to allocate, and will
-+	 * become increasingly unresponsive to the point where it appears to be hung.
-+	 * So we place a limit on the size of an individual queuepair here, and
-+	 * leave the device to enforce the restriction on total queuepair memory.
-+	 * (Note that this doesn't prevent all cases; a user with only this much
-+	 * physical memory could still get into trouble.)  The error used by the
-+	 * device is NO_RESOURCES, so use that here too.
-+	 */
++	ASSERT(dg);
++	ASSERT(VMCI_HostPersonalityActive());
 +
-+	if (produceQSize + consumeQSize < max(produceQSize, consumeQSize)
-+	    || produceQSize + consumeQSize > VMCI_MAX_GUEST_QP_MEMORY)
-+		return VMCI_ERROR_NO_RESOURCES;
++	dgSize = VMCI_DG_SIZE(dg);
 +
-+	myQPair = kmalloc(sizeof *myQPair, GFP_KERNEL);
-+	if (!myQPair)
-+		return VMCI_ERROR_NO_MEM;
-+
-+	memset(myQPair, 0, sizeof *myQPair);
-+	myQPair->produceQSize = produceQSize;
-+	myQPair->consumeQSize = consumeQSize;
-+	myQPair->peer = peer;
-+	myQPair->flags = flags;
-+	myQPair->privFlags = privFlags;
-+	retval = VMCI_Route(&src, &dst, false, &route);
-+	if (retval < VMCI_SUCCESS) {
-+		if (VMCI_GuestPersonalityActive()) {
-+			route = VMCI_ROUTE_AS_GUEST;
-+		} else {
-+			route = VMCI_ROUTE_AS_HOST;
-+		}
++	if (contextID == VMCI_HOST_CONTEXT_ID &&
++	    dg->dst.context == VMCI_HYPERVISOR_CONTEXT_ID) {
++		return VMCI_ERROR_DST_UNREACHABLE;
 +	}
 +
-+	wakeupCB = clientData = NULL;
-+	if (VMCI_ROUTE_AS_HOST == route) {
-+		myQPair->guestEndpoint = false;
-+		if (!(flags & VMCI_QPFLAG_LOCAL)) {
-+			myQPair->blocked = 0;
-+			init_waitqueue_head(&myQPair->event);
-+			wakeupCB = VMCIQPairWakeupCB;
-+			clientData = (void *)myQPair;
-+		}
-+	} else {
-+		myQPair->guestEndpoint = true;
++	ASSERT(dg->dst.context != VMCI_HYPERVISOR_CONTEXT_ID);
++
++	/* Check that source handle matches sending context. */
++	if (dg->src.context != contextID) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"Sender context (ID=0x%x) is not owner of src "
++				"datagram entry (handle=0x%x:0x%x).\n",
++				contextID, dg->src.context, dg->src.resource));
++		return VMCI_ERROR_NO_ACCESS;
 +	}
 +
-+	retval = VMCIQueuePair_Alloc(handle,
-+				     &myQPair->produceQ,
-+				     myQPair->produceQSize,
-+				     &myQPair->consumeQ,
-+				     myQPair->consumeQSize,
-+				     myQPair->peer,
-+				     myQPair->flags,
-+				     myQPair->privFlags,
-+				     myQPair->guestEndpoint,
-+				     wakeupCB, clientData);
-+
-+	if (retval < VMCI_SUCCESS) {
-+		kfree(myQPair);
++	/* Get hold of privileges of sending endpoint. */
++	retval = VMCIDatagramGetPrivFlagsInt(contextID, dg->src, &srcPrivFlags);
++	if (retval != VMCI_SUCCESS) {
++		VMCI_WARNING((LGPFX
++			      "Couldn't get privileges (handle=0x%x:0x%x).\n",
++			      dg->src.context, dg->src.resource));
 +		return retval;
 +	}
 +
-+	*qpair = myQPair;
-+	myQPair->handle = *handle;
++	/* Determine if we should route to host or guest destination. */
++	if (dg->dst.context == VMCI_HOST_CONTEXT_ID) {
++		/* Route to host datagram entry. */
++		struct datagram_entry *dstEntry;
++		struct vmci_resource *resource;
 +
++		if (dg->src.context == VMCI_HYPERVISOR_CONTEXT_ID &&
++		    dg->dst.resource == VMCI_EVENT_HANDLER) {
++			return VMCIEvent_Dispatch(dg);
++		}
++
++		resource =
++		    VMCIResource_Get(dg->dst, VMCI_RESOURCE_TYPE_DATAGRAM);
++		if (resource == NULL) {
++			VMCI_DEBUG_LOG(4,
++				       (LGPFX
++					"Sending to invalid destination "
++					"(handle=0x%x:0x%x).\n",
++					dg->dst.context, dg->dst.resource));
++			return VMCI_ERROR_INVALID_RESOURCE;
++		}
++		dstEntry =
++		    RESOURCE_CONTAINER(resource, struct datagram_entry,
++				       resource);
++		if (VMCIDenyInteraction(srcPrivFlags, dstEntry->privFlags)) {
++			VMCIResource_Release(resource);
++			return VMCI_ERROR_NO_ACCESS;
++		}
++		ASSERT(dstEntry->recvCB);
++
++		/*
++		 * If a VMCI datagram destined for the host is also sent by the
++		 * host, we always run it delayed. This ensures that no locks
++		 * are held when the datagram callback runs.
++		 */
++
++		if (dstEntry->runDelayed
++		    || dg->src.context == VMCI_HOST_CONTEXT_ID) {
++			struct delayed_datagram_info *dgInfo;
++
++			if (atomic_add_return(1, &delayedDGHostQueueSize)
++			    == VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE) {
++				atomic_dec(&delayedDGHostQueueSize);
++				VMCIResource_Release(resource);
++				return VMCI_ERROR_NO_MEM;
++			}
++
++			dgInfo =
++			    kmalloc(sizeof *dgInfo +
++				    (size_t) dg->payloadSize, GFP_ATOMIC);
++			if (NULL == dgInfo) {
++				atomic_dec(&delayedDGHostQueueSize);
++				VMCIResource_Release(resource);
++				return VMCI_ERROR_NO_MEM;
++			}
++
++			dgInfo->inDGHostQueue = true;
++			dgInfo->entry = dstEntry;
++			memcpy(&dgInfo->msg, dg, dgSize);
++
++			retval =
++			    VMCI_ScheduleDelayedWork
++			    (VMCIDatagramDelayedDispatchCB, dgInfo);
++			if (retval < VMCI_SUCCESS) {
++				VMCI_WARNING((LGPFX
++					      "Failed to schedule delayed work for datagram "
++					      "(result=%d).\n", retval));
++				kfree(dgInfo);
++				VMCIResource_Release(resource);
++				atomic_dec(&delayedDGHostQueueSize);
++				return retval;
++			}
++		} else {
++			retval = dstEntry->recvCB(dstEntry->clientData, dg);
++			VMCIResource_Release(resource);
++			if (retval < VMCI_SUCCESS) {
++				return retval;
++			}
++		}
++	} else {
++		/* Route to destination VM context. */
++		struct vmci_datagram *newDG;
++
++		if (contextID != dg->dst.context) {
++			if (VMCIDenyInteraction(srcPrivFlags,
++						VMCIContext_GetPrivFlags
++						(dg->dst.context))) {
++				return VMCI_ERROR_NO_ACCESS;
++			} else if (VMCI_CONTEXT_IS_VM(contextID)) {
++				/* If the sending context is a VM, it cannot reach another VM. */
++
++				VMCI_DEBUG_LOG(4,
++					       (LGPFX
++						"Datagram communication between VMs not"
++						"supported (src=0x%x, dst=0x%x).\n",
++						contextID, dg->dst.context));
++				return VMCI_ERROR_DST_UNREACHABLE;
++			}
++		}
++
++		/* We make a copy to enqueue. */
++		newDG = kmalloc(dgSize, GFP_KERNEL);
++		if (newDG == NULL) {
++			return VMCI_ERROR_NO_MEM;
++		}
++		memcpy(newDG, dg, dgSize);
++		retval = VMCIContext_EnqueueDatagram(dg->dst.context, newDG);
++		if (retval < VMCI_SUCCESS) {
++			kfree(newDG);
++			return retval;
++		}
++	}
++
++	/*
++	 * We currently truncate the size to signed 32 bits. This doesn't
++	 * matter for this handler as it only support 4Kb messages.
++	 */
++	return (int)dgSize;
++}
++
++/*
++ *------------------------------------------------------------------------------
++ *
++ *  VMCIDatagramDispatchAsGuest --
++ *
++ *     Dispatch datagram as a guest, down through the VMX and potentially to
++ *     the host.
++ *
++ *  Result:
++ *     Number of bytes sent on success, appropriate error code otherwise.
++ *
++ *  Side effects:
++ *     None.
++ *
++ *------------------------------------------------------------------------------
++ */
++
++static int VMCIDatagramDispatchAsGuest(struct vmci_datagram *dg)
++{
++	int retval;
++	struct vmci_resource *resource;
++
++	resource = VMCIResource_Get(dg->src, VMCI_RESOURCE_TYPE_DATAGRAM);
++	if (NULL == resource) {
++		return VMCI_ERROR_NO_HANDLE;
++	}
++
++	retval = VMCI_SendDatagram(dg);
++	VMCIResource_Release(resource);
 +	return retval;
 +}
 +
-+EXPORT_SYMBOL(VMCIQPair_Alloc);
-+
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPair_Detach --
++ *  VMCIDatagram_Dispatch --
 + *
-+ *      This is the client interface for detaching from a VMCIQPair.
-+ *      Note that this routine will free the memory allocated for the
-+ *      VMCIQPair structure, too.
++ *     Dispatch datagram.  This will determine the routing for the datagram
++ *     and dispatch it accordingly.
 + *
-+ * Results:
-+ *      An error, if < 0.
++ *  Result:
++ *     Number of bytes sent on success, appropriate error code otherwise.
 + *
-+ * Side effects:
-+ *      Will clear the caller's pointer to the VMCIQPair structure.
++ *  Side effects:
++ *     None.
 + *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+int VMCIQPair_Detach(VMCIQPair ** qpair)	// IN/OUT
++int
++VMCIDatagram_Dispatch(uint32_t contextID,
++		      struct vmci_datagram *dg, bool fromGuest)
 +{
-+	int result;
-+	VMCIQPair *oldQPair;
++	int retval;
++	enum vmci_route route;
 +
-+	if (!qpair || !(*qpair)) {
++	ASSERT(dg);
++	ASSERT_ON_COMPILE(sizeof(struct vmci_datagram) == 24);
++
++	if (VMCI_DG_SIZE(dg) > VMCI_MAX_DG_SIZE) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX "Payload (size=%" FMT64
++				"u bytes) too big to " "send.\n",
++				dg->payloadSize));
 +		return VMCI_ERROR_INVALID_ARGS;
 +	}
 +
-+	oldQPair = *qpair;
-+	result =
-+	    VMCIQueuePair_Detach(oldQPair->handle, oldQPair->guestEndpoint);
++	retval = VMCI_Route(&dg->src, &dg->dst, fromGuest, &route);
++	if (retval < VMCI_SUCCESS) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"Failed to route datagram (src=0x%x, dst=0x%x, "
++				"err=%d)\n.", dg->src.context,
++				dg->dst.context, retval));
++		return retval;
++	}
 +
-+	/*
-+	 * The guest can fail to detach for a number of reasons, and if it does so,
-+	 * it will cleanup the entry (if there is one).  The host can fail too, but
-+	 * it won't cleanup the entry immediately, it will do that later when the
-+	 * context is freed.  Either way, we need to release the qpair struct here;
-+	 * there isn't much the caller can do, and we don't want to leak.
-+	 */
++	if (VMCI_ROUTE_AS_HOST == route) {
++		if (VMCI_INVALID_ID == contextID)
++			contextID = VMCI_HOST_CONTEXT_ID;
++		return VMCIDatagramDispatchAsHost(contextID, dg);
++	}
 +
-+	memset(oldQPair, 0, sizeof *oldQPair);
-+	oldQPair->handle = VMCI_INVALID_HANDLE;
-+	oldQPair->peer = VMCI_INVALID_ID;
-+	kfree(oldQPair);
-+	*qpair = NULL;
++	if (VMCI_ROUTE_AS_GUEST == route)
++		return VMCIDatagramDispatchAsGuest(dg);
 +
-+	return result;
++	VMCI_WARNING((LGPFX "Unknown route (%d) for datagram.\n", route));
++	return VMCI_ERROR_DST_UNREACHABLE;
 +}
 +
-+EXPORT_SYMBOL(VMCIQPair_Detach);
-+
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * VMCIQPair_GetProduceIndexes --
++ *  VMCIDatagram_InvokeGuestHandler --
 + *
-+ *      This is the client interface for getting the current indexes of the
-+ *      QPair from the point of the view of the caller as the producer.
++ *     Invoke the handler for the given datagram.  This is intended to be
++ *     called only when acting as a guest and receiving a datagram from the
++ *     virtual device.
 + *
-+ * Results:
-+ *      err, if < 0
-+ *      Success otherwise.
++ *  Result:
++ *     VMCI_SUCCESS on success, other error values on failure.
 + *
-+ * Side effects:
-+ *      Windows blocking call.
++ *  Side effects:
++ *     None.
 + *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+int VMCIQPair_GetProduceIndexes(const VMCIQPair * qpair,	// IN
-+				uint64_t * producerTail,	// OUT
-+				uint64_t * consumerHead)	// OUT
++int VMCIDatagram_InvokeGuestHandler(struct vmci_datagram *dg)	// IN
 +{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int result;
++	int retval;
++	struct vmci_resource *resource;
++	struct datagram_entry *dstEntry;
 +
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
++	ASSERT(dg);
 +
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS)
-+		VMCIQueueHeader_GetPointers(produceQHeader, consumeQHeader,
-+					    producerTail, consumerHead);
++	resource = VMCIResource_Get(dg->dst, VMCI_RESOURCE_TYPE_DATAGRAM);
++	if (NULL == resource) {
++		VMCI_DEBUG_LOG(4,
++			       (LGPFX
++				"destination (handle=0x%x:0x%x) doesn't exist.\n",
++				dg->dst.context, dg->dst.resource));
++		return VMCI_ERROR_NO_HANDLE;
++	}
 +
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
++	dstEntry =
++	    RESOURCE_CONTAINER(resource, struct datagram_entry, resource);
++	if (dstEntry->runDelayed) {
++		struct delayed_datagram_info *dgInfo;
 +
-+	if (result == VMCI_SUCCESS &&
-+	    ((producerTail && *producerTail >= qpair->produceQSize) ||
-+	     (consumerHead && *consumerHead >= qpair->produceQSize)))
-+		return VMCI_ERROR_INVALID_SIZE;
++		dgInfo =
++		    kmalloc(sizeof *dgInfo + (size_t) dg->payloadSize,
++			    GFP_ATOMIC);
++		if (NULL == dgInfo) {
++			VMCIResource_Release(resource);
++			retval = VMCI_ERROR_NO_MEM;
++			goto exit;
++		}
 +
-+	return result;
-+}
++		dgInfo->inDGHostQueue = false;
++		dgInfo->entry = dstEntry;
++		memcpy(&dgInfo->msg, dg, VMCI_DG_SIZE(dg));
 +
-+EXPORT_SYMBOL(VMCIQPair_GetProduceIndexes);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_GetConsumeIndexes --
-+ *
-+ *      This is the client interface for getting the current indexes of the
-+ *      QPair from the point of the view of the caller as the consumer.
-+ *
-+ * Results:
-+ *      err, if < 0
-+ *      Success otherwise.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+int VMCIQPair_GetConsumeIndexes(const VMCIQPair * qpair,	// IN
-+				uint64_t * consumerTail,	// OUT
-+				uint64_t * producerHead)	// OUT
-+{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int result;
-+
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS)
-+		VMCIQueueHeader_GetPointers(consumeQHeader, produceQHeader,
-+					    consumerTail, producerHead);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	if (result == VMCI_SUCCESS &&
-+	    ((consumerTail && *consumerTail >= qpair->consumeQSize) ||
-+	     (producerHead && *producerHead >= qpair->consumeQSize)))
-+		return VMCI_ERROR_INVALID_SIZE;
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_GetConsumeIndexes);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_ProduceFreeSpace --
-+ *
-+ *      This is the client interface for getting the amount of free
-+ *      space in the QPair from the point of the view of the caller as
-+ *      the producer which is the common case.
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Full queue if = 0.
-+ *      Number of available bytes into which data can be enqueued if > 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+int64_t VMCIQPair_ProduceFreeSpace(const VMCIQPair * qpair)	// IN
-+{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int64_t result;
-+
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS) {
-+		result =
-+		    VMCIQueueHeader_FreeSpace(produceQHeader,
-+					      consumeQHeader,
-+					      qpair->produceQSize);
++		retval =
++		    VMCI_ScheduleDelayedWork(VMCIDatagramDelayedDispatchCB,
++					     dgInfo);
++		if (retval < VMCI_SUCCESS) {
++			VMCI_WARNING((LGPFX
++				      "Failed to schedule delayed work for datagram "
++				      "(result=%d).\n", retval));
++			kfree(dgInfo);
++			VMCIResource_Release(resource);
++			dgInfo = NULL;
++			goto exit;
++		}
 +	} else {
-+		result = 0;
-+	}
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_ProduceFreeSpace);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_ConsumeFreeSpace --
-+ *
-+ *      This is the client interface for getting the amount of free
-+ *      space in the QPair from the point of the view of the caller as
-+ *      the consumer which is not the common case (see
-+ *      VMCIQPair_ProduceFreeSpace(), above).
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Full queue if = 0.
-+ *      Number of available bytes into which data can be enqueued if > 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+int64_t VMCIQPair_ConsumeFreeSpace(const VMCIQPair * qpair)	// IN
-+{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int64_t result;
-+
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS) {
-+		result =
-+		    VMCIQueueHeader_FreeSpace(consumeQHeader,
-+					      produceQHeader,
-+					      qpair->consumeQSize);
-+	} else {
-+		result = 0;
-+	}
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_ConsumeFreeSpace);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_ProduceBufReady --
-+ *
-+ *      This is the client interface for getting the amount of
-+ *      enqueued data in the QPair from the point of the view of the
-+ *      caller as the producer which is not the common case (see
-+ *      VMCIQPair_ConsumeBufReady(), above).
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Empty queue if = 0.
-+ *      Number of bytes ready to be dequeued if > 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+int64_t VMCIQPair_ProduceBufReady(const VMCIQPair * qpair)	// IN
-+{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int64_t result;
-+
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS) {
-+		result =
-+		    VMCIQueueHeader_BufReady(produceQHeader,
-+					     consumeQHeader,
-+					     qpair->produceQSize);
-+	} else {
-+		result = 0;
-+	}
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_ProduceBufReady);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_ConsumeBufReady --
-+ *
-+ *      This is the client interface for getting the amount of
-+ *      enqueued data in the QPair from the point of the view of the
-+ *      caller as the consumer which is the normal case.
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Empty queue if = 0.
-+ *      Number of bytes ready to be dequeued if > 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+int64_t VMCIQPair_ConsumeBufReady(const VMCIQPair * qpair)	// IN
-+{
-+	struct vmci_queue_header *produceQHeader;
-+	struct vmci_queue_header *consumeQHeader;
-+	int64_t result;
-+
-+	if (!qpair)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+	result =
-+	    VMCIQPairGetQueueHeaders(qpair, &produceQHeader, &consumeQHeader);
-+	if (result == VMCI_SUCCESS) {
-+		result =
-+		    VMCIQueueHeader_BufReady(consumeQHeader,
-+					     produceQHeader,
-+					     qpair->consumeQSize);
-+	} else {
-+		result = 0;
-+	}
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_ConsumeBufReady);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * EnqueueLocked --
-+ *
-+ *      Enqueues a given buffer to the produce queue using the provided
-+ *      function. As many bytes as possible (space available in the queue)
-+ *      are enqueued.
-+ *
-+ *      Assumes the queue->mutex has been acquired.
-+ *
-+ * Results:
-+ *      VMCI_ERROR_QUEUEPAIR_NOSPACE if no space was available to enqueue data.
-+ *      VMCI_ERROR_INVALID_SIZE, if any queue pointer is outside the queue
-+ *      (as defined by the queue size).
-+ *      VMCI_ERROR_INVALID_ARGS, if an error occured when accessing the buffer.
-+ *      VMCI_ERROR_QUEUEPAIR_NOTATTACHED, if the queue pair pages aren't
-+ *      available.
-+ *      Otherwise, the number of bytes written to the queue is returned.
-+ *
-+ * Side effects:
-+ *      Updates the tail pointer of the produce queue.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+static inline ssize_t EnqueueLocked(struct vmci_queue *produceQ,	// IN
-+				    struct vmci_queue *consumeQ,	// IN
-+				    const uint64_t produceQSize,	// IN
-+				    const void *buf,	// IN
-+				    size_t bufSize,	// IN
-+				    int bufType,	// IN
-+				    VMCIMemcpyToQueueFunc memcpyToQueue)	// IN
-+{
-+	int64_t freeSpace;
-+	uint64_t tail;
-+	size_t written;
-+	ssize_t result;
-+
-+	result = VMCIQPairMapQueueHeaders(produceQ, consumeQ);
-+	if (unlikely(result != VMCI_SUCCESS))
-+		return result;
-+
-+	freeSpace = VMCIQueueHeader_FreeSpace(produceQ->qHeader,
-+					      consumeQ->qHeader, produceQSize);
-+	if (freeSpace == 0)
-+		return VMCI_ERROR_QUEUEPAIR_NOSPACE;
-+
-+	if (freeSpace < VMCI_SUCCESS)
-+		return (ssize_t) freeSpace;
-+
-+	written = (size_t) (freeSpace > bufSize ? bufSize : freeSpace);
-+	tail = VMCIQueueHeader_ProducerTail(produceQ->qHeader);
-+	if (likely(tail + written < produceQSize)) {
-+		result =
-+		    memcpyToQueue(produceQ, tail, buf, 0, written, bufType);
-+	} else {
-+		/* Tail pointer wraps around. */
-+
-+		const size_t tmp = (size_t) (produceQSize - tail);
-+
-+		result = memcpyToQueue(produceQ, tail, buf, 0, tmp, bufType);
-+		if (result >= VMCI_SUCCESS) {
-+			result =
-+			    memcpyToQueue(produceQ, 0, buf, tmp,
-+					  written - tmp, bufType);
-+		}
++		dstEntry->recvCB(dstEntry->clientData, dg);
++		VMCIResource_Release(resource);
++		retval = VMCI_SUCCESS;
 +	}
 +
-+	if (result < VMCI_SUCCESS) {
-+		return result;
-+	}
-+
-+	VMCIQueueHeader_AddProducerTail(produceQ->qHeader, written,
-+					produceQSize);
-+	return written;
++ exit:
++	return retval;
 +}
 +
 +/*
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + *
-+ * DequeueLocked --
++ * VMCIDatagram_Send --
 + *
-+ *      Dequeues data (if available) from the given consume queue. Writes data
-+ *      to the user provided buffer using the provided function.
-+ *
-+ *      Assumes the queue->mutex has been acquired.
++ *      Sends the payload to the destination datagram handle.
 + *
 + * Results:
-+ *      VMCI_ERROR_QUEUEPAIR_NODATA if no data was available to dequeue.
-+ *      VMCI_ERROR_INVALID_SIZE, if any queue pointer is outside the queue
-+ *      (as defined by the queue size).
-+ *      VMCI_ERROR_INVALID_ARGS, if an error occured when accessing the buffer.
-+ *      Otherwise the number of bytes dequeued is returned.
++ *      Returns number of bytes sent if success, or error code if failure.
 + *
 + * Side effects:
-+ *      Updates the head pointer of the consume queue.
++ *      None.
 + *
-+ *-----------------------------------------------------------------------------
++ *------------------------------------------------------------------------------
 + */
 +
-+static inline ssize_t DequeueLocked(struct vmci_queue *produceQ,	// IN
-+				    struct vmci_queue *consumeQ,	// IN
-+				    const uint64_t consumeQSize,	// IN
-+				    void *buf,	// IN
-+				    size_t bufSize,	// IN
-+				    int bufType,	// IN
-+				    VMCIMemcpyFromQueueFunc memcpyFromQueue,	// IN
-+				    bool updateConsumer)	// IN
++int VMCIDatagram_Send(struct vmci_datagram *msg)	// IN
 +{
-+	int64_t bufReady;
-+	uint64_t head;
-+	size_t read;
-+	ssize_t result;
-+
-+	result = VMCIQPairMapQueueHeaders(produceQ, consumeQ);
-+	if (unlikely(result != VMCI_SUCCESS))
-+		return result;
-+
-+	bufReady = VMCIQueueHeader_BufReady(consumeQ->qHeader,
-+					    produceQ->qHeader, consumeQSize);
-+	if (bufReady == 0)
-+		return VMCI_ERROR_QUEUEPAIR_NODATA;
-+
-+	if (bufReady < VMCI_SUCCESS)
-+		return (ssize_t) bufReady;
-+
-+	read = (size_t) (bufReady > bufSize ? bufSize : bufReady);
-+	head = VMCIQueueHeader_ConsumerHead(produceQ->qHeader);
-+	if (likely(head + read < consumeQSize)) {
-+		result = memcpyFromQueue(buf, 0, consumeQ, head, read, bufType);
-+	} else {
-+		/* Head pointer wraps around. */
-+
-+		const size_t tmp = (size_t) (consumeQSize - head);
-+
-+		result = memcpyFromQueue(buf, 0, consumeQ, head, tmp, bufType);
-+		if (result >= VMCI_SUCCESS) {
-+			result =
-+			    memcpyFromQueue(buf, tmp, consumeQ, 0,
-+					    read - tmp, bufType);
-+		}
-+	}
-+
-+	if (result < VMCI_SUCCESS)
-+		return result;
-+
-+	if (updateConsumer) {
-+		VMCIQueueHeader_AddConsumerHead(produceQ->qHeader,
-+						read, consumeQSize);
-+	}
-+
-+	return read;
-+}
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_Enqueue --
-+ *
-+ *      This is the client interface for enqueueing data into the queue.
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes enqueued if >= 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+ssize_t VMCIQPair_Enqueue(VMCIQPair * qpair,	// IN
-+			  const void *buf,	// IN
-+			  size_t bufSize,	// IN
-+			  int bufType)	// IN
-+{
-+	ssize_t result;
-+
-+	if (!qpair || !buf)
++	if (msg == NULL)
 +		return VMCI_ERROR_INVALID_ARGS;
 +
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	do {
-+		result = EnqueueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->produceQSize,
-+				       buf, bufSize, bufType,
-+				       qpair->flags & VMCI_QPFLAG_LOCAL ?
-+				       VMCIMemcpyToQueueLocal :
-+				       VMCIMemcpyToQueue);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
++	return VMCIDatagram_Dispatch(VMCI_INVALID_ID, msg, false);
 +}
 +
-+EXPORT_SYMBOL(VMCIQPair_Enqueue);
++EXPORT_SYMBOL(VMCIDatagram_Send);
 +
 +/*
 + *-----------------------------------------------------------------------------
 + *
-+ * VMCIQPair_Dequeue --
++ * VMCIDatagram_Sync --
 + *
-+ *      This is the client interface for dequeueing data from the queue.
++ *      Use this as a synchronization point when setting globals, for example,
++ *      during device shutdown.
 + *
 + * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes dequeued if >= 0.
++ *      None.
 + *
 + * Side effects:
-+ *      Windows blocking call.
++ *      None.
 + *
 + *-----------------------------------------------------------------------------
 + */
 +
-+ssize_t VMCIQPair_Dequeue(VMCIQPair * qpair,	// IN
-+			  void *buf,	// IN
-+			  size_t bufSize,	// IN
-+			  int bufType)	// IN
++void VMCIDatagram_Sync(void)
 +{
-+	ssize_t result;
-+
-+	if (!qpair || !buf)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	do {
-+		result = DequeueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->consumeQSize,
-+				       buf, bufSize, bufType,
-+				       qpair->flags & VMCI_QPFLAG_LOCAL ?
-+				       VMCIMemcpyFromQueueLocal :
-+				       VMCIMemcpyFromQueue, true);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
++	VMCIResource_Sync();
 +}
-+
-+EXPORT_SYMBOL(VMCIQPair_Dequeue);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_Peek --
-+ *
-+ *      This is the client interface for peeking into a queue.  (I.e.,
-+ *      copy data from the queue without updating the head pointer.)
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes peeked, if >= 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+ssize_t VMCIQPair_Peek(VMCIQPair * qpair,	// IN
-+		       void *buf,	// IN
-+		       size_t bufSize,	// IN
-+		       int bufType)	// IN
-+{
-+	ssize_t result;
-+
-+	if (!qpair || !buf)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	do {
-+		result = DequeueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->consumeQSize,
-+				       buf, bufSize, bufType,
-+				       qpair->flags & VMCI_QPFLAG_LOCAL ?
-+				       VMCIMemcpyFromQueueLocal :
-+				       VMCIMemcpyFromQueue, false);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_Peek);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_EnqueueV --
-+ *
-+ *      This is the client interface for enqueueing data into the queue.
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes enqueued if >= 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+ssize_t VMCIQPair_EnqueueV(VMCIQPair * qpair,	// IN
-+			   void *iov,	// IN
-+			   size_t iovSize,	// IN
-+			   int bufType)	// IN
-+{
-+	ssize_t result;
-+
-+	if (!qpair || !iov)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	do {
-+		result = EnqueueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->produceQSize,
-+				       iov, iovSize, bufType,
-+				       VMCIMemcpyToQueueV);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_EnqueueV);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_DequeueV --
-+ *
-+ *      This is the client interface for dequeueing data from the queue.
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes dequeued if >= 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+ssize_t VMCIQPair_DequeueV(VMCIQPair * qpair,	// IN
-+			   void *iov,	// IN
-+			   size_t iovSize,	// IN
-+			   int bufType)	// IN
-+{
-+	ssize_t result;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	if (!qpair || !iov)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	do {
-+		result = DequeueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->consumeQSize,
-+				       iov, iovSize, bufType,
-+				       VMCIMemcpyFromQueueV, true);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_DequeueV);
-+
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIQPair_PeekV --
-+ *
-+ *      This is the client interface for peeking into a queue.  (I.e.,
-+ *      copy data from the queue without updating the head pointer.)
-+ *
-+ * Results:
-+ *      Err, if < 0.
-+ *      Number of bytes peeked, if >= 0.
-+ *
-+ * Side effects:
-+ *      Windows blocking call.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+
-+ssize_t VMCIQPair_PeekV(VMCIQPair * qpair,	// IN
-+			void *iov,	// IN
-+			size_t iovSize,	// IN
-+			int bufType)	// IN
-+{
-+	ssize_t result;
-+
-+	if (!qpair || !iov)
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	VMCI_AcquireQueueMutex(qpair->produceQ);
-+
-+	do {
-+		result = DequeueLocked(qpair->produceQ,
-+				       qpair->consumeQ,
-+				       qpair->consumeQSize,
-+				       iov, iovSize, bufType,
-+				       VMCIMemcpyFromQueueV, false);
-+		if (result == VMCI_ERROR_QUEUEPAIR_NOT_READY) {
-+			if (!VMCIQPairWaitForReadyQueue(qpair)) {
-+				result = VMCI_ERROR_WOULD_BLOCK;
-+			}
-+		}
-+	} while (result == VMCI_ERROR_QUEUEPAIR_NOT_READY);
-+
-+	VMCI_ReleaseQueueMutex(qpair->produceQ);
-+
-+	return result;
-+}
-+
-+EXPORT_SYMBOL(VMCIQPair_PeekV);
-diff --git a/drivers/misc/vmw_vmci/vmciQueue.h b/drivers/misc/vmw_vmci/vmciQueue.h
+diff --git a/drivers/misc/vmw_vmci/vmciDatagram.h b/drivers/misc/vmw_vmci/vmciDatagram.h
 new file mode 100644
-index 0000000..1d7c17c
+index 0000000..9ae003e
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmciQueue.h
-@@ -0,0 +1,108 @@
++++ b/drivers/misc/vmw_vmci/vmciDatagram.h
+@@ -0,0 +1,42 @@
 +/*
 + *
 + * VMware VMCI Driver
@@ -1224,94 +902,28 @@ index 0000000..1d7c17c
 + * 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 + */
 +
-+#ifndef _VMCI_QUEUE_H_
-+#define _VMCI_QUEUE_H_
++#ifndef _VMCI_DATAGRAM_H_
++#define _VMCI_DATAGRAM_H_
 +
-+/*
-+ * struct vmci_queue
-+ *
-+ * This data type contains the information about a queue.
-+ *
-+ * There are two queues (hence, queue pairs) per transaction model between a
-+ * pair of end points, A & B.  One queue is used by end point A to transmit
-+ * commands and responses to B.  The other queue is used by B to transmit
-+ * commands and responses.
-+ *
-+ * struct vmci_queue_kern_if is a per-OS defined Queue structure.  It contains either a
-+ * direct pointer to the linear address of the buffer contents or a pointer to
-+ * structures which help the OS locate those data pages.  See vmciKernelIf.c
-+ * for each platform for its definition.
-+ */
++#include "vmci_call_defs.h"
++#include "vmci_iocontrols.h"
++#include "vmciContext.h"
 +
-+struct vmci_queue {
-+	struct vmci_queue_header *qHeader;
-+	struct vmci_queue_header *savedHeader;
-+	struct vmci_queue_kern_if *kernelIf;
-+};
++#define VMCI_MAX_DELAYED_DG_HOST_QUEUE_SIZE 256
 +
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIMemcpy{To,From}QueueFunc() prototypes.  Functions of these
-+ * types are passed around to enqueue and dequeue routines.  Note that
-+ * often the functions passed are simply wrappers around memcpy
-+ * itself.
-+ *
-+ * Note: In order for the memcpy typedefs to be compatible with the VMKernel,
-+ * there's an unused last parameter for the hosted side.  In
-+ * ESX, that parameter holds a buffer type.
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
-+typedef int VMCIMemcpyToQueueFunc(struct vmci_queue *queue,
-+				  uint64_t queueOffset, const void *src,
-+				  size_t srcOffset, size_t size, int bufType);
-+typedef int VMCIMemcpyFromQueueFunc(void *dest, size_t destOffset,
-+				    const struct vmci_queue *queue,
-+				    uint64_t queueOffset, size_t size,
-+				    int bufType);
++/* Init functions. */
++int VMCIDatagram_Init(void);
 +
-+/*
-+ *-----------------------------------------------------------------------------
-+ *
-+ * VMCIMemcpy{To,From}Queue[v]() prototypes
-+ *
-+ * Note that these routines are NOT SAFE to call on a host end-point
-+ * until the guest end of the queue pair has attached -AND-
-+ * SetPageStore().  The VMX crosstalk device will issue the
-+ * SetPageStore() on behalf of the guest when the guest creates a
-+ * QueuePair or attaches to one created by the host.  So, if the guest
-+ * notifies the host that it's attached then the queue is safe to use.
-+ * Also, if the host registers notification of the connection of the
-+ * guest, then it will only receive that notification when the guest
-+ * has issued the SetPageStore() call and not before (when the guest
-+ * had attached).
-+ *
-+ *-----------------------------------------------------------------------------
-+ */
++/* Datagram API for non-public use. */
++int VMCIDatagram_Dispatch(uint32_t contextID, struct vmci_datagram *dg,
++			  bool fromGuest);
++int VMCIDatagram_InvokeGuestHandler(struct vmci_datagram *dg);
++int VMCIDatagram_GetPrivFlags(struct vmci_handle handle, uint32_t * privFlags);
 +
-+int VMCIMemcpyToQueue(struct vmci_queue *queue, uint64_t queueOffset,
-+		      const void *src, size_t srcOffset, size_t size,
-+		      int bufType);
-+int VMCIMemcpyFromQueue(void *dest, size_t destOffset,
-+			const struct vmci_queue *queue,
-+			uint64_t queueOffset, size_t size, int bufType);
++/* Misc. */
++void VMCIDatagram_Sync(void);
 +
-+int VMCIMemcpyToQueueLocal(struct vmci_queue *queue, uint64_t queueOffset,
-+			   const void *src, size_t srcOffset, size_t size,
-+			   int bufType);
-+int VMCIMemcpyFromQueueLocal(void *dest, size_t destOffset,
-+			     const struct vmci_queue *queue,
-+			     uint64_t queueOffset, size_t size, int bufType);
-+
-+int VMCIMemcpyToQueueV(struct vmci_queue *queue, uint64_t queueOffset,
-+		       const void *src, size_t srcOffset, size_t size,
-+		       int bufType);
-+int VMCIMemcpyFromQueueV(void *dest, size_t destOffset,
-+			 const struct vmci_queue *queue,
-+			 uint64_t queueOffset, size_t size, int bufType);
-+
-+#endif				/* !_VMCI_QUEUE_H_ */
++#endif				// _VMCI_DATAGRAM_H_
 -- 
 1.7.0.4
 
