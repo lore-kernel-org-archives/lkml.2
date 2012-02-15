@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab2BOR4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:56:47 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:33566 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab2BOR4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:56:45 -0500
-Date: Wed, 15 Feb 2012 23:26:36 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@elte.hu, pjt@google.com, efault@gmx.de, venki@google.com,
-        suresh.b.siddha@intel.com, linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Subject: Re: sched: Performance of Trade workload running inside VM
-Message-ID: <20120215175636.GE9918@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20120214112827.GA22653@linux.vnet.ibm.com>
- <1329307161.2293.66.camel@twins>
- <20120215171032.GB9918@linux.vnet.ibm.com>
- <1329326651.2293.151.camel@twins>
- <20120215173817.GD9918@linux.vnet.ibm.com>
- <1329327902.2293.168.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1329327902.2293.168.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12021507-0260-0000-0000-0000008B8082
+	id S1754438Ab2BOR7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:59:42 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33381 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754060Ab2BOR7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 12:59:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="117892588"
+Subject: Re: [PATCH] iwlwifi: iwl-agn.h included twice
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: linux-wireless@vger.kernel.org, Danny Kukawka <dkukawka@suse.de>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1329328516-4792-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329328516-4792-1-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Feb 2012 08:50:09 -0800
+Message-ID: <1329324609.7290.67.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-02-15 18:45:02]:
-
-> I'm still waiting for a problem description that isn't a book.
-
-:-)
-
-> What does the load-balancer do, why is it wrong, why does your patch
-> sort it etc.
-
-Ok. I will get some more load balancer traces and describe what it is doing
-(potentially) wrong which is affecting this benchmark.
-
-> I've really no idea what you're trying to do, other than make your
-> numbers improve (which while a noble goal, doesn't help in judging your
-> patch or suggesting alternative means of getting there).
-
-- vatsa
+On Wed, 2012-02-15 at 18:55 +0100, Danny Kukawka wrote:
+> drivers/net/wireless/iwlwifi/iwl-core.c included 'iwl-agn.h' twice,
+> remove the duplicate.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
