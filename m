@@ -1,88 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab2BOQDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:03:00 -0500
-Received: from mail.southpole.se ([193.12.106.18]:58734 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2BOQCz (ORCPT
+	id S1752202Ab2BOQDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:03:08 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45427 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2BOQDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:02:55 -0500
-Message-ID: <1329320456.2670.86.camel@crucifix>
-Subject: Re: [PATCH 21/40] OpenRISC: Don't reimplement force_sigsegv()
-From: Jonas Bonn <jonas@southpole.se>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-arch@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net
-Date: Wed, 15 Feb 2012 16:40:56 +0100
-In-Reply-To: <1329219673-28711-22-git-send-email-matt@console-pimps.org>
-References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-	 <1329219673-28711-22-git-send-email-matt@console-pimps.org>
-Organization: South Pole AB
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu2 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 20453-07209
+	Wed, 15 Feb 2012 11:03:07 -0500
+Date: Wed, 15 Feb 2012 17:03:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: Re: [PATCH 5/7] ftrace, perf: Add support to use function tracepoint
+ in perf
+Message-ID: <20120215160259.GA24080@somewhere>
+References: <1329317514-8131-1-git-send-email-jolsa@redhat.com>
+ <1329317514-8131-6-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329317514-8131-6-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Acked-by: Jonas Bonn <jonas@southpole.se>
-
-...for OpenRISC, all 4 patches (20-23 in this series).
-
-Should I take these in the OpenRISC tree or how did you want to do?
-
-/Jonas
-
-On Tue, 2012-02-14 at 11:40 +0000, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On Wed, Feb 15, 2012 at 03:51:52PM +0100, Jiri Olsa wrote:
+> Adding perf registration support for the ftrace function event,
+> so it is now possible to register it via perf interface.
 > 
-> Instead of open coding the sequence from force_sigsegv() just call
-> it. This also fixes a bug because we were modifying ka->sa.sa_handler
-> (which is a copy of sighand->action[]), whereas the intention of the
-> code was to modify sighand->action[] directly.
+> The perf_event struct statically contains ftrace_ops as a handle
+> for function tracer. The function tracer is registered/unregistered
+> in open/close actions.
 > 
-> As the original code was working with a copy it had no effect on
-> signal delivery.
+> To be efficient, we enable/disable ftrace_ops each time the traced
+> process is scheduled in/out (via TRACE_REG_PERF_(ADD|DELL) handlers).
+> This way tracing is enabled only when the process is running.
+> Intentionally using this way instead of the event's hw state
+> PERF_HES_STOPPED, which would not disable the ftrace_ops.
 > 
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux@lists.openrisc.net
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> It is now possible to use function trace within perf commands
+> like:
+> 
+>   perf record -e ftrace:function ls
+>   perf stat -e ftrace:function ls
+> 
+> Allowed only for root.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
 > ---
->  arch/openrisc/kernel/signal.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+>  include/linux/perf_event.h      |    3 +
+>  kernel/trace/trace.h            |   11 +++++
+>  kernel/trace/trace_entries.h    |    6 ++-
+>  kernel/trace/trace_event_perf.c |   86 +++++++++++++++++++++++++++++++++++++++
+>  kernel/trace/trace_export.c     |    5 ++
+>  5 files changed, 109 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
-> index 95207ab..53741ba 100644
-> --- a/arch/openrisc/kernel/signal.c
-> +++ b/arch/openrisc/kernel/signal.c
-> @@ -250,9 +250,7 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	return;
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 412b790..92a056f 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -859,6 +859,9 @@ struct perf_event {
+>  #ifdef CONFIG_EVENT_TRACING
+>  	struct ftrace_event_call	*tp_event;
+>  	struct event_filter		*filter;
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +	struct ftrace_ops               ftrace_ops;
+> +#endif
+>  #endif
 >  
->  give_sigsegv:
-> -	if (sig == SIGSEGV)
-> -		ka->sa.sa_handler = SIG_DFL;
-> -	force_sig(SIGSEGV, current);
-> +	force_sigsegv(sig, current);
+>  #ifdef CONFIG_CGROUP_PERF
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 638476a..76a1c50 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -595,6 +595,8 @@ static inline int ftrace_trace_task(struct task_struct *task)
+>  static inline int ftrace_is_dead(void) { return 0; }
+>  #endif
+>  
+> +int ftrace_event_is_function(struct ftrace_event_call *call);
+> +
+>  /*
+>   * struct trace_parser - servers for reading the user input separated by spaces
+>   * @cont: set if the input is not complete - no final space char was found
+> @@ -832,4 +834,13 @@ extern const char *__stop___trace_bprintk_fmt[];
+>  	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
+>  #include "trace_entries.h"
+>  
+> +#ifdef CONFIG_PERF_EVENTS
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +int perf_ftrace_event_register(struct ftrace_event_call *call,
+> +			       enum trace_reg type, void *data);
+> +#else
+> +#define perf_ftrace_event_register NULL
+> +#endif /* CONFIG_FUNCTION_TRACER */
+> +#endif /* CONFIG_PERF_EVENTS */
+> +
+>  #endif /* _LINUX_KERNEL_TRACE_H */
+> diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
+> index 9336590..47db7ed 100644
+> --- a/kernel/trace/trace_entries.h
+> +++ b/kernel/trace/trace_entries.h
+> @@ -55,7 +55,7 @@
+>  /*
+>   * Function trace entry - function address and parent function address:
+>   */
+> -FTRACE_ENTRY(function, ftrace_entry,
+> +FTRACE_ENTRY_REG(function, ftrace_entry,
+>  
+>  	TRACE_FN,
+>  
+> @@ -64,7 +64,9 @@ FTRACE_ENTRY(function, ftrace_entry,
+>  		__field(	unsigned long,	parent_ip	)
+>  	),
+>  
+> -	F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip)
+> +	F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip),
+> +
+> +	perf_ftrace_event_register
+>  );
+>  
+>  /* Function call entry */
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index d72af0b..fdeeb5c 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -24,6 +24,11 @@ static int	total_ref_count;
+>  static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
+>  				 struct perf_event *p_event)
+>  {
+> +	/* The ftrace function trace is allowed only for root. */
+> +	if (ftrace_event_is_function(tp_event) &&
+> +	    perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> +		return -EPERM;
+> +
+>  	/* No tracing, just counting, so no obvious leak */
+>  	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
+>  		return 0;
+> @@ -250,3 +255,84 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+>  	return raw_data;
 >  }
+>  EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +static void
+> +perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
+> +{
+> +	struct ftrace_entry *entry;
+> +	struct hlist_head *head;
+> +	struct pt_regs regs;
+> +	int rctx;
+> +
+> +#define ENTRY_SIZE (ALIGN(sizeof(struct ftrace_entry) + sizeof(u32), \
+> +		    sizeof(u64)) - sizeof(u32))
+> +
+> +	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
+> +
+> +	perf_fetch_caller_regs(&regs);
+> +
+> +	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
+> +	if (!entry)
+> +		return;
+> +
+> +	entry->ip = ip;
+> +	entry->parent_ip = parent_ip;
+> +
+> +	head = this_cpu_ptr(event_function.perf_events);
+> +	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
+> +			      1, &regs, head);
+> +
+> +#undef ENTRY_SIZE
+> +}
+> +
+> +static int perf_ftrace_function_register(struct perf_event *event)
+> +{
+> +	struct ftrace_ops *ops = &event->ftrace_ops;
+> +
+> +	ops->flags |= FTRACE_OPS_FL_CONTROL;
+> +	ops->func = perf_ftrace_function_call;
+> +	return register_ftrace_function(ops);
+> +}
+> +
+> +static int perf_ftrace_function_unregister(struct perf_event *event)
+> +{
+> +	struct ftrace_ops *ops = &event->ftrace_ops;
+> +	return unregister_ftrace_function(ops);
+> +}
+> +
+> +static void perf_ftrace_function_enable(struct perf_event *event)
+> +{
+> +	ftrace_function_local_enable(&event->ftrace_ops);
+> +}
+> +
+> +static void perf_ftrace_function_disable(struct perf_event *event)
+> +{
+> +	ftrace_function_local_disable(&event->ftrace_ops);
+> +}
+> +
+> +int perf_ftrace_event_register(struct ftrace_event_call *call,
+> +			       enum trace_reg type, void *data)
+> +{
+> +	switch (type) {
+> +	case TRACE_REG_REGISTER:
+> +	case TRACE_REG_UNREGISTER:
+> +		break;
+> +	case TRACE_REG_PERF_REGISTER:
+> +	case TRACE_REG_PERF_UNREGISTER:
+> +		return 0;
+> +	case TRACE_REG_PERF_OPEN:
+> +		return perf_ftrace_function_register(data);
+> +	case TRACE_REG_PERF_CLOSE:
+> +		return perf_ftrace_function_unregister(data);
+> +	case TRACE_REG_PERF_ADD:
+> +		perf_ftrace_function_enable(data);
+> +		return 0;
+> +	case TRACE_REG_PERF_DEL:
+> +		perf_ftrace_function_disable(data);
+> +		return 0;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +#endif /* CONFIG_FUNCTION_TRACER */
+> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> index f74de86..a3dbee6 100644
+> --- a/kernel/trace/trace_export.c
+> +++ b/kernel/trace/trace_export.c
+> @@ -184,4 +184,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
+>  	FTRACE_ENTRY_REG(call, struct_name, etype,			\
+>  			 PARAMS(tstruct), PARAMS(print), NULL)
 >  
->  static inline void
-
--- 
-Jonas Bonn                       South Pole AB
-Phone : +46-8-56237100           Anderstorpsvägen 16
-Mobile: +46-768-527755           SE-17154 Solna
-jonas@southpole.se               www.southpoleconsulting.com
-
-
-
-
-
+> +int ftrace_event_is_function(struct ftrace_event_call *call)
+> +{
+> +	return call == &event_function;
+> +}
+> +
+>  #include "trace_entries.h"
+> -- 
+> 1.7.1
+> 
