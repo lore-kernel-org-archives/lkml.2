@@ -1,120 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab2BOUSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:18:24 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:57516 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755045Ab2BOUSW (ORCPT
+	id S1755314Ab2BOUTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:19:23 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60846 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132Ab2BOUTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:18:22 -0500
-Date: Wed, 15 Feb 2012 15:17:57 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Xi Wang <xi.wang@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
-Subject: Re: Uninline kcalloc
-Message-ID: <20120215201757.GA6934@elliptictech.com>
-References: <alpine.DEB.2.00.1202131424020.25908@router.home>
- <20120214072017.GF26353@mwanda>
- <alpine.DEB.2.00.1202140858080.20013@router.home>
- <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com>
- <alpine.DEB.2.00.1202141032410.22250@router.home>
- <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com>
- <alpine.DEB.2.00.1202141329360.24883@router.home>
- <alpine.DEB.2.00.1202141336060.24883@router.home>
- <20120214205032.GA631@elliptictech.com>
- <alpine.DEB.2.00.1202141513210.29019@router.home>
+	Wed, 15 Feb 2012 15:19:22 -0500
+Date: Wed, 15 Feb 2012 15:19:18 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Eric Paris <eparis@redhat.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Nathaniel Husted <nhusted@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
+In-Reply-To: <1329335879.2337.18.camel@localhost>
+Message-ID: <alpine.LFD.2.02.1202151518000.24536@xanadu.home>
+References: <1329284188.12708.1.camel@phoenix> <20120215083609.GD13673@n2100.arm.linux.org.uk> <1329325622.2337.13.camel@localhost> <20120215173443.GF27825@n2100.arm.linux.org.uk> <1329335879.2337.18.camel@localhost>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1202141513210.29019@router.home>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-14 15:24 -0600, Christoph Lameter wrote:
-> On Tue, 14 Feb 2012, Nick Bowler wrote:
+On Wed, 15 Feb 2012, Eric Paris wrote:
+
+> On Wed, 2012-02-15 at 17:34 +0000, Russell King - ARM Linux wrote:
+> > On Wed, Feb 15, 2012 at 12:07:02PM -0500, Eric Paris wrote:
+> > > So if someone tells me how the code knows it's endianness I'll gladly
+> > > write the ifdef to switch from AUDIT_ARCH_ARMEB to AUDIT_ARCH_ARM when
+> > > appropriate....
+> > 
+> > An easy way would be:
+> > 
+> > #ifndef __ARMEB__
+> > #define AUDIT_ARCH_NR AUDIT_ARCH_ARMEB
+> > #else
+> > #define AUDIT_ARCH_NR AUDIT_ARCH_ARM
+> > #endif
 > 
-> > On 2012-02-14 13:37 -0600, Christoph Lameter wrote:
-> > > This patch still preserves kcalloc. But note that if kcalloc returns NULL
-> > > then multiple conditions may have caused it. One is that the array is
-> > > simply too large. The other may be that such an allocation is not possible
-> > > due to fragmentation.
-> > [...]
-> > > +static inline long calculate_array_size(size_t n, size_t size)
-> > > +{
-> > > +	if (size != 0 && n > ULONG_MAX / size)
-> > > +
-> > > +		return 0;
-> >
-> > This isn't right.  The above tests whether or not the result of the
-> > multiplication will not be representable in an 'unsigned long'...
-> 
-> Yes and so does the current kcalloc.
+> Is that actually exactly backwards?  ifndef?  (I don't have a clue 
+> when __ARMEB__ is set)
 
-Well, the current kcalloc doesn't assign the result to a signed long.
-However, it does assign the result to a size_t, which makes one wonder
-why it's not testing against SIZE_MAX.  If size_t has the same range as
-unsigned long on all architectures, then this confusion doesn't matter,
-but is that actually the case?
+__ARMEB__ is set on big endian.  So the above condition should be ifdef 
+not ifndef.
 
-> > > +	return n * size;
-> >
-> > but then the result is assigned to a (signed) long, which may overflow
-> > if it's greater than LONG_MAX.
-> 
-> That can happen?
 
-Yes, because LONG_MAX (the maximum value of your return type) is
-strictly less than ULONG_MAX (what you test against).  It's not hard to
-pick input numbers that multiply to something between LONG_MAX and
-ULONG_MAX, which will cause your function to return a negative value
-(standard C leaves the result of such a conversion implementation-
-defined, but I'll assume for now that it works this way for everything
-that compiles Linux).
-
-Admittedly, your kcalloc change then assigns this negative value to a
-size_t, which will result in the correct positive value assuming
-SIZE_MAX == ULONG_MAX, but that's gratuitously roundabout.
-
-[...]
-> > [...]
-> > >  void *kcalloc(size_t n, size_t size, gfp_t flags)
-> > >  {
-> > > -	if (size != 0 && n > ULONG_MAX / size)
-> > > -		return NULL;
-> > > -	return __kmalloc(n * size, flags | __GFP_ZERO);
-> > > +	size_t s = calculate_array_size(n, size);
-> > > +
-> > > +	if (s)
-> > > +		return kzalloc(s, flags);
-> > > +
-> > > +	return NULL;
-> > >  }
-> >
-> > This hunk changes the behaviour of kcalloc if either of the two size parameters
-> > is 0.
-> 
-> You want ZERO_PTR returns?
->
-> NULL is one permissible return value of calloc() if size == 0. So we are
-> now deviating from user space conventions.
-
-Sort of.  While standard C leaves it implementation-defined whether
-successful zero-sized allocations are possible, all sane implementations
-let them succeed.  Hence, portable C apps need to handle 0 as a special
-case, because there are insane implementations out there.  There's no
-reason for the kernel to be one of them.
-
-Regardless, this was still a (presumably unintentional) change from
-the previous behaviour.
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-
+Nicolas
