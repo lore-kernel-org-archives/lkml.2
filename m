@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2BOW74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:59:56 -0500
+	id S1756159Ab2BOXAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:00:17 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:56730 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab2BOW52 (ORCPT
+	with ESMTP id S1755991Ab2BOW5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:57:28 -0500
-Subject: [PATCH RFC 05/15] mm: add book->reclaim_stat
+	Wed, 15 Feb 2012 17:57:15 -0500
+Subject: [PATCH RFC 02/15] mm: memory bookkeeping core
 To: linux-mm@kvack.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-kernel@vger.kernel.org
-Date: Thu, 16 Feb 2012 02:57:25 +0400
-Message-ID: <20120215225724.22050.60712.stgit@zurg>
+Date: Thu, 16 Feb 2012 02:57:11 +0400
+Message-ID: <20120215225711.22050.54656.stgit@zurg>
 In-Reply-To: <20120215224221.22050.80605.stgit@zurg>
 References: <20120215224221.22050.80605.stgit@zurg>
 User-Agent: StGit/0.15
@@ -23,230 +23,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge memcg and non-memcg reclaim stat, thus we need to update only one.
-Move zone->reclaimer_stat and mem_cgroup_per_zone->reclaimer_stat to struct book.
+core blueprint
 
-struct book will become operating unit for recalimer logic,
-thus this is perfect place for these counters.
+TODO:
+* add direct link from page to book in page->flags instead of zoneid and nodeid
+* atomic switching page book-id in page->flags bits
+  [ something like atomic_long_xor(&page->flags, old_book_id ^ new_book_id) ]
+* move freed pages into root book (zone->book)
+* don't free struct book, reuse them after rcu grace period to keep rcu-iterating
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- include/linux/memcontrol.h |   17 --------------
- include/linux/mmzone.h     |    4 ++-
- mm/memcontrol.c            |   52 +++++---------------------------------------
- mm/page_alloc.c            |    6 ++---
- mm/swap.c                  |   12 ++--------
- mm/vmscan.c                |    5 +++-
- 6 files changed, 15 insertions(+), 81 deletions(-)
+ include/linux/mm_inline.h |   36 ++++++++++++++++++++++++++++++++++
+ include/linux/mmzone.h    |    8 ++++++++
+ init/Kconfig              |    4 ++++
+ mm/memcontrol.c           |   48 ++++++++++++++++++++++++++++++++++++++++++++-
+ mm/page_alloc.c           |    6 ++++++
+ 5 files changed, 101 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 4183753..78d0fcd 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -111,10 +111,6 @@ unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 					int nid, int zid, unsigned int lrumask);
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone);
--struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat_from_page(struct page *page);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- 					struct task_struct *p);
- extern void mem_cgroup_replace_page_cache(struct page *oldpage,
-@@ -284,19 +280,6 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
- 	return 0;
- }
+diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
+index e0b78ca..6f42819 100644
+--- a/include/linux/mm_inline.h
++++ b/include/linux/mm_inline.h
+@@ -3,6 +3,42 @@
  
--
--static inline struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg, struct zone *zone)
--{
--	return NULL;
--}
--
--static inline struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat_from_page(struct page *page)
--{
--	return NULL;
--}
--
- static inline void
- mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- {
+ #include <linux/huge_mm.h>
+ 
++#ifdef CONFIG_MEMORY_BOOKKEEPING
++
++extern struct book *page_book(struct page *book);
++
++static inline struct zone *book_zone(struct book *book)
++{
++	return book->zone;
++}
++
++static inline struct pglist_data *book_node(struct book *book)
++{
++	return book->node;
++}
++
++#else /* CONFIG_MEMORY_BOOKKEEPING */
++
++static inline struct book *page_book(struct page *page)
++{
++	return &page_zone(page)->book;
++}
++
++static inline struct zone *book_zone(struct book *book)
++{
++	return container_of(book, struct zone, book);
++}
++
++static inline struct pglist_data *book_node(struct book *book)
++{
++	return book_zone(book)->zone_pgdat;
++}
++
++#endif /* CONFIG_MEMORY_BOOKKEEPING */
++
++#define for_each_book(book, zone) \
++	list_for_each_entry_rcu(book, &zone->book_list, list)
++
+ /**
+  * page_is_file_cache - should the page be on a file LRU or anon LRU?
+  * @page: the page to test
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index ef4b984..5bcd5b1 100644
+index 0b6e5d4..e05b003 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -304,6 +304,8 @@ struct book {
- 	struct list_head	pages_lru[NR_LRU_LISTS];
- 	unsigned long		pages_count[NR_LRU_LISTS];
- 
-+	struct zone_reclaim_stat	reclaim_stat;
-+
- 	struct list_head	list;	/* for zone->book_list */
+@@ -297,7 +297,12 @@ struct zone_reclaim_stat {
  };
  
-@@ -383,8 +385,6 @@ struct zone {
- 	spinlock_t		lru_lock;
- 	struct book		book;
+ struct book {
++#ifdef CONFIG_MEMORY_BOOKKEEPING
++	struct pglist_data	*node;
++	struct zone		*zone;
++#endif
+ 	struct list_head	pages_lru[NR_LRU_LISTS];
++	struct list_head	list;	/* for zone->book_list */
+ };
  
--	struct zone_reclaim_stat reclaim_stat;
--
- 	unsigned long		pages_scanned;	   /* since last reclaim */
- 	unsigned long		flags;		   /* zone flags, see below */
+ struct zone {
+@@ -442,6 +447,9 @@ struct zone {
+ 	unsigned long		spanned_pages;	/* total size, including holes */
+ 	unsigned long		present_pages;	/* amount of memory (excluding holes) */
  
++	/* RCU-protected list of all books in this zone */
++	struct list_head	book_list;
++
+ 	/*
+ 	 * rarely used fields:
+ 	 */
+diff --git a/init/Kconfig b/init/Kconfig
+index ab0d680..70c3cef 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -651,10 +651,14 @@ config RESOURCE_COUNTERS
+ 	  This option enables controller independent resource accounting
+ 	  infrastructure that works with cgroups.
+ 
++config MEMORY_BOOKKEEPING
++	bool
++
+ config CGROUP_MEM_RES_CTLR
+ 	bool "Memory Resource Controller for Control Groups"
+ 	depends on RESOURCE_COUNTERS
+ 	select MM_OWNER
++	select MEMORY_BOOKKEEPING
+ 	help
+ 	  Provides a memory resource controller that manages both anonymous
+ 	  memory and page cache. (See Documentation/cgroups/memory.txt)
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8e1765a..ff82d6e 100644
+index 578118b..06d946f 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -138,7 +138,6 @@ struct mem_cgroup_per_zone {
+@@ -152,6 +152,7 @@ struct mem_cgroup_per_zone {
  
- 	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
+ struct mem_cgroup_per_node {
+ 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
++	struct rcu_head		rcu_head;
+ };
  
--	struct zone_reclaim_stat reclaim_stat;
- 	struct rb_node		tree_node;	/* RB tree node */
- 	unsigned long long	usage_in_excess;/* Set to the value by which */
- 						/* the soft limit is exceeded*/
-@@ -448,15 +447,6 @@ struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg)
- 	return &memcg->css;
- }
+ struct mem_cgroup_lru_info {
+@@ -990,6 +991,32 @@ out:
+ EXPORT_SYMBOL(mem_cgroup_count_vm_event);
  
--static struct mem_cgroup_per_zone *
--page_cgroup_zoneinfo(struct mem_cgroup *memcg, struct page *page)
--{
--	int nid = page_to_nid(page);
--	int zid = page_zonenum(page);
--
--	return mem_cgroup_zoneinfo(memcg, nid, zid);
--}
--
- static struct mem_cgroup_tree_per_zone *
- soft_limit_tree_node_zone(int nid, int zid)
+ /**
++ * page_book - get the book there this page is located
++ * @page: the struct page pointer with stable reference
++ *
++ * Returns pointer to struct book.
++ *
++ * FIXME optimized this translation, add direct link from page to book.
++ */
++struct book *page_book(struct page *page)
++{
++	struct mem_cgroup_per_zone *mz;
++	struct page_cgroup *pc;
++
++	if (mem_cgroup_disabled())
++		return &page_zone(page)->book;
++
++	pc = lookup_page_cgroup(page);
++	if (!PageCgroupUsed(pc))
++		return &page_zone(page)->book;
++	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
++	smp_rmb();
++	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
++			page_to_nid(page), page_zonenum(page));
++	return &mz->book;
++}
++
++/**
+  * mem_cgroup_zone_book - get the lru list vector for a zone and memcg
+  * @zone: zone of the wanted book
+  * @mem: memcg of the wanted book
+@@ -4740,6 +4767,11 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 		mz = &pn->zoneinfo[zone];
+ 		for_each_lru(l)
+ 			INIT_LIST_HEAD(&mz->book.pages_lru[l]);
++		mz->book.node = NODE_DATA(node);
++		mz->book.zone = &NODE_DATA(node)->node_zones[zone];
++		spin_lock(&mz->book.zone->lock);
++		list_add_tail_rcu(&mz->book.list, &mz->book.zone->book_list);
++		spin_unlock(&mz->book.zone->lock);
+ 		mz->usage_in_excess = 0;
+ 		mz->on_tree = false;
+ 		mz->mem = memcg;
+@@ -4750,7 +4782,21 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 
+ static void free_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
  {
-@@ -1098,34 +1088,6 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
- 	return ret;
+-	kfree(memcg->info.nodeinfo[node]);
++	struct mem_cgroup_per_node *pn;
++	struct mem_cgroup_per_zone *mz;
++	int zone;
++
++	pn = memcg->info.nodeinfo[node];
++	if (!pn)
++		return;
++
++	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
++		mz = mem_cgroup_zoneinfo(memcg, node, zone);
++		spin_lock(&mz->book.zone->lock);
++		list_del_rcu(&mz->book.list);
++		spin_unlock(&mz->book.zone->lock);
++	}
++	kfree_rcu(pn, rcu_head);
  }
  
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone)
--{
--	int nid = zone_to_nid(zone);
--	int zid = zone_idx(zone);
--	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
--
--	return &mz->reclaim_stat;
--}
--
--struct zone_reclaim_stat *
--mem_cgroup_get_reclaim_stat_from_page(struct page *page)
--{
--	struct page_cgroup *pc;
--	struct mem_cgroup_per_zone *mz;
--
--	if (mem_cgroup_disabled())
--		return NULL;
--
--	pc = lookup_page_cgroup(page);
--	if (!PageCgroupUsed(pc))
--		return NULL;
--	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
--	smp_rmb();
--	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
--	return &mz->reclaim_stat;
--}
--
- #define mem_cgroup_from_res_counter(counter, member)	\
- 	container_of(counter, struct mem_cgroup, member)
- 
-@@ -4098,21 +4060,19 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	{
- 		int nid, zid;
- 		struct mem_cgroup_per_zone *mz;
-+		struct zone_reclaim_stat *rs;
- 		unsigned long recent_rotated[2] = {0, 0};
- 		unsigned long recent_scanned[2] = {0, 0};
- 
- 		for_each_online_node(nid)
- 			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
- 				mz = mem_cgroup_zoneinfo(mem_cont, nid, zid);
-+				rs = &mz->book.reclaim_stat;
- 
--				recent_rotated[0] +=
--					mz->reclaim_stat.recent_rotated[0];
--				recent_rotated[1] +=
--					mz->reclaim_stat.recent_rotated[1];
--				recent_scanned[0] +=
--					mz->reclaim_stat.recent_scanned[0];
--				recent_scanned[1] +=
--					mz->reclaim_stat.recent_scanned[1];
-+				recent_rotated[0] += rs->recent_rotated[0];
-+				recent_rotated[1] += rs->recent_rotated[1];
-+				recent_scanned[0] += rs->recent_scanned[0];
-+				recent_scanned[1] += rs->recent_scanned[1];
- 			}
- 		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
- 		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
+ static struct mem_cgroup *mem_cgroup_alloc(void)
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c62a1d2..a2df69e 100644
+index 08b4e4b..ead327b 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -4320,10 +4320,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- #endif
- 		INIT_LIST_HEAD(&zone->book_list);
- 		list_add(&zone->book.list, &zone->book_list);
--		zone->reclaim_stat.recent_rotated[0] = 0;
--		zone->reclaim_stat.recent_rotated[1] = 0;
--		zone->reclaim_stat.recent_scanned[0] = 0;
--		zone->reclaim_stat.recent_scanned[1] = 0;
-+		memset(&zone->book.reclaim_stat, 0,
-+				sizeof(struct zone_reclaim_stat));
- 		zap_zone_vm_stats(zone);
- 		zone->flags = 0;
- 		if (!size)
-diff --git a/mm/swap.c b/mm/swap.c
-index ba29c3c..2268ee7 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -277,21 +277,13 @@ void rotate_reclaimable_page(struct page *page)
- static void update_page_reclaim_stat(struct zone *zone, struct page *page,
- 				     int file, int rotated)
- {
--	struct zone_reclaim_stat *reclaim_stat = &zone->reclaim_stat;
--	struct zone_reclaim_stat *memcg_reclaim_stat;
-+	struct zone_reclaim_stat *reclaim_stat;
- 
--	memcg_reclaim_stat = mem_cgroup_get_reclaim_stat_from_page(page);
-+	reclaim_stat = &page_book(page)->reclaim_stat;
- 
- 	reclaim_stat->recent_scanned[file]++;
- 	if (rotated)
- 		reclaim_stat->recent_rotated[file]++;
--
--	if (!memcg_reclaim_stat)
--		return;
--
--	memcg_reclaim_stat->recent_scanned[file]++;
--	if (rotated)
--		memcg_reclaim_stat->recent_rotated[file]++;
- }
- 
- static void __activate_page(struct page *page, void *arg)
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 61ffc8a..ba95e83 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -190,9 +190,10 @@ static bool scanning_global_lru(struct mem_cgroup_zone *mz)
- static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- {
- 	if (!scanning_global_lru(mz))
--		return mem_cgroup_get_reclaim_stat(mz->mem_cgroup, mz->zone);
-+		return &mem_cgroup_zone_book(mz->zone,
-+				mz->mem_cgroup)->reclaim_stat;
- 
--	return &mz->zone->reclaim_stat;
-+	return &mz->zone->book.reclaim_stat;
- }
- 
- static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
+@@ -4312,6 +4312,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 		zone_pcp_init(zone);
+ 		for_each_lru(lru)
+ 			INIT_LIST_HEAD(&zone->book.pages_lru[lru]);
++#ifdef CONFIG_MEMORY_BOOKKEEPING
++		zone->book.node = pgdat;
++		zone->book.zone = zone;
++#endif
++		INIT_LIST_HEAD(&zone->book_list);
++		list_add(&zone->book.list, &zone->book_list);
+ 		zone->reclaim_stat.recent_rotated[0] = 0;
+ 		zone->reclaim_stat.recent_rotated[1] = 0;
+ 		zone->reclaim_stat.recent_scanned[0] = 0;
 
