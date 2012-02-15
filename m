@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab2BOXfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:35:45 -0500
-Received: from outmail012.snc4.facebook.com ([66.220.144.146]:35956 "EHLO
-	intmgw004.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753457Ab2BOXfo (ORCPT
+	id S1756201Ab2BOXg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:36:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49157 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab2BOXg0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 18:35:44 -0500
-Date: Wed, 15 Feb 2012 15:35:37 -0800
-From: Arun Sharma <asharma@fb.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
-Message-ID: <20120215233537.GA20724@dev3310.snc6.facebook.com>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
- <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Feb 2012 18:36:26 -0500
+Message-ID: <1329348972.2293.189.camel@twins>
+Subject: Re: [RFC PATCH 08/14] sched: normalize tg load contributions
+ against runnable time
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 00:36:12 +0100
+In-Reply-To: <20120202013826.20844.39042.stgit@kitami.mtv.corp.google.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+	 <20120202013826.20844.39042.stgit@kitami.mtv.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 01:21:38AM +0100, Andrea Righi wrote:
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 386da09..624a73e 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -9,6 +9,7 @@
->  #include <linux/limits.h>
->  #include <linux/ioctl.h>
->  #include <linux/blk_types.h>
-> +#include <linux/kinterval.h>
->  #include <linux/types.h>
+On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
+> Entities of equal weight should receive equitable distribution of cpu time.
+> This is challenging in the case of a task_group's shares as execution may be
+> occurring on multiple cpus simultaneously.
+> 
+> To handle this we divide up the shares into weights proportionate with the load
+> on each cfs_rq.  This does not however, account for the fact that the sum of
+> the parts may be less than one cpu and so we need to normalize:
+>   load(tg) = min(runnable_avg(tg), 1) * tg->shares
+> Where runnable_avg is the aggregate time in which the task_group had runnable
+> children.
 
-fs.h is an exported header file, whereas kinterval.h is not. So this
-fails scripts/header_check.pl.
 
-I used the workaround below.
+>  static inline void __update_group_entity_contrib(struct sched_entity *se)
+>  {
+>         struct cfs_rq *cfs_rq = group_cfs_rq(se);
+>         struct task_group *tg = cfs_rq->tg;
+> +       int runnable_avg;
+>  
+>         se->avg.load_avg_contrib = (cfs_rq->tg_load_contrib * tg->shares);
+>         se->avg.load_avg_contrib /= atomic64_read(&tg->load_avg) + 1;
+> +
+> +       /*
+> +        * Unlike a task-entity, a group entity may be using >=1 cpu globally.
+> +        * However, in the case that it's using <1 cpu we need to form a
+> +        * correction term so that we contribute the same load as a task of
+> +        * equal weight. (Global runnable time is taken as a fraction over 2^12.)
+> +        */
+> +       runnable_avg = atomic_read(&tg->runnable_avg);
+> +       if (runnable_avg < (1<<12)) {
+> +               se->avg.load_avg_contrib *= runnable_avg;
+> +               se->avg.load_avg_contrib /= (1<<12);
+> +       }
+>  } 
 
- -Arun
+This seems weird, and the comments don't explain anything.
 
-diff --git a/fs/inode.c b/fs/inode.c
-index d27dbee..1335a5f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,7 @@
- #include <linux/ima.h>
- #include <linux/cred.h>
- #include <linux/buffer_head.h> /* for inode_has_buffers */
-+#include <linux/kinterval.h>
- #include "internal.h"
- 
- /*
-@@ -279,7 +280,7 @@ void address_space_init_once(struct address_space *mapping)
- 	spin_lock_init(&mapping->private_lock);
- 	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
- 	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
--	INIT_KINTERVAL_TREE_ROOT(&mapping->nocache_tree);
-+	INIT_KINTERVAL_TREE_ROOT((struct rb_root *) &mapping->nocache_tree);
- 	rwlock_init(&mapping->nocache_lock);
- }
- EXPORT_SYMBOL(address_space_init_once);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 74b6a97..b4e45e6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -9,7 +9,6 @@
- #include <linux/limits.h>
- #include <linux/ioctl.h>
- #include <linux/blk_types.h>
--#include <linux/kinterval.h>
- #include <linux/types.h>
- 
- /*
-@@ -656,7 +655,7 @@ struct address_space {
- 	spinlock_t		private_lock;	/* for use by the address_space */
- 	struct list_head	private_list;	/* ditto */
- 	struct address_space	*assoc_mapping;	/* ditto */
--	struct rb_root		nocache_tree;	/* noreuse cache range tree */
-+	void			*nocache_tree;	/* noreuse cache range tree */
- 	rwlock_t		nocache_lock;	/* protect the nocache_tree */
- } __attribute__((aligned(sizeof(long))));
- 	/*
+Ah,.. you can count runnable multiple times (on each cpu), this also
+means that the number you're using (when below 1) can still be utter
+crap.
+
+Neither the comment nor the changelog mention this, it should, it should
+also mention why it doesn't matter (does it?).
