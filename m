@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759061Ab2BONcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:32:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45193 "EHLO mx1.redhat.com"
+	id S1759104Ab2BONcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:32:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758330Ab2BONcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:32:12 -0500
-Message-ID: <4F3BB3D3.7060401@redhat.com>
-Date: Wed, 15 Feb 2012 15:32:03 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757982Ab2BONch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 08:32:37 -0500
+Date: Wed, 15 Feb 2012 14:32:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
+Message-ID: <20120215133218.GD1664@m.brq.redhat.com>
+References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
+ <1327674868-10486-1-git-send-email-jolsa@redhat.com>
+ <1329236924.2293.13.camel@twins>
+ <1329237838.2293.20.camel@twins>
+ <1329250830.2293.24.camel@twins>
+ <1329253030.2293.27.camel@twins>
+ <1329253391.2293.31.camel@twins>
+ <20120215092423.GB1664@m.brq.redhat.com>
+ <1329304712.2293.46.camel@twins>
 MIME-Version: 1.0
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-CC: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
-        KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <20120212161034.9d8f68df72f6c28298cdcd33@gmail.com>
-In-Reply-To: <20120212161034.9d8f68df72f6c28298cdcd33@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329304712.2293.46.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2012 09:10 AM, Takuya Yoshikawa wrote:
-> Avi Kivity <avi@redhat.com> wrote:
->
-> > > >  Slot searching is quite fast since there's a small number of slots, and we sort the larger ones to be in the front, so positive lookups are fast.  We cache negative lookups in the shadow page tables (an spte can be either "not mapped", "mapped to RAM", or "not mapped and known to be mmio") so we rarely need to walk the entire list.
-> > >
-> > > Well, we don't always have shadow page tables. Having hints for unmapped guest memory like this is pretty tricky.
-> > > We're currently running into issues with device assignment though, where we get a lot of small slots mapped to real hardware. I'm sure that will hit us on x86 sooner or later too.
+On Wed, Feb 15, 2012 at 12:18:32PM +0100, Peter Zijlstra wrote:
+> On Wed, 2012-02-15 at 10:24 +0100, Jiri Olsa wrote:
+> > On Tue, Feb 14, 2012 at 10:03:11PM +0100, Peter Zijlstra wrote:
+> 
+> > > These would be: period, config, config1, config2 and stephane's new
+> > > branch_sample_type, although that might want to get a shorter name.
 > > 
-> > For x86 that's not a problem, since once you map a page, it stays mapped 
-> > (on modern hardware).
+> > right, for pmu/.../ syntax there are allowed only fields from 'format'
+> > directory are so far.. with exceptions like: cycles/period=100000/
 > > 
->
-> I was once thinking about how to search a slot reasonably fast for every case,
-> even when we do not have mmio-spte cache.
->
-> One possible way I thought up was to sort slots according to their base_gfn.
-> Then the problem would become:  "find the first slot whose base_gfn + npages
-> is greater than this gfn."
->
-> Since we can do binary search, the search cost is O(log(# of slots)).
->
-> But I guess that most of the time was wasted on reading many memslots just to
-> know their base_gfn and npages.
->
-> So the most practically effective thing is to make a separate array which holds
-> just their base_gfn.  This will make the task a simple, and cache friendly,
-> search on an integer array:  probably faster than using *-tree data structure.
+> > so I'll hardcode following config fields:
+> > 	config
+> > 	config1
+> > 	config2
+> > 	period
+> > 	branch_sample_type (branch, branch_type, branch_st  ???)
+> 
+> Uhmm,.. Stephane any particular preference on this?
+> 
+> > to be used in xxx/.../ syntax
+> > 
+> > also we need to choose some strategy of format field name shadowing
+> > with hardcoded fields:
+> > 
+> > - BUILD_BUG in kernel PMU_FORMAT_ATTR
+> > - not allowed.. report error in perf runtime
+> > - allowed - hardcoded field have precedence
+> > - allowed - format field values have precedence
+> > 
+> > I'd say either allow shadowing(with whatever precedence we this is better),
+> > or have the BUILD_BUG line in kernel..
+> 
+> I agree, if we can get the BUILD_BUG thing working that might be the
+> best option, otherwise we can do the precedence thing. We could even add
+> a syntax to resolve the namespace conflict in the latter case (eg. use
+> '$' PE_NAME to mean the hardcoded in case of conflict).
+err.. I could not get the BUILD_BUG working... looks like string
+comparison is something you are not supposed to do in cpp.. ;)
 
-This assumes that there is equal probability for matching any slot.  But
-that's not true, even if you have hundreds of slots, the probability is
-much greater for the two main memory slots, or if you're playing with
-the framebuffer, the framebuffer slot.  Everything else is loaded
-quickly into shadow and forgotten.
+currently, I have the hardcoded fields to have a precedence,
+and I'd workaround/fix it if there's need.. later I mean..
 
-> If needed, we should make cmp_memslot() architecture specific in the end?
+also, any idea when's the branch_sample_type going in?
 
-We could, but why is it needed?  This logic holds for all architectures.
-
--- 
-error compiling committee.c: too many arguments to function
-
+thanks,
+jirka
