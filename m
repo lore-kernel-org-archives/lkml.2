@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2BOTkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:40:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53108 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab2BOTkF (ORCPT
+	id S1754744Ab2BOTtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:49:25 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39031 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab2BOTtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:40:05 -0500
-Date: Wed, 15 Feb 2012 11:39:20 -0800
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Message-ID: <tip-0a8a2e78b7eece7c65884fcff9f98dc0fce89ee4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, john.stultz@linaro.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: john.stultz@linaro.org, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1327427984-23282-3-git-send-email-fweisbec@gmail.com>
-References: <1327427984-23282-3-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timer: Fix bad idle check on irq entry
-Git-Commit-ID: 0a8a2e78b7eece7c65884fcff9f98dc0fce89ee4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 15 Feb 2012 11:39:32 -0800 (PST)
+	Wed, 15 Feb 2012 14:49:21 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 15 Feb 2012 20:48:36 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 07/11] firewire-sbp-target: add
+ sbp_management_agent.{c,h}
+Message-ID: <20120215204836.063bbd36@stein>
+In-Reply-To: <1329317248-94128-8-git-send-email-bootc@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-8-git-send-email-bootc@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a8a2e78b7eece7c65884fcff9f98dc0fce89ee4
-Gitweb:     http://git.kernel.org/tip/0a8a2e78b7eece7c65884fcff9f98dc0fce89ee4
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 24 Jan 2012 18:59:44 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 15 Feb 2012 15:23:09 +0100
+On Feb 15 Chris Boot wrote:
+> --- /dev/null
+> +++ b/drivers/target/sbp/sbp_management_agent.c
+[...]
+> +static void sbp_mgt_agent_rw(struct fw_card *card,
+> +	struct fw_request *request, int tcode, int destination, int source,
+> +	int generation, unsigned long long offset, void *data, size_t length,
+> +	void *callback_data)
+> +{
+> +	struct sbp_management_agent *agent = callback_data;
+> +	struct sbp2_pointer *ptr = data;
+> +
+> +	if (!agent->tport->enable) {
+> +		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
+> +		return;
+> +	}
+> +
+> +	if ((offset != agent->handler.offset) || (length != 8)) {
+> +		fw_send_response(card, request, RCODE_ADDRESS_ERROR);
+> +		return;
+> +	}
+> +
+> +	if (tcode == TCODE_WRITE_BLOCK_REQUEST) {
+> +		struct sbp_management_request *req;
+> +		int ret;
+> +
+> +		smp_wmb();
+> +		if (atomic_cmpxchg(&agent->state,
+> +					MANAGEMENT_AGENT_STATE_IDLE,
+> +					MANAGEMENT_AGENT_STATE_BUSY) !=
+> +				MANAGEMENT_AGENT_STATE_IDLE) {
+> +			pr_notice("ignoring management request while busy\n");
+> +
+> +			fw_send_response(card, request, RCODE_CONFLICT_ERROR);
+> +			return;
+> +		}
 
-timer: Fix bad idle check on irq entry
+There is a rule of thumb which says:  If you add a memory barrier anywhere
+in your code, also add a comment saying which accesses this barrier is
+meant to bring into order.
 
-idle_cpu() is called on irq entry to guess if we need to call
-tick_check_idle(). This way we can catch up with jiffies if the tick
-was stopped, stop accounting idle time during the interrupt and
-maintain the sched clock if it is unstable.
+So after the write barrier is apparently the agent->state access.  What
+access is before the barrier?
 
-But if we are going to exit the idle loop to schedule a new task (ie:
-if we have a task in the runqueue or a remotely enqueued ttwu to
-perform), the idle_cpu() check will return 0 such that we miss the
-call to tick_check_idle() for all interrupts happening before we
-schedule the new task.
+And how does the read side look like?
 
-As a result these interrupts and the softirqs coming along may deal
-with stale jiffies values, bad sched clock values, and won't substract
-their time from the idle time accounting.
+These questions are mostly rhetoric.  It is quite likely that this code is
+better off with a plain and simple mutex serialization.
 
-Fix this with using is_idle_task() instead that strictly checks that
-we are running the idle task, without caring about the fact we are
-going to schedule a task soon.
+[...]
+> +void sbp_management_agent_unregister(struct sbp_management_agent *agent)
+> +{
+> +	if (atomic_read(&agent->state) != MANAGEMENT_AGENT_STATE_IDLE)
+> +		flush_work_sync(&agent->work);
+> +
+> +	fw_core_remove_address_handler(&agent->handler);
+> +	kfree(agent);
+> +}
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1327427984-23282-3-git-send-email-fweisbec@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/softirq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I still have yet to test-apply all your patches, look at the sum of the
+code and understand what the execution contexts and critical sections
+are.  So I really should not yet ask the next, uninformed question.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 4eb3a0f..5ace266 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -297,7 +297,7 @@ void irq_enter(void)
- 	int cpu = smp_processor_id();
- 
- 	rcu_irq_enter();
--	if (idle_cpu(cpu) && !in_interrupt()) {
-+	if (is_idle_task(current) && !in_interrupt()) {
- 		/*
- 		 * Prevent raise_softirq from needlessly waking up ksoftirqd
- 		 * here, as softirq will be serviced on return from interrupt.
+Looking at this function, I wonder:  Can the agent->state change after you
+read it, and what would happen then?
+-- 
+Stefan Richter
+-=====-===-- --=- -====
+http://arcgraph.de/sr/
