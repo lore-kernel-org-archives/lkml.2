@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab2BOLuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 06:50:04 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47907 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754309Ab2BOLuB (ORCPT
+	id S1755533Ab2BOLzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 06:55:19 -0500
+Received: from coyote.quickmin.net ([217.14.112.24]:57505 "EHLO
+	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab2BOLzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 06:50:01 -0500
-Subject: Re: [PATCH 20/40] mn10300: Use set_current_blocked() and
- block_sigmask()
-From: Matt Fleming <matt@console-pimps.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-am33-list@redhat.com
-In-Reply-To: <28189.1329244210@redhat.com>
-References: <1329242378.3675.71.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <1329219673-28711-21-git-send-email-matt@console-pimps.org>
-	 <1329219673-28711-1-git-send-email-matt@console-pimps.org>
-	 <17603.1329234976@redhat.com>  <28189.1329244210@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 15 Feb 2012 11:49:58 +0000
-Message-ID: <1329306598.3675.115.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Wed, 15 Feb 2012 06:55:18 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Feb 2012 06:55:17 EST
+Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=default; d=telemotive.de;
+  b=pXeoEyozgGCUoUJ7ik9LoC4nVWN9ZWDRa27891ck0uhNte7iYMtG/g2NGF3uQrXJyPRAzIIEUEM2eDAKhnoqo7DWJCIcFEEfed0OXn1YX58Fj0bf5UpXvymFTq2QDdTKqJr4gRF39rVBP9JIfM4kqOmoSmS3hPmv6jv4d//6N5Y=  ;
+From: Roman Fietze <roman.fietze@telemotive.de>
+Organization: Telemotive AG
+To: Shaohua Li <shaohua.li@intel.com>
+Subject: ASPM, devices with mixed PCIe/PCI functions
+Date: Wed, 15 Feb 2012 12:48:34 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.11-default; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Message-Id: <201202151248.34578.roman.fietze@telemotive.de>
+X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.5.3|September 15, 2011) at
+ 15.02.2012 12:48:34,
+	Serialize by Router on muc/Telemotive(Release 8.5.3|September 15, 2011) at
+ 15.02.2012 12:48:34,
+	Serialize complete at 15.02.2012 12:48:34
+X-TNEFEvaluated: 1
 Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-14 at 18:30 +0000, David Howells wrote:
-> Matt Fleming <matt@console-pimps.org> wrote:
-> 
-> > > Can this line create a race, now that it's not protected by a lock?  It is
-> > > possible for current->blocked to get altered by another thread.
-> > 
-> > ->blocked can only ever be altered by current, not another thread. See
-> > the following comment from sigprocmask() in kernel/signal.c,
-> 
-> Okay, I've managed to convince myself.  Feel free to my Acked-by to the
-> MN10300 and FRV patches.
+Hello,
 
-Thanks! I think Andrew is picking these up, unless you want to take them
-through the arch trees?
+I'm referring to commit ddc9753fcddfe5f.
+
+On our system we use a PCIe-Local-Bridge, the PEX8311, which
+internally is a quick and dirty design glued together using a PEX8111
+and a PEX9056. I'm now just talking about the PEX8111, which is a PCIe
+to PCI-X bridge.
+
+The function pcie_aspm_sanity_check() in drivers/pci/pcie/aspm.c
+disables ASPM for this bridge, because the child (PEX9056) is not
+PCIe, hereby disabling power savings on the upstream PCIe link.
+
+Is this a flaw? What is the reason for this? Could please someone with
+more PCI(e) knowledge enlighten me?
+
+I'm of course willing to deliver a patch to fix this (IMHO) problem,
+but this only makes sense if I'm not totally wrong in my assumption,
+that ASPM should be enabled on such devices (besides the fact, that
+the PEX8111 does not have PCI_EXP_DEVCAP_RBER set).
+
+
+Roman
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Roman Fietze              Telemotive AG Buero Muehlhausen
+Breitwiesen                             73347 Muehlhausen
+Tel.: +49(0)7335/18493-45        http://www.telemotive.de
