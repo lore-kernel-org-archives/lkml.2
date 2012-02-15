@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab2BPBwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 20:52:00 -0500
-Received: from ozlabs.org ([203.10.76.45]:48967 "EHLO ozlabs.org"
+	id S1756791Ab2BPBvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 20:51:17 -0500
+Received: from ozlabs.org ([203.10.76.45]:56413 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756329Ab2BPBvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753255Ab2BPBvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Feb 2012 20:51:15 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Mike Travis <travis@sgi.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>
-Subject: Re: [PATCH v2] arch/ia64: remove references to cpu_*_map.
-In-Reply-To: <20120215130240.7308f373.akpm@linux-foundation.org>
-References: <4F3B8EAE.4050809@linux.vnet.ibm.com> <20120215130240.7308f373.akpm@linux-foundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/12] arch/mips: remove references to cpu_*_map.
+In-Reply-To: <4F3B78C2.7040709@linux.vnet.ibm.com>
+References: <1329281884.26321.rusty@rustcorp.com.au> <4F3B78C2.7040709@linux.vnet.ibm.com>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 16 Feb 2012 09:40:49 +1030
-Message-ID: <87k43nbsli.fsf@rustcorp.com.au>
+Date: Thu, 16 Feb 2012 10:29:24 +1030
+Message-ID: <87hayrbqcj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Feb 2012 13:02:40 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 15 Feb 2012 16:23:34 +0530
-> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+On Wed, 15 Feb 2012 14:50:02 +0530, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > -		cpu_clear(smp_processor_id(), mask);
+> > -		for_each_cpu_mask(cpu, mask)
+> > -			if (cpu_context(cpu, mm))
+> > +		for_each_online_cpu(cpu) {
+> > +			if (cpu != smp_processor_id() && cpu_context(cpu, mm))
+> >  				cpu_context(cpu, mm) = 0;
+> > +		}
 > 
-> > This patch ought to go along with the patchsets that do cleanups in other
-> > architectures as well.. And it looks like Rusty's patchset[1] is a superset of
-> > Venki's patchset[2].. So, Rusty, would you kindly take this patch into your
-> > patchset? (It should come before the 11/12 in your patchset. This should apply
-> > at that point easily, because I have modified it to suit your 11/12 which also
-> > touches ia64).
 > 
-> OK, I'm officially all confused.  I think I'll drop everything and wait
-> until it settles down.  Please, someone prepare a single patch series.
-> 
-> The cpumask-related patches whcih I'm currently holding are:
-> 
-> smp-introduce-a-generic-on_each_cpu_mask-function.patch
-> #arm-move-arm-over-to-generic-on_each_cpu_mask.patch: fold
-> arm-move-arm-over-to-generic-on_each_cpu_mask.patch
-> #tile-move-tile-to-use-generic-on_each_cpu_mask.patch: fold
-> tile-move-tile-to-use-generic-on_each_cpu_mask.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func-fix.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func-update.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func-update-fix.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func-v9.patch
-> smp-add-func-to-ipi-cpus-based-on-parameter-func-v9-fix.patch
-> slub-only-ipi-cpus-that-have-per-cpu-obj-to-flush.patch
-> fs-only-send-ipi-to-invalidate-lru-bh-when-needed.patch
-> mm-only-ipi-cpus-to-drain-local-pages-if-they-exist.patch
-> mm-only-ipi-cpus-to-drain-local-pages-if-they-exist-update.patch
-> mm-only-ipi-cpus-to-drain-local-pages-if-they-exist-v9.patch
-> #
-> arch-ia64-remove-references-to-cpu__map.patch
-> cpumask-avoid-mask-based-num_possible_cpus-and-num_online_cpus.patch
-> 
-> So I'm thinking the thing to do is to drop just the final two?
+> Strictly speaking, this one is not a mere cleanup. It causes a subtle change in
+> behaviour: earlier, it used to iterate over a local copy of cpu_online_mask, which
+> wouldn't change. However, with this patch, it will iterate directly over
+> cpu_online_mask, which can change underneath. (The preempt_disable() won't stop
+> new CPUs from coming in.. it only prevents CPUs from going offline, that too
+> provided that we use stop_machine stuff for CPU offline, which we do currently.)
 
-Keep them all, I'll rebase on top of linux-next, and send you a few
-patches.  I'm not going to break down by arch, that was just in the hope
-that the arch maintainers themselves would take them...
+There's a preempt_disable() around this whole function, so online_mask
+can't change.
+
+Same with the others.
+> > +		mask = *cpu_online_mask;
+> > +	cpumask_clear(&mask, cpu);
+> 
+> 
+> This should be cpumask_clear_cpu(cpu, &mask);
+
+Good catch.  I copied the bitmask ops, and continually regret it.
+
+I've rolled all these together with your fixes, added your ia64 patch,
+and am rebasing to -next now, so I can hand this all across to akpm.
 
 Thanks,
 Rusty.
