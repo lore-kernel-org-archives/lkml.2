@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab2BOTV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:21:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39887 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755142Ab2BOTU4 (ORCPT
+	id S1755222Ab2BOTVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:21:44 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:60236 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754941Ab2BOTV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:20:56 -0500
-Message-ID: <4F3C0588.1080601@gmail.com>
-Date: Wed, 15 Feb 2012 13:20:40 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Danny Kukawka <danny.kukawka@bisect.de>
-CC: Grant Likely <grant.likely@secretlab.ca>, Danny Kukawka <dkukawka@suse.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/fdt.c: asm/setup.h included twice
-References: <1329328528-4847-1-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1329328528-4847-1-git-send-email-danny.kukawka@bisect.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 14:21:28 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Teddy Wang <teddy.wang@siliconmotion.com.cn>
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Javier M. Mellid" <jmunhoz@igalia.com>,
+        anish kumar <anish198519851985@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: sm7xx/smtcfb.c included linux/module.h twice
+Date: Wed, 15 Feb 2012 20:21:07 +0100
+Message-Id: <1329333667-32158-1-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329333688;d0f9d328;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 11:55 AM, Danny Kukawka wrote:
-> drivers/of/fdt.c included 'asm/setup.h' twice, remove the duplicate.
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+drivers/staging/sm7xx/smtcfb.c included 'linux/module.h' twice,
+remove the duplicate.
 
-Applied for 3.4.
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/staging/sm7xx/smtcfb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Rob
+diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
+index ae0035f..1b3e2d0 100644
+--- a/drivers/staging/sm7xx/smtcfb.c
++++ b/drivers/staging/sm7xx/smtcfb.c
+@@ -41,7 +41,6 @@
+ 
+ #ifdef CONFIG_PM
+ #include <linux/pm.h>
+-#include <linux/module.h>
+ #endif
+ 
+ #include "smtcfb.h"
+-- 
+1.7.8.3
 
-> ---
->  drivers/of/fdt.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index ea2bd1b..91a375f 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -23,7 +23,6 @@
->  #include <asm/machdep.h>
->  #endif /* CONFIG_PPC */
->  
-> -#include <asm/setup.h>
->  #include <asm/page.h>
->  
->  char *of_fdt_get_string(struct boot_param_header *blob, u32 offset)
