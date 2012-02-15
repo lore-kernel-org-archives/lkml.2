@@ -1,123 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758813Ab2BOBfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 20:35:33 -0500
-Received: from mail.betterlinux.com ([199.58.199.50]:51872 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab2BOBf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 20:35:28 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 0E48C82A77
-Date: Wed, 15 Feb 2012 02:35:24 +0100
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, Greg Thelen <gthelen@google.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH v5 0/3] fadvise: support POSIX_FADV_NOREUSE
-Message-ID: <20120215012957.GA1728@thinkpad>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
- <20120214133337.9de7835b.akpm@linux-foundation.org>
- <20120214225922.GA12394@thinkpad>
- <20120214152220.4f621975.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214152220.4f621975.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761454Ab2BOBiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 20:38:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51810 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755622Ab2BOBiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 20:38:03 -0500
+Date: Wed, 15 Feb 2012 12:37:50 +1100
+From: NeilBrown <neilb@suse.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+Message-ID: <20120215123750.3333141f@notabene.brown>
+In-Reply-To: <1329265750.2340.17.camel@work-vm>
+References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+	<1328832993-23228-2-git-send-email-john.stultz@linaro.org>
+	<20120214051659.GH14132@dastard>
+	<1329198932.2753.62.camel@work-vm>
+	<20120214235106.GL7479@dastard>
+	<1329265750.2340.17.camel@work-vm>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/TS3eXNpKOSdGkX7h4ikbMK+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 03:22:20PM -0800, Andrew Morton wrote:
-> On Tue, 14 Feb 2012 23:59:22 +0100
-> Andrea Righi <andrea@betterlinux.com> wrote:
-> 
-> > On Tue, Feb 14, 2012 at 01:33:37PM -0800, Andrew Morton wrote:
-> > > On Sun, 12 Feb 2012 01:21:35 +0100
-> > > Andrea Righi <andrea@betterlinux.com> wrote:
-> > > 
-> > > > The new proposal is to implement POSIX_FADV_NOREUSE as a way to perform a real
-> > > > drop-behind policy where applications can mark certain intervals of a file as
-> > > > FADV_NOREUSE before accessing the data.
-> > > 
-> > > I think you and John need to talk to each other, please.  The amount of
-> > > duplication here is extraordinary.
-> > 
-> > Yes, definitely. I'm currently reviewing and testing the John's patch
-> > set. I was even considering to apply my patch set on top of the John's
-> > patch, or at least propose my tree-based approach to manage the list of
-> > the POSIX_FADV_VOLATILE ranges.
-> 
-> Cool.
-> 
-> > > 
-> > > Both patchsets add fields to the address_space (and hence inode), which
-> > > is significant - we should convince ourselves that we're getting really
-> > > good returns from a feature which does this.
-> > > 
-> > > 
-> > > 
-> > > Regarding the use of fadvise(): I suppose it's a reasonable thing to do
-> > > in the long term - if the feature works well, popular data streaming
-> > > applications will eventually switch over.  But I do think we should
-> > > explore interfaces which don't require modification of userspace source
-> > > code.  Because there will always be unconverted applications, and the
-> > > feature becomes available immediately.
-> > > 
-> > > One such interface would be to toss the offending application into a
-> > > container which has a modified drop-behind policy.  And here we need to
-> > > drag out the crystal ball: what *is* the best way of tuning application
-> > > pagecache behaviour?  Will we gravitate towards containerization, or
-> > > will we gravitate towards finer-tuned fadvise/sync_page_range/etc
-> > > behaviour?  Thus far it has been the latter, and I don't think that has
-> > > been a great success.
-> > > 
-> > > Finally, are the problems which prompted these patchsets already
-> > > solved?  What happens if you take the offending streaming application
-> > > and toss it into a 16MB memcg?  That *should* avoid perturbing other
-> > > things running on that machine.
-> > 
-> > Moving the streaming application into a 16MB memcg can be dangerous in
-> > some cases... the application might start to do "bad" things, like
-> > swapping (if the memcg can swap) or just fail due to OOMs.
-> 
-> Well OK, maybe there are problems with the current implementation.  But
-> are they unfixable problems?  Is the right approach to give up on ever
-> making containers useful for this application and to instead go off and
-> implement a new and separate feature?
-> 
-> > > And yes, a container-based approach is pretty crude, and one can
-> > > envision applications which only want modified reclaim policy for one
-> > > particualr file.  But I suspect an application-wide reclaim policy
-> > > solves 90% of the problems.
-> > 
-> > I really like the container-based approach. But for this we need a
-> > better file cache control in the memory cgroup; now we have the
-> > accounting of file pages, but there's no way to limit them.
-> 
-> Again, if/whem memcg becomes sufficiently useful for this application
-> we're left maintaining the obsolete POSIX_FADVISE_NOREUSE for ever.
+--Sig_/TS3eXNpKOSdGkX7h4ikbMK+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, totally agree. For the future a memcg-based solution is probably
-the best way to go.
+On Tue, 14 Feb 2012 16:29:10 -0800 John Stultz <john.stultz@linaro.org> wro=
+te:
 
-This reminds me to the old per-memcg dirty memory discussion
-(http://thread.gmane.org/gmane.linux.kernel.mm/67114), cc'ing Greg.
+> But I'm open to other ideas and arguments.
 
-Maybe the generic feature to provide that could solve both problems is
-a better file cache isolation in memcg.
+I didn't notice the original patch, but found it at
+https://lwn.net/Articles/468837/
+and had a look.
 
-Thanks,
--Andrea
+My first comment is -ENODOC.  A bit background always helps, so let me try =
+to
+construct that:
+
+ The goal is to allow applications to interact with the kernel's cache
+ management infrastructure.  In particular an application can say "this
+ memory contains data that might be useful in the future, but can be
+ reconstructed if necessary, and it is cheaper to reconstruct it than to re=
+ad
+ it back from disk, so don't bother writing it out".
+
+ The proposed mechanism - at a high level - is for user-space to be able to
+ say "This memory is volatile" and then later "this memory is no longer
+ volatile".  If the content of the memory is still available the second
+ request succeeds.  If not, it fails.. Well, actually it succeeds but repor=
+ts
+ that some content has been lost. (not sure what happens then - can the app=
+ do
+ a binary search to find which pages it still has or something).
+
+ (technically we should probably include the cost to reconstruct the page,
+ which the kernel measures as 'seeks' but maybe that isn't necessary).
+
+ This is implemented by using files in a 'tmpfs' filesystem.  These file
+ support three new flags to fadvise:
+
+ POSIX_FADV_VOLATILE - this marks a range of pages as 'volatile'.  They may=
+ be
+        removed from the page cache as needed, even if they are not 'clean'.
+ POSIX_FADV_NONVOLATILE - this marks a range of pages as non-volatile.
+        If any pages in the range were previously volatile but have since b=
+een
+        removed, then a status is returned reporting this.
+ POSIX_FADV_ISVOLATILE - this does not actually give any advice to the kern=
+el
+        but rather asks a question: Are any of these pages volatile?
+
+
+Is this an accurate description?
+
+My first thoughts are:
+ 1/ is page granularity really needed?  Would file granularity be sufficien=
+t?
+ 2/ POSIX_FADV_ISVOLATILE is a warning sign to me - it doesn't actually
+    provide advice.  Is this really needed?  What for?  Because it feels li=
+ke
+    a wrong interface.
+ 3/ Given that this is specific to one filesystem, is fadvise really an
+    appropriate interface?
+
+(fleshing out the above documentation might be an excellent way to answer
+these questions).
+
+As a counter-point,  this is my first thought of an implementation approach
+(-ENOPATCH, sorry)
+
+- new mount option for tmpfs e.g. 'volatile'.  Any file in a filesystem
+  mounted with that option and which is not currently open by any process c=
+an
+  have blocks removed at any time.  The file name must remain, and the file
+  size must not change.
+- lseek can be used to determine if anything has been purged with 'SEEK_DAT=
+A'
+  and 'SEEK_HOLE'.
+
+So you can only mark volatility on a whole-file granularity (hence the
+question above).
+ 'open' says "NONVOLATILE".
+ 'close' says "VOLATILE".
+ 'lseek' is used to check if anything was discarded.
+
+This approach would allow multiple processes to share a cache (might this be
+valuable?) as it doesn't become truly volatile until all processes close
+their handles.
+
+
+Just a few thoughts ... take or discard as you choose.
+
+NeilBrown
+
+
+
+--Sig_/TS3eXNpKOSdGkX7h4ikbMK+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTzsMbjnsnt1WYoG5AQJZCBAApWmHwvCPiyRhizlGPpXcNL1yyTEq4UCP
+jFAdEwIzLuIOotM9skvRuQnXGwSQZY2K0EDvhqCFS1FtnoDtgg7IuMYWXvZzgd/S
+Xryt039DSV7SqhLDGMnwTSb4Kd2VFQPZjomw82HXOR0pAZ7ebe+dpEooEmv94jNs
+su7kjKqHJMoQCai3vU6IOH/GnWPhKrxbVzXBGGf4uuNR0jh3f9Wvx5X2vf2GHVyJ
+svudr2UdKRVlk6CEQZn37+VoaEsv1ydwgBMjEjvxtO12fF9bTf9U75T/jVd5YMsi
+VBvIqlyCyKcZGLlJwPV5NvuoP/jz500lhakfEjbM84jhU3IQ2rUBG0DRJZj+lGnh
+aekElqCvX06an/hOzKWlUvrXK8pdWjFVA/DIN9SIQqqeazP/jWHXcjOO6YJFVKdt
+gaYXDb1ZouQsX96l6MNrCbnCK+HSEBCfxbq3ohsuQopEv5ml0uSPVTgf7IDLAWwn
+AuTK6hihiqDAtCiVdkYG9oDyZi/NEsA7yKYLqdmOJTYYnnId3nfIQSd9XnYh30Hz
+M3vo7mCSDj2UlIQ2beAoMKtFmc7U2bugzTDJYbvV7CXx7zILVIVKTjNQu2jCx6AH
+vId2hoV4trSh/x+dHF6gnF9kJ+q1HvzaU9uEA5Qq1vfaqMTPeJxuuzLfX0bt1jEo
+htbb+/pP2r4=
+=74nP
+-----END PGP SIGNATURE-----
+
+--Sig_/TS3eXNpKOSdGkX7h4ikbMK+--
