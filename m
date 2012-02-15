@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab2BOE2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 23:28:32 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49184 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab2BOE23 (ORCPT
+	id S1757084Ab2BOEiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 23:38:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64172 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab2BOEiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 23:28:29 -0500
-Date: Wed, 15 Feb 2012 15:28:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Akinobu Mita <akinobu.mita@gmail.com>, Al Viro <viro@ftp.linux.org.uk>,
-        James Morris <jmorris@namei.org>
-Subject: linux-next: manual merge of the akpm tree with the security tree
-Message-Id: <20120215152818.58f32cb975a52a28328799a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_Feb_2012_15_28_18_+1100_OPoy1uMYAb3GKpQU"
+	Tue, 14 Feb 2012 23:38:19 -0500
+Date: Tue, 14 Feb 2012 20:38:13 -0800
+From: Dong Aisheng <dongas86@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: Make "hog" mapping table entries work
+Message-ID: <20120215043813.GA3607@b29396-Latitude-E6410>
+References: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Feb_2012_15_28_18_+1100_OPoy1uMYAb3GKpQU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 14, 2012 at 10:50:41AM -0700, Stephen Warren wrote:
+> Commit 77a5988 "pinctrl: changes hog mechanism to be self-referential"
+> modified the way "hog" entries were represented in the mapping table.
+> However, the new representation failed some error checks in
+> pinctrl_hog_map(). Remove the now-bogus error-check, and fix the code
+> to solve the issue the error-check used to avoid.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Hi Andrew,
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/sysctl.c between commit 404015308747 ("security: trim security.h")
-from the security tree and commit "sysctl: use bitmap library functions"
-from the akpm.
+Regards
+Dong Aisheng
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc kernel/sysctl.c
-index 62538ee,cfeb1fa..0000000
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@@ -58,7 -58,7 +58,8 @@@
-  #include <linux/oom.h>
-  #include <linux/kmod.h>
-  #include <linux/capability.h>
- +#include <linux/binfmts.h>
-+ #include <linux/bitmap.h>
- =20
-  #include <asm/uaccess.h>
-  #include <asm/processor.h>
-
---Signature=_Wed__15_Feb_2012_15_28_18_+1100_OPoy1uMYAb3GKpQU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPOzRiAAoJEECxmPOUX5FE+VsQAIEhQ6To8ZOejwP7bB4NVVID
-Km3DUBXnCDwB80czg/UB1NHdkgYHb3ePwXnwhcCV5bgnd6q6ki/4jzTfqPeD/tCX
-5eXswZH4tqG7V8+fZt5XyXZ5YKaDoZOq5OvycERS9UxAMdOSdRPsDfVgGOX3G0zE
-s60/ebShAYsJC0MaT1Q90zjnr61kSytrL2ujxhDQ6zdxFugQab7npulr6eOfmj2B
-GbK5F3rLkbe8Qtye/IyDfUMuu5EOOf9spBbn2DHQ7bxh1ly7H/mN9UX5IFNx7Xp7
-j971eANAp+GVRUDYy8Q+HXiVbItonkq9Y6uXJ0sJwoelcRhrpBmZMLJKIzT6iric
-M/L3Ln3Vxqa3z0NNVBig49eSDtuf2HuHWxmFy3SdA/YCz1HWSw9L1hBMhBZ/fgrD
-a9se5/IGGPotiRVe4EYmTX4c/mDiYOPf15npUN3lTuRbWi/jmJTq/diqba1xJcBN
-FTIzVpMPRxH1ZBWju74bA1qK4JmB3ZntvzM59s+4R6lhrlQR1yZVNde115YCwxqo
-qwBcvRz4wghu26v1uvTXiteOAqaU+5pl+u6ynskjxHPf/pabxqGMEj0tM7ou5VA8
-27wckt5eThpzA+2k2Kq5soI+NF2snaxizasgBpsfBXTqAHD2ui3YmLfMji4axOd/
-R8R9dyYfWPUYKarqX2g9
-=SkI1
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Feb_2012_15_28_18_+1100_OPoy1uMYAb3GKpQU--
+> ---
+>  drivers/pinctrl/core.c |   14 +-------------
+>  1 files changed, 1 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+> index c5f76ad..8a91eb2 100644
+> --- a/drivers/pinctrl/core.c
+> +++ b/drivers/pinctrl/core.c
+> @@ -725,23 +725,11 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
+>  	struct pinctrl *p;
+>  	int ret;
+>  
+> -	if (map->dev_name) {
+> -		/*
+> -		 * TODO: the day we have device tree support, we can
+> -		 * traverse the device tree and hog to specific device nodes
+> -		 * without any problems, so then we can hog pinmuxes for
+> -		 * all devices that just want a static pin mux at this point.
+> -		 */
+> -		dev_err(pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
+> -				map->name);
+> -		return -EINVAL;
+> -	}
+> -
+>  	hog = kzalloc(sizeof(struct pinctrl_hog), GFP_KERNEL);
+>  	if (!hog)
+>  		return -ENOMEM;
+>  
+> -	p = pinctrl_get(NULL, map->name);
+> +	p = pinctrl_get(pctldev->dev, map->name);
+>  	if (IS_ERR(p)) {
+>  		kfree(hog);
+>  		dev_err(pctldev->dev,
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
