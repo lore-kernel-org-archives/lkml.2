@@ -1,85 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2BOCZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 21:25:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45830 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab2BOCZ4 (ORCPT
+	id S932673Ab2BOC1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 21:27:36 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38966 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2BOC1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 21:25:56 -0500
-Date: Wed, 15 Feb 2012 13:25:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ftp.linux.org.uk>, James Morris <jmorris@namei.org>
-Subject: linux-next: manual merge of the sysctl tree with the security tree
-Message-Id: <20120215132543.27189492ab5e910a0899be85@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_Feb_2012_13_25_43_+1100_Wlz2D6P_g.F+B6k5"
+	Tue, 14 Feb 2012 21:27:34 -0500
+Message-ID: <4F3B17C7.9040107@ce.jp.nec.com>
+Date: Wed, 15 Feb 2012 11:26:15 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Bart Van Assche <bvanassche@acm.org>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
+        Huajun Li <huajun.li.lee@gmail.com>,
+        Axel Theilmann <theilmann@pre-sense.de>, linux-kernel@vger.kernel.org
+Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
+ of oops in sd_revalidate_disk?)
+References: <4EE8E419.8010000@pre-sense.de> <CAO+b5-pCW-F1nD365TnEiAfoN7zKB4zXkk3uO6p5QyUPY2icsA@mail.gmail.com> <20120214143800.69703df9@stein> <2173642.Y3HxI15Hxl@asus>
+In-Reply-To: <2173642.Y3HxI15Hxl@asus>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Feb_2012_13_25_43_+1100_Wlz2D6P_g.F+B6k5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Eric,
+Thank you for comments.
 
-Today's linux-next merge of the sysctl tree got a conflict in
-fs/proc/proc_sysctl.c between commit 404015308747 ("security: trim
-security.h") from the security tree and commit 1f87f0b52b1d ("sysctl:
-Move the implementation into fs/proc/proc_sysctl.c") from the sysctl tree.
+On 02/15/12 04:11, Bart Van Assche wrote:
+> On Feb 14 Stefan Richter wrote:
+>> Or asked differently, what is supposed to serialize the ->queuedata
+>> accesses?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+AFAIU the racy check is ok because 
+sdev does not disappear as far as the device is opened.
 
-BTW, I think this file only needs to include <linux/export.h> not
-module.h ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The oopses in scsi_prep_fn happened just because they used queuedata
+without checking.
 
-diff --cc fs/proc/proc_sysctl.c
-index 67bbf6e,a7708b7..0000000
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@@ -6,9 -6,8 +6,10 @@@
-  #include <linux/poll.h>
-  #include <linux/proc_fs.h>
-  #include <linux/security.h>
- +#include <linux/sched.h>
-  #include <linux/namei.h>
- +#include <linux/mm.h>
-+ #include <linux/module.h>
-  #include "internal.h"
- =20
-  static const struct dentry_operations proc_sys_dentry_operations;
-http://www.canb.auug.org.au/~sfr/
+> 
+> How about avoiding to modify q->queuedata before scsi_free_queue() has been
+> invoked, e.g. as follows ?
 
---Signature=_Wed__15_Feb_2012_13_25_43_+1100_Wlz2D6P_g.F+B6k5
-Content-Type: application/pgp-signature
+I think this patch is good, too.
+Since QUEUE_FLAG_DEAD is also racy, it is not much different
+from queuedata check, IMO.
+Maybe you want additional blk_queue_dead() check in prep_fn
+to keep the current behaviour.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Note: the kfree() call in scsi_host_dev_release() probably
+> should be postponed until the last put on the queue has occurred.
+> 
+>>From 4d29b62c686a718d34d3b3f634306376b40dbdb6 Mon Sep 17 00:00:00 2001
+> From: Bart Van Assche <bvanassche@acm.org>
+> Date: Tue, 14 Feb 2012 13:52:21 +0100
+> Subject: [PATCH] scsi-queuedata-null-deref-fix
+> 
+> ---
+>  drivers/scsi/hosts.c      |    4 ++--
+>  drivers/scsi/scsi_lib.c   |   13 +++----------
+>  drivers/scsi/scsi_sysfs.c |    3 ---
+>  3 files changed, 5 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
+> index 351dc0b..5f34620 100644
+> --- a/drivers/scsi/hosts.c
+> +++ b/drivers/scsi/hosts.c
+> @@ -296,9 +296,9 @@ static void scsi_host_dev_release(struct device *dev)
+>  		destroy_workqueue(shost->work_q);
+>  	q = shost->uspace_req_q;
+>  	if (q) {
+> -		kfree(q->queuedata);
+> -		q->queuedata = NULL;
+> +		void *qd = q->queuedata;
+>  		scsi_free_queue(q);
+> +		kfree(qd);
+>  	}
+>  
+>  	scsi_destroy_command_freelist(shost);
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index f85cfa6..7c40303 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1491,7 +1491,9 @@ static void scsi_request_fn(struct request_queue *q)
+>  	struct scsi_cmnd *cmd;
+>  	struct request *req;
+>  
+> -	if (!sdev) {
+> +	BUG_ON(!sdev);
+> +
+> +	if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)) {
+>  		while ((req = blk_peek_request(q)) != NULL)
+>  			scsi_kill_request(req, q);
+>  		return;
+> @@ -1700,15 +1702,6 @@ struct request_queue *scsi_alloc_queue(struct scsi_device *sdev)
+>  
+>  void scsi_free_queue(struct request_queue *q)
+>  {
+> -	unsigned long flags;
+> -
+> -	WARN_ON(q->queuedata);
+> -
+> -	/* cause scsi_request_fn() to kill all non-finished requests */
+> -	spin_lock_irqsave(q->queue_lock, flags);
+> -	q->request_fn(q);
+> -	spin_unlock_irqrestore(q->queue_lock, flags);
+> -
+>  	blk_cleanup_queue(q);
+>  }
+>  
+> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+> index ea5658d..61dd107 100644
+> --- a/drivers/scsi/scsi_sysfs.c
+> +++ b/drivers/scsi/scsi_sysfs.c
+> @@ -976,9 +976,6 @@ void __scsi_remove_device(struct scsi_device *sdev)
+>  		sdev->host->hostt->slave_destroy(sdev);
+>  	transport_destroy_device(dev);
+>  
+> -	/* cause the request function to reject all I/O requests */
+> -	sdev->request_queue->queuedata = NULL;
+> -
+>  	/* Freeing the queue signals to block that we're done */
+>  	scsi_free_queue(sdev->request_queue);
+>  	put_device(dev);
 
-iQIcBAEBCAAGBQJPOxenAAoJEECxmPOUX5FEw6AP+wSMJUhrgwEM2YZhDGxPww2q
-D8jrXjs11WTkfXAD/dpJHnkadeBekipxHLKVxNEOanES+BJBPMrdn/MgMgDrPtxo
-mjShxaWNnXE5YxrjCEjAO9S6lV1DSgyKH/qghkGYaEmwVpEGY7aD0YfU1Q/4upOb
-nkWkURgOHyCwFOCzw2GrM8cxDUQA6MLx+1zQs+oCurwTqpXRRfXtfO7qZbPdpKZ/
-YiWfrjVHVoyo4FfExPhqHmMYzZK3sGbaCw6ZdBVXTZsbIN47OJ+y859SfVe2KTW7
-/agHwH8DV32jSSgbJu5RyaRSofSHK3OY4xhyCIyUJtOdA4Zu80KbBaclWePq/6mz
-aI9JP2Qo/mbfbgQFyXNHPYQslbIThjHi5tUl0j8q3+OtrGqToPTYyXwTIVT2e0Pl
-MghLb48fVzE80+GzuwbP6/HDCHpRIPtagawsqEo/7xAS/qKLT8S17Es/a0BpTYl3
-wWM+TDpqJ7/SCC8r134L+Irg1lm09ArGpet8BjlhmvPe64nFfY7077ggAMTiOj7U
-T/c3LDvcYiJpcOH63Tem5Lc6qd1em0rWrui5yqSJCr0vp4mHszJ60RRe3BidGEG3
-nJIXDuz9garhSguWV/Osrzn0bsfEVgh3KjecmVBHHXY4/x8v2ik8twG3VF+V9Ch8
-5/Qc7XeK1kuB/oeQWiN4
-=zki3
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_Feb_2012_13_25_43_+1100_Wlz2D6P_g.F+B6k5--
+-- 
+Jun'ichi Nomura, NEC Corporation
