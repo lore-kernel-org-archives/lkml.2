@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2BOGBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 01:01:55 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5595 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2BOGBv (ORCPT
+	id S1752789Ab2BOGDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 01:03:12 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57903 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab2BOGDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 01:01:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 14 Feb 2012 22:01:50 -0800
-Message-ID: <4F3B49D4.5090508@nvidia.com>
-Date: Wed, 15 Feb 2012 11:29:48 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V5 2/2] regmap: add regmap_bulk_write() for register write
-References: <1329056383-20312-1-git-send-email-ldewangan@nvidia.com> <20120214221313.GB4035@opensource.wolfsonmicro.com>
-In-Reply-To: <20120214221313.GB4035@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 01:03:10 -0500
+Message-ID: <1329285786.2555.38.camel@edumazet-laptop>
+Subject: Re: [PATCH v1] percpu: use raw_local_irq_* in _this_cpu op
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Date: Wed, 15 Feb 2012 07:03:06 +0100
+In-Reply-To: <CACVXFVN7ye6QkJLWSTecy24FeHY6SRB6cDLAXyrPF7kBKgvq5g@mail.gmail.com>
+References: <1329280586-6878-1-git-send-email-tom.leiming@gmail.com>
+	 <1329281947.2555.26.camel@edumazet-laptop>
+	 <CACVXFVN7ye6QkJLWSTecy24FeHY6SRB6cDLAXyrPF7kBKgvq5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 February 2012 03:43 AM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Sun, Feb 12, 2012 at 07:49:43PM +0530, Laxman Dewangan wrote:
->
-> Applied, thanks.  When posting patches you should only number things for
-> the patch series you're currently posting - this isn't patch 2/2, this
-> is a single isolated patch.  The numbering is only there to help people
-> and tools figure out which order to apply things in.
-Thanks, I understand now.
+Le mercredi 15 février 2012 à 13:08 +0800, Ming Lei a écrit :
+
+> Just several warnings, no errors. Also the 5 warnings are introduced
+> by previous commit, sounds nothing to do with motivation of this patch.
+> You may prepare a standalone patch to fix all the code style in this file, :-)
+> 
+
+Oh well, I dont use checkpatch but spoke about trailing \
+
+Cant you see them on your screen ?
+
+We had :
+
+#define _this_cpu_generic_to_op(pcp, val, op)				\
+do {									\
+	unsigned long flags;						\
+	local_irq_save(flags);						\
+	*__this_cpu_ptr(&(pcp)) op val;					\
+	local_irq_restore(flags);					\
+} while (0)
+
+
+You want :
+
+#define _this_cpu_generic_to_op(pcp, val, op)				\
+do {									\
+	unsigned long flags;						\
+	raw_local_irq_save(flags);						\
+	*__this_cpu_ptr(&(pcp)) op val;					\
+	raw_local_irq_restore(flags);					\
+} while (0)
+
+
+I suggest :
+
+#define _this_cpu_generic_to_op(pcp, val, op)				\
+do {									\
+	unsigned long flags;						\
+	raw_local_irq_save(flags);					\
+	*__this_cpu_ptr(&(pcp)) op val;					\
+	raw_local_irq_restore(flags);					\
+} while (0)
+
+
+Is it clear now ?
+
+
 
