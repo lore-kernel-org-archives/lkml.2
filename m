@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab2BORyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:54:50 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:41595 "EHLO
+	id S1754450Ab2BORzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:55:09 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:41620 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754277Ab2BORys (ORCPT
+	by vger.kernel.org with ESMTP id S1754386Ab2BORzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:54:48 -0500
+	Wed, 15 Feb 2012 12:55:05 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Danny Kukawka <dkukawka@suse.de>, Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] renesas/sh_eth.c: fix linux/interrupt.h included twice
-Date: Wed, 15 Feb 2012 18:54:43 +0100
-Message-Id: <1329328483-4682-1-git-send-email-danny.kukawka@bisect.de>
+Subject: [PATCH] cc770: linux/can/dev.h included twice
+Date: Wed, 15 Feb 2012 18:55:01 +0100
+Message-Id: <1329328501-4737-1-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329328488;3561e942;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329328505;b109608a;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove double include of linux/interrupt.h.
+drivers/net/can/cc770/cc770.c included 'linux/can/dev.h' twice,
+remove the duplicate.
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- drivers/net/ethernet/renesas/sh_eth.c |    1 -
+ drivers/net/can/cc770/cc770.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index 87b6501..59524f1 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
+diff --git a/drivers/net/can/cc770/cc770.c b/drivers/net/can/cc770/cc770.c
+index c30f0e6..d42a6a7 100644
+--- a/drivers/net/can/cc770/cc770.c
++++ b/drivers/net/can/cc770/cc770.c
 @@ -34,7 +34,6 @@
- #include <linux/phy.h>
- #include <linux/cache.h>
- #include <linux/io.h>
--#include <linux/interrupt.h>
- #include <linux/pm_runtime.h>
- #include <linux/slab.h>
- #include <linux/ethtool.h>
+ #include <linux/can.h>
+ #include <linux/can/dev.h>
+ #include <linux/can/error.h>
+-#include <linux/can/dev.h>
+ #include <linux/can/platform/cc770.h>
+ 
+ #include "cc770.h"
 -- 
 1.7.8.3
 
