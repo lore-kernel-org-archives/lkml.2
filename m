@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab2BOTVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:21:07 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:60197 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755079Ab2BOTVB (ORCPT
+	id S1755139Ab2BOTV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:21:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39887 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755142Ab2BOTU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:21:01 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Danny Kukawka <dkukawka@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mt9p031.c included media/v4l2-subdev.h twice
-Date: Wed, 15 Feb 2012 20:20:55 +0100
-Message-Id: <1329333655-32103-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.8.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329333661;17ddbd06;
+	Wed, 15 Feb 2012 14:20:56 -0500
+Message-ID: <4F3C0588.1080601@gmail.com>
+Date: Wed, 15 Feb 2012 13:20:40 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, Danny Kukawka <dkukawka@suse.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/fdt.c: asm/setup.h included twice
+References: <1329328528-4847-1-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1329328528-4847-1-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/media/video/mt9p031.c included 'media/v4l2-subdev.h' twice,
-remove the duplicate.
+On 02/15/2012 11:55 AM, Danny Kukawka wrote:
+> drivers/of/fdt.c included 'asm/setup.h' twice, remove the duplicate.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/media/video/mt9p031.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Applied for 3.4.
 
-diff --git a/drivers/media/video/mt9p031.c b/drivers/media/video/mt9p031.c
-index 93c3ec7..dd937df 100644
---- a/drivers/media/video/mt9p031.c
-+++ b/drivers/media/video/mt9p031.c
-@@ -19,7 +19,6 @@
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
--#include <media/v4l2-subdev.h>
- #include <linux/videodev2.h>
- 
- #include <media/mt9p031.h>
--- 
-1.7.8.3
+Rob
 
+> ---
+>  drivers/of/fdt.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index ea2bd1b..91a375f 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -23,7 +23,6 @@
+>  #include <asm/machdep.h>
+>  #endif /* CONFIG_PPC */
+>  
+> -#include <asm/setup.h>
+>  #include <asm/page.h>
+>  
+>  char *of_fdt_get_string(struct boot_param_header *blob, u32 offset)
