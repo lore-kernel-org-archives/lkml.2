@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab2BORHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 12:07:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab2BORHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 12:07:36 -0500
-Message-ID: <1329325622.2337.13.camel@localhost>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-From: Eric Paris <eparis@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Nathaniel Husted <nhusted@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 15 Feb 2012 12:07:02 -0500
-In-Reply-To: <20120215083609.GD13673@n2100.arm.linux.org.uk>
-References: <1329284188.12708.1.camel@phoenix>
-	 <20120215083609.GD13673@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753300Ab2BORIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 12:08:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41528 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab2BORHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 12:07:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120215134733.GL28614@infradead.org>
+References: <1329195360-10699-1-git-send-email-semenzato@chromium.org>
+	<1329310113.2293.72.camel@twins>
+	<20120215134733.GL28614@infradead.org>
+Date: Wed, 15 Feb 2012 09:07:47 -0800
+X-Google-Sender-Auth: H4SfGON6tjjhMYL6DDx2C70sTnc
+Message-ID: <CAA25o9SW+EqsUhv-Ze6fX5-DyZ4fTHXL5CZd0rHnTLsOBxV7xg@mail.gmail.com>
+Subject: Re: [PATCH] Perf: bug fix: distinguish between rename and exec
+From: Luigi Semenzato <semenzato@chromium.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 08:36 +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 15, 2012 at 01:36:28PM +0800, Axel Lin wrote:
-> > Include linux/audit.h to fix below build errors:
-> > 
-> >   CC      arch/arm/kernel/ptrace.o
-> > arch/arm/kernel/ptrace.c: In function 'syscall_trace':
-> > arch/arm/kernel/ptrace.c:919: error: implicit declaration of function 'audit_syscall_exit'
-> > arch/arm/kernel/ptrace.c:921: error: implicit declaration of function 'audit_syscall_entry'
-> > arch/arm/kernel/ptrace.c:921: error: 'AUDIT_ARCH_ARMEB' undeclared (first use in this function)
-> 
-> Err, can someone explain why we seem to tell the audit code that we're
-> always big endian?
+On Wed, Feb 15, 2012 at 5:47 AM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Wed, Feb 15, 2012 at 01:48:33PM +0100, Peter Zijlstra escreveu:
+>> I really dislike changing generic code purely for the purpose of
+>> instrumentation like this. Better to pull perf_event_comm() out of here
+>> if you want to change semantics.
+>>
+>> Personally I couldn't care less about renames, I think they're a waste
+>> of time, so I'm ok with the simple patch moving the perf_event_comm()
+>> into setup_new_exec() and possibly renaming it to perf_event_exec().
+>>
+>> Acme, do you care about renames?
+>
+> I like your idea of keeping the semantics of PERF_RECORD_COMM and
+> introducing a PERF_RECORD_EXEC, just have to think about how to handle
+> that in a way that the tools detect that we have PERF_RECORD_EXEC...
 
-So we have 2 bugs obviously.  One is my fault.  One is Nathaniel's.
-Both are easy to fix.
+I considered this but I don't know how important it is to be backward
+compatible.  Adding a new record type makes old "perf report" fail to
+parse new perf.data files.  (Unless we pad the new record to a
+multiple of 8 bytes, but I don't think we want to go down that path).
 
-I'm pretty sure I introduced the build failure when I merged Nathaniel's
-patch into my tree.  I completely rewrote audit_syscall_entry() and exit
-and probably the include wasn't needed in his version.  So my fault.
+If looking forward is more important, I agree a new new record type is
+best.  We might want to consider adding a PERF_RECORD_RENAME for
+renames, and leaving the COMM record to its historical meaning (exec),
+possibly renaming it to PERF_RECORD_EXEC for clarity.  And yes, the
+perf instrumentation should not be in set_task_comm(), that's why the
+bug exists in the first place.
 
-The endian issue is something an ARM-er would have noticed I assume, and
-again, it's my fault for not forwarding to the ARM list.  Let me explain
-what happens.  The kernel audit system is going to dump the raw bits to
-userspace.  Userspace is going to write them to a file exactly how it
-got them.  One of the things we write is the arch (which includes
-endianness)  This means we can send those bits to another machine and it
-should be able to correctly interpret their meaning.  However if you are
-just looking at the raw bits on your own box, endianness isn't an issue
-and records will look ok.
+We might also want to change the parsing of perf.data so that in the
+future it is more tolerant of new record types.
 
-Fixing the arch flag to be correct means we could do that translation
-properly.  I haven't seen the patches to support translation of arm raw
-bits to something higher level in audit userspace, but I assume it's
-coming as soon as someone cares.
-
-So if someone tells me how the code knows it's endianness I'll gladly
-write the ifdef to switch from AUDIT_ARCH_ARMEB to AUDIT_ARCH_ARM when
-appropriate....
-
+>
+> Humm, will be yet another fallback for setting an perf_event_attr bit,
+> just like with .sample_id_all and .exclude_{guest,host}...
+>
+> That together with the per class errnos + __strerror() method will allow
+> to move all the event creation finally to perf_evlist__open() where all
+> this gets nicely hidden away from poor tools.
+>
+> We can then even have an ui__evlist_perror() method that does all the
+> ui__warning calls, etc.
+>
+> So, yes, from a tooling perspective, I want to be notified of renames
+> and being able to stop relying on PERF_RECORD_COMM to call
+> map_groups__flush and instead do it at PERF_RECORD_EXEC seems a
+> bonus.
+>
+> - Arnaldo
