@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab2BOMri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 07:47:38 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34589 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757823Ab2BOMrf (ORCPT
+	id S1758227Ab2BOMtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 07:49:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56834 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016Ab2BOMtF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 07:47:35 -0500
-Message-ID: <4F3BA962.9040109@monstr.eu>
-Date: Wed, 15 Feb 2012 13:47:30 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory
- location
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
-In-Reply-To: <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 07:49:05 -0500
+Message-ID: <1329310113.2293.72.camel@twins>
+Subject: Re: [PATCH] Perf: bug fix: distinguish between rename and exec
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Luigi Semenzato <semenzato@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org,
+        sonnyrao@chromium.org, olofj@chromium.org, eranian@google.com
+Date: Wed, 15 Feb 2012 13:48:33 +0100
+In-Reply-To: <1329195360-10699-1-git-send-email-semenzato@chromium.org>
+References: <1329195360-10699-1-git-send-email-semenzato@chromium.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad Ben-Cohen wrote:
-> On Mon, Feb 13, 2012 at 3:20 PM, Michal Simek <monstr@monstr.eu> wrote:
->> Here is how it is achieve
->>        ret = dma_declare_coherent_memory(&zynq_freertos.dev, 0,
->>                                0, 0x10000000, DMA_MEMORY_MAP);
->>
->> which is fully compatible with remoteproc.
+On Mon, 2012-02-13 at 20:56 -0800, Luigi Semenzato wrote:
+> This makes it possible for "perf report" to distinguish between an exec and
+> a rename (for instance from prctl(PR_SET_NAME)).  Currently a similar COMM
+> record is produced for the two events.  Perf report assumes all COMM records
+> are execs and discards the old mappings.  Without mappings, perf report
+> can no longer correlate sampled IPs to the functions containing them,
+> and collapses all samples into a single bucket.
 > 
-> Great, this is what we've been doing with davinci too.
-
-Cool.
-
+> This change maintains backward compatibility in both directions, i.e. old
+> version of perf will continue to work on new perf.data files in the same
+> way, and new versions of perf on old data files.
 > 
->> Do you have any example of using it?
-> 
-> What exactly are you looking for ? RTOS or Linux side ?
+> Another solution would be to not send COMM records for renames.  Although
+> it seems reasonable, it might break existing setups.
 
-Both side will be great. Rtos is freertos.
+Uhm, didn't you argue its already broken?
 
-> 
-> On the Linux side, you can just make the rpmsg sample work (it's part
-> of the rpmsg patch set). For the RTOS side, feel free to just take our
-> code (it's BSD licensed and hosted on github) and adapt it to your
-> environment.
+> +++ b/fs/exec.c
+> @@ -1052,7 +1052,7 @@ char *get_task_comm(char *buf, struct task_struct *tsk)
+>  }
+>  EXPORT_SYMBOL_GPL(get_task_comm);
+>  
+> -void set_task_comm(struct task_struct *tsk, char *buf)
+> +void set_task_comm(struct task_struct *tsk, char *buf, bool is_rename)
+>  {
+>  	task_lock(tsk);
+>  
+> @@ -1068,7 +1068,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+>  	wmb();
+>  	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+>  	task_unlock(tsk);
+> -	perf_event_comm(tsk);
+> +	perf_event_comm(tsk, is_rename);
+>  }
 
-You mean that server_sample and rpmsg_omx right?
-I have also found rpmsg-omx demo application.
-What I am missing is how to probe rpmsg bus.
-Do you have any working example?
+I really dislike changing generic code purely for the purpose of
+instrumentation like this. Better to pull perf_event_comm() out of here
+if you want to change semantics.
 
-Communication between cpus is done through swirqs. I have test sending it from linux to rtos.
+Personally I couldn't care less about renames, I think they're a waste
+of time, so I'm ok with the simple patch moving the perf_event_comm()
+into setup_new_exec() and possibly renaming it to perf_event_exec().
 
-Thanks,
-Michal
+Acme, do you care about renames?
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
