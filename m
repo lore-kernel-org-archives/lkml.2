@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2BOPvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:51:52 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:58055
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751792Ab2BOPvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:51:49 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] scsi: Fix typo in pmcraid.h
-Date: Thu, 16 Feb 2012 00:48:38 +0900
-Message-Id: <1329320918-2745-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1752038Ab2BOPxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:53:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750928Ab2BOPxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 10:53:31 -0500
+Date: Wed, 15 Feb 2012 10:53:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH block/for-linus] block: blk-throttle should be drained
+ regardless of q->elevator
+Message-ID: <20120215155328.GC27312@redhat.com>
+References: <20120213225248.GH12117@google.com>
+ <20120213232742.GH3130@redhat.com>
+ <20120213234057.GI12117@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120213234057.GI12117@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "thresold" to "threshold" in
-drivers/scsi/pmraid.h
+On Mon, Feb 13, 2012 at 03:40:57PM -0800, Tejun Heo wrote:
+> Hello,
+> 
+> On Mon, Feb 13, 2012 at 06:27:42PM -0500, Vivek Goyal wrote:
+> > > -	/*
+> > > -	 * Drain all requests queued before DEAD marking.  The caller might
+> > > -	 * be trying to tear down @q before its elevator is initialized, in
+> > > -	 * which case we don't want to call into draining.
+> > > -	 */
+> > > -	if (q->elevator)
+> > > -		blk_drain_queue(q, true);
+> > > +	/* drain all requests queued before DEAD marking */
+> > 
+> > We have already marked the queue DEAD before we start draining the queue.
+> > May be we need to fix the comment.
+> 
+> Hmmm... it actually is correct.  It drains all requests which were
+> queued before the preceding DEAD marking.  ie... it's describing the
+> following.
+> 
+> 	1. requests queued
+> 	2. mark q DEAD
+> 	3. drain requests which were queued before #2.  We don't care
+> 	   about requests queued after #2.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/scsi/pmcraid.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Ok, thanks. I read the comment wrong. I thought of it as "drain all requests before marking queue DEAD". :-)
 
-diff --git a/drivers/scsi/pmcraid.h b/drivers/scsi/pmcraid.h
-index ca496c7..e1d150f 100644
---- a/drivers/scsi/pmcraid.h
-+++ b/drivers/scsi/pmcraid.h
-@@ -857,11 +857,11 @@ static struct pmcraid_ioasc_error pmcraid_ioasc_error_table[] = {
- 	{0x01180600, IOASC_LOG_LEVEL_HARD,
- 	 "Recovered Error, soft media error, sector reassignment suggested"},
- 	{0x015D0000, IOASC_LOG_LEVEL_HARD,
--	 "Recovered Error, failure prediction thresold exceeded"},
-+	 "Recovered Error, failure prediction threshold exceeded"},
- 	{0x015D9200, IOASC_LOG_LEVEL_HARD,
--	 "Recovered Error, soft Cache Card Battery error thresold"},
-+	 "Recovered Error, soft Cache Card Battery error threshold"},
- 	{0x015D9200, IOASC_LOG_LEVEL_HARD,
--	 "Recovered Error, soft Cache Card Battery error thresold"},
-+	 "Recovered Error, soft Cache Card Battery error threshold"},
- 	{0x02048000, IOASC_LOG_LEVEL_HARD,
- 	 "Not Ready, IOA Reset Required"},
- 	{0x02408500, IOASC_LOG_LEVEL_HARD,
--- 
-1.7.6.5
-
+Thanks
+Vivek
