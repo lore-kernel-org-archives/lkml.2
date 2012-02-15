@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760853Ab2BOOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:37:16 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:45497 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759927Ab2BOOhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:37:13 -0500
-Date: Wed, 15 Feb 2012 08:37:10 -0600
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
-Message-ID: <20120215143710.GA10543@sgi.com>
-References: <20111108191149.GA7236@sgi.com>
- <alpine.LFD.2.02.1202151512420.2794@ionos>
+	id S1759286Ab2BOOhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:37:07 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55313 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab2BOOhC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 09:37:02 -0500
+Message-ID: <4F3BC30A.4030301@monstr.eu>
+Date: Wed, 15 Feb 2012 15:36:58 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1202151512420.2794@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        John Williams <john.williams@petalogix.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: remoteproc: Load coprocessor code to the specific main memory
+ location
+References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com> <4F3BA962.9040109@monstr.eu>
+In-Reply-To: <4F3BA962.9040109@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 03:16:34PM +0100, Thomas Gleixner wrote:
-> On Tue, 8 Nov 2011, Dimitri Sivanich wrote:
-> > 
-> > Allow manual override of the tick_do_timer_cpu.
-> > 
-> > While not necessarily harmful, doing jiffies updates on an application cpu
-> > does cause some extra overhead that HPC benchmarking people notice.  They
-> > prefer to have OS activity isolated to certain cpus.  They like reproducibility
-> > of results, and having jiffies updates bouncing around introduces variability.
+Michal Simek wrote:
+> Ohad Ben-Cohen wrote:
+>> On Mon, Feb 13, 2012 at 3:20 PM, Michal Simek <monstr@monstr.eu> wrote:
+>>> Here is how it is achieve
+>>>        ret = dma_declare_coherent_memory(&zynq_freertos.dev, 0,
+>>>                                0, 0x10000000, DMA_MEMORY_MAP);
+>>>
+>>> which is fully compatible with remoteproc.
+>>
+>> Great, this is what we've been doing with davinci too.
 > 
-> I really wonder about this changelog. The only case where jiffies
-> updates bounces around is the NOHZ case. In all other modes (periodic
-> or highres) the boot cpu gets the do_timer() duty and it's never
-> assigned to any other cpu.
+> Cool.
 > 
-> So what's the point of this exercise? Moving it away from CPU0 for
-> acedemic reasons or what?
->
-I wasn't specifically trying to move it away from CPU0 (having jiffies updates
-on CPU0 was and would be just fine for the nohz=off case).  The issue was
-that the tick_do_timer_cpu could be any cpu even in the nohz=off case (maybe
-something has changed that since?).  After the point of assignment it is
-static, but you never know which cpu it is.
+>>
+>>> Do you have any example of using it?
+>>
+>> What exactly are you looking for ? RTOS or Linux side ?
+> 
+> Both side will be great. Rtos is freertos.
+> 
+>>
+>> On the Linux side, you can just make the rpmsg sample work (it's part
+>> of the rpmsg patch set). For the RTOS side, feel free to just take our
+>> code (it's BSD licensed and hosted on github) and adapt it to your
+>> environment.
+> 
+> You mean that server_sample and rpmsg_omx right?
+> I have also found rpmsg-omx demo application.
+> What I am missing is how to probe rpmsg bus.
+> Do you have any working example?
+> 
+> Communication between cpus is done through swirqs. I have test sending 
+> it from linux to rtos.
 
+ok. How that rpmsg channels are created? Is it based on data sent from remoteproc?
+Or based on resource table?
+
+Thanks,
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
