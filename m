@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab2BOWsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:48:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:52377 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab2BOWsD (ORCPT
+	id S1756104Ab2BOW5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:57:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56730 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075Ab2BOW5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:48:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Date: Wed, 15 Feb 2012 22:14:24 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Alexander Graf <agraf@suse.de>, Avi Kivity <avi@redhat.com>,
-        "kvm-ppc" <kvm-ppc@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <4F2AB552.2070909@redhat.com> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de>
-In-Reply-To: <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de>
+	Wed, 15 Feb 2012 17:57:08 -0500
+Subject: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
+To: linux-mm@kvack.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 16 Feb 2012 02:57:04 +0400
+Message-ID: <20120215224221.22050.80605.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202152214.24992.arnd@arndb.de>
-X-Provags-ID: V02:K0:urp3NOcjygWA888OeAVle50ahfAqZ0DBMUfFUQ9O1CN
- 4aA8m7pFCOWZGG9MNTUM1yIrUoTmWqtFC0NY40UVAWQaPYAfW/
- YTdmdAjZlkCukWkQhz10sW7UzU5nGPjVO+4nc5O4/ENG2GMurw
- mYPKwm4lBsKUQIothHAs0NTJMabSFUDnm0k1IqeIb38od40dHV
- JeJWYPjg6ZfLPEqQZ3hdhtQYv4G70Zuo49zc51fL0CLLxM2kcE
- P+i/8zRXm7Y1+db5IXzNRBP6hE85GGriYvRbxPZkn6RpTMztRe
- F59dEELUd7MNGLZ/1NvqRwB9WR/tC/dl83h4/kOnmZjOBmJbK8
- 5JUaRHUTXgeEip2telRw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 February 2012, Alexander Graf wrote:
-> >> 
-> >> Not sure we'll ever get there. For PPC, it will probably take another 1-2 years until we get the 32-bit targets stabilized. By then we will have new 64-bit support though. And then the next gen will come out giving us even more new constraints.
-> > 
-> > I would expect that newer archs have less constraints, not more.
-> 
-> Heh. I doubt it :). The 64-bit booke stuff is pretty similar to what we have today on 32-bit, but extends a
-> bunch of registers to 64-bit. So what if we laid out stuff wrong before?
-> 
-> I don't even want to imagine what v7 arm vs v8 arm looks like. It's a completely new architecture.
-> 
+There should be no logic changes in this patchset, this is only tossing bits around.
+[ This patchset is on top some memcg cleanup/rework patches,
+  which I sent to linux-mm@ today/yesterday ]
 
-I have not seen the source but I'm pretty sure that v7 and v8 they look very
-similar regarding virtualization support because they were designed together,
-including the concept that on v8 you can run either a v7 compatible 32 bit
-hypervisor with 32 bit guests or a 64 bit hypervisor with a combination of
-32 and 64 bit guests. Also, the page table layout in v7-LPAE is identical
-to the v8 one. The main difference is the instruction set, but then ARMv7
-already has four of these (ARM, Thumb, Thumb2, ThumbEE).
+Most of things in this patchset are self-descriptive, so here brief plan:
 
-	Arnd
+* Transmute struct lruvec into struct book. Like real book this struct will
+  store set of pages for one zone. It will be working unit for reclaimer code.
+[ If memcg is disabled in config there will only one book embedded into struct zone ]
 
+* move page-lru counters to struct book
+[ this adds extra overhead in add_page_to_lru_list()/del_page_from_lru_list() for
+  non-memcg case, but I believe it will be invisible, only one non-atomic add/sub
+  in the same cacheline with lru list ]
+
+* unify inactive_list_is_low_global() and cleanup reclaimer code
+* replace struct mem_cgroup_zone with single pointer to struct book
+* optimize page to book translations, move it upper in the call stack,
+  replace some struct zone arguments with struct book pointer.
+
+page -> book dereference become main operation, page (even free) will always
+points to one book in its zone. so page->flags bits may contains direct reference to book.
+Maybe we can replace page_zone(page) with book_zone(page_book(page)), without mem cgroups
+book -> zone dereference will be simple container_of().
+
+Finally, there appears some new locking primitives for decorating lru_lock splitting logic.
+Final patch actually splits zone->lru_lock into small per-book pieces.
+All this code currently *completely untested*, but seems like it already can work.
+
+
+After that, there two options how manage struct book on mem-cgroup create/destroy:
+a) [ currently implemented ] allocate and release by rcu.
+   Thus lock_page_book() will be protected with rcu_read_lock().
+b) allocate and never release struct book, reuse them after rcu grace period.
+   It allows to avoid some rcu_read_lock()/rcu_read_unlock() calls on hot paths.
+
+
+Motivation:
+I wrote the similar memory controller for our rhel6-based openvz/virtuozzo kernel,
+including splitted lru-locks and some other [patented LOL] cool stuff.
+[ common descrioption without techical details: http://wiki.openvz.org/VSwap ]
+That kernel already in production and rather stable for a long time.
+
+---
+
+Konstantin Khlebnikov (15):
+      mm: rename struct lruvec into struct book
+      mm: memory bookkeeping core
+      mm: add book->pages_count
+      mm: unify inactive_list_is_low()
+      mm: add book->reclaim_stat
+      mm: kill struct mem_cgroup_zone
+      mm: move page-to-book translation upper
+      mm: introduce book locking primitives
+      mm: handle book relocks on lumpy reclaim
+      mm: handle book relocks in compaction
+      mm: handle book relock in memory controller
+      mm: optimize books in update_page_reclaim_stat()
+      mm: optimize books in pagevec_lru_move_fn()
+      mm: optimize putback for 0-order reclaim
+      mm: split zone->lru_lock
+
+
+ include/linux/memcontrol.h |   52 -------
+ include/linux/mm_inline.h  |  222 ++++++++++++++++++++++++++++-
+ include/linux/mmzone.h     |   26 ++-
+ include/linux/swap.h       |    2 
+ init/Kconfig               |    4 +
+ mm/compaction.c            |   35 +++--
+ mm/huge_memory.c           |   10 +
+ mm/memcontrol.c            |  238 ++++++++++---------------------
+ mm/page_alloc.c            |   20 ++-
+ mm/swap.c                  |  128 ++++++-----------
+ mm/vmscan.c                |  334 +++++++++++++++++++-------------------------
+ 11 files changed, 554 insertions(+), 517 deletions(-)
+
+-- 
+Signature
