@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759104Ab2BONcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:32:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49913 "EHLO mx1.redhat.com"
+	id S1759136Ab2BONd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:33:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757982Ab2BONch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:32:37 -0500
-Date: Wed, 15 Feb 2012 14:32:18 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
-Message-ID: <20120215133218.GD1664@m.brq.redhat.com>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
- <1327674868-10486-1-git-send-email-jolsa@redhat.com>
- <1329236924.2293.13.camel@twins>
- <1329237838.2293.20.camel@twins>
- <1329250830.2293.24.camel@twins>
- <1329253030.2293.27.camel@twins>
- <1329253391.2293.31.camel@twins>
- <20120215092423.GB1664@m.brq.redhat.com>
- <1329304712.2293.46.camel@twins>
+	id S1757833Ab2BONd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 08:33:27 -0500
+Message-ID: <4F3BB41E.60405@redhat.com>
+Date: Wed, 15 Feb 2012 15:33:18 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329304712.2293.46.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Alexander Graf <agraf@suse.de>, qemu-devel <qemu-devel@nongnu.org>,
+        kvm-ppc <kvm-ppc@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws>	<51470503-DEE0-478D-8D01-020834AF6E8C@suse.de>	<4F3117E5.6000105@redhat.com>	<EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de>	<4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F3141E4.8080902@codemonkey.ws>
+In-Reply-To: <4F3141E4.8080902@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 12:18:32PM +0100, Peter Zijlstra wrote:
-> On Wed, 2012-02-15 at 10:24 +0100, Jiri Olsa wrote:
-> > On Tue, Feb 14, 2012 at 10:03:11PM +0100, Peter Zijlstra wrote:
-> 
-> > > These would be: period, config, config1, config2 and stephane's new
-> > > branch_sample_type, although that might want to get a shorter name.
-> > 
-> > right, for pmu/.../ syntax there are allowed only fields from 'format'
-> > directory are so far.. with exceptions like: cycles/period=100000/
-> > 
-> > so I'll hardcode following config fields:
-> > 	config
-> > 	config1
-> > 	config2
-> > 	period
-> > 	branch_sample_type (branch, branch_type, branch_st  ???)
-> 
-> Uhmm,.. Stephane any particular preference on this?
-> 
-> > to be used in xxx/.../ syntax
-> > 
-> > also we need to choose some strategy of format field name shadowing
-> > with hardcoded fields:
-> > 
-> > - BUILD_BUG in kernel PMU_FORMAT_ATTR
-> > - not allowed.. report error in perf runtime
-> > - allowed - hardcoded field have precedence
-> > - allowed - format field values have precedence
-> > 
-> > I'd say either allow shadowing(with whatever precedence we this is better),
-> > or have the BUILD_BUG line in kernel..
-> 
-> I agree, if we can get the BUILD_BUG thing working that might be the
-> best option, otherwise we can do the precedence thing. We could even add
-> a syntax to resolve the namespace conflict in the latter case (eg. use
-> '$' PE_NAME to mean the hardcoded in case of conflict).
-err.. I could not get the BUILD_BUG working... looks like string
-comparison is something you are not supposed to do in cpp.. ;)
+On 02/07/2012 05:23 PM, Anthony Liguori wrote:
+> On 02/07/2012 07:40 AM, Alexander Graf wrote:
+>>
+>> Why? For the HPET timer register for example, we could have a simple
+>> MMIO hook that says
+>>
+>>    on_read:
+>>      return read_current_time() - shared_page.offset;
+>>    on_write:
+>>      handle_in_user_space();
+>>
+>> For IDE, it would be as simple as
+>>
+>>    register_pio_hook_ptr_r(PIO_IDE, SIZE_BYTE,&s->cmd[0]);
+>>    for (i = 1; i<  7; i++) {
+>>      register_pio_hook_ptr_r(PIO_IDE + i, SIZE_BYTE,&s->cmd[i]);
+>>      register_pio_hook_ptr_w(PIO_IDE + i, SIZE_BYTE,&s->cmd[i]);
+>>    }
+>
+> You can't easily serialize updates to that address with the kernel
+> since two threads are likely going to be accessing it at the same
+> time.  That either means an expensive sync operation or a reliance on
+> atomic instructions.
+>
+> But not all architectures offer non-word sized atomic instructions so
+> it gets fairly nasty in practice.
+>
 
-currently, I have the hardcoded fields to have a precedence,
-and I'd workaround/fix it if there's need.. later I mean..
+I doubt that any guest accesses IDE registers from two threads in
+parallel.  The guest will have some lock, so we could have a lock as
+well and be assured that there will never be contention.
 
-also, any idea when's the branch_sample_type going in?
+-- 
+error compiling committee.c: too many arguments to function
 
-thanks,
-jirka
