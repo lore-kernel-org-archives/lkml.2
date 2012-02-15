@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760251Ab2BOOkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:40:05 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:60551 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758396Ab2BOOkB (ORCPT
+	id S1758536Ab2BOOk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:40:29 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53498 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480Ab2BOOk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:40:01 -0500
+	Wed, 15 Feb 2012 09:40:26 -0500
+Date: Wed, 15 Feb 2012 15:40:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+In-Reply-To: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+Message-ID: <alpine.LFD.2.02.1202151537500.2794@ionos>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <201202150953.20341.oneukum@suse.de>
-References: <1329230375-25508-1-git-send-email-toby.gray@realvnc.com>
-	<20120214.144622.678577766818888054.davem@davemloft.net>
-	<CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
-	<201202150953.20341.oneukum@suse.de>
-Date: Wed, 15 Feb 2012 15:40:00 +0100
-Message-ID: <CAL_Kpj0oN883qGhAD2pO4zOHvYt1=VmQHOJx970UF0TcqG06OA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] usb: cdc-ncm: Increase maximum allowed datagram size
-From: Alexey Orishko <alexey.orishko@gmail.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: David Miller <davem@davemloft.net>, toby.gray@realvnc.com,
-        oliver@neukum.name, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 9:53 AM, Oliver Neukum <oneukum@suse.de> wrote:
-> Have you tried that under severe memory presssure?
+On Thu, 29 Sep 2011, Matthew Garrett wrote:
 
-Well, it is a simplistic view upon host configuration.
-Developing of NCM spec was done with mind set, that host must be more
-capable than device.
+> sleep(0) is a common construct used by applications that want to trigger
+> the scheduler. sched_yield() might make more sense, but only appeared in
+> POSIX.1-2001 and so plenty of example code still uses the sleep(0) form.
+> This wouldn't normally be a problem, but it means that event-driven
+> applications that are merely trying to avoid starving other processes may
+> actually end up sleeping due to having large timer_slack values. Special-
+> casing this seems reasonable.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
+>  kernel/hrtimer.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index a9205e3..0bb70a7 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -1566,6 +1566,14 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
+>  	if (rt_task(current))
+>  		slack = 0;
+>  
+> +	/*
+> +	 * Applications will often sleep(0) to indicate that they wish to
+> +	 * be scheduled. Special case that to avoid actually putting them
+> +	 * to sleep for the duration of the slack.
+> +	 */
+> +	if (rqtp->tv_sec == 0 && rqtp->tv_nsec == 0)
+> +		slack = 0;
 
-However, proposal above doesn't solve problem completely due to usbnet.
-Currently I'm testing some improvements/fixes related to data handling
-and driver latency with the plan to post it in the near future.
+That's pretty pointless. You can simply return 0 here as
+do_nanosleep() will not call the scheduler on an already expired
+timer, which is always true for a relative timer with delta 0.
 
-Regards,
-Alexey
+Thanks,
+
+	tglx
