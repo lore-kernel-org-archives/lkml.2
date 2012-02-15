@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab2BOGOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 01:14:51 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:54643 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab2BOGOu (ORCPT
+	id S1757749Ab2BOGPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 01:15:22 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:62326 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab2BOGPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 01:14:50 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: rdunlap@xenotime.net, trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lucas.demarchi@profusion.mobi
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [trivial] Documentation: broken URL in libata
-Date: Wed, 15 Feb 2012 07:14:39 +0100
-Message-Id: <1329286479-17553-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 15 Feb 2012 01:15:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <201202070205.07589.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+	<201202070205.07589.rjw@sisk.pl>
+Date: Tue, 14 Feb 2012 22:15:18 -0800
+Message-ID: <CAMP5XgdPmyOp4ECoS3t7NUvQz+cWbq9eMRQSSQn3073w2P4t5w@mail.gmail.com>
+Subject: Re: [RFC][PATCH 5/8] PM / Sleep: Change wakeup statistics
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The text for version 1.1 of the Open Sofware license doesn't seem
-to be available anywhere on http://www.opensource.org/ any more.
-Replace it with an URL on fedora.org.
+On Mon, Feb 6, 2012 at 5:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> Wakeup statistics used by Android are slightly different from what we
+> have at the moment, so modify them to follow Android more closely.
+...
+> @@ -438,6 +444,11 @@ static void wakeup_source_deactivate(str
+>        if (ktime_to_ns(duration) > ktime_to_ns(ws->max_time))
+>                ws->max_time = duration;
+>
+> +       ws->last_time = now;
+> +       if (ws->has_timeout && time_after(jiffies, ws->timer_expires))
 
-Thanks to Randy Dunlap for his advise choosing the most
-appropriate replacement URL.
+time_after_eq may work better (or increment the count from the timer).
+I applied this patch and the expire counts I see for wakeup-sources
+that always time-out do not match the active count.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- Documentation/DocBook/libata.tmpl |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
-index cdd1bb9..880c956 100644
---- a/Documentation/DocBook/libata.tmpl
-+++ b/Documentation/DocBook/libata.tmpl
-@@ -22,8 +22,8 @@
-    <para>
-    The contents of this file are subject to the Open
-    Software License version 1.1 that can be found at
--   <ulink url="http://www.opensource.org/licenses/osl-1.1.txt">http://www.opensource.org/licenses/osl-1.1.txt</ulink> and is included herein
--   by reference.
-+   <ulink url="http://fedoraproject.org/wiki/Licensing:OSL1.1">http://fedoraproject.org/wiki/Licensing:OSL1.1</ulink>
-+   and is included herein by reference.
-    </para>
- 
-    <para>
 -- 
-1.7.4.1
-
+Arve Hjønnevåg
