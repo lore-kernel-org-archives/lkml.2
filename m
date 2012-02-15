@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab2BOD2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 22:28:06 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:56749 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932159Ab2BOD14 (ORCPT
+	id S1753851Ab2BODlp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 22:41:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60645 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab2BODlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 22:27:56 -0500
-Message-ID: <4F3B2631.6080900@st.com>
-Date: Wed, 15 Feb 2012 08:57:45 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: "trivial@kernel.org" <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>
-Subject: Re: [PATCH] [trivial] arm: Fix typo in spear3[012]0.c
-References: <1329230142-2063-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1329230142-2063-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Feb 2012 22:41:42 -0500
+Date: Wed, 15 Feb 2012 14:41:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ftp.linux.org.uk>, James Morris <jmorris@namei.org>
+Subject: linux-next: build failure after merge of the tmem tree
+Message-Id: <20120215144131.e1c3b7bbe9c30f6b622872c2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__15_Feb_2012_14_41_31_+1100_iKo7WZrM5d//hE1W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/14/2012 8:05 PM, Masanari Iida wrote:
-> Correct spelling "registeration" to "registration" in
-> arch/arm/mach-spear3xx/spear300.c, spear310.c and spear320.c
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  arch/arm/mach-spear3xx/spear300.c |    2 +-
->  arch/arm/mach-spear3xx/spear310.c |    2 +-
->  arch/arm/mach-spear3xx/spear320.c |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-spear3xx/spear300.c b/arch/arm/mach-spear3xx/spear300.c
-> index a5e46b4..4f7f518 100644
-> --- a/arch/arm/mach-spear3xx/spear300.c
-> +++ b/arch/arm/mach-spear3xx/spear300.c
-> @@ -469,7 +469,7 @@ void __init spear300_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
->  	if (pmx_driver.base) {
->  		ret = pmx_register(&pmx_driver);
->  		if (ret)
-> -			printk(KERN_ERR "padmux: registeration failed. err no"
-> +			printk(KERN_ERR "padmux: registration failed. err no"
->  					": %d\n", ret);
->  		/* Free Mapping, device selection already done */
->  		iounmap(pmx_driver.base);
-> diff --git a/arch/arm/mach-spear3xx/spear310.c b/arch/arm/mach-spear3xx/spear310.c
-> index 9004cf9..febaa6f 100644
-> --- a/arch/arm/mach-spear3xx/spear310.c
-> +++ b/arch/arm/mach-spear3xx/spear310.c
-> @@ -303,6 +303,6 @@ void __init spear310_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
->  
->  	ret = pmx_register(&pmx_driver);
->  	if (ret)
-> -		printk(KERN_ERR "padmux: registeration failed. err no: %d\n",
-> +		printk(KERN_ERR "padmux: registration failed. err no: %d\n",
->  				ret);
->  }
-> diff --git a/arch/arm/mach-spear3xx/spear320.c b/arch/arm/mach-spear3xx/spear320.c
-> index ee29bef..deaaf19 100644
-> --- a/arch/arm/mach-spear3xx/spear320.c
-> +++ b/arch/arm/mach-spear3xx/spear320.c
-> @@ -550,6 +550,6 @@ void __init spear320_init(struct pmx_mode *pmx_mode, struct pmx_dev **pmx_devs,
->  
->  	ret = pmx_register(&pmx_driver);
->  	if (ret)
-> -		printk(KERN_ERR "padmux: registeration failed. err no: %d\n",
-> +		printk(KERN_ERR "padmux: registration failed. err no: %d\n",
->  				ret);
->  }
+--Signature=_Wed__15_Feb_2012_14_41_31_+1100_iKo7WZrM5d//hE1W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hi Konrad,
 
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
+After merging the tmem tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
--- 
-viresh
+mm/frontswap.c: In function 'frontswap_shrink':
+mm/frontswap.c:217:3: error: implicit declaration of function 'security_vm_=
+enough_memory_kern' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 8174e70a6bde ("mm: frontswap: core frontswap
+functionality") interacting with commit 191c542442fd ("mm: collapse
+security_vm_enough_memory() variants into a single function") from the
+security tree.
+
+I applied the following merge fix:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 15 Feb 2012 14:35:31 +1100
+Subject: [PATCH] mm: frontswap: update for security_vm_enough_memory API ch=
+ange
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ mm/frontswap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/frontswap.c b/mm/frontswap.c
+index d7c91e3..2b80c5a 100644
+--- a/mm/frontswap.c
++++ b/mm/frontswap.c
+@@ -214,7 +214,7 @@ void frontswap_shrink(unsigned long target_pages)
+ 			pages_to_unuse =3D 0; /* unuse all */
+ 		}
+ 		/* ensure there is enough RAM to fetch pages from frontswap */
+-		if (security_vm_enough_memory_kern(pages))
++		if (security_vm_enough_memory_mm(current->mm, pages))
+ 			continue;
+ 		vm_unacct_memory(pages);
+ 		break;
+--=20
+1.7.9
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__15_Feb_2012_14_41_31_+1100_iKo7WZrM5d//hE1W
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPOylrAAoJEECxmPOUX5FEinUP/3+wxR+k8TXbSohKmaDKCJCu
+HooBf1sQztgg3TkLibo45ymTCSQ6SFq+Ex7OBpjSNur147VTqFNj6jYDr1mGQ9Ie
+a+ZWMPP49thhkDjjcic/oKrYQQqlKP07JtPJeEw5+Nx2NwZSazZ2xtwrKO/SCT29
+S3Qs5L6nkhN6mpxo6j6xC06Xkcuk5pxe8lh5+OVPbr9iqMKql9doCc12Y6CfGocK
++Mnt6QQgPB90o8U7MH1bVMoUWjJvakk8QGzrJg9HobG1Zu2NHngSDgajqhESBu3S
+HtePbnxzeOJ1+CY+Atd3ReQK+4pe70tYUohieWXReBuXVaf7FmQJhqrVVDKaIxo5
+h7Tw68JoV+mCp/jZVtsXDmMvIX5TxpCeYTUIvDdNZCFeay7I+dGh/gLMZS0KN2et
+f+gfEEJPky6EEfY0H9y/uZcEFwv8nwnzMGItGfbamA8VR6pA9F1kefJwZAkeMQ9G
+pWDZM20gM1m1viPf0nlUQZ+DN6ybZ1t/7qjoBH016zSpbZkbVobPcCILqxvluX+P
+3tKSieaspFk+xVBrBumwSuSYZAQeS4yxDvjR/hd2o9ixR7T2sTgGABM4bvlrI8P5
+yfDhlKjSXoEWHYoX6uwZFQSyUpCaKRmtlTt7n9UEWQNPO/9ekiXBKOxLW4XtZgt8
+04ekwObboP7mSFz2v6/y
+=w8AH
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Feb_2012_14_41_31_+1100_iKo7WZrM5d//hE1W--
