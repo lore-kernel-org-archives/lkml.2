@@ -1,131 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2BOXa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 18:30:27 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37724 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751472Ab2BOXaZ (ORCPT
+	id S1756149Ab2BOXfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 18:35:45 -0500
+Received: from outmail012.snc4.facebook.com ([66.220.144.146]:35956 "EHLO
+	intmgw004.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753457Ab2BOXfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 18:30:25 -0500
-X-Sasl-enc: CxR4kqgVGnYrlRF43ML+mSu0tI3uAVvEOtJuatO1tpYQ 1329348624
-Date: Wed, 15 Feb 2012 15:30:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Egmont Koblinger <egmont@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
-Message-ID: <20120215233002.GB20816@kroah.com>
-References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
- <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+	Wed, 15 Feb 2012 18:35:44 -0500
+Date: Wed, 15 Feb 2012 15:35:37 -0800
+From: Arun Sharma <asharma@fb.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120215233537.GA20724@dev3310.snc6.facebook.com>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+In-Reply-To: <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 07:50:58PM +0100, Egmont Koblinger wrote:
-> Hi,
-> 
-> Short summary:  When pasting large amount of data (>4kB) to terminals,
-> often the data gets mangled.
-> 
-> How to reproduce:
-> Create a text file that contains this line about 100 times:
-> a=(123456789123456789123456789123456789123456789123456789123456789)
-> (also available at http://pastebin.com/LAH2bmaw for a while)
-> and then copy-paste its entire contents in one step into a "bash" or
-> "python" running in a graphical terminal.
-> 
-> Expected result: The interpreter correctly parses these lines and
-> produces no visible result.
-> Actual result: They complain about syntax error.
-> Reproducibility: About 10% on my computer (2.6.38.8), reportedly 100%
-> on friends' computers running 2.6.37 and 3.1.1.
+On Sun, Feb 12, 2012 at 01:21:38AM +0100, Andrea Righi wrote:
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 386da09..624a73e 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -9,6 +9,7 @@
+>  #include <linux/limits.h>
+>  #include <linux/ioctl.h>
+>  #include <linux/blk_types.h>
+> +#include <linux/kinterval.h>
+>  #include <linux/types.h>
 
-Has this ever worked properly for you on older kernels?  How about 3.2?
-3.3-rc3?  Having a "known good" point to work from here would be nice to
-have.
+fs.h is an exported header file, whereas kinterval.h is not. So this
+fails scripts/header_check.pl.
 
-I can reproduce this using bash, BUT, I can not reproduce it using vim
-running in the same window bash was running in.
+I used the workaround below.
 
-So, that implies that this is a userspace bug, not a kernel one,
-otherwise the results would be the same both times, right?
+ -Arun
 
-> Why I believe this is a kernel bug:
-> - Reproducible with any source of copy-pasting (e.g. various
-> terminals, graphical editors, browsers).
-
-Bugs are common when people start with the same original codebase :)
-
-> - Reproducible with at least five different popular graphical terminal
-> emulators where you paste into (xterm, gnome, kde, urxvt, putty).
-> - Reproducble with at least two applications (bash, python).
-
-Again, I can't duplicate this with vim in a terminal window, which rules
-out the terminal, and points at bash, right?
-
-> - stracing the terminal shows that it does indeed write the correct
-> copy-paste buffer into /dev/ptmx, and all its writes return the full
-> amount of bytes requested, i.e. no short write.
-
-short writes are legal, but so many userspace programs don't handle them
-properly.
-
-> - stracing the application clearly shows that it does not receive all
-> the desired characters from its stdin, some are simply missing, i.e. a
-> read(0, "3", 1) = 1 is followed by a read(0, "\n", 1) = 1 (with a
-> write() and some rt_sigprocmask()s in between), although the char '3'
-> shouldn't be followed by a newline.
-
-Perhaps the buffer is overflowing as the program isn't able to keep up
-properly?  It's not an "endless" buffer, it can overflow if reads don't
-keep up.
-
-> - Not reproducible on MacOS.
-
-That means nothing :)
-
-> Additional informaiton:
-> - On friends' computers the bug always happens from the offset 4163
-> which is exactly the length of the first line (data immediately
-> processed by the application) plus the magic 4095. The rest of that
-> line, up to the next newline, is cut off.
-> 
-> - On my computer, the bug, if happens, always happens at an offset
-> behind this one; moreover, there's a lone digit '3' appearing on the
-> display on its own line exactly 4095 bytes before the syntax error.
-> Here's a "screenshot" with "$ " being the bash prompt, and with my
-> comments after "#":
-> 
-> $ a=(123456789123456789123456789123456789123456789123456789123456789)
-> # repeated a few, varying number of times
-> 3
-> # <- notice this lone '3' on the display
-> $ a=(123456789123456789123456789123456789123456789123456789123456789)
-> # 60 times, that's 4080 bytes incl. newlines
-> $ a=(123456789123
-> > a=(123456789123456789123456789123456789123456789123456789123456789)
-> bash: syntax error near unexpected token `('
-> $ a=(123456789123456789123456789123456789123456789123456789123456789)
-> # a few more times
-> 
-> - I couldn't reproduce with cat-like applications, I have a feeling
-> perhaps the bug only occurs in raw terminal mode, but I'm really not
-> sure about this.
-
-That kind of proves the "there's a problem in the application you are
-testing" theory, right?
-
-> I'd be glad if you could find the time to look at this problem, it's
-> quite unfortunate that I cannot safely copy-paste large amount of data
-> into terminals.
-
-Works for me, just use an editor to do that...
-
-thanks,
-
-greg k-h
+diff --git a/fs/inode.c b/fs/inode.c
+index d27dbee..1335a5f 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -26,6 +26,7 @@
+ #include <linux/ima.h>
+ #include <linux/cred.h>
+ #include <linux/buffer_head.h> /* for inode_has_buffers */
++#include <linux/kinterval.h>
+ #include "internal.h"
+ 
+ /*
+@@ -279,7 +280,7 @@ void address_space_init_once(struct address_space *mapping)
+ 	spin_lock_init(&mapping->private_lock);
+ 	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
+ 	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
+-	INIT_KINTERVAL_TREE_ROOT(&mapping->nocache_tree);
++	INIT_KINTERVAL_TREE_ROOT((struct rb_root *) &mapping->nocache_tree);
+ 	rwlock_init(&mapping->nocache_lock);
+ }
+ EXPORT_SYMBOL(address_space_init_once);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 74b6a97..b4e45e6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -9,7 +9,6 @@
+ #include <linux/limits.h>
+ #include <linux/ioctl.h>
+ #include <linux/blk_types.h>
+-#include <linux/kinterval.h>
+ #include <linux/types.h>
+ 
+ /*
+@@ -656,7 +655,7 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
+-	struct rb_root		nocache_tree;	/* noreuse cache range tree */
++	void			*nocache_tree;	/* noreuse cache range tree */
+ 	rwlock_t		nocache_lock;	/* protect the nocache_tree */
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
