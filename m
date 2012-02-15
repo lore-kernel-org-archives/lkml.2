@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2BOF5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 00:57:47 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:54072 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab2BOF5R convert rfc822-to-8bit (ORCPT
+	id S1751797Ab2BOF5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 00:57:12 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54014 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab2BOF5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 00:57:17 -0500
+	Wed, 15 Feb 2012 00:57:11 -0500
+X-AuditID: 9c930197-b7cdbae000001518-c8-4f3b49340de8
+Message-ID: <4F3B4930.8020002@lge.com>
+Date: Wed, 15 Feb 2012 14:57:04 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <201202150022.26072.rjw@sisk.pl>
-References: <201202070200.55505.rjw@sisk.pl>
-	<CAMP5XgeqXJroKtHZO18SESFxg1iGP=wHAa+CU1zEEXQqUEQwTA@mail.gmail.com>
-	<201202150022.26072.rjw@sisk.pl>
-Date: Tue, 14 Feb 2012 21:57:16 -0800
-Message-ID: <CAMP5XgfgZphvsoFr62=oNoDUxXSeRXmu21Co3fGWXhZ17DgO_A@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Newsgroups: gmane.linux.kernel
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/2] perf/core fixes and improvements
+References: <1329237356-907-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1329237356-907-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/14 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday, February 14, 2012, Arve Hjønnevåg wrote:
->> On Mon, Feb 6, 2012 at 5:00 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> ...
->> but the wake-source timeout feature has some bugs or incompatible apis. An
->> init api would also be useful for embedding wake-sources in other data
->> structures without adding another memory allocation. Your patch to
->> move the spinlock init to wakeup_source_add still require the struct
->> to be zero initialized and the name set manually.
+Hello, Arnaldo
+
+2012-02-15 1:35 AM, Arnaldo Carvalho de Melo wrote:
+> The following changes since commit c98fdeaa92731308ed80386261fa2589addefa47:
 >
-> That should be easy to fix.  What about the appended patch?
+>    x86/sched/perf/AMD: Set sched_clock_stable (2012-02-07 13:12:08 +0100)
+>
+> are available in the git repository at:
+>
+>    git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf-core-for-mingo
+>
+> for you to fetch changes up to 808e122630d45a7f036d25582474d70548a87e2c:
+>
+>    perf tools: Invert the sample_id_all logic (2012-02-14 14:18:57 -0200)
+>
+> ----------------------------------------------------------------
+> perf core fixes and improvements.
+>
+> Includes the previous pull request + the exclude_{host,guest} feature test and
+> fallback to handle older kernels.
+>
+> Signed-off-by: Arnaldo Carvalho de Melo<acme@redhat.com>
 >
 
-That works, but I still have to call more than one function before I
-can use the wakeup-source (wakeup_source_init and wakeup_source_add)
-and more than one function before I can free it (__pm_relax,
-wakeup_source_remove and wakeup_source_drop). Is there any reason to
-keep these separate?
+I've just found that you missed my previous two patches which can be found at:
 
-Also, not copying the name when the caller provides the memory for the
-wakeup-source would be a closer match to the wakelock api. Most of our
-wakelocks pass a string constant as the name, and making a copy of
-that string is not useful. wake_lock_init is also safe to call from
-atomic context, but I don't know if anyone relies on this.
+   https://lkml.org/lkml/2012/1/30/576
 
--- 
-Arve Hjønnevåg
+Do they have any problem?
+
+
+Thanks,
+Namhyung
+
+
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (2):
+>        perf tools: Handle kernels that don't support attr.exclude_{guest,host}
+>        perf tools: Invert the sample_id_all logic
+>
+> David Ahern (3):
+>        perf record: No build id option fails
+>        perf tools: Fix out of tree compiles
+>        perf tools: Allow multiple threads or processes in record, stat, top
+>
+> Jiri Olsa (3):
+>        perf tools: Remove unused functions from debugfs object
+>        perf tools: Add sysfs mountpoint interface
+>        perf tools: Add bitmap_or function into bitmap object
+>
+> Joerg Roedel (2):
+>        perf top: Don't process samples with no valid machine object
+>        perf tools: Change perf_guest default back to false
+>
+> Namhyung Kim (4):
+>        perf tools: Fix build dependency of perf python extension
+>        perf tools: Implement islower/isupper macro into util.h
+>        perf tools: ctype.c only wants util.h
+>        perf tools: Get rid of ctype.h in symbol.c
+>
+> Robert Richter (2):
+>        perf tools: Moving code in header.c
+>        perf tools: Factor out feature op to process header sections
+>
+> Stephane Eranian (2):
+>        perf tools: fix endianness detection in perf.data
+>        perf tools: cleanup initialization of attr->size
+>
+>   tools/perf/Documentation/perf-record.txt |    4 +-
+>   tools/perf/Documentation/perf-stat.txt   |    4 +-
+>   tools/perf/Documentation/perf-top.txt    |    4 +-
+>   tools/perf/MANIFEST                      |    1 +
+>   tools/perf/Makefile                      |    7 +-
+>   tools/perf/builtin-record.c              |   46 ++--
+>   tools/perf/builtin-stat.c                |   31 ++-
+>   tools/perf/builtin-test.c                |    3 -
+>   tools/perf/builtin-top.c                 |   44 ++-
+>   tools/perf/perf.h                        |    8 +-
+>   tools/perf/util/bitmap.c                 |   10 +
+>   tools/perf/util/ctype.c                  |    2 +-
+>   tools/perf/util/debugfs.c                |  141 ----------
+>   tools/perf/util/debugfs.h                |    6 -
+>   tools/perf/util/evlist.c                 |   10 +-
+>   tools/perf/util/evlist.h                 |    4 +-
+>   tools/perf/util/evsel.c                  |    6 +-
+>   tools/perf/util/header.c                 |  421 +++++++++++++++++-------------
+>   tools/perf/util/hist.h                   |    1 +
+>   tools/perf/util/include/linux/bitmap.h   |   11 +
+>   tools/perf/util/python-ext-sources       |   19 ++
+>   tools/perf/util/session.c                |   10 +
+>   tools/perf/util/setup.py                 |    8 +-
+>   tools/perf/util/symbol.c                 |    2 +-
+>   tools/perf/util/sysfs.c                  |   60 +++++
+>   tools/perf/util/sysfs.h                  |    6 +
+>   tools/perf/util/thread_map.c             |  128 +++++++++
+>   tools/perf/util/thread_map.h             |    4 +
+>   tools/perf/util/top.c                    |   10 +-
+>   tools/perf/util/top.h                    |    5 +-
+>   tools/perf/util/usage.c                  |    6 +-
+>   tools/perf/util/util.c                   |    4 +-
+>   tools/perf/util/util.h                   |    6 +-
+>   33 files changed, 616 insertions(+), 416 deletions(-)
+>   create mode 100644 tools/perf/util/python-ext-sources
+>   create mode 100644 tools/perf/util/sysfs.c
+>   create mode 100644 tools/perf/util/sysfs.h
+
