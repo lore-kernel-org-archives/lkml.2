@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2BOQBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:01:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45989 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2BOQBf (ORCPT
+	id S1751879Ab2BOQDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:03:00 -0500
+Received: from mail.southpole.se ([193.12.106.18]:58734 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2BOQCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:01:35 -0500
-Date: Wed, 15 Feb 2012 16:00:28 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Saravana Kannan <skannan@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
-        linaro-kernel@lists.linaro.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Oleg Nesterov <oleg@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Chan <mike@android.com>, Dave Jones <davej@redhat.com>,
-        Todd Poynor <toddpoynor@google.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org,
-        Arjan Van De Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-Message-ID: <20120215160028.GD27825@n2100.arm.linux.org.uk>
-References: <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com> <1328736834.2903.33.camel@pasglop> <20120209075106.GB18387@elte.hu> <4F35DD3E.4020406@codeaurora.org> <20120211144530.GA497@elte.hu> <4F3AEC4E.9000303@codeaurora.org> <1329313085.2293.106.camel@twins> <20120215140245.GB27825@n2100.arm.linux.org.uk> <1329318063.2293.136.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329318063.2293.136.camel@twins>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 15 Feb 2012 11:02:55 -0500
+Message-ID: <1329320456.2670.86.camel@crucifix>
+Subject: Re: [PATCH 21/40] OpenRISC: Don't reimplement force_sigsegv()
+From: Jonas Bonn <jonas@southpole.se>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-arch@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net
+Date: Wed, 15 Feb 2012 16:40:56 +0100
+In-Reply-To: <1329219673-28711-22-git-send-email-matt@console-pimps.org>
+References: <1329219673-28711-1-git-send-email-matt@console-pimps.org>
+	 <1329219673-28711-22-git-send-email-matt@console-pimps.org>
+Organization: South Pole AB
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu2 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+X-Assp-Version: 2.1.1(11364) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 20453-07209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 04:01:03PM +0100, Peter Zijlstra wrote:
-> On Wed, 2012-02-15 at 14:02 +0000, Russell King - ARM Linux wrote:
+
+Acked-by: Jonas Bonn <jonas@southpole.se>
+
+...for OpenRISC, all 4 patches (20-23 in this series).
+
+Should I take these in the OpenRISC tree or how did you want to do?
+
+/Jonas
+
+On Tue, 2012-02-14 at 11:40 +0000, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> > There's a problem with that: SA11x0 platforms (for which cpufreq was
-> > _originally_ written for before it spouted all the policy stuff which
-> > Linus demanded) need to notify drivers when the CPU frequency changes so
-> > that drivers can readjust stuff to keep within the bounds of the hardware.
-> > 
-> > Unfortunately, there's embedded platforms out there where the CPU core
-> > clock is not just the CPU core clock, but also is the memory bus clock,
-> > PCMCIA clock, and some peripheral clocks.  All these peripherals need
-> > their timing registers rewritten when the CPU core clock changes.
-> > 
-> > Even more unfortunately, some of these peripherals can't be adjusted
-> > with the click of your fingers: you have to wait for them to finish
-> > what they're doing.  In the case of a LCD controller, that means the
-> > hardware must finish displaying the current frame before the LCD
-> > controller will shut down and let you change its registers.
-> > 
-> > We _could_ make it atomic, but in return we'd have to spin in the driver
-> > for maybe 20+ ms, during which time the system would not be able to do
-> > anything else, not even those threaded IRQs. 
+> Instead of open coding the sequence from force_sigsegv() just call
+> it. This also fixes a bug because we were modifying ka->sa.sa_handler
+> (which is a copy of sighand->action[]), whereas the intention of the
+> code was to modify sighand->action[] directly.
 > 
-> Thing is, the scheduler doesn't care about completion, all it needs is
-> to be able to kick-start the thing atomically. So you really have to
-> wait for it or can you do an interrupt driven state machine?
+> As the original code was working with a copy it had no effect on
+> signal delivery.
+> 
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux@lists.openrisc.net
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/openrisc/kernel/signal.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+> index 95207ab..53741ba 100644
+> --- a/arch/openrisc/kernel/signal.c
+> +++ b/arch/openrisc/kernel/signal.c
+> @@ -250,9 +250,7 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+>  	return;
+>  
+>  give_sigsegv:
+> -	if (sig == SIGSEGV)
+> -		ka->sa.sa_handler = SIG_DFL;
+> -	force_sig(SIGSEGV, current);
+> +	force_sigsegv(sig, current);
+>  }
+>  
+>  static inline void
 
-Well, in the case I'm most familiar with, the sequence is this:
+-- 
+Jonas Bonn                       South Pole AB
+Phone : +46-8-56237100           Anderstorpsvägen 16
+Mobile: +46-768-527755           SE-17154 Solna
+jonas@southpole.se               www.southpoleconsulting.com
 
-1. Receive request to change frequency
-2. Shut down LCD controller and wait for it to stop (can take 20ms)
-3. Check new frequency wrt old frequency, reprogram timings for PCMCIA
-   if moving to a faster clock rate
-4. Simultaneously program new frequency and SDRAM clocking
-5. Recheck new frequency wrt old frequency, reprogram things for PCMCIA
-   if moving to a slower clock rate
-6. Reconfigure LCD controller
 
-Now, the problem is that this sequence is spread across multiple drivers,
-and today is handled by a notifier, which can sleep in the case of the
-LCD controller waiting for the shutdown to complete.
 
-> A third possibility is to self-IPI and take it from there.. assuming
-> these platforms can actually self-IPI.
 
-Even if there was an IPI (not talking about SMP anyway) I'm not sure
-what good it would be.  We can (and do) get an IRQ from the LCD
-controller when its shutdown is complete, but that would have to be
-somehow propagated back up to the cpufreq code.  And the cpufreq code
-would have to know that the LCD controller was alive and therefore had
-to be waited for.  All sounds rather yucky to me.
+
