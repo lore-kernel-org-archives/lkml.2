@@ -1,286 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2BOQhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:37:47 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:26100 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2BOQhp (ORCPT
+	id S1753005Ab2BOQij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:38:39 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40226 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab2BOQih convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:37:45 -0500
-Message-ID: <4F3BDF1E.4040506@atmel.com>
-Date: Wed, 15 Feb 2012 17:36:46 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-CC: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 25/25] irq_domain: mostly eliminate slow-path revmap
- lookups
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca> <1327700179-17454-26-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1327700179-17454-26-git-send-email-grant.likely@secretlab.ca>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 11:38:37 -0500
+Message-ID: <1329323900.2293.150.camel@twins>
+Subject: Re: oprofile and ARM A9 hardware counter
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: eranian@gmail.com, "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        David Long <dave.long@linaro.org>, b-cousson@ti.com, mans@mansr.com,
+        will.deacon@arm.com, linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 15 Feb 2012 17:38:20 +0100
+In-Reply-To: <CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
+References: <1328578047.1724.17.camel@dave-Dell-System-XPS-L502X>
+	 <CAMQu2gwfo5JXAqQaLUNs7C7J3TUhEO2zOcyD0Rk-D_O61Yrfag@mail.gmail.com>
+	 <CAMsRxfLNBbQO5XF+EHJqNsnW+s=ay3mjSV5dh=sxdwzktUu03g@mail.gmail.com>
+	 <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
+	 <CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
+	 <CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
+	 <CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
+	 <CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
+	 <CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
+	 <CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
+	 <CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
-
-I do not know if it is the latest revision but I have identified some
-issues on error/slow paths...
-
-
-On 01/27/2012 10:36 PM, Grant Likely :
-> With the current state of irq_domain, the reverse map is always used when
-> new IRQs get mapped.  This means that the irq_find_mapping() function
-> can be simplified to always call out to the revmap-specific lookup function.
+On Wed, 2012-02-08 at 10:24 +0800, Ming Lei wrote:
 > 
-> This patch adds lookup functions for the revmaps that don't yet have one
-> and removes the slow path lookup from most of the code paths.  The only
-> place where the slow path legitimately remains is when the linear map
-> is used with a hwirq number larger than the revmap size.
+> On OMAP4, HZ is 128, and perf_rotate_context may set a new sample period(~8ms),
+> which is much longer than 1ms in 1000HZ freq mode, so less sample events are
+> observed. X86 isn't affected since its HZ is 1000.
 > 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Milton Miller <miltonm@bga.com>
-> ---
->  arch/powerpc/sysdev/xics/xics-common.c |    3 -
->  include/linux/irqdomain.h              |    3 +-
->  kernel/irq/irqdomain.c                 |   94 +++++++++++++++++---------------
->  3 files changed, 51 insertions(+), 49 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/xics/xics-common.c b/arch/powerpc/sysdev/xics/xics-common.c
-> index ea5e204..1d7067d 100644
-> --- a/arch/powerpc/sysdev/xics/xics-common.c
-> +++ b/arch/powerpc/sysdev/xics/xics-common.c
-> @@ -330,9 +330,6 @@ static int xics_host_map(struct irq_domain *h, unsigned int virq,
->  
->  	pr_devel("xics: map virq %d, hwirq 0x%lx\n", virq, hw);
->  
-> -	/* Insert the interrupt mapping into the radix tree for fast lookup */
-> -	irq_radix_revmap_insert(xics_host, virq, hw);
-> -
->  	/* They aren't all level sensitive but we just don't really know */
->  	irq_set_status_flags(virq, IRQ_LEVEL);
->  
-> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-> index 0b00f83..38314f2 100644
-> --- a/include/linux/irqdomain.h
-> +++ b/include/linux/irqdomain.h
-> @@ -93,6 +93,7 @@ struct irq_domain {
->  	struct list_head link;
->  
->  	/* type of reverse mapping_technique */
-> +	unsigned int (*revmap)(struct irq_domain *host, irq_hw_number_t hwirq);
->  	unsigned int revmap_type;
->  	union {
->  		struct {
-> @@ -155,8 +156,6 @@ extern void irq_dispose_mapping(unsigned int virq);
->  extern unsigned int irq_find_mapping(struct irq_domain *host,
->  				     irq_hw_number_t hwirq);
->  extern unsigned int irq_create_direct_mapping(struct irq_domain *host);
-> -extern void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
-> -				    irq_hw_number_t hwirq);
->  extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
->  					    irq_hw_number_t hwirq);
->  extern unsigned int irq_linear_revmap(struct irq_domain *host,
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 5b4fc4d..91c1cb7 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -104,6 +104,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
->  	domain->revmap_data.legacy.first_irq = first_irq;
->  	domain->revmap_data.legacy.first_hwirq = first_hwirq;
->  	domain->revmap_data.legacy.size = size;
-> +	domain->revmap = irq_domain_legacy_revmap;
->  
->  	mutex_lock(&irq_domain_mutex);
->  	/* Verify that all the irqs are available */
-> @@ -174,18 +175,35 @@ struct irq_domain *irq_domain_add_linear(struct device_node *of_node,
->  	}
->  	domain->revmap_data.linear.size = size;
->  	domain->revmap_data.linear.revmap = revmap;
-> +	domain->revmap = irq_linear_revmap;
->  	irq_domain_add(domain);
->  	return domain;
+> With patch[1], about 10000 sample events can be generated after running
+> 'perf record -e cycles  ./noploop 10' and 'perf report -D | tail -20'
+> on panda board.
+
+
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 32b48c8..db4faf2 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -2300,14 +2300,12 @@ do {                                    \
+>         return div64_u64(dividend, divisor);
 >  }
->  
-> +static unsigned int irq_domain_nomap_revmap(struct irq_domain *domain,
-> +					    irq_hw_number_t hwirq)
-> +{
-> +	struct irq_data *data = irq_get_irq_data(hwirq);
-> +
-> +	if (WARN_ON_ONCE(domain->revmap_type != IRQ_DOMAIN_MAP_NOMAP))
-> +		return irq_find_mapping(domain, hwirq);
-
-Should be:
-		return irq_find_mapping_slow(domain, hwirq);
-
-Recursion otherwise...
-
-
-> +
-> +	/* Verify that the map has actually been established */
-> +	if (data && (data->domain == domain) && (data->hwirq == hwirq))
-> +		return hwirq;
-> +	return 0;
-> +}
-> +
->  struct irq_domain *irq_domain_add_nomap(struct device_node *of_node,
->  					 const struct irq_domain_ops *ops,
->  					 void *host_data)
+> 
+> -static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+> +static void perf_adjust_period(struct perf_event *event, u64 period, u64 count)
 >  {
->  	struct irq_domain *domain = irq_domain_alloc(of_node,
->  					IRQ_DOMAIN_MAP_NOMAP, ops, host_data);
-> -	if (domain)
-> +	if (domain) {
-> +		domain->revmap = irq_domain_nomap_revmap;
->  		irq_domain_add(domain);
-> +	}
->  	return domain;
->  }
->  
-> @@ -205,6 +223,7 @@ struct irq_domain *irq_domain_add_tree(struct device_node *of_node,
->  					IRQ_DOMAIN_MAP_TREE, ops, host_data);
->  	if (domain) {
->  		INIT_RADIX_TREE(&domain->revmap_data.tree, GFP_KERNEL);
-> +		domain->revmap = irq_radix_revmap_lookup;
->  		irq_domain_add(domain);
->  	}
->  	return domain;
-> @@ -378,6 +397,19 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->  		return 0;
->  	}
->  
-> +	switch(domain->revmap_type) {
-> +	case IRQ_DOMAIN_MAP_LINEAR:
-> +		if (hwirq < domain->revmap_data.linear.size)
-> +			domain->revmap_data.linear.revmap[hwirq] = irq;
-> +		break;
-> +	case IRQ_DOMAIN_MAP_TREE:
-> +		mutex_lock(&revmap_trees_mutex);
-> +		radix_tree_insert(&domain->revmap_data.tree, hwirq,
-> +				  irq_get_irq_data(irq));
-> +		mutex_unlock(&revmap_trees_mutex);
+>         struct hw_perf_event *hwc = &event->hw;
+> -       s64 period, sample_period;
+> +       s64 sample_period;
+>         s64 delta;
+> 
+> -       period = perf_calculate_period(event, nsec, count);
+> -
+>         delta = (s64)(period - hwc->sample_period);
+>         delta = (delta + 7) / 8; /* low pass filter */
+> 
+> @@ -2363,8 +2361,13 @@ static void perf_ctx_adjust_freq(struct
+> perf_event_context *ctx, u64 period)
+>                 delta = now - hwc->freq_count_stamp;
+>                 hwc->freq_count_stamp = now;
+> 
+> -               if (delta > 0)
+> +               if (delta > 0) {
+> +                       period = perf_calculate_period(event, period, delta);
 > +
-> +		break;
-> +	}
->  	pr_debug("irq: irq %lu on domain %s mapped to virtual irq %u\n",
->  		hwirq, domain->of_node ? domain->of_node->full_name : "null", virq);
->  
-> @@ -478,25 +510,27 @@ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
->   * irq_find_mapping() - Find a linux irq from an hw irq number.
->   * @domain: domain owning this hardware interrupt
->   * @hwirq: hardware irq number in that domain space
-> - *
-> - * This is a slow path, for use by generic code. It's expected that an
-> - * irq controller implementation directly calls the appropriate low level
-> - * mapping function.
->   */
->  unsigned int irq_find_mapping(struct irq_domain *domain,
->  			      irq_hw_number_t hwirq)
->  {
-> -	unsigned int i;
-> -
-> -	/* Look for default domain if nececssary */
-> -	if (domain == NULL)
-> +	if (!domain)
->  		domain = irq_default_domain;
-> -	if (domain == NULL)
-> -		return 0;
-> +	return domain ? domain->revmap(domain, hwirq) : 0;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_find_mapping);
->  
-> -	/* legacy -> bail early */
-> -	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-> -		return irq_domain_legacy_revmap(domain, hwirq);
-> +/**
-> + * irq_find_mapping_slow() - slow path for finding the irq mapped to a hwirq
-> + *
-> + * This is the failsafe slow path for finding an irq mapping.  The only time
-> + * this will reasonably get called is when the linear map is used with a
-> + * hwirq number larger than the size of the reverse map.
-> + */
-> +static unsigned int irq_find_mapping_slow(struct irq_domain *domain,
-> +					  irq_hw_number_t hwirq)
-> +{
-> +	int i;
->  
->  	/* Slow path does a linear search of the map */
->  	for (i = 0; i < irq_virq_count; i++)  {
-> @@ -506,7 +540,6 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
->  	}
->  	return 0;
+> +                       if (period > 4*hwc->sample_period)
+> +                               period = hwc->sample_period;
+>                         perf_adjust_period(event, period, delta);
+> +               }
+>         }
 >  }
-> -EXPORT_SYMBOL_GPL(irq_find_mapping);
->  
->  /**
->   * irq_radix_revmap_lookup() - Find a linux irq from a hw irq number.
-> @@ -537,31 +570,7 @@ unsigned int irq_radix_revmap_lookup(struct irq_domain *domain,
->  	 * Else fallback to linear lookup - this should not happen in practice
->  	 * as it means that we failed to insert the node in the radix tree.
->  	 */
-> -	return irq_data ? irq_data->irq : irq_find_mapping(domain, hwirq);
-> -}
-> -
-> -/**
-> - * irq_radix_revmap_insert() - Insert a hw irq to linux irq number mapping.
-> - * @domain: domain owning this hardware interrupt
-> - * @virq: linux irq number
-> - * @hwirq: hardware irq number in that domain space
-> - *
-> - * This is for use by irq controllers that use a radix tree reverse
-> - * mapping for fast lookup.
-> - */
-> -void irq_radix_revmap_insert(struct irq_domain *domain, unsigned int virq,
-> -			     irq_hw_number_t hwirq)
-> -{
-> -	struct irq_data *irq_data = irq_get_irq_data(virq);
-> -
-> -	if (WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_TREE))
-> -		return;
-> -
-> -	if (virq) {
-> -		mutex_lock(&revmap_trees_mutex);
-> -		radix_tree_insert(&domain->revmap_data.tree, hwirq, irq_data);
-> -		mutex_unlock(&revmap_trees_mutex);
-> -	}
-> +	return irq_data ? irq_data->irq : irq_find_mapping_slow(domain, hwirq);
->  }
->  
->  /**
-> @@ -585,14 +594,11 @@ unsigned int irq_linear_revmap(struct irq_domain *domain,
->  	if (unlikely(hwirq >= domain->revmap_data.linear.size))
->  		return irq_find_mapping(domain, hwirq);
+> 
+> @@ -4533,8 +4536,10 @@ static int __perf_event_overflow(struct
+> perf_event *event,
+> 
+>                 hwc->freq_time_stamp = now;
+> 
+> -               if (delta > 0 && delta < 2*TICK_NSEC)
+> +               if (delta > 0 && delta < 2*TICK_NSEC) {
+> +                       delta = perf_calculate_period(event, delta, hwc->last_period);
+>                         perf_adjust_period(event, delta, hwc->last_period);
+> +               }
+>         }
+> 
+>         /* 
 
-Ditto here. And same whith previous one in same function. Check in
-irq_radix_revmap_lookup() there is the same issue on the "WARN_ON_ONCE"
-path...
-
->  
-> -	/* Check if revmap was allocated */
->  	revmap = domain->revmap_data.linear.revmap;
-> -	if (unlikely(revmap == NULL))
-> -		return irq_find_mapping(domain, hwirq);
->  
->  	/* Fill up revmap with slow path if no mapping found */
->  	if (unlikely(!revmap[hwirq]))
-> -		revmap[hwirq] = irq_find_mapping(domain, hwirq);
-> +		revmap[hwirq] = irq_find_mapping_slow(domain, hwirq);
->  
->  	return revmap[hwirq];
->  }
-
-Bye,
--- 
-Nicolas Ferre
+So what this patch seems to do is put that filter on period in
+perf_ctx_adjust_freq(). Not making sense.. nor can I see a HZ
+dependency, perf_ctx_adjust_freq() uses TICK_NSEC as time base.
