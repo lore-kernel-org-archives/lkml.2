@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab2BOIu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 03:50:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37989 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755995Ab2BOIux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 03:50:53 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Alexey Orishko <alexey.orishko@gmail.com>
-Subject: Re: [PATCH 1/1] usb: cdc-ncm: Increase maximum allowed datagram size
-Date: Wed, 15 Feb 2012 09:53:20 +0100
-User-Agent: KMail/1.13.5 (Linux/3.3.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, toby.gray@realvnc.com,
-        oliver@neukum.name, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1329230375-25508-1-git-send-email-toby.gray@realvnc.com> <20120214.144622.678577766818888054.davem@davemloft.net> <CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
-In-Reply-To: <CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
+	id S1758054Ab2BOIv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 03:51:27 -0500
+Received: from mail-lpp01m020-f174.google.com ([209.85.217.174]:59675 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755995Ab2BOIv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 03:51:26 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202150953.20341.oneukum@suse.de>
+Date: Wed, 15 Feb 2012 09:51:24 +0100
+Message-ID: <CA+rthh-JU-CE2t=BvpuZyZt5_1sm4urWrmZN8MmA4iC5JorDmQ@mail.gmail.com>
+Subject: AES-NI data corruption issues
+From: Mathias Krause <minipli@googlemail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 14. Februar 2012, 23:27:29 schrieb Alexey Orishko:
-> On Tue, Feb 14, 2012 at 8:46 PM, David Miller <davem@davemloft.net> wrote:
-> >
-> > Can a USB expert please sanity check this before I apply it?
-> 
-> I would recommend to change CDC_NCM_NTB_MAX_SIZE_TX(RX) to 32K and
-> simply set MAX_DATAGRAM_SIZE to 16K
+Hi Linus,
 
-Have you tried that under severe memory presssure?
+in commit 5b1cbac3.. ("i387: make irq_fpu_usable() tests more robust")
+you wrote on a side note:
 
-	Regards
-		Oliver
+    So this explicitly verifies that we will not touch the TS_USEDFPU bit,
+    and adds a few related sanity-checks.  Because it seems that somehow
+    AES-NI is corrupting user FP state.  The cause is not clear, and this
+    patch doesn't fix it, but while debugging it I really wanted the code to
+    be more obviously correct and robust.
+
+Can you please elaborate a little more on the AES-NI issues you're
+seeing as I cannot find any information about them on
+LKML/bugzilla/linux-crypto? Are they limited to the 3.3-rc kernels or
+are they happening on released kernels as well? Are they happening on
+32 bit, 64 bit or both?
+
+I'm using aesni-intel.ko and fear my data may vanish, albeit I haven't
+observed any data corruption so far.
+
+
+Regards,
+Mathias
