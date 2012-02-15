@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab2BOPTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:19:14 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51313 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab2BOPTN convert rfc822-to-8bit (ORCPT
+	id S1751030Ab2BOP27 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:28:59 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56811 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab2BOP24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:19:13 -0500
+	Wed, 15 Feb 2012 10:28:56 -0500
+Date: Wed, 15 Feb 2012 07:28:51 -0800
+From: mark gross <markgross@thegnar.org>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, markgross@thegnar.org,
+        NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        Greg KH <greg@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC][PATCH 0/8] PM: Implement autosleep and "wake locks"
+Message-ID: <20120215152851.GB25163@gs62>
+Reply-To: markgross@thegnar.org
+References: <201202070200.55505.rjw@sisk.pl>
+ <201202100144.11123.rjw@sisk.pl>
+ <20120212020507.GD18742@gs62>
+ <201202122232.12541.rjw@sisk.pl>
+ <CAMP5Xgd3ODhA6rR_=nTw3EfUeeACfrzN4ycPLypryi8hfcBW8w@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [109.64.24.177]
-In-Reply-To: <1329318679.2293.140.camel@twins>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
-	<1327591185.2446.102.camel@twins>
-	<CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
-	<20120201170443.GE6731@somewhere.redhat.com>
-	<CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
-	<4F2AAEB9.9070302@tilera.com>
-	<1328899105.25989.37.camel@laptop>
-	<CAOtvUMf11CxFV+FR8YCjqaoEWojGT7oX46_QamjCkXkHzsW3-A@mail.gmail.com>
-	<1329318679.2293.140.camel@twins>
-Date: Wed, 15 Feb 2012 17:19:11 +0200
-Message-ID: <CAOtvUMeo1=P-4g4ACG3MdSMv_pkQJiDEJQ4cuLTEhrUa+kKGyA@mail.gmail.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5Xgd3ODhA6rR_=nTw3EfUeeACfrzN4ycPLypryi8hfcBW8w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 5:11 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> On Fri, 2012-02-10 at 22:24 +0200, Gilad Ben-Yossef wrote:
-> > I think the concept of giving the task some way to know if the tick is
-> > disabled or not is nice.
-> > Not sure the exact feature and surely not the interface are what we
-> > should adopt - maybe
-> > allow registering to receive a signal at the end of the tick when it
-> > is disabled an re-enabled?
->
-> Fair enough, I indeed missed that property. And yes that makes sense.
->
-> It might be a tad tricky to implement as things currently stand, because
-> AFAICR Frederic's stuff re-enables the tick on kernel entry (syscall)
-> things like signal delivery or a blocking wait for it might be 'fun'.
->
-> But I'll have to defer to Frederic, its been too long since I've seen
-> his patches to remember most details.
+On Mon, Feb 13, 2012 at 04:11:24PM -0800, Arve Hjønnevåg wrote:
+> On Sun, Feb 12, 2012 at 1:32 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, February 12, 2012, mark gross wrote:
+> >> On Fri, Feb 10, 2012 at 01:44:10AM +0100, Rafael J. Wysocki wrote:
+> > [...]
+> >> > I'd like us and Android to use the same low-level data structures for power
+> >> > management and the same API eventually, at least for drivers.  This is not
+> >> > the case at the moment and it's actively hurting us as a project quite a bit.
+> >> > If Android needs to add patches on top of whatever we have to get the desired
+> >> > functionality, I'm fine with that, as long as they don't require drivers to use
+> >> > APIs that are incompatible with the mainline.  Insisting that Android should
+> >> > use a user-space-based autosleep implementation wouldn't help at all, because
+> >> > realistically this isn't going to happen.
+> >>
+> >> why not?  I don't think having the PMS explicitly acknowledge a wake
+> >> event is a big ask at all.
+> >
+> > I'd like to hear what the Android people think about that, but somehow it seems
+> > to me they won't like it. :-)
+> >
+> 
+> Correct.
+> 
+> The android power manager service does not handle wake events and
+> therefore does not know when it is safe to acknowledge a wake event
+> (assuming this acknowledgement re-triggers suspend). Other components
+> handle the event and only notify the power manager if the event should
+> change a state (e.g. turn the screen on). Some wake events, like the
+> alarm used for battery monitoring, don't signal user space at all if
+> the user visible state did not change. Other wake events are processed
+> by lower level user-space services than the system-server where the
+> power manager runs.
 
-Yes, what I had in mind is that since Frederic's patch set always
-disables the tick
-from inside the (last) timer tick, we can have the tick return to user
-code from the timer
-with a signal whenever it is disabled or re-enabled. Basically, have
-the timer code make
-the signal pending from inside the timer, so that the return to user
-space on the special
-timer ticks (the last before disable or the first after re-enable)
-will be to a signal handler.
+So you are all good with the wake event suspend race condition never ever
+getting corrected or the fact that we have to sprinkle overlapping
+kernel wake locks up and down the stack if we want to attempt to
+implement correct code or that there is *no* way to deal with the hand
+off of a wake lock critical section between kernel and user mode on wake
+events without having a somewhat arbitrary time out wake lock dropping in
+kernel mode?
 
-I don't know if what I wrote above actually makes sense or not :-)
-I'll try to hack something
-up and see.
+Fine, if you don't like having the PMS ack wake events how about having
+the services that handle them do it?  
 
-Thanks,
-Gilad
+The basic problem with wake locks is that there is no explicit wake
+event acknowledgment required before re-suspending.  How about helping
+us come up with a solution to that.
 
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+--mark
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+> -- 
+> Arve Hjønnevåg
