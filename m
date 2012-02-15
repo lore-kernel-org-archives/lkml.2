@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab2BON57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:57:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49007 "EHLO mx1.redhat.com"
+	id S1759266Ab2BON7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:59:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43612 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab2BON55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:57:57 -0500
-Message-ID: <4F3BB9DC.6040102@redhat.com>
-Date: Wed, 15 Feb 2012 15:57:48 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1752967Ab2BON7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 08:59:49 -0500
+Date: Wed, 15 Feb 2012 14:53:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sysrq: Use SEND_SIG_FORCED instead of force_sig()
+Message-ID: <20120215135306.GA11174@redhat.com>
+References: <13288070803232@kroah.org> <20120210201008.GA21009@redhat.com> <20120214225017.GA12360@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de> <4F3BB33C.1000908@redhat.com> <1FE08D00-49E8-4371-9F23-C5D2EE568FA8@suse.de>
-In-Reply-To: <1FE08D00-49E8-4371-9F23-C5D2EE568FA8@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120214225017.GA12360@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 03:37 PM, Alexander Graf wrote:
-> On 15.02.2012, at 14:29, Avi Kivity wrote:
+On 02/15, Anton Vorontsov wrote:
 >
-> > On 02/15/2012 01:57 PM, Alexander Graf wrote:
-> >>> 
-> >>> Is an extra syscall for copying TLB entries to user space prohibitively
-> >>> expensive?
-> >> 
-> >> The copying can be very expensive, yes. We want to have the possibility of exposing a very large TLB to the guest, in the order of multiple kentries. Every entry is a struct of 24 bytes.
-> > 
-> > You don't need to copy the entire TLB, just the way that maps the
-> > address you're interested in.
+> Change send_sig_all() to use do_send_sig_info(SEND_SIG_FORCED)
+> instead of force_sig(SIGKILL). With the recent changes we do not
+> need force_ to kill the CLONE_NEWPID tasks.
+
+ACK.
+
+Just one note. This change makes no difference for sysrq_handle_kill().
+But it obviously changes the behaviour sysrq_handle_term(). I think
+this is fine, if you want to really kill the task which blocks/ignores
+SIGTERM you can use sysrq_handle_kill().
+
+Even ignoring the reasons why force_sig() is simply wrong here,
+force_sig(SIGTERM) looks strange. The task won't be killed if it has
+a handler, but SIG_IGN can't help. However if it has the handler
+but blocks SIGTERM temporary (this is very common) it will be killed.
+
+> And this is more correct. force_sig() can race with the exiting
+> thread, while do_send_sig_info(group => true) kill the whole
+> process.
+
+Yes, except the word "race" doesn't look accurate. force_sig()
+can't kill the process if the main thread has already exited.
+IOW, it is trivial to create the process which can't be killed
+by sysrq.
+
+> > > @@ -324,9 +324,12 @@ static void send_sig_all(int sig)
+> > >
+> > >  	read_lock(&tasklist_lock);
+> > >  	for_each_process(p) {
+> > > -		if (p->mm && !is_global_init(p))
+> > > -			/* Not swapper, init nor kernel thread */
+> > > -			force_sig(sig, p);
+> > > +		if (p->flags & PF_KTHREAD)
+> > > +			continue;
+> > > +		if (is_global_init(p))
+> > > +			continue;
+> > > +
+> > > +		force_sig(sig, p);
+> > >  	}
+> > >  	read_unlock(&tasklist_lock);
+> >
+> > Obviously I agree with this change.
+> >
+> > But where does this read_lock(tasklist) come from?
 >
-> Yeah, unless we do migration in which case we need to introduce another special case to fetch the whole thing :(.
-
-Well, the scatter/gather registers I proposed will give you just one
-register or all of them.
-
-> > btw, why are you interested in virtual addresses in userspace at all?
+> It came from this patch: http://lkml.org/lkml/2012/2/7/24
 >
-> We need them for gdb and monitor introspection.
-
-Hardly fast paths that justify shared memory.  I should be much harder
-on you.
-
-> >> 
-> >> Right. It's an optional performance accelerator. If anything doesn't align, don't use it. But if you happen to have a system where everything's cool, you're faster. Sounds like a good deal to me ;).
-> > 
-> > Depends on how much the alignment relies on guest knowledge.  I guess
-> > with a simple device like HPET, it's simple, but with a complex device,
-> > different guests (or different versions of the same guest) could drive
-> > it very differently.
+> > We discussed this with Anton. Yes, tasklist ensures that
+> > force_sig() can't crash the kernel. But it is still wrong
+> > and should not be used.
+> >
+> > I think send_sig_all() should use SEND_SIG_FORCED (this
+> > depends on the patches I sent to Andrew), in this case
+> > tasklist is not needed.
 >
-> Right. But accelerating simple devices > not accelerating any devices. No? :)
+> Well, I think the lock is still a good thing: we don't want
+> any new processes to be created while we kill others.
 
-Yes.  But introducing bugs and vulns < not introducing them.  It's a
-tradeoff.  Even an unexploited vulnerability can be a lot more pain,
-just because you need to update your entire cluster, than a simple
-device that is accelerated for a guest which has maybe 3% utilization. 
-Performance is just one parameter we optimize for.  It's easy to overdo
-it because it's an easily measurable and sexy parameter, but it's a mistake.
+Yes, but
 
-> > 
-> > One thing that's different is that virtio offloads itself to a thread
-> > very quickly, while IDE does a lot of work in vcpu thread context.
+> I might be wrong, but copy_process() issues recalc_sigpending()
+> under tasklist lock especially the for this scenario.
+
+note that it checks recalc_sigpending() under ->siglock. This
+means copy_process() can't race with do_send_sig_info() which
+takes the same lock. Either the forking task should see
+TIF_SIGPENDING, or send_sig_all() should see the result of
+list_add_tail_rcu(&p->tasks, &init_task.tasks).
+
+However, we can race with exec. This needs the trivial fix, but:
+
+> Sysrq is a rare thing, so there is actually should be no problem
+> with holding the lock.
+
+OK. This looks simpler.
+
+> So, how about this patch?
 >
-> So it's all about latencies again, which could be reduced at least a fair bit with the scheme I described above. But really, this needs to be prototyped and benchmarked to actually give us data on how fast it would get us.
-
-Simply making qemu issue the request from a thread would be way better. 
-Something like socketpair mmio, configured for not waiting for the
-writes to be seen (posted writes) will also help by buffering writes in
-the socket buffer.
-
-> > 
-> > The all-knowing management tool can provide a virtio driver disk, or
-> > even slip-stream the driver into the installation CD.
+> Greg, can we take it via -mm tree, as it depends on a few
+> sched patches?
 >
-> One management tool might do that, another one might now. We can't assume that all management tools are all-knowing. Some times you also want to run guest OSs that the management tool doesn't know (yet).
-
-That is true, but we have to leave some work for the management guys.
-
->  
-> >> So for MMIO reads, I can assume that this is an MMIO because I would never write a non-readable entry. For writes, I'm overloading the bit that also means "guest entry is not readable" so there I'd have to walk the guest PTEs/TLBs and check if I find a read-only entry. Right now I can just forward write faults to the guest. Since COW is probably a hotter path for the guest than MMIO, this might end up being ineffective.
-> > 
-> > COWs usually happen from guest userspace, while mmio is usually from the
-> > guest kernel, so you can switch on that, maybe.
+>  drivers/tty/sysrq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
-> Hrm, nice idea. That might fall apart with user space drivers that we might eventually have once vfio turns out to work well, but for the time being it's a nice hack :).
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index 8db9125..5ab8039 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -329,7 +329,7 @@ static void send_sig_all(int sig)
+>  		if (is_global_init(p))
+>  			continue;
+>
+> -		force_sig(sig, p);
+> +		do_send_sig_info(sig, SEND_SIG_FORCED, p, true);
 
-Or nested virt...
-
-
-
--- 
-error compiling committee.c: too many arguments to function
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
