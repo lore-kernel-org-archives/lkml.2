@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084Ab2BOEiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 23:38:23 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64172 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab2BOEiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 23:38:19 -0500
-Date: Tue, 14 Feb 2012 20:38:13 -0800
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: Make "hog" mapping table entries work
-Message-ID: <20120215043813.GA3607@b29396-Latitude-E6410>
-References: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
+	id S1757520Ab2BOEl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 23:41:59 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61402 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756444Ab2BOEl4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 23:41:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329241841-21357-1-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAJw_Zu7TitPqM3Oqo0ySci_VQ8xm9YMghiQ1HLY7nwCrcYnVg@mail.gmail.com>
+References: <CAAJw_ZsryUFFFRCKdd9sQ7_38hjpVq37b6hhZDX5=qz8x1B+EQ@mail.gmail.com>
+	<m2pqdr2tyq.fsf@bob.laptop.org>
+	<CAAJw_Zv4Hk_kfc33xsVcdi-0_C6tsf_FD3sUx1JPDX_fZZMzeQ@mail.gmail.com>
+	<4F30E19B.9020503@intel.com>
+	<CAAJw_Zth+QM8OhMEWweBBek8QNW_9CseHSDuB-LCGrvwuqfV2A@mail.gmail.com>
+	<4F310529.4020101@intel.com>
+	<CAAJw_ZsHwdvXuw+edXUfyGOSMOu5oUw3zX8nUryxJJiiZXzXKQ@mail.gmail.com>
+	<CAAJw_Zup7Wg7FO95Z63e_sniu21gyzdCjcBNgsS0aw6MguDwLw@mail.gmail.com>
+	<CAAJw_Zv6HkLLqEzNKRCfQ7EbMNEVe_hzbW+mHOnDAWLidOhMBQ@mail.gmail.com>
+	<CAAJw_Zs7aET=vdy033bzuHwW==uS8AW78NSvD2L_hjU+Mzp-_w@mail.gmail.com>
+	<4F31B789.9020509@samsung.com>
+	<CAAJw_ZtnWYxGCm5Vm5CQ1GBLc=GU7AGiQKe_-9LJsbMW+YG-GQ@mail.gmail.com>
+	<15D4F59C-7AFA-456E-8A5F-9E11EE9B9717@marvell.com>
+	<CAAJw_Zs+Jz9WiJd6254Zkj+Y76w9W3CqZTgGrLYRRsjuxnqTyw@mail.gmail.com>
+	<4B11A480-8122-4A0B-A0EE-E1E95477F985@marvell.com>
+	<CAAJw_Zu=M7R5cyVRmbd3Tz7MipgX_b5J4g5Z4m+SsiHP-3Uxgw@mail.gmail.com>
+	<CAAJw_ZuQaDka+xKfwfvZCkPwfqJNsd6+UC4bfww=_G1XhaS5QA@mail.gmail.com>
+	<CAAJw_Zsxj9VKpnB7fGWnkqRUKG1DahCV6dKyGTfeAybhqn4KUw@mail.gmail.com>
+	<CAAJw_Zu7TitPqM3Oqo0ySci_VQ8xm9YMghiQ1HLY7nwCrcYnVg@mail.gmail.com>
+Date: Wed, 15 Feb 2012 12:41:55 +0800
+Message-ID: <CAAJw_ZvCHz0N==MCCVbartfUzCBzsmkKcj_+0BUKa3okNf3JfA@mail.gmail.com>
+Subject: Re: mmc sdhci mmcblk0: error -110 sending status command, retrying
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Philip Rakity <prakity@marvell.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Pierre Ossman <pierre@ossman.eu>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "arindam.nath@amd.com" <arindam.nath@amd.com>,
+        "zhangfei.gao@gmail.com" <zhangfei.gao@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Greg KH <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 10:50:41AM -0700, Stephen Warren wrote:
-> Commit 77a5988 "pinctrl: changes hog mechanism to be self-referential"
-> modified the way "hog" entries were represented in the mapping table.
-> However, the new representation failed some error checks in
-> pinctrl_hog_map(). Remove the now-bogus error-check, and fix the code
-> to solve the issue the error-check used to avoid.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+On Mon, Feb 13, 2012 at 1:20 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> On Mon, Feb 13, 2012 at 1:16 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>> On Mon, Feb 13, 2012 at 12:41 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>>> I ran tests for frequency that works dd out 1G of data from 8MHz to
+>>> 16MHz, and it seems frequency less than 8.4MHz can only transfer at
+>>> rate of 14.3MB/s and above 8.4MHz, speed goes up to 18.3 MB/s. Above
+>>> 17MHz, errors encounters.
+>>>
+>>> hz1  8000000  73.5029 s  14.3 MB/s
+>>> hz2  8000000  73.4740 s  14.3 MB/s
+>>> hz3  8000000  73.3982 s  14.3 MB/s
+>>> hz1  8200000  71.9677 s  14.6 MB/s
+>>> hz2  8200000  73.4936 s  14.3 MB/s
+>>> hz3  8200000  73.3462 s  14.3 MB/s
+>>> hz1  8400000  56.6296 s  18.5 MB/s
+>>> hz2  8400000  56.7616 s  18.5 MB/s
+>>> hz3  8400000  56.7926 s  18.5 MB/s
+>>> hz1  8600000  56.6622 s  18.5 MB/s
+>>> hz2  8600000  56.7201 s  18.5 MB/s
+>>> hz3  8600000  56.6476 s  18.5 MB/s
+>>> hz1  8800000  56.8846 s  18.4 MB/s
+>>> hz2  8800000  56.8226 s  18.5 MB/s
+>>> hz3  8800000  56.7070 s  18.5 MB/s
+>>
+>> I've turned on write, and there's no error writing. But speed is
+>> slower than accessing it via USB2 SD card reader. Same SD.
+>>
+>
+> Via SD PCI
+> 18.779 sec  4.04 %cpu
+>
+> Via USB2.0 Card Reader
+> 12.205 sec  2.04 %cpu
+>
+> Via USB3.0 Card Reader
+> 11.427 sec  2.01 %cpu
+>
+>
+> Shouldn't PCI SD be faster? Same SD used for all tests.
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-Regards
-Dong Aisheng
+Are there any thoughts on this or I should give up hope on the SD :((
+Or is there something else I should try?
 
-> ---
->  drivers/pinctrl/core.c |   14 +-------------
->  1 files changed, 1 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index c5f76ad..8a91eb2 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -725,23 +725,11 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
->  	struct pinctrl *p;
->  	int ret;
->  
-> -	if (map->dev_name) {
-> -		/*
-> -		 * TODO: the day we have device tree support, we can
-> -		 * traverse the device tree and hog to specific device nodes
-> -		 * without any problems, so then we can hog pinmuxes for
-> -		 * all devices that just want a static pin mux at this point.
-> -		 */
-> -		dev_err(pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
-> -				map->name);
-> -		return -EINVAL;
-> -	}
-> -
->  	hog = kzalloc(sizeof(struct pinctrl_hog), GFP_KERNEL);
->  	if (!hog)
->  		return -ENOMEM;
->  
-> -	p = pinctrl_get(NULL, map->name);
-> +	p = pinctrl_get(pctldev->dev, map->name);
->  	if (IS_ERR(p)) {
->  		kfree(hog);
->  		dev_err(pctldev->dev,
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+Thanks,
+Jeff
