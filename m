@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2BOWC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:02:29 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40504 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab2BOWC1 (ORCPT
+	id S1755891Ab2BOWKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:10:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60956 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755555Ab2BOWKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:02:27 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 15 Feb 2012 23:01:51 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 01/11] firewire: Add function to get speed from
- opaque struct fw_request
-Message-ID: <20120215230151.3467cd8a@stein>
-In-Reply-To: <4F3C0333.6060306@bootc.net>
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-2-git-send-email-bootc@bootc.net>
-	<20120215200919.10d9e2eb@stein>
-	<4F3C0333.6060306@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Feb 2012 17:10:01 -0500
+Date: Thu, 16 Feb 2012 02:09:56 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "hpanvin@gmail.com" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [patch 2/4] syscalls, x86: Add __NR_kcmp syscall v8
+Message-ID: <20120215220956.GN4533@moon>
+References: <20120213164822.227219834@openvz.org>
+ <20120213165137.903318774@openvz.org>
+ <20120214151312.92afd44a.akpm@linux-foundation.org>
+ <20120215065245.GB1894@moon>
+ <bb6e15c8-1b6b-4809-a796-cdfac39bc8b4@email.android.com>
+ <20120215070427.GE1894@moon>
+ <20120215072454.GA4533@moon>
+ <20120215135313.0e22d1bf.akpm@linux-foundation.org>
+ <20120215220040.GA26668@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120215220040.GA26668@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 15 Chris Boot wrote:
-> On 15/02/2012 19:09, Stefan Richter wrote:
-> > On Feb 15 Chris Boot wrote:
-> >> --- a/drivers/firewire/core-transaction.c
-> >> +++ b/drivers/firewire/core-transaction.c
-> >> @@ -820,6 +820,22 @@ void fw_send_response(struct fw_card *card,
-> >>   }
-> >>   EXPORT_SYMBOL(fw_send_response);
-> >>
-> >> +/**
-> >> + * fw_get_request_speed() - Discover bus speed used for this request
-> >> + * @request:	The struct fw_request from which to obtain the speed.
-> >> + *
-> >> + * In certain circumstances it's important to be able to obtain the speed at
-> >> + * which a request was made to an address handler, for example when
-> >> + * implementing an SBP-2 or SBP-3 target. This function inspects the response
-> >> + * object to obtain the speed, which is copied from the request packet in
-> >> + * allocate_request().
-> >> + */
-> >> +int fw_get_request_speed(struct fw_request *request)
-> >> +{
-> >> +	return request->response.speed;
-> >> +}
-> >> +EXPORT_SYMBOL(fw_get_request_speed);
-> >
-> > Uh oh, what have I done by asking for a comment? :-)
-> >
-> > Can you tell what's wrong with this API documentation?
+On Thu, Feb 16, 2012 at 02:00:40AM +0400, Cyrill Gorcunov wrote:
+> On Wed, Feb 15, 2012 at 01:53:13PM -0800, Andrew Morton wrote:
+> > That worked.
+> > 
+> > What's with all those warnings, btw?
+> > 
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > Subject: syscalls-x86-add-__nr_kcmp-syscall-v8-fix-fix-fix
+> > 
+> > kcmp_test.c: In function 'main':
+> > kcmp_test.c:69: warning: format '%2d' expects type 'int', but argument 4 has type 'long int'
 > 
-> Better to have too much than too little? :-)
+> Indeed it's nit, wonder why I've not beed warned by compiler before
+> (nothing serious since results do fit integer anyway but _must_
+>  be fixed). I'll update shortly. Sorry for that.
 > 
-> Linux 3.4, now with added Enterprise.
-> 
-> Shall I cut it down a bit?
 
-a)  The implementation of the function should not be explained here;
-after all it is meant to be opaque to API users.  Besides, if somebody
-changes the implementation he will for sure forget to change the comment.
+Heh, I just realized that you've fixed it already. Thanks a lot!
 
-b)  It is fairly self-evident at which occasions an API user would want
-to use this function.  (Everytime when he needs to know that speed.)
-
-c)  The function call argument does not really need to be explained
-either as soon as the purpose of the function has been made known.
-
-So in my first response where I already acked your patch I should have
-simply asked for
-
-/**
- * fw_get_request_speed() - returns speed at which the @request was received
- */
-
-to be added to your patch.  :-)
-
-Patch review could be so easy for everyone involved if the reviewer knew
-how to express himself...
--- 
-Stefan Richter
--=====-===-- --=- -====
-http://arcgraph.de/sr/
+	Cyrill
