@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750995Ab2BOO52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:57:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44981 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab2BOO51 convert rfc822-to-8bit (ORCPT
+	id S1751242Ab2BOO7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:59:01 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:33303 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2BOO7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:57:27 -0500
-Message-ID: <1329317835.2293.133.camel@twins>
-Subject: Re: [PATCH 2/2] x86, reschedule: check to see if system is shutting
- down
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com,
-        seiji.aguchi@hds.com, ak@linux.intel.com, mjg@redhat.com,
-        levinsasha928@gmail.com
-Date: Wed, 15 Feb 2012 15:57:15 +0100
-In-Reply-To: <20120215145429.GE9751@redhat.com>
-References: <1329164860-668-1-git-send-email-dzickus@redhat.com>
-	 <1329164860-668-3-git-send-email-dzickus@redhat.com>
-	 <1329305197.2293.50.camel@twins> <20120215145429.GE9751@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 15 Feb 2012 09:59:00 -0500
+Date: Wed, 15 Feb 2012 14:58:58 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+Message-ID: <20120215145857.GA21755@srcf.ucam.org>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+ <alpine.LFD.2.02.1202151537500.2794@ionos>
+ <1329317650.2293.129.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329317650.2293.129.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 09:54 -0500, Don Zickus wrote:
-> On Wed, Feb 15, 2012 at 12:26:37PM +0100, Peter Zijlstra wrote:
-> > 
-> > Right, so this fixes this one particular case, I imagine there's tons of
-> > places that could go splat due to this (but don't quite yet for some
-> > reason).
-> > 
-> > We can't go around annotating everything, nor would we want to simply
-> > shut up all warnings for fear of missing an actual error.
-> > 
-> > Why can't the normal shut-down path use a less crazy approach to going
-> > down?
-> 
-> Well maybe it can, it's been like that way for over three years now.  I'm
-> surprised no one ran into issues before now.
-> 
-> The only thing I can think that would work is stop_machine().  Pass in a
-> halt function and a cpumask of everyone but smp_processor_id().  That
-> would solve the problem, no?
+Regardless of whether userspace should be concerning itself about this 
+kind of thing or not, there's plenty of userspace that calls sleep(0) on 
+the assumption that it'll get rescheduled. This makes using whole-system 
+timer slack difficult, because there are some applications that do this 
+even if they're event-driven and sleeping for significant lengths of 
+time here breaks them. I'd certainly understand the argument for fixing 
+userspace instead, but that's a massive task for something that's easily 
+special-cased in the kernel.
 
-nope.. same problem, you're not telling anybody you're shooting CPUs
-down -- this telling is usually done through cpu hotplug notifiers that
-fix up state.
-
-The only way is to unplug all cpus except the one. Problem with that is
-that we cannot (as of yet) unplug the boot cpu.
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
