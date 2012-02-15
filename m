@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2BOQPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:15:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038Ab2BOQPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:15:44 -0500
-Date: Wed, 15 Feb 2012 17:06:52 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120215160652.GA17680@redhat.com>
-References: <20120215143606.GA14037@redhat.com>
+	id S1752328Ab2BOQTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:19:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48586 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab2BOQS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 11:18:59 -0500
+Date: Wed, 15 Feb 2012 10:18:55 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Akio Idehara <zbe64533@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix ALPS touchpad detection
+Message-ID: <20120215161855.GA2495@ubuntu-macmini>
+Mail-Followup-To: Akio Idehara <zbe64533@gmail.com>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <4F3BABF1.8050204@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120215143606.GA14037@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F3BABF1.8050204@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not a comment, but the question. I am just curious...
+On Wed, Feb 15, 2012 at 09:58:25PM +0900, Akio Idehara wrote:
+> ALPS touchpad detection fails if some buttons of ALPS are pressed.
+> The reason is that the query response byte is different from what is expected.
+> This was tested on a Toshiba Portege R500.
 
-> +/*
-> + * We don't expose real in-memory order of objects for security
-> + * reasons, still the comparison results should be suitable for
-> + * sorting. Thus, we obfuscate kernel pointers values and compare
-> + * the production instead.
-> + */
-> +static unsigned long cookies[KCMP_TYPES][2] __read_mostly;
-> +
-> +static long kptr_obfuscate(long v, int type)
-> +{
-> +       return (v ^ cookies[type][0]) * cookies[type][1];
-> +}
+I've reproduced the problem and confirmed that your approach fixes it.
 
-OK, but why do we need this per type? Just to add more obfuscation
-or there is another reason?
+However, your patch seems to be malformed as it won't apply cleanly for
+me. For the comment you're modifying you should also keep the line
+length under 80 characters.
 
-> +static __init int kcmp_cookies_init(void)
-> +{
-> +       int i;
-> +
-> +       get_random_bytes(cookies, sizeof(cookies));
-> +
-> +       for (i = 0; i < KCMP_TYPES; i++)
-> +               cookies[i][1] |= (~(~0UL >>  1) | 1);
+This fix seems like a good candidate for stable as well.
 
-I am puzzled, help ;) this is equal to
-
-		cookies[i][1] |= -LONG_MAX;
-or
-		cookies[i][1] |= (LONG_MIN | 1);
-
-for what? why do we want to set these 2 bits (MSB and LSB) ?
-
-Oleg.
-
+Seth
