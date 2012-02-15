@@ -1,64 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab2BOFgl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 00:36:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39790 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab2BOFgj (ORCPT
+	id S1751512Ab2BOFsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 00:48:43 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56820 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab2BOFsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 00:36:39 -0500
-Message-ID: <1329284188.12708.1.camel@phoenix>
-Subject: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Nathaniel Husted <nhusted@gmail.com>, Eric Paris <eparis@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 15 Feb 2012 13:36:28 +0800
+	Wed, 15 Feb 2012 00:48:42 -0500
+Message-ID: <1329284916.2555.34.camel@edumazet-laptop>
+Subject: Re: [PATCH] char random: fix boot id uniqueness race (v2)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, Greg Kroah-Hartman <greg@kroah.com>
+Date: Wed, 15 Feb 2012 06:48:36 +0100
+In-Reply-To: <20120215041014.GA15846@Krystal>
+References: <20120215041014.GA15846@Krystal>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include linux/audit.h to fix below build errors:
+Le mardi 14 février 2012 à 23:10 -0500, Mathieu Desnoyers a écrit :
+> The proc file /proc/sys/kernel/random/boot_id can be read concurrently
+> by user-space processes. If two (or more) user-space processes
+> concurrently read boot_id when sysctl_bootid is not yet assigned, a race
+> can occur making boot_id differ between the reads. Because the whole
+> point of the boot id is to be unique across a kernel execution, fix this
+> by protecting this operation with a mutex, and introduce a
+> boot_id_generated flag, along with appropriate memory barriers, to let
+> the fast-path know if the boot ID has been generated without having to
+> hold the mutex.
+> 
+> I propose this approach rather than setting it up within an initcall(),
+> because letting execution randomness add to entropy before populating
+> the boot id seems to be a wanted property. Also, populating it lazily
+> rather than at boot time only makes the performance hit be taken when
+> boot_id is being read.
+> 
+> 
+> Q: Why are these memory barriers required ? Aren't the mutexes already
+>    dealing with ordering ?
+> 
+> The need for memory barriers is a consequence of letting the fast-path
+> run without holding this mutex.
+> 
+> Here is the race dealt with by the smp_rmb()/smp_wmb(). I'm showing the
+> result of reversed write order here:
+> 
+> CPU A                             CPU B
+> 
+> Load boot_id_generated            
+>   (test -> false)
+> mutex_lock(&boot_id_mutex)
+>   (implied memory barrier
+>    with acquire semantic)
+> Load boot_id_generated again
+>    (test -> false)
+> boot_id_generated = 1
+>   (both the compiler and
+>    CPU are free to reorder
+>    the boot_id_generated
+>    store before uuid stores)
+>                                   Load boot_id_generated
+>                                     (test -> true)
+>                                   Load uuid content
+>                                     (races with generate_random_uuid:
+>                                      result either 0 or corrupted)
+>                                   Return corrupted uuid.
+> generate_random_uuid(uuid)
+> mutex_unlock(&boot_id_mutex)
+> 
+> I prefer not requiring the fast-path to take a mutex, because this
+> would transform a read-mostly operation into an operation that
+> requires cache-line exchanges (the mutex). However, if we want the
+> fast-path to be mutex-free, we need to enforce order with
+> memory barriers: smp_rmb on the read-side, smp_wmb on the
+> update-side. Failure to do so leads to the race shown above, where
+> a corrupted boot_id can be returned.
+> 
+> 
+> * Changelog since v1:
+> - boot_id_mutex is now declared within the proc_do_uuid scope.
+> - added explanation for memory barriers.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: "Theodore Ts'o" <tytso@mit.edu>
+> CC: Matt Mackall <mpm@selenic.com>
+> CC: Greg Kroah-Hartman <greg@kroah.com>
+> ---
+>  drivers/char/random.c |   20 +++++++++++++++++---
+>  1 file changed, 17 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6-lttng/drivers/char/random.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/drivers/char/random.c
+> +++ linux-2.6-lttng/drivers/char/random.c
+> @@ -1244,16 +1244,30 @@ static char sysctl_bootid[16];
+>  static int proc_do_uuid(ctl_table *table, int write,
+>  			void __user *buffer, size_t *lenp, loff_t *ppos)
+>  {
+> +	static int boot_id_generated;
+> +	static DEFINE_MUTEX(boot_id_mutex);
+>  	ctl_table fake_table;
+>  	unsigned char buf[64], tmp_uuid[16], *uuid;
+>  
+>  	uuid = table->data;
+>  	if (!uuid) {
+>  		uuid = tmp_uuid;
+> -		uuid[8] = 0;
+> -	}
+> -	if (uuid[8] == 0)
+>  		generate_random_uuid(uuid);
+> +	} else {
+> +		if (unlikely(!ACCESS_ONCE(boot_id_generated))) {
+> +			mutex_lock(&boot_id_mutex);
+> +			if (!boot_id_generated) {
+> +				generate_random_uuid(uuid);
+> +				/* Store uuid before boot_id_generated. */
+> +				smp_wmb();
+> +				boot_id_generated = 1;
+> +			}
+> +			mutex_unlock(&boot_id_mutex);
+> +		} else {
+> +			/* Load boot_id_generated before uuid */
+> +			smp_rmb();
+> +		}
+> +	}
+>  
+>  	sprintf(buf, "%pU", uuid);
+>  
+> 
 
-  CC      arch/arm/kernel/ptrace.o
-arch/arm/kernel/ptrace.c: In function 'syscall_trace':
-arch/arm/kernel/ptrace.c:919: error: implicit declaration of function 'audit_syscall_exit'
-arch/arm/kernel/ptrace.c:921: error: implicit declaration of function 'audit_syscall_entry'
-arch/arm/kernel/ptrace.c:921: error: 'AUDIT_ARCH_ARMEB' undeclared (first use in this function)
-arch/arm/kernel/ptrace.c:921: error: (Each undeclared identifier is reported only once
-arch/arm/kernel/ptrace.c:921: error: for each function it appears in.)
-make[1]: *** [arch/arm/kernel/ptrace.o] Error 1
-make: *** [arch/arm/kernel] Error 2
+This seems overly complex to me.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This patch is against linux-next 20120215.
+I doubt this is performance critical path ?
 
- arch/arm/kernel/ptrace.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+What about a basic patch like :
 
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index e33870f..48970ad 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -23,6 +23,7 @@
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/regset.h>
-+#include <linux/audit.h>
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 54ca8b2..af6040d 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -1260,11 +1260,15 @@ static int proc_do_uuid(ctl_table *table, int write,
+ 	uuid = table->data;
+ 	if (!uuid) {
+ 		uuid = tmp_uuid;
+-		uuid[8] = 0;
+-	}
+-	if (uuid[8] == 0)
+ 		generate_random_uuid(uuid);
++	} else {
++		static DEFINE_SPINLOCK(bootid_spinlock);
  
- #include <asm/pgtable.h>
- #include <asm/system.h>
--- 
-1.7.5.4
++		spin_lock(&bootid_spinlock);
++		if (!uuid[8])
++			generate_random_uuid(uuid);
++		spin_unlock(&bootid_spinlock);
++	}
+ 	sprintf(buf, "%pU", uuid);
+ 
+ 	fake_table.data = buf;
 
 
 
