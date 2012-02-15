@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab2BOMmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 07:42:46 -0500
-Received: from fieldses.org ([174.143.236.118]:44014 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab2BOMmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 07:42:42 -0500
-Date: Wed, 15 Feb 2012 07:42:30 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] locks: export device name
-Message-ID: <20120215124230.GA11393@fieldses.org>
-References: <1328907967.3138.1.camel@offbook>
- <20120213163425.dd9adfde.akpm@linux-foundation.org>
- <20120214190906.GA5115@fieldses.org>
- <1329303162.3356.6.camel@offbook>
+	id S1758101Ab2BOMri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 07:47:38 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34589 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757823Ab2BOMrf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 07:47:35 -0500
+Message-ID: <4F3BA962.9040109@monstr.eu>
+Date: Wed, 15 Feb 2012 13:47:30 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329303162.3356.6.camel@offbook>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        John Williams <john.williams@petalogix.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: remoteproc: Load coprocessor code to the specific main memory
+ location
+References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
+In-Reply-To: <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 11:52:42AM +0100, Davidlohr Bueso wrote:
-> On Tue, 2012-02-14 at 14:09 -0500, J. Bruce Fields wrote:
-> > On Mon, Feb 13, 2012 at 04:34:25PM -0800, Andrew Morton wrote:
-> > > I don't get it.  This is an immediate and non-back-compatible change to
-> > > the format of /proc/locks.  The only way this can avoid breaking things
-> > > is if there are no programs or scripts in use by anyone which use
-> > > this field.  What am I missing here?
-> > 
-> > I'm a little surprised anything parses that file.
+Ohad Ben-Cohen wrote:
+> On Mon, Feb 13, 2012 at 3:20 PM, Michal Simek <monstr@monstr.eu> wrote:
+>> Here is how it is achieve
+>>        ret = dma_declare_coherent_memory(&zynq_freertos.dev, 0,
+>>                                0, 0x10000000, DMA_MEMORY_MAP);
+>>
+>> which is fully compatible with remoteproc.
 > 
-> To my knowledge only lslk - but the whole point here is that its going
-> to be replaced by lslocks.
+> Great, this is what we've been doing with davinci too.
+
+Cool.
+
 > 
-> > 
-> > But, yes, looks like I can "yum install" lslk on Fedora 16, as an
-> > example.  Can't get it to do anything useful, though.  Does it actually
-> > work on any recent distro?
+>> Do you have any example of using it?
 > 
-> It works on Ubuntu's latest release.
+> What exactly are you looking for ? RTOS or Linux side ?
 
-OK, in that case I'm with Andrew, we'd need to do this more carefully.
+Both side will be great. Rtos is freertos.
 
-People should be able to use something like a recent Ubuntu release to
-test more recent kernels, and we don't want their tools to break when we
-do that.
-
-> > Perhaps safest would be to replace /proc/locks by another interface and
-> > deprecate this one.
 > 
-> If exporting the name in the current /proc/locks file is out of the
-> question, then IMHO I don't think it would be worth adding a new
-> interface just for such a small change.
+> On the Linux side, you can just make the rpmsg sample work (it's part
+> of the rpmsg patch set). For the RTOS side, feel free to just take our
+> code (it's BSD licensed and hosted on github) and adapt it to your
+> environment.
 
-OK.
+You mean that server_sample and rpmsg_omx right?
+I have also found rpmsg-omx demo application.
+What I am missing is how to probe rpmsg bus.
+Do you have any working example?
 
-If you want to just change this over, I guess the thing to do would be
-to stick something in feature-removal-schedule.txt saying "we'll switch
-this in 2 years" (or however long you think before there are
-realistically no more lslk users left), then do it then.
+Communication between cpus is done through swirqs. I have test sending it from linux to rtos.
 
-Switching to a new api would be better as we could warn users of the old
-api then.  Maybe it'd be worth it if there was some other change we'd
-been wanting to make?   Can't think of anything off the top of my head.
+Thanks,
+Michal
 
-We may be adding more lock types--will lslk and lslocks handle that
-gracefully?
-
---b.
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
