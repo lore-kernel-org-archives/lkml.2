@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab2BONAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:00:40 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40217 "EHLO
+	id S1758930Ab2BONBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:01:01 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40236 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab2BONAi convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754566Ab2BONBA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:00:38 -0500
-Message-ID: <1329310763.2293.78.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org, Avi Kiviti <avi@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Eric Paris <eparis@redhat.com>
-Date: Wed, 15 Feb 2012 13:59:23 +0100
-In-Reply-To: <20120213020951.GA12138@linux.vnet.ibm.com>
-References: <20120213020951.GA12138@linux.vnet.ibm.com>
+	Wed, 15 Feb 2012 08:01:00 -0500
+Message-ID: <1329310854.2293.79.camel@twins>
+Subject: Re: Question about resetting a sampling counter in kernel
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: heechul Yun <heechul@illinois.edu>
+Cc: linux-kernel@vger.kernel.org, Vince Weaver <vweaver1@eecs.utk.edu>
+Date: Wed, 15 Feb 2012 14:00:54 +0100
+In-Reply-To: <CAN_5kQB+BjPc5Sj=a-4B80-6t5D3C4WkvP6bz_BRcMd6LKAzqw@mail.gmail.com>
+References: <CAN_5kQB+BjPc5Sj=a-4B80-6t5D3C4WkvP6bz_BRcMd6LKAzqw@mail.gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -30,55 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-12 at 18:09 -0800, Paul E. McKenney wrote:
-> The current implementation of synchronize_srcu_expedited() can cause
-> severe OS jitter due to its use of synchronize_sched(), which in turn
-> invokes try_stop_cpus(), which causes each CPU to be sent an IPI.
-> This can result in severe performance degradation for real-time workloads
-> and especially for short-interation-length HPC workloads.  Furthermore,
-> because only one instance of try_stop_cpus() can be making forward progress
-> at a given time, only one instance of synchronize_srcu_expedited() can
-> make forward progress at a time, even if they are all operating on
-> distinct srcu_struct structures.
+On Sun, 2012-02-12 at 12:37 -0600, heechul Yun wrote:
+> Hello,
 > 
-> This commit, inspired by an earlier implementation by Peter Zijlstra
-> (https://lkml.org/lkml/2012/1/31/211) and by further offline discussions,
-> takes a strictly algorithmic bits-in-memory approach.  This has the
-> disadvantage of requiring one explicit memory-barrier instruction in
-> each of srcu_read_lock() and srcu_read_unlock(), but on the other hand
-> completely dispenses with OS jitter and furthermore allows SRCU to be
-> used freely by CPUs that RCU believes to be idle or offline.
+> I have a question about controlling performance counter in kernel.
 > 
-> The update-side implementation handles the single read-side memory
-> barrier by rechecking the per-CPU counters after summing them and
-> by running through the update-side state machine twice.
+> I created a kernel counter which generates an interrupt at every
+> 10000 cache-misses as shown below.
+> 
+> struct perf_event_attr sched_perf_hw_attr = {
+>      .type = PERF_TYPE_HARDWARE,
+>      .config = PERF_COUNT_HW_CACHE_MISSES,
+>      .sample_period = 10000,
+>      .size = sizeof(struct perf_event_attr),
+>      .pinned = 1,
+>      .disbled = 1,
+> }
+> 
+> event = perf_event_create_kernel_counter(&sched_perf_hw_attr, cpu,
+>        NULL, event_overflow_callback, NULL);
+> 
+> What I would like to do is to "reset" the counter before the
+> overflow interrupt occurs (e.g, reset at 5000th event),
+> and then to restart the sampling from 0.
+> 
+> I found perf_event_enable() and perf_event_disable() only
+> start/stop the counting but couln't figure out how to reset the
+> sampling as I described above.
+> 
+> I would be really thankful if you explain how I can efficiently reset the
+> sampling counter.
 
-Yeah, getting rid of that second memory barrier in srcu_read_lock() is
-pure magic :-)
-
-> This implementation has passed moderate rcutorture testing on both 32-bit
-> x86 and 64-bit Power.  A call_srcu() function will be present in a later
-> version of this patch.
-
-Goodness ;-)
-
-> @@ -131,10 +214,11 @@ int __srcu_read_lock(struct srcu_struct *sp)
->  	int idx;
->  
->  	preempt_disable();
-> -	idx = sp->completed & 0x1;
-> -	barrier();  /* ensure compiler looks -once- at sp->completed. */
-> -	per_cpu_ptr(sp->per_cpu_ref, smp_processor_id())->c[idx]++;
-> -	srcu_barrier();  /* ensure compiler won't misorder critical section. */
-> +	idx = rcu_dereference_index_check(sp->completed,
-> +					  rcu_read_lock_sched_held()) & 0x1;
-> +	ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, smp_processor_id())->c[idx]) +=
-> +		SRCU_USAGE_COUNT + 1;
-> +	smp_mb(); /* B */  /* Avoid leaking the critical section. */
->  	preempt_enable();
->  	return idx;
->  }
-
-You could use __this_cpu_* muck to shorten some of that.
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Expose and use perf_event_reset().
