@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2BOPLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 10:11:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915Ab2BOPL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 10:11:29 -0500
-Message-ID: <1329318658.2337.6.camel@localhost>
-Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
-From: Eric Paris <eparis@redhat.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nathaniel Husted <nhusted@gmail.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 15 Feb 2012 10:10:58 -0500
-In-Reply-To: <20120215101832.GF13673@n2100.arm.linux.org.uk>
-References: <1329284188.12708.1.camel@phoenix>
-	 <20120215083609.GD13673@n2100.arm.linux.org.uk>
-	 <20120215095216.GA29319@mudshark.cambridge.arm.com>
-	 <20120215101832.GF13673@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1751670Ab2BOPLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 10:11:55 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48620 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2BOPLv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 10:11:51 -0500
+Message-ID: <1329318679.2293.140.camel@twins>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Date: Wed, 15 Feb 2012 16:11:19 +0100
+In-Reply-To: <CAOtvUMf11CxFV+FR8YCjqaoEWojGT7oX46_QamjCkXkHzsW3-A@mail.gmail.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+	 <1327591185.2446.102.camel@twins>
+	 <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+	 <20120201170443.GE6731@somewhere.redhat.com>
+	 <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+	 <4F2AAEB9.9070302@tilera.com> <1328899105.25989.37.camel@laptop>
+	 <CAOtvUMf11CxFV+FR8YCjqaoEWojGT7oX46_QamjCkXkHzsW3-A@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 10:18 +0000, Russell King - ARM Linux wrote:
+On Fri, 2012-02-10 at 22:24 +0200, Gilad Ben-Yossef wrote:
+> I think the concept of giving the task some way to know if the tick is
+> disabled or not is nice.
+> Not sure the exact feature and surely not the interface are what we
+> should adopt - maybe
+> allow registering to receive a signal at the end of the tick when it
+> is disabled an re-enabled? 
 
-> So, this gives us two options: either we revert the damned thing and start
-> over with it (and hopefully audit folk will start co-operating with ARM
-> folk) or we try to fix up their mess (and potentially they learn they can
-> dump crap on us.)
+Fair enough, I indeed missed that property. And yes that makes sense. 
 
-It must be a conspiracy to screw with the ARM people!  Your jobs were
-obviously too easy to begin with.  Rahrrrrr!  Down with ARM!
+It might be a tad tricky to implement as things currently stand, because
+AFAICR Frederic's stuff re-enables the tick on kernel entry (syscall)
+things like signal delivery or a blocking wait for it might be 'fun'.
 
-No seriously.  I am the audit folks.  You got us all right here in this
-one e-mail.  You're right, I should have paid more attention to who was
-in the cc list.  If you want to rewrite it, please feel free!  If you
-want to push fixes yourself, please feel free!  If you want me to push
-fixes, please just let me know what is broken and I'll do my best.
-
-Sorry.  I just got the patch and was contacted by a number of people off
-list asking when it was going to go in because they wanted it for their
-project.  I obviously should have known who the ARM maintainers that
-would have looked at a patch for the audit system was and should have
-made sure they commented.  Sorry!  I'll be sure to hit the ARM list if
-another patch goes by....
-
+But I'll have to defer to Frederic, its been too long since I've seen
+his patches to remember most details.
