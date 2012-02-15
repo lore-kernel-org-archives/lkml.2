@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab2BOJYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 04:24:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab2BOJYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 04:24:37 -0500
-Date: Wed, 15 Feb 2012 10:24:23 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCHv4 0/9] perf tool: parser generator for events parsing
-Message-ID: <20120215092423.GB1664@m.brq.redhat.com>
-References: <1326717103-10287-1-git-send-email-jolsa@redhat.com>
- <1327674868-10486-1-git-send-email-jolsa@redhat.com>
- <1329236924.2293.13.camel@twins>
- <1329237838.2293.20.camel@twins>
- <1329250830.2293.24.camel@twins>
- <1329253030.2293.27.camel@twins>
- <1329253391.2293.31.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329253391.2293.31.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932166Ab2BOJ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 04:26:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:47138 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab2BOJ0N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 04:26:13 -0500
+Message-ID: <1329297944.2293.36.camel@twins>
+Subject: Re: bisected: 'perf top' causing soft lockups under Xen
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Ben Guthro <ben@guthro.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Date: Wed, 15 Feb 2012 10:25:44 +0100
+In-Reply-To: <20120215085737.GA13722@asmodeus>
+References: <CAKbGBLgVyWC3iuu8n+aQ8UhziSPnbpHVNGtQ=9m-PzvVA1kzdg@mail.gmail.com>
+	 <1328894901.25989.20.camel@laptop>
+	 <20120210190412.GB12975@phenom.dumpdata.com>
+	 <CAOvdn6WcdrLHOPJc0Hv53+0trEFnU=RQJL5+xUMhAO3C3HWqbw@mail.gmail.com>
+	 <20120212205016.GA2794@asmodeus> <20120215085737.GA13722@asmodeus>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 10:03:11PM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-02-14 at 21:57 +0100, Peter Zijlstra wrote:
-> > On Tue, 2012-02-14 at 21:20 +0100, Peter Zijlstra wrote:
-> > > OK, this one works. the attributes thing wants NULL termination.
-> > > Thanks
-> > > for mentioning that Jiri. 
-> > 
-> > OK, it mostly works, except:
-> > 
-> > perf record -e "cpu/config=0x108000c0/upp" ./loop_1b_locks
-> > 
-> > doesn't seem to work...
+On Wed, 2012-02-15 at 00:57 -0800, Steven Noonan wrote:
+> It seems to me that there are two options for fixing this, but I'm
+> probably lacking the necessary context (or experience with Xen). Either:
 > 
-> This seems to come back to hardcoding config* vs including it in every
-> single format description.
+> - The patch provided by Ben needs to have additional work to specially
+>   handle IRQ_WORK_VECTOR, since it seems to be a special case where
+>   there's no event channel attached for it. Perhaps adding an event
+>   channel for this is the fix? Seems high-overhead, but I lack a good
+>   understanding of how interrupts are handled in Xen.
+
+So that's a self-IPI, is Xen failing to implement this?
+
+> or
 > 
-> I prefer to have all perf_event_attr fields (of interest) hard-coded in
-> the parser so that we can omit them for all actual format descriptions.
-> 
-> These would be: period, config, config1, config2 and stephane's new
-> branch_sample_type, although that might want to get a shorter name.
+> - Perf needs to be "enlightened" about Xen and avoid sending an IPI in
+>   the first place.
 
-right, for pmu/.../ syntax there are allowed only fields from 'format'
-directory are so far.. with exceptions like: cycles/period=100000/
-
-so I'll hardcode following config fields:
-	config
-	config1
-	config2
-	period
-	branch_sample_type (branch, branch_type, branch_st  ???)
-
-to be used in xxx/.../ syntax
-
-also we need to choose some strategy of format field name shadowing
-with hardcoded fields:
-
-- BUILD_BUG in kernel PMU_FORMAT_ATTR
-- not allowed.. report error in perf runtime
-- allowed - hardcoded field have precedence
-- allowed - format field values have precedence
-
-I'd say either allow shadowing(with whatever precedence we this is better),
-or have the BUILD_BUG line in kernel..
-
-jirka
+Uhm, no. If anything Xen should simply not implement
+arch_irq_work_raise(). The callbacks are then ran from the timer
+interrupt.
