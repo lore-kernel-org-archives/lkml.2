@@ -1,232 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab2BOM04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 07:26:56 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63768 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753924Ab2BOM0x convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 07:26:53 -0500
+	id S1758118Ab2BOM2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 07:28:12 -0500
+Received: from www.coomevamail.com ([200.1.126.66]:44526 "HELO coomevamail.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753924Ab2BOM2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 07:28:08 -0500
+Message-ID: <20120215040534.24175hkft04v4ori@www.coomevamail.com>
+X-Priority: 3 (Normal)
+Date: Wed, 15 Feb 2012 04:05:34 -0500
+From: WCS BIG5 <elsamoya@coomevamail.com>
+Reply-to: munir_bassem1957@gala.net
+To: undisclosed-recipients:;
+Subject: YOU HAVE BEEN SELECTED A WINNER!!!
 MIME-Version: 1.0
-In-Reply-To: <1329306980-17997-1-git-send-email-amit.sahrawat83@gmail.com>
-References: <1329306980-17997-1-git-send-email-amit.sahrawat83@gmail.com>
-Date: Wed, 15 Feb 2012 17:56:51 +0530
-Message-ID: <CADDb1s2_rQJsvLxCFgc1jreMx1vNvQV2YA50Z6k8BcMinQbsiw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] xfs: fix buffer flushing during log unmount
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
-        xfs@oss.sgi.com
-Cc: Nam-Jae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+X-Originating-IP: 41.132.15.225
+X-Remote-Browser: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB;
+ rv:1.9.2.26) Gecko/20120128 Firefox/3.6.26
+X-Proveedor: Calipso Comunicaciones S.A. http://www.calipso.com.co/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Errror logs on 3.0.18
-Architecture: ARM
-Just tried to mount a corrupted USB HDD - which resulted in the below
-mentioned behaviour.
 
-#> mount -t xfs /dev/sdb3 /mnt/
-XFS (sdb3): Mounting Filesystem
-XFS (sdb3): Starting recovery (logdev: internal)
-e420d000: 3f b5 ce 5d 15 3b 64 e2 bb b4 f2 9b a0 97 f5 f4  ?..].;d.........
-XFS (sdb3): Internal error xfs_btree_check_sblock at line 120 of file
-fs/xfs/xfs_btree.c.  Caller 0xc012c444
 
-[<c003a008>] (unwind_backtrace+0x0/0xe4) from [<c013c990>]
-(xfs_corruption_error+0x54/0x70)
-[<c013c990>] (xfs_corruption_error+0x54/0x70) from [<c012c310>]
-(xfs_btree_check_sblock+0xe4/0xf8)
-[<c012c310>] (xfs_btree_check_sblock+0xe4/0xf8) from [<c012c444>]
-(xfs_btree_read_buf_block+0x78/0x98)
-[<c012c444>] (xfs_btree_read_buf_block+0x78/0x98) from [<c012e0b0>]
-(xfs_btree_rshift+0xb0/0x508)
-[<c012e0b0>] (xfs_btree_rshift+0xb0/0x508) from [<c012e5c4>]
-(xfs_btree_make_block_unfull+0xbc/0x168)
-[<c012e5c4>] (xfs_btree_make_block_unfull+0xbc/0x168) from
-[<c012e854>] (xfs_btree_insrec+0x1e4/0x504)
-[<c012e854>] (xfs_btree_insrec+0x1e4/0x504) from [<c012ebd8>]
-(xfs_btree_insert+0x64/0x15c)
-[<c012ebd8>] (xfs_btree_insert+0x64/0x15c) from [<c011a51c>]
-(xfs_free_ag_extent+0x478/0x5a8)
-[<c011a51c>] (xfs_free_ag_extent+0x478/0x5a8) from [<c011af1c>]
-(xfs_free_extent+0xcc/0x108)
-[<c011af1c>] (xfs_free_extent+0xcc/0x108) from [<c014d2b4>]
-(xlog_recover_process_efi+0x168/0x1d4)
-[<c014d2b4>] (xlog_recover_process_efi+0x168/0x1d4) from [<c014d380>]
-(xlog_recover_process_efis+0x60/0xac)
-[<c014d380>] (xlog_recover_process_efis+0x60/0xac) from [<c014d8b4>]
-(xlog_recover_finish+0x18/0x90)
-[<c014d8b4>] (xlog_recover_finish+0x18/0x90) from [<c0154390>]
-(xfs_mountfs+0x4c8/0x5c4)
-[<c0154390>] (xfs_mountfs+0x4c8/0x5c4) from [<c0167c5c>]
-(xfs_fs_fill_super+0x150/0x244)
-[<c0167c5c>] (xfs_fs_fill_super+0x150/0x244) from [<c00c05f4>]
-(mount_bdev+0x120/0x19c)
-[<c00c05f4>] (mount_bdev+0x120/0x19c) from [<c0166198>] (xfs_fs_mount+0x10/0x18)
-[<c0166198>] (xfs_fs_mount+0x10/0x18) from [<c00bf39c>] (mount_fs+0x10/0xb8)
-[<c00bf39c>] (mount_fs+0x10/0xb8) from [<c00d6d50>] (vfs_kern_mount+0x50/0x88)
-[<c00d6d50>] (vfs_kern_mount+0x50/0x88) from [<c00d700c>]
-(do_kern_mount+0x34/0xc8)
-[<c00d700c>] (do_kern_mount+0x34/0xc8) from [<c00d8420>] (do_mount+0x620/0x688)
-[<c00d8420>] (do_mount+0x620/0x688) from [<c00d850c>] (sys_mount+0x84/0xc4)
-[<c00d850c>] (sys_mount+0x84/0xc4) from [<c0034260>] (ret_fast_syscall+0x0/0x30)
-XFS (sdb3): Corruption detected. Unmount and run xfs_repair
-XFS (sdb3): Internal error xfs_trans_cancel at line 1928 of file
-fs/xfs/xfs_trans.c.  Caller 0xc014d314
+2nd Floor United Building
+20 Goldman Street, Florida
+Johannesburg, South Africa.
 
-[<c003a008>] (unwind_backtrace+0x0/0xe4) from [<c0156e34>]
-(xfs_trans_cancel+0x70/0xfc)
-[<c0156e34>] (xfs_trans_cancel+0x70/0xfc) from [<c014d314>]
-(xlog_recover_process_efi+0x1c8/0x1d4)
-[<c014d314>] (xlog_recover_process_efi+0x1c8/0x1d4) from [<c014d380>]
-(xlog_recover_process_efis+0x60/0xac)
-[<c014d380>] (xlog_recover_process_efis+0x60/0xac) from [<c014d8b4>]
-(xlog_recover_finish+0x18/0x90)
-[<c014d8b4>] (xlog_recover_finish+0x18/0x90) from [<c0154390>]
-(xfs_mountfs+0x4c8/0x5c4)
-[<c0154390>] (xfs_mountfs+0x4c8/0x5c4) from [<c0167c5c>]
-(xfs_fs_fill_super+0x150/0x244)
-[<c0167c5c>] (xfs_fs_fill_super+0x150/0x244) from [<c00c05f4>]
-(mount_bdev+0x120/0x19c)
-[<c00c05f4>] (mount_bdev+0x120/0x19c) from [<c0166198>] (xfs_fs_mount+0x10/0x18)
-[<c0166198>] (xfs_fs_mount+0x10/0x18) from [<c00bf39c>] (mount_fs+0x10/0xb8)
-[<c00bf39c>] (mount_fs+0x10/0xb8) from [<c00d6d50>] (vfs_kern_mount+0x50/0x88)
-[<c00d6d50>] (vfs_kern_mount+0x50/0x88) from [<c00d700c>]
-(do_kern_mount+0x34/0xc8)
-[<c00d700c>] (do_kern_mount+0x34/0xc8) from [<c00d8420>] (do_mount+0x620/0x688)
-[<c00d8420>] (do_mount+0x620/0x688) from [<c00d850c>] (sys_mount+0x84/0xc4)
-[<c00d850c>] (sys_mount+0x84/0xc4) from [<c0034260>] (ret_fast_syscall+0x0/0x30)
-XFS (sdb3): xfs_do_force_shutdown(0x8) called from line 1929 of file
-fs/xfs/xfs_trans.c.  Return address = 0xc0156e48
-XFS (sdb3): Corruption of in-memory data detected.  Shutting down filesystem
-XFS (sdb3): Please umount the filesystem and rectify the problem(s)
-XFS (sdb3): Failed to recover EFIs
-XFS (sdb3): log mount finish failed
-Unable to handle kernel paging request at virtual address ffffffff
-pgd = e80bc000
-[ffffffff] *pgd=68ffc821, *pte=00000000, *ppte=00000000
-Internal error: Oops: 17 [#1] PREEMPT SMP
-Modules linked in:
-CPU: 1    Not tainted  (3.0.18 #17)
-PC is at strnlen+0x10/0x28
-LR is at string+0x34/0xcc
-pc : [<c01964e0>]    lr : [<c0197ad8>]    psr: a0000093
-sp : e424fca0  ip : 00000000  fp : 00000400
-r10: e424fd8c  r9 : 00000002  r8 : ffffffff
-r7 : 00000000  r6 : 0000ffff  r5 : c03abca8  r4 : c03ab8b0
-r3 : 00000000  r2 : ffffffff  r1 : ffffffff  r0 : ffffffff
-Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 680bc04a  DAC: 00000015
-Process mount (pid: 656, stack limit = 0xe424e2f0)
-Stack: (0xe424fca0 to 0xe4250000)
-...
-...
-ffe0: 00000000 be88470c 000436dc 00009604 a0000010 be884b4f 45d65600 04000000
-[<c01964e0>] (strnlen+0x10/0x28) from [<c0197ad8>] (string+0x34/0xcc)
-[<c0197ad8>] (string+0x34/0xcc) from [<c0198874>] (vsnprintf+0x1bc/0x344)
-[<c0198874>] (vsnprintf+0x1bc/0x344) from [<c0198a68>] (vscnprintf+0xc/0x24)
-[<c0198a68>] (vscnprintf+0xc/0x24) from [<c0057424>] (vprintk+0x14c/0x3fc)
-[<c0057424>] (vprintk+0x14c/0x3fc) from [<c0293820>] (printk+0x18/0x24)
-[<c0293820>] (printk+0x18/0x24) from [<c01660c8>] (xfs_alert_tag+0x64/0x98)
-[<c01660c8>] (xfs_alert_tag+0x64/0x98) from [<c0158034>]
-(xfs_trans_ail_delete_bulk+0x74/0x118)
-[<c0158034>] (xfs_trans_ail_delete_bulk+0x74/0x118) from [<c012fe80>]
-(xfs_buf_iodone+0x2c/0x38)
-[<c012fe80>] (xfs_buf_iodone+0x2c/0x38) from [<c012fe30>]
-(xfs_buf_do_callbacks+0x28/0x38)
-[<c012fe30>] (xfs_buf_do_callbacks+0x28/0x38) from [<c012fffc>]
-(xfs_buf_iodone_callbacks+0x13c/0x164)
-[<c012fffc>] (xfs_buf_iodone_callbacks+0x13c/0x164) from [<c015ffc4>]
-(xfs_buf_iodone_work+0x1c/0x40)
-[<c015ffc4>] (xfs_buf_iodone_work+0x1c/0x40) from [<c0160194>]
-(xfs_bioerror+0x44/0x4c)
-[<c0160194>] (xfs_bioerror+0x44/0x4c) from [<c016075c>]
-(xfs_flush_buftarg+0xcc/0x148)
-[<c016075c>] (xfs_flush_buftarg+0xcc/0x148) from [<c01607f8>]
-(xfs_free_buftarg+0x20/0x5c)
-[<c01607f8>] (xfs_free_buftarg+0x20/0x5c) from [<c0167cd8>]
-(xfs_fs_fill_super+0x1cc/0x244)
-[<c0167cd8>] (xfs_fs_fill_super+0x1cc/0x244) from [<c00c05f4>]
-(mount_bdev+0x120/0x19c)
-[<c00c05f4>] (mount_bdev+0x120/0x19c) from [<c0166198>] (xfs_fs_mount+0x10/0x18)
-[<c0166198>] (xfs_fs_mount+0x10/0x18) from [<c00bf39c>] (mount_fs+0x10/0xb8)
-[<c00bf39c>] (mount_fs+0x10/0xb8) from [<c00d6d50>] (vfs_kern_mount+0x50/0x88)
-[<c00d6d50>] (vfs_kern_mount+0x50/0x88) from [<c00d700c>]
-(do_kern_mount+0x34/0xc8)
-[<c00d700c>] (do_kern_mount+0x34/0xc8) from [<c00d8420>] (do_mount+0x620/0x688)
-[<c00d8420>] (do_mount+0x620/0x688) from [<c00d850c>] (sys_mount+0x84/0xc4)
-[<c00d850c>] (sys_mount+0x84/0xc4) from [<c0034260>] (ret_fast_syscall+0x0/0x30)
-Code: e3a03000 e1510003 e0832000 0a000003 (e7d0c003)
----[ end trace 9fae26d925820746 ]---
-note: mount[656] exited with preempt_count 2
-Segmentation fault
-#>
-#>
+Congratulations!!!! "You have won One Million Nine Hundred and Fifty  
+Thousand United States Dollars (US$1,950,000.00) from WCS Big5  
+Promotions."
 
-Regards,
-Amit Sahrawat
+For Claiming, Urgently contact;
+Mr. Munir Bassem
+Tel: +27-735-324-797
+E-mail: munir_bassem1957@gala.net
 
-On Wed, Feb 15, 2012 at 5:26 PM, Amit Sahrawat
-<amit.sahrawat83@gmail.com> wrote:
-> Whenever there is a mount/unmount failure - there is a chance of calling the
-> callbacks functions once - transaction ail mount pointer is destroyed. So, it results
-> in NULL pointer exception followed by hang. So, before unmount of the log - flush all
-> the pending buffers.
->
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/xfs/xfs_log.c   |   10 ++++++++++
->  fs/xfs/xfs_mount.c |    9 ---------
->  2 files changed, 10 insertions(+), 9 deletions(-)
->
-> diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
-> index e2cc356..b924a5b 100644
-> --- a/fs/xfs/xfs_log.c
-> +++ b/fs/xfs/xfs_log.c
-> @@ -739,6 +739,16 @@ xfs_log_unmount_write(xfs_mount_t *mp)
->  void
->  xfs_log_unmount(xfs_mount_t *mp)
->  {
-> +       int error = 0;
-> +       /*
-> +        * Make sure all buffers have been flushed and completed before
-> +        * unmounting the log.
-> +        */
-> +       error = xfs_flush_buftarg(mp->m_ddev_targp, 1);
-> +       if (error)
-> +               cmn_err(CE_WARN, "%d busy buffers during log unmount.", error);
-> +       xfs_wait_buftarg(mp->m_ddev_targp);
-> +
->        xfs_trans_ail_destroy(mp);
->        xlog_dealloc_log(mp->m_log);
->  }
-> diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
-> index d06afbc..3bd2246 100644
-> --- a/fs/xfs/xfs_mount.c
-> +++ b/fs/xfs/xfs_mount.c
-> @@ -1519,15 +1519,6 @@ xfs_unmountfs(
->                                "Freespace may not be correct on next mount.");
->        xfs_unmountfs_writesb(mp);
->
-> -       /*
-> -        * Make sure all buffers have been flushed and completed before
-> -        * unmounting the log.
-> -        */
-> -       error = xfs_flush_buftarg(mp->m_ddev_targp, 1);
-> -       if (error)
-> -               xfs_warn(mp, "%d busy buffers during unmount.", error);
-> -       xfs_wait_buftarg(mp->m_ddev_targp);
-> -
->        xfs_log_unmount_write(mp);
->        xfs_log_unmount(mp);
->        xfs_uuid_unmount(mp);
-> --
-> 1.7.2.3
->
+CONGRATULATIONS!!!!
+
+We wish you success in our WCS Big5 Promotions/Email Internet Program  
+made today, which was held on 31st of January 2012.Your Email Address  
+was attached to Ticket No: 07-12-35-54-55-02 Drew the Lucky No:  
+15-19-24-27-47 + 12 from 800,000 Email Addresses consequently won in  
+the 2nd Category. You have therefore been approved to claim a Star  
+Prize of One Million Nine Hundred and Fifty Thousand United States  
+Dollars (US$1,950,000.00) in cash credited to File Number:  
+M1/2010/8/011.
+
+Below are your Winning Details;
+
+Reference Number: ZAR/POP-677152/ZA2012
+Batch Number: ZAR/002831323/M222-23
+Amount Won: One Million Nine Hundred and Fifty Thousand United States  
+Dollars (US$1,950,000.00)
+
+"The Validity period of the winnings is (10) Working Days, of your  
+reply to the Agency; hence you are expected to make your claims  
+immediately, any claim not made before this date will be returned as  
+UNCLAIMED."
+
+To claim your winning prize, you are to contact the appointed agent  
+for the immediate release of your winnings.
+
+Congratulations from all our Staff and thank you for being part of our  
+Promotions.
+
+Yours Truly,
+
+Mr. Ahmed Ibrahim
+Claims Department
+Copyrights (C) WCS Big5 Promotions (Pty) Ltd.
+Company Registration number: 2012/026290/12
+WCS Big5 Promotions, All rights reserved.
+Developed and maintained by RHVenter.com
+http://www.wcsbig5.co.za
+
+----------------------------------------------------------------
+Mensaje enviado usando correoweb http://www.calipso.com.co
+
+
