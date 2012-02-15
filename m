@@ -1,144 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2BOUZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 15:25:44 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53402 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab2BOUZn (ORCPT
+	id S1755351Ab2BOU2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 15:28:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58685 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755155Ab2BOU2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 15:25:43 -0500
-Date: Thu, 16 Feb 2012 00:25:38 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Vasiliy Kulikov <segoon@openwall.com>, Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120215202538.GK4533@moon>
-References: <20120215143606.GA14037@redhat.com>
- <20120215151008.GL1894@moon>
- <20120215153816.GA15988@redhat.com>
- <20120215161329.GM1894@moon>
- <20120215162222.GA18266@redhat.com>
- <20120215175319.GG4533@moon>
- <20120215184336.GA24182@redhat.com>
- <20120215195610.GJ4533@moon>
- <20120215195733.GA8021@albatros>
- <20120215200533.GQ1894@moon>
+	Wed, 15 Feb 2012 15:28:19 -0500
+Date: Wed, 15 Feb 2012 12:28:15 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: regulators: dummy.c vs. REGULATOR_DUMMY
+Message-ID: <20120215202814.GA22648@opensource.wolfsonmicro.com>
+References: <4F3C0A96.3050105@odi.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
 Content-Disposition: inline
-In-Reply-To: <20120215200533.GQ1894@moon>
+In-Reply-To: <4F3C0A96.3050105@odi.ch>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 12:05:33AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Feb 15, 2012 at 11:57:33PM +0400, Vasiliy Kulikov wrote:
-> > > 
-> > > This makes me scratch the head ;) I think ptrace_may_access (or
-> > > some other security test) should remain since it's somehow weird
-> > > if non-root task will be able to find objects order from privileged
-> > > task. Thus I need to find a way how to handle execve(setuid_app).
-> > > Need to think...
-> > 
-> > Look at fs/proc/base.c:lock_trace() - it locks ->cred_guard_mutex
-> > for the whole period of time when it uses a resource.
-> 
-> Yup, thanks Vasiliy! I've just found cred_guard_mutex in
-> install_exec_creds. Now I'm thinking if this is what we
-> need here ;)
-> 
 
-Something like below I think (not yet tested, overall update).
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Cyrill
----
-diff -u linux-2.6.git/kernel/kcmp.c linux-2.6.git/kernel/kcmp.c
---- linux-2.6.git/kernel/kcmp.c
-+++ linux-2.6.git/kernel/kcmp.c
-@@ -44,20 +44,34 @@
- static struct file *
- get_file_raw_ptr(struct task_struct *task, unsigned int idx)
- {
--	struct fdtable *fdt;
--	struct file *file;
-+	struct file *file = NULL;
- 
--	spin_lock(&task->files->file_lock);
--	fdt = files_fdtable(task->files);
--	if (idx < fdt->max_fds)
--		file = fdt->fd[idx];
--	else
--		file = NULL;
--	spin_unlock(&task->files->file_lock);
-+	task_lock(task);
-+	rcu_read_lock();
-+
-+	if (task->files)
-+		file = fcheck_files(task->files, idx);
-+
-+	rcu_read_unlock();
-+	task_unlock(task);
- 
- 	return file;
- }
- 
-+static int may_access(struct task_struct *task)
-+{
-+	int err = mutex_lock_killable(&task->signal->cred_guard_mutex);
-+	if (err)
-+		return err;
-+
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
-+		mutex_unlock(&task->signal->cred_guard_mutex);
-+		return -EPERM;
-+	}
-+
-+	return 0;
-+}
-+
- SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
- 		unsigned long, idx1, unsigned long, idx2)
- {
-@@ -82,11 +96,12 @@
- 	/*
- 	 * One should have enough rights to inspect task details.
- 	 */
--	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
--	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
--		ret = -EACCES;
-+	ret = may_access(task1);
-+	if (ret)
- 		goto err;
--	}
-+	ret = may_access(task2);
-+	if (ret)
-+		goto err_unlock;
- 
- 	switch (type) {
- 	case KCMP_FILE: {
-@@ -130,6 +145,9 @@
- 		break;
- 	}
- 
-+	mutex_unlock(&task2->signal->cred_guard_mutex);
-+err_unlock:
-+	mutex_unlock(&task1->signal->cred_guard_mutex);
- err:
- 	put_task_struct(task1);
- 	put_task_struct(task2);
+On Wed, Feb 15, 2012 at 08:42:14PM +0100, Ortwin Gl=FCck wrote:
 
+> I have REGULATOR_DUMMY unset, but still get the dummy regulator
+> registered. As far as I can see, dummy.c is always built regardless
+> of the config option. Either the option should be removed or the
+> Makefile should be changed to actually use it.
+
+=2E..or alternatively you've not understood what the Kconfig option does.
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPPBVXAAoJEBus8iNuMP3dAggP/3+KQcloxko6PtUyucDNU63E
+YfCARFZ72uoL7isQ9Nxt/A3W+GNd9eT5slQ6SUA3Jn2oH3q+kAfOCnk2In1iKioW
+w9hnPfZSnnTgpsSb4k5mx3qIcl9anGxQeYmyoQ5sslI5HHcl1KfZCI1cKFbrt3Sn
+qKI5zbJWxueG8cKXuVYTB5ttVzZJhAs5B9eGs+Tu9Y5OKuHHRvSzf/5JIrBIL94l
+J4/bzlgjaflFvTBtwofo3gzkB7CasrJJMTi9I3ACBH5MDwT+HYZjqp30Og86DC1b
+oEq4K55uFq1S2U6mTts3V/Heh/D4kJMFwySHetr/eaKvm2gYr1VAdgKnw5bAiJoy
+Hbj5exgeZvAZKFzFd1R0KsxrfC6SHewx6LbbsSh5BoUFwHhdJkm+OLThdAAFvAvr
+YxXdMrrT2iRCf/LK9tyJbWWOv21NvQzRREQOa1DSrsOBryWcmF29nYnf2eL+FMC6
+ux8BMuTYosKgJXId5yaj2I03fIg4DXWTCHon1lfZ4vgVB2RzzBBmE3Wq/fjAGa1o
+d4zVoB9oWJNyNerpJGajEmd3ZjgqFccW7GFK5XjazGdUGkIb1IVmSCSjuUwLJa08
+MA4dz73Io+mrBLHe4ZFCC1za3CEaWLUQ6XhsTROOJt9DfU83kmV7MEm+7xybEi0a
+jV4xb4O8Ztkh2aomY8z/
+=FPCN
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
