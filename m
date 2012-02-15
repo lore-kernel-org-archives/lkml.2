@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab2BOQzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:55:05 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:40694 "EHLO relay.sw.ru"
+	id S1752534Ab2BOQzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:55:14 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:28310 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab2BOQzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:55:03 -0500
-Subject: [PATCH 1/2] IPC: message queue receive cleanup
+	id S1751688Ab2BOQzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 11:55:11 -0500
+Subject: [PATCH 2/2] IPC: message queue stealing feature introduced
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: serge.hallyn@canonical.com, criu@openvz.org, lucas.demarchi@profusion.mobi,
         linux-kernel@vger.kernel.org, cmetcalf@tilera.com, dhowells@redhat.com
-Date: Wed, 15 Feb 2012 20:54:31 +0400
-Message-ID: <20120215165431.27978.36457.stgit@localhost6.localdomain6>
+Date: Wed, 15 Feb 2012 20:54:39 +0400
+Message-ID: <20120215165439.27978.43513.stgit@localhost6.localdomain6>
 In-Reply-To: <20120215163203.27978.52494.stgit@localhost6.localdomain6>
 References: <20120215163203.27978.52494.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -23,222 +23,210 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves all message related manipulation into one function msg_fill().
-Actually, two functions because of the compat one.
+v2:
+1) compat functions added.
+2) message slot size in array is now aligned by struct msgbuf_a.
+3) check for enough free space in buffer before message copying added.
+4) if MSG_STEAL flag is set, then do_msgrcv() returns number of bytes written
+to buffer.
+5) flag MSG_NOERROR is ignored if MSG_STEAL flag is set.
+
+This patch is required for checkpoint/restore in userspace.
+IOW, c/r requires some way to get all pending IPC messages without deleting
+them for the queue (checkpoint can fail and in this case tasks will be resumed,
+so queue have to be valid).
+To achive this, new operation flag MSG_STEAL for sys_msgrcv() system call
+introduced.
+If this flag is set, then passed struct msgbuf pointer will be used for storing
+array of structures:
+
+struct msgbuf_a {
+	long mtype;         /* type of message */
+	int msize;          /* size of message */
+	char mtext[0];      /* message text */
+};
+
+each of which will be followed by corresponding message data.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- arch/tile/kernel/compat.c |   11 +----------
- include/linux/compat.h    |    2 ++
- include/linux/msg.h       |    5 +++--
- ipc/compat.c              |   33 +++++++++++++++++----------------
- ipc/msg.c                 |   44 +++++++++++++++++++++++---------------------
- 5 files changed, 46 insertions(+), 49 deletions(-)
+ include/linux/msg.h |    8 ++++++++
+ ipc/compat.c        |   31 ++++++++++++++++++++++++++++++-
+ ipc/msg.c           |   46 +++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 83 insertions(+), 2 deletions(-)
 
-diff --git a/arch/tile/kernel/compat.c b/arch/tile/kernel/compat.c
-index bf5e9d7..d963b45 100644
---- a/arch/tile/kernel/compat.c
-+++ b/arch/tile/kernel/compat.c
-@@ -121,16 +121,7 @@ long tile_compat_sys_msgrcv(int msqid,
- 			    struct compat_msgbuf __user *msgp,
- 			    size_t msgsz, long msgtyp, int msgflg)
- {
--	long err, mtype;
--
--	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
--	if (err < 0)
--		goto out;
--
--	if (put_user(mtype, &msgp->mtype))
--		err = -EFAULT;
-- out:
--	return err;
-+	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg, compat_do_msg_fill);
- }
- 
- /* Provide the compat syscall number to call mapping. */
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 41c9f65..7389209 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -224,6 +224,7 @@ struct compat_sysinfo;
- struct compat_sysctl_args;
- struct compat_kexec_segment;
- struct compat_mq_attr;
-+struct msg_msg;
- 
- extern void compat_exit_robust_list(struct task_struct *curr);
- 
-@@ -236,6 +237,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 
- long compat_sys_semctl(int first, int second, int third, void __user *uptr);
- long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
-+long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz);
- long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
- 		int version, void __user *uptr);
- long compat_sys_msgctl(int first, int second, void __user *uptr);
 diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 6689e73..9411b76 100644
+index 9411b76..5eb43a2 100644
 --- a/include/linux/msg.h
 +++ b/include/linux/msg.h
-@@ -105,8 +105,9 @@ struct msg_queue {
- /* Helper routines for sys_msgsnd and sys_msgrcv */
- extern long do_msgsnd(int msqid, long mtype, void __user *mtext,
- 			size_t msgsz, int msgflg);
--extern long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
--			size_t msgsz, long msgtyp, int msgflg);
-+extern long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
-+		      int msgflg,
-+		      long (*msg_fill)(void __user *, struct msg_msg *, size_t ));
+@@ -11,6 +11,7 @@
+ /* msgrcv options */
+ #define MSG_NOERROR     010000  /* no error if message is too big */
+ #define MSG_EXCEPT      020000  /* recv any msg except of specified type.*/
++#define MSG_STEAL       040000  /* copy (not remove) all queue messages */
  
- #endif /* __KERNEL__ */
+ /* Obsolete, used only for backwards compatibility and libc5 compiles */
+ struct msqid_ds {
+@@ -38,6 +39,13 @@ struct msgbuf {
+ 	char mtext[1];      /* message text */
+ };
  
++/* message buffer for msgrcv in case of array calls */
++struct msgbuf_a {
++	long mtype;         /* type of message */
++	int msize;          /* size of message */
++	char mtext[0];      /* message text */
++};
++
+ /* buffer for msgctl calls IPC_INFO, MSG_INFO */
+ struct msginfo {
+ 	int msgpool;
 diff --git a/ipc/compat.c b/ipc/compat.c
-index b828244..38c1ee5 100644
+index 38c1ee5..d2b34f8 100644
 --- a/ipc/compat.c
 +++ b/ipc/compat.c
-@@ -328,13 +328,23 @@ long compat_sys_msgsnd(int first, int second, int third, void __user *uptr)
+@@ -38,6 +38,12 @@ struct compat_msgbuf {
+ 	char mtext[1];
+ };
+ 
++struct compat_msgbuf_a {
++	compat_long_t mtype;
++	int msize;
++	char mtext[0];
++};
++
+ struct compat_ipc_perm {
+ 	key_t key;
+ 	__compat_uid_t uid;
+@@ -328,6 +334,27 @@ long compat_sys_msgsnd(int first, int second, int third, void __user *uptr)
  	return do_msgsnd(first, type, up->mtext, second, third);
  }
  
-+long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
++
++static long compat_do_msg_steal(void __user *dest, struct msg_msg *msg, size_t bufsz)
 +{
-+	struct compat_msgbuf __user *msgp;
++	struct compat_msgbuf_a __user *msgp = dest;
 +	size_t msgsz;
++
++	msgsz = roundup(sizeof(struct msgbuf_a) + msg->m_ts,
++			__alignof__(struct msgbuf_a));
++
++	if (bufsz < msgsz)
++		return -E2BIG;
 +
 +	if (put_user(msg->m_type, &msgp->mtype))
 +		return -EFAULT;
-+
-+	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
-+	if (store_msg(msgp->mtext, msg, msgsz))
++	if (put_user(msg->m_ts, &msgp->msize))
++		return -EFAULT;
++	if (store_msg(msgp->mtext, msg, msg->m_ts))
 +		return -EFAULT;
 +	return msgsz;
 +}
 +
- long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
- 			   int version, void __user *uptr)
+ long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
  {
--	struct compat_msgbuf __user *up;
--	long type;
--	int err;
--
- 	if (first < 0)
- 		return -EINVAL;
- 	if (second < 0)
-@@ -342,23 +352,14 @@ long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
- 
- 	if (!version) {
- 		struct compat_ipc_kludge ipck;
--		err = -EINVAL;
- 		if (!uptr)
--			goto out;
--		err = -EFAULT;
-+			return -EINVAL;
- 		if (copy_from_user (&ipck, uptr, sizeof(ipck)))
--			goto out;
-+			return -EFAULT;
+ 	struct compat_msgbuf __user *msgp;
+@@ -359,7 +386,9 @@ long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
  		uptr = compat_ptr(ipck.msgp);
  		msgtyp = ipck.msgtyp;
  	}
--	up = uptr;
--	err = do_msgrcv(first, &type, up->mtext, second, msgtyp, third);
--	if (err < 0)
--		goto out;
--	if (put_user(type, &up->mtype))
--		err = -EFAULT;
--out:
--	return err;
-+	return do_msgrcv(first, uptr, second, msgtyp, third, compat_do_msg_fill);
+-	return do_msgrcv(first, uptr, second, msgtyp, third, compat_do_msg_fill);
++	return do_msgrcv(first, uptr, second, msgtyp, third,
++			 (third & MSG_STEAL) ? compat_do_msg_steal
++					      : compat_do_msg_fill);
  }
  
  static inline int get_compat_msqid64(struct msqid64_ds *m64,
 diff --git a/ipc/msg.c b/ipc/msg.c
-index 303362b..1d34c11 100644
+index 1d34c11..64f83b6 100644
 --- a/ipc/msg.c
 +++ b/ipc/msg.c
-@@ -762,15 +762,30 @@ static inline int convert_mode(long *msgtyp, int msgflg)
+@@ -762,6 +762,33 @@ static inline int convert_mode(long *msgtyp, int msgflg)
  	return SEARCH_EQUAL;
  }
  
--long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
--		size_t msgsz, long msgtyp, int msgflg)
-+static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
++static long do_msg_steal(void __user *dest, struct msg_msg *msg, size_t bufsz)
 +{
-+	struct msgbuf __user *msgp = dest;
++	struct msgbuf_a __user *msgp = dest;
 +	size_t msgsz;
++
++	/*
++	 * Message size have to be aligned.
++	 */
++	msgsz = roundup(sizeof(struct msgbuf_a) + msg->m_ts,
++			__alignof__(struct msgbuf_a));
++
++	/*
++	 * No need to support MSG_NOERROR flag because truncated message array
++	 * is useless.
++	 */
++	if (bufsz < msgsz)
++		return -E2BIG;
 +
 +	if (put_user(msg->m_type, &msgp->mtype))
 +		return -EFAULT;
-+
-+	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
-+	if (store_msg(msgp->mtext, msg, msgsz))
++	if (put_user(msg->m_ts, &msgp->msize))
++		return -EFAULT;
++	if (store_msg(msgp->mtext, msg, msg->m_ts))
 +		return -EFAULT;
 +	return msgsz;
 +}
 +
-+long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
-+	       int msgflg,
-+	       long (*msg_fill)(void __user *, struct msg_msg *, size_t ))
+ static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
  {
- 	struct msg_queue *msq;
+ 	struct msgbuf __user *msgp = dest;
+@@ -784,6 +811,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
  	struct msg_msg *msg;
  	int mode;
  	struct ipc_namespace *ns;
++	size_t arrsz = bufsz;
  
--	if (msqid < 0 || (long) msgsz < 0)
-+	if (msqid < 0 || (long) bufsz < 0)
+ 	if (msqid < 0 || (long) bufsz < 0)
  		return -EINVAL;
- 	mode = convert_mode(&msgtyp, msgflg);
- 	ns = current->nsproxy->ipc_ns;
-@@ -814,7 +829,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+@@ -817,6 +845,16 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
+ 						walk_msg->m_type != 1) {
+ 					msg = walk_msg;
+ 					msgtyp = walk_msg->m_type - 1;
++				} else if (msgflg & MSG_STEAL) {
++					long ret;
++
++					ret = msg_fill(buf, msg, arrsz);
++					if (ret < 0) {
++						msg = ERR_PTR(ret);
++						goto out_unlock;
++					}
++					buf += ret;
++					arrsz -= ret;
+ 				} else {
+ 					msg = walk_msg;
+ 					break;
+@@ -825,6 +863,8 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
+ 			tmp = tmp->next;
+ 		}
+ 		if (!IS_ERR(msg)) {
++			if (msgflg & MSG_STEAL)
++				goto out_unlock;
+ 			/*
  			 * Found a suitable message.
  			 * Unlink it from the queue.
- 			 */
--			if ((msgsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
-+			if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
- 				msg = ERR_PTR(-E2BIG);
- 				goto out_unlock;
- 			}
-@@ -841,7 +856,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
- 		if (msgflg & MSG_NOERROR)
- 			msr_d.r_maxsize = INT_MAX;
- 		else
--			msr_d.r_maxsize = msgsz;
-+			msr_d.r_maxsize = bufsz;
- 		msr_d.r_msg = ERR_PTR(-EAGAIN);
- 		current->state = TASK_INTERRUPTIBLE;
- 		msg_unlock(msq);
-@@ -904,29 +919,16 @@ out_unlock:
+@@ -919,6 +959,9 @@ out_unlock:
  	if (IS_ERR(msg))
  		return PTR_ERR(msg);
  
--	msgsz = (msgsz > msg->m_ts) ? msg->m_ts : msgsz;
--	*pmtype = msg->m_type;
--	if (store_msg(mtext, msg, msgsz))
--		msgsz = -EFAULT;
--
-+	bufsz = msg_fill(buf, msg, bufsz);
++	if (msgflg & MSG_STEAL)
++		return bufsz - arrsz;
++
+ 	bufsz = msg_fill(buf, msg, bufsz);
  	free_msg(msg);
  
--	return msgsz;
-+	return bufsz;
- }
- 
+@@ -928,7 +971,8 @@ out_unlock:
  SYSCALL_DEFINE5(msgrcv, int, msqid, struct msgbuf __user *, msgp, size_t, msgsz,
  		long, msgtyp, int, msgflg)
  {
--	long err, mtype;
--
--	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
--	if (err < 0)
--		goto out;
--
--	if (put_user(mtype, &msgp->mtype))
--		err = -EFAULT;
--out:
--	return err;
-+	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg, do_msg_fill);
+-	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg, do_msg_fill);
++	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg,
++			 (msgflg & MSG_STEAL) ? do_msg_steal : do_msg_fill);
  }
  
  #ifdef CONFIG_PROC_FS
