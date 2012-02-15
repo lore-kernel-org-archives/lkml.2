@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2BOQKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 11:10:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:42711 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2BOQKb (ORCPT
+	id S1751829Ab2BOQLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 11:11:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59758 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2BOQLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 11:10:31 -0500
-Date: Wed, 15 Feb 2012 11:07:07 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ftp.linux.org.uk>, James Morris <jmorris@namei.org>
-Subject: Re: linux-next: build failure after merge of the tmem tree
-Message-ID: <20120215160707.GB4093@phenom.dumpdata.com>
-References: <20120215144131.e1c3b7bbe9c30f6b622872c2@canb.auug.org.au>
+	Wed, 15 Feb 2012 11:11:11 -0500
+Date: Wed, 15 Feb 2012 16:10:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Paris <eparis@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>, Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nathaniel Husted <nhusted@gmail.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: ptrace: Include linux/audit.h to fix build errors
+Message-ID: <20120215161032.GE27825@n2100.arm.linux.org.uk>
+References: <1329284188.12708.1.camel@phoenix> <20120215083609.GD13673@n2100.arm.linux.org.uk> <20120215095216.GA29319@mudshark.cambridge.arm.com> <20120215101832.GF13673@n2100.arm.linux.org.uk> <1329318658.2337.6.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120215144131.e1c3b7bbe9c30f6b622872c2@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F3BD8E6.0023,ss=1,re=0.000,fgs=0
+In-Reply-To: <1329318658.2337.6.camel@localhost>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 02:41:31PM +1100, Stephen Rothwell wrote:
-> Hi Konrad,
+On Wed, Feb 15, 2012 at 10:10:58AM -0500, Eric Paris wrote:
+> On Wed, 2012-02-15 at 10:18 +0000, Russell King - ARM Linux wrote:
 > 
-> After merging the tmem tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> > So, this gives us two options: either we revert the damned thing and start
+> > over with it (and hopefully audit folk will start co-operating with ARM
+> > folk) or we try to fix up their mess (and potentially they learn they can
+> > dump crap on us.)
 > 
-> mm/frontswap.c: In function 'frontswap_shrink':
-> mm/frontswap.c:217:3: error: implicit declaration of function 'security_vm_enough_memory_kern' [-Werror=implicit-function-declaration]
+> It must be a conspiracy to screw with the ARM people!  Your jobs were
+> obviously too easy to begin with.  Rahrrrrr!  Down with ARM!
 > 
-> Caused by commit 8174e70a6bde ("mm: frontswap: core frontswap
-> functionality") interacting with commit 191c542442fd ("mm: collapse
-> security_vm_enough_memory() variants into a single function") from the
-> security tree.
+> No seriously.  I am the audit folks.  You got us all right here in this
+> one e-mail.  You're right, I should have paid more attention to who was
+> in the cc list.  If you want to rewrite it, please feel free!  If you
+> want to push fixes yourself, please feel free!  If you want me to push
+> fixes, please just let me know what is broken and I'll do my best.
 > 
-> I applied the following merge fix:
-> 
+> Sorry.  I just got the patch and was contacted by a number of people off
+> list asking when it was going to go in because they wanted it for their
+> project.  I obviously should have known who the ARM maintainers that
+> would have looked at a patch for the audit system was and should have
+> made sure they commented.  Sorry!  I'll be sure to hit the ARM list if
+> another patch goes by....
 
-Sweeet. Thanks!
+And... what about this endian-ness issue?
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 15 Feb 2012 14:35:31 +1100
-> Subject: [PATCH] mm: frontswap: update for security_vm_enough_memory API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  mm/frontswap.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index d7c91e3..2b80c5a 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -214,7 +214,7 @@ void frontswap_shrink(unsigned long target_pages)
->  			pages_to_unuse = 0; /* unuse all */
->  		}
->  		/* ensure there is enough RAM to fetch pages from frontswap */
-> -		if (security_vm_enough_memory_kern(pages))
-> +		if (security_vm_enough_memory_mm(current->mm, pages))
->  			continue;
->  		vm_unacct_memory(pages);
->  		break;
-> -- 
-> 1.7.9
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+Frustrated.
 
+I've tried discussing that issue with Nathaniel and haven't got anywhere
+with it (other than, seemingly, it's above his pay grade to know the
+answer.)
 
+Right, I've committed a revert of it to my tree.  When there's more
+interest in the feature, it can be revisited with proper review and
+proper testing of it.
