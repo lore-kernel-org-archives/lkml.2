@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761463Ab2BOCAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 21:00:35 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60930 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab2BOCAe (ORCPT
+	id S1761456Ab2BOCVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 21:21:52 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56610 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2BOCVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 21:00:34 -0500
-Date: Wed, 15 Feb 2012 09:39:58 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venki Pallipadi <venki@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
-Message-ID: <20120215013958.GA24229@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1328560933-3037-1-git-send-email-venki@google.com>
- <1328901567.25989.51.camel@laptop>
- <CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
- <20120213053410.GB24636@zhy>
- <1329227537.2293.1.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1329227537.2293.1.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 Feb 2012 21:21:50 -0500
+From: Jorgyano Vieira <jorgyano@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        Jorgyano Vieira <jorgyano@gmail.com>
+Subject: [PATCH] Staging: crystalhd: crystalhd_misc: improved debug macros
+Date: Wed, 15 Feb 2012 00:20:06 -0200
+Message-Id: <1329272406-26198-1-git-send-email-jorgyano@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 02:52:17PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-02-13 at 13:34 +0800, Yong Zhang wrote:
-> > Yeah, most of the things could be shared. Such as the added logic when
-> > return from idle and the hooks into ttwu_queue_remote() and
-> > generic_exec_single().
-> > 
-> 
-> The thing is, those last two should not have hooks. 
+Improvement of debug macros to ensure safe use on if/else statements.
 
-Yeah, it's general place; and smp_need_ipi() plays well.
+Signed-off-by: Jorgyano Vieira <jorgyano@gmail.com>
+---
+ drivers/staging/crystalhd/crystalhd_misc.h |   46 +++++++++++++++-------------
+ 1 files changed, 25 insertions(+), 21 deletions(-)
 
-> Nor am I convinced
-> anything outside of the arch idle loop should have any.
+diff --git a/drivers/staging/crystalhd/crystalhd_misc.h b/drivers/staging/crystalhd/crystalhd_misc.h
+index 4d61723..e0aa361 100644
+--- a/drivers/staging/crystalhd/crystalhd_misc.h
++++ b/drivers/staging/crystalhd/crystalhd_misc.h
+@@ -203,26 +203,30 @@ enum _chd_log_levels {
+ 	BCMLOG_ENTER_LEAVE	= 0x00000008,	/* stack tracking */
+ };
+ 
+-#define BCMLOG_ENTER				\
+-if (g_linklog_level & BCMLOG_ENTER_LEAVE) {	\
+-	printk(KERN_DEBUG "Entered %s\n", __func__);	\
+-}
+-
+-#define BCMLOG_LEAVE				\
+-if (g_linklog_level & BCMLOG_ENTER_LEAVE) {	\
+-	printk(KERN_DEBUG "Leaving %s\n", __func__);	\
+-}
+-
+-#define BCMLOG(trace, fmt, args...)		\
+-if (g_linklog_level & trace) {			\
+-	printk(fmt, ##args);			\
+-}
+-
+-#define BCMLOG_ERR(fmt, args...)					\
+-do {									\
+-	if (g_linklog_level & BCMLOG_ERROR) {				\
+-		printk(KERN_ERR "*ERR*:%s:%d: "fmt, __FILE__, __LINE__, ##args);	\
+-	}								\
+-} while (0);
++#define BCMLOG_ENTER						\
++do {								\
++	if (g_linklog_level & BCMLOG_ENTER_LEAVE)		\
++		printk(KERN_DEBUG "Entered %s\n", __func__);	\
++} while (0)
++
++#define BCMLOG_LEAVE						\
++do {								\
++	if (g_linklog_level & BCMLOG_ENTER_LEAVE)		\
++		printk(KERN_DEBUG "Leaving %s\n", __func__);	\
++} while (0)							\
++
++#define BCMLOG(trace, fmt, args...)	\
++do {					\
++	if (g_linklog_level & trace)	\
++		printk(fmt, ##args);	\
++} while (0)
++
++
++#define BCMLOG_ERR(fmt, args...)				\
++do {								\
++	if (g_linklog_level & BCMLOG_ERROR)			\
++		printk(KERN_ERR "*ERR*:%s:%d: "fmt,		\
++				__FILE__, __LINE__, ##args);	\
++} while (0)
+ 
+ #endif
+-- 
+1.7.2.5
 
-'idle loop' is the key point :)
-
-Thanks,
-Yong
