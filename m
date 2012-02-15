@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab2BOOjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 09:39:41 -0500
-Received: from gw.danplanet.com ([50.43.125.66]:41552 "EHLO mail.danplanet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754257Ab2BOOjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 09:39:40 -0500
-From: Dan Smith <danms@us.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Ensure that walk_page_range()'s start and end are page-aligned
-References: <1328902796-30389-1-git-send-email-danms@us.ibm.com>
-	<alpine.DEB.2.00.1202130211400.4324@chino.kir.corp.google.com>
-	<87zkcm23az.fsf@caffeine.danplanet.com>
-	<alpine.DEB.2.00.1202131350500.17296@chino.kir.corp.google.com>
-	<87pqdh1mvs.fsf@caffeine.danplanet.com>
-	<alpine.DEB.2.00.1202141259420.28450@chino.kir.corp.google.com>
-Date: Wed, 15 Feb 2012 06:39:37 -0800
-In-Reply-To: <alpine.DEB.2.00.1202141259420.28450@chino.kir.corp.google.com>
-	(David Rientjes's message of "Tue, 14 Feb 2012 13:04:45 -0800 (PST)")
-Message-ID: <87lio417py.fsf@caffeine.danplanet.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1760251Ab2BOOkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 09:40:05 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:60551 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758396Ab2BOOkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 09:40:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <201202150953.20341.oneukum@suse.de>
+References: <1329230375-25508-1-git-send-email-toby.gray@realvnc.com>
+	<20120214.144622.678577766818888054.davem@davemloft.net>
+	<CAL_Kpj0VSu-ByUEwTeVG5-5psab3h38bTL=ot7vYD8A+Oeb_Ug@mail.gmail.com>
+	<201202150953.20341.oneukum@suse.de>
+Date: Wed, 15 Feb 2012 15:40:00 +0100
+Message-ID: <CAL_Kpj0oN883qGhAD2pO4zOHvYt1=VmQHOJx970UF0TcqG06OA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] usb: cdc-ncm: Increase maximum allowed datagram size
+From: Alexey Orishko <alexey.orishko@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: David Miller <davem@davemloft.net>, toby.gray@realvnc.com,
+        oliver@neukum.name, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DR> And do what if they're not?  What behavior are you trying to fix
-DR> from the pagewalk code with respect to page-aligned addresses?  Any
-DR> specific examples?
+On Wed, Feb 15, 2012 at 9:53 AM, Oliver Neukum <oneukum@suse.de> wrote:
+> Have you tried that under severe memory presssure?
 
-Sorry, I thought I detailed this in the patch header.
+Well, it is a simplistic view upon host configuration.
+Developing of NCM spec was done with mind set, that host must be more
+capable than device.
 
-In walk_pte_entry(), the exit condition is when the end address is equal
-to the start address + n*PAGE_SIZE. If they're not both page aligned,
-then we'll never exit the loop and we'll start handing bad pte entries
-to the handler function.
+However, proposal above doesn't solve problem completely due to usbnet.
+Currently I'm testing some improvements/fixes related to data handling
+and driver latency with the plan to post it in the near future.
 
-As was pointed out earlier in the thread, we could "solve" this by
-making the exit condition be > instead of ==. However, that changes the
-entirety of walk_page_range() from requiring page-aligned attributes to
-silently tolerating them. IMHO, it's better to just
-declare/check/enforce that they are.
-
-I hit this recently because I was working with a prototype syscall that
-took an address range from userspace and walked the pages. I ended up
-passing non-page-aligned addresses, not knowing that walk_page_range()
-needed it, and it took me a few days to figure out why my pte_entry
-handler got a few good entries and then garbage until I crashed. I
-turned on DEBUG_VM and got zero additional help. With the proposed
-patch, I would have received a helpful smack in the head.
-
-Does that make sense?
-
--- 
-Dan Smith
-IBM Linux Technology Center
-email: danms@us.ibm.com
+Regards,
+Alexey
