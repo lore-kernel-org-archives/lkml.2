@@ -1,132 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2BOC1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 21:27:36 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38966 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab2BOC1e (ORCPT
+	id S932705Ab2BOCcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 21:32:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41222 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab2BOCcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 21:27:34 -0500
-Message-ID: <4F3B17C7.9040107@ce.jp.nec.com>
-Date: Wed, 15 Feb 2012 11:26:15 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Tue, 14 Feb 2012 21:32:14 -0500
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        Huajun Li <huajun.li.lee@gmail.com>,
-        Axel Theilmann <theilmann@pre-sense.de>, linux-kernel@vger.kernel.org
-Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
- of oops in sd_revalidate_disk?)
-References: <4EE8E419.8010000@pre-sense.de> <CAO+b5-pCW-F1nD365TnEiAfoN7zKB4zXkk3uO6p5QyUPY2icsA@mail.gmail.com> <20120214143800.69703df9@stein> <2173642.Y3HxI15Hxl@asus>
-In-Reply-To: <2173642.Y3HxI15Hxl@asus>
+In-Reply-To: <1329227537.2293.1.camel@twins>
+References: <1328560933-3037-1-git-send-email-venki@google.com>
+	<1328901567.25989.51.camel@laptop>
+	<CABeCy1aUj9MM8YabvvQCYYFm4FNMsomU3PZ1ZyoKikL9hnc9uQ@mail.gmail.com>
+	<20120213053410.GB24636@zhy>
+	<1329227537.2293.1.camel@twins>
+Date: Tue, 14 Feb 2012 18:32:13 -0800
+Message-ID: <CABeCy1aC3-nFZBOPufsqqAPki7s-yfDw3m5uMCoCkTNQiE3k0w@mail.gmail.com>
+Subject: Re: [RFC] Extend mwait idle to optimize away IPIs when possible
+From: Venki Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Aaron Durbin <adurbin@google.com>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 14, 2012 at 5:52 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-02-13 at 13:34 +0800, Yong Zhang wrote:
+>> Yeah, most of the things could be shared. Such as the added logic when
+>> return from idle and the hooks into ttwu_queue_remote() and
+>> generic_exec_single().
+>>
+>
+> The thing is, those last two should not have hooks. Nor am I convinced
+> anything outside of the arch idle loop should have any.
+>
 
-Thank you for comments.
+OK. Will put stuff in arch and respin soon..
 
-On 02/15/12 04:11, Bart Van Assche wrote:
-> On Feb 14 Stefan Richter wrote:
->> Or asked differently, what is supposed to serialize the ->queuedata
->> accesses?
-
-AFAIU the racy check is ok because 
-sdev does not disappear as far as the device is opened.
-
-The oopses in scsi_prep_fn happened just because they used queuedata
-without checking.
-
-> 
-> How about avoiding to modify q->queuedata before scsi_free_queue() has been
-> invoked, e.g. as follows ?
-
-I think this patch is good, too.
-Since QUEUE_FLAG_DEAD is also racy, it is not much different
-from queuedata check, IMO.
-Maybe you want additional blk_queue_dead() check in prep_fn
-to keep the current behaviour.
-
-> Note: the kfree() call in scsi_host_dev_release() probably
-> should be postponed until the last put on the queue has occurred.
-> 
->>From 4d29b62c686a718d34d3b3f634306376b40dbdb6 Mon Sep 17 00:00:00 2001
-> From: Bart Van Assche <bvanassche@acm.org>
-> Date: Tue, 14 Feb 2012 13:52:21 +0100
-> Subject: [PATCH] scsi-queuedata-null-deref-fix
-> 
-> ---
->  drivers/scsi/hosts.c      |    4 ++--
->  drivers/scsi/scsi_lib.c   |   13 +++----------
->  drivers/scsi/scsi_sysfs.c |    3 ---
->  3 files changed, 5 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-> index 351dc0b..5f34620 100644
-> --- a/drivers/scsi/hosts.c
-> +++ b/drivers/scsi/hosts.c
-> @@ -296,9 +296,9 @@ static void scsi_host_dev_release(struct device *dev)
->  		destroy_workqueue(shost->work_q);
->  	q = shost->uspace_req_q;
->  	if (q) {
-> -		kfree(q->queuedata);
-> -		q->queuedata = NULL;
-> +		void *qd = q->queuedata;
->  		scsi_free_queue(q);
-> +		kfree(qd);
->  	}
->  
->  	scsi_destroy_command_freelist(shost);
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index f85cfa6..7c40303 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1491,7 +1491,9 @@ static void scsi_request_fn(struct request_queue *q)
->  	struct scsi_cmnd *cmd;
->  	struct request *req;
->  
-> -	if (!sdev) {
-> +	BUG_ON(!sdev);
-> +
-> +	if (test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)) {
->  		while ((req = blk_peek_request(q)) != NULL)
->  			scsi_kill_request(req, q);
->  		return;
-> @@ -1700,15 +1702,6 @@ struct request_queue *scsi_alloc_queue(struct scsi_device *sdev)
->  
->  void scsi_free_queue(struct request_queue *q)
->  {
-> -	unsigned long flags;
-> -
-> -	WARN_ON(q->queuedata);
-> -
-> -	/* cause scsi_request_fn() to kill all non-finished requests */
-> -	spin_lock_irqsave(q->queue_lock, flags);
-> -	q->request_fn(q);
-> -	spin_unlock_irqrestore(q->queue_lock, flags);
-> -
->  	blk_cleanup_queue(q);
->  }
->  
-> diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-> index ea5658d..61dd107 100644
-> --- a/drivers/scsi/scsi_sysfs.c
-> +++ b/drivers/scsi/scsi_sysfs.c
-> @@ -976,9 +976,6 @@ void __scsi_remove_device(struct scsi_device *sdev)
->  		sdev->host->hostt->slave_destroy(sdev);
->  	transport_destroy_device(dev);
->  
-> -	/* cause the request function to reject all I/O requests */
-> -	sdev->request_queue->queuedata = NULL;
-> -
->  	/* Freeing the queue signals to block that we're done */
->  	scsi_free_queue(sdev->request_queue);
->  	put_device(dev);
-
--- 
-Jun'ichi Nomura, NEC Corporation
+-Venki
