@@ -1,143 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab2BOEKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 23:10:21 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:41414 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754752Ab2BOEKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 23:10:18 -0500
-Date: Tue, 14 Feb 2012 23:10:14 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: [PATCH] char random: fix boot id uniqueness race (v2)
-Message-ID: <20120215041014.GA15846@Krystal>
+	id S1755947Ab2BOEW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 23:22:27 -0500
+Received: from ozlabs.org ([203.10.76.45]:38914 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab2BOEWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Feb 2012 23:22:25 -0500
+Date: Wed, 15 Feb 2012 15:16:09 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, Amerigo Wang <amwang@redhat.com>,
+        Kexec-ml <kexec@lists.infradead.org>, Milton Miller <miltonm@bga.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC PATCH v6 00/10] fadump: Firmware-assisted dump support for
+ Powerpc.
+Message-ID: <20120215041608.GA15258@bloggs.ozlabs.ibm.com>
+References: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 23:06:40 up 448 days,  9:09,  5 users,  load average: 0.22, 0.19,
-	0.12
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111210064301.10195.3344.stgit@mars.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The proc file /proc/sys/kernel/random/boot_id can be read concurrently
-by user-space processes. If two (or more) user-space processes
-concurrently read boot_id when sysctl_bootid is not yet assigned, a race
-can occur making boot_id differ between the reads. Because the whole
-point of the boot id is to be unique across a kernel execution, fix this
-by protecting this operation with a mutex, and introduce a
-boot_id_generated flag, along with appropriate memory barriers, to let
-the fast-path know if the boot ID has been generated without having to
-hold the mutex.
+On Sat, Dec 10, 2011 at 12:19:59PM +0530, Mahesh J Salgaonkar wrote:
 
-I propose this approach rather than setting it up within an initcall(),
-because letting execution randomness add to entropy before populating
-the boot id seems to be a wanted property. Also, populating it lazily
-rather than at boot time only makes the performance hit be taken when
-boot_id is being read.
+> The most of the code implementation has been adapted from phyp assisted dump
+> implementation written by Linas Vepstas and Manish Ahuja.
 
+When you repost the series, please be explicit about what the
+relationship between the new fadump facility and the old phyp-dump
+is, both in the documentation you're adding and in the patch
+descriptions.
 
-Q: Why are these memory barriers required ? Aren't the mutexes already
-   dealing with ordering ?
+I gather that fadump uses the same firmware interfaces as phyp-dump,
+and can be characterised as a rewrite of phyp-dump.  It would be good
+if you would explicitly mention:
 
-The need for memory barriers is a consequence of letting the fast-path
-run without holding this mutex.
+- What advantages fadump has over phyp-dump
+- Whether there are any capabilities that phyp-dump does that fadump
+  doesn't
+- What is different between fadump and phyp-dump in the interface to
+  usermode code
+- Any user-visible differences between how fadump operates compared to
+  phyp-dump.  For example, will users see a difference in how much
+  memory is available to the kernel?
 
-Here is the race dealt with by the smp_rmb()/smp_wmb(). I'm showing the
-result of reversed write order here:
+Paul.
 
-CPU A                             CPU B
-
-Load boot_id_generated            
-  (test -> false)
-mutex_lock(&boot_id_mutex)
-  (implied memory barrier
-   with acquire semantic)
-Load boot_id_generated again
-   (test -> false)
-boot_id_generated = 1
-  (both the compiler and
-   CPU are free to reorder
-   the boot_id_generated
-   store before uuid stores)
-                                  Load boot_id_generated
-                                    (test -> true)
-                                  Load uuid content
-                                    (races with generate_random_uuid:
-                                     result either 0 or corrupted)
-                                  Return corrupted uuid.
-generate_random_uuid(uuid)
-mutex_unlock(&boot_id_mutex)
-
-I prefer not requiring the fast-path to take a mutex, because this
-would transform a read-mostly operation into an operation that
-requires cache-line exchanges (the mutex). However, if we want the
-fast-path to be mutex-free, we need to enforce order with
-memory barriers: smp_rmb on the read-side, smp_wmb on the
-update-side. Failure to do so leads to the race shown above, where
-a corrupted boot_id can be returned.
-
-
-* Changelog since v1:
-- boot_id_mutex is now declared within the proc_do_uuid scope.
-- added explanation for memory barriers.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
-CC: Matt Mackall <mpm@selenic.com>
-CC: Greg Kroah-Hartman <greg@kroah.com>
----
- drivers/char/random.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
-
-Index: linux-2.6-lttng/drivers/char/random.c
-===================================================================
---- linux-2.6-lttng.orig/drivers/char/random.c
-+++ linux-2.6-lttng/drivers/char/random.c
-@@ -1244,16 +1244,30 @@ static char sysctl_bootid[16];
- static int proc_do_uuid(ctl_table *table, int write,
- 			void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-+	static int boot_id_generated;
-+	static DEFINE_MUTEX(boot_id_mutex);
- 	ctl_table fake_table;
- 	unsigned char buf[64], tmp_uuid[16], *uuid;
- 
- 	uuid = table->data;
- 	if (!uuid) {
- 		uuid = tmp_uuid;
--		uuid[8] = 0;
--	}
--	if (uuid[8] == 0)
- 		generate_random_uuid(uuid);
-+	} else {
-+		if (unlikely(!ACCESS_ONCE(boot_id_generated))) {
-+			mutex_lock(&boot_id_mutex);
-+			if (!boot_id_generated) {
-+				generate_random_uuid(uuid);
-+				/* Store uuid before boot_id_generated. */
-+				smp_wmb();
-+				boot_id_generated = 1;
-+			}
-+			mutex_unlock(&boot_id_mutex);
-+		} else {
-+			/* Load boot_id_generated before uuid */
-+			smp_rmb();
-+		}
-+	}
- 
- 	sprintf(buf, "%pU", uuid);
- 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
