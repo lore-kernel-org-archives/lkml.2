@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab2BOWPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:15:40 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:20292 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755115Ab2BOWPj (ORCPT
+	id S1755936Ab2BOWTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:19:43 -0500
+Received: from fmmailgate03.web.de ([217.72.192.234]:43071 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab2BOWTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:15:39 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: C6c1ef8VM1mJyegP2TDEkmiXzPeUT1iVXdffGp2NJlwT5QB
- h.fkqwgL7LrjBrP99NuSEfePxso_jIoO8q33zuW4c6NeiUN2rFqGNRmcIk7v
- ebaJgHJlS2ddZUivJ9h5SwD_tldPBxoGT4ZOn.HJz.QWgL7oYka3alvk1AmV
- NrczvuaBrf6Trltlp8r9fhNopqn3mfrFgiBj0K97GHBICPYndtWiL_VhfUGp
- gExedy6nNsyhXJB18_k4a2Nk1xufdRWX4XRz2cKnZ_2oPDGVlR78iZyrj6Mi
- sgnjp7AQWYhh0kuC70Mu.HCBEjNxWe7tLzDtJcrlnxBR1SH7J2HvdFylbPLm
- UMHdhMtEQJEAH3Cn3gjNe3_GBBavneGJPrmK8nR0KNfayGY9HOZ7FSyBMvlx
- dsVwt3NcXbuZjFMm_2R.f6jTzxI2vzQlYf2upEqfIKKvSBm01BDrcwpF1Ea4
- Wxzz2gcX_3zuMMG9K4wxPGnsp1Q6h5raYuaNwC1cISx20zOZskRgeejvbyGL
- Yxzg-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 15 Feb 2012 16:15:33 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
-        Milton Miller <miltonm@bga.com>
-Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
-In-Reply-To: <4F3C28AF.9080005@tilera.com>
-Message-ID: <alpine.DEB.2.00.1202151614510.28225@router.home>
-References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>  <1327591185.2446.102.camel@twins>  <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>  <20120201170443.GE6731@somewhere.redhat.com>  <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
-  <4F2AAEB9.9070302@tilera.com> <1328898816.25989.33.camel@laptop> <4F3C28AF.9080005@tilera.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 15 Feb 2012 17:19:42 -0500
+From: Markus <M4rkusXXL@web.de>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Jan Kara <jack@suse.cz>, Jack Stone <jwjstone@fastmail.fm>,
+        akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        gregkh@linuxfoundation.org
+Subject: Re: Deadlock?
+Date: Wed, 15 Feb 2012 12:42:45 +0100
+Message-ID: <20459834.QRhKtMFN8x@f209>
+User-Agent: KMail/4.8.0 (Linux/3.2.4-gentoo; KDE/4.8.0; x86_64; ; )
+In-Reply-To: <20120214124735.GD1934@quack.suse.cz>
+References: <3125411.WeeEOF8PnR@f209> <4F394A5E.4050002@fastmail.fm> <20120214124735.GD1934@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hYTPT7U5IYFm8qLWuaWnd8rjAx+GtRR0dfERhSfHXus
+ ejUZOuUVXa5MylAXv+QxdWU7bIeBqoRoBwu9zfYV3QOgC9gCkP
+ LBQwW0RjWK+H0CuAGhlYr2r/yvKFZn3YV5ga92Z0psJSzjO7v2
+ U9Y0ovTOyBRdXDVfQvTzMayOpkkDgxUZtoTlr1yGXIzrvTMcV8
+ hySiHbXE90fkr3e+RyJuw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Feb 2012, Chris Metcalf wrote:
+Hi!
 
-> The Tilera dataplane code is available on the "dataplane" branch (off of
-> 3.3-rc3 at the moment):
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
+/proc/sysrq-trigger does not exists, I will apply the patch and enable sysrq.
+But it may take some days for a result.
 
-Looks like that patch is only for the tile architecture. Is there a
-x86 version?
+Thanks,
+Markus
+
+Jan Kara schrieb am 14.02.2012:
+> On Mon 13-02-12 17:37:34, Jack Stone wrote:
+> > Adding CCs
+> > 
+> > On 02/13/2012 11:17 AM, Markus wrote:
+> > > I noted some kind of deadlock, where I was not able to write to the raid6, 
+> > > while writing to each disk would still work.
+> > > This caused many processes to "wait" in d-state, thus making it impossible to 
+> > > unmount, cleanly reboot, sync, ...
+>   Thanks for report. Could you please provide output of
+>     'echo w >/proc/sysrq-trigger'
+> in dmesg? That would help us narrow down the real cause the the current
+> deadlock.
+> 
+> > > So I enabled the detection of hung tasks and this deplock option.
+> > > After running a 3.2.2 for about 5 days:
+> > > http://pastebin.com/gy1kaYmS
+> > > 
+> > > I dont know if its a bug or nothing. Or if it has anything to do with my 
+> > > problem as there was no hungtask detected and the raid still seems to work.
+>   It's lock debugging code complaining about a possible problem it found.
+> Actually, the problem looks real (although hard to hit AFAICS) and attached
+> patch should fix it. Does the patch fix things for you? If not, please
+> provide the output I describe above.
+> 
+> 									Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
