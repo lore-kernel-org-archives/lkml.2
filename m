@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab2BOW0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:26:20 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6140 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab2BOW0S (ORCPT
+	id S1756055Ab2BOWda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:33:30 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54495 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab2BOWd2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:26:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 15 Feb 2012 14:26:06 -0800
-Date: Thu, 16 Feb 2012 00:25:51 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "Russell King" <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Message-ID: <20120215222551.GN16501@tbergstrom-lnx.Nvidia.com>
-References: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF178FACB954@HQMAIL01.nvidia.com>
+	Wed, 15 Feb 2012 17:33:28 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [RFC][PATCH 5/8] PM / Sleep: Change wakeup statistics
+Date: Wed, 15 Feb 2012 23:37:21 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <greg@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201202070200.55505.rjw@sisk.pl> <201202070205.07589.rjw@sisk.pl> <CAMP5XgdPmyOp4ECoS3t7NUvQz+cWbq9eMRQSSQn3073w2P4t5w@mail.gmail.com>
+In-Reply-To: <CAMP5XgdPmyOp4ECoS3t7NUvQz+cWbq9eMRQSSQn3073w2P4t5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178FACB954@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202152337.22072.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 10:27:43PM +0100, Stephen Warren wrote:
-> Peter De Schrijver wrote at Thursday, February 09, 2012 4:48 PM:
-> > This patchset introduces support for secondary cores on tegra30. It also
-> > introduces some functions for the flowcontroller and adds basic support for
-> > tegra30 powerdomains.
+On Wednesday, February 15, 2012, Arve Hjønnevåg wrote:
+> On Mon, Feb 6, 2012 at 5:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Wakeup statistics used by Android are slightly different from what we
+> > have at the moment, so modify them to follow Android more closely.
+> ...
+> > @@ -438,6 +444,11 @@ static void wakeup_source_deactivate(str
+> >        if (ktime_to_ns(duration) > ktime_to_ns(ws->max_time))
+> >                ws->max_time = duration;
+> >
+> > +       ws->last_time = now;
+> > +       if (ws->has_timeout && time_after(jiffies, ws->timer_expires))
 > 
-> The code looks fine to me. I do notice the following when running
-> "shutdown -h now":
-> 
-> [   27.762124] SMP: failed to stop secondary CPUs
-> 
-> So, this patch series makes the secondary cores boot OK, but not shut
-> down it appears. Is that expected? It's probably something we can fix
-> with a following on patch rather than re-spinning this series though?
-> 
+> time_after_eq may work better (or increment the count from the timer).
 
-This seems to be a bug indeed. I will look at it next week when I'm back in
-finland.
+I think incrementing the count from the timer is a better approach.
 
-Cheers,
+> I applied this patch and the expire counts I see for wakeup-sources
+> that always time-out do not match the active count.
 
-Peter.
+I see.  The reason may also be that __pm_wakeup_event() increments
+ws->event_count even if the wakeup source is already active.
+
+Thanks,
+Rafael
