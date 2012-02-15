@@ -1,167 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab2BON3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 08:29:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45502 "EHLO mx1.redhat.com"
+	id S1759061Ab2BONcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 08:32:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45193 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757957Ab2BON3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 08:29:45 -0500
-Message-ID: <4F3BB33C.1000908@redhat.com>
-Date: Wed, 15 Feb 2012 15:29:32 +0200
+	id S1758330Ab2BONcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 08:32:12 -0500
+Message-ID: <4F3BB3D3.7060401@redhat.com>
+Date: Wed, 15 Feb 2012 15:32:03 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
+        KVM list <kvm@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
 Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de>
-In-Reply-To: <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de>
+References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <20120212161034.9d8f68df72f6c28298cdcd33@gmail.com>
+In-Reply-To: <20120212161034.9d8f68df72f6c28298cdcd33@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 01:57 PM, Alexander Graf wrote:
+On 02/12/2012 09:10 AM, Takuya Yoshikawa wrote:
+> Avi Kivity <avi@redhat.com> wrote:
+>
+> > > >  Slot searching is quite fast since there's a small number of slots, and we sort the larger ones to be in the front, so positive lookups are fast.  We cache negative lookups in the shadow page tables (an spte can be either "not mapped", "mapped to RAM", or "not mapped and known to be mmio") so we rarely need to walk the entire list.
+> > >
+> > > Well, we don't always have shadow page tables. Having hints for unmapped guest memory like this is pretty tricky.
+> > > We're currently running into issues with device assignment though, where we get a lot of small slots mapped to real hardware. I'm sure that will hit us on x86 sooner or later too.
 > > 
-> > Is an extra syscall for copying TLB entries to user space prohibitively
-> > expensive?
->
-> The copying can be very expensive, yes. We want to have the possibility of exposing a very large TLB to the guest, in the order of multiple kentries. Every entry is a struct of 24 bytes.
-
-You don't need to copy the entire TLB, just the way that maps the
-address you're interested in.
-
-btw, why are you interested in virtual addresses in userspace at all?
-
-> >>> 
-> >>> It works for the really simple cases, yes, but if the guest wants to set up one-shot timers, it fails.  
-> >> 
-> >> I don't understand. Why would anything fail here? 
+> > For x86 that's not a problem, since once you map a page, it stays mapped 
+> > (on modern hardware).
 > > 
-> > It fails to provide a benefit, I didn't mean it causes guest failures.
-> > 
-> > You also have to make sure the kernel part and the user part use exactly
-> > the same time bases.
 >
-> Right. It's an optional performance accelerator. If anything doesn't align, don't use it. But if you happen to have a system where everything's cool, you're faster. Sounds like a good deal to me ;).
+> I was once thinking about how to search a slot reasonably fast for every case,
+> even when we do not have mmio-spte cache.
+>
+> One possible way I thought up was to sort slots according to their base_gfn.
+> Then the problem would become:  "find the first slot whose base_gfn + npages
+> is greater than this gfn."
+>
+> Since we can do binary search, the search cost is O(log(# of slots)).
+>
+> But I guess that most of the time was wasted on reading many memslots just to
+> know their base_gfn and npages.
+>
+> So the most practically effective thing is to make a separate array which holds
+> just their base_gfn.  This will make the task a simple, and cache friendly,
+> search on an integer array:  probably faster than using *-tree data structure.
 
-Depends on how much the alignment relies on guest knowledge.  I guess
-with a simple device like HPET, it's simple, but with a complex device,
-different guests (or different versions of the same guest) could drive
-it very differently.
+This assumes that there is equal probability for matching any slot.  But
+that's not true, even if you have hundreds of slots, the probability is
+much greater for the two main memory slots, or if you're playing with
+the framebuffer, the framebuffer slot.  Everything else is loaded
+quickly into shadow and forgotten.
 
-> >>>> 
-> >>>> Because not every guest supports them. Virtio-blk needs 3rd party drivers. AHCI needs 3rd party drivers on w2k3 and wxp. 
-> > 
-> > 3rd party drivers are a way of life for Windows users; and the
-> > incremental benefits of IDE acceleration are still far behind virtio.
->
-> The typical way of life for Windows users are all-included drivers. Which is the case for AHCI, where we're getting awesome performance for Vista and above guests. The iDE thing was just an idea for legacy ones.
->
-> It'd be great to simply try and see how fast we could get by handling a few special registers in kernel space vs heavyweight exiting to QEMU. If it's only 10%, I wouldn't even bother with creating an interface for it. I'd bet the benefits are a lot bigger though.
->
-> And the main point was that specific partial device emulation buys us more than pseudo-generic accelerators like coalesced mmio, which are also only used by 1 or 2 devices.
+> If needed, we should make cmp_memslot() architecture specific in the end?
 
-Ok.
-
-> > 
-> >> I'm pretty sure non-Linux non-Windows systems won't get QXL drivers. 
-> > 
-> > Cirrus or vesa should be okay for them, I don't see what we could do for
-> > them in the kernel, or why.
->
-> That's my point. You need fast emulation of standard devices to get a good baseline. Do PV on top, but keep the baseline as fast as is reasonable.
->
-> > 
-> >> Same for virtio.
-> >>>> 
-> >>>> Please don't do the Xen mistake again of claiming that all we care about is Linux as a guest.
-> >>> 
-> >>> Rest easy, there's no chance of that.  But if a guest is important enough, virtio drivers will get written.  IDE has no chance in hell of approaching virtio-blk performance, no matter how much effort we put into it.
-> >> 
-> >> Ever used VMware? They basically get virtio-blk performance out of ordinary IDE for linear workloads.
-> > 
-> > For linear loads, so should we, perhaps with greater cpu utliization.
-> > 
-> > If we DMA 64 kB at a time, then 128 MB/sec (to keep the numbers simple)
-> > means 0.5 msec/transaction.  Spending 30 usec on some heavyweight exits
-> > shouldn't matter.
->
-> *shrug* last time I checked we were a lot slower. But maybe there's more stuff making things slow than the exit path ;).
-
-One thing that's different is that virtio offloads itself to a thread
-very quickly, while IDE does a lot of work in vcpu thread context.
-
-> > 
-> >>> 
-> >>>> KVM's strength has always been its close resemblance to hardware.
-> >>> 
-> >>> This will remain.  But we can't optimize everything.
-> >> 
-> >> That's my point. Let's optimize the hot paths and be good. As long as we default to IDE for disk, we should have that be fast, no?
-> > 
-> > We should make sure that we don't default to IDE.  Qemu has no knowledge
-> > of the guest, so it can't default to virtio, but higher level tools can
-> > and should.
->
-> You can only default to virtio on recent Linux. Windows, BSD, etc don't include drivers, so you can't assume it working. You can default to AHCI for basically any recent guest, but that still won't work for XP and the likes :(.
-
-The all-knowing management tool can provide a virtio driver disk, or
-even slip-stream the driver into the installation CD.
-
-
->  
-> >> Ah, because you're on NPT and you can have MMIO hints in the nested page table. Nifty. Yeah, we don't have that luxury :).
-> > 
-> > Well the real reason is we have an extra bit reported by page faults
-> > that we can control.  Can't you set up a hashed pte that is configured
-> > in a way that it will fault, no matter what type of access the guest
-> > does, and see it in your page fault handler?
->
-> I might be able to synthesize a PTE that is !readable and might throw a permission exception instead of a miss exception. I might be able to synthesize something similar for booke. I don't however get any indication on why things failed.
->
-> So for MMIO reads, I can assume that this is an MMIO because I would never write a non-readable entry. For writes, I'm overloading the bit that also means "guest entry is not readable" so there I'd have to walk the guest PTEs/TLBs and check if I find a read-only entry. Right now I can just forward write faults to the guest. Since COW is probably a hotter path for the guest than MMIO, this might end up being ineffective.
-
-COWs usually happen from guest userspace, while mmio is usually from the
-guest kernel, so you can switch on that, maybe.
-
-> >> 
-> >> I think we're talking about the same thing really.
-> > 
-> > So what's your objection to slots?
->
-> I was merely saying that having slots internally keeps us from speeding things up. I don't mind the external interface though.
-
-Ah, but it doesn't.  We can sort them, convert them to a radix tree,
-basically do anything with them.
-
->
-> > 
-> >>>>  http://www.mail-archive.com/kvm@vger.kernel.org/msg66155.html
-> >>>> 
-> >>> 
-> >>> Yeah - s390 is always different.  On the current interface synchronous registers are easy, so why not.  But I wonder if it's really critical.
-> >> 
-> >> It's certainly slick :). We do the same for the TLB on e500, just with a separate ioctl to set the sharing up.
-> > 
-> > It's also dangerous wrt future hardware, as noted above.
->
-> Yes and no. I see the capability system as two things in one:
->
->   1) indicate features we learn later
->   2) indicate missing features in our current model
->
-> So if a new model comes out that can't do something, just scratch off the CAP and be good ;). If somehow you ended up with multiple bits in a single CAP, remove the CAP, create a new one with the subset, set that for the new hardware.
->
-> We will have the same situation when we get nested TLBs for booke. We just unlearn a CAP then. User space needs to cope with its unavailability anyways.
->
-
-At least qemu tends to assume a certain baseline and won't run without
-it.  We also need to make sure that the feature is available in some
-other way (non-shared memory), which means duplication to begin with.
+We could, but why is it needed?  This logic holds for all architectures.
 
 -- 
 error compiling committee.c: too many arguments to function
