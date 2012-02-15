@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761362Ab2BOAy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Feb 2012 19:54:56 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18294 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755651Ab2BOAyy convert rfc822-to-8bit (ORCPT
+	id S1761426Ab2BOBFN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Feb 2012 20:05:13 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:58802 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757525Ab2BOBFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Feb 2012 19:54:54 -0500
+	Tue, 14 Feb 2012 20:05:10 -0500
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Danny Kukawka'" <danny.kukawka@bisect.de>,
+        "'James E.J. Bottomley'" <JBottomley@parallels.com>
+Cc: "'Danny Kukawka'" <dkukawka@suse.de>, <lindar_liu@usish.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1329230455-27084-1-git-send-email-danny.kukawka@bisect.de>
+Subject: RE: [PATCH] pm8001: fix enum checks
+Date: Wed, 15 Feb 2012 09:02:51 +0800
+Message-ID: <19540A16097A409F9E4999160E0B25BC@usish.com.cn>
 MIME-Version: 1.0
-Message-ID: <e0be2242-530b-46cd-ad3a-d49fd60345ab@default>
-Date: Tue, 14 Feb 2012 16:54:37 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: RE: linux-next: build failure after merge of the staging tree
-References: <20120210155800.ccef418fd5c2f2b87a5d6315@canb.auug.org.au>
- <20120210052947.GA2068@kroah.com>
- <80f07411-179e-4fe9-b591-32fbcaac414b@default>
- <20120210174359.GB5128@kroah.com>
- <443c718c-643b-4b48-9dd8-e0424fc0afa9@default>
- <20120215000358.GA27341@kroah.com>
-In-Reply-To: <20120215000358.GA27341@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F3B0256.0001,ss=1,re=0.000,fgs=0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1329230455-27084-1-git-send-email-danny.kukawka@bisect.de>
+Thread-Index: AczrJqn7tKKCDKGGRrif2UpLYLTFzAAVrDIg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Subject: Re: linux-next: build failure after merge of the staging tree
+Thanks for fix.
+Acked-by: Jack Wang <jack_wang@usish.com> 
+
+[PATCH] pm8001: fix enum checks
 > 
-> > > Ok, now reverted, what a mess...
-> > >
-> > > greg k-h
-> >
-> > OK, I have just posted the ramster v5 patchset which applies against
-> > linux-3.2.  I've test-built it against linux-next... it only gets
-> > the normal minor merge conflicts for adding a line to
-> > drivers/staging/Makefile and Kconfig.
+> Fix for:
+> drivers/scsi/pm8001/pm8001_hwi.c: In function 'hw_event_sas_phy_up':
+> drivers/scsi/pm8001/pm8001_hwi.c:2932:32: warning: comparison between
+>   'enum sas_device_type' and 'enum sas_dev_type' [-Wenum-compare]
+> drivers/scsi/pm8001/pm8001_hwi.c:2934:37: warning: comparison between
+>   'enum sas_device_type' and 'enum sas_dev_type' [-Wenum-compare]
 > 
-> Please resend after fixing that conflict, as it would require me to edit
-> it by hand in order to apply this.  As you have already redone the
-> patch, there's no reason I should have to do this, right?
+> Changed SAS_END_DEV to SAS_END_DEVICE and NO_DEVICE with
+> SAS_PHY_UNUSED.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/scsi/pm8001/pm8001_hwi.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_hwi.c
+> b/drivers/scsi/pm8001/pm8001_hwi.c
+> index b7b92f7..46fd7219 100644
+> --- a/drivers/scsi/pm8001/pm8001_hwi.c
+> +++ b/drivers/scsi/pm8001/pm8001_hwi.c
+> @@ -2929,9 +2929,9 @@ hw_event_sas_phy_up(struct pm8001_hba_info
+*pm8001_ha,
+> void *piomb)
+>  	phy->phy_type |= PORT_TYPE_SAS;
+>  	phy->identify.device_type = deviceType;
+>  	phy->phy_attached = 1;
+> -	if (phy->identify.device_type == SAS_END_DEV)
+> +	if (phy->identify.device_type == SAS_END_DEVICE)
+>  		phy->identify.target_port_protocols = SAS_PROTOCOL_SSP;
+> -	else if (phy->identify.device_type != NO_DEVICE)
+> +	else if (phy->identify.device_type != SAS_PHY_UNUSED)
+>  		phy->identify.target_port_protocols = SAS_PROTOCOL_SMP;
+>  	phy->sas_phy.oob_mode = SAS_OOB_MODE;
+>  	sas_ha->notify_phy_event(&phy->sas_phy, PHYE_OOB_DONE);
+> --
+> 1.7.7.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-OK.  I'm not quite sure how to generate a patchset or a
-git commit-set that applies cleanly against two different
-trees (3.2 and linux-next), but I guess common sense should
-tell me that, since the patches have to go through staging-next
-first and you are applying patches rather than git-pull'ing,
-staging-next should be my preferred choice for a base.
-
-Do you want me to resend all 6 patches?  The only patch
-affected is patch 6 of 6.  All others apply cleanly.
-Let me know and I will resend one or all tomorrow.
-
-Sorry for the noise/hassle, but this is a learning process...
-
-Dan
