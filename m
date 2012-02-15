@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab2BOWAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 17:00:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53965 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab2BOWAo (ORCPT
+	id S1755871Ab2BOWBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 17:01:52 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:35691 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755071Ab2BOWBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 17:00:44 -0500
-Date: Thu, 16 Feb 2012 02:00:40 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "hpanvin@gmail.com" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [patch 2/4] syscalls, x86: Add __NR_kcmp syscall v8
-Message-ID: <20120215220040.GA26668@moon>
-References: <20120213164822.227219834@openvz.org>
- <20120213165137.903318774@openvz.org>
- <20120214151312.92afd44a.akpm@linux-foundation.org>
- <20120215065245.GB1894@moon>
- <bb6e15c8-1b6b-4809-a796-cdfac39bc8b4@email.android.com>
- <20120215070427.GE1894@moon>
- <20120215072454.GA4533@moon>
- <20120215135313.0e22d1bf.akpm@linux-foundation.org>
+	Wed, 15 Feb 2012 17:01:50 -0500
+Message-ID: <4F3C2B28.7030802@xenotime.net>
+Date: Wed, 15 Feb 2012 14:01:12 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215135313.0e22d1bf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: linux-next: Tree for Feb 15 (decnet)
+References: <20120215160352.60be31b78879628be7e446b8@canb.auug.org.au>	<4F3C0CE3.6020708@xenotime.net> <20120215.163801.2243433584488421039.davem@davemloft.net>
+In-Reply-To: <20120215.163801.2243433584488421039.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 01:53:13PM -0800, Andrew Morton wrote:
-> That worked.
+On 02/15/2012 01:38 PM, David Miller wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> Date: Wed, 15 Feb 2012 11:52:03 -0800
 > 
-> What's with all those warnings, btw?
+>> On 02/14/2012 09:03 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20120214:
+>>
+>>
+>> on x86_64:
+>>
+>>   CC      net/decnet/dn_nsp_in.o
+>> In file included from /next/linux-next-20120215/net/decnet/dn_nsp_in.c:75:0:
+>> /next/linux-next-20120215/include/net/dn.h:195:65: warning: 'struct flowidn' declared inside parameter list
 > 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: syscalls-x86-add-__nr_kcmp-syscall-v8-fix-fix-fix
-> 
-> kcmp_test.c: In function 'main':
-> kcmp_test.c:69: warning: format '%2d' expects type 'int', but argument 4 has type 'long int'
+> I can't reproduce this in the net-next tree using your config but I can
+> certainly fix it, as follows :-)
 
-Indeed it's nit, wonder why I've not beed warned by compiler before
-(nothing serious since results do fit integer anyway but _must_
- be fixed). I'll update shortly. Sorry for that.
+Yes, you fixed it.  Thanks.
 
-	Cyrill
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+
+> --------------------
+> decnet: net/dn.h needs net/flow.h
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> ---
+>  include/net/dn.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/net/dn.h b/include/net/dn.h
+> index 298521e..814af0b 100644
+> --- a/include/net/dn.h
+> +++ b/include/net/dn.h
+> @@ -3,6 +3,7 @@
+>  
+>  #include <linux/dn.h>
+>  #include <net/sock.h>
+> +#include <net/flow.h>
+>  #include <asm/byteorder.h>
+>  #include <asm/unaligned.h>
+>  
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
