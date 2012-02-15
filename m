@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab2BOTbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 14:31:44 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57284 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab2BOTbm (ORCPT
+	id S1755013Ab2BOTeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 14:34:17 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:45081 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751251Ab2BOTeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 14:31:42 -0500
-Date: Wed, 15 Feb 2012 14:21:06 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: pull request: wireless 2012-02-15
-Message-ID: <20120215192106.GI4379@tuxdriver.com>
+	Wed, 15 Feb 2012 14:34:16 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HK3fdK4VM1kT1NgoO4CSN8poYEUXbBPP1aan0vnZygVo4Wy
+ C2S6kRlPHo0ga8PzN6NUzF36M34Vpk6yb.qs4V1wOTHkfLJRfFhrI74t9RyG
+ bjTvJm.GRu05HcBYSq7DNJedks7R_a4O4vQW_BAgaKXE8hJEB0JXHb.j0kTX
+ bYdhEsPWkmD0aouYg0ahEWm_PbR5aJM4CBiqWBsFdn7l11QG8zMr54RIlVGi
+ 8KPrYWRDvkvfsZObskXo7ROR_13gFqjC0_rPi8b0YPYQgxjdawaM8ZlkRoNS
+ xO6Siuid15MxSooaV9GQGbUpBazKemLSbhWz8mCy3avFkBo4JeTylDzI77_y
+ K4eNEMJrpyq4EX8RQNIOpbCSMHvqXyvnRZLdyTFyez8xQcUiZhWZk8eDlMn2
+ CJClCFvzifVM6cGuLMnW1uhTfCBIOuACFAW41
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 15 Feb 2012 13:34:11 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Xi Wang <xi.wang@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: Uninline kcalloc
+In-Reply-To: <07635976-4FC3-4E14-9B94-CE4D6446FD4E@gmail.com>
+Message-ID: <alpine.DEB.2.00.1202151324060.28225@router.home>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda>
+ <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home> <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com>
+ <alpine.DEB.2.00.1202141329360.24883@router.home> <20120214124518.f42bc03e.akpm@linux-foundation.org> <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com> <alpine.DEB.2.00.1202141503470.29019@router.home> <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com>
+ <alpine.DEB.2.00.1202141605240.32407 @router.home> <07635976-4FC3-4E14-9B94-CE4D6446FD4E@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 Feb 2012, Xi Wang wrote:
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> for overflow, one has to write:
+>
+>         size_t s = calculate_array_size(n, size);
+>         if (s)
+>                 p = kmalloc(s, ...);
+>
+> This "if" thing is just too verbose --- you need three lines to
+> allocate an array.
+>
+> We could change calculate_array_size() to return ULONG_MAX or some
+> large number with which kmalloc() would fail.  Then one would write:
 
-commit 33b5d30cd8b200024d55ac5830c9efde1102ef4c
+Any allocation larger than MAX_ORDER << PAGE_SHIFT will fail since the
+page allocator cannot serve larger contigous pages.
 
-Dave,
 
-Here are two more fixes intended for 3.3.  One changes the non-error
-return code for a routine in rtlwifi -- it had been masking an error
-condition that could lead to a divide by zero.  The other moves a
-routine inside of a locked critical section to avoid a "BUG: rwlock bad
-magic".
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit 3013dc0cceb9baaf25d5624034eeaa259bf99004:
-
-  3c59x: shorten timer period for slave devices (2012-02-14 16:28:23 -0500)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Mohammed Shafi Shajakhan (1):
-      mac80211: Fix a rwlock bad magic bug
-
-Simon Graham (1):
-      rtlwifi: Modify rtl_pci_init to return 0 on success
-
- drivers/net/wireless/rtlwifi/pci.c |    4 ++--
- net/mac80211/main.c                |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlw=
-ifi/pci.c
-index 39e0907..9245d88 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -1501,7 +1501,7 @@ static int rtl_pci_init(struct ieee80211_hw *hw, stru=
-ct pci_dev *pdev)
- 		return err;
- 	}
-=20
--	return 1;
-+	return 0;
- }
-=20
- static int rtl_pci_start(struct ieee80211_hw *hw)
-@@ -1870,7 +1870,7 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 	}
-=20
- 	/* Init PCI sw */
--	err =3D !rtl_pci_init(hw, pdev);
-+	err =3D rtl_pci_init(hw, pdev);
- 	if (err) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
- 			 ("Failed to init PCI.\n"));
-diff --git a/net/mac80211/main.c b/net/mac80211/main.c
-index 0a0d94a..b142bd4 100644
---- a/net/mac80211/main.c
-+++ b/net/mac80211/main.c
-@@ -910,6 +910,8 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
- 		wiphy_debug(local->hw.wiphy, "Failed to initialize wep: %d\n",
- 			    result);
-=20
-+	ieee80211_led_init(local);
-+
- 	rtnl_lock();
-=20
- 	result =3D ieee80211_init_rate_ctrl_alg(local,
-@@ -931,8 +933,6 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
-=20
- 	rtnl_unlock();
-=20
--	ieee80211_led_init(local);
--
- 	local->network_latency_notifier.notifier_call =3D
- 		ieee80211_max_network_latency;
- 	result =3D pm_qos_add_notifier(PM_QOS_NETWORK_LATENCY,
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPPAWiAAoJEJctW/TcYTgGuXMP/RwrggZXacj6oA5OeYAd9B6I
-7g65j857BXlhHCDwOcgJGIXEzYtJkGRuqVumqUurHeEyXQfJAti6Y9ggOTSE9bGd
-kJ781QxP3bR8VixiFK2Ceg4p2iJQAumdYqGUEqe8kV74/tPHi/gyIYee7W8usmy3
-iRZ4pyxEC0w4aInzXaECXQX9mOreYWlEiIss7WfPknmC9bmqhAyf6AoBodaON2eU
-1zb4Qh/1bG7fAEYuceYd2v4vPqWpkiK5Q5gHuBo5h3lYFjfOlcZN1BXqogp4AdAd
-tnIAkyE5TCSxnd8gtgnR7eLT1XCD8Lhh1OmCIWAGecNV/XvzKB+Xk6pNBCqeCOhm
-PsJickf+o8Ne2xdyOF0jdqq6KXbf6OS1zQUrvOsNls7YmVOK31NutppqVWop13Au
-Vowbj/nqoVitd6vsW7Mbq5ibVqCp9/QIdV3p5L/6atNIk2X4J0vN1hN8C+nUpd1z
-6yf0ZFnkPG0laRKmEr6J4UodIIFv3Axuhmb8HVp6/sh+oHxXCfhgU+u5M8LzMSUX
-LZQDsvj3CK4s9NuF1U9Eyb3+H/M9h344l+GGrkrCifVV3RGqzZV9UAUyp1bUCYgm
-jQC9/b74+oHcJrXv7LcM6wySXth40Tog5v4hDyrJgJirO+0I6ZKB1azbKoJ2fyIQ
-bmlS8PxVJl/NLMtZBAjD
-=p7KM
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
