@@ -1,78 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab2BOV2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 16:28:18 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39780 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab2BOV2Q (ORCPT
+	id S1755752Ab2BOVaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 16:30:05 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60892 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab2BOVaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 16:28:16 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 15 Feb 2012 22:27:41 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 09/11] firewire-sbp-target: Add
- sbp_target_agent.{c,h}
-Message-ID: <20120215222741.6b7388dc@stein>
-In-Reply-To: <1329317248-94128-10-git-send-email-bootc@bootc.net>
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-10-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+	Wed, 15 Feb 2012 16:30:00 -0500
+Date: Wed, 15 Feb 2012 16:29:55 -0500 (EST)
+Message-Id: <20120215.162955.1766444494566592539.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 15 Feb 2012 13:29:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 15 Chris Boot wrote:
-> --- /dev/null
-> +++ b/drivers/target/sbp/sbp_target_agent.c
-[...]
-> +static int tgt_agent_rw_orb_pointer(struct fw_card *card,
-> +	int tcode, int generation, void *data,
-> +	struct sbp_target_agent *agent)
-> +{
-> +	struct sbp2_pointer *ptr = data;
-> +	int ret;
-> +
-> +	switch (tcode) {
-> +	case TCODE_WRITE_BLOCK_REQUEST:
-> +		smp_wmb();
-> +		atomic_cmpxchg(&agent->state,
-> +				AGENT_STATE_RESET, AGENT_STATE_SUSPENDED);
-> +		smp_wmb();
-> +		if (atomic_cmpxchg(&agent->state,
-> +					AGENT_STATE_SUSPENDED,
-> +					AGENT_STATE_ACTIVE)
-> +				!= AGENT_STATE_SUSPENDED)
-> +			return RCODE_CONFLICT_ERROR;
-> +		smp_wmb();
 
-Why the double state change?
+1) VETH_INFO_PEER netlink attribute needs to have it's size validated,
+   from Thomas Graf.
 
-And as asked at the patch, which writes are the barriers meant to order,
-and how does the corresponding read side look like?  Or are these barriers
-not actually needed after all?
+2) 'poll' module option of bnx2x driver crashes the machine, just remove
+   it.  From Michal Schmidt.
 
-[...]
-> +void sbp_target_agent_unregister(struct sbp_target_agent *agent)
-> +{
-> +	if (atomic_read(&agent->state) == AGENT_STATE_ACTIVE)
-> +		flush_work_sync(&agent->work);
-> +
-> +	fw_core_remove_address_handler(&agent->handler);
-> +	kfree(agent);
-> +}
+3) ks8851_mll driver reads the irq number from two places, but only
+   initializes one of them, oops.  Use only one location and fix
+   this problem, from Jan Weitzel.
 
-So, asking once more without having read the code in full yet:  Are you
-sure that agent->state is not going to change anymore after you tested it
-here?
--- 
-Stefan Richter
--=====-===-- --=- -====
-http://arcgraph.de/sr/
+4) Fix buffer overrun and unicast sterring bugs in mellanox
+   mlx4 driver, from Eugenia Emantayev.
+
+5) Swapped kcalloc() args in RxRPC and mlx4, from Axel Lin.
+
+6) PHY MDIO device name regression fixes from Florian Fainelli.
+
+7) If the wake event IRQ line is different from the netdevice one,
+   we have to properly route it to the stmmac interrupt handler.
+   From Francesco Virlinzi.
+
+8) Fix rwlock lock initialization ordering bug in mac80211, from
+   Mohammed Shafi Shajakhan.
+
+9) TCP lost_cnt can get out of sync, and in fact go negative, in
+   certain circumstances.  Fix the way we specify what sequence
+   range to operate on in tcp_sacktag_one() to fix this bug.
+   From Neal Cardwell.
+
+Please pull, thanks a lot!
+
+The following changes since commit c38e23456278e967f094b08247ffc3711b1029b2:
+
+  i387: fix sense of sanity check (2012-02-15 08:05:18 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Axel Lin (2):
+      mlx4: Fix kcalloc parameters swapped
+      RxRPC: Fix kcalloc parameters swapped
+
+Cousson, Benoit (1):
+      ks8851: Fix NOHZ local_softirq_pending 08 warning
+
+Eric Dumazet (3):
+      bnx2x: fix bnx2x_storm_stats_update() on big endian
+      netpoll: netpoll_poll_dev() should access dev->flags
+      3c59x: shorten timer period for slave devices
+
+Eugenia Emantayev (3):
+      mlx4: fix buffer overrun
+      mlx4: fix QP tree trashing
+      mlx4: add unicast steering entries to resource_tracker
+
+Florian Fainelli (5):
+      cpmac: fix PHY name to match MDIO bus name
+      bcm63xx-enet: fix PHY name to match MDIO bus name
+      fec: fix PHY name to match fixed MDIO bus name
+      octeon: fix PHY name to match MDIO bus name
+      ixp4xx-eth: fix PHY name to match MDIO bus name
+
+Francesco Virlinzi (1):
+      stmmac: request_irq when use an ext wake irq line (v2)
+
+Giuseppe CAVALLARO (3):
+      stmmac: do not discard frame on dribbling bit assert
+      stmmac: move hw init in the probe (v2)
+      stmmac: update the driver version to Feb 2012 (v2)
+
+Jan Weitzel (1):
+      net/ethernet: ks8851_mll fix irq handling
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Michal Schmidt (1):
+      bnx2x: remove the 'poll' module option
+
+Mohammed Shafi Shajakhan (1):
+      mac80211: Fix a rwlock bad magic bug
+
+Neal Cardwell (3):
+      tcp: allow tcp_sacktag_one() to tag ranges not aligned with skbs
+      tcp: fix range tcp_shifted_skb() passes to tcp_sacktag_one()
+      tcp: fix tcp_shifted_skb() adjustment of lost_cnt_hint for FACK
+
+Simon Graham (1):
+      rtlwifi: Modify rtl_pci_init to return 0 on success
+
+Thomas Graf (1):
+      veth: Enforce minimum size of VETH_INFO_PEER
+
+Tim Gardner (1):
+      ipheth: Add iPhone 4S
+
+ drivers/net/ethernet/3com/3c59x.c                  |    2 +-
+ drivers/net/ethernet/broadcom/bcm63xx_enet.c       |    2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |   17 +--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c  |    8 +-
+ drivers/net/ethernet/freescale/fec.c               |    2 +-
+ drivers/net/ethernet/mellanox/mlx4/eq.c            |    5 +-
+ .../net/ethernet/mellanox/mlx4/resource_tracker.c  |   21 ++-
+ drivers/net/ethernet/micrel/ks8851.c               |    2 +-
+ drivers/net/ethernet/micrel/ks8851_mll.c           |   14 +-
+ drivers/net/ethernet/octeon/octeon_mgmt.c          |    4 +-
+ drivers/net/ethernet/stmicro/stmmac/common.h       |    1 +
+ drivers/net/ethernet/stmicro/stmmac/enh_desc.c     |    2 +-
+ drivers/net/ethernet/stmicro/stmmac/norm_desc.c    |    2 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    5 +-
+ .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    7 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  205 ++++++++++----------
+ drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c   |    6 +-
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   23 +--
+ drivers/net/ethernet/ti/cpmac.c                    |    4 +-
+ drivers/net/ethernet/xscale/ixp4xx_eth.c           |    3 +-
+ drivers/net/usb/ipheth.c                           |    5 +
+ drivers/net/veth.c                                 |    4 +-
+ drivers/net/wireless/rtlwifi/pci.c                 |    4 +-
+ net/core/netpoll.c                                 |    2 +-
+ net/ipv4/tcp_input.c                               |   45 +++--
+ net/mac80211/main.c                                |    4 +-
+ net/rxrpc/ar-key.c                                 |    4 +-
+ 27 files changed, 212 insertions(+), 191 deletions(-)
