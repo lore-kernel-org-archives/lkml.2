@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2BOV2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 16:28:01 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16613 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab2BOV17 convert rfc822-to-8bit (ORCPT
+	id S1755765Ab2BOV2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 16:28:18 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39780 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab2BOV2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 16:27:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 15 Feb 2012 13:27:44 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Feb 2012 13:27:43 -0800
-Subject: RE: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Thread-Topic: [PATCH v3 00/10] Add tegra30 support for secondary cores
-Thread-Index: AcznhVHdlLxNnIPPSBirvu5EHMcA3gEoxVIw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF178FACB954@HQMAIL01.nvidia.com>
-References: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1328831277-21002-1-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 15 Feb 2012 16:28:16 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 15 Feb 2012 22:27:41 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 09/11] firewire-sbp-target: Add
+ sbp_target_agent.{c,h}
+Message-ID: <20120215222741.6b7388dc@stein>
+In-Reply-To: <1329317248-94128-10-git-send-email-bootc@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-10-git-send-email-bootc@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Thursday, February 09, 2012 4:48 PM:
-> This patchset introduces support for secondary cores on tegra30. It also
-> introduces some functions for the flowcontroller and adds basic support for
-> tegra30 powerdomains.
+On Feb 15 Chris Boot wrote:
+> --- /dev/null
+> +++ b/drivers/target/sbp/sbp_target_agent.c
+[...]
+> +static int tgt_agent_rw_orb_pointer(struct fw_card *card,
+> +	int tcode, int generation, void *data,
+> +	struct sbp_target_agent *agent)
+> +{
+> +	struct sbp2_pointer *ptr = data;
+> +	int ret;
+> +
+> +	switch (tcode) {
+> +	case TCODE_WRITE_BLOCK_REQUEST:
+> +		smp_wmb();
+> +		atomic_cmpxchg(&agent->state,
+> +				AGENT_STATE_RESET, AGENT_STATE_SUSPENDED);
+> +		smp_wmb();
+> +		if (atomic_cmpxchg(&agent->state,
+> +					AGENT_STATE_SUSPENDED,
+> +					AGENT_STATE_ACTIVE)
+> +				!= AGENT_STATE_SUSPENDED)
+> +			return RCODE_CONFLICT_ERROR;
+> +		smp_wmb();
 
-The code looks fine to me. I do notice the following when running
-"shutdown -h now":
+Why the double state change?
 
-[   27.762124] SMP: failed to stop secondary CPUs
+And as asked at the patch, which writes are the barriers meant to order,
+and how does the corresponding read side look like?  Or are these barriers
+not actually needed after all?
 
-So, this patch series makes the secondary cores boot OK, but not shut
-down it appears. Is that expected? It's probably something we can fix
-with a following on patch rather than re-spinning this series though?
+[...]
+> +void sbp_target_agent_unregister(struct sbp_target_agent *agent)
+> +{
+> +	if (atomic_read(&agent->state) == AGENT_STATE_ACTIVE)
+> +		flush_work_sync(&agent->work);
+> +
+> +	fw_core_remove_address_handler(&agent->handler);
+> +	kfree(agent);
+> +}
 
+So, asking once more without having read the code in full yet:  Are you
+sure that agent->state is not going to change anymore after you tested it
+here?
 -- 
-nvpublic
-
+Stefan Richter
+-=====-===-- --=- -====
+http://arcgraph.de/sr/
