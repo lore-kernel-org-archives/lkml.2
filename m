@@ -1,151 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab2BPGoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 01:44:55 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57079 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab2BPGox (ORCPT
+	id S1757315Ab2BPG5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 01:57:21 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33167 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757249Ab2BPG5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 01:44:53 -0500
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-Cc: Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 2/2] scsi: retrieve cache mode using ATA_16 cmd if normal routine fails
-Date: Thu, 16 Feb 2012 12:22:21 +0530
-Message-Id: <1329375141-6944-1-git-send-email-amit.sahrawat83@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Thu, 16 Feb 2012 01:57:18 -0500
+Message-ID: <4F3CA8CA.8020004@openvz.org>
+Date: Thu, 16 Feb 2012 10:57:14 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: rework inactive_ratio logic
+References: <20120215162442.13588.21790.stgit@zurg> <20120216103842.0c3e9258.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120216103842.0c3e9258.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been observed that a number of USB HDD's do not respond correctly
-to SCSI mode sense command(retrieve caching pages) which results in their
-Write Cache being discarded by queue requests i.e., WCE if left set to
-'0'(disabled).
-This results in a number of Filesystem corruptions, when the device
-is unplugged abruptly.
+KAMEZAWA Hiroyuki wrote:
+> On Wed, 15 Feb 2012 20:24:42 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> This patch adds mem_cgroup->inactive_ratio calculated from hierarchical memory limit.
+>> It updated at each limit change before shrinking cgroup to this new limit.
+>> Ratios for all child cgroups are updated too, because parent limit can affect them.
+>> Update precedure can be greatly optimized if its performance becomes the problem.
+>> Inactive ratio for unlimited or huge limit does not matter, because we'll never hit it.
+>>
+>> At global reclaim always use global ratio from zone->inactive_ratio.
+>> At mem-cgroup reclaim use inactive_ratio from target memory cgroup,
+>> this is cgroup which hit its limit and cause this reclaimer invocation.
+>>
+>> Thus, global memory reclaimer will try to keep ratio for all lru lists in zone
+>> above one mark, this guarantee that total ratio in this zone will be above too.
+>> Meanwhile mem-cgroup will do the same thing for its lru lists in all zones, and
+>> for all lru lists in all sub-cgroups in hierarchy.
+>>
+>> Also this patch removes some redundant code.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> Hmm, the main purpose of this patch is to remove calculation per get_scan_ratio() ?
 
-So, in order to identify the devices correctly - give it
-a last try using ATA_16 cmd after failure from normal routine.
+Technically, it was preparation for "mm: unify inactive_list_is_low()" from "memory book keeping" patchset.
+So, actually its main purpose is moving all active/inactive size calculation to mm/vmscan.c
 
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
----
- drivers/ata/libata-scsi.c |   39 +++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c         |   18 ++++++++++++++++++
- include/linux/libata.h    |    1 +
- 3 files changed, 58 insertions(+), 0 deletions(-)
+Also I trying to figure out most sane logic for inactive_ratio calculation,
+currently global memory reclaimer sometimes uses memcg-calculated ratio, it looks strange.
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 508a60b..218df4f 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -561,6 +561,45 @@ error:
- 	return rc;
- }
- 
-+int ata_get_cachestatus(struct scsi_device *scsidev)
-+{
-+	int rc = 0;
-+	u8 scsi_cmd[MAX_COMMAND_SIZE] = {0};
-+	u8 *sensebuf = NULL, *argbuf = NULL;
-+	enum dma_data_direction data_dir;
-+	int cmd_result;
-+	sensebuf = kzalloc(SCSI_SENSE_BUFFERSIZE, GFP_NOIO);
-+	if (!sensebuf)
-+		return rc;
-+
-+	argbuf = kzalloc(ATA_SECT_SIZE, GFP_KERNEL);
-+	if (!argbuf)
-+		goto error;
-+
-+	scsi_cmd[0] = ATA_16;
-+	scsi_cmd[1]  = (4 << 1); /* PIO Data-in */
-+	scsi_cmd[2]  = 0x0e;     /* no off.line or cc, read from dev,
-+				block count in sector count field */
-+	data_dir = DMA_FROM_DEVICE;
-+	scsi_cmd[14] = ATA_CMD_ID_ATA;
-+
-+	if (!scsi_execute(scsidev, scsi_cmd, data_dir, argbuf, ATA_SECT_SIZE,
-+					sensebuf, (10*HZ), 5, 0, NULL)) {
-+		/*
-+		 * 6th Bit in Word 85 Corresponds to Write Cache
-+		 * being Enabled/disabled, Word 85 represnets the
-+		 * features supported
-+		 */
-+		 if (le16_to_cpu(((unsigned short *)argbuf)[85]) & 0x20)
-+			rc = 1;
-+	}
-+
-+error:
-+	kfree(sensebuf);
-+	kfree(argbuf);
-+	return rc;
-+}
-+
- /**
-  *	ata_task_ioctl - Handler for HDIO_DRIVE_TASK ioctl
-  *	@scsidev: Device to which we are issuing command
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index c691fb5..3ca507a 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -50,6 +50,11 @@
- #include <linux/string_helpers.h>
- #include <linux/async.h>
- #include <linux/slab.h>
-+
-+#ifdef CONFIG_ATA
-+#include <linux/libata.h>
-+#endif
-+
- #include <linux/pm_runtime.h>
- #include <asm/uaccess.h>
- #include <asm/unaligned.h>
-@@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 		if (modepage == 0x3F) {
- 			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
- 				  "present\n");
-+#ifdef CONFIG_ATA
-+			goto WCE_USING_ATA;
-+#else
- 			goto defaults;
-+#endif
- 		} else if ((buffer[offset] & 0x3f) != modepage) {
- 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
- 			goto defaults;
-@@ -2149,6 +2158,15 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 				  "Uses READ/WRITE(6), disabling FUA\n");
- 			sdkp->DPOFUA = 0;
- 		}
-+#ifdef CONFIG_ATA
-+WCE_USING_ATA:
-+		if (!sdp->removable && !sdkp->WCE) {
-+			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache"
-+				" enable/disable using ATA command\n");
-+			sdkp->WCE = ata_get_cachestatus(sdp);
-+		}
-+#endif
-+
- 
- 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
- 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index cafc09a..20c5c33 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -990,6 +990,7 @@ extern void ata_host_init(struct ata_host *, struct device *,
- 			  unsigned long, struct ata_port_operations *);
- extern int ata_scsi_detect(struct scsi_host_template *sht);
- extern int ata_scsi_ioctl(struct scsi_device *dev, int cmd, void __user *arg);
-+extern int ata_get_cachestatus(struct scsi_device *scsidev);
- extern int ata_scsi_queuecmd(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- extern int ata_sas_scsi_ioctl(struct ata_port *ap, struct scsi_device *dev,
- 			    int cmd, void __user *arg);
--- 
-1.7.2.3
+>> ---
+>>   include/linux/memcontrol.h |   16 ++------
+>>   mm/memcontrol.c            |   85 ++++++++++++++++++++++++--------------------
+>>   mm/vmscan.c                |   82 +++++++++++++++++++++++-------------------
+>>   3 files changed, 93 insertions(+), 90 deletions(-)
+>>   static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+>>                                unsigned long long val)
+>>   {
 
+<cut>
+
+>> @@ -3422,6 +3416,7 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+>>                        else
+>>                                memcg->memsw_is_minimum = false;
+>>                }
+>> +             mem_cgroup_update_inactive_ratio(memcg, val);
+>>                mutex_unlock(&set_limit_mutex);
+>>
+>>                if (!ret)
+>> @@ -3439,6 +3434,12 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+>>        if (!ret&&  enlarge)
+>>                memcg_oom_recover(memcg);
+>>
+>> +     if (ret) {
+>> +             mutex_lock(&set_limit_mutex);
+>> +             mem_cgroup_update_inactive_ratio(memcg, RESOURCE_MAX);
+>> +             mutex_unlock(&set_limit_mutex);
+>> +     }
+>
+> Why RESOUECE_MAX ?
+
+resize was failed, so we return back normal value calculated from the current limit.
+target == RESOURCE_MAX isn't clip limit: min(RESOURCE_MAX, limit) == limit
+
+>
+> Thanks,
+> -Kame
+>
