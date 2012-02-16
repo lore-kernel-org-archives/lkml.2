@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2BPFcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:32:11 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:35953 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab2BPFcJ (ORCPT
+	id S1752507Ab2BPFcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:32:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47839 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2BPFcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:32:09 -0500
-Date: Thu, 16 Feb 2012 16:32:00 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 3.3
-Message-ID: <20120216053200.GA20581@gondor.apana.org.au>
-References: <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au> <20120214033504.GA26895@gondor.apana.org.au>
+	Thu, 16 Feb 2012 00:32:46 -0500
+Date: Wed, 15 Feb 2012 22:32:43 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 24/25] irq_domain: remove "hint" when allocating irq
+ numbers
+Message-ID: <20120216053243.GM25779@ponder.secretlab.ca>
+References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
+ <1327700179-17454-25-git-send-email-grant.likely@secretlab.ca>
+ <4F316848.4060100@atmel.com>
+ <4F3BC97C.6030203@atmel.com>
+ <20120215202145.GH25779@ponder.secretlab.ca>
+ <20120215215001.GA30946@r65073-Latitude-D630>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120214033504.GA26895@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120215215001.GA30946@r65073-Latitude-D630>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Wed, Feb 15, 2012 at 01:50:02PM -0800, Shawn Guo wrote:
+> On Wed, Feb 15, 2012 at 01:21:45PM -0700, Grant Likely wrote:
+> > On Wed, Feb 15, 2012 at 04:04:28PM +0100, Nicolas Ferre wrote:
+> > > On 02/07/2012 07:07 PM, Nicolas Ferre :
+> > > > On 01/27/2012 10:36 PM, Grant Likely :
+> > > >> The 'hint' used to try and line up irq numbers with hw irq numbers is
+> > > >> rather a hack and not very useful.  Now that /proc/interrupts also outputs
+> > > >> the hwirq number, it is even less useful to keep around the 'hint' heuristic.
+> > > >>
+> > > >> This patch removes it.
+> > > > 
+> > > > Grant,
+> > > > 
+> > > > While trying your patch series in conjunction with Rob one, I do not
+> > > > find this patch in your irqdomain/next branch (and a couple of others).
+> > > > Can you tell me if this v3 series is available as a git tree?
+> > > 
+> > > I am still interested by patch 24-25 of this series but still cannot
+> > > find them in your irqdomain/next branch:
+> > > Are they also expected to join the 3.4 merge window material?
+> > 
+> > I've held off on putting them in irqdomain/next because they are a bit more
+> > risky than the other patches, and I want an explicit ack from Ben for patches
+> > 24 & 25.  However, that shouldn't really cause any issues since the changes
+> > in 24 & 25 don't impact the irq_domain functionality or API.  They are just
+> > optimizations.
+> > 
+> I'm seeing that patch 24 does impact on irq_domain functionality
+> a little bit.  On next tree which has no this patch yet,
+> irq_create_mapping can reasonably create virq in range 1..15, while
+> irq_find_mapping will only try to find the virq from 16
+> (NUM_ISA_INTERRUPTS).  This will result in that any hwirq that is < 16
+> gets multiple entries in the mapping table with different virq numbers
+> mapped to the same one hwirq.
 
-Dave reported that even with the latest stack bloat reduction
-fix for i386, the stack usage of sha512 still exceeded 1024 bytes
-on sparc32.  However, with Alexey's ror64 patch applied, the stack
-usage goes back down to a more respectable 824.
+That's a bug then.  The implementation should work without patch 24.  Does
+this patch fix it?
 
-So I've moved the ror64 patch from cryptodev to crypto and I'm
-pushing it to you now.
+---
+
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 2c1d6f8..2d3dfff 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -516,8 +516,8 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 		return irq_domain_legacy_revmap(domain, hwirq);
  
-Please pull from
+ 	/* Slow path does a linear search of the map */
+-	if (hint < NUM_ISA_INTERRUPTS)
+-		hint = NUM_ISA_INTERRUPTS;
++	if (hint == 0)
++		hint = 1;
+ 	i = hint;
+ 	do {
+ 		struct irq_data *data = irq_get_irq_data(i);
+@@ -525,7 +525,7 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 			return i;
+ 		i++;
+ 		if (i >= irq_virq_count)
+-			i = NUM_ISA_INTERRUPTS;
++			i = 1
+ 	} while(i != hint);
+ 	return 0;
+ }
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Alexey Dobriyan (1):
-      crypto: sha512 - use standard ror64()
-
- crypto/sha512_generic.c |   13 ++++---------
- include/linux/bitops.h  |   20 ++++++++++++++++++++
- 2 files changed, 24 insertions(+), 9 deletions(-)
- 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
