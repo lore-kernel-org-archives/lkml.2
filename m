@@ -1,275 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab2BPDws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 22:52:48 -0500
-Received: from ozlabs.org ([203.10.76.45]:54564 "EHLO ozlabs.org"
+	id S1753584Ab2BPEMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 23:12:37 -0500
+Received: from ozlabs.org ([203.10.76.45]:52256 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756963Ab2BPDv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 22:51:57 -0500
+	id S1751048Ab2BPEMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 23:12:35 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Message-ID: <1329364286.27544.rusty@rustcorp.com.au>
-Date: Thu, 16 Feb 2012 14:21:26 +1030
-CC: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/5] arch/ia64: remove references to cpu_*_map.
-Cc: srivatsa.bhat@linux.vnet.ibm.com
+To: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@tglx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: anton@samba.org
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mike Travis <travis@sgi.com>
+Subject: cpumask: reduce cpumask allocation size for CONFIG_CPUMASK_OFFSTACK.
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 16 Feb 2012 14:41:55 +1030
+Message-ID: <87d39fbeno.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+I've had these sitting in my queue for almost 3 years, but since Thomas
+and Linus converted mm_struct to a cpumask_var_t, it's gotten easier.
+Refreshed them on top of -tip.
 
-This was marked as obsolete for quite a while now.. Now it is time to remove
-it altogether. And while doing this, get rid of first_cpu() as well.
-Also, remove the redundant setting of cpu_online_mask in smp_prepare_cpus()
-because the generic code would have already set cpu 0 in cpu_online_mask.
+The aim is to allow 'struct cpumask' to be undefined (but declared) if
+CONFIG_CPUMASK_OFFSTACK is set.  This avoids assignment, pass-by-value,
+etc, so we can finally safely allocate nr_cpu_ids bits instead of
+NR_CPUS.
 
-Reported-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- arch/ia64/kernel/acpi.c     |    6 +++---
- arch/ia64/kernel/irq_ia64.c |    8 ++++----
- arch/ia64/kernel/mca.c      |    6 ++++--
- arch/ia64/kernel/msi_ia64.c |    4 ++--
- arch/ia64/kernel/setup.c    |    2 +-
- arch/ia64/kernel/smp.c      |    2 +-
- arch/ia64/kernel/smpboot.c  |   19 +++++++------------
- arch/ia64/kernel/topology.c |    3 ++-
- 8 files changed, 24 insertions(+), 26 deletions(-)
+The last holdout is 'struct task_struct', and we use a similar
+alloc-at-end style to mm_struct.
 
-diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-index 5207035..2ad7328 100644
---- a/arch/ia64/kernel/acpi.c
-+++ b/arch/ia64/kernel/acpi.c
-@@ -844,7 +844,7 @@ early_param("additional_cpus", setup_additional_cpus);
-  * are onlined, or offlined. The reason is per-cpu data-structures
-  * are allocated by some modules at init time, and dont expect to
-  * do this dynamically on cpu arrival/departure.
-- * cpu_present_map on the other hand can change dynamically.
-+ * cpu_present_mask on the other hand can change dynamically.
-  * In case when cpu_hotplug is not compiled, then we resort to current
-  * behaviour, which is cpu_possible == cpu_present.
-  * - Ashok Raj
-@@ -922,7 +922,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
- 
- 	acpi_map_cpu2node(handle, cpu, physid);
- 
--	cpu_set(cpu, cpu_present_map);
-+	set_cpu_present(cpu, true);
- 	ia64_cpu_to_sapicid[cpu] = physid;
- 
- 	acpi_processor_set_pdc(handle);
-@@ -941,7 +941,7 @@ EXPORT_SYMBOL(acpi_map_lsapic);
- int acpi_unmap_lsapic(int cpu)
- {
- 	ia64_cpu_to_sapicid[cpu] = -1;
--	cpu_clear(cpu, cpu_present_map);
-+	set_cpu_present(cpu, false);
- 
- #ifdef CONFIG_ACPI_NUMA
- 	/* NUMA specific cleanup's */
-diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
-index 782c3a35..51da772 100644
---- a/arch/ia64/kernel/irq_ia64.c
-+++ b/arch/ia64/kernel/irq_ia64.c
-@@ -118,7 +118,7 @@ static inline int find_unassigned_vector(cpumask_t domain)
- 	cpumask_t mask;
- 	int pos, vector;
- 
--	cpus_and(mask, domain, cpu_online_map);
-+	cpumask_and(&mask, &domain, cpu_online_mask);
- 	if (cpus_empty(mask))
- 		return -EINVAL;
- 
-@@ -141,7 +141,7 @@ static int __bind_irq_vector(int irq, int vector, cpumask_t domain)
- 	BUG_ON((unsigned)irq >= NR_IRQS);
- 	BUG_ON((unsigned)vector >= IA64_NUM_VECTORS);
- 
--	cpus_and(mask, domain, cpu_online_map);
-+	cpumask_and(&mask, &domain, cpu_online_mask);
- 	if (cpus_empty(mask))
- 		return -EINVAL;
- 	if ((cfg->vector == vector) && cpus_equal(cfg->domain, domain))
-@@ -179,7 +179,7 @@ static void __clear_irq_vector(int irq)
- 	BUG_ON(cfg->vector == IRQ_VECTOR_UNASSIGNED);
- 	vector = cfg->vector;
- 	domain = cfg->domain;
--	cpus_and(mask, cfg->domain, cpu_online_map);
-+	cpumask_and(&mask, &cfg->domain, cpu_online_mask);
- 	for_each_cpu_mask(cpu, mask)
- 		per_cpu(vector_irq, cpu)[vector] = -1;
- 	cfg->vector = IRQ_VECTOR_UNASSIGNED;
-@@ -322,7 +322,7 @@ void irq_complete_move(unsigned irq)
- 	if (unlikely(cpu_isset(smp_processor_id(), cfg->old_domain)))
- 		return;
- 
--	cpus_and(cleanup_mask, cfg->old_domain, cpu_online_map);
-+	cpumask_and(&cleanup_mask, &cfg->old_domain, cpu_online_mask);
- 	cfg->move_cleanup_count = cpus_weight(cleanup_mask);
- 	for_each_cpu_mask(i, cleanup_mask)
- 		platform_send_ipi(i, IA64_IRQ_MOVE_VECTOR, IA64_IPI_DM_INT, 0);
-diff --git a/arch/ia64/kernel/mca.c b/arch/ia64/kernel/mca.c
-index 8192009..26dbbd3 100644
---- a/arch/ia64/kernel/mca.c
-+++ b/arch/ia64/kernel/mca.c
-@@ -1515,7 +1515,8 @@ static void
- ia64_mca_cmc_poll (unsigned long dummy)
- {
- 	/* Trigger a CMC interrupt cascade  */
--	platform_send_ipi(first_cpu(cpu_online_map), IA64_CMCP_VECTOR, IA64_IPI_DM_INT, 0);
-+	platform_send_ipi(cpumask_first(cpu_online_mask), IA64_CMCP_VECTOR,
-+							IA64_IPI_DM_INT, 0);
- }
- 
- /*
-@@ -1591,7 +1592,8 @@ static void
- ia64_mca_cpe_poll (unsigned long dummy)
- {
- 	/* Trigger a CPE interrupt cascade  */
--	platform_send_ipi(first_cpu(cpu_online_map), IA64_CPEP_VECTOR, IA64_IPI_DM_INT, 0);
-+	platform_send_ipi(cpumask_first(cpu_online_mask), IA64_CPEP_VECTOR,
-+							IA64_IPI_DM_INT, 0);
- }
- 
- #endif /* CONFIG_ACPI */
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index 94e0db7..fb2f1e6 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -57,7 +57,7 @@ int ia64_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
- 		return irq;
- 
- 	irq_set_msi_desc(irq, desc);
--	cpus_and(mask, irq_to_domain(irq), cpu_online_map);
-+	cpumask_and(&mask, &(irq_to_domain(irq)), cpu_online_mask);
- 	dest_phys_id = cpu_physical_id(first_cpu(mask));
- 	vector = irq_to_vector(irq);
- 
-@@ -179,7 +179,7 @@ msi_compose_msg(struct pci_dev *pdev, unsigned int irq, struct msi_msg *msg)
- 	unsigned dest;
- 	cpumask_t mask;
- 
--	cpus_and(mask, irq_to_domain(irq), cpu_online_map);
-+	cpumask_and(&mask, &(irq_to_domain(irq)), cpu_online_mask);
- 	dest = cpu_physical_id(first_cpu(mask));
- 
- 	msg->address_hi = 0;
-diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-index cd57d73..4d1a550 100644
---- a/arch/ia64/kernel/setup.c
-+++ b/arch/ia64/kernel/setup.c
-@@ -486,7 +486,7 @@ mark_bsp_online (void)
- {
- #ifdef CONFIG_SMP
- 	/* If we register an early console, allow CPU 0 to printk */
--	cpu_set(smp_processor_id(), cpu_online_map);
-+	set_cpu_online(smp_processor_id(), true);
- #endif
- }
- 
-diff --git a/arch/ia64/kernel/smp.c b/arch/ia64/kernel/smp.c
-index 0bd537b..8551979 100644
---- a/arch/ia64/kernel/smp.c
-+++ b/arch/ia64/kernel/smp.c
-@@ -77,7 +77,7 @@ stop_this_cpu(void)
- 	/*
- 	 * Remove this CPU:
- 	 */
--	cpu_clear(smp_processor_id(), cpu_online_map);
-+	set_cpu_online(smp_processor_id(), false);
- 	max_xtp();
- 	local_irq_disable();
- 	cpu_halt();
-diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
-index 5590979..90916be 100644
---- a/arch/ia64/kernel/smpboot.c
-+++ b/arch/ia64/kernel/smpboot.c
-@@ -401,7 +401,7 @@ smp_callin (void)
- 	/* Setup the per cpu irq handling data structures */
- 	__setup_vector_irq(cpuid);
- 	notify_cpu_starting(cpuid);
--	cpu_set(cpuid, cpu_online_map);
-+	set_cpu_online(cpuid, true);
- 	per_cpu(cpu_state, cpuid) = CPU_ONLINE;
- 	spin_unlock(&vector_lock);
- 	ipi_call_unlock_irq();
-@@ -548,7 +548,7 @@ do_rest:
- 	if (!cpu_isset(cpu, cpu_callin_map)) {
- 		printk(KERN_ERR "Processor 0x%x/0x%x is stuck.\n", cpu, sapicid);
- 		ia64_cpu_to_sapicid[cpu] = -1;
--		cpu_clear(cpu, cpu_online_map);  /* was set in smp_callin() */
-+		set_cpu_online(cpu, false);  /* was set in smp_callin() */
- 		return -EINVAL;
- 	}
- 	return 0;
-@@ -578,8 +578,7 @@ smp_build_cpu_map (void)
- 	}
- 
- 	ia64_cpu_to_sapicid[0] = boot_cpu_id;
--	cpus_clear(cpu_present_map);
--	set_cpu_present(0, true);
-+	init_cpu_present(cpumask_of(0));
- 	set_cpu_possible(0, true);
- 	for (cpu = 1, i = 0; i < smp_boot_data.cpu_count; i++) {
- 		sapicid = smp_boot_data.cpu_phys_id[i];
-@@ -606,10 +605,6 @@ smp_prepare_cpus (unsigned int max_cpus)
- 
- 	smp_setup_percpu_timer();
- 
--	/*
--	 * We have the boot CPU online for sure.
--	 */
--	cpu_set(0, cpu_online_map);
- 	cpu_set(0, cpu_callin_map);
- 
- 	local_cpu_data->loops_per_jiffy = loops_per_jiffy;
-@@ -633,7 +628,7 @@ smp_prepare_cpus (unsigned int max_cpus)
- 
- void __devinit smp_prepare_boot_cpu(void)
- {
--	cpu_set(smp_processor_id(), cpu_online_map);
-+	set_cpu_online(smp_processor_id(), true);
- 	cpu_set(smp_processor_id(), cpu_callin_map);
- 	set_numa_node(cpu_to_node_map[smp_processor_id()]);
- 	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
-@@ -690,7 +685,7 @@ int migrate_platform_irqs(unsigned int cpu)
- 			/*
- 			 * Now re-target the CPEI to a different processor
- 			 */
--			new_cpei_cpu = any_online_cpu(cpu_online_map);
-+			new_cpei_cpu = cpumask_any(cpu_online_mask);
- 			mask = cpumask_of(new_cpei_cpu);
- 			set_cpei_target_cpu(new_cpei_cpu);
- 			data = irq_get_irq_data(ia64_cpe_irq);
-@@ -732,10 +727,10 @@ int __cpu_disable(void)
- 			return -EBUSY;
- 	}
- 
--	cpu_clear(cpu, cpu_online_map);
-+	set_cpu_online(cpu, false);
- 
- 	if (migrate_platform_irqs(cpu)) {
--		cpu_set(cpu, cpu_online_map);
-+		set_cpu_online(cpu, true);
- 		return -EBUSY;
- 	}
- 
-diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
-index 9deb21d..c64460b 100644
---- a/arch/ia64/kernel/topology.c
-+++ b/arch/ia64/kernel/topology.c
-@@ -220,7 +220,8 @@ static ssize_t show_shared_cpu_map(struct cache_info *this_leaf, char *buf)
- 	ssize_t	len;
- 	cpumask_t shared_cpu_map;
- 
--	cpus_and(shared_cpu_map, this_leaf->shared_cpu_map, cpu_online_map);
-+	cpumask_and(&shared_cpu_map,
-+				&this_leaf->shared_cpu_map, cpu_online_mask);
- 	len = cpumask_scnprintf(buf, NR_CPUS+1, &shared_cpu_map);
- 	len += sprintf(buf+len, "\n");
- 	return len;
+Of course, more testing is needed...
+Thanks,
+Rusty.
 
+The following changes since commit 6541f3667d5aa8996c8a22e8c878a59564d9590d:
 
+  Merge branch 'linus' (2012-02-14 16:01:39 +0100)
+
+are available in the git repository at:
+
+  git://github.com/rustyrussell/linux.git cpumask-tip-wip
+
+Rusty Russell (8):
+      cpumask: prepare for reduced cpumask_allocation.
+      cpumask: make task_struct.cpus_allowed a cpumask_var_t
+      cpumask: select disabling obsolete cpumask functions on x86
+      cpumask: fix lg_lock/br_lock.
+      cpumask: get rid of cpumask_t.
+      irq: remove sizeof(struct cpumask)
+      cpumask: remove struct cpumask definition when CONFIG_CPUMASK_OFFSTACK=y
+      cpumask: reduce cpumask_size
+
+ arch/arm/mach-integrator/cpu.c               |    4 +-
+ arch/ia64/kernel/cpufreq/acpi-cpufreq.c      |    4 +-
+ arch/ia64/kernel/mca.c                       |    2 +-
+ arch/ia64/kernel/salinfo.c                   |    2 +-
+ arch/ia64/kernel/topology.c                  |    2 +-
+ arch/ia64/sn/kernel/sn2/sn_hwperf.c          |    2 +-
+ arch/mips/include/asm/system.h               |    3 +-
+ arch/mips/kernel/cpufreq/loongson2_cpufreq.c |    2 +-
+ arch/mips/kernel/traps.c                     |    8 +++---
+ arch/sh/kernel/cpufreq.c                     |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce_intel.c       |    2 +-
+ drivers/acpi/processor_throttling.c          |    4 +-
+ drivers/firmware/dcdbas.c                    |    2 +-
+ fs/file_table.c                              |    2 +-
+ fs/namespace.c                               |    4 ++-
+ fs/proc/array.c                              |    4 +-
+ include/linux/cpumask.h                      |   25 ++++++++++++++++-----
+ include/linux/init_task.h                    |    9 +++++++-
+ include/linux/interrupt.h                    |    2 +-
+ include/linux/lglock.h                       |   23 +++++++++++--------
+ include/linux/mm_types.h                     |   23 +++++++++++++++++--
+ include/linux/sched.h                        |    6 ++--
+ kernel/cpuset.c                              |    4 +-
+ kernel/fork.c                                |   30 ++++++++++++++++---------
+ kernel/irq/irqdesc.c                         |    2 +-
+ kernel/rcutree_plugin.h                      |    4 +-
+ kernel/sched/core.c                          |    6 ++--
+ kernel/sched/cpupri.c                        |    4 +-
+ kernel/trace/trace_workqueue.c               |    6 ++--
+ kernel/workqueue.c                           |    2 +-
+ lib/Kconfig                                  |    8 +++++-
+ lib/cpu_rmap.c                               |    2 +-
+ lib/cpumask.c                                |    2 +
+ 33 files changed, 132 insertions(+), 75 deletions(-)
+
+commit 5fadb164e2a9e8d58e0662d803d7e43992c80a7c
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:11 2012 +1030
+
+    cpumask: prepare for reduced cpumask_allocation.
+    
+    Thomas and Linus already made CONFIG_CPUMASK_OFFSTACK use a cpumask
+    at the end of struct mm_struct, this just changes it into a bitmap
+    and allocates it using cpumask_size().
+    
+    This means it will shrink when cpumask_size() is changed to reflect
+    nr_cpu_ids not NR_CPUS.
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Thomas Gleixner <tglx@linutronix.de>
+    Cc: Linus Torvalds <torvalds@linux-foundation.org>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: anton@samba.org
+    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    Cc: Mike Travis <travis@sgi.com>
+
+ include/linux/mm_types.h |   21 +++++++++++++++++++--
+ kernel/fork.c            |   13 +++----------
+ 2 files changed, 22 insertions(+), 12 deletions(-)
+
+commit 3b40c642842881e71c70fd1496a406b53bcee62b
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:20 2012 +1030
+
+    cpumask: make task_struct.cpus_allowed a cpumask_var_t
+    
+    This turns it into a pointer for everyone.  No change for those
+    already using the tsk_cpus_allowed() accessor; I've enhanced some of
+    the sched/ code to use that.  For others, I just changed them
+    directly.
+    
+    For CONFIG_CPUMASK_OFFSTACK=y, we now allocate it off the end; it
+    would be better to avoid the indirection and use a dangling bitmap,
+    but I didn't want to alter the layout of task_struct and risk breaking
+    carefully balanced caches.
+    
+    Even better would be to point to the fixed "one cpu" and "all cpus"
+    masks where possible, and make a copy when setting it to something
+    else.  But you'd have to track down those naughty places which frob it
+    directly...
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: anton@samba.org
+    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    Cc: Mike Travis <travis@sgi.com>
+
+ arch/arm/mach-integrator/cpu.c               |    4 ++--
+ arch/ia64/kernel/cpufreq/acpi-cpufreq.c      |    4 ++--
+ arch/ia64/kernel/mca.c                       |    2 +-
+ arch/ia64/kernel/salinfo.c                   |    2 +-
+ arch/ia64/kernel/topology.c                  |    2 +-
+ arch/ia64/sn/kernel/sn2/sn_hwperf.c          |    2 +-
+ arch/mips/include/asm/system.h               |    3 ++-
+ arch/mips/kernel/cpufreq/loongson2_cpufreq.c |    2 +-
+ arch/mips/kernel/traps.c                     |    8 ++++----
+ arch/sh/kernel/cpufreq.c                     |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce_intel.c       |    2 +-
+ drivers/acpi/processor_throttling.c          |    4 ++--
+ drivers/firmware/dcdbas.c                    |    2 +-
+ fs/proc/array.c                              |    4 ++--
+ include/linux/init_task.h                    |    9 ++++++++-
+ include/linux/sched.h                        |    4 ++--
+ kernel/cpuset.c                              |    4 ++--
+ kernel/fork.c                                |   17 ++++++++++++++++-
+ kernel/rcutree_plugin.h                      |    4 ++--
+ kernel/sched/core.c                          |    6 +++---
+ kernel/sched/cpupri.c                        |    4 ++--
+ kernel/trace/trace_workqueue.c               |    6 +++---
+ kernel/workqueue.c                           |    2 +-
+ 23 files changed, 61 insertions(+), 38 deletions(-)
+
+commit 68f666acb7b838675fdf9488cb22f016c8d9922c
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:29 2012 +1030
+
+    cpumask: select disabling obsolete cpumask functions on x86
+    
+    It currently depends on CONFIG_BROKEN; change to be set by
+    CONFIG_CPUMASK_OFFSTACK now it all compiles.
+    
+    We also complete it: the header shouldn't refer to the deprected
+    CPU_MASK_LAST_WORD, and the deprecated implementations are removed.
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: anton@samba.org
+    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    Cc: Mike Travis <travis@sgi.com>
+
+ include/linux/cpumask.h |    4 ++--
+ include/linux/sched.h   |    2 +-
+ lib/Kconfig             |    8 ++++++--
+ lib/cpumask.c           |    2 ++
+ 4 files changed, 11 insertions(+), 5 deletions(-)
+
+commit 2d7109dfd6789444c49099574de603cc3bd089a1
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:39 2012 +1030
+
+    cpumask: fix lg_lock/br_lock.
+    
+    Use a cpumask_var_t instead of cpumask_t.  We're doing plenty of
+    allocations here anyway, so it's not really an issue, and it sets a
+    good example.
+    
+    (cpumask_t is obsolescent, as are the cpus_* functions).
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+ fs/file_table.c        |    2 +-
+ fs/namespace.c         |    4 +++-
+ include/linux/lglock.h |   23 +++++++++++++----------
+ 3 files changed, 17 insertions(+), 12 deletions(-)
+
+commit f35bdd306dc92e247e9cc398e783be15417538e6
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:47 2012 +1030
+
+    cpumask: get rid of cpumask_t.
+    
+    Very shortly, struct cpumask will be declared but undefined for
+    CONFIG_CPUMASK_OFFSTACK, so use 'struct cpumask' rather than
+    the obsolescent 'cpumask_t'.
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+ include/linux/interrupt.h |    2 +-
+ include/linux/mm_types.h  |    2 +-
+ lib/cpu_rmap.c            |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 41fa3963db50afaf7156901adf726ab2d054229a
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:26:55 2012 +1030
+
+    irq: remove sizeof(struct cpumask)
+    
+    Very shortly, struct cpumask will be declared but undefined for
+    CONFIG_CPUMASK_OFFSTACK, so sizeof() won't compile.  This is a Good
+    Thing, since we want to use cpumask_size() here anyway.
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+ kernel/irq/irqdesc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 365e3e26f8bf81a5abde817a00a0e6d442c53fe1
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:27:03 2012 +1030
+
+    cpumask: remove struct cpumask definition when CONFIG_CPUMASK_OFFSTACK=y
+    
+    We're about to change CONFIG_CPUMASK_OFFSTACK so it only allocate
+    nr_cpu_ids bits for all cpumasks.  We need to make sure that when
+    CONFIG_CPUMASK_OFFSTACK is set:
+    
+    1) Noone uses the old bitmap ops, which use NR_CPUS bits (use cpumask_*)
+    2) Noone uses assignment of struct cpumask (use cpumask_copy)
+    3) Noone passes a struct cpumask (pass a pointer)
+    4) Noone declares them on the stack (use cpumask_var_t)
+    
+    So we finally remove the definition of struct cpumask when
+    CONFIG_CPUMASK_OFFSTACK=y.  This means that these usages will hit a compile
+    error the moment that config option is turned on.
+    
+    Note that it also means you can't declare a static cpumask.  You
+    should avoid this anyway (use cpumask_var_t), but there's a
+    deliberately-ugly workaround for special cases, using DECLARE_BITMAP()
+    and to_cpumask().
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: anton@samba.org
+    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    Cc: Mike Travis <travis@sgi.com>
+
+ include/linux/cpumask.h |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+commit 07ad9d8d49dd9c0c8c962a7bdae502c7ef168add
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Thu Feb 16 14:27:10 2012 +1030
+
+    cpumask: reduce cpumask_size
+    
+    Now we're sure noone is using old cpumask operators, nor *cpumask, we can
+    allocate less bits safely.  This reduces the memory usage of off-stack
+    cpumasks when CONFIG_CPUMASK_OFFSTACK=y but we don't have NR_CPUS actual
+    cpus.
+    
+    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: anton@samba.org
+    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    Cc: Mike Travis <travis@sgi.com>
+
+ include/linux/cpumask.h |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
