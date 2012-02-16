@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2BPClP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 21:41:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:25464 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428Ab2BPClN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 21:41:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="126062338"
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: stern@rowland.harvard.edu, Greg KH <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, andiry.xu@amd.com,
-        linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Takashi Iwai <tiwai@suse.de>, trenn@suse.de, linux-pci@vger.kernel.org,
-        Michal Marek <MMarek@suse.com>
-In-Reply-To: <20120214002030.GA10364@xanatos>
-References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>
-	 <4F311233.9070404@intel.com> <20120207144204.GA7214@kroah.com>
-	 <20120207172743.GA4780@xanatos> <20120207221317.GA6103@xanatos>
-	 <1328664392.12669.233.camel@debian> <1328682430.12669.443.camel@debian>
-	 <1328692300.12669.593.camel@debian>  <20120214002030.GA10364@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 Feb 2012 10:36:41 +0800
-Message-ID: <1329359801.12669.2872.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1757013Ab2BPCoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 21:44:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61347 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab2BPCoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 21:44:13 -0500
+MIME-Version: 1.0
+Date: Thu, 16 Feb 2012 11:44:12 +0900
+Message-ID: <CAOAMb1AVoJts+OVCm1L-n1t1mdyu=3eDxpC=+3Ums1BbHo4K3Q@mail.gmail.com>
+Subject: [PATCH] amba-pl011/dma: Add check for the residue in DMA callback
+From: Chanho Min <chanho0207@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In DMA-operated uart, I found that rx data can be taken by the UART
+interrupts during
+the DMA irq handler. pl011_int is occurred just before it goes inside
+spin_lock_irq.
+When it returns to the callback, DMA buffer already has been flushed.
+Then, pl011_dma_rx_chars
+gets invalid data. So I add check for the residue as the patch bellow.
 
-> Ugh, this is a giant patch.  It's too big for stable, and it adds new
-> host controller driver APIs.  We can't do that for stable.
-
-Yes, agree!
-> > +		return 1;
-> > +	} else if (!(hcd->driver->flags & HCD_MSI_FIRST))
-> > +		return 1;
-> 
-> You don't need the else statement here, since you always return in the
-> previous if block.
-
-Correct! remove 'else' here make code more clear. 
-> > +/* msi irq handler should be here, if driver has */
-> > +irqreturn_t hcd_msi_irq(int irq, struct usb_hcd *hcd)
-> > +{
-> > +	return hcd->driver->irq(hcd);
-> > +}
-> 
-> This works for now, but it isn't going to work in the future.  We need
-> the USB core to provide us with the irq number so we can map the MSI-X
-> interrupt to the event ring that generated the interrupt, whenever we
-> get around to adding multiple event rings.
-> 
-> I think you need to add a new USB hcd callback for MSI/MSI-X vectors.  The
-> xHCI usb_hcd can provide both pointers.
-> 
-
-Do you mean to add 2 new vectors for MSI/MSIX in hc_driver?
+Signed-off-by: Chanho Min <chanho.min@lge.com>
 ---
-@@ -205,11 +212,14 @@ struct hc_driver {
- 
-        /* irq handler */
-        irqreturn_t     (*irq) (struct usb_hcd *hcd);
-+       irqreturn_t     (*msi_irq) (struct usb_hcd *hcd);
-+       irqreturn_t     (*msix_irq) (struct usb_hcd *hcd);
- 
-        int     flags;
----
-It is reasonable. When I written the code, I thought it may need
-different MSI/MSIX irq handlers later for different driver. :) 
+ drivers/tty/serial/amba-pl011.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-Actually, There is 2 ways to implement this vectors for detail. 
-a, let driver's self code to do request_irq() for each of vectors for
-MSI/MSIX, and hc_driver just has a simple hook for them.
-b, do detailed request_irq() work in usb-core(in hcd-pci.c). 
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 6800f5f..cc3ea06 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -827,7 +827,12 @@ static void pl011_dma_rx_callback(void *data)
+ {
+ 	struct uart_amba_port *uap = data;
+ 	struct pl011_dmarx_data *dmarx = &uap->dmarx;
++	struct dma_chan *rxchan = dmarx->chan;
+ 	bool lastbuf = dmarx->use_buf_b;
++	struct pl011_sgbuf *sgbuf = dmarx->use_buf_b ?
++		&dmarx->sgbuf_b : &dmarx->sgbuf_a;
++	size_t pending;
++	struct dma_tx_state state;
+ 	int ret;
 
-Consider all pci MSI/MSIX interface is similar, we may prefer the second
-way to save some code. 
+ 	/*
+@@ -838,11 +843,21 @@ static void pl011_dma_rx_callback(void *data)
+ 	 * we immediately trigger the next DMA job.
+ 	 */
+ 	spin_lock_irq(&uap->port.lock);
++	/*
++	 * Rx data can be taken by the UART interrupts during
++	 * the DMA irq handler. So we check the residue here.
++	 */
++	rxchan->device->device_tx_status(rxchan, dmarx->cookie, &state);
++	pending = sgbuf->sg.length - state.residue;
++	BUG_ON(pending > PL011_DMA_BUFFER_SIZE);
++	/* Then we terminate the transfer - we now know our residue */
++	dmaengine_terminate_all(rxchan);
++
+ 	uap->dmarx.running = false;
+ 	dmarx->use_buf_b = !lastbuf;
+ 	ret = pl011_dma_rx_trigger_dma(uap);
 
-What's opinions for above 2 ways? 
-
+-	pl011_dma_rx_chars(uap, PL011_DMA_BUFFER_SIZE, lastbuf, false);
++	pl011_dma_rx_chars(uap, pending, lastbuf, false);
+ 	spin_unlock_irq(&uap->port.lock);
+ 	/*
+ 	 * Do this check after we picked the DMA chars so we don't
+-- 
+1.7.0.4
