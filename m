@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2BPQMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:12:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38529 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751732Ab2BPQMQ (ORCPT
+	id S1752589Ab2BPQMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:12:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53546 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab2BPQMx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:12:16 -0500
-Date: Thu, 16 Feb 2012 08:12:12 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] regmap fix for 3.3
-Message-ID: <20120216161211.GA3383@opensource.wolfsonmicro.com>
+	Thu, 16 Feb 2012 11:12:53 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120216150004.GE2641@mudshark.cambridge.arm.com>
+References: <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
+	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
+	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
+	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
+	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
+	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
+	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
+	<CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
+	<1329323900.2293.150.camel@twins>
+	<CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
+	<20120216150004.GE2641@mudshark.cambridge.arm.com>
+Date: Fri, 17 Feb 2012 00:12:49 +0800
+Message-ID: <CACVXFVM472hz+na7o2wJr1CPq-W=YB7i0UwtrsUf62+ryzWp8A@mail.gmail.com>
+Subject: Re: oprofile and ARM A9 hardware counter
+From: Ming Lei <ming.lei@canonical.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        David Long <dave.long@linaro.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 16, 2012 at 11:00 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Feb 16, 2012 at 10:25:05AM +0000, Ming Lei wrote:
+>> On Thu, Feb 16, 2012 at 12:38 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> >
+>> > So what this patch seems to do is put that filter on period in
+>> > perf_ctx_adjust_freq(). Not making sense.. nor can I see a HZ
+>> > dependency, perf_ctx_adjust_freq() uses TICK_NSEC as time base.
+>>
+>> Yes, you are right, I remembered it was observed it on -rc1, and
+>> Stephane's unthrottling
+>> patch was not merged at that time. Today I investigated the problem
+>> further on -rc3 and found that seems the problem is caused by arm pmu code.
+>
+> As I reported previously, Stephane's patch is causing warnings on -rc3:
+>
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/084391.html
+>
+> so I'd like to get to the bottom of that before changing anything else.
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looks I am luck enough and not see the warning on OMAP4, either -rc3 or
+-rc3--next-20120210, :-)
 
-The following changes since commit d65b4e98d7ea3038b767b70fe8be959b2913f16d:
+Maybe we have different config options.
 
-  Linux 3.3-rc3 (2012-02-08 19:21:53 -0800)
+>
+> I'd also like to know why this has only been reported on OMAP4 and I can't
+> reproduce it on my boards.
+>
+>> The patch below may fix the problem, now about 40000 sample events
+>> can be generated on the command:
+>>
+>>       'perf record -e cycles -F 4000  ./noploop 10&& perf report -D | tail -20'
+>>
+>> armpmu_event_update may be called in tick path, so the running counter
+>> will be overflowed and produce a great value of 'delta', then a mistaken
+>> count is stored into event->count and event->hw.freq_count_stamp. Finally
+>> the two variables are not synchronous, then a invalid and large period is
+>> computed and written to pmu, and sample events are decreased much.
+>
+> Hmm, so are you observing an event overflow during the tick handler? This
 
-are available in the git repository at:
+Yes, I am sure I can observe it without much difficulty.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-linus
+> should be fine unless the new value has wrapped past the previous one (i.e.
+> more than 2^32 events have occurred). I find this extremely unlikely for
+> sample-based profiling unless you have some major IRQ latency issues...
 
-for you to fetch changes up to 61cddc57dc14a5dffa0921d9a24fd68edbb374ac:
+IMO, it is not so difficult to get it, suppose prev_raw_count is
+1000000 and -prev_raw_count
+was write to one pmu counter, then the counter will be expired and pmu
+irq is not handled
+quickly enough, so the pmu counter will warp and start counting from zero.
 
-  regmap: Fix cache defaults initialization from raw cache defaults (2012-02-15 08:31:32 -0800)
+When the tick is scheduled just before handling pmu irq,
+armpmu_event_update() is
+called to read the pmu counter as 'new_raw_count', suppose it is 100,
+then the issue
+is triggered: u64 delta = 100 -  1000000 = 18446744073708551716.
 
-----------------------------------------------------------------
-Fixes a bootstrapping issue for some registers when a less commonly used
-method for register cache initialisation is used.  Only affects a fairly
-small proportion of users that both don't use explicit register defaults
-and do use the cache.
-----------------------------------------------------------------
+Looks the higher the frequency is, the easier the problem is reproduced.
 
-Lars-Peter Clausen (1):
-      regmap: Fix cache defaults initialization from raw cache defaults
+>
+> The only way I can think of improving this (bearing in mind that at some
+> point we're limited by 32 bits of counter) is to check for overflow in the
+> tick path and then invoke the PMU irq handler if there is an overflow, but
+> that's really not very nice.
 
- drivers/base/regmap/regcache.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Also we may remove the 'overflow' parameter from armpmu_event_update,
+and introduce armpmu->is_overflow(idx) callback to check if the counter(event)
+is overflow inside armpmu_event_update.
 
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+IMO, the pmu irq can't be lost, so the pmu irq handler is not needed to invoke
+in tick path.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>
+>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+>> index 5bb91bf..789700a 100644
+>> --- a/arch/arm/kernel/perf_event.c
+>> +++ b/arch/arm/kernel/perf_event.c
+>> @@ -193,13 +193,8 @@ again:
+>>                            new_raw_count) != prev_raw_count)
+>>               goto again;
+>>
+>> -     new_raw_count &= armpmu->max_period;
+>> -     prev_raw_count &= armpmu->max_period;
+>> -
+>> -     if (overflow)
+>> -             delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
+>> -     else
+>> -             delta = new_raw_count - prev_raw_count;
+>> +     delta = (armpmu->max_period - prev_raw_count + new_raw_count
+>> +                             + 1) & armpmu->max_period;
+>
+> This breaks when more than max_period events have passed. See a737823d
+> ("ARM: 6835/1: perf: ensure overflows aren't missed due to IRQ latency").
 
-iQIcBAEBAgAGBQJPPSrUAAoJEBus8iNuMP3dG+4P/AjZrreZS60VgYva2PD9Ct61
-KZDSb/bMwP5evU44mJQAg4Wwo9QZ3JWZOsLBP1I4wGmMeKT/6MXczT8MQroGJjEm
-SnZem/ykWumQ+OFJeEjo6GvfiLL38cYyG8NIJbMv2ZE/7hq2Ej4Z6M2KKfnnvzbc
-w3Dgx5mrNIvikSVJzAri+9/oI9EM3WjdIaMEoTt7v0kyfI5oLWGAZMvK8QZKdYyW
-ZBNTNGGnYQEaFNK/+uUSpzIatIC+MObJN07BtBNmExgfLdOduTWsMBw5YntYwm7w
-hDseKNFKZtHsXTDh5Nx/+GW/7xkOTq7ITGaLvwdXVaaTRsrC8kZ/DiAvEbF+7++n
-PIjY2Sdq7pmJ5eCfzxyAaLAzHVqu3Y3bIhr/E10hhEx8l0gU7jEMDsYqjDE+tUKm
-RZ9MwrX3WLIFI7hF7l2+qexzGvRvqW5Ppc3iywLQdUZyXOmAcie37QGTpGKx+rJG
-G/1CsLmIBhPl8tNE2OO42OP//+GZi6yRWFdNE82YwUHbDHiP2LKUruqOclQII3gc
-rECkaHHgk/irLveCEFbnN2sJn0Xxb6D7t3JycKhIF5NoWMfk9pEsow7LwQusTxx9
-Du7tniPcyuvHXOZgpD1UjiKUibZdYgBEwM/6owmLlnM/LaTmllIfA4qxay35kfuS
-TcgjiweY2glhPIGNgzuS
-=LQvj
------END PGP SIGNATURE-----
+Sorry, I didn't notice the commit and the problem addressed, so looks
+the 'overflow'
+information is needed for armpmu_event_update.
 
---5vNYLRcllDrimb99--
+thanks,
+--
+Ming Lei
