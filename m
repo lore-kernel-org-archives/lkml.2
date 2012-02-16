@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2BPKGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:06:17 -0500
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:42990 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752425Ab2BPKGO (ORCPT
+	id S1754225Ab2BPKHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:07:33 -0500
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:46680 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752425Ab2BPKHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:06:14 -0500
-Message-ID: <4F3CD511.6030409@ti.com>
-Date: Thu, 16 Feb 2012 15:36:09 +0530
+	Thu, 16 Feb 2012 05:07:32 -0500
+Message-ID: <4F3CD55C.2020002@ti.com>
+Date: Thu, 16 Feb 2012 15:37:24 +0530
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
@@ -35,7 +35,28 @@ On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
 > This data will useful for memory controller device drivers
 > 
 > Signed-off-by: Aneesh V <aneesh@ti.com>
-Looks good to me.
+Sorry.. Missed one minor comment.
 
-Regards
-santosh
+> ---
+>  drivers/misc/Kconfig          |    8 ++
+>  drivers/misc/Makefile         |    1 +
+>  drivers/misc/jedec_ddr_data.c |  141 +++++++++++++++++++++++++++++++++
+>  include/linux/jedec_ddr.h     |  174 +++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 324 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/jedec_ddr_data.c
+>  create mode 100644 include/linux/jedec_ddr.h
+> 
+
+[...]
+
+> diff --git a/drivers/misc/jedec_ddr_data.c b/drivers/misc/jedec_ddr_data.c
+> new file mode 100644
+> index 0000000..299c056
+> --- /dev/null
+> +++ b/drivers/misc/jedec_ddr_data.c
+> @@ -0,0 +1,141 @@
+> +/*
+> + * DDR addressing details and AC timing parameters from JEDEC specs
+> + *
+> + * Copyright (C) 2010 Texas Instruments, Inc.
+Fix the year please. Should be 2012
