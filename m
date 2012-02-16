@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab2BPPst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:48:49 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:43315 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2BPPss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:48:48 -0500
-Message-ID: <4F3D2553.9010600@free-electrons.com>
-Date: Thu, 16 Feb 2012 16:48:35 +0100
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
-CC: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
-        s.hauer@pengutronix.de, magnus.damm@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: ARM: add xz kernel compression support
-References: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com> <4F3D22D5.3060607@bluegiga.com>
-In-Reply-To: <4F3D22D5.3060607@bluegiga.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751896Ab2BPPxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:53:10 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59236 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab2BPPxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 10:53:08 -0500
+From: Pradeep Kumar <psuriset@linux.vnet.ibm.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Cc: Pradeep Kumar <psuriset@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 21:22:48 +0530
+Message-Id: <20120216155248.6865.47935.sendpatchset@localhost.localdomain>
+Subject: Re: KVM: perf: a smart tool to analyse kvm events
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021615-7182-0000-0000-000000CF64E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Veli,
+Xiao,
 
-On 02/16/2012 04:37 PM, Veli-Pekka Peltola wrote:
-> Hi,
->
-> On 02/16/2012 04:54 PM, Michael Opdenacker wrote:
->> It adds xz support to the ARM tree. x86 already has it, so let's
->> have it too!
->
-> XZ support is already applied to Russell's for-next through patch
-> tracking system [1].
->
-> [1]:
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7001/2
+ i tried your perf events patch set on RHEL 6.1 host and failed to trace kvm-events with below error message.
 
-Cool! Good to know that we already have this :-)
-This was a good exercise anyway and not a complete waste of time as I
-produced benchmarks in the process.
-
-Thanks,
-
-Michael.
-
--- 
-Michael Opdenacker, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
-+33 484 253 396
+  [root@kvm perf]# ./perf kvm-events report
+  Warning: unknown op '{'
+  Warning: Error: expected type 5 but read 1
+  Warning: failed to read event print fmt for hrtimer_start
+  Warning: unknown op '{'
+  Warning: Error: expected type 5 but read 1
+  Warning: failed to read event print fmt for hrtimer_expire_entry
+  Analyze events for all VCPUs:
+  VM-EXIT    Samples  Samples%     Time%         Avg time               
+  Total Samples:0, Total events handled time:0.00us.
+  [root@kvm perf]#          
+	     
+    --Pradeep
 
