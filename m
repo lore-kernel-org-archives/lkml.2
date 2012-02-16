@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab2BPORN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:17:13 -0500
-Received: from skyrme.org ([193.175.80.135]:46555 "EHLO skyrme.org"
+	id S1752041Ab2BPOSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:18:09 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:40998 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab2BPORL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:17:11 -0500
-Date: 16 Feb 2012 14:17:07 +0000
-Message-ID: <20120216141707.GA8647@curry>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Wolfram Sang" <w.sang@pengutronix.de>
-Cc: "Oskar Schirmer" <oskar@scara.com>, wim@iguana.be, s.hauer@pengutronix.de,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: make imx2_wdt report boot status correctly
-References: <1329394665-7238-1-git-send-email-oskar@scara.com> <20120216133510.GA2541@pengutronix.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216133510.GA2541@pengutronix.de>
-User-Agent: Mutt/1.4.2.3i
-Organisation: www.embedded-group.de
+	id S1751267Ab2BPOSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 09:18:07 -0500
+X-IronPort-AV: E=Sophos;i="4.73,429,1325491200"; 
+   d="scan'208";a="625953594"
+Message-ID: <4F3D101C.6080805@netapp.com>
+Date: Thu, 16 Feb 2012 09:18:04 -0500
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120212 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Danny Kukawka <dkukawka@suse.de>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/nfs/dns_resolve.c: included linux/nfs_fs.h twice
+References: <1329400481-31627-1-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1329400481-31627-1-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On 02/16/12 08:54, Danny Kukawka wrote:
 
-On Thu, Feb 16, 2012 at 14:35:10 +0100, Wolfram Sang wrote:
-> besides this minor thing (which may be just personal taste)...
+> fs/nfs/dns_resolve.c: included 'linux/nfs_fs.h' twice. No need
+
+         ^^^^^^^^^^^^^
+You probably meant idamp.c here...
+
+Good catch.  My idmapper fallback changes from a few weeks ago should have already done this see:
+
+e6499c6f4b5f56a16f8b8ef60529c1da28b13aea  NFS: Fall back on old idmapper if request_key() fails
+3cd0f37a2cc9e4d6188df10041a2441eaa41d991  NFS: Keep idmapper include files in one place
+
+in Trond's nfs-for-next branch.
+
+- Bryan
+
+> to include it in the 'CONFIG_NFS_USE_NEW_IDMAPPER not defined'
+> block since it's already included at the top of the file.
 > 
-> > +	case WDIOC_GETBOOTSTATUS:
-> > +		val = __raw_readw(imx2_wdt.base + IMX2_WDT_WRSR);
-> > +		new_value = 0;
-> > +		if (val & IMX2_WDT_WRSR_TOUT)
-> > +			new_value = WDIOF_CARDRESET;
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  fs/nfs/idmap.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
 > 
-> I'd go for this to save some lines:
-> 		new_value = val & IMX2_WDT_WRSR_TOUT ? WDIOF_CARDRESET : 0;
+> diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+> index 2c05f19..1526b5f 100644
+> --- a/fs/nfs/idmap.c
+> +++ b/fs/nfs/idmap.c
+> @@ -374,8 +374,6 @@ int nfs_map_gid_to_group(const struct nfs_server *server, __u32 gid, char *buf,
+>  #include <linux/workqueue.h>
+>  #include <linux/sunrpc/rpc_pipe_fs.h>
+>  
+> -#include <linux/nfs_fs.h>
+> -
+>  #include "nfs4_fs.h"
+>  
+>  #define IDMAP_HASH_SZ          128
 
-A good alternative for sure.
 
-Seen from the perspective of code compactness ("save some lines"),
-one could try to be consequent here, and save the "val" variable
-altogether, ending up with some "new_value = __raw_readw ... & ... ? ... : 0;"
-But eventually there might be code readability issues, so it's
-a good idea to keep the balance.
-
-An argument for the original, longer version might be it is easier
-to extend, when more flags need to be handled, like
-"else if (val & ...) new_value = ...", while nested conditional
-expressions would most likely become quite complex soon.
-
-Actually, my personal taste doesn't show a preference for
-one version or the other, so I'm ok with Your proposal, too.
-
-  Oskar
