@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2BPTIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:08:16 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52916 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752014Ab2BPTIN (ORCPT
+	id S1754962Ab2BPTJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:09:14 -0500
+Received: from 124-248-200-49.sunnyvision.com ([124.248.200.49]:56433 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab2BPTJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:08:13 -0500
-Message-ID: <4F3D53F9.8040508@fb.com>
-Date: Thu, 16 Feb 2012 11:07:37 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Andrea Righi <andrea@betterlinux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com> <1329006098-5454-4-git-send-email-andrea@betterlinux.com> <20120215233537.GA20724@dev3310.snc6.facebook.com> <20120215234724.GA21685@thinkpad> <4F3C467B.1@fb.com> <20120216005608.GC21685@thinkpad> <4F3C6594.3030709@fb.com> <20120216103944.GA1440@thinkpad> <4F3D4E34.9060105@fb.com> <20120216185753.GD13354@thinkpad>
-In-Reply-To: <20120216185753.GD13354@thinkpad>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
- definitions=2012-02-16_06:2012-02-16,2012-02-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	Thu, 16 Feb 2012 14:09:11 -0500
+X-Greylist: delayed 7238 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 14:09:11 EST
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com E944152DF8
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com DC3934FB23
+Message-ID: <DT6vvV@ibm.com>
+From: dedicatedhk@yahoo.com.hk
+Subject: Cloud server
+X-Mailer: gUpaoV19TstKfDWf1upDu
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Thu, 16 Feb 2012 23:13:57 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1GJ9ONG026445
 
-On 2/16/12 10:57 AM, Andrea Righi wrote:
+Cloud Serveràm∆ÿ
+Advantages of Cloud Server àm
+Cloud Server provides you with the same function as a traditional dedicated server, plus the high availability, scalability and flexibility that a dedicated server cannot offer to you.  àm???"°¬????»˙ç??∆ÿ?èê???ào∆Ÿ??????°”?¢X∆Ÿ?°”????»˙ç??∆ÿ?ê??-???"?o∆Ÿào?????ào£·???"àm?ç??-??"àm"??è°¬?"∆ÿ?£·°±?£·Å?"??°”o?£·°±?è???∆Ÿ?£·°±?????∆ÿ?°¬"?????°”?¢X∆Ÿ?°”????»˙ç??∆ÿ????????"?-?????£·?
 
-> Maybe we should try to push ...something... in the memcg code for the
-> short-term future, make it as much generic as possible, and for the
-> long-term try to reuse the same feature (totally or in part) in the
-> per-fd approach via fadvise().
+a. Costing Saving
+With Cloud Server, there is zero setup cost! All you need is to pay for a regular service fee only. And saved up to 50-70% maintenance costs compared with traditional dedicated server hosting solutions. Without a huge cost-saving, you can handle your IT budget more efficiently.  
+ào∆ÿ
+b. High Flexibility & Scalabilityàm
+Cloud Server is invented and designed to allow you to scale up your server specifications easily and conveniently. The simplified steps in spinning up your server minimize your time and processes; therefore, you can make adjustment at the very last moment.
 
-Yes - the two approaches are complementary and we should probably pursue 
-both.
+c. High Availability & Reliabilityàm
+Cloud Server could be deployed for both High Availability & High Reliability with clustering features. Your business is still running even if there is an unlikely primary server down issue, the secondary servers inside the cloud will take over the role to serve and ensure your service continues to perform as usual.
 
-There are a number of apps which are already using fadvise though:
+d. Self-owned World-class Data Centerào
+ISO certified data center on the backend with fully redundant facilities, high level security and 24x7 manpower support.
 
-https://issues.apache.org/jira/browse/MAPREDUCE-3289
-http://highscalability.com/blog/2012/1/12/peregrine-a-map-reduce-framework-for-iterative-and-pipelined.html
+Dell PowerEdge Powered Cloud Server
+Hardware Configuration
+- CPU: 2vCPU
+- RAM: 4G RAM
+- HardDisk: 100GB Storage
+- IP Address: 2 IP Addresses
 
-and probably many other similar cases that are not open source.
+Software Configuration
+- OS: Linux CentOS / RHEL / Debian / Fedora
+- Plesk Control Panel 
 
-Some of these apps may be better off using NOREUSE instead of DONTNEED, 
-since they may not have a clue on what else is going on in the system.
+Data Center Facilities
+- Applying to Internet Backbone
+  2Gbps to HKIX (Local) + 300Mbps to Int'l Carrier (Oversea)
+- TIA945 Standard Tier 3+	
 
-The way I think about it: NOREUSE is a statement about what my process 
-is doing and DONTNEED is a statement about the entire system.
+Data Center Facilities
+- Applying to Internet Backbone
+  2Gbps to HKIX (Local) + 300Mbps to Int'l Carrier (Oversea)
+- TIA945 Standard Tier 3+
 
-  -Arun
+We are a leading total ISP and Data Center Service Provider in HK, with 13 years experience in Internet and IT Solutions, we offers one-stop service to our clients with satisfaction.
+
+Data Center Co-location 
+Dedicated Server Rental and Managed 
+VPS & Cloud Server Computing
+Web & Email Hosting
+Exchange 2010 Enterprise Email
+Web Development (Design & Programming)
+Online Marketing
+
+Our main mission is to provide the best and reliability services to help our clients to achieve their business objectives.
+
+We would like to ask if your side considering to revamp your website, upgrade your email system, co-locate or make a server site in Hong Kong.
+Should you have any queries or quotation request, please feel free to email to boris@dedicatedserver.com.hk
+
+Your prompt feedback and response will be highly appreciated.
+Best Regards,
+Boris Lam
+Senior Sales Executive
+Mobile: 9408 8762
+Email: boris@dedicatedserver.com.hk
+
+
