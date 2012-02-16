@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab2BPUAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:00:30 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52340 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab2BPUA3 (ORCPT
+	id S1755055Ab2BPUB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:01:57 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45120 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab2BPUB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:00:29 -0500
+	Thu, 16 Feb 2012 15:01:56 -0500
+Date: Fri, 17 Feb 2012 00:01:51 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Vasiliy Kulikov <segoon@openwall.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Michal Marek <mmarek@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
+Message-ID: <20120216200151.GQ1905@moon>
+References: <20120215210934.GL4533@moon>
+ <20120215215807.GM4533@moon>
+ <20120216144954.GA11953@redhat.com>
+ <20120216151340.GI1905@moon>
+ <20120216164901.GD3849@moon>
+ <20120216174047.GA31176@redhat.com>
+ <20120216175809.GJ1905@moon>
+ <20120216190321.GA2216@redhat.com>
+ <20120216192952.GN1905@moon>
+ <20120216115208.a488e10e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4F3CBE3F.1090604@nvidia.com>
-References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>
-	<1329114588-15430-3-git-send-email-ldewangan@nvidia.com>
-	<20120213211809.GI11077@ponder.secretlab.ca>
-	<CACRpkdZzcN5oi0ejeTQn3BNJ_w6XHsBQ_RoQMvpf8Lt2bOARAg@mail.gmail.com>
-	<4F3CBE3F.1090604@nvidia.com>
-Date: Thu, 16 Feb 2012 21:00:28 +0100
-Message-ID: <CACRpkdaFyxU-gq5ETnNc4LonTo98PbUs09CmvsPUqzyt0Mg2Cg@mail.gmail.com>
-Subject: Re: [PATCH V1 2/3] Documentation: gpio: Add details of open-drain configuration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "dunlap@xenotime.net" <dunlap@xenotime.net>, "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216115208.a488e10e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 9:28 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Thu, Feb 16, 2012 at 11:52:08AM -0800, Andrew Morton wrote:
+> On Thu, 16 Feb 2012 23:29:52 +0400
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> 
+> > Final one ;)
+> 
+> syscalls-x86-add-__nr_kcmp-syscall-v8-fix-fix-fix-fix-fix.patch
+> is a tie for the world record!
 
-> Yes, I can add the open source also but like to be in incremental change.
-> Not together with open drain.
-> We can go with:
-> - open drain core driver support.
-> - open drain sysfs interface support
-> - open source core driver support
-> - open source sysfs interface.
+It was close to v13 ;)
+
+> 
+> I folded everything back into a single patch.  Here's what we currently
+> have:
 >
-> I have already changes for the first 2 which we can review/apply,
-> Meanwhile I will work on open source support.
->
-> Does it look good?
 
-Well as a patch concept it is OK but I have real bad feelings about
-patch  [2/4] and [4/4] adding sysfs.
+Thanks a lot, Andrew!
 
-What the GPIO subsystem really needs is to get rid of sysfs
-interfaces, have them deprecated and replaced with a
-per-gpiochip /dev/gpioN with ioctl()s or similar instead. The sysfs
-interface is just ... it won't scale.
-
-Yours,
-Linus Walleij
+	Cyrill
