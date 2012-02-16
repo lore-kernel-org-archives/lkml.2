@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757051Ab2BPDLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 22:11:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51627 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756909Ab2BPDLF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 22:11:05 -0500
-Subject: Re: Uninline kcalloc
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Xi Wang <xi.wang@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1202151324060.28225@router.home>
-Date: Wed, 15 Feb 2012 22:10:59 -0500
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        David Rientjes <rientjes@google.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E307A48D-2146-4052-8A84-E7FA690A6703@gmail.com>
-References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <20120209150652.5b1d19dc.akpm@linux-foundation.org> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home> <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com> <alpine.DEB.2.00.1202141329360.24883@router.home> <20120214124518.f42bc03e.akpm@linux-foundation.org> <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com> <alpine.DEB.2.00.1202141503470.29019@router.home> <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com> <alpine.DEB.2.00.1202141605240.32407 @router.home> <07635976-4FC3-4E14-9B94-CE4D6446FD4E@gmail.com> <alpine.DEB.2.00.1202151324060.28225@router.home>
-To: Christoph Lameter <cl@linux.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1757074Ab2BPDMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 22:12:13 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43993 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756909Ab2BPDML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 22:12:11 -0500
+Message-ID: <1329361898.3772.43.camel@pasglop>
+Subject: Re: Please add irqdomain branch to linux-next
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 16 Feb 2012 14:11:38 +1100
+In-Reply-To: <CACxGe6tAVW2zCrWFPDgvu8sjd4KXJnfqhT16sYa1UvyRVEVyhQ@mail.gmail.com>
+References: <CACxGe6sTO_Jy-vecKS9SoVs55ZA8BMc+O0NODLdq6KvkcbPByg@mail.gmail.com>
+	 <1328492111.30631.24.camel@pasglop>
+	 <20120206061517.GD21449@ponder.secretlab.ca>
+	 <CACxGe6tAVW2zCrWFPDgvu8sjd4KXJnfqhT16sYa1UvyRVEVyhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 15, 2012, at 2:34 PM, Christoph Lameter wrote:
-> Any allocation larger than MAX_ORDER << PAGE_SHIFT will fail since the
-> page allocator cannot serve larger contigous pages.
+On Wed, 2012-02-15 at 18:32 -0700, Grant Likely wrote:
 
-Yes, any number larger than KMALLOC_MAX_SIZE would do the trick.
-The question is whether people would like to adopt
+> Only nomap users will care about this, and of those 5, only iseries
+> and ps3 actually change it.  How about I add a max_virq parameter to
+> only be used by the nomap revmap?  That seems to be cleaner than a
+> global setting.  I've crafted a patch and will post it with v5 of the
+> series.
 
-kmalloc(ARRAY_BYTES(n, size), ...);
+Right, I don't see an obvious need elsewhere so it could be a flag
+specific to nomap, tho it still needs to be taken into account in the
+main allocation code.
 
-or
+> For now I'll use numa_node_id() at allocation time.  I'll craft a
+> follow-on patch to change the API since it touches a lot of call
+> sites.
 
-knalloc(n, size, ...);
+But which node ? :-)
 
-Besides, I am worried that ARRAY_BYTES is error-prone because you
-have to make sure that ARRAY_BYTES is used only in *alloc, not
-elsewhere, not in forms like ARRAY_BYTES(n, size) + padding_size,
-etc.  If ARRAY_BYTES is mostly used with kmalloc(), and the only
-safe form is kmalloc(ARRAY_BYTES(n, size), ...), then adding a new
-allocator knalloc(n, size, ...) seems like a simpler choice.
+I'd rather you add a new API, no need to change the call sites:
 
-BTW, here goes a partial list of places where the new allocator
-could be used to simplify existing checks.
+Add foo_node(xxx,node); and have the existing foo() be implemented
+as a static inline calling foo_node(xxx,0); or something like that, then
+I can change the powerpc code to use the later & pass the PCI device
+node (which should be in the pci_controller structure). We can add more
+later.
 
-fs/cifs/cifsacl.c:912
+> I've dropped irq_domain_xlate_pci()
+> 
+> I think I've addressed all the problems you've brought up.  I'm
+> testing now and I'll be posting v5 very shortly.
 
-        if (num_aces > ULONG_MAX / sizeof(struct cifs_ace *))
-                return;                 
-        ppace = kmalloc(num_aces * sizeof(struct cifs_ace *),
-                        GFP_KERNEL);
+Ok, let me know.
 
-fs/cifs/asn1.c:428
+Cheers,
+Ben.
 
-        if (size < 2 || size > UINT_MAX/sizeof(unsigned long))
-                return 0;
-
-        *oid = kmalloc(size * sizeof(unsigned long), GFP_ATOMIC);
-
-fs/nfs/callback_xdr.c:308
-
-        if (n > ULONG_MAX / sizeof(*args->devs)) {
-                status = htonl(NFS4ERR_BADXDR);
-                goto out;               
-        }
-
-        args->devs = kmalloc(n * sizeof(*args->devs), GFP_KERNEL);
-
-net/ipv4/netfilter/nf_nat_snmp_basic.c:447
-
-        if (size < 2 || size > ULONG_MAX/sizeof(unsigned long))
-                return 0;               
-
-        *oid = kmalloc(size * sizeof(unsigned long), GFP_ATOMIC);
-
-drivers/staging/comedi/comedi_fops.c:673
-
-        insns =
-            kcalloc(insnlist.n_insns, sizeof(struct comedi_insn), GFP_KERNEL);
-
-I believe there are more places without those checks, where the new
-allocator can offer better security.
-
-- xi
 
