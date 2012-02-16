@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab2BPO1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:27:39 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:49851 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2BPO1i (ORCPT
+	id S1752045Ab2BPO2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:28:47 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58452 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2BPO2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:27:38 -0500
-Date: Thu, 16 Feb 2012 14:27:33 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
-Message-ID: <20120216142733.GA15632@srcf.ucam.org>
-References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
- <alpine.LFD.2.02.1202151537500.2794@ionos>
- <20120215145225.GA21448@srcf.ucam.org>
- <alpine.LFD.2.02.1202152059230.2794@ionos>
- <20120215202221.GA29552@srcf.ucam.org>
- <alpine.LFD.2.02.1202152125500.2794@ionos>
- <20120215203814.GA29795@srcf.ucam.org>
- <alpine.LFD.2.02.1202152140110.2794@ionos>
- <20120215204757.GA30275@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215204757.GA30275@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 16 Feb 2012 09:28:46 -0500
+Date: Thu, 16 Feb 2012 14:27:28 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, hpa@zytor.com,
+        stable@kernel.org
+Subject: Re: [PATCH 2/2] efi: Validate UEFI boot variables
+Message-ID: <20120216142728.64ed46e7@pyramind.ukuu.org.uk>
+In-Reply-To: <1329400717-22670-2-git-send-email-mjg@redhat.com>
+References: <1329400717-22670-1-git-send-email-mjg@redhat.com>
+	<1329400717-22670-2-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 08:47:57PM +0000, Matthew Garrett wrote:
+On Thu, 16 Feb 2012 08:58:37 -0500
+Matthew Garrett <mjg@redhat.com> wrote:
 
-> Ok. I'll work on finding how prevelant it is and see if we can kill it 
-> off in userspace.
+> A common flaw in UEFI systems is a refusal to POST triggered by a malformed
+> boot variable. Once in this state, machines may only be restored by
+> reflashing their firmware with an external hardware device. While this is
+> obviously a firmware bug, the serious nature of the outcome suggests that
+> operating systems should filter their variable writes in order to prevent
+> a malicious user from rendering the machine unusable.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-Checking through an exploded Fedora kernel tree suggests around 125 
-packages out of 11000 or so, so around 1% of userspace seems to use 
-sleep(0) under certain circumstances. We can probably fix everything in 
-the distribution, but that suggests that there's also going to be a 
-significant amount of code in the outside world that's also broken. 
+Other than pr_err() as a nitpick comemnt this looks good to me
 
-Userspace clearly has an expectation that sleep(0) is magic in some 
-ill-defined way. We'd be well within our rights to break that 
-expectation, but I think it's common enough to warrant special casing.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Acked-by: Alan Cox <alan@linux.intel.com>
