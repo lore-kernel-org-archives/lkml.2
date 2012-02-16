@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2BPUDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:03:19 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60880 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab2BPUDN (ORCPT
+	id S1755546Ab2BPUDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:03:31 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51400 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755472Ab2BPUD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:03:13 -0500
+	Thu, 16 Feb 2012 15:03:27 -0500
 MIME-Version: 1.0
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -20,9 +20,9 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org,
         Will Drewry <wad@chromium.org>
-Subject: [PATCH v8 2/8] seccomp: kill the seccomp_t typedef
-Date: Thu, 16 Feb 2012 14:02:23 -0600
-Message-Id: <1329422549-16407-2-git-send-email-wad@chromium.org>
+Subject: [PATCH v8 7/8] x86: Enable HAVE_ARCH_SECCOMP_FILTER
+Date: Thu, 16 Feb 2012 14:02:28 -0600
+Message-Id: <1329422549-16407-7-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1329422549-16407-1-git-send-email-wad@chromium.org>
 References: <1329422549-16407-1-git-send-email-wad@chromium.org>
@@ -30,73 +30,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces the seccomp_t typedef with struct seccomp to match modern
-kernel style.
+Enable support for seccomp filter on x86:
+- asm/tracehook.h exists
+- syscall_get_arguments() works
+- syscall_rollback() works
+- ptrace_report_syscall() works
+- secure_computing() return value is honored (see below)
 
-v7: struct seccomp_struct -> struct seccomp
-v6: original inclusion in this series.
+This also adds support for honoring the return
+value from secure_computing().
+
+SECCOMP_RET_TRACE and SECCOMP_RET_TRAP may result in seccomp needing to
+skip a system call without killing the process.  This is done by
+returning a non-zero (-1) value from secure_computing.  This change
+makes x86 respect that return value.
+
+To ensure that minimal kernel code is exposed, a non-zero return value
+results in an immediate return to user space (with an invalid syscall
+number).
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- include/linux/sched.h   |    2 +-
- include/linux/seccomp.h |   10 ++++++----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ arch/x86/Kconfig         |    1 +
+ arch/x86/kernel/ptrace.c |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..c30526f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1418,7 +1418,7 @@ struct task_struct {
- 	uid_t loginuid;
- 	unsigned int sessionid;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..4c9012b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -82,6 +82,7 @@ config X86
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
++	select HAVE_ARCH_SECCOMP_FILTER
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..90d465a 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1380,7 +1380,11 @@ long syscall_trace_enter(struct pt_regs *regs)
+ 		regs->flags |= X86_EFLAGS_TF;
+ 
+ 	/* do the secure computing check first */
+-	secure_computing(regs->orig_ax);
++	if (secure_computing(regs->orig_ax)) {
++		/* seccomp failures shouldn't expose any additional code. */
++		ret = -1L;
++		goto out;
++	}
+ 
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
+ 		ret = -1L;
+@@ -1405,6 +1409,7 @@ long syscall_trace_enter(struct pt_regs *regs)
+ 				    regs->dx, regs->r10);
  #endif
--	seccomp_t seccomp;
-+	struct seccomp seccomp;
  
- /* Thread group tracking */
-    	u32 parent_exec_id;
-diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
-index cc7a4e9..d61f27f 100644
---- a/include/linux/seccomp.h
-+++ b/include/linux/seccomp.h
-@@ -7,7 +7,9 @@
- #include <linux/thread_info.h>
- #include <asm/seccomp.h>
- 
--typedef struct { int mode; } seccomp_t;
-+struct seccomp {
-+	int mode;
-+};
- 
- extern void __secure_computing(int);
- static inline void secure_computing(int this_syscall)
-@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
- extern long prctl_get_seccomp(void);
- extern long prctl_set_seccomp(unsigned long);
- 
--static inline int seccomp_mode(seccomp_t *s)
-+static inline int seccomp_mode(struct seccomp *s)
- {
- 	return s->mode;
- }
-@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
- 
- #include <linux/errno.h>
- 
--typedef struct { } seccomp_t;
-+struct seccomp { };
- 
- #define secure_computing(x) do { } while (0)
- 
-@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
- 	return -EINVAL;
++out:
+ 	return ret ?: regs->orig_ax;
  }
  
--static inline int seccomp_mode(seccomp_t *s)
-+static inline int seccomp_mode(struct seccomp *s)
- {
- 	return 0;
- }
 -- 
 1.7.5.4
 
