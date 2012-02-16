@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab2BPOHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:07:32 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59445 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2BPOH3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:07:29 -0500
+	id S1751837Ab2BPOLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:11:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56860 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab2BPOLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 09:11:54 -0500
+Message-ID: <4F3D0E9C.8030302@redhat.com>
+Date: Thu, 16 Feb 2012 16:11:40 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <1329398881.2893.8.camel@dabdike>
-References: <1329375141-6944-1-git-send-email-amit.sahrawat83@gmail.com>
-	<1329398881.2893.8.camel@dabdike>
-Date: Thu, 16 Feb 2012 23:07:27 +0900
-Message-ID: <CAKYAXd91v1vFa4EE27xn1sJkQDADJGcPOQ5WgsE900wPgw3mWw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] scsi: retrieve cache mode using ATA_16 cmd if normal
- routine fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Eric B Munson <emunson@mgebm.net>
+CC: mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 V13] Add ioctl for KVM_KVMCLOCK_CTRL
+References: <1328713666-11424-1-git-send-email-emunson@mgebm.net> <1328713666-11424-4-git-send-email-emunson@mgebm.net>
+In-Reply-To: <1328713666-11424-4-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/16 James Bottomley <James.Bottomley@hansenpartnership.com>:
-> On Thu, 2012-02-16 at 12:22 +0530, Amit Sahrawat wrote:
+On 02/08/2012 05:07 PM, Eric B Munson wrote:
+> Now that we have a flag that will tell the guest it was suspended, create an
+> interface for that communication using a KVM ioctl.
 >
->> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
->> index c691fb5..3ca507a 100644
->> --- a/drivers/scsi/sd.c
->> +++ b/drivers/scsi/sd.c
->> @@ -50,6 +50,11 @@
->>  #include <linux/string_helpers.h>
->>  #include <linux/async.h>
->>  #include <linux/slab.h>
->> +
->> +#ifdef CONFIG_ATA
->> +#include <linux/libata.h>
->> +#endif
->> +
->>  #include <linux/pm_runtime.h>
->>  #include <asm/uaccess.h>
->>  #include <asm/unaligned.h>
->> @@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
->>               if (modepage == 0x3F) {
->>                       sd_printk(KERN_ERR, sdkp, "No Caching mode page "
->>                                 "present\n");
->> +#ifdef CONFIG_ATA
->> +                     goto WCE_USING_ATA;
->> +#else
->>                       goto defaults;
->> +#endif
->>               } else if ((buffer[offset] & 0x3f) != modepage) {
->>                       sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
->>                       goto defaults;
->> @@ -2149,6 +2158,15 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
->>                                 "Uses READ/WRITE(6), disabling FUA\n");
->>                       sdkp->DPOFUA = 0;
->>               }
->> +#ifdef CONFIG_ATA
->> +WCE_USING_ATA:
->> +             if (!sdp->removable && !sdkp->WCE) {
->> +                     sd_printk(KERN_NOTICE, sdkp, "Try to check write cache"
->> +                             " enable/disable using ATA command\n");
->> +                     sdkp->WCE = ata_get_cachestatus(sdp);
->> +             }
->> +#endif
->> +
->
-> I already said before, this is a non starter: we can't randomly send
-> SCSI encapsulated ATA commands to disks from sd.  What we can do is give
-> you a WCE variable you can change on the fly in sysfs via whatever
-> mechanism is most appropriate (but this would have to be a mechanism
-> external to sd.c).
-Oops.. it is mistake. we will make patch v2 included setting via sysfs.
-Thanks for your reply.
->
-> Alternatively, you can co-opt the USB quirks handling to set it for you.
->
-> James
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +
+> +Capability: KVM_CAP_KVMCLOCK_CTRL
+> +Architectures: Any that implement pvclocks (currently x86 only)
+> +Type: vcpu ioctl
+> +Parameters: None
+> +Returns: 0 on success, -1 on error
+> +
+> +This signals to the host kernel that the specified guest is being paused by
+> +userspace.  The host will set a flag in the pvclock structure that is checked
+> +from the soft lockup watchdog.  
+
+This needs to be expanded.  There is a protocol between the host and
+guest that needs to be documented, including the requirement to use a
+single instruction (or ll/sc) to clear the flag.  See
+Documentation/virtual/kvm/msr.txt
+
+> This ioctl can be called during pause or
+> +unpause.
+> +
+
+After pausing the vcpu, but before resuming it.
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
