@@ -1,108 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab2BPSJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:09:13 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43825 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178Ab2BPSJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:09:11 -0500
-Date: Thu, 16 Feb 2012 18:08:41 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        David Long <dave.long@linaro.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: oprofile and ARM A9 hardware counter
-Message-ID: <20120216180841.GC31977@mudshark.cambridge.arm.com>
-References: <CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
- <CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
- <CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
- <CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
- <1329323900.2293.150.camel@twins>
- <CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
- <20120216150004.GE2641@mudshark.cambridge.arm.com>
- <CACVXFVM472hz+na7o2wJr1CPq-W=YB7i0UwtrsUf62+ryzWp8A@mail.gmail.com>
- <1329409183.2293.245.camel@twins>
- <CACVXFVOygObWqPMLjg6uOB6inBkvvUjsQncNW0fbmpa4Xspw0Q@mail.gmail.com>
+	id S1753333Ab2BPSJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:09:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751512Ab2BPSJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 13:09:49 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 2/3] Replace the fd_sets in struct fdtable with an array of
+ unsigned longs
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk
+Cc: hpa@zytor.com, torvalds@osdl.org, arnd@arndb.de, dhowells@redhat.com
+Date: Thu, 16 Feb 2012 17:49:54 +0000
+Message-ID: <20120216174954.23314.48147.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120216174930.23314.69764.stgit@warthog.procyon.org.uk>
+References: <20120216174930.23314.69764.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVOygObWqPMLjg6uOB6inBkvvUjsQncNW0fbmpa4Xspw0Q@mail.gmail.com>
-Thread-Topic: oprofile and ARM A9 hardware counter
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 04:37:35PM +0000, Ming Lei wrote:
-> On Fri, Feb 17, 2012 at 12:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Fri, 2012-02-17 at 00:12 +0800, Ming Lei wrote:
-> >> is triggered: u64 delta = 100 -  1000000 = 18446744073708551716.
-> >
-> > on x86 we do:
-> >
-> >  int shift = 64 - x86_pmu.cntval_bits;
-> >  s64 delta;
-> >
-> >  delta = (new_raw_count << shift) - (prev_raw_count << shift);
-> >  delta >>= shift;
-> >
-> > This deals with short overflows (on x86 the registers are typically 40
-> > or 48 bits wide). If the arm register is 32 you can of course also get
-> > there with some u32 casts.
-> 
-> Good idea, but it may not work if new_raw_count is bigger than prev_raw_count.
+Replace the fd_sets in struct fdtable with an array of unsigned longs and then
+use the standard non-atomic bit operations rather than the FD_* macros.
 
-The more I think about this, the more I think that the overflow parameter to
-armpmu_event_update needs to go. It was introduced to prevent massive event
-loss in non-sampling mode, but I think we can get around that by changing
-the default sample_period to be half of the max_period, therefore giving
-ourselves a much better chance of handling the interrupt before new wraps
-around past prev.
+This:
 
-Ming Lei - can you try the following please? If it works for you, then I'll
-do it properly and kill the overflow parameter altogether.
+ (1) Removes the abuses of struct fd_set:
 
-Thanks,
+     (a) Since we don't want to allocate a full fd_set the vast majority of the
+     	 time, we actually, in effect, just allocate a just-big-enough array of
+     	 unsigned longs and cast it to an fd_set type - so why bother with the
+     	 fd_set at all?
 
-Will
+     (b) Some places outside of the core fdtable handling code (such as
+     	 SELinux) want to look inside the array of unsigned longs hidden inside
+     	 the fd_set struct for more efficient iteration over the entire set.
 
-git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 5bb91bf..ef597a3 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -193,13 +193,7 @@ again:
-                             new_raw_count) != prev_raw_count)
-                goto again;
+ (2) Eliminates the use of FD_*() macros in the kernel completely.
+
+ (3) Permits the __FD_*() macros to be deleted entirely where not exposed to
+     userspace.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/exec.c                |    4 ++--
+ fs/file.c                |   46 ++++++++++++++++++++++------------------------
+ fs/select.c              |    2 +-
+ include/linux/fdtable.h  |   28 ++++++++++------------------
+ kernel/exit.c            |    2 +-
+ security/selinux/hooks.c |    2 +-
+ 6 files changed, 37 insertions(+), 47 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 22cc38d..cfd5e30 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1026,10 +1026,10 @@ static void flush_old_files(struct files_struct * files)
+ 		fdt = files_fdtable(files);
+ 		if (i >= fdt->max_fds)
+ 			break;
+-		set = fdt->close_on_exec->fds_bits[j];
++		set = fdt->close_on_exec[j];
+ 		if (!set)
+ 			continue;
+-		fdt->close_on_exec->fds_bits[j] = 0;
++		fdt->close_on_exec[j] = 0;
+ 		spin_unlock(&files->file_lock);
+ 		for ( ; set ; i++,set >>= 1) {
+ 			if (set & 1) {
+diff --git a/fs/file.c b/fs/file.c
+index 114fea0..2d479dd 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -40,7 +40,7 @@ int sysctl_nr_open_max = 1024 * 1024; /* raised later */
+  */
+ static DEFINE_PER_CPU(struct fdtable_defer, fdtable_defer_list);
  
--       new_raw_count &= armpmu->max_period;
--       prev_raw_count &= armpmu->max_period;
+-static void *alloc_fdmem(unsigned int size)
++static void *alloc_fdmem(size_t size)
+ {
+ 	/*
+ 	 * Very large allocations can stress page reclaim, so fall back to
+@@ -142,7 +142,7 @@ static void copy_fdtable(struct fdtable *nfdt, struct fdtable *ofdt)
+ static struct fdtable * alloc_fdtable(unsigned int nr)
+ {
+ 	struct fdtable *fdt;
+-	char *data;
++	void *data;
+ 
+ 	/*
+ 	 * Figure out how many fds we actually want to support in this fdtable.
+@@ -172,14 +172,15 @@ static struct fdtable * alloc_fdtable(unsigned int nr)
+ 	data = alloc_fdmem(nr * sizeof(struct file *));
+ 	if (!data)
+ 		goto out_fdt;
+-	fdt->fd = (struct file **)data;
+-	data = alloc_fdmem(max_t(unsigned int,
++	fdt->fd = data;
++
++	data = alloc_fdmem(max_t(size_t,
+ 				 2 * nr / BITS_PER_BYTE, L1_CACHE_BYTES));
+ 	if (!data)
+ 		goto out_arr;
+-	fdt->open_fds = (fd_set *)data;
+-	data += nr / BITS_PER_BYTE;
+-	fdt->close_on_exec = (fd_set *)data;
++	fdt->open_fds = data;
++	data += nr / BITS_PER_LONG;
++	fdt->close_on_exec = data;
+ 	fdt->next = NULL;
+ 
+ 	return fdt;
+@@ -275,11 +276,11 @@ static int count_open_files(struct fdtable *fdt)
+ 	int i;
+ 
+ 	/* Find the last open fd */
+-	for (i = size/(8*sizeof(long)); i > 0; ) {
+-		if (fdt->open_fds->fds_bits[--i])
++	for (i = size / BITS_PER_LONG; i > 0; ) {
++		if (fdt->open_fds[--i])
+ 			break;
+ 	}
+-	i = (i+1) * 8 * sizeof(long);
++	i = (i + 1) * BITS_PER_LONG;
+ 	return i;
+ }
+ 
+@@ -306,8 +307,8 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 	newf->next_fd = 0;
+ 	new_fdt = &newf->fdtab;
+ 	new_fdt->max_fds = NR_OPEN_DEFAULT;
+-	new_fdt->close_on_exec = (fd_set *)&newf->close_on_exec_init;
+-	new_fdt->open_fds = (fd_set *)&newf->open_fds_init;
++	new_fdt->close_on_exec = newf->close_on_exec_init;
++	new_fdt->open_fds = newf->open_fds_init;
+ 	new_fdt->fd = &newf->fd_array[0];
+ 	new_fdt->next = NULL;
+ 
+@@ -350,10 +351,8 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 	old_fds = old_fdt->fd;
+ 	new_fds = new_fdt->fd;
+ 
+-	memcpy(new_fdt->open_fds->fds_bits,
+-		old_fdt->open_fds->fds_bits, open_files/8);
+-	memcpy(new_fdt->close_on_exec->fds_bits,
+-		old_fdt->close_on_exec->fds_bits, open_files/8);
++	memcpy(new_fdt->open_fds, old_fdt->open_fds, open_files / 8);
++	memcpy(new_fdt->close_on_exec, old_fdt->close_on_exec, open_files / 8);
+ 
+ 	for (i = open_files; i != 0; i--) {
+ 		struct file *f = *old_fds++;
+@@ -379,11 +378,11 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 	memset(new_fds, 0, size);
+ 
+ 	if (new_fdt->max_fds > open_files) {
+-		int left = (new_fdt->max_fds-open_files)/8;
+-		int start = open_files / (8 * sizeof(unsigned long));
++		int left = (new_fdt->max_fds - open_files) / 8;
++		int start = open_files / BITS_PER_LONG;
+ 
+-		memset(&new_fdt->open_fds->fds_bits[start], 0, left);
+-		memset(&new_fdt->close_on_exec->fds_bits[start], 0, left);
++		memset(&new_fdt->open_fds[start], 0, left);
++		memset(&new_fdt->close_on_exec[start], 0, left);
+ 	}
+ 
+ 	rcu_assign_pointer(newf->fdt, new_fdt);
+@@ -419,8 +418,8 @@ struct files_struct init_files = {
+ 	.fdtab		= {
+ 		.max_fds	= NR_OPEN_DEFAULT,
+ 		.fd		= &init_files.fd_array[0],
+-		.close_on_exec	= (fd_set *)&init_files.close_on_exec_init,
+-		.open_fds	= (fd_set *)&init_files.open_fds_init,
++		.close_on_exec	= init_files.close_on_exec_init,
++		.open_fds	= init_files.open_fds_init,
+ 	},
+ 	.file_lock	= __SPIN_LOCK_UNLOCKED(init_task.file_lock),
+ };
+@@ -443,8 +442,7 @@ repeat:
+ 		fd = files->next_fd;
+ 
+ 	if (fd < fdt->max_fds)
+-		fd = find_next_zero_bit(fdt->open_fds->fds_bits,
+-					   fdt->max_fds, fd);
++		fd = find_next_zero_bit(fdt->open_fds, fdt->max_fds, fd);
+ 
+ 	error = expand_files(files, fd);
+ 	if (error < 0)
+diff --git a/fs/select.c b/fs/select.c
+index d33418f..2e7fbe8 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -348,7 +348,7 @@ static int max_select_fd(unsigned long n, fd_set_bits *fds)
+ 	set = ~(~0UL << (n & (__NFDBITS-1)));
+ 	n /= __NFDBITS;
+ 	fdt = files_fdtable(current->files);
+-	open_fds = fdt->open_fds->fds_bits+n;
++	open_fds = fdt->open_fds + n;
+ 	max = 0;
+ 	if (set) {
+ 		set &= BITS(fds, n);
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 7675da2..158a41e 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -21,51 +21,43 @@
+  */
+ #define NR_OPEN_DEFAULT BITS_PER_LONG
+ 
+-/*
+- * The embedded_fd_set is a small fd_set,
+- * suitable for most tasks (which open <= BITS_PER_LONG files)
+- */
+-struct embedded_fd_set {
+-	unsigned long fds_bits[1];
+-};
 -
--       if (overflow)
--               delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
--       else
--               delta = new_raw_count - prev_raw_count;
-+       delta = (new_raw_count - prev_raw_count) & armpmu->max_period;
+ struct fdtable {
+ 	unsigned int max_fds;
+ 	struct file __rcu **fd;      /* current fd array */
+-	fd_set *close_on_exec;
+-	fd_set *open_fds;
++	unsigned long *close_on_exec;
++	unsigned long *open_fds;
+ 	struct rcu_head rcu;
+ 	struct fdtable *next;
+ };
  
-        local64_add(delta, &event->count);
-        local64_sub(delta, &hwc->period_left);
-@@ -518,7 +512,7 @@ __hw_perf_event_init(struct perf_event *event)
-        hwc->config_base            |= (unsigned long)mapping;
+ static inline void __set_close_on_exec(int fd, struct fdtable *fdt)
+ {
+-	FD_SET(fd, fdt->close_on_exec);
++	__set_bit(fd, fdt->close_on_exec);
+ }
  
-        if (!hwc->sample_period) {
--               hwc->sample_period  = armpmu->max_period;
-+               hwc->sample_period  = armpmu->max_period >> 1;
-                hwc->last_period    = hwc->sample_period;
-                local64_set(&hwc->period_left, hwc->sample_period);
-        }
+ static inline void __clear_close_on_exec(int fd, struct fdtable *fdt)
+ {
+-	FD_CLR(fd, fdt->close_on_exec);
++	__clear_bit(fd, fdt->close_on_exec);
+ }
+ 
+ static inline bool close_on_exec(int fd, const struct fdtable *fdt)
+ {
+-	return FD_ISSET(fd, fdt->close_on_exec);
++	return test_bit(fd, fdt->close_on_exec);
+ }
+ 
+ static inline void __set_open_fd(int fd, struct fdtable *fdt)
+ {
+-	FD_SET(fd, fdt->open_fds);
++	__set_bit(fd, fdt->open_fds);
+ }
+ 
+ static inline void __clear_open_fd(int fd, struct fdtable *fdt)
+ {
+-	FD_CLR(fd, fdt->open_fds);
++	__clear_bit(fd, fdt->open_fds);
+ }
+ 
+ static inline bool fd_is_open(int fd, const struct fdtable *fdt)
+ {
+-	return FD_ISSET(fd, fdt->open_fds);
++	return test_bit(fd, fdt->open_fds);
+ }
+ 
+ /*
+@@ -83,8 +75,8 @@ struct files_struct {
+    */
+ 	spinlock_t file_lock ____cacheline_aligned_in_smp;
+ 	int next_fd;
+-	struct embedded_fd_set close_on_exec_init;
+-	struct embedded_fd_set open_fds_init;
++	unsigned long close_on_exec_init[1];
++	unsigned long open_fds_init[1];
+ 	struct file __rcu * fd_array[NR_OPEN_DEFAULT];
+ };
+ 
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 4b4042f..4db0200 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -473,7 +473,7 @@ static void close_files(struct files_struct * files)
+ 		i = j * __NFDBITS;
+ 		if (i >= fdt->max_fds)
+ 			break;
+-		set = fdt->open_fds->fds_bits[j++];
++		set = fdt->open_fds[j++];
+ 		while (set) {
+ 			if (set & 1) {
+ 				struct file * file = xchg(&fdt->fd[i], NULL);
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 6a3683e..421c990 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2145,7 +2145,7 @@ static inline void flush_unauthorized_files(const struct cred *cred,
+ 		fdt = files_fdtable(files);
+ 		if (i >= fdt->max_fds)
+ 			break;
+-		set = fdt->open_fds->fds_bits[j];
++		set = fdt->open_fds[j];
+ 		if (!set)
+ 			continue;
+ 		spin_unlock(&files->file_lock);
 
