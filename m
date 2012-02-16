@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab2BPCLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 21:11:15 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52046 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754791Ab2BPCLM (ORCPT
+	id S1756861Ab2BPCMc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 21:12:32 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34810 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab2BPCMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 21:11:12 -0500
-Message-ID: <4F3C6594.3030709@fb.com>
-Date: Wed, 15 Feb 2012 18:10:28 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 15 Feb 2012 21:12:31 -0500
+Date: Wed, 15 Feb 2012 18:12:23 -0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Huang Shijie <b32955@freescale.com>
+Cc: vinod.koul@intel.com, artem.bityutskiy@intel.com, w.sang@pengutronix.de,
+        LW@KARO-electronics.de, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com, cjb@laptop.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/2] mxs-dma : rewrite the last parameter of
+ mxs_dma_prep_slave_sg()
+Message-ID: <20120216021223.GF30946@r65073-Latitude-D630>
+References: <1329110756-14434-1-git-send-email-b32955@freescale.com>
+ <1329110756-14434-3-git-send-email-b32955@freescale.com>
+ <20120215195552.GB2399@r65073-Latitude-D630>
+ <4F3C6466.9000500@freescale.com>
 MIME-Version: 1.0
-To: Andrea Righi <andrea@betterlinux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com> <1329006098-5454-4-git-send-email-andrea@betterlinux.com> <20120215233537.GA20724@dev3310.snc6.facebook.com> <20120215234724.GA21685@thinkpad> <4F3C467B.1@fb.com> <20120216005608.GC21685@thinkpad>
-In-Reply-To: <20120216005608.GC21685@thinkpad>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
- definitions=2012-02-16_01:2012-02-16,2012-02-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3C6466.9000500@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/15/12 4:56 PM, Andrea Righi wrote:
+On Thu, Feb 16, 2012 at 10:05:26AM +0800, Huang Shijie wrote:
+> Hi Shawn:
+> >I'm trying to give it a test.  But it does not apply on either mainline
+> >or next tree.  You probably had a wrong base for this patch.
+> >
+> thanks for your work.
+> 
+> As the previous email said, this patch set bases on :[PATCH v2]
+> mtd/gpmi : add gpmi support for mx6q.
+> 
+Then you are doing something wrong.  This series should be based on
+mainline, and then you add imx6q support on top of this series.
 
-> Oh sorry, you're right! nocache_tree is not a pointer inside
-> address_space, so the compiler must know the size.
->
-> mmh... move the definition of the rb_root struct in linux/types.h? or
-> simply use a rb_root pointer. The (void *) looks a bit scary and too bug
-> prone.
-
-Either way is fine. I did some black box testing of the patch (comparing 
-noreuse vs dontneed) and it behaves as expected.
-
-On a file copy, neither one pollutes the page cache. But if I run a 
-random read benchmark on the source file right before and afterwards, 
-page cache is warm with noreuse, but cold with dontneed. Copy 
-performance was unaffected.
-
-I can't really comment on the implementation details since I haven't 
-reviewed it, but the functionality sounds useful.
-
-  -Arun
-
+-- 
+Regards,
+Shawn
