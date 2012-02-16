@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2BPSiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:38:09 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63992 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322Ab2BPSiH (ORCPT
+	id S1754610Ab2BPSnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:43:09 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41116 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab2BPSnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:38:07 -0500
-Date: Thu, 16 Feb 2012 22:33:16 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120216183316.GA17636@albatros>
-References: <20120215195733.GA8021@albatros>
- <20120215200533.GQ1894@moon>
- <20120215202538.GK4533@moon>
- <20120215210934.GL4533@moon>
- <20120215215807.GM4533@moon>
- <20120216144954.GA11953@redhat.com>
- <20120216151340.GI1905@moon>
- <20120216164901.GD3849@moon>
- <20120216182106.GA17020@albatros>
- <20120216183455.GL1905@moon>
+	Thu, 16 Feb 2012 13:43:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216183455.GL1905@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120216025331.GT9751@redhat.com>
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<20120213152808.GD9751@redhat.com>
+	<CAE9FiQXX7BXKuVHZ9NRCEmeTnPj4zVJL5gf5eSp6b+4e3jN3EA@mail.gmail.com>
+	<20120216025331.GT9751@redhat.com>
+Date: Thu, 16 Feb 2012 10:43:06 -0800
+X-Google-Sender-Auth: 0YHre0MtiqHZOdPrSwDnZVxO2cg
+Message-ID: <CAE9FiQW4utm0roHR7zHS_tHbOAhqi4SECjH8cwJ3H=zEKhQLXA@mail.gmail.com>
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+From: Yinghai Lu <yinghai@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, kexec@lists.infradead.org,
+        vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 22:34 +0400, Cyrill Gorcunov wrote:
-> On Thu, Feb 16, 2012 at 10:21:06PM +0400, Vasiliy Kulikov wrote:
-> > On Thu, Feb 16, 2012 at 20:49 +0400, Cyrill Gorcunov wrote:
-> > > +	err = mutex_lock_killable(m1);
-> > > +	if (!err && likely(m1 != m2)) {
-> > > +		err = mutex_lock_killable_nested(m2, SINGLE_DEPTH_NESTING);
-> > 
-> > Doesn't it lead to a deadlock?
-> > 
-> > mutex_lock_killable(task1)
-> > |					mutex_lock_killable(task2)
-> > mutex_lock_killable_nested(task2)	|
-> > (locked)				|
-> > 					mutex_lock_killable_nested(task1)
-> > 					(locked)
-> > 
-> > I suppose you should use some global lock (kcmp_lock) before both locks.
-> 
-> but here is if (m1 > m2) and swap() do take place.
+On Wed, Feb 15, 2012 at 6:53 PM, Don Zickus <dzickus@redhat.com> wrote:
+>
+> For some reason using gzip instead of xz makes things work for me with
+> your config.
+>
+> CONFIG_KERNEL_GZIP=y
+> CONFIG_KERNEL_XZ=n
+>
+> Do you see the same thing?
 
-Ah, ok.  Then this deadlock scenario is impossible, sorry.
+no.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+with GZIP still get instant reset.
+
+Yinghai
