@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab2BPFe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:34:26 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:37517 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2BPFeX (ORCPT
+	id S1752708Ab2BPFef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:34:35 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:41170 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab2BPFec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:34:23 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux@arm.linux.org.uk, nicolas.pitre@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] ARM: boot/compressed/decompress.c cleanup
-Date: Thu, 16 Feb 2012 06:34:09 +0100
-Message-Id: <1329370449-12033-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 16 Feb 2012 00:34:32 -0500
+Message-ID: <4F3C953B.2060803@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 13:33:47 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com> <4F38E091.5070504@linux.vnet.ibm.com> <4F3931D6.2090305@gmail.com> <4F3C8D3F.9010105@linux.vnet.ibm.com> <4F3C8E84.80905@gmail.com>
+In-Reply-To: <4F3C8E84.80905@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021519-5490-0000-0000-000000BFA01B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes against Linus' tree
+On 02/16/2012 01:05 PM, David Ahern wrote:
 
-- Remove unused declarations and includes
-- Remove the ARCH_HAS_DECOMP_WDOG define
-  because it is only used in lib/deflate.c, which
-  only the alpha architecture uses. No other architecture
-  uses this define
-- Remove the Trace<xx> and Assert functions which aren't used
-  in decompression routines.
+> On 2/15/12 9:59 PM, Xiao Guangrong wrote:
+>>
+>>
+>> Okay, i will post the next version after collecting your new comments!
+>>
+>> Thanks for your time, David! :)
+>>
+> 
+> I had more comments, but got sidetracked and forgot to come back to this. I still haven't looked at the code yet, but some comments from testing:
+> 
+> 1. The error message:
+>   Warning: Error: expected type 5 but read 4
+>   Warning: Error: expected type 5 but read 0
+>   Warning: unknown op '}'
+> 
+> is fixed by this patch which has not yet made its way into perf:
+> https://lkml.org/lkml/2011/9/4/41
+> 
+> The most recent request:
+> https://lkml.org/lkml/2012/2/8/479
+> 
+> Arnaldo: the patch still applies cleanly (but with an offset of -2 lines).
+> 
 
-Tested successfully on Linux 3.3.0-rc3
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/arm/boot/compressed/decompress.c |   23 -----------------------
- 1 files changed, 0 insertions(+), 23 deletions(-)
+Great, it is a good fix.
 
-diff --git a/arch/arm/boot/compressed/decompress.c b/arch/arm/boot/compressed/decompress.c
-index 07be5a2..36f92ca 100644
---- a/arch/arm/boot/compressed/decompress.c
-+++ b/arch/arm/boot/compressed/decompress.c
-@@ -1,37 +1,14 @@
--#define _LINUX_STRING_H_
--
- #include <linux/compiler.h>	/* for inline */
- #include <linux/types.h>	/* for size_t */
- #include <linux/stddef.h>	/* for NULL */
--#include <linux/linkage.h>
- #include <asm/string.h>
- 
- extern unsigned long free_mem_ptr;
- extern unsigned long free_mem_end_ptr;
--extern void error(char *);
- 
- #define STATIC static
- #define STATIC_RW_DATA	/* non-static please */
- 
--#define ARCH_HAS_DECOMP_WDOG
--
--/* Diagnostic functions */
--#ifdef DEBUG
--#  define Assert(cond,msg) {if(!(cond)) error(msg);}
--#  define Trace(x) fprintf x
--#  define Tracev(x) {if (verbose) fprintf x ;}
--#  define Tracevv(x) {if (verbose>1) fprintf x ;}
--#  define Tracec(c,x) {if (verbose && (c)) fprintf x ;}
--#  define Tracecv(c,x) {if (verbose>1 && (c)) fprintf x ;}
--#else
--#  define Assert(cond,msg)
--#  define Trace(x)
--#  define Tracev(x)
--#  define Tracevv(x)
--#  define Tracec(c,x)
--#  define Tracecv(c,x)
--#endif
--
- #ifdef CONFIG_KERNEL_GZIP
- #include "../../../../lib/decompress_inflate.c"
- #endif
--- 
-1.7.4.1
+But, it does not hurt the development of kvm-events.
+
+> 
+> 2. negatve testing:
+> 
+> perf kvm-events record -e kvm:* -p 2603 -- sleep 10
+> 
+>   Warning: Error: expected type 4 but read 7
+>   Warning: Error: expected type 5 but read 0
+>   Warning: failed to read event print fmt for kvm_apic
+>   Warning: Error: expected type 4 but read 7
+>   Warning: Error: expected type 5 but read 0
+>   Warning: failed to read event print fmt for kvm_inj_exception
+>   Fatal: bad op token {
+> 
+> If other kvm events are specified in the record line they appear to be silently ignored in the report in which case why allow the -e option to record?
+> 
+
+
+Yes, kvm-events doese not analyse these events specified by -e option since
+these events are not needed by vmexit/ioport/mmio analysis.
+
+And after kvm-evnets record, you can see these events by perf script
+
+> 
+> 3. What is happening for multiple VMs?
+> 
+> a. perf kvm-events report
+> data is collected for all VMs. What is displayed in the report? An
+> average for all VMs?
+> 
+
+
+Yes
+
+> b. perf kvm-events report --vcpu 1
+> Does this given an average of all vcpu 1's?
+> 
+
+
+Yes
+
+> Perhaps a -p option for the report to pull out events related to a single VM. Really this could be a generic option (to perf-report and perf-script as well) to only show/analyze events for the specified pid. ie., data is recorded for all VMs (or system wide for the regular perf-record) and you want to only consider events for a specific pid. e.g., in process_sample_event() skip event if event->ip.pid != report_pid (works for perf code because PERF_SAMPLE_TID attribute is always set).
+
+Analysis for per VMs is good idea, but please allow me put it into my TODO list. :)
 
