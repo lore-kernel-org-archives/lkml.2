@@ -1,75 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab2BPGnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 01:43:17 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34202 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab2BPGnQ (ORCPT
+	id S1757277Ab2BPGoz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 01:44:55 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57079 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2BPGox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 01:43:16 -0500
-Message-ID: <1329374591.5646.23.camel@edumazet-laptop>
-Subject: [PATCH] atl1c: dont use highprio tx queue
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>, David Miller <davem@davemloft.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "jcliburn@gmail.com" <jcliburn@gmail.com>,
-        "chris.snook@gmail.com" <chris.snook@gmail.com>,
-        netdev <netdev@vger.kernel.org>, Josh Boyer <jwboyer@gmail.com>
-Date: Thu, 16 Feb 2012 07:43:11 +0100
-In-Reply-To: <21390AB8-BD9B-44D7-B2CE-B20AF7605CE7@m3y3r.de>
-References: <1329063403.1449.14.camel@localhost.localdomain>
-	 <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
-	 <1329204997.24837.15.camel@edumazet-laptop>
-	 <1329366846.5646.1.camel@edumazet-laptop>
-	 <C6B7BB6C-D1B8-4454-A2B2-558FCA5B0BBD@m3y3r.de>
-	 <1329373082.5646.9.camel@edumazet-laptop>
-	 <21390AB8-BD9B-44D7-B2CE-B20AF7605CE7@m3y3r.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 16 Feb 2012 01:44:53 -0500
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jeff Garzik <jgarzik@pobox.com>
+Cc: Nam-Jae Jeon <namjae.jeon@samsung.com>, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 2/2] scsi: retrieve cache mode using ATA_16 cmd if normal routine fails
+Date: Thu, 16 Feb 2012 12:22:21 +0530
+Message-Id: <1329375141-6944-1-git-send-email-amit.sahrawat83@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver attempts to use two TX rings but lacks proper support :
+It has been observed that a number of USB HDD's do not respond correctly
+to SCSI mode sense command(retrieve caching pages) which results in their
+Write Cache being discarded by queue requests i.e., WCE if left set to
+'0'(disabled).
+This results in a number of Filesystem corruptions, when the device
+is unplugged abruptly.
 
-1) IRQ handler only takes care of TX completion on first TX ring
-2) the stop/start logic uses the legacy functions (for non multiqueue
-drivers)
+So, in order to identify the devices correctly - give it
+a last try using ATA_16 cmd after failure from normal routine.
 
-This means all packets witk skb mark set to 1 are sent through high
-queue but are never cleaned and queue eventualy fills and block the
-device, triggering the infamous "NETDEV WATCHDOG" message. 
-
-Lets use a single TX ring to fix the problem, this driver is not a real
-multiqueue one yet.
-
-Minimal fix for stable kernels.
-
-Reported-by: Thomas Meyer <thomas@m3y3r.de>
-Tested-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jay Cliburn <jcliburn@gmail.com>
-Cc: Chris Snook <chris.snook@gmail.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 ---
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/ata/libata-scsi.c |   39 +++++++++++++++++++++++++++++++++++++++
+ drivers/scsi/sd.c         |   18 ++++++++++++++++++
+ include/linux/libata.h    |    1 +
+ 3 files changed, 58 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index b859124..1ff3c6d 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -2244,10 +2244,6 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
- 			dev_info(&adapter->pdev->dev, "tx locked\n");
- 		return NETDEV_TX_LOCKED;
- 	}
--	if (skb->mark == 0x01)
--		type = atl1c_trans_high;
--	else
--		type = atl1c_trans_normal;
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 508a60b..218df4f 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -561,6 +561,45 @@ error:
+ 	return rc;
+ }
  
- 	if (atl1c_tpd_avail(adapter, type) < tpd_req) {
- 		/* no enough descriptor, just stop queue */
-
++int ata_get_cachestatus(struct scsi_device *scsidev)
++{
++	int rc = 0;
++	u8 scsi_cmd[MAX_COMMAND_SIZE] = {0};
++	u8 *sensebuf = NULL, *argbuf = NULL;
++	enum dma_data_direction data_dir;
++	int cmd_result;
++	sensebuf = kzalloc(SCSI_SENSE_BUFFERSIZE, GFP_NOIO);
++	if (!sensebuf)
++		return rc;
++
++	argbuf = kzalloc(ATA_SECT_SIZE, GFP_KERNEL);
++	if (!argbuf)
++		goto error;
++
++	scsi_cmd[0] = ATA_16;
++	scsi_cmd[1]  = (4 << 1); /* PIO Data-in */
++	scsi_cmd[2]  = 0x0e;     /* no off.line or cc, read from dev,
++				block count in sector count field */
++	data_dir = DMA_FROM_DEVICE;
++	scsi_cmd[14] = ATA_CMD_ID_ATA;
++
++	if (!scsi_execute(scsidev, scsi_cmd, data_dir, argbuf, ATA_SECT_SIZE,
++					sensebuf, (10*HZ), 5, 0, NULL)) {
++		/*
++		 * 6th Bit in Word 85 Corresponds to Write Cache
++		 * being Enabled/disabled, Word 85 represnets the
++		 * features supported
++		 */
++		 if (le16_to_cpu(((unsigned short *)argbuf)[85]) & 0x20)
++			rc = 1;
++	}
++
++error:
++	kfree(sensebuf);
++	kfree(argbuf);
++	return rc;
++}
++
+ /**
+  *	ata_task_ioctl - Handler for HDIO_DRIVE_TASK ioctl
+  *	@scsidev: Device to which we are issuing command
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index c691fb5..3ca507a 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -50,6 +50,11 @@
+ #include <linux/string_helpers.h>
+ #include <linux/async.h>
+ #include <linux/slab.h>
++
++#ifdef CONFIG_ATA
++#include <linux/libata.h>
++#endif
++
+ #include <linux/pm_runtime.h>
+ #include <asm/uaccess.h>
+ #include <asm/unaligned.h>
+@@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 		if (modepage == 0x3F) {
+ 			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+ 				  "present\n");
++#ifdef CONFIG_ATA
++			goto WCE_USING_ATA;
++#else
+ 			goto defaults;
++#endif
+ 		} else if ((buffer[offset] & 0x3f) != modepage) {
+ 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+ 			goto defaults;
+@@ -2149,6 +2158,15 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+ 				  "Uses READ/WRITE(6), disabling FUA\n");
+ 			sdkp->DPOFUA = 0;
+ 		}
++#ifdef CONFIG_ATA
++WCE_USING_ATA:
++		if (!sdp->removable && !sdkp->WCE) {
++			sd_printk(KERN_NOTICE, sdkp, "Try to check write cache"
++				" enable/disable using ATA command\n");
++			sdkp->WCE = ata_get_cachestatus(sdp);
++		}
++#endif
++
+ 
+ 		if (sdkp->first_scan || old_wce != sdkp->WCE ||
+ 		    old_rcd != sdkp->RCD || old_dpofua != sdkp->DPOFUA)
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index cafc09a..20c5c33 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -990,6 +990,7 @@ extern void ata_host_init(struct ata_host *, struct device *,
+ 			  unsigned long, struct ata_port_operations *);
+ extern int ata_scsi_detect(struct scsi_host_template *sht);
+ extern int ata_scsi_ioctl(struct scsi_device *dev, int cmd, void __user *arg);
++extern int ata_get_cachestatus(struct scsi_device *scsidev);
+ extern int ata_scsi_queuecmd(struct Scsi_Host *h, struct scsi_cmnd *cmd);
+ extern int ata_sas_scsi_ioctl(struct ata_port *ap, struct scsi_device *dev,
+ 			    int cmd, void __user *arg);
+-- 
+1.7.2.3
 
