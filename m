@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2BPQgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:36:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62515 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab2BPQgf (ORCPT
+	id S1753403Ab2BPQhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:37:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53707 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2BPQhj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:36:35 -0500
-Date: Thu, 16 Feb 2012 08:36:30 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Naveen Goswamy <naveen.goswamy@polymtl.ca>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: Kernel crashing on eject SD card
-Message-ID: <20120216163630.GH24986@google.com>
-References: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca>
- <20120212220836.6aa7fa4d@stein>
- <20120212222027.71651e8b@stein>
- <20120213021813.GA589@redhat.com>
- <1329154831.4f394b0f3c69c@www.imp.polymtl.ca>
- <4F3A4220.4010901@ce.jp.nec.com>
- <20120214162858.GM12117@google.com>
- <4F3B1ED3.4000706@ce.jp.nec.com>
- <20120215172617.GB24986@google.com>
- <4F3C5B4E.3080606@ce.jp.nec.com>
+	Thu, 16 Feb 2012 11:37:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3C5B4E.3080606@ce.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1329409183.2293.245.camel@twins>
+References: <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
+	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
+	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
+	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
+	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
+	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
+	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
+	<CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
+	<1329323900.2293.150.camel@twins>
+	<CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
+	<20120216150004.GE2641@mudshark.cambridge.arm.com>
+	<CACVXFVM472hz+na7o2wJr1CPq-W=YB7i0UwtrsUf62+ryzWp8A@mail.gmail.com>
+	<1329409183.2293.245.camel@twins>
+Date: Fri, 17 Feb 2012 00:37:35 +0800
+Message-ID: <CACVXFVOygObWqPMLjg6uOB6inBkvvUjsQncNW0fbmpa4Xspw0Q@mail.gmail.com>
+Subject: Re: oprofile and ARM A9 hardware counter
+From: Ming Lei <ming.lei@canonical.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Will Deacon <will.deacon@arm.com>, "eranian@gmail.com" <eranian@gmail.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        David Long <dave.long@linaro.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Feb 17, 2012 at 12:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2012-02-17 at 00:12 +0800, Ming Lei wrote:
+>> is triggered: u64 delta = 100 -  1000000 = 18446744073708551716.
+>
+> on x86 we do:
+>
+>  int shift = 64 - x86_pmu.cntval_bits;
+>  s64 delta;
+>
+>  delta = (new_raw_count << shift) - (prev_raw_count << shift);
+>  delta >>= shift;
+>
+> This deals with short overflows (on x86 the registers are typically 40
+> or 48 bits wide). If the arm register is 32 you can of course also get
+> there with some u32 casts.
 
-On Thu, Feb 16, 2012 at 10:26:38AM +0900, Jun'ichi Nomura wrote:
-> >> +int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
-> >> +{
-> >> +	int res;
-> >> +
-> >> +	res = drop_partitions(disk, bdev);
-> >> +	if (res)
-> >> +		return res;
-> >> +
-> > 
-> > Hmmm... shouldn't we have set_capacity(disk, 0) here?
-> 
-> Added.
-> I wasn't sure whether I should leave it to drivers.
+Good idea, but it may not work if new_raw_count is bigger than prev_raw_count.
 
-The problem is that we shouldn't call into drivers without first
-opening the device, so....
-
-> But it seems capacity 0 for ENOMEDIUM device is reasonable.
-
-Yeah, I *think* it should be okay.
-
-> >> +	check_disk_size_change(disk, bdev);
-> >> +	bdev->bd_invalidated = 0;
-> >> +	/* tell userspace that the media / partition table may have changed */
-> >> +	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
-> > 
-> > Also, we really shouldn't be generating KOBJ_CHANGE after every
-> > -ENOMEDIUM open.  This can easily lead to infinite loop.  We should
-> > generate this iff we actually dropped partitions && modified the size.
-> 
-> invalidate_partitions() is called only when bd_invalidated is set.
-> So KOBJ_CHANGE is not raised for every ENOMEDIUM open.
-
-Ah, okay.
-
-> I put it explicit in the function to make it safer for
-> possible misuse.
-> 
-> How about this?
-> 
-> ---------------------------------------------------------
-> Do not call drivers when invalidating partitions for -ENOMEDIUM
-> 
-> When a scsi driver returns -ENOMEDIUM for open(),
-> __blkdev_get() calls rescan_partitions(), which ends up calling
-> sd_revalidate_disk() without getting a refcount of scsi_device.
-> 
-> That could lead to oops like this:
-> 
->   process A                  process B
->   ----------------------------------------------
->   sys_open
->     __blkdev_get
->       sd_open
->         returns -ENOMEDIUM
->                              scsi_remove_device
->                                <scsi_device torn down>
->       rescan_partitions
->         sd_revalidate_disk
->           <oops>
-> 
-> Oopses are reported here:
-> http://marc.info/?l=linux-scsi&m=132388619710052
-> 
-> This patch separates the partition invalidation from rescan_partitions()
-> and use it for -ENOMEDIUM case. 
-
-Yeah, this looks good to me.
-
-Thank you.
-
--- 
-tejun
+thanks
+--
+Ming Lei
