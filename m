@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab2BPA4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 19:56:16 -0500
-Received: from mail.betterlinux.com ([199.58.199.50]:59586 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab2BPA4N (ORCPT
+	id S1756240Ab2BPA62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 19:58:28 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:54497 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751916Ab2BPA60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 19:56:13 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 5C693821A8
-Date: Thu, 16 Feb 2012 01:56:08 +0100
-From: Andrea Righi <andrea@betterlinux.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
-Message-ID: <20120216005608.GC21685@thinkpad>
-References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
- <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
- <20120215233537.GA20724@dev3310.snc6.facebook.com>
- <20120215234724.GA21685@thinkpad>
- <4F3C467B.1@fb.com>
+	Wed, 15 Feb 2012 19:58:26 -0500
+X-Sasl-enc: u67LOwrm7NSE5q04mSIjObNCGPH1hrdrcC3qvhlx1gVH 1329353905
+Date: Wed, 15 Feb 2012 16:54:37 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Egmont Koblinger <egmont@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
+Message-ID: <20120216005437.GA22858@kroah.com>
+References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
+ <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+ <20120215233002.GB20816@kroah.com>
+ <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F3C467B.1@fb.com>
+In-Reply-To: <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 03:57:47PM -0800, Arun Sharma wrote:
-> 
-> 
-> On 2/15/12 3:47 PM, Andrea Righi wrote:
-> >>index 74b6a97..b4e45e6 100644
-> >>--- a/include/linux/fs.h
-> >>+++ b/include/linux/fs.h
-> >>@@ -9,7 +9,6 @@
-> >>  #include<linux/limits.h>
-> >>  #include<linux/ioctl.h>
-> >>  #include<linux/blk_types.h>
-> >>-#include<linux/kinterval.h>
-> >>  #include<linux/types.h>
-> >>
-> >>  /*
-> >>@@ -656,7 +655,7 @@ struct address_space {
-> >>  	spinlock_t		private_lock;	/* for use by the address_space */
-> >>  	struct list_head	private_list;	/* ditto */
-> >>  	struct address_space	*assoc_mapping;	/* ditto */
-> >>-	struct rb_root		nocache_tree;	/* noreuse cache range tree */
-> >>+	void			*nocache_tree;	/* noreuse cache range tree */
-> >>  	rwlock_t		nocache_lock;	/* protect the nocache_tree */
-> >>  } __attribute__((aligned(sizeof(long))));
-> >>  	/*
-> >
-> >mmh.. a forward declaration of rb_root in fs.h shouldn't be better than
-> >this?
-> >
-> 
-> Forward declaration works if the type was struct rb_root *. But the
-> type in your patch was a struct and the compiler can't figure out
-> its size.
-> 
-> include/linux/fs.h:659:17: error: field ‘nocache_tree’ has incomplete type
-> 
-> Did you mean forward declaring struct rb_node instead of rb_root?
-> 
-> If we go down this path, a few more places need fixups (I ignored
-> the compiler warnings about casting void * to struct rb_root *).
-> 
->  -Arun
 
-Oh sorry, you're right! nocache_tree is not a pointer inside
-address_space, so the compiler must know the size.
+A: No.
+Q: Should I include quotations after my reply?
 
-mmh... move the definition of the rb_root struct in linux/types.h? or
-simply use a rb_root pointer. The (void *) looks a bit scary and too bug
-prone.
+http://daringfireball.net/2007/07/on_top
 
--Andrea
+On Thu, Feb 16, 2012 at 01:39:59AM +0100, Egmont Koblinger wrote:
+> Hi Greg,
+> 
+> Sorry, I didn't emphasize the point that makes me suspect it's a kernel issue:
+> 
+> - strace reveals that the terminal emulator writes the correct data
+> into /dev/ptmx, and the kernel reports no short writes(!), all the
+> write(..., ..., 68) calls actually return 68 (the length of the
+> example file's lines incl. newline; I'm naively assuming I can trust
+> strace here.)
+> - strace reveals that the receiving application (bash) doesn't receive
+> all the data from /dev/pts/N.
+> - so: the data gets lost after writing to /dev/ptmx, but before
+> reading it out from /dev/pts/N.
+
+Which it will, if the reader doesn't read fast enough, right?  Is the
+data somewhere guaranteed to never "overrun" the buffer?  If so, how do
+we handle not just running out of memory?
+
+> First I was also hoping for a bug in the terminal emulators not
+> handling short writes correctly, but it's not the case.
+
+Yes, that would make things easier.
+
+> Could you please verify that stracing the terminal and the app shows
+> the same behavior to you?  If it's the same, and if strace correctly
+> reports the actual number of bytes written, then can it still be an
+> application bug?
+
+You can do that stracing vim if you want to, I'm currently on the road
+at the moment, and have to give a presentation in a few minutes, so my
+spare time for this is a bit limited :)
+
+> Not being able to reproduce in vim/whatever doesn't mean too much, as
+> it seems to be some kind of race condition (behaves differently on
+> different machines, buggy only at ~10% of the time for me), the actual
+> circumstances that trigger the bug might depend on timing or the way
+> the applications read the buffer (byte by byte, or larger chunks) or
+> number of processors or I don't know what.
+
+Not being able to reproduce it with a different userspace program is
+important, in that there is at least one "known good" userspace program
+here that does things correctly.
+
+I bet you can write a simple userspace program that also does this
+correctly, have you tried that?  That might be best to provide a "tiny"
+reproducer.
+
+Odds are bash and python don't do things properly, as they aren't
+accustomed to such large buffers coming in at this rate of speed.  They
+are designed for this type of thing, while vim is used to it.
+
+> Unfortunately I have no information about "known good" reference
+> point, but I recall seeing a similar bug a year or two ago, I just
+> didn't pay attention to it. So probably it's not a new one.
+
+If you can trace something down in the kernel to point to where we are
+doing something wrong, I would be glad to look at it.  But without that,
+there's not much I can do here, sorry.
+
+thanks,
+
+greg k-h
