@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2BPRjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:39:08 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:47135 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab2BPRjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 12:39:06 -0500
-Message-ID: <4F3D3F21.3060905@ti.com>
-Date: Thu, 16 Feb 2012 18:38:41 +0100
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1753944Ab2BPRo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 12:44:56 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:49675 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2BPRoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 12:44:55 -0500
+Date: Thu, 16 Feb 2012 12:44:52 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com,
+        s.hauer@pengutronix.de, magnus.damm@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: remove memmove from boot/compressed/string.c
+In-Reply-To: <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
+Message-ID: <alpine.LFD.2.02.1202161226580.24536@xanadu.home>
+References: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com> <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 08/27] irq_domain: Move irq_domain code from powerpc
- to kernel/irq
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-9-git-send-email-grant.likely@secretlab.ca>
-In-Reply-To: <1329383368-12122-9-git-send-email-grant.likely@secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Thu, 16 Feb 2012, Michael Opdenacker wrote:
 
-It looks like there is a small regression in that update, it cannot 
-build due to a missing semi-colon.
+> This patch removes the memmove function from boot/compressed/string.c
 
-On 2/16/2012 10:09 AM, Grant Likely wrote:
-> +/**
-> + * irq_find_mapping() - Find a linux irq from an hw irq number.
-> + * @host: domain owning this hardware interrupt
-> + * @hwirq: hardware irq number in that host space
-> + *
-> + * This is a slow path, for use by generic code. It's expected that an
-> + * irq controller implementation directly calls the appropriate low level
-> + * mapping function.
-> + */
-> +unsigned int irq_find_mapping(struct irq_domain *host,
-> +			      irq_hw_number_t hwirq)
-> +{
-> +	unsigned int i;
-> +	unsigned int hint = hwirq % irq_virq_count;
-> +
-> +	/* Look for default host if nececssary */
-> +	if (host == NULL)
-> +		host = irq_default_host;
-> +	if (host == NULL)
-> +		return NO_IRQ;
-> +
-> +	/* legacy ->  bail early */
-> +	if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-> +		return hwirq;
-> +
-> +	/* Slow path does a linear search of the map */
-> +	if (hint == 0)
-> +		hint = 1;
-> +	i = hint;
-> +	do {
-> +		struct irq_data *data = irq_get_irq_data(i);
-> +		if (data&&  (data->domain == host)&&  (data->hwirq == hwirq))
-> +			return i;
-> +		i++;
-> +		if (i>= irq_virq_count)
-> +			i = 1
+... breaking CONFIG_ARM_ATAG_DTB_COMPAT.
 
-The ";" is missing.
+> - This definition conflicts with the one in lib/decompress_unxz.c
+>   This change is required to support xz compression on ARM.
 
-Regards,
-Benoit
+No, it's the decompress_unxz.c code which is wrong.
+
+To work around it, just do:
+
+#define memmove memmove
+
+before including lib/decompress_unxz.c.
+
+> - memmove is not used in any of the other decompressors
+>   in lib/decompress_*.c
+
+Doesn't mean it isn't used at all.
+
+Here's a trick.  Next time you can do:
+
+	git blame arch/arm/boot/compressed/string.c
+
+That will list all the file content, annotated with references to the 
+commits that brought them there.
+
+Looking for memmove() you'll see that commit df4879fa260 is responsible 
+for it. Its commit log says:
+
+    ARM: zImage: gather some string functions into string.c
+
+    This is a small subset of string functions needed by commits to 
+    come.
+
+OK, doing a full 'git log' and searching for that commit, just to back 
+up to the next one you'll see:
+
+    ARM: zImage: allow supplementing appended DTB with traditional ATAG  data
+
+That explains why memmove() is required, and by which code.
+
+
+Nicolas
