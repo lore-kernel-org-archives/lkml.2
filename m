@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab2BPL3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 06:29:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39296 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2BPL27 (ORCPT
+	id S1751430Ab2BPLmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 06:42:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37063 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab2BPLmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 06:28:59 -0500
+	Thu, 16 Feb 2012 06:42:49 -0500
 MIME-Version: 1.0
-X-Originating-IP: [108.60.121.130]
-In-Reply-To: <4F3CC899.4070302@monstr.eu>
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com>
- <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com>
- <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
- <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com>
- <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
- <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu> <4F3CC899.4070302@monstr.eu>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 16 Feb 2012 12:28:38 +0100
-Message-ID: <CAK=WgbaRF-L7M3VMZQdqFLUFOJuwFVkBH1hUNuJ51kSrzkaVjA@mail.gmail.com>
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory location
-To: monstr@monstr.eu
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120216001040.GA21919@kroah.com>
+References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
+ <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+ <CAOULuObKZX_VER0ERPNBb0gS8GBQBHpJBHQcpJi2kNBBysL=2A@mail.gmail.com> <20120216001040.GA21919@kroah.com>
+From: Egmont Koblinger <egmont@gmail.com>
+Date: Thu, 16 Feb 2012 12:42:07 +0100
+Message-ID: <CAGWcZkJ+uvg=GwFJ+AizCAope2rWw2wujJYUZMvz8GBkKr34sA@mail.gmail.com>
+Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 10:12 AM, Michal Simek <monstr@monstr.eu> wrote:
-> I should be more specific. Can you point me to remoteproc code which publish
-> remote service based on them Linux rpmsg driver will be probed? It is rtos
-> part of code.
-> In your ELCE presentation is called rpmsg-client-sample service.
+On Thu, Feb 16, 2012 at 01:10, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> Odds are emacs also does this correctly, anyone care to verify that?
 
-Sorry for the late response (I'm in ELC).
+Actually, thanks for the hint, emacs is the first editor where I could
+easily trigger the bug.  I made the input data a bit longer (200
+lines), and it's being pasted incorrectly all the time.
 
-Yes, use the client sample (which is part of the submitted patch set)
-and not the omx/server samples (which are public, but were never
-submitted nor cleaned up).
+Stracing xterm contains exactly this, with the "= 68" at the end, 200 times:
+write(5, "a=(12345678912345678912345678912"..., 68) = 68
 
-The channels are created dynamically: the rpmsg bus designates address
-53 for a name service, which listens to channel creation/removal
-announcements coming from the remote processor. Take a look in
-virtio_rpmsg_bus.c and you'll immediately see it.
+Contrary to xterm, gnome-terminal doesn't split the buffer at
+newlines, it tries to write to /dev/ptmx in one single step. In this
+example I extended the file to 1000 lines long (68000 bytes), here's
+what strace gnome-terminal says:
+open("/dev/ptmx", O_RDWR) = 17
+[...]
+write(17, "a=(12345678912345678912345678912"..., 68000) = 65280
+[...]
+write(17, "a=(12345678912345678912345678912"..., 2720) = 2720
 
-Hope this helps,
-Ohad.
+So copy-paste starts misbehaving after 4kB, which suggests a buffer
+size of around that size; on the other hand, writes to /dev/ptmx can
+return up to almost 64kB, which suggests a much larger terminal buffer
+which makes it strange that it starts misbehaving as early as at 4kB.
+
+On a side note, apparently gnome-terminal handles short writes
+correctly. (It's a mere accident that the size of the first write,
+65280, is dividable by the line length of my example, 68.  A different
+input shows that the second write indeed continues sending the buffer
+from the correct offset, from the middle of a line. The return value
+of the first write is the same, 65280 in that case too.)
+
+
+thx,
+egmont
