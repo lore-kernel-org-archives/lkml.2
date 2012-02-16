@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab2BPQgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:36:00 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33304 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab2BPQf7 (ORCPT
+	id S1753384Ab2BPQgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:36:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62515 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab2BPQgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:35:59 -0500
-Date: Thu, 16 Feb 2012 14:35:39 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-Message-ID: <20120216163539.GC2086@infradead.org>
-References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com>
- <4F38E091.5070504@linux.vnet.ibm.com>
- <4F3931D6.2090305@gmail.com>
- <4F3C8D3F.9010105@linux.vnet.ibm.com>
- <4F3C8E84.80905@gmail.com>
+	Thu, 16 Feb 2012 11:36:35 -0500
+Date: Thu, 16 Feb 2012 08:36:30 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: Naveen Goswamy <naveen.goswamy@polymtl.ca>, Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: Kernel crashing on eject SD card
+Message-ID: <20120216163630.GH24986@google.com>
+References: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca>
+ <20120212220836.6aa7fa4d@stein>
+ <20120212222027.71651e8b@stein>
+ <20120213021813.GA589@redhat.com>
+ <1329154831.4f394b0f3c69c@www.imp.polymtl.ca>
+ <4F3A4220.4010901@ce.jp.nec.com>
+ <20120214162858.GM12117@google.com>
+ <4F3B1ED3.4000706@ce.jp.nec.com>
+ <20120215172617.GB24986@google.com>
+ <4F3C5B4E.3080606@ce.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F3C8E84.80905@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4F3C5B4E.3080606@ce.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Feb 15, 2012 at 10:05:08PM -0700, David Ahern escreveu:
-> On 2/15/12 9:59 PM, Xiao Guangrong wrote:
-> >
-> >
-> >Okay, i will post the next version after collecting your new comments!
-> >
-> >Thanks for your time, David! :)
-> >
-> 
-> I had more comments, but got sidetracked and forgot to come back to
-> this. I still haven't looked at the code yet, but some comments from
-> testing:
-> 
-> 1. The error message:
->   Warning: Error: expected type 5 but read 4
->   Warning: Error: expected type 5 but read 0
->   Warning: unknown op '}'
-> 
-> is fixed by this patch which has not yet made its way into perf:
-> https://lkml.org/lkml/2011/9/4/41
-> 
-> The most recent request:
-> https://lkml.org/lkml/2012/2/8/479
-> 
-> Arnaldo: the patch still applies cleanly (but with an offset of -2 lines).
+Hello,
 
-I'll merge this one now, recall Steven asked me to, thanks for the
-reminder,
+On Thu, Feb 16, 2012 at 10:26:38AM +0900, Jun'ichi Nomura wrote:
+> >> +int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
+> >> +{
+> >> +	int res;
+> >> +
+> >> +	res = drop_partitions(disk, bdev);
+> >> +	if (res)
+> >> +		return res;
+> >> +
+> > 
+> > Hmmm... shouldn't we have set_capacity(disk, 0) here?
+> 
+> Added.
+> I wasn't sure whether I should leave it to drivers.
 
-- Arnaldo
+The problem is that we shouldn't call into drivers without first
+opening the device, so....
+
+> But it seems capacity 0 for ENOMEDIUM device is reasonable.
+
+Yeah, I *think* it should be okay.
+
+> >> +	check_disk_size_change(disk, bdev);
+> >> +	bdev->bd_invalidated = 0;
+> >> +	/* tell userspace that the media / partition table may have changed */
+> >> +	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
+> > 
+> > Also, we really shouldn't be generating KOBJ_CHANGE after every
+> > -ENOMEDIUM open.  This can easily lead to infinite loop.  We should
+> > generate this iff we actually dropped partitions && modified the size.
+> 
+> invalidate_partitions() is called only when bd_invalidated is set.
+> So KOBJ_CHANGE is not raised for every ENOMEDIUM open.
+
+Ah, okay.
+
+> I put it explicit in the function to make it safer for
+> possible misuse.
+> 
+> How about this?
+> 
+> ---------------------------------------------------------
+> Do not call drivers when invalidating partitions for -ENOMEDIUM
+> 
+> When a scsi driver returns -ENOMEDIUM for open(),
+> __blkdev_get() calls rescan_partitions(), which ends up calling
+> sd_revalidate_disk() without getting a refcount of scsi_device.
+> 
+> That could lead to oops like this:
+> 
+>   process A                  process B
+>   ----------------------------------------------
+>   sys_open
+>     __blkdev_get
+>       sd_open
+>         returns -ENOMEDIUM
+>                              scsi_remove_device
+>                                <scsi_device torn down>
+>       rescan_partitions
+>         sd_revalidate_disk
+>           <oops>
+> 
+> Oopses are reported here:
+> http://marc.info/?l=linux-scsi&m=132388619710052
+> 
+> This patch separates the partition invalidation from rescan_partitions()
+> and use it for -ENOMEDIUM case. 
+
+Yeah, this looks good to me.
+
+Thank you.
+
+-- 
+tejun
