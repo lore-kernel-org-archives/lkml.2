@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2BPPNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:13:47 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41655 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab2BPPNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:13:45 -0500
-Date: Thu, 16 Feb 2012 19:13:40 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120216151340.GI1905@moon>
-References: <20120215162222.GA18266@redhat.com>
- <20120215175319.GG4533@moon>
- <20120215184336.GA24182@redhat.com>
- <20120215195610.GJ4533@moon>
- <20120215195733.GA8021@albatros>
- <20120215200533.GQ1894@moon>
- <20120215202538.GK4533@moon>
- <20120215210934.GL4533@moon>
- <20120215215807.GM4533@moon>
- <20120216144954.GA11953@redhat.com>
+	id S1753678Ab2BPPOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:14:04 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:29489 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290Ab2BPPOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 10:14:01 -0500
+X-IronPort-AV: E=Sophos;i="4.73,430,1325491200"; 
+   d="scan'208";a="625975697"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "xemul@parallels.com" <xemul@parallels.com>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [RFC PATCH] SUNRPC: connect local transports synchronously
+Thread-Topic: [RFC PATCH] SUNRPC: connect local transports synchronously
+Thread-Index: AQHM7Lys+QBmkvlPAkK7M1BwYZ2FPZZAJ9EA
+Date: Thu, 16 Feb 2012 15:13:53 +0000
+Message-ID: <1329405232.4279.4.camel@lade.trondhjem.org>
+References: <20120216150507.19081.28659.stgit@localhost6.localdomain6>
+In-Reply-To: <20120216150507.19081.28659.stgit@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <C889075737E6264D975E0FAE3246B671@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216144954.GA11953@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 16 Feb 2012 15:13:55.0367 (UTC) FILETIME=[9968FB70:01CCECBD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1GFECVb024761
 
-On Thu, Feb 16, 2012 at 03:49:54PM +0100, Oleg Nesterov wrote:
-> On 02/16, Cyrill Gorcunov wrote:
-> >
-> > +static int access_trylock(struct task_struct *task)
-> > +{
-> > +	if (!mutex_trylock(&task->signal->cred_guard_mutex))
-> > +		return -EBUSY;
-> > +
-> > +	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
-> > +		mutex_unlock(&task->signal->cred_guard_mutex);
-> > +		return -EPERM;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> 
-> OK, this looks correct, but I don't really understand _trylock.
-> This means the caller should always retry if -EBUSY, and
-> kcmp(pid, pid) can never succeed. Sure, kcmp() doesn't make
-> a lot of sense if pid1 == pid2, but this looks a bit strange.
-> 
+On Thu, 2012-02-16 at 19:06 +0400, Stanislav Kinsbursky wrote:
+> Local tranports uses UNIX sockets and connecting of these sockets is done in
+> context of file system namespace (i.e. task file system root).
+> Currenly, all sockets connect operations are performed by rpciod work queue,
+> which actually means, that any service will be registered in the same rpcbind
+> instance regardless to process file system root.
+> This is not containers, which usually have it's own nested root. There are 2
+> approaches, how to solve the problem. First one is to store proper root in
+> tranport and switch to it in rpciod workqueue function for connect operations.
+> But this looks ugly. The second one is to connect to unix sockets
+> synchronously. This aptch implements the last one.
 
-Hi Oleg, sure I can make it this way, also I think if pid1 == pid2
-and idx1 == idx2 I can return 0 immediately.
+That approach can fall afoul of the selinux restrictions on the process
+context. Processes that are allowed to write data, may not be allowed to
+create sockets or call connect(). That is the main reason for doing it
+in the rpciod context, which is a clean kernel process context.
 
-> You could simply do
-> 	int mutex_double_lock_killable(struct mutex *m1, struct mutex *m2)
-> 	{
-> 		int err;
-> 
-> 		if (m2 > m1)
-> 			swap(m1, m2);
-> 
-> 		err = mutex_lock_killable(m1);
-> 
-> 		if (!err && likely(m1 != m2)) {
-> 			err = mutex_lock_killable_nested(m2);
-> 			if (err)
-> 				mutex_unlock(m1);
-> 		}
-> 
-> 		return err;
-> 	}
-> 
-> but I won't insist.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Initially I wanted kcmp would be brining minimum impact
-and if mutex is already taken by someone, we would not sleep
-but return immediately with -EBUSY and it would be up to caller
-to deside if to try again or make some delay first. I simply
-not sure what is better here.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-	Cyrill
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
