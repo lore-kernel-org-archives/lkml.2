@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2BPQWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:22:51 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:57751 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab2BPQWt (ORCPT
+	id S1753056Ab2BPQYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:24:44 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:41584 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752773Ab2BPQYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:22:49 -0500
-Message-ID: <4F3D2D55.8000104@garzik.org>
-Date: Thu, 16 Feb 2012 11:22:45 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 16 Feb 2012 11:24:42 -0500
+X-Sasl-enc: vVc1S1U+nERhyuOLy2wQ5x3M/ufN6KQlgwen/nLYnmW4 1329409480
+Date: Thu, 16 Feb 2012 08:23:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: akpm@linux-foundation.org, Aneesh V <aneesh@ti.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8] Add TI EMIF SDRAM controller driver
+Message-ID: <20120216162359.GB20827@kroah.com>
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+ <4F3CDF9F.9080204@ti.com>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        Norbert Preining <preining@logic.at>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
-        linux-ide@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>, valdis.kletnieks@vt.edu,
-        Mark Lord <kernel@teksavvy.com>
-Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume, COMRESET
- failed
-References: <20120206024052.GI9413@gamma.logic.tuwien.ac.at> <1328496591.15079.40.camel@minggr> <20120206031528.GA16093@gamma.logic.tuwien.ac.at> <1328503376.15079.55.camel@minggr> <20120206161943.GA3926@google.com> <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com> <20120213174445.GD12117@google.com> <CAN8TOE-hFvDs4mGeYVRBDyfbyg8t_7YXDintLeG1QHvMXhVh+A@mail.gmail.com> <20120215165706.GA24986@google.com> <4F3BF989.8060607@garzik.org> <20120215183139.GC24986@google.com> <4F3C04EF.7070404@garzik.org> <CAN8TOE8cuUU_Gh5gPKNWQGvunMdzDf9nLNq3GqoQuwvdnD1p8g@mail.gmail.com>
-In-Reply-To: <CAN8TOE8cuUU_Gh5gPKNWQGvunMdzDf9nLNq3GqoQuwvdnD1p8g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3CDF9F.9080204@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2012 06:39 PM, Brian Norris wrote:
-> On Wed, Feb 15, 2012 at 11:18 AM, Jeff Garzik<jeff@garzik.org>  wrote:
->> On 02/15/2012 01:31 PM, Tejun Heo wrote:
->>> The problem is that there's no way to identify the controller in
->>> question, so we can't do this automatically, so might just as well do
->>> it in the simplest way for now.  :(
->>
->>
->> See ahci_devtype[] and ahci_port_info[] in ahci_platform.c for how to do
->> this.  Brian would not have to tweak the driver out of tree as claimed; we
->> put all changes in tree, and the platform calls itself "spec-strict-ahci" or
->> whatever string you prefer.
->
-> OK, so can it seems I would add a flag in include/linux/libata.h that
-> can be added to a new entry in ahci_port_info[]? It seems a little
-> awkward to put in "libata.h", plus I'm not sure if all the flags have
-> direct meaning to ATA or if they can be AHCI-specific.
+On Thu, Feb 16, 2012 at 04:21:11PM +0530, Santosh Shilimkar wrote:
+> Andrew, Greg,
+> 
+> On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+> > Add a driver for the EMIF SDRAM controller used in TI SoCs
+> > 
+> > EMIF is an SDRAM controller that supports, based on its revision,
+> > one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+> > for LPDDR2.
+> > 
+> > The driver supports the following features:
+> > - Calculates the DDR AC timing parameters to be set in EMIF
+> >   registers using data from the device data-sheets and based
+> >   on the DDR frequency. If data from data-sheets is not available
+> >   default timing values from the JEDEC spec are used. These
+> >   will be safe, but not necessarily optimal
+> > - API for changing timings during DVFS or at boot-up
+> > - Temperature alert configuration and handling of temperature
+> >   alerts, if any for LPDDR2 devices
+> >   * temperature alert is based on periodic polling of MR4 mode
+> >     register in DDR devices automatically performed by hardware
+> >   * timings are de-rated and brought back to nominal when
+> >     temperature raises and falls respectively
+> > - Cache of calculated register values to avoid re-calculating
+> >   them
+> > 
+> > The driver will need some minor updates when it is eventually
+> > integrated with DVFS. This can not be done now as DVFS support
+> > is not available yet in mainline.
+> > 
+> > Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+> > <vvardhan@gmail.com> did the initial code snippet for thermal
+> > handling.
+> > 
+> > Testing: 
+> > - The driver is tested on OMAP4430 SDP.
+> > - The driver in a slightly adapted form is also tested on OMAP5.
+> > - Since mainline kernel doesn't have DVFS support yet,
+> >   testing was done using a test module.
+> > - Temperature alert handling was tested with simulated interrupts
+> >   and faked temperature values as testing all cases in real-life
+> >   scenarios is difficult.
+> > 
+> [...]
+> 
+> >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++
+> >  drivers/misc/Kconfig                       |   20 +
+> >  drivers/misc/Makefile                      |    2 +
+> >  drivers/misc/emif.c                        | 1522 ++++++++++++++++++++++++++++
+> >  drivers/misc/emif_regs.h                   |  461 +++++++++
+> >  drivers/misc/jedec_ddr_data.c              |  141 +++
+> >  include/linux/emif.h                       |  257 +++++
+> >  include/linux/jedec_ddr.h                  |  174 ++++
+> 
+> Any suggestion on where this driver can reside. It's a memory
+> controller driver which supports standard DDR functionality
+> as per JDEC specs including thermal alert. On top of
+> that it does support DVFS using the TI PRCM IP block.
 
-Nothing needs to go into libata.h.  grep for IMX53_AHCI, and see how 
-that differentiates ata_port_info information.  There you may vary 
-AHCI-specific flags (defined in ahci.h), port operations, or anything 
-else specific to the controller.
+I don't know what any of those TLA words mean, so I really can't suggest
+where this code should go.  But just from this diffstat, it looks like
+you are creating a new user/kernel interface, without documenting it
+anywhere, which isn't ok.
 
-Create a flag, add it to ahci.h, guard the spec-strict behavior creating 
-problems with said flag, and apply said flag to your controller in 
-ahci_platform.
-
-	Jeff
-
-
+greg k-h
