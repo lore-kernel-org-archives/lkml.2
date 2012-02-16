@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab2BPL4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 06:56:44 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:41966 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750981Ab2BPL4n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 06:56:43 -0500
-Message-ID: <4F3CEEF4.9020406@ti.com>
-Date: Thu, 16 Feb 2012 17:26:36 +0530
-From: Aneesh V <aneesh@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 7/8] misc: emif: add one-time settings
-References: <1328357771-31644-1-git-send-email-aneesh@ti.com> <1328357771-31644-8-git-send-email-aneesh@ti.com> <4F3CDE00.1080407@ti.com>
-In-Reply-To: <4F3CDE00.1080407@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752176Ab2BPMBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 07:01:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623Ab2BPMBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 07:01:38 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 3/8] perf, tool: Add bitmap_or function into bitmap object
+Date: Thu, 16 Feb 2012 13:00:47 +0100
+Message-Id: <1329393652-6055-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
+References: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 February 2012 04:14 PM, Santosh Shilimkar wrote:
-> On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
->> Add settings that are not dependent on frequency
->> or any other transient parameters
->>
-> Expand the changelog a bit. One time settings like
-> SDRAM_CONFIG, PHY_CONTROL, TEMP alert etc.
+Adding implementation os bitmap_or function to the bitmap
+object. It is stolen from the kernel lib/bitmap.o object.
 
-Will do.
+It is used in upcomming patches.
 
->
->> Signed-off-by: Aneesh V<aneesh@ti.com>
->> ---
-> Patch looks fine.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/bitmap.c               |   10 ++++++++++
+ tools/perf/util/include/linux/bitmap.h |   11 +++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
-Thanks,
-Aneesh
+diff --git a/tools/perf/util/bitmap.c b/tools/perf/util/bitmap.c
+index 5e230ac..0a1adc1 100644
+--- a/tools/perf/util/bitmap.c
++++ b/tools/perf/util/bitmap.c
+@@ -19,3 +19,13 @@ int __bitmap_weight(const unsigned long *bitmap, int bits)
+ 
+ 	return w;
+ }
++
++void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
++		 const unsigned long *bitmap2, int bits)
++{
++	int k;
++	int nr = BITS_TO_LONGS(bits);
++
++	for (k = 0; k < nr; k++)
++		dst[k] = bitmap1[k] | bitmap2[k];
++}
+diff --git a/tools/perf/util/include/linux/bitmap.h b/tools/perf/util/include/linux/bitmap.h
+index eda4416..bb162e4 100644
+--- a/tools/perf/util/include/linux/bitmap.h
++++ b/tools/perf/util/include/linux/bitmap.h
+@@ -5,6 +5,8 @@
+ #include <linux/bitops.h>
+ 
+ int __bitmap_weight(const unsigned long *bitmap, int bits);
++void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
++		 const unsigned long *bitmap2, int bits);
+ 
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+@@ -32,4 +34,13 @@ static inline int bitmap_weight(const unsigned long *src, int nbits)
+ 	return __bitmap_weight(src, nbits);
+ }
+ 
++static inline void bitmap_or(unsigned long *dst, const unsigned long *src1,
++			     const unsigned long *src2, int nbits)
++{
++	if (small_const_nbits(nbits))
++		*dst = *src1 | *src2;
++	else
++		__bitmap_or(dst, src1, src2, nbits);
++}
++
+ #endif /* _PERF_BITOPS_H */
+-- 
+1.7.4.4
+
