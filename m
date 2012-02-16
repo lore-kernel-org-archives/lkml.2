@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab2BPVmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 16:42:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29173 "EHLO mx1.redhat.com"
+	id S1752224Ab2BPVrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 16:47:55 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:56578 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab2BPVmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 16:42:49 -0500
-Date: Thu, 16 Feb 2012 22:42:45 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kernel-team@fedoraproject.org
-Subject: Re: exit_mmap() BUG_ON triggering since 3.1
-Message-ID: <20120216214245.GD23585@redhat.com>
-References: <20120215183317.GA26977@redhat.com>
- <alpine.LSU.2.00.1202151801020.19691@eggly.anvils>
- <20120216070753.GA23585@redhat.com>
- <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
+	id S1751610Ab2BPVrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 16:47:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Jones <davej@redhat.com>
+Subject: Re: Corrupted files after suspend to disk
+Date: Thu, 16 Feb 2012 22:51:46 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: "richard -rw- weinberger" <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, esandeen@redhat.com
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <CAFLxGvzzHDRma_Y_XEpOD+fY+vonbkoR1mvQp4Vb4c3M6fTsPA@mail.gmail.com> <20120216163030.GA32651@redhat.com>
+In-Reply-To: <20120216163030.GA32651@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202162251.47063.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 01:53:04AM -0800, Hugh Dickins wrote:
-> Yes (and I think less troublesome than most BUGs, coming at exit
-> while not holding locks; though we could well make it a WARN_ON,
-> I don't think that existed back in the day).
+On Thursday, February 16, 2012, Dave Jones wrote:
+> On Thu, Feb 16, 2012 at 11:52:27AM +0100, richard -rw- weinberger wrote:
+>  
+>  > >> >> Of course, please test the above separately. :-)
+>  > >> >
+>  > >> > Ok, I'll test this when I'm at home.
+>  > >> >
+>  > >> > BTW: dropping the caches helps, when some files seem corrupted.
+>  > >> > Today /usr/bin/okular was broken.
+>  > >> > After setting vm.drop_caches=1 it worked again.
+>  > >>
+>  > >> On Linux 2.6.38 I'm unable to reproduce the issue.
+>  > >> Only 2.6.37 seems to be affected.
+>  > >> So, I'm moving over to 2.6.38. :)
+>  > >
+>  > Bad news:
+>  > I saw the issue on 3.x too but thought it's because my IdeaPad s10 is crap.
+>  > Now with my shiny new Lenovo x121e I have the same issue! :-(
+>  > 
+>  > OpenSUSE 12.1, kernel 3.2.7.
+>  > After a few suspend2disk iterations random files are corrupted.
+>  > But only cached files. A reboot solves the problem.
+>  
+> FWIW, we've been seeing a number of hard to diagnose failures
+> with suspend to disk for the last few releases in Fedora.
+> Eric Sandeen has been chasing https://bugzilla.redhat.com/show_bug.cgi?id=744275
+> for a while, but there's no smoking gun that really explains what's
+> getting into these states. Further complicating things, is that it
+> doesn't seem to be 100% reproducable.
 
-A WARN_ON would be fine with me, go ahead if you prefer it... only
-risk would be to go unnoticed or be underestimated. I am ok with the
-BUG_ON too (even if this time it triggered false positives... sigh).
+I wonder if that's reproducible with the filesystems freezing patch I posted
+some time ago (it will need some rebasing to apply to the current mainline or
+3.2.y).
 
-> Acked-by: Hugh Dickins <hughd@google.com>
+I also thing that this problem discovered by Alan Stern may be involved:
 
-Thanks for the quick review!
+http://marc.info/?l=linux-pm&m=132940331030253&w=4
 
-> In looking into the bug, it had actually bothered me a little that you
-> were setting aside those pages, yet not counting them into nr_ptes;
-> though the only thing that cares is oom_kill.c, and the count of pages
-> in each hugepage can only dwarf the count in nr_ptes (whereas, without
-> hugepages, it's possible to populate very sparsely and nr_ptes become
-> significant).
-
-Agreed, it's not significant either ways.
-
-Running my two primary systems with this applied for half a day and no
-problem so far so it should be good for -mm at least.
+Thanks,
+Rafael
