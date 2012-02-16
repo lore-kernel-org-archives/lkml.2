@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab2BPNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 08:35:16 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55392 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab2BPNfO (ORCPT
+	id S1752624Ab2BPNiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 08:38:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58617 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2BPNiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 08:35:14 -0500
-Date: Thu, 16 Feb 2012 14:35:10 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Oskar Schirmer <oskar@scara.com>
-Cc: wim@iguana.be, s.hauer@pengutronix.de, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: make imx2_wdt report boot status correctly
-Message-ID: <20120216133510.GA2541@pengutronix.de>
-References: <1329394665-7238-1-git-send-email-oskar@scara.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <1329394665-7238-1-git-send-email-oskar@scara.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 16 Feb 2012 08:38:08 -0500
+Message-ID: <1329399446.2293.217.camel@twins>
+Subject: Re: [RFC PATCH 14/14] sched: implement usage tracking
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 14:37:26 +0100
+In-Reply-To: <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+	 <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+> -       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+> +       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable,
+> +                                    runnable); 
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Oskar,
-
-besides this minor thing (which may be just personal taste)...
-
-> +	case WDIOC_GETBOOTSTATUS:
-> +		val =3D __raw_readw(imx2_wdt.base + IMX2_WDT_WRSR);
-> +		new_value =3D 0;
-> +		if (val & IMX2_WDT_WRSR_TOUT)
-> +			new_value =3D WDIOF_CARDRESET;
-
-I'd go for this to save some lines:
-		new_value =3D val & IMX2_WDT_WRSR_TOUT ? WDIOF_CARDRESET : 0;
-
-But in general:
-
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk89Bg4ACgkQD27XaX1/VRsM9gCdFfdADJ16jSw18O/vpHOEXvE+
-y3EAn1ehBvEAIrkATsuOaevMQNQT61U7
-=by6I
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
+Its not immediately obvious why we use @runnable for @running, 
