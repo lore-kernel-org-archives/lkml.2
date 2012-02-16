@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab2BPSDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:03:40 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:39157 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2BPSDi (ORCPT
+	id S1754246Ab2BPSHF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:07:05 -0500
+Received: from mailgw.tensilica.com ([65.119.96.134]:50631 "EHLO
+	mailgw.tensilica.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2BPSHC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:03:38 -0500
-Date: Thu, 16 Feb 2012 16:05:07 -0200
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: Joe Perches <joe@perches.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] bluetooth: Use more current logging styles
-Message-ID: <20120216180507.GA5280@joana>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"David S. Miller" <davem@davemloft.net>,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <cover.1329102581.git.joe@perches.com>
- <44b8744770a55924c68f8ad0ca274816d2d6148f.1329102581.git.joe@perches.com>
- <1329114913.28848.50.camel@aeonflux>
- <20120213215603.GA27753@joana>
- <1329184963.8143.2.camel@joe2Laptop>
- <1329410631.10890.3.camel@joe2Laptop>
+	Thu, 16 Feb 2012 13:07:02 -0500
+X-Greylist: delayed 1295 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 13:07:02 EST
+From: Marc Gauthier <marc@tensilica.com>
+To: David Howells <dhowells@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Zankel <chris@zankel.net>
+Date: Thu, 16 Feb 2012 09:45:28 -0800
+Subject: RE: [PATCH 20/21] xtensa: Use generic posix_types.h
+Thread-Topic: [PATCH 20/21] xtensa: Use generic posix_types.h
+Thread-Index: AczssQd1etrY26jyQ/ONCF2PCnJ39AAHVhiA
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D0217D187A2@exch.hq.tensilica.com>
+References: <1328677745-20121-21-git-send-email-hpa@zytor.com>
+ <1328677745-20121-1-git-send-email-hpa@zytor.com>
+ <3289.1329399779@redhat.com>
+In-Reply-To: <3289.1329399779@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329410631.10890.3.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+David Howells wrote:
+> Xtensa exports __FD_SET() and co. to userspace under some
+> circumstances,
+> therefore this patch potentially breaks the userspace ABI.
 
-* Joe Perches <joe@perches.com> [2012-02-16 08:43:51 -0800]:
+Thanks for noticing.
+Looks like that happens for non GNU C compilers only.
+Which doesn't make sense as the only non-GNU compiler we use
+does have a GNU compatible front-end, and I don't see any
+reason why this particular header would do something differently.
 
-> On Mon, 2012-02-13 at 18:02 -0800, Joe Perches wrote:
-> > On Mon, 2012-02-13 at 19:56 -0200, Gustavo Padovan wrote:
-> > > it is not really a good idea to change BT_INFO to
-> > > bt_info and BT_ERR to bt_err. I understand that capital letters are not the
-> > > standard here but such a change is painful for all Bluetooth developers and I
-> > > don't wanna give more trouble to them.
-> []
-> > Standardization of use and style is a good thing.
-> > What kind of trouble is a case conversion?
-> > Out of tree modules?
-> 
-> I'm truly curious as to why you think a
-> case conversion is painful and trouble.
+I suspect we simply copied this from another architecture.
 
-Such a change will require rebase from all our developers and we already have
-enough issues to solve, I don't wanna add one more here. Change what BT_*
-stands for is ok, but there is no need to change the macros names. 
+(Note that the relevant C libraries have compatible definitions,
+so I don't think userspace breaks in any case.)
 
-	Gustavo
+So the patch looks like the right thing to do.
+We'll find out soon enough, but I'd say go ahead with the patch.
+
+Thanks,
+-Marc
+
+Acked-by:  Marc Gauthier <marc@tensilica.com>
+
+
+
+> David
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
