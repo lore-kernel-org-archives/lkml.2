@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2BPTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:04:27 -0500
-Received: from smtp-out01.msg.oleane.net ([62.161.3.10]:58550 "EHLO
-	smtp-out01.msg.oleane.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab2BPTE0 (ORCPT
+	id S1754885Ab2BPTEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:04:49 -0500
+Received: from mail.hq.newdream.net ([66.33.206.127]:57351 "EHLO
+	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2BPTEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:04:26 -0500
-X-Oleane-Rep: REPC
-Reply-To: <sogawa@msnzone.cn>
-From: "Shoichi Ogawa" <info@mail.com>
-Subject: [SPAM?] Hello..
-Date: Thu, 16 Feb 2012 13:58:47 -0500
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	Thu, 16 Feb 2012 14:04:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=dreamhost.com; h=message-id
+	:subject:from:reply-to:to:cc:date:in-reply-to:references
+	:content-type:content-transfer-encoding:mime-version; q=dns; s=
+	dreamhost.com; b=dkpYqgnHDgiYEpwpcQA0SF1SjSz39azyMsMKcSyuANrLj1H
+	bEMph+2QZpbdS9PVxD4YZBeRkzmaux0b7kKq/DW0yr6DPRkv+cNrubsmjkoZziql
+	MOLlHOGHesDECZPSuK6dcaXN/Xi9V9hZesBg2NLmmdzFinw6zi4ZGTvCi7EQ=
+Message-ID: <1329419084.3121.39.camel@doink>
+Subject: Re: [PATCH 09/11] sysfs: Push file_update_time() into
+ bin_page_mkwrite()
+From: Alex Elder <elder@dreamhost.com>
+Reply-To: elder@dreamhost.com
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 16 Feb 2012 13:04:44 -0600
+In-Reply-To: <1329399979-3647-10-git-send-email-jack@suse.cz>
+References: <1329399979-3647-1-git-send-email-jack@suse.cz>
+	 <1329399979-3647-10-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <SRVLgFuoe5cizlK4nNA0001e4d1@smtp.rossini.fr>
-X-CTCH-ID: _63A290CA-1B35-440A-8C25-FD8A74D3DFBD_
-X-CTCH-RefID: str=0001.0A0B0205.4F3D4FFE.0097,ss=3,sh,fgs=0
-X-CTCH-Action: ToJMF
-X-OriginalArrivalTime: 16 Feb 2012 18:56:55.0356 (UTC) FILETIME=[C08147C0:01CCECDC]
-X-Spam-Flag: NO
-X-PMX-Spam: Probability=57%
-X-PFSI-Info: PMX 5.6.0.2009776, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.2.16.184214 (no antivirus check)
-X-Orange-Auth: c3ludGVjQHN5bnRpbmZvLmZyLmZ0bw==
-To: unlisted-recipients:; (no To-header on input)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Friend 
+On Thu, 2012-02-16 at 14:46 +0100, Jan Kara wrote:
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/sysfs/bin.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/sysfs/bin.c b/fs/sysfs/bin.c
+> index a475983..6ceb16f 100644
+> --- a/fs/sysfs/bin.c
+> +++ b/fs/sysfs/bin.c
+> @@ -225,6 +225,8 @@ static int bin_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  	if (!sysfs_get_active(attr_sd))
+>  		return VM_FAULT_SIGBUS;
+>  
+> +	file_update_time(file);
+> +
+>  	ret = 0;
+>  	if (bb->vm_ops->page_mkwrite)
+>  		ret = bb->vm_ops->page_mkwrite(vma, vmf);
 
-I am sorry to encroach on your privacy. I have a business proposal foryou. Please contact me if you are interested to know more.
+If the filesystem's page_mkwrite() function is responsible
+for updating the time, can't the call to file_update_time()
+here be conditional?
 
-Best Regards 
+I.e:
+	ret = 0;
+	if (bb->vm_ops->page_mkwrite)
+ 		ret = bb->vm_ops->page_mkwrite(vma, vmf);
+	else
+		file_update_time(file);
 
-Shoichi Ogawa
+					-Alex
+
+
+
+
