@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2BPRgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:36:19 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50981 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab2BPRgR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 12:36:17 -0500
+	id S1753998Ab2BPRjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 12:39:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47135 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967Ab2BPRjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 12:39:06 -0500
+Message-ID: <4F3D3F21.3060905@ti.com>
+Date: Thu, 16 Feb 2012 18:38:41 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <4F3D395B.1000708@redhat.com>
-References: <20120203082748.GB782@amit.redhat.com> <20120214122205.GA29418@amit.redhat.com>
- <CALCETrVCzErebXrVk8Bi+k1TjigD3XvJsmZFVZb=ksmSCOTVLg@mail.gmail.com>
- <20120215110122.GA3136@amit.redhat.com> <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com>
- <4F3D2C09.1020803@redhat.com> <CALCETrUhGY8C8JLz6DrbBxukV58K=2jrMSfDyAm=eF7OWbKx7g@mail.gmail.com>
- <4F3D395B.1000708@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 16 Feb 2012 09:35:57 -0800
-Message-ID: <CALCETrXjJtKLhe2rRkuy57Ai+5X2-+qh9eMbE5y-UhX=CPWftA@mail.gmail.com>
-Subject: Re: [KVM paravirt issue?] Re: vsyscall=emulate regression
-To: Avi Kivity <avi@redhat.com>
-Cc: Amit Shah <amit.shah@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        kvm list <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v5 08/27] irq_domain: Move irq_domain code from powerpc
+ to kernel/irq
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-9-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1329383368-12122-9-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 9:14 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 02/16/2012 06:45 PM, Andy Lutomirski wrote:
->> >
->> >> So I could have messed up, or there could be a subtle
->> >> bug somewhere.  Any ideas?
->> >
->> > What's the code trying to do?  Execute an instruction from an
->> > non-executable page, trap the #PF, and emulate?  And what are the
->> > symptoms? wrong error code for the #PF?  That could easily be a kvm bug.
->> >
->>
->> The symptom is that some kind of access to a page that's supposed to
->> be readable, NX is reporting error 5.  I'm not quite sure what kind of
->> access is causing that.
->
-> Might it be a fetch access, with kvm forgetting to set bit 4 correctly?
->
->> >
->> > Can you point me at the code in question?
->>
->> The setup code is in arch/x86/kernel/vsyscall_64.c in map_vsyscall.
->> The bad access is to the vsyscall page.
->
-> The bad access is on purpose, yes?
->
-> From fault.c:
->
-> #ifdef CONFIG_X86_64
->                /*
->                 * Instruction fetch faults in the vsyscall page might need
->                 * emulation.
->                 */
->                if (unlikely((error_code & PF_INSTR) &&
->                             ((address & ~0xfff) == VSYSCALL_START))) {
->                        if (emulate_vsyscall(regs, address))
->                                return;
->                }
-> #endif
->
-> so it seems like kvm doesn't set PF_INSTR?
+Hi Grant,
 
-Yes, this is on purpose, and you're almost certainly right (and I feel
-dumb for not figuring this out immediately).  The error message is:
+It looks like there is a small regression in that update, it cannot 
+build due to a missing semi-colon.
 
-segfault at ffffffffff600400 ip ffffffffff600400 sp 00007fff103d72f8 error 5
+On 2/16/2012 10:09 AM, Grant Likely wrote:
+> +/**
+> + * irq_find_mapping() - Find a linux irq from an hw irq number.
+> + * @host: domain owning this hardware interrupt
+> + * @hwirq: hardware irq number in that host space
+> + *
+> + * This is a slow path, for use by generic code. It's expected that an
+> + * irq controller implementation directly calls the appropriate low level
+> + * mapping function.
+> + */
+> +unsigned int irq_find_mapping(struct irq_domain *host,
+> +			      irq_hw_number_t hwirq)
+> +{
+> +	unsigned int i;
+> +	unsigned int hint = hwirq % irq_virq_count;
+> +
+> +	/* Look for default host if nececssary */
+> +	if (host == NULL)
+> +		host = irq_default_host;
+> +	if (host == NULL)
+> +		return NO_IRQ;
+> +
+> +	/* legacy ->  bail early */
+> +	if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
+> +		return hwirq;
+> +
+> +	/* Slow path does a linear search of the map */
+> +	if (hint == 0)
+> +		hint = 1;
+> +	i = hint;
+> +	do {
+> +		struct irq_data *data = irq_get_irq_data(i);
+> +		if (data&&  (data->domain == host)&&  (data->hwirq == hwirq))
+> +			return i;
+> +		i++;
+> +		if (i>= irq_virq_count)
+> +			i = 1
 
-which is garbage.  The instruction at 0xffffffffff600400 can't fetch
-itself as data and fault on the data access (at least not in 64-bit
-mode, as far as I can think of, without evil messing with the TLBs).
+The ";" is missing.
 
-So... what do we do about this?  This (whitespace-damaged, untested)
-patch will probably work around it well enough to boot the system:
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 9d74824..52b9522 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -741,8 +741,11 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long
-                 * Instruction fetch faults in the vsyscall page might need
-                 * emulation.
-                 */
--               if (unlikely((error_code & PF_INSTR) &&
-+               if (unlikely(address == regs->ip && !(error_code & PF_WRITE) &&
-                             ((address & ~0xfff) == VSYSCALL_START))) {
-+                       WARN_ONCE(!(error_code & PF_INSTR),
-+                                 "Fixing up bogus vsyscall read fault -- "
-+                                 "your hypervisor is buggy.");
-                        if (emulate_vsyscall(regs, address))
-                                return;
-                }
-
-Before we patch the guest like this, though, it would be nice to know
-what hosts are affected.  If it's just one version of RHEL6, maybe it
-makes sense to fix the hypervisor and either leave the guest alone or
-just add a warning saying to fix your hypervisor, like:
-
-WARN_ONCE(address == regs->ip && !(error_code & (PF_INSTR | PF_WRITE))
-&& user_64bit_mode(regs), "Fishy page fault -- you might need to fix
-your hypervisor");
-
-near some exit path in the page fault handler.  The 64-bit check is
-because (I think) 32-bit code can mess with regs->ip using a cs offset
-in the LDT and trigger the warning at will.
-
---Andy
+Regards,
+Benoit
