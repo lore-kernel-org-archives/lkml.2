@@ -1,166 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab2BPPzC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:55:02 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52724 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab2BPPzB (ORCPT
+	id S1752041Ab2BPPzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:55:44 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47774 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2BPPzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:55:01 -0500
-Message-ID: <4F3D26CF.2040102@openvz.org>
-Date: Thu, 16 Feb 2012 19:54:55 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Thu, 16 Feb 2012 10:55:43 -0500
+Date: Thu, 16 Feb 2012 15:55:07 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: nicolas.pitre@linaro.org, tony@atomide.com, s.hauer@pengutronix.de,
+        magnus.damm@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ARM: add xz kernel compression support
+Message-ID: <20120216155507.GO13673@n2100.arm.linux.org.uk>
+References: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
-References: <20120215224221.22050.80605.stgit@zurg>	<20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>	<4F3C9798.7050800@openvz.org> <20120216172409.5fa18608.kamezawa.hiroyu@jp.fujitsu.com> <4F3CE243.9050203@openvz.org>
-In-Reply-To: <4F3CE243.9050203@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> KAMEZAWA Hiroyuki wrote:
->> On Thu, 16 Feb 2012 09:43:52 +0400
->> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
->>
->>> KAMEZAWA Hiroyuki wrote:
->>>> On Thu, 16 Feb 2012 02:57:04 +0400
->>>> Konstantin Khlebnikov<khlebnikov@openvz.org>    wrote:
->>
->>>>> * optimize page to book translations, move it upper in the call stack,
->>>>>      replace some struct zone arguments with struct book pointer.
->>>>>
->>>>
->>>> a page->book transrater from patch 2/15
->>>>
->>>> +struct book *page_book(struct page *page)
->>>> +{
->>>> +	struct mem_cgroup_per_zone *mz;
->>>> +	struct page_cgroup *pc;
->>>> +
->>>> +	if (mem_cgroup_disabled())
->>>> +		return&page_zone(page)->book;
->>>> +
->>>> +	pc = lookup_page_cgroup(page);
->>>> +	if (!PageCgroupUsed(pc))
->>>> +		return&page_zone(page)->book;
->>>> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
->>>> +	smp_rmb();
->>>> +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
->>>> +			page_to_nid(page), page_zonenum(page));
->>>> +	return&mz->book;
->>>> +}
->>>>
->>>> What happens when pc->mem_cgroup is rewritten by move_account() ?
->>>> Where is the guard for lockless access of this ?
->>>
->>> Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
->>
->> Hmm, VM_BUG_ON(!PageLRU(page)) ?
->
-> Where?
->
->>
->> move_account() overwrites pc->mem_cgroup with isolating page from LRU.
->> but it doesn't take lru_lock.
->
-> There three kinds of lock_page_book() users:
-> 1) caller want to catch page in LRU, it will lock either old or new book and
->      recheck PageLRU() after locking, if page not it in LRU it don't touch anything.
->      some of these functions has stable reference to page, some of them not.
->    [ There actually exist small race, I knew about it, just forget to pick this chunk from old code. See below. ]
-> 2) page is isolated by caller, it want to put it back. book link is stable. no problems.
-> 3) page-release functions. page-counter is zero. no references -- no problems.
->
-> race for 1)
->
-> catcher					switcher
->
-> 					# isolate
-> 					old_book = lock_page_book(page)
-> 					ClearPageLRU(page)
-> 					unlock_book(old_book)				
-> 					# charge
-> old_book = lock_page_book(page)		
-> 					# switch
-> 					page->book = new_book
-> 					# putback
-> 					lock_book(new_book)
-> 					SetPageLRU(page)
-> 					unlock_book(new_book)
-> if (PageLRU(page))
-> 	oops, page actually in new_book
-> unlock_book(old_book)
->
->
-> I'll protect "switch" phase with old_book lru-lock:
->
-> lock_book(old_book)
-> page->book = new_book
-> unlock_book(old_book)
+On Thu, Feb 16, 2012 at 03:54:15PM +0100, Michael Opdenacker wrote:
+> This patchset applies on Linus' tree
+> 
+> It adds xz support to the ARM tree. x86 already has it, so let's have it too!
+> My benchmarks below show that xz is better than lzma in terms of image size
+> and uncompression time.
 
-I found better solution for switcher sequence:
-
-#isolate
-old_book = lock_page_book(page)
-ClearPageLRU(page)
-unlock_book(old_book)				
-
-#charge
-
-#switch
-page->book = new_book
-spin_unlock_wait(&old_book->lru_lock)
-
-#putback
-lock_book(new_book)
-SetPageLRU(page)
-unlock_book(new_book)
-
-this spin_unlock_wait() effectively stabilize PageLRU() sign
-for potential old_book lock holder.
-
->
-> The other option is recheck in "catcher" page book after PageLRU()
-> maybe there exists some other variants.
->
->> BTW, what amount of perfomance benefit ?
->
-> It depends, but usually lru_lock is very-very hot.
-> This lock splitting can be used without cgroups and containers,
-> now huge zones can be easily sliced into arbitrary pieces, for example one book per 256Mb.
->
->
->
-> According to my experience, one of complicated thing there is how to postpone "book" destroying
-> if some its pages are isolated. For example lumpy reclaim and memory compaction isolates pages
-> from several books. And they wants to put them back. Currently this can be broken, if someone removes
-> cgroup in wrong moment. There appears funny races with three players: catcher, switcher and destroyer.
-> This can be fixed with some extra reference-counting or some other sleepable synchronizing.
-> In my rhel6-based implementation I uses extra reference-counting, and it looks ugly. So I want to invent something better.
-> Other option is just never release books, reuse them after rcu grace period for rcu-list iterating.
-
-Looks like it is not broken, charged page will keep memcg books alive.
-To make it completely safe rcu-free callback must wait on spin_unlock_wait(book->lru_lock).
-
->
->>
->> Thanks,
->> -Kame
->>
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-
+Have you checked what's in my tree?  Have you checked patch 7001/2 ?
