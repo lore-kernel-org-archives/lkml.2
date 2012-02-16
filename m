@@ -1,145 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab2BPQMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:12:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2BPQMx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:12:53 -0500
+	id S1752665Ab2BPQR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:17:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18676 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049Ab2BPQR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 11:17:26 -0500
+Message-ID: <4F3D2C09.1020803@redhat.com>
+Date: Thu, 16 Feb 2012 18:17:13 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120216150004.GE2641@mudshark.cambridge.arm.com>
-References: <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
-	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
-	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
-	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
-	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
-	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
-	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
-	<CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
-	<1329323900.2293.150.camel@twins>
-	<CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
-	<20120216150004.GE2641@mudshark.cambridge.arm.com>
-Date: Fri, 17 Feb 2012 00:12:49 +0800
-Message-ID: <CACVXFVM472hz+na7o2wJr1CPq-W=YB7i0UwtrsUf62+ryzWp8A@mail.gmail.com>
-Subject: Re: oprofile and ARM A9 hardware counter
-From: Ming Lei <ming.lei@canonical.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        David Long <dave.long@linaro.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Amit Shah <amit.shah@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        kvm list <kvm@vger.kernel.org>
+Subject: Re: [KVM paravirt issue?] Re: vsyscall=emulate regression
+References: <20120203082748.GB782@amit.redhat.com> <20120214122205.GA29418@amit.redhat.com> <CALCETrVCzErebXrVk8Bi+k1TjigD3XvJsmZFVZb=ksmSCOTVLg@mail.gmail.com> <20120215110122.GA3136@amit.redhat.com> <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com>
+In-Reply-To: <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 11:00 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Feb 16, 2012 at 10:25:05AM +0000, Ming Lei wrote:
->> On Thu, Feb 16, 2012 at 12:38 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> >
->> > So what this patch seems to do is put that filter on period in
->> > perf_ctx_adjust_freq(). Not making sense.. nor can I see a HZ
->> > dependency, perf_ctx_adjust_freq() uses TICK_NSEC as time base.
->>
->> Yes, you are right, I remembered it was observed it on -rc1, and
->> Stephane's unthrottling
->> patch was not merged at that time. Today I investigated the problem
->> further on -rc3 and found that seems the problem is caused by arm pmu code.
+On 02/15/2012 09:36 PM, Andy Lutomirski wrote:
+> Hi, kvm people-
 >
-> As I reported previously, Stephane's patch is causing warnings on -rc3:
+> Here's a strange failure.  It could be a bug in something
+> RHEL6-specific, but it could be a generic issue that only triggers
+> with a paravirt guest with old userspace on a non-ept host.  There was
+> a bug like this on Xen, and I'm wondering something's wrong on kvm as
+> well.
 >
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/084391.html
->
-> so I'd like to get to the bottom of that before changing anything else.
+> For background, a change in 3.1 (IIRC) means that, when
+> vsyscall=emulate or vsyscall=none, the vsyscall page in the fixmap is
+> NX.  It seems like Amit's machine is marking the physical PTE present
+> but unreadable.  
 
-Looks I am luck enough and not see the warning on OMAP4, either -rc3 or
--rc3--next-20120210, :-)
+No such thing as present and unreadable, without EPT.
 
-Maybe we have different config options.
+> So I could have messed up, or there could be a subtle
+> bug somewhere.  Any ideas?
 
->
-> I'd also like to know why this has only been reported on OMAP4 and I can't
-> reproduce it on my boards.
->
->> The patch below may fix the problem, now about 40000 sample events
->> can be generated on the command:
->>
->>       'perf record -e cycles -F 4000  ./noploop 10&& perf report -D | tail -20'
->>
->> armpmu_event_update may be called in tick path, so the running counter
->> will be overflowed and produce a great value of 'delta', then a mistaken
->> count is stored into event->count and event->hw.freq_count_stamp. Finally
->> the two variables are not synchronous, then a invalid and large period is
->> computed and written to pmu, and sample events are decreased much.
->
-> Hmm, so are you observing an event overflow during the tick handler? This
-
-Yes, I am sure I can observe it without much difficulty.
-
-> should be fine unless the new value has wrapped past the previous one (i.e.
-> more than 2^32 events have occurred). I find this extremely unlikely for
-> sample-based profiling unless you have some major IRQ latency issues...
-
-IMO, it is not so difficult to get it, suppose prev_raw_count is
-1000000 and -prev_raw_count
-was write to one pmu counter, then the counter will be expired and pmu
-irq is not handled
-quickly enough, so the pmu counter will warp and start counting from zero.
-
-When the tick is scheduled just before handling pmu irq,
-armpmu_event_update() is
-called to read the pmu counter as 'new_raw_count', suppose it is 100,
-then the issue
-is triggered: u64 delta = 100 -  1000000 = 18446744073708551716.
-
-Looks the higher the frequency is, the easier the problem is reproduced.
+What's the code trying to do?  Execute an instruction from an
+non-executable page, trap the #PF, and emulate?  And what are the
+symptoms? wrong error code for the #PF?  That could easily be a kvm bug.
 
 >
-> The only way I can think of improving this (bearing in mind that at some
-> point we're limited by 32 bits of counter) is to check for overflow in the
-> tick path and then invoke the PMU irq handler if there is an overflow, but
-> that's really not very nice.
+> I'll try to reproduce on a non-ept host later on, but that will
+> involve finding one.
 
-Also we may remove the 'overflow' parameter from armpmu_event_update,
-and introduce armpmu->is_overflow(idx) callback to check if the counter(event)
-is overflow inside armpmu_event_update.
+rmmod kvm-intel
+moprobe kvm-intel ept=0
 
-IMO, the pmu irq can't be lost, so the pmu irq handler is not needed to invoke
-in tick path.
+> Hmm.  You don't have ept.  If your guest kernel supports paravirt,
+> then you might use the hypercall interface instead of programming the
+> fixmap directly.
+
+There is no hypercall interface for writing page tables in kvm.
 
 >
->> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
->> index 5bb91bf..789700a 100644
->> --- a/arch/arm/kernel/perf_event.c
->> +++ b/arch/arm/kernel/perf_event.c
->> @@ -193,13 +193,8 @@ again:
->>                            new_raw_count) != prev_raw_count)
->>               goto again;
->>
->> -     new_raw_count &= armpmu->max_period;
->> -     prev_raw_count &= armpmu->max_period;
->> -
->> -     if (overflow)
->> -             delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
->> -     else
->> -             delta = new_raw_count - prev_raw_count;
->> +     delta = (armpmu->max_period - prev_raw_count + new_raw_count
->> +                             + 1) & armpmu->max_period;
+> >
+> > This is what I get with vsyscall=none, where emulate and native work
+> > fine on the 3.2 kernel on different host hardware, the guest stays the
+> > same:
+> >
+> >
+> > [    2.874661] debug: unmapping init memory ffffffff8167f000..ffffffff818dc000
+> > [    2.876778] Write protecting the kernel read-only data: 6144k
+> > [    2.879111] debug: unmapping init memory ffff880001318000..ffff880001400000
+> > [    2.881242] debug: unmapping init memory ffff8800015a0000..ffff880001600000
+> > [    2.884637] init[1] vsyscall attempted with vsyscall=none ip:ffffffffff600400 cs:33 sp:7fff2f48fe18 ax:7fff2f48fe50 si:7fff2f48ff08 di:0
 >
-> This breaks when more than max_period events have passed. See a737823d
-> ("ARM: 6835/1: perf: ensure overflows aren't missed due to IRQ latency").
+> This like (vsyscall attempted) means that the emulation worked
+> correctly.  Your other traces didn't have it or anything like it,
+> which mostly rules out do_emulate_vsyscall issues.
+>
 
-Sorry, I didn't notice the commit and the problem addressed, so looks
-the 'overflow'
-information is needed for armpmu_event_update.
+Can you point me at the code in question?
 
-thanks,
---
-Ming Lei
+Amit, a trace would be nice.
+
+-- 
+error compiling committee.c: too many arguments to function
+
