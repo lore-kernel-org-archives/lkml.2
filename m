@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab2BPLmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 06:42:50 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37063 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2BPLmt (ORCPT
+	id S1751534Ab2BPLu2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 06:50:28 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:60255 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750981Ab2BPLu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 06:42:49 -0500
+	Thu, 16 Feb 2012 06:50:27 -0500
+Message-ID: <4F3CED7C.8060406@ti.com>
+Date: Thu, 16 Feb 2012 17:20:20 +0530
+From: Aneesh V <aneesh@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <20120216001040.GA21919@kroah.com>
-References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
- <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
- <CAOULuObKZX_VER0ERPNBb0gS8GBQBHpJBHQcpJi2kNBBysL=2A@mail.gmail.com> <20120216001040.GA21919@kroah.com>
-From: Egmont Koblinger <egmont@gmail.com>
-Date: Thu, 16 Feb 2012 12:42:07 +0100
-Message-ID: <CAGWcZkJ+uvg=GwFJ+AizCAope2rWw2wujJYUZMvz8GBkKr34sA@mail.gmail.com>
-Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Parag Warudkar <parag.lkml@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 6/8] misc: emif: add interrupt and temperature handling
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com> <1328357771-31644-7-git-send-email-aneesh@ti.com> <4F3CDD5E.8020600@ti.com>
+In-Reply-To: <4F3CDD5E.8020600@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 01:10, Greg KH <gregkh@linuxfoundation.org> wrote:
+On Thursday 16 February 2012 04:11 PM, Santosh Shilimkar wrote:
+> On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+>> Add an ISR for EMIF that:
+>> 	1. reports details of access errors
+>> 	2. takes action on thermal events
+>>
+>> On thermal events SDRAM timing parameters are
+>> adjusted to ensure safe operation
+>>
+>> Also clear all interrupts on shut-down. Pending IRQs
+>> may casue problems during warm-reset.
+>>
+> Add some more details like MR4, EMIF polling frequency etc
+> for better understanding.
+
+Will do.
+
+
+
 >
-> Odds are emacs also does this correctly, anyone care to verify that?
+>> Signed-off-by: Aneesh V<aneesh@ti.com>
+>> ---
+>>   drivers/misc/emif.c |  209 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+>>   1 files changed, 207 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
+>> index 36ba6f4..5c2b0ae 100644
+>> --- a/drivers/misc/emif.c
+>> +++ b/drivers/misc/emif.c
+>> @@ -500,6 +500,45 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
+>>   }
+>>
+>>   /*
+>> + * Get the temperature level of the EMIF instance:
+>> + * Reads the MR4 register of attached SDRAM parts to find out the temperature
+>> + * level. If there are two parts attached(one on each CS), then the temperature
+>> + * level for the EMIF instance is the higher of the two temperatures.
+>> + */
+>> +static void get_temperature_level(struct emif_data *emif)
+>> +{
+>> +	u32		temp, temperature_level;
+>> +	unsigned long	irqs;
+>> +	void __iomem	*base;
+>> +
+>> +	base = emif->base;
+>> +
+>> +	/* Read mode register 4 */
+>> +	writel(DDR_MR4, base + EMIF_LPDDR2_MODE_REG_CONFIG);
+>> +	temperature_level = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
+>> +	temperature_level = (temperature_level&  MR4_SDRAM_REF_RATE_MASK)>>
+>> +				MR4_SDRAM_REF_RATE_SHIFT;
+>> +
+>> +	if (emif->plat_data->device_info->cs1_used) {
+>> +		writel(DDR_MR4 | CS_MASK, base + EMIF_LPDDR2_MODE_REG_CONFIG);
+>> +		temp = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
+>> +		temp = (temp&  MR4_SDRAM_REF_RATE_MASK)
+>> +				>>  MR4_SDRAM_REF_RATE_SHIFT;
+>> +		temperature_level = max(temp, temperature_level);
+>> +	}
+>> +
+>> +	spin_lock_irqsave(&emif->lock, irqs);
+> Add a line here.
 
-Actually, thanks for the hint, emacs is the first editor where I could
-easily trigger the bug.  I made the input data a bit longer (200
-lines), and it's being pasted incorrectly all the time.
+Will do.
 
-Stracing xterm contains exactly this, with the "= 68" at the end, 200 times:
-write(5, "a=(12345678912345678912345678912"..., 68) = 68
+>> +	/* treat everything less than nominal(3) in MR4 as nominal */
+>> +	if (unlikely(temperature_level<  SDRAM_TEMP_NOMINAL))
+>> +		temperature_level = SDRAM_TEMP_NOMINAL;
+>> +
+>> +	/* if we get reserved value in MR4 persist with the existing value */
+>> +	if (likely(temperature_level != SDRAM_TEMP_RESERVED_4))
+>> +		emif->temperature_level = temperature_level;
+>> +	spin_unlock_irqrestore(&emif->lock, irqs);
+>> +}
+>> +
+>
+> rest of the patch looks fine to me
 
-Contrary to xterm, gnome-terminal doesn't split the buffer at
-newlines, it tries to write to /dev/ptmx in one single step. In this
-example I extended the file to 1000 lines long (68000 bytes), here's
-what strace gnome-terminal says:
-open("/dev/ptmx", O_RDWR) = 17
-[...]
-write(17, "a=(12345678912345678912345678912"..., 68000) = 65280
-[...]
-write(17, "a=(12345678912345678912345678912"..., 2720) = 2720
-
-So copy-paste starts misbehaving after 4kB, which suggests a buffer
-size of around that size; on the other hand, writes to /dev/ptmx can
-return up to almost 64kB, which suggests a much larger terminal buffer
-which makes it strange that it starts misbehaving as early as at 4kB.
-
-On a side note, apparently gnome-terminal handles short writes
-correctly. (It's a mere accident that the size of the first write,
-65280, is dividable by the line length of my example, 68.  A different
-input shows that the second write indeed continues sending the buffer
-from the correct offset, from the middle of a line. The return value
-of the first write is the same, 65280 in that case too.)
-
-
-thx,
-egmont
+Thanks,
+Aneesh
