@@ -1,80 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab2BPImk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 03:42:40 -0500
-Received: from mail.nudt.edu.cn ([61.187.54.11]:38323 "HELO eyou.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755758Ab2BPImf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 03:42:35 -0500
-X-EYOU-SPAMVALUE: 0
-X-EYOU-DEALDRC: 
-X-EMDG-VER: 2011-01-28
-Message-ID: <529380713.15452@eyou.net>
-X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
-From: Li Wang <liwang@nudt.edu.cn>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Li Wang <liwang@nudt.edu.cn>
-Subject: [PATCH 3/3] eCryptfs: Remove unreached codes
-Date: Fri, 17 Feb 2012 00:36:50 +0800
-Message-Id: <1329410210-2712-3-git-send-email-liwang@nudt.edu.cn>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1329410210-2712-1-git-send-email-liwang@nudt.edu.cn>
-References: <1329410210-2712-1-git-send-email-liwang@nudt.edu.cn>
+	id S1756006Ab2BPIu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 03:50:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32877 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab2BPIu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 03:50:27 -0500
+Date: Thu, 16 Feb 2012 08:50:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: nicolas.pitre@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: boot/compressed/decompress.c cleanup
+Message-ID: <20120216085010.GI13673@n2100.arm.linux.org.uk>
+References: <1329370449-12033-1-git-send-email-michael.opdenacker@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329370449-12033-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code segment handles the ECRYPTFS_VIEW_AS_ENCRYPTED option in
-ecryptfs_write_begin(mmap.c) is unreached, since this option is
-enabled only when eCryptfs is mounted with RDONLY.
+On Thu, Feb 16, 2012 at 06:34:09AM +0100, Michael Opdenacker wrote:
+> - Remove the ARCH_HAS_DECOMP_WDOG define
+>   because it is only used in lib/deflate.c, which
+>   only the alpha architecture uses. No other architecture
+>   uses this define
 
-Signed-off-by: Li Wang <liwang@nudt.edu.cn>
----
- fs/ecryptfs/mmap.c |   29 +----------------------------
- 1 files changed, 1 insertions(+), 28 deletions(-)
-
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index 59a8e57..a4802a6 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -320,35 +320,8 @@ static int ecryptfs_write_begin(struct file *file,
- 				goto out;
- 			} else
- 				SetPageUptodate(page);
--		} else if (crypt_stat->flags & ECRYPTFS_VIEW_AS_ENCRYPTED) {
--			if (crypt_stat->flags & ECRYPTFS_METADATA_IN_XATTR) {
--				rc = ecryptfs_copy_up_encrypted_with_header(
--					page, crypt_stat);
--				if (rc) {
--					printk(KERN_ERR "%s: Error attempting "
--					       "to copy the encrypted content "
--					       "from the lower file whilst "
--					       "inserting the metadata from "
--					       "the xattr into the header; rc "
--					       "= [%d]\n", __func__, rc);
--					ClearPageUptodate(page);
--					goto out;
--				}
--				SetPageUptodate(page);
--			} else {
--				rc = ecryptfs_read_lower_page_segment(
--					page, index, 0, PAGE_CACHE_SIZE,
--					mapping->host);
--				if (rc) {
--					printk(KERN_ERR "%s: Error reading "
--					       "page; rc = [%d]\n",
--					       __func__, rc);
--					ClearPageUptodate(page);
--					goto out;
--				}
--				SetPageUptodate(page);
--			}
- 		} else {
-+			BUG_ON(crypt_stat->flags & ECRYPTFS_VIEW_AS_ENCRYPTED);
- 			if (prev_page_end_size
- 			    >= i_size_read(page->mapping->host)) {
- 				zero_user(page, 0, PAGE_CACHE_SIZE);
--- 
-1.7.6.5
-
+No.  Your grepping is broken.
