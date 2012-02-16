@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab2BPX1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 18:27:07 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52970 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab2BPX1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 18:27:05 -0500
-Date: Thu, 16 Feb 2012 23:26:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH v5 00/27] irq_domain generalization and rework
-Message-ID: <20120216232648.GM27825@n2100.arm.linux.org.uk>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <20120216145219.0f1c1b98.akpm@linux-foundation.org>
+	id S1755392Ab2BPX1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 18:27:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754903Ab2BPX1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 18:27:34 -0500
+Message-ID: <4F3D90E1.6010001@redhat.com>
+Date: Thu, 16 Feb 2012 15:27:29 -0800
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216145219.0f1c1b98.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dave Jones <davej@redhat.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, esandeen@redhat.com
+Subject: Re: Corrupted files after suspend to disk
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com> <AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com> <AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com> <201103242330.14416.rjw@sisk.pl> <CAFLxGvzzHDRma_Y_XEpOD+fY+vonbkoR1mvQp4Vb4c3M6fTsPA@mail.gmail.com> <20120216163030.GA32651@redhat.com>
+In-Reply-To: <20120216163030.GA32651@redhat.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 02:52:19PM -0800, Andrew Morton wrote:
-> On Thu, 16 Feb 2012 02:09:01 -0700
-> Grant Likely <grant.likely@secretlab.ca> wrote:
-> > This series generalizes the "irq_host" infrastructure from powerpc
-> > so that it can be used by all architectures and renames it to "irq_domain".
-> 
-> drivers/mfd/twl-core.c is fairly horked on i386 allmodconfig:
-> 
-> drivers/mfd/twl-core.c: In function 'twl_probe':
-> drivers/mfd/twl-core.c:1218: error: implicit declaration of function 'irq_alloc_descs'
-> drivers/mfd/twl-core.c:1226: error: implicit declaration of function 'irq_domain_add_legacy'
-> drivers/mfd/twl-core.c:1227: error: 'irq_domain_simple_ops' undeclared (first use in this function)
-> drivers/mfd/twl-core.c:1227: error: (Each undeclared identifier is reported only once
-> drivers/mfd/twl-core.c:1227: error: for each function it appears in.)
-> 
-> This is today's linux-next so it has rmk's "ARM: omap: fix broken
-> twl-core dependencies and ifdefs" in there, which looks like it
-> attempts to repair this stuff.
+On 2/16/12 8:30 AM, Dave Jones wrote:
+> On Thu, Feb 16, 2012 at 11:52:27AM +0100, richard -rw- weinberger wrote:
+>  
+>  > >> >> Of course, please test the above separately. :-)
+>  > >> >
+>  > >> > Ok, I'll test this when I'm at home.
+>  > >> >
+>  > >> > BTW: dropping the caches helps, when some files seem corrupted.
+>  > >> > Today /usr/bin/okular was broken.
+>  > >> > After setting vm.drop_caches=1 it worked again.
+>  > >>
+>  > >> On Linux 2.6.38 I'm unable to reproduce the issue.
+>  > >> Only 2.6.37 seems to be affected.
+>  > >> So, I'm moving over to 2.6.38. :)
+>  > >
+>  > Bad news:
+>  > I saw the issue on 3.x too but thought it's because my IdeaPad s10 is crap.
+>  > Now with my shiny new Lenovo x121e I have the same issue! :-(
+>  > 
+>  > OpenSUSE 12.1, kernel 3.2.7.
+>  > After a few suspend2disk iterations random files are corrupted.
+>  > But only cached files. A reboot solves the problem.
 
-Yes, you're the third to report this breakage.
+Just to be clear - you see _data_ corruption in files, but only
+until a reboot, and after that they are ok?  Ok, reading above
+about using drop_caches that sounds like the case.
 
-Grant's response on Tuesday over this was:
-| This is irq_domain related.  It's related to an API change.  I'm
-| tracking to get it solved, either by moving the twl commit into the
-| irqdomain branch or by deferring the api change to v3.5.
-|
-| I've also got a patch that converts x86 over to the new api, but I
-| don't have sufficient review to put it into the irqdomain tree yet.
+That sounds different from what I saw in the bug Dave mentions
+below, but possibly related root cause, I suppose.
 
-> btw, Russell, regarding this comment in include/linux/irq.h:
+-Eric
+
+> FWIW, we've been seeing a number of hard to diagnose failures
+> with suspend to disk for the last few releases in Fedora.
+> Eric Sandeen has been chasing https://bugzilla.redhat.com/show_bug.cgi?id=744275
+> for a while, but there's no smoking gun that really explains what's
+> getting into these states. Further complicating things, is that it
+> doesn't seem to be 100% reproducable.
 > 
-> /*
->  * Please do not include this file in generic code.  There is currently
->  * no requirement for any architecture to implement anything held
->  * within this file.
->  *
->  * Thanks. --rmk
->  */
+> 	Dave
 > 
-> A quick grep indicates that we've lost this battle ;) Is the comments
-> still true?  Should we stop discouraging inclusion of linux/irq.h? 
-> Does anyone even know that it's discouraged ;)
 
-It's still true for any platform which hasn't been converted to genirq,
-as such a platform would not have asm/hw_irq.h.  That said, since
-genirq, it's now necessary for any driver which contains interrupt
-controller code like GPIO drivers.  So I suspect the comment should now
-be lost, even though it's not really a replacement for asm/irq.h.
