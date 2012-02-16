@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2BPCFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 21:05:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48550 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2BPCFf (ORCPT
+	id S1756817Ab2BPCLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 21:11:15 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52046 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754791Ab2BPCLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 21:05:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Feb 2012 11:04:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock
- splitting
-Message-Id: <20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120215224221.22050.80605.stgit@zurg>
-References: <20120215224221.22050.80605.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 15 Feb 2012 21:11:12 -0500
+Message-ID: <4F3C6594.3030709@fb.com>
+Date: Wed, 15 Feb 2012 18:10:28 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Andrea Righi <andrea@betterlinux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com> <1329006098-5454-4-git-send-email-andrea@betterlinux.com> <20120215233537.GA20724@dev3310.snc6.facebook.com> <20120215234724.GA21685@thinkpad> <4F3C467B.1@fb.com> <20120216005608.GC21685@thinkpad>
+In-Reply-To: <20120216005608.GC21685@thinkpad>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
+ definitions=2012-02-16_01:2012-02-16,2012-02-16,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 02:57:04 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+On 2/15/12 4:56 PM, Andrea Righi wrote:
 
-> There should be no logic changes in this patchset, this is only tossing bits around.
-> [ This patchset is on top some memcg cleanup/rework patches,
->   which I sent to linux-mm@ today/yesterday ]
-> 
-> Most of things in this patchset are self-descriptive, so here brief plan:
-> 
+> Oh sorry, you're right! nocache_tree is not a pointer inside
+> address_space, so the compiler must know the size.
+>
+> mmh... move the definition of the rb_root struct in linux/types.h? or
+> simply use a rb_root pointer. The (void *) looks a bit scary and too bug
+> prone.
 
-AFAIK, Hugh Dickins said he has per-zone-per-lru-lock and is testing it.
-So, please CC him and Johannes, at least.
+Either way is fine. I did some black box testing of the patch (comparing 
+noreuse vs dontneed) and it behaves as expected.
 
+On a file copy, neither one pollutes the page cache. But if I run a 
+random read benchmark on the source file right before and afterwards, 
+page cache is warm with noreuse, but cold with dontneed. Copy 
+performance was unaffected.
 
-> * Transmute struct lruvec into struct book. Like real book this struct will
->   store set of pages for one zone. It will be working unit for reclaimer code.
-> [ If memcg is disabled in config there will only one book embedded into struct zone ]
-> 
+I can't really comment on the implementation details since I haven't 
+reviewed it, but the functionality sounds useful.
 
-Why you need to add new structure rahter than enhancing lruvec ?
-"book" means a binder of pages ?
-
-
-> * move page-lru counters to struct book
-> [ this adds extra overhead in add_page_to_lru_list()/del_page_from_lru_list() for
->   non-memcg case, but I believe it will be invisible, only one non-atomic add/sub
->   in the same cacheline with lru list ]
-> 
-
-This seems straightforward.
-
-> * unify inactive_list_is_low_global() and cleanup reclaimer code
-> * replace struct mem_cgroup_zone with single pointer to struct book
-
-Hm, ok.
-
-> * optimize page to book translations, move it upper in the call stack,
->   replace some struct zone arguments with struct book pointer.
-> 
-
-a page->book transrater from patch 2/15
-
-+struct book *page_book(struct page *page)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	struct page_cgroup *pc;
-+
-+	if (mem_cgroup_disabled())
-+		return &page_zone(page)->book;
-+
-+	pc = lookup_page_cgroup(page);
-+	if (!PageCgroupUsed(pc))
-+		return &page_zone(page)->book;
-+	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-+	smp_rmb();
-+	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-+			page_to_nid(page), page_zonenum(page));
-+	return &mz->book;
-+}
-
-What happens when pc->mem_cgroup is rewritten by move_account() ?
-Where is the guard for lockless access of this ?
-
-Thanks,
--Kame
+  -Arun
 
