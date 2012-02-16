@@ -1,74 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab2BPGDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 01:03:44 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50674 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab2BPGDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 01:03:42 -0500
-Date: Wed, 15 Feb 2012 22:03:35 -0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 24/25] irq_domain: remove "hint" when allocating irq
- numbers
-Message-ID: <20120216060334.GA11758@r65073-Latitude-D630>
-References: <1327700179-17454-1-git-send-email-grant.likely@secretlab.ca>
- <1327700179-17454-25-git-send-email-grant.likely@secretlab.ca>
- <4F316848.4060100@atmel.com>
- <4F3BC97C.6030203@atmel.com>
- <20120215202145.GH25779@ponder.secretlab.ca>
- <20120215215001.GA30946@r65073-Latitude-D630>
- <20120216053243.GM25779@ponder.secretlab.ca>
-MIME-Version: 1.0
+	id S1753923Ab2BPGFH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 01:05:07 -0500
+Received: from plane.gmane.org ([80.91.229.3]:52985 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753435Ab2BPGFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 01:05:05 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: ramana <ramana05458@gmail.com>
+Subject: Re: [PATCH] Fix =?utf-8?b?Q09ORklHX0NST1NTX0NPTVBJTEU=?= issue in .config
+Date: Thu, 16 Feb 2012 06:03:15 +0000 (UTC)
+Message-ID: <loom.20120216T065703-912@post.gmane.org>
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216053243.GM25779@ponder.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 122.174.82.132 (Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20100101 Firefox/7.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 10:32:43PM -0700, Grant Likely wrote:
-...
-> That's a bug then.  The implementation should work without patch 24.  Does
-> this patch fix it?
-> 
-Yes, it fixes the problem for me.
+Hi,
+I couild not find patch. Can you please tell me where is that patch and how to
+attach to my host system.....?
 
-Regards,
-Shawn
+Thanks,
+Ramana.
 
-> ---
-> 
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 2c1d6f8..2d3dfff 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -516,8 +516,8 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
->  		return irq_domain_legacy_revmap(domain, hwirq);
->  
->  	/* Slow path does a linear search of the map */
-> -	if (hint < NUM_ISA_INTERRUPTS)
-> -		hint = NUM_ISA_INTERRUPTS;
-> +	if (hint == 0)
-> +		hint = 1;
->  	i = hint;
->  	do {
->  		struct irq_data *data = irq_get_irq_data(i);
-> @@ -525,7 +525,7 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
->  			return i;
->  		i++;
->  		if (i >= irq_virq_count)
-> -			i = NUM_ISA_INTERRUPTS;
-> +			i = 1
->  	} while(i != hint);
->  	return 0;
->  }
-> 
+
+
