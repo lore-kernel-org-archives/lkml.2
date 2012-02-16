@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab2BPTJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:09:14 -0500
-Received: from 124-248-200-49.sunnyvision.com ([124.248.200.49]:56433 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab2BPTJL (ORCPT
+	id S1755016Ab2BPTJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:09:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58971 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab2BPTJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:09:11 -0500
-X-Greylist: delayed 7238 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 14:09:11 EST
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com E944152DF8
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com DC3934FB23
-Message-ID: <DT6vvV@ibm.com>
-From: dedicatedhk@yahoo.com.hk
-Subject: Cloud server
-X-Mailer: gUpaoV19TstKfDWf1upDu
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu, 16 Feb 2012 23:13:57 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 16 Feb 2012 14:09:26 -0500
+Date: Thu, 16 Feb 2012 20:09:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+In-Reply-To: <20120216150139.GA16634@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.02.1202161946530.2794@ionos>
+References: <20120215145225.GA21448@srcf.ucam.org> <alpine.LFD.2.02.1202152059230.2794@ionos> <20120215202221.GA29552@srcf.ucam.org> <alpine.LFD.2.02.1202152125500.2794@ionos> <20120215203814.GA29795@srcf.ucam.org> <alpine.LFD.2.02.1202152140110.2794@ionos>
+ <20120215204757.GA30275@srcf.ucam.org> <20120216142733.GA15632@srcf.ucam.org> <20120216143132.293c8f50@pyramind.ukuu.org.uk> <1329403876.2293.232.camel@twins> <20120216150139.GA16634@srcf.ucam.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1GJ9ONG026445
 
-Cloud ServerˆmÆØ
-Advantages of Cloud Server ˆm
-Cloud Server provides you with the same function as a traditional dedicated server, plus the high availability, scalability and flexibility that a dedicated server cannot offer to you.  ˆm???"¡Â????Èú??ÆØ????ˆoÆÙ??????¡Ó?¢XÆÙ?¡Ó????Èú??ÆØ???-???"?oÆÙˆo?????ˆo£á???"ˆm???-??"ˆm"??¡Â?"ÆØ?£á¡±?£á?"??¡Óo?£á¡±????ÆÙ?£á¡±?????ÆØ?¡Â"?????¡Ó?¢XÆÙ?¡Ó????Èú??ÆØ????????"?-?????£á?
+On Thu, 16 Feb 2012, Matthew Garrett wrote:
 
-a. Costing Saving
-With Cloud Server, there is zero setup cost! All you need is to pay for a regular service fee only. And saved up to 50-70% maintenance costs compared with traditional dedicated server hosting solutions. Without a huge cost-saving, you can handle your IT budget more efficiently.  
-ˆoÆØ
-b. High Flexibility & Scalabilityˆm
-Cloud Server is invented and designed to allow you to scale up your server specifications easily and conveniently. The simplified steps in spinning up your server minimize your time and processes; therefore, you can make adjustment at the very last moment.
+> On Thu, Feb 16, 2012 at 03:51:16PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2012-02-16 at 14:31 +0000, Alan Cox wrote:
+> > > In historical Unix sleep(0) ends up the nearest equivalent it had to
+> > > triggering a reschedule and giving up the rest of the timeslice.
+> > > 
+> > > I suspect special casing it as yield() isn't far from the right result ?
+> > 
+> > But why go that way? Using sleep(0) or yield() is pretty much always the
+> > wrong thing to do anyway, this is a great opportunity for all folks to
+> > find these sites and fix them.
+> > 
+> > Wasn't that what open-source is all about, doing the right thing?
+> 
+> Doing the right thing if practical. How about we special-case for now 
+> with a once-per-process printk and kill it further down the line?
 
-c. High Availability & Reliabilityˆm
-Cloud Server could be deployed for both High Availability & High Reliability with clustering features. Your business is still running even if there is an unlikely primary server down issue, the secondary servers inside the cloud will take over the role to serve and ensure your service continues to perform as usual.
+We've done this for stuff which was once kinda guaranteed
+(intentionally or not), but sleep(0) has never had any guarantee
+whatsoever. Quite the contrary it changed its behaviour several times
+over the last decades and there is no reason to manifest some weird
+ass semantics now.
 
-d. Self-owned World-class Data Centerˆo
-ISO certified data center on the backend with fully redundant facilities, high level security and 24x7 manpower support.
+> > Why should we care about obviously broken crap?
+> > 
+> > Furthermore, pushing slack to several seconds will also break stuff that
+> > needed those timers to expire sooner, who is going to fix that?
+> 
+> The reason to change timer slack is because we're willing to break 
+> polling applications in order to gain power savings. The problem is that 
+> there are event-driven applications that are also going to be broken 
+> because some ridiculous proportion of userspace believes that sleep(0) 
+> is a thing that they can do in an event-driven application. The question 
 
-Dell PowerEdge Powered Cloud Server
-Hardware Configuration
-- CPU: 2vCPU
-- RAM: 4G RAM
-- HardDisk: 100GB Storage
-- IP Address: 2 IP Addresses
+If we are willing to break polling crap, then there is no fricking
+reason not to break lousy programmed "event driven" crap while we are
+at it.
 
-Software Configuration
-- OS: Linux CentOS / RHEL / Debian / Fedora
-- Plesk Control Panel 
+> is whether the cost of special-casing that in the kernel is more than 
+> fixing all of them.
 
-Data Center Facilities
-- Applying to Internet Backbone
-  2Gbps to HKIX (Local) + 300Mbps to Int'l Carrier (Oversea)
-- TIA945 Standard Tier 3+	
+The cost of special casing stuff is maintainence, inconsistance of
+interfaces and extended confusion. And each of that is worse than
+breaking some (i.e. 1% of the total app stack out there) weirdo apps.
 
-Data Center Facilities
-- Applying to Internet Backbone
-  2Gbps to HKIX (Local) + 300Mbps to Int'l Carrier (Oversea)
-- TIA945 Standard Tier 3+
+> > What's next, we're actually going to give people their O_PONIES?
+> 
+> If we could give people O_PONIES then why wouldn't we? The only reason 
+> not to is because it costs too much elsewhere.
 
-We are a leading total ISP and Data Center Service Provider in HK, with 13 years experience in Internet and IT Solutions, we offers one-stop service to our clients with satisfaction.
+Wrong. The reason is that O_PONIES is impossible to define and that's
+equally true for any exception to the (nano)sleep interface.
 
-Data Center Co-location 
-Dedicated Server Rental and Managed 
-VPS & Cloud Server Computing
-Web & Email Hosting
-Exchange 2010 Enterprise Email
-Web Development (Design & Programming)
-Online Marketing
+Thanks,
 
-Our main mission is to provide the best and reliability services to help our clients to achieve their business objectives.
-
-We would like to ask if your side considering to revamp your website, upgrade your email system, co-locate or make a server site in Hong Kong.
-Should you have any queries or quotation request, please feel free to email to boris@dedicatedserver.com.hk
-
-Your prompt feedback and response will be highly appreciated.
-Best Regards,
-Boris Lam
-Senior Sales Executive
-Mobile: 9408 8762
-Email: boris@dedicatedserver.com.hk
-
-
+	tglx
