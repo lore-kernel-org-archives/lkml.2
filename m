@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab2BPJpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 04:45:11 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38101 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751019Ab2BPJpH (ORCPT
+	id S1751666Ab2BPJxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:53:36 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42482 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab2BPJxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 04:45:07 -0500
+	Thu, 16 Feb 2012 04:53:33 -0500
+Date: Thu, 16 Feb 2012 01:53:04 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kernel-team@fedoraproject.org
+Subject: Re: exit_mmap() BUG_ON triggering since 3.1
+In-Reply-To: <20120216070753.GA23585@redhat.com>
+Message-ID: <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
+References: <20120215183317.GA26977@redhat.com> <alpine.LSU.2.00.1202151801020.19691@eggly.anvils> <20120216070753.GA23585@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxWKns=BFo=bw-DDRLwTYjznGbAT+PA5aB-mGTSDieWxQ@mail.gmail.com>
-References: <CA+rthh-JU-CE2t=BvpuZyZt5_1sm4urWrmZN8MmA4iC5JorDmQ@mail.gmail.com>
-	<CA+55aFxWKns=BFo=bw-DDRLwTYjznGbAT+PA5aB-mGTSDieWxQ@mail.gmail.com>
-Date: Thu, 16 Feb 2012 10:45:05 +0100
-Message-ID: <CA+rthh-ahJ3j+SQ2ugRnmiEHNmxwk3VgyAkMxQn42gEh9YG8MA@mail.gmail.com>
-Subject: Re: AES-NI data corruption issues
-From: Mathias Krause <minipli@googlemail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 5:20 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Feb 15, 2012 at 12:51 AM, Mathias Krause <minipli@googlemail.com> wrote:
->>
->> Can you please elaborate a little more on the AES-NI issues you're
->> seeing as I cannot find any information about them on
->> LKML/bugzilla/linux-crypto? Are they limited to the 3.3-rc kernels or
->> are they happening on released kernels as well? Are they happening on
->> 32 bit, 64 bit or both?
->
-> So far we have reports from just one person, and it's seems limited to
-> 32-bit and using the AES instructions from interrupts - by the WiFi
-> layer.
->
-> We have not figured out what's wrong yet, but it doesn't look like
-> it's AES-NI itself: it seems to be some FP state mixup (right now it
-> looks like the TS_USEDFPU bit we use to track it gets confused). It is
-> probably just triggered by the very unusual case of the mac80211 code
-> wanting to use FP state from interrupts.
+On Thu, 16 Feb 2012, Andrea Arcangeli wrote:
+> On Wed, Feb 15, 2012 at 06:14:12PM -0800, Hugh Dickins wrote:
+> > Now most of those paths in THP also hold mmap_sem for read or write (with
+> > appropriate checks on mm_users), but two do not: when split_huge_page()
+> > is called by hwpoison_user_mappings(), and when called by add_to_swap().
+> 
+> So the race is split_huge_page_map() called by add_to_swap() running
+> concurrently with free_pgtables. Great catch!!
+> 
+> > Or should we try harder to avoid the extra locking: test mm_users?
+> > #ifdef on THP?  Or consider the accuracy of this count not worth
+> > extra locking, and just scrap the BUG_ON now?
+> 
+> It's probably also happening with a large munmap, while add_to_swap
+> runs on another vma. Process didn't exit yet, but the actual BUG_ON
+> check runs at exit. So I doubt aborting split_huge_page on zero
+> mm_users could solve it.
 
-Maybe it was a bad idea porting that code to 32 bit. Honestly, I
-haven't checked if the kernel can save and restore the FP state
-(especially the MMX/SSE state) correctly while doing the port. But as
-my tests with dm-crypt worked flawlessly I was implying it can.
+Indeed, what I meant was, I was wondering whether to make the
+spin_lock and spin_unlock in my patch conditional on mm_users,
+not to make split_huge_page conditional on it.
 
-> There's a few other reports that *may* be the same thing, but they
-> also seem to be about wireless, and using WPA with AES. In fact, we
-> have no real reason to even consider them related to AES-NI at all,
-> other than that commonality.
+> 
+> Good part is, this being a false positive makes these oopses a
+> nuisance, so it means they can't corrupt any memory or disk etc...
 
-I'm actively using AES-NI with WPA as well for quite some months now
-without any problems. I'm running on a 64 bit kernel, though. So this
-problem may be 32 bit only.
+Yes (and I think less troublesome than most BUGs, coming at exit
+while not holding locks; though we could well make it a WARN_ON,
+I don't think that existed back in the day).
 
-> Anyway, AES-NI itself seems to be fine, everything we have so far
-> points to the FPU/MMX state handling being very subtly broken.
+> 
+> The simplest is probably to change nr_ptes to count THPs too. I tried
+> that and no oopses so far but it's not very well tested yet.
 
-Lets hope they get fixed soon.
+Oh, I like that, that's a much nicer fix than mine.  If you're happy
+to change the THP end (which I could hardly blame for getting those odd
+rules slightly wrong), and it passes your testing, then certainly add my
 
-Thanks,
-Mathias
+Acked-by: Hugh Dickins <hughd@google.com>
+
+In looking into the bug, it had actually bothered me a little that you
+were setting aside those pages, yet not counting them into nr_ptes;
+though the only thing that cares is oom_kill.c, and the count of pages
+in each hugepage can only dwarf the count in nr_ptes (whereas, without
+hugepages, it's possible to populate very sparsely and nr_ptes become
+significant).
+
+> 
+> ====
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> Subject: [PATCH] mm: thp: fix BUG on mm->nr_ptes
+> 
+> Quoting Hugh's discovery and explanation of the SMP race condition:
+> 
+> ===
+> mm->nr_ptes had unusual locking: down_read mmap_sem plus
+> page_table_lock when incrementing, down_write mmap_sem (or mm_users 0)
+> when decrementing; whereas THP is careful to increment and decrement
+> it under page_table_lock.
+> 
+> Now most of those paths in THP also hold mmap_sem for read or write
+> (with appropriate checks on mm_users), but two do not: when
+> split_huge_page() is called by hwpoison_user_mappings(), and when
+> called by add_to_swap().
+> 
+> It's conceivable that the latter case is responsible for the
+> exit_mmap() BUG_ON mm->nr_ptes that has been reported on Fedora.
+> ===
+> 
+> The simplest way to fix it without having to alter the locking is to
+> make split_huge_page() a noop in nr_ptes terms, so by counting the
+> preallocated pagetables that exists for every mapped hugepage. It was
+> an arbitrary choice not to count them and either way is not wrong or
+> right, because they are not used but they're still allocated.
+> 
+> Reported-by: Dave Jones <davej@redhat.com>
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+>  mm/huge_memory.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 91d3efb..8f7fc39 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -671,6 +671,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
+>  		set_pmd_at(mm, haddr, pmd, entry);
+>  		prepare_pmd_huge_pte(pgtable, mm);
+>  		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+> +		mm->nr_ptes++;
+>  		spin_unlock(&mm->page_table_lock);
+>  	}
+>  
+> @@ -789,6 +790,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+>  	pmd = pmd_mkold(pmd_wrprotect(pmd));
+>  	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
+>  	prepare_pmd_huge_pte(pgtable, dst_mm);
+> +	dst_mm->nr_ptes++;
+>  
+>  	ret = 0;
+>  out_unlock:
+> @@ -887,7 +889,6 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+>  	}
+>  	kfree(pages);
+>  
+> -	mm->nr_ptes++;
+>  	smp_wmb(); /* make pte visible before pmd */
+>  	pmd_populate(mm, pmd, pgtable);
+>  	page_remove_rmap(page);
+> @@ -1047,6 +1048,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>  			VM_BUG_ON(page_mapcount(page) < 0);
+>  			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+>  			VM_BUG_ON(!PageHead(page));
+> +			tlb->mm->nr_ptes--;
+>  			spin_unlock(&tlb->mm->page_table_lock);
+>  			tlb_remove_page(tlb, page);
+>  			pte_free(tlb->mm, pgtable);
+> @@ -1375,7 +1377,6 @@ static int __split_huge_page_map(struct page *page,
+>  			pte_unmap(pte);
+>  		}
+>  
+> -		mm->nr_ptes++;
+>  		smp_wmb(); /* make pte visible before pmd */
+>  		/*
+>  		 * Up to this point the pmd is present and huge and
+> @@ -1988,7 +1989,6 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	set_pmd_at(mm, address, pmd, _pmd);
+>  	update_mmu_cache(vma, address, _pmd);
+>  	prepare_pmd_huge_pte(pgtable, mm);
+> -	mm->nr_ptes--;
+>  	spin_unlock(&mm->page_table_lock);
+>  
+>  #ifndef CONFIG_NUMA
