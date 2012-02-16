@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab2BPJMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 04:12:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49333 "EHLO
+	id S932458Ab2BPJM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:12:26 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57178 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab2BPJJs (ORCPT
+	with ESMTP id S932149Ab2BPJJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 04:09:48 -0500
+	Thu, 16 Feb 2012 04:09:49 -0500
 MIME-Version: 1.0
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
@@ -15,12 +15,10 @@ To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
         Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Michal Simek <monstr@monstr.eu>,
-        John Williams <john.williams@petalogix.com>,
-        John Linn <john.linn@xilinx.com>
-Subject: [PATCH v5 24/27] irq_domain/microblaze: Convert microblaze to use irq_domains
-Date: Thu, 16 Feb 2012 02:09:25 -0700
-Message-Id: <1329383368-12122-25-git-send-email-grant.likely@secretlab.ca>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v5 26/27] irq_domain: mostly eliminate slow-path revmap lookups
+Date: Thu, 16 Feb 2012 02:09:27 -0700
+Message-Id: <1329383368-12122-27-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
 References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
@@ -28,257 +26,267 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts Microblaze to use the irq_domain remapper and get
-away from hard coding the offset between hwirq number and the linux irq
-number space.  This also paves the way for multiple interrupt controllers.
+With the current state of irq_domain, the reverse map is always updated
+when new IRQs get mapped.  This means that the irq_find_mapping() function
+can be simplified to always execute the revmap-specific lookup function.
 
-v2: Don't enable SPARSE_IRQ and keep NR_IRQS set to 33
+This patch adds lookup functions for the revmaps that don't yet have one
+and removes the slow path lookup from most of the code paths.  The only
+place where the slow path legitimately remains is where the linear map
+is used with a hwirq number larger than the revmap size.
+
+v5: rewrite to not use a ->revmap() callback.  It is simpler, smaller,
+    safer and faster to open code each of the revmap lookups directly into
+    irq_find_mapping() via a switch statement.
+v4: Fix build failure on incorrect variable reference.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: John Williams <john.williams@petalogix.com>
-Cc: John Linn <john.linn@xilinx.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Milton Miller <miltonm@bga.com>
 ---
- arch/microblaze/Kconfig               |    1 +
- arch/microblaze/include/asm/hardirq.h |   16 ---------
- arch/microblaze/include/asm/irq.h     |   42 ++---------------------
- arch/microblaze/kernel/intc.c         |   61 ++++++++++++++++++++-------------
- arch/microblaze/kernel/irq.c          |   24 ++-----------
- 5 files changed, 45 insertions(+), 99 deletions(-)
+ arch/powerpc/sysdev/xics/icp-hv.c      |    2 +-
+ arch/powerpc/sysdev/xics/icp-native.c  |    2 +-
+ arch/powerpc/sysdev/xics/xics-common.c |    3 -
+ include/linux/irqdomain.h              |    4 -
+ kernel/irq/irqdomain.c                 |  121 ++++++++++++--------------------
+ 5 files changed, 48 insertions(+), 84 deletions(-)
 
-diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
-index c8d6efb..11060fa 100644
---- a/arch/microblaze/Kconfig
-+++ b/arch/microblaze/Kconfig
-@@ -14,6 +14,7 @@ config MICROBLAZE
- 	select TRACING_SUPPORT
- 	select OF
- 	select OF_EARLY_FLATTREE
-+	select IRQ_DOMAIN
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
-diff --git a/arch/microblaze/include/asm/hardirq.h b/arch/microblaze/include/asm/hardirq.h
-index cd1ac9a..fb3c05a 100644
---- a/arch/microblaze/include/asm/hardirq.h
-+++ b/arch/microblaze/include/asm/hardirq.h
-@@ -1,17 +1 @@
--/*
-- * Copyright (C) 2006 Atmark Techno, Inc.
+diff --git a/arch/powerpc/sysdev/xics/icp-hv.c b/arch/powerpc/sysdev/xics/icp-hv.c
+index 253dce9..14469cf 100644
+--- a/arch/powerpc/sysdev/xics/icp-hv.c
++++ b/arch/powerpc/sysdev/xics/icp-hv.c
+@@ -111,7 +111,7 @@ static unsigned int icp_hv_get_irq(void)
+ 	if (vec == XICS_IRQ_SPURIOUS)
+ 		return NO_IRQ;
+ 
+-	irq = irq_radix_revmap_lookup(xics_host, vec);
++	irq = irq_find_mapping(xics_host, vec);
+ 	if (likely(irq != NO_IRQ)) {
+ 		xics_push_cppr(vec);
+ 		return irq;
+diff --git a/arch/powerpc/sysdev/xics/icp-native.c b/arch/powerpc/sysdev/xics/icp-native.c
+index 4c79b6f..48861d3 100644
+--- a/arch/powerpc/sysdev/xics/icp-native.c
++++ b/arch/powerpc/sysdev/xics/icp-native.c
+@@ -119,7 +119,7 @@ static unsigned int icp_native_get_irq(void)
+ 	if (vec == XICS_IRQ_SPURIOUS)
+ 		return NO_IRQ;
+ 
+-	irq = irq_radix_revmap_lookup(xics_host, vec);
++	irq = irq_find_mapping(xics_host, vec);
+ 	if (likely(irq != NO_IRQ)) {
+ 		xics_push_cppr(vec);
+ 		return irq;
+diff --git a/arch/powerpc/sysdev/xics/xics-common.c b/arch/powerpc/sysdev/xics/xics-common.c
+index ea5e204..1d7067d 100644
+--- a/arch/powerpc/sysdev/xics/xics-common.c
++++ b/arch/powerpc/sysdev/xics/xics-common.c
+@@ -330,9 +330,6 @@ static int xics_host_map(struct irq_domain *h, unsigned int virq,
+ 
+ 	pr_devel("xics: map virq %d, hwirq 0x%lx\n", virq, hw);
+ 
+-	/* Insert the interrupt mapping into the radix tree for fast lookup */
+-	irq_radix_revmap_insert(xics_host, virq, hw);
+-
+ 	/* They aren't all level sensitive but we just don't really know */
+ 	irq_set_status_flags(virq, IRQ_LEVEL);
+ 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 5245488..47af458 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -155,10 +155,6 @@ extern void irq_dispose_mapping(unsigned int virq);
+ extern unsigned int irq_find_mapping(struct irq_domain *host,
+ 				     irq_hw_number_t hwirq);
+ extern unsigned int irq_create_direct_mapping(struct irq_domain *host);
+-extern void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
+-				    irq_hw_number_t hwirq);
+-extern unsigned int irq_radix_revmap_lookup(struct irq_domain *host,
+-					    irq_hw_number_t hwirq);
+ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+ 				      irq_hw_number_t hwirq);
+ 
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index db7adb2..e7d8e96 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -313,7 +313,8 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
+ 		domain = irq_default_domain;
+ 
+ 	BUG_ON(domain == NULL);
+-	WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_NOMAP);
++	if (WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_NOMAP))
++		return 0;
+ 
+ 	virq = irq_alloc_desc_from(1, 0);
+ 	if (!virq) {
+@@ -389,6 +390,18 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+ 		return 0;
+ 	}
+ 
++	switch(domain->revmap_type) {
++	case IRQ_DOMAIN_MAP_LINEAR:
++		if (hwirq < domain->revmap_data.linear.size)
++			domain->revmap_data.linear.revmap[hwirq] = virq;
++		break;
++	case IRQ_DOMAIN_MAP_TREE:
++		mutex_lock(&revmap_trees_mutex);
++		radix_tree_insert(&domain->revmap_data.tree, hwirq,
++				  irq_get_irq_data(virq));
++		mutex_unlock(&revmap_trees_mutex);
++		break;
++	}
+ 	pr_debug("irq: irq %lu on domain %s mapped to virtual irq %u\n",
+ 		hwirq, domain->of_node ? domain->of_node->full_name : "null", virq);
+ 
+@@ -497,7 +510,7 @@ EXPORT_SYMBOL_GPL(irq_dispose_mapping);
+ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 			      irq_hw_number_t hwirq)
+ {
+-	unsigned int i;
++	struct irq_data *data;
+ 
+ 	/* Look for default domain if nececssary */
+ 	if (domain == NULL)
+@@ -505,74 +518,43 @@ unsigned int irq_find_mapping(struct irq_domain *domain,
+ 	if (domain == NULL)
+ 		return 0;
+ 
+-	/* legacy -> bail early */
+-	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
++	switch (domain->revmap_type) {
++	case IRQ_DOMAIN_MAP_LEGACY:
+ 		return irq_domain_legacy_revmap(domain, hwirq);
+-
+-	/* Slow path does a linear search of the map */
+-	for (i = 0; i < irq_virq_count; i++)  {
+-		struct irq_data *data = irq_get_irq_data(i);
++	case IRQ_DOMAIN_MAP_LINEAR:
++		return irq_linear_revmap(domain, hwirq);
++	case IRQ_DOMAIN_MAP_TREE:
++		rcu_read_lock();
++		data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
++		rcu_read_unlock();
++		if (data)
++			return data->irq;
++		break;
++	case IRQ_DOMAIN_MAP_NOMAP:
++		data = irq_get_irq_data(hwirq);
+ 		if (data && (data->domain == domain) && (data->hwirq == hwirq))
+-			return i;
++			return hwirq;
++		break;
+ 	}
++
++	WARN(1, "ERROR: irq revmap went horribly wrong. revmap_type=%i\n",
++		domain->revmap_type);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(irq_find_mapping);
+ 
+-/**
+- * irq_radix_revmap_lookup() - Find a linux irq from a hw irq number.
+- * @domain: domain owning this hardware interrupt
+- * @hwirq: hardware irq number in that domain space
 - *
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License. See the file "COPYING" in the main directory of this archive
-- * for more details.
+- * This is a fast path, for use by irq controller code that uses radix tree
+- * revmaps
 - */
+-unsigned int irq_radix_revmap_lookup(struct irq_domain *domain,
+-				     irq_hw_number_t hwirq)
++static unsigned int irq_find_mapping_slow(struct irq_domain *domain,
++					  irq_hw_number_t hwirq)
+ {
+-	struct irq_data *irq_data;
 -
--#ifndef _ASM_MICROBLAZE_HARDIRQ_H
--#define _ASM_MICROBLAZE_HARDIRQ_H
+-	if (WARN_ON_ONCE(domain->revmap_type != IRQ_DOMAIN_MAP_TREE))
+-		return irq_find_mapping(domain, hwirq);
 -
--/* should be defined in each interrupt controller driver */
--extern unsigned int get_irq(struct pt_regs *regs);
+-	/*
+-	 * Freeing an irq can delete nodes along the path to
+-	 * do the lookup via call_rcu.
+-	 */
+-	rcu_read_lock();
+-	irq_data = radix_tree_lookup(&domain->revmap_data.tree, hwirq);
+-	rcu_read_unlock();
 -
- #include <asm-generic/hardirq.h>
--
--#endif /* _ASM_MICROBLAZE_HARDIRQ_H */
-diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
-index 7798ad1..bab3b13 100644
---- a/arch/microblaze/include/asm/irq.h
-+++ b/arch/microblaze/include/asm/irq.h
-@@ -9,49 +9,13 @@
- #ifndef _ASM_MICROBLAZE_IRQ_H
- #define _ASM_MICROBLAZE_IRQ_H
- 
--
--/*
-- * Linux IRQ# is currently offset by one to map to the hardware
-- * irq number. So hardware IRQ0 maps to Linux irq 1.
-- */
--#define NO_IRQ_OFFSET	1
--#define IRQ_OFFSET	NO_IRQ_OFFSET
--#define NR_IRQS		(32 + IRQ_OFFSET)
-+#define NR_IRQS		(32 + 1)
- #include <asm-generic/irq.h>
- 
--/* This type is the placeholder for a hardware interrupt number. It has to
-- * be big enough to enclose whatever representation is used by a given
-- * platform.
-- */
--typedef unsigned long irq_hw_number_t;
--
--extern unsigned int nr_irq;
--
- struct pt_regs;
- extern void do_IRQ(struct pt_regs *regs);
- 
--/** FIXME - not implement
-- * irq_dispose_mapping - Unmap an interrupt
-- * @virq: linux virq number of the interrupt to unmap
-- */
--static inline void irq_dispose_mapping(unsigned int virq)
--{
--	return;
+-	/*
+-	 * If found in radix tree, then fine.
+-	 * Else fallback to linear lookup - this should not happen in practice
+-	 * as it means that we failed to insert the node in the radix tree.
+-	 */
+-	return irq_data ? irq_data->irq : irq_find_mapping(domain, hwirq);
 -}
--
--struct irq_domain;
 -
 -/**
-- * irq_create_mapping - Map a hardware interrupt into linux virq space
-- * @host: host owning this hardware interrupt or NULL for default host
-- * @hwirq: hardware irq number in that host space
+- * irq_radix_revmap_insert() - Insert a hw irq to linux irq number mapping.
+- * @domain: domain owning this hardware interrupt
+- * @virq: linux irq number
+- * @hwirq: hardware irq number in that domain space
 - *
-- * Only one mapping per hardware interrupt is permitted. Returns a linux
-- * virq number.
-- * If the sense/trigger is to be specified, set_irq_type() should be called
-- * on the number returned from that call.
+- * This is for use by irq controllers that use a radix tree reverse
+- * mapping for fast lookup.
 - */
--extern unsigned int irq_create_mapping(struct irq_domain *host,
--					irq_hw_number_t hwirq);
-+/* should be defined in each interrupt controller driver */
-+extern unsigned int get_irq(void);
- 
- #endif /* _ASM_MICROBLAZE_IRQ_H */
-diff --git a/arch/microblaze/kernel/intc.c b/arch/microblaze/kernel/intc.c
-index 44b177e..ad12067 100644
---- a/arch/microblaze/kernel/intc.c
-+++ b/arch/microblaze/kernel/intc.c
-@@ -9,6 +9,7 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/irqdomain.h>
- #include <linux/irq.h>
- #include <asm/page.h>
- #include <linux/io.h>
-@@ -25,8 +26,6 @@ static unsigned int intc_baseaddr;
- #define INTC_BASE	intc_baseaddr
- #endif
- 
--unsigned int nr_irq;
+-void irq_radix_revmap_insert(struct irq_domain *domain, unsigned int virq,
+-			     irq_hw_number_t hwirq)
+-{
+-	struct irq_data *irq_data = irq_get_irq_data(virq);
 -
- /* No one else should require these constants, so define them locally here. */
- #define ISR 0x00			/* Interrupt Status Register */
- #define IPR 0x04			/* Interrupt Pending Register */
-@@ -84,24 +83,45 @@ static struct irq_chip intc_dev = {
- 	.irq_mask_ack = intc_mask_ack,
- };
+-	if (WARN_ON(domain->revmap_type != IRQ_DOMAIN_MAP_TREE))
+-		return;
++	unsigned int i;
  
--unsigned int get_irq(struct pt_regs *regs)
-+static struct irq_domain *root_domain;
-+
-+unsigned int get_irq(void)
- {
--	int irq;
-+	unsigned int hwirq, irq = -1;
- 
--	/*
--	 * NOTE: This function is the one that needs to be improved in
--	 * order to handle multiple interrupt controllers. It currently
--	 * is hardcoded to check for interrupts only on the first INTC.
--	 */
--	irq = in_be32(INTC_BASE + IVR) + NO_IRQ_OFFSET;
--	pr_debug("get_irq: %d\n", irq);
-+	hwirq = in_be32(INTC_BASE + IVR);
-+	if (hwirq != -1U)
-+		irq = irq_find_mapping(root_domain, hwirq);
-+
-+	pr_debug("get_irq: hwirq=%d, irq=%d\n", hwirq, irq);
- 
- 	return irq;
- }
- 
-+int xintc_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
-+{
-+	u32 intr_mask = (u32)d->host_data;
-+
-+	if (intr_mask & (1 << hw)) {
-+		irq_set_chip_and_handler_name(irq, &intc_dev,
-+						handle_edge_irq, "edge");
-+		irq_clear_status_flags(irq, IRQ_LEVEL);
-+	} else {
-+		irq_set_chip_and_handler_name(irq, &intc_dev,
-+						handle_level_irq, "level");
-+		irq_set_status_flags(irq, IRQ_LEVEL);
-+	}
+-	if (virq) {
+-		mutex_lock(&revmap_trees_mutex);
+-		radix_tree_insert(&domain->revmap_data.tree, hwirq, irq_data);
+-		mutex_unlock(&revmap_trees_mutex);
++	/* Slow path does a linear search of the map */
++	for (i = 0; i < irq_virq_count; i++)  {
++		struct irq_data *data = irq_get_irq_data(i);
++		if (data && (data->domain == domain) && (data->hwirq == hwirq))
++			return i;
+ 	}
 +	return 0;
-+}
-+
-+static const struct irq_domain_ops xintc_irq_domain_ops = {
-+	.xlate = irq_domain_xlate_onetwocell,
-+	.map = xintc_map,
-+};
-+
- void __init init_IRQ(void)
+ }
+ 
+ /**
+@@ -581,31 +563,20 @@ void irq_radix_revmap_insert(struct irq_domain *domain, unsigned int virq,
+  * @hwirq: hardware irq number in that domain space
+  *
+  * This is a fast path, for use by irq controller code that uses linear
+- * revmaps. It does fallback to the slow path if the revmap doesn't exist
+- * yet and will create the revmap entry with appropriate locking
++ * revmaps. It does fallback to the slow path if the hwirq number is outside
++ * the range of the hwirq numbers.
+  */
+ unsigned int irq_linear_revmap(struct irq_domain *domain,
+ 			       irq_hw_number_t hwirq)
  {
--	u32 i, intr_mask;
-+	u32 nr_irq, intr_mask;
- 	struct device_node *intc = NULL;
- #ifdef CONFIG_SELFMOD_INTC
- 	unsigned int intc_baseaddr = 0;
-@@ -146,16 +166,9 @@ void __init init_IRQ(void)
- 	/* Turn on the Master Enable. */
- 	out_be32(intc_baseaddr + MER, MER_HIE | MER_ME);
- 
--	for (i = IRQ_OFFSET; i < (nr_irq + IRQ_OFFSET); ++i) {
--		if (intr_mask & (0x00000001 << (i - IRQ_OFFSET))) {
--			irq_set_chip_and_handler_name(i, &intc_dev,
--				handle_edge_irq, "edge");
--			irq_clear_status_flags(i, IRQ_LEVEL);
--		} else {
--			irq_set_chip_and_handler_name(i, &intc_dev,
--				handle_level_irq, "level");
--			irq_set_status_flags(i, IRQ_LEVEL);
--		}
--		irq_get_irq_data(i)->hwirq = i - IRQ_OFFSET;
--	}
-+	/* Yeah, okay, casting the intr_mask to a void* is butt-ugly, but I'm
-+	 * lazy and Michal can clean it up to something nicer when he tests
-+	 * and commits this patch.  ~~gcl */
-+	root_domain = irq_domain_add_linear(intc, nr_irq, &xintc_irq_domain_ops,
-+							(void *)intr_mask);
- }
-diff --git a/arch/microblaze/kernel/irq.c b/arch/microblaze/kernel/irq.c
-index 3f613df..ace700a 100644
---- a/arch/microblaze/kernel/irq.c
-+++ b/arch/microblaze/kernel/irq.c
-@@ -31,14 +31,13 @@ void __irq_entry do_IRQ(struct pt_regs *regs)
- 	trace_hardirqs_off();
- 
- 	irq_enter();
--	irq = get_irq(regs);
-+	irq = get_irq();
- next_irq:
- 	BUG_ON(!irq);
--	/* Substract 1 because of get_irq */
--	generic_handle_irq(irq + IRQ_OFFSET - NO_IRQ_OFFSET);
-+	generic_handle_irq(irq);
- 
--	irq = get_irq(regs);
--	if (irq) {
-+	irq = get_irq();
-+	if (irq != -1U) {
- 		pr_debug("next irq: %d\n", irq);
- 		++concurrent_irq;
- 		goto next_irq;
-@@ -48,18 +47,3 @@ next_irq:
- 	set_irq_regs(old_regs);
- 	trace_hardirqs_on();
- }
+-	unsigned int *revmap;
 -
--/* MS: There is no any advance mapping mechanism. We are using simple 32bit
--  intc without any cascades or any connection that's why mapping is 1:1 */
--unsigned int irq_create_mapping(struct irq_domain *host, irq_hw_number_t hwirq)
--{
--	return hwirq + IRQ_OFFSET;
--}
--EXPORT_SYMBOL_GPL(irq_create_mapping);
+ 	if (WARN_ON_ONCE(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR))
+ 		return irq_find_mapping(domain, hwirq);
+ 
+ 	/* Check revmap bounds */
+ 	if (unlikely(hwirq >= domain->revmap_data.linear.size))
+-		return irq_find_mapping(domain, hwirq);
 -
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	return intspec[0] + IRQ_OFFSET;
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+-	/* Check if revmap was allocated */
+-	revmap = domain->revmap_data.linear.revmap;
+-	if (unlikely(revmap == NULL))
+-		return irq_find_mapping(domain, hwirq);
+-
+-	/* Fill up revmap with slow path if no mapping found */
+-	if (unlikely(!revmap[hwirq]))
+-		revmap[hwirq] = irq_find_mapping(domain, hwirq);
++		return irq_find_mapping_slow(domain, hwirq);
+ 
+-	return revmap[hwirq];
++	return domain->revmap_data.linear.revmap[hwirq];
+ }
+ 
+ #ifdef CONFIG_VIRQ_DEBUG
 -- 
 1.7.9
 
