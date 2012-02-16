@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab2BPUB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:01:57 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45120 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594Ab2BPUB4 (ORCPT
+	id S1755019Ab2BPUC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:02:58 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:58184 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751791Ab2BPUC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:01:56 -0500
-Date: Fri, 17 Feb 2012 00:01:51 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120216200151.GQ1905@moon>
-References: <20120215210934.GL4533@moon>
- <20120215215807.GM4533@moon>
- <20120216144954.GA11953@redhat.com>
- <20120216151340.GI1905@moon>
- <20120216164901.GD3849@moon>
- <20120216174047.GA31176@redhat.com>
- <20120216175809.GJ1905@moon>
- <20120216190321.GA2216@redhat.com>
- <20120216192952.GN1905@moon>
- <20120216115208.a488e10e.akpm@linux-foundation.org>
+	Thu, 16 Feb 2012 15:02:57 -0500
+Date: Thu, 16 Feb 2012 15:02:50 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: [RELEASE] LTTng 2.0 prerelease bundle 20120216
+Message-ID: <20120216200250.GA20296@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120216115208.a488e10e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:56:55 up 450 days,  1:00,  5 users,  load average: 0.17, 0.09,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 11:52:08AM -0800, Andrew Morton wrote:
-> On Thu, 16 Feb 2012 23:29:52 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > Final one ;)
-> 
-> syscalls-x86-add-__nr_kcmp-syscall-v8-fix-fix-fix-fix-fix.patch
-> is a tie for the world record!
+LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
+full system tracing solution toolchain. It is composed of several
+components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming. LTTng is open source software.
 
-It was close to v13 ;)
+You can get a the current release "bundle" (recommanded set of packages)
+at the following URL:
 
-> 
-> I folded everything back into a single patch.  Here's what we currently
-> have:
->
+http://lttng.org/bundles/
 
-Thanks a lot, Andrew!
+Current versions as of 20120216:
 
-	Cyrill
+babeltrace-0.12
+lttng-modules-2.0-pre15
+lttng-tools-2.0-pre23
+lttng-ust-1.9.8
+userspace-rcu-0.6.7
+
+Project website: http://lttng.org
+Download link: http://lttng.org/lttng2.0
+(please refer to the README files for installation instructions and
+lttng-tools doc/quickstart.txt for usage information)
+
+Key Features:
+
+- Efficient synchronized User-space and Kernel tracing using the same
+  time source provides view of correlated kernel and user-space events.
+- LTTng 2.0 kernel modules build against a vanilla or distribution
+  kernel, without need for additional patches,
+- Tracepoints, detailed syscall tracing (fast strace replacement),
+  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
+  probing (kprobes) and function call/return tracing (kretprobes support),
+- Have the ability to attach "context" information to events in the
+  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
+  All the extra information fields to be collected with events are
+  optional, specified on a per-tracing-session basis (except for
+  timestamp and event id, which are mandatory).
+- Allows non-root users part of the "tracing" group to perform kernel
+  and userspace tracing.
+- Allows multiple tracing sessions to be active concurrently, each with
+  its own instrumentation set.
+- Integrated interface for both kernel and userspace tracing,
+- Produces CTF (Common Trace Format) natively,
+  (http://www.efficios.com/ctf)
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
