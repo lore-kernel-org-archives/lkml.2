@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab2BPVv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 16:51:29 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58046 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752432Ab2BPVvZ (ORCPT
+	id S1753610Ab2BPVxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 16:53:32 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53875 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab2BPVxa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 16:51:25 -0500
+	Thu, 16 Feb 2012 16:53:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F3D766E.7040205@zytor.com>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
-	<1329422549-16407-3-git-send-email-wad@chromium.org>
-	<4F3D61CB.2000301@zytor.com>
-	<CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-	<4F3D7250.6040504@zytor.com>
-	<CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
-	<4F3D766E.7040205@zytor.com>
-Date: Thu, 16 Feb 2012 15:51:23 -0600
-Message-ID: <CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Markus Gutschke <markus@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        keescook@chromium.org
+In-Reply-To: <20120216172735.GX9751@redhat.com>
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<m1ipjc3fsk.fsf@fess.ebiederm.org>
+	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+	<m1zkcmyjyd.fsf@fess.ebiederm.org>
+	<CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
+	<CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+	<20120216172735.GX9751@redhat.com>
+Date: Thu, 16 Feb 2012 13:53:29 -0800
+X-Google-Sender-Auth: cI5N0PKB5GjKeVGwwrZb3JY8w5w
+Message-ID: <CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+From: Yinghai Lu <yinghai@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        kexec@lists.infradead.org, vgoyal@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 3:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/16/2012 01:28 PM, Markus Gutschke wrote:
->>
->> I think, the documentation said that as soon as prctl() is used to set
->> a bpf filter for system calls, it automatically disallows system calls
->> using an entry point other than the one used by this particular
->> prctl().
->>
->> I was trying to come up with scenarios where this particular approach
->> causes problem, but I can't think of any off the top of my head. So,
->> it might actually turn out to be a very elegant way to reduce the
->> attack surface of the kernel. If we are really worried about userspace
->> compatibility, we could make the kernel send a signal instead of
->> terminating the program, if the wrong entry point was used; not sure
->> if that is needed, though.
->>
->
-> Let's see... we're building an entire pattern-matching engine and then
-> randomly disallowing its use because we didn't build in the right bits?
->
-> Sorry, that's asinine.
->
-> Put the bloody bit in there and let the pattern program make that decision.
+On Thu, Feb 16, 2012 at 9:27 AM, Don Zickus <dzickus@redhat.com> wrote:
 
-Easy enough to add a bit for the mode: 32-bit or 64-bit.  It seemed
-like a waste of cycles for every 32-bit program or every 64-bit
-program to check to see that its calling convention hadn't changed,
-but it does take away a valid decision the pattern program should be
-making.
+> So I think I figured it out.  I went through and commented out code in
+> disable_local_APIC until I narrowed it down to the piece of code that
+> needs to be disabled for it to work.
+>
+> Surprise, surprise... its LVTPC or perf! :-)  Actually it is the
+> nmi_watchdog which uses perf.  My theory is NMIs are not disabled and one
+> is generated by the local apic during decompression (just bad timing) and
+> *splat*.
+>
+> Yinghai, you can probably prove this by
+>
+> echo 0 > /proc/sys/kernel/nmi_watchdog
+>
+> then do your kdump crash test.
 
-I'll add a flag for 32bit/64bit while cleaning up seccomp_data. I
-think that will properly encapsulate the is_compat_task() behavior in
-a way that is stable for compat and non-compat tasks to use.  If
-there's a more obvious way, I'm all ears.
+yes.  that will make kdump crash working.
 
-thanks!
-will
+Yinghai
