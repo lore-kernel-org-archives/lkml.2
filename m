@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2BPVmD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 16:42:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51175 "EHLO mx1.redhat.com"
+	id S1756042Ab2BPVmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 16:42:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755993Ab2BPVmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 16:42:00 -0500
-Date: Thu, 16 Feb 2012 16:41:41 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-tip-commits@vger.kernel.org, mingo@elte.hu,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, ebiederm@xmission.com, hpa@zytor.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tglx@linutronix.de, vgoyal@redhat.com
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
- crash path
-Message-ID: <20120216214141.GG9751@redhat.com>
-References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
- <CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
- <20120213152808.GD9751@redhat.com>
- <CAE9FiQXX7BXKuVHZ9NRCEmeTnPj4zVJL5gf5eSp6b+4e3jN3EA@mail.gmail.com>
- <20120216025331.GT9751@redhat.com>
- <CAE9FiQW4utm0roHR7zHS_tHbOAhqi4SECjH8cwJ3H=zEKhQLXA@mail.gmail.com>
+	id S1754269Ab2BPVmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 16:42:49 -0500
+Date: Thu, 16 Feb 2012 22:42:45 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kernel-team@fedoraproject.org
+Subject: Re: exit_mmap() BUG_ON triggering since 3.1
+Message-ID: <20120216214245.GD23585@redhat.com>
+References: <20120215183317.GA26977@redhat.com>
+ <alpine.LSU.2.00.1202151801020.19691@eggly.anvils>
+ <20120216070753.GA23585@redhat.com>
+ <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQW4utm0roHR7zHS_tHbOAhqi4SECjH8cwJ3H=zEKhQLXA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 10:43:06AM -0800, Yinghai Lu wrote:
-> On Wed, Feb 15, 2012 at 6:53 PM, Don Zickus <dzickus@redhat.com> wrote:
-> >
-> > For some reason using gzip instead of xz makes things work for me with
-> > your config.
-> >
-> > CONFIG_KERNEL_GZIP=y
-> > CONFIG_KERNEL_XZ=n
-> >
-> > Do you see the same thing?
-> 
-> no.
-> 
-> with GZIP still get instant reset.
+On Thu, Feb 16, 2012 at 01:53:04AM -0800, Hugh Dickins wrote:
+> Yes (and I think less troublesome than most BUGs, coming at exit
+> while not holding locks; though we could well make it a WARN_ON,
+> I don't think that existed back in the day).
 
-What about my other idea, 'echo 0 > /proc/sys/kernel/nmi_watchdog'?
+A WARN_ON would be fine with me, go ahead if you prefer it... only
+risk would be to go unnoticed or be underestimated. I am ok with the
+BUG_ON too (even if this time it triggered false positives... sigh).
 
-Cheers,
-Don
+> Acked-by: Hugh Dickins <hughd@google.com>
+
+Thanks for the quick review!
+
+> In looking into the bug, it had actually bothered me a little that you
+> were setting aside those pages, yet not counting them into nr_ptes;
+> though the only thing that cares is oom_kill.c, and the count of pages
+> in each hugepage can only dwarf the count in nr_ptes (whereas, without
+> hugepages, it's possible to populate very sparsely and nr_ptes become
+> significant).
+
+Agreed, it's not significant either ways.
+
+Running my two primary systems with this applied for half a day and no
+problem so far so it should be good for -mm at least.
