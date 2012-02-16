@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab2BPKks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:40:48 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:61567 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab2BPKko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:40:44 -0500
-Date: Thu, 16 Feb 2012 11:40:27 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, andrzej.p@samsung.com,
-        mingo@elte.hu, jbarnes@virtuousgeek.org
-Subject: [PATCH 3/3] x86: introduce CONFIG_X86_DMA_REMAP
-Message-ID: <60eae1275eab92e527ac19f40b56f703fd6c6c5a.1329387617.git.rubini@gnudd.com>
+	id S1751588Ab2BPKlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:41:40 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:36864 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750726Ab2BPKlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 05:41:39 -0500
+Message-ID: <4F3CDD5E.8020600@ti.com>
+Date: Thu, 16 Feb 2012 16:11:34 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1329387617.git.rubini@gnudd.com>
-In-Reply-To: <cover.1329387617.git.rubini@gnudd.com>
+To: Aneesh V <aneesh@ti.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 6/8] misc: emif: add interrupt and temperature handling
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com> <1328357771-31644-7-git-send-email-aneesh@ti.com>
+In-Reply-To: <1328357771-31644-7-git-send-email-aneesh@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default functions phys_to_dma, dma_to_phys implement identity
-mapping as fast inline functions.  Some systems, however, need a
-custom function to implement its own mapping between CPU addresses and
-device addresses. This option is needed to support the sta2x11 I/O Hub,
-whose support has been accepted but won't compile without this patch.
+On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+> Add an ISR for EMIF that:
+> 	1. reports details of access errors
+> 	2. takes action on thermal events
+> 
+> On thermal events SDRAM timing parameters are
+> adjusted to ensure safe operation
+> 
+> Also clear all interrupts on shut-down. Pending IRQs
+> may casue problems during warm-reset.
+> 
+Add some more details like MR4, EMIF polling frequency etc
+for better understanding.
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Alan Cox <alan@linux.intel.com>
----
- arch/x86/Kconfig                   |    5 +++++
- arch/x86/include/asm/dma-mapping.h |    7 +++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+> Signed-off-by: Aneesh V <aneesh@ti.com>
+> ---
+>  drivers/misc/emif.c |  209 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 207 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
+> index 36ba6f4..5c2b0ae 100644
+> --- a/drivers/misc/emif.c
+> +++ b/drivers/misc/emif.c
+> @@ -500,6 +500,45 @@ static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
+>  }
+>  
+>  /*
+> + * Get the temperature level of the EMIF instance:
+> + * Reads the MR4 register of attached SDRAM parts to find out the temperature
+> + * level. If there are two parts attached(one on each CS), then the temperature
+> + * level for the EMIF instance is the higher of the two temperatures.
+> + */
+> +static void get_temperature_level(struct emif_data *emif)
+> +{
+> +	u32		temp, temperature_level;
+> +	unsigned long	irqs;
+> +	void __iomem	*base;
+> +
+> +	base = emif->base;
+> +
+> +	/* Read mode register 4 */
+> +	writel(DDR_MR4, base + EMIF_LPDDR2_MODE_REG_CONFIG);
+> +	temperature_level = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
+> +	temperature_level = (temperature_level & MR4_SDRAM_REF_RATE_MASK) >>
+> +				MR4_SDRAM_REF_RATE_SHIFT;
+> +
+> +	if (emif->plat_data->device_info->cs1_used) {
+> +		writel(DDR_MR4 | CS_MASK, base + EMIF_LPDDR2_MODE_REG_CONFIG);
+> +		temp = readl(base + EMIF_LPDDR2_MODE_REG_DATA);
+> +		temp = (temp & MR4_SDRAM_REF_RATE_MASK)
+> +				>> MR4_SDRAM_REF_RATE_SHIFT;
+> +		temperature_level = max(temp, temperature_level);
+> +	}
+> +
+> +	spin_lock_irqsave(&emif->lock, irqs);
+Add a line here.
+> +	/* treat everything less than nominal(3) in MR4 as nominal */
+> +	if (unlikely(temperature_level < SDRAM_TEMP_NOMINAL))
+> +		temperature_level = SDRAM_TEMP_NOMINAL;
+> +
+> +	/* if we get reserved value in MR4 persist with the existing value */
+> +	if (likely(temperature_level != SDRAM_TEMP_RESERVED_4))
+> +		emif->temperature_level = temperature_level;
+> +	spin_unlock_irqrestore(&emif->lock, irqs);
+> +}
+> +
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bb23c3..5426833 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -512,6 +512,7 @@ config STA2X11
- 	depends on X86_32_NON_STANDARD && PCI
- 	select SWIOTLB
- 	select X86_DEV_DMA_OPS
-+	select X86_DMA_REMAP
- 	select MFD_STA2X11
- 	select ARCH_REQUIRE_GPIOLIB
- 	default n
-@@ -2255,6 +2256,10 @@ config X86_DEV_DMA_OPS
- 	bool
- 	depends on X86_64 || STA2X11
- 
-+config X86_DMA_REMAP
-+	bool
-+	depends on STA2X11
-+
- source "net/Kconfig"
- 
- source "drivers/Kconfig"
-diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
-index 09aa473..61c0bd2 100644
---- a/arch/x86/include/asm/dma-mapping.h
-+++ b/arch/x86/include/asm/dma-mapping.h
-@@ -62,6 +62,12 @@ extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
- 					dma_addr_t *dma_addr, gfp_t flag,
- 					struct dma_attrs *attrs);
- 
-+#ifdef CONFIG_X86_DMA_REMAP /* Platform code defines bridge-specific code */
-+extern bool dma_capable(struct device *dev, dma_addr_t addr, size_t size);
-+extern dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr);
-+extern phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr);
-+#else
-+
- static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
- {
- 	if (!dev->dma_mask)
-@@ -79,6 +85,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
- {
- 	return daddr;
- }
-+#endif /* CONFIG_X86_DMA_REMAP */
- 
- static inline void
- dma_cache_sync(struct device *dev, void *vaddr, size_t size,
--- 
-1.7.7.2
+rest of the patch looks fine to me
