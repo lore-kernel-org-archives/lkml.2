@@ -1,216 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2BPB2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 20:28:21 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55338 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab2BPB2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 20:28:19 -0500
-Message-ID: <4F3C5B4E.3080606@ce.jp.nec.com>
-Date: Thu, 16 Feb 2012 10:26:38 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756698Ab2BPBc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 20:32:27 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44494 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756040Ab2BPBcX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 20:32:23 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Naveen Goswamy <naveen.goswamy@polymtl.ca>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: Kernel crashing on eject SD card
-References: <1328660390.4f31bfa6e8f4b@www.imp.polymtl.ca> <20120212220836.6aa7fa4d@stein> <20120212222027.71651e8b@stein> <20120213021813.GA589@redhat.com> <1329154831.4f394b0f3c69c@www.imp.polymtl.ca> <4F3A4220.4010901@ce.jp.nec.com> <20120214162858.GM12117@google.com> <4F3B1ED3.4000706@ce.jp.nec.com> <20120215172617.GB24986@google.com>
-In-Reply-To: <20120215172617.GB24986@google.com>
+In-Reply-To: <20120206061517.GD21449@ponder.secretlab.ca>
+References: <CACxGe6sTO_Jy-vecKS9SoVs55ZA8BMc+O0NODLdq6KvkcbPByg@mail.gmail.com>
+ <1328492111.30631.24.camel@pasglop> <20120206061517.GD21449@ponder.secretlab.ca>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 15 Feb 2012 18:32:03 -0700
+X-Google-Sender-Auth: HVxkiGFy20RA0yn7u4Di1-9qfZU
+Message-ID: <CACxGe6tAVW2zCrWFPDgvu8sjd4KXJnfqhT16sYa1UvyRVEVyhQ@mail.gmail.com>
+Subject: Re: Please add irqdomain branch to linux-next
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Feb 5, 2012 at 11:15 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, Feb 06, 2012 at 12:35:11PM +1100, Benjamin Herrenschmidt wrote:
+>> On Thu, 2012-02-02 at 14:10 -0700, Grant Likely wrote:
+>> > Hi Stephen,
+>> >
+>> > Can you please add the following branch to linux-next?  It contains
+>> > the majority of the irqdomain rework that I've been doing.  I'd like
+>> > to get it marinating in linux-next early so I'm sure it will be ready
+>> > when the v3.4 merge window rolls around.
+>>
+>> Ho !
+>>
+>> I don't have v4 in my mailbox to reply to the individual patches,
+>> but I've spotted some issues so here they are in no specific order.
+>>
+>> @@ -739,31 +712,36 @@ unsigned int irq_create_mapping(struct irq_domain *host,
+>>
+>>       /* Get a virtual interrupt number */
+>>       if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY) {
+>>               /* Handle legacy */
+>>               virq = (unsigned int)hwirq;
+>>               if (virq == 0 || virq >= NUM_ISA_INTERRUPTS)
+>>                       return NO_IRQ;
+>>               return virq;
+>>       } else {
+>>               /* Allocate a virtual interrupt number */
+>>               hint = hwirq % irq_virq_count;
+>> -             virq = irq_alloc_virt(host, 1, hint);
+>> +             virq = irq_alloc_desc_from(hint, 0);
+>> +             if (!virq)
+>> +                     virq = irq_alloc_desc_from(1, 0);
+>>               if (virq == NO_IRQ) {
+>>                       pr_debug("irq: -> virq allocation failed\n");
+>>                       return NO_IRQ;
+>>               }
+>>
+>> So first, the way you "avoid" allocating irq 0 seems to be by ...
+>> allocating irq 0 and then allocating again once you've done that :-)
+>>
+>> You should either make sure hint is non-0 to begin with or use
+>> irq_reserve_irq() to reserve irq 0 (tho I don't know whether the later
+>> could be an issue on x86).
+>
+> Okay, I'll ensure that hint != 0
 
-Thank you for review and comments.
+Now fixed.  Will be in v5
 
-On 02/16/12 02:26, Tejun Heo wrote:
-> On Wed, Feb 15, 2012 at 11:56:19AM +0900, Jun'ichi Nomura wrote:
->> +int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
+>
+>> Also, you no longer honor irq_virq_count. It's a limitation of
+>> __irq_alloc_descs() to not be able to get an upper boundary, but you
+>> need that for iseries and ps3 at least.
+>
+> I'll look at adding an upper limit to __irq_alloc_descs().  If that won't
+> work, then I'll add an explicit test after allocation to make sure it is not
+> over the limit.
+>
+>> Also the default for irq_virq_count should probably be changed when you
+>> move to the core to use IRQ_BITMAP_BITS (so we get the 8192 additional
+>> irqs on SPARSE_IRQ).
+>
+> Good catch.
+
+Only nomap users will care about this, and of those 5, only iseries
+and ps3 actually change it.  How about I add a max_virq parameter to
+only be used by the nomap revmap?  That seems to be cleaner than a
+global setting.  I've crafted a patch and will post it with v5 of the
+series.
+
+>
+>>
+>> Another thing I noticed, tho I'm still only half way through the series
+>> so you -may- have fixed that, is that you allocate all descs on node 0
+>> (not even the current node) and have no way to do otherwise.
+>
+> No, I've not fixed that.
+>
+>> Now, it's a bit of a nasty issue because ideally we should "move" the
+>> descs around as we set the affinity of interrupts and we really can't do
+>> that just yet, but at least having a way to allocate the desc with a
+>> node number (adding a node argument to irq_create_mapping) would be
+>> useful. For things like PCI we could make that use the node where the
+>> device is, which is better than having everything on node 0.
+>
+> okay.
+
+For now I'll use numa_node_id() at allocation time.  I'll craft a
+follow-on patch to change the API since it touches a lot of call
+sites.
+
+>
+>> Also you should probably make the whole match & xlate business
+>> #ifdef CONFIG_OF (especially in the definition of the irq domain). There
+>> is no reason why archs couldn't use the domain mapper without
+>> device-tree support.
+>
+> It builds and runs fine without the CONFIG_OF wrappers, but I can trim stuff
+> down.
+>
+>> +int irq_domain_xlate_pci(struct irq_domain *d, struct device_node *ctrlr,
+>> +                      const u32 *intspec, unsigned int intsize,
+>> +                      unsigned long *out_hwirq, unsigned int *out_type)
 >> +{
->> +	int res;
->> +
->> +	res = drop_partitions(disk, bdev);
->> +	if (res)
->> +		return res;
->> +
-> 
-> Hmmm... shouldn't we have set_capacity(disk, 0) here?
+>> +     if (WARN_ON(intsize != 1))
+>> +             return -EINVAL;
+>> +     *out_hwirq = intspec[0];
+>> +     *out_type = IRQ_TYPE_LEVEL_HIGH;
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(irq_domain_xlate_pci);
+>>
+>> That's bogus. PCI interrupts are level -low-. However some bridges
+>> internally invert them on the way to the PIC (this is actually common
+>> with PCIe bridges where they are generated from messages). So if you are
+>> to provide a default helper, make it LEVEL_LOW really.
+>
+> Haha, good point.  I'll fix that.
 
-Added.
-I wasn't sure whether I should leave it to drivers.
-But it seems capacity 0 for ENOMEDIUM device is reasonable.
+I've dropped irq_domain_xlate_pci()
 
->> +	check_disk_size_change(disk, bdev);
->> +	bdev->bd_invalidated = 0;
->> +	/* tell userspace that the media / partition table may have changed */
->> +	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
-> 
-> Also, we really shouldn't be generating KOBJ_CHANGE after every
-> -ENOMEDIUM open.  This can easily lead to infinite loop.  We should
-> generate this iff we actually dropped partitions && modified the size.
+I think I've addressed all the problems you've brought up.  I'm
+testing now and I'll be posting v5 very shortly.
 
-invalidate_partitions() is called only when bd_invalidated is set.
-So KOBJ_CHANGE is not raised for every ENOMEDIUM open.
-
-I put it explicit in the function to make it safer for
-possible misuse.
-
-How about this?
-
----------------------------------------------------------
-Do not call drivers when invalidating partitions for -ENOMEDIUM
-
-When a scsi driver returns -ENOMEDIUM for open(),
-__blkdev_get() calls rescan_partitions(), which ends up calling
-sd_revalidate_disk() without getting a refcount of scsi_device.
-
-That could lead to oops like this:
-
-  process A                  process B
-  ----------------------------------------------
-  sys_open
-    __blkdev_get
-      sd_open
-        returns -ENOMEDIUM
-                             scsi_remove_device
-                               <scsi_device torn down>
-      rescan_partitions
-        sd_revalidate_disk
-          <oops>
-
-Oopses are reported here:
-http://marc.info/?l=linux-scsi&m=132388619710052
-
-This patch separates the partition invalidation from rescan_partitions()
-and use it for -ENOMEDIUM case. 
-
-Index: linux-3.3/block/partition-generic.c
-===================================================================
---- linux-3.3.orig/block/partition-generic.c	2012-02-15 09:00:25.147293790 +0900
-+++ linux-3.3/block/partition-generic.c	2012-02-16 10:48:22.257680685 +0900
-@@ -389,17 +389,11 @@ static bool disk_unlock_native_capacity(
- 	}
- }
- 
--int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
-+static int drop_partitions(struct gendisk *disk, struct block_device *bdev)
- {
--	struct parsed_partitions *state = NULL;
- 	struct disk_part_iter piter;
- 	struct hd_struct *part;
--	int p, highest, res;
--rescan:
--	if (state && !IS_ERR(state)) {
--		kfree(state);
--		state = NULL;
--	}
-+	int res;
- 
- 	if (bdev->bd_part_count)
- 		return -EBUSY;
-@@ -412,6 +406,24 @@ rescan:
- 		delete_partition(disk, part->partno);
- 	disk_part_iter_exit(&piter);
- 
-+	return 0;
-+}
-+
-+int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
-+{
-+	struct parsed_partitions *state = NULL;
-+	struct hd_struct *part;
-+	int p, highest, res;
-+rescan:
-+	if (state && !IS_ERR(state)) {
-+		kfree(state);
-+		state = NULL;
-+	}
-+
-+	res = drop_partitions(disk, bdev);
-+	if (res)
-+		return res;
-+
- 	if (disk->fops->revalidate_disk)
- 		disk->fops->revalidate_disk(disk);
- 	check_disk_size_change(disk, bdev);
-@@ -515,6 +527,26 @@ rescan:
- 	return 0;
- }
- 
-+int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
-+{
-+	int res;
-+
-+	if (!bdev->bd_invalidated)
-+		return 0;
-+
-+	res = drop_partitions(disk, bdev);
-+	if (res)
-+		return res;
-+
-+	set_capacity(disk, 0);
-+	check_disk_size_change(disk, bdev);
-+	bdev->bd_invalidated = 0;
-+	/* tell userspace that the media / partition table may have changed */
-+	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
-+
-+	return 0;
-+}
-+
- unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
- {
- 	struct address_space *mapping = bdev->bd_inode->i_mapping;
-Index: linux-3.3/include/linux/genhd.h
-===================================================================
---- linux-3.3.orig/include/linux/genhd.h	2012-02-09 12:21:53.000000000 +0900
-+++ linux-3.3/include/linux/genhd.h	2012-02-16 10:47:43.783681813 +0900
-@@ -596,6 +596,7 @@ extern char *disk_name (struct gendisk *
- 
- extern int disk_expand_part_tbl(struct gendisk *disk, int target);
- extern int rescan_partitions(struct gendisk *disk, struct block_device *bdev);
-+extern int invalidate_partitions(struct gendisk *disk, struct block_device *bdev);
- extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
- 						     int partno, sector_t start,
- 						     sector_t len, int flags,
-Index: linux-3.3/fs/block_dev.c
-===================================================================
---- linux-3.3.orig/fs/block_dev.c	2012-02-09 12:21:53.000000000 +0900
-+++ linux-3.3/fs/block_dev.c	2012-02-16 10:47:52.602681441 +0900
-@@ -1183,8 +1183,12 @@ static int __blkdev_get(struct block_dev
- 			 * The latter is necessary to prevent ghost
- 			 * partitions on a removed medium.
- 			 */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
--				rescan_partitions(disk, bdev);
-+			if (bdev->bd_invalidated) {
-+				if (!ret)
-+					rescan_partitions(disk, bdev);
-+				else if (ret == -ENOMEDIUM)
-+					invalidate_partitions(disk, bdev);
-+			}
- 			if (ret)
- 				goto out_clear;
- 		} else {
-@@ -1214,8 +1218,12 @@ static int __blkdev_get(struct block_dev
- 			if (bdev->bd_disk->fops->open)
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
- 			/* the same as first opener case, read comment there */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
--				rescan_partitions(bdev->bd_disk, bdev);
-+			if (bdev->bd_invalidated) {
-+				if (!ret)
-+					rescan_partitions(bdev->bd_disk, bdev);
-+				else if (ret == -ENOMEDIUM)
-+					invalidate_partitions(bdev->bd_disk, bdev);
-+			}
- 			if (ret)
- 				goto out_unlock_bdev;
- 		}
+g.
