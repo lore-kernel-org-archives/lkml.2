@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab2BPWwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:52:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38262 "EHLO
+	id S1754841Ab2BPW7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 17:59:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38294 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab2BPWwV (ORCPT
+	with ESMTP id S1751896Ab2BPW7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:52:21 -0500
-Date: Thu, 16 Feb 2012 14:52:19 -0800
+	Thu, 16 Feb 2012 17:59:35 -0500
+Date: Thu, 16 Feb 2012 14:59:34 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [PATCH v5 00/27] irq_domain generalization and rework
-Message-Id: <20120216145219.0f1c1b98.akpm@linux-foundation.org>
-In-Reply-To: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
-References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
+To: dave@gnu.org
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Matthew Wilcox <matthew@wil.cx>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] locks: export device name
+Message-Id: <20120216145934.5fd9772e.akpm@linux-foundation.org>
+In-Reply-To: <1329431831.2753.3.camel@offbook>
+References: <1328907967.3138.1.camel@offbook>
+	<20120213163425.dd9adfde.akpm@linux-foundation.org>
+	<20120214190906.GA5115@fieldses.org>
+	<1329303162.3356.6.camel@offbook>
+	<20120215124230.GA11393@fieldses.org>
+	<20120215123929.6888c867.akpm@linux-foundation.org>
+	<1329431831.2753.3.camel@offbook>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,45 +31,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 02:09:01 -0700
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On Thu, 16 Feb 2012 23:37:11 +0100
+Davidlohr Bueso <dave@gnu.org> wrote:
 
+> On Wed, 2012-02-15 at 12:39 -0800, Andrew Morton wrote:
+> > On Wed, 15 Feb 2012 07:42:30 -0500
+> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > 
+> > > > > Perhaps safest would be to replace /proc/locks by another interface and
+> > > > > deprecate this one.
+> > > > 
+> > > > If exporting the name in the current /proc/locks file is out of the
+> > > > question, then IMHO I don't think it would be worth adding a new
+> > > > interface just for such a small change.
+> > > 
+> > > OK.
+> > > 
+> > > If you want to just change this over, I guess the thing to do would be
+> > > to stick something in feature-removal-schedule.txt saying "we'll switch
+> > > this in 2 years" (or however long you think before there are
+> > > realistically no more lslk users left), then do it then.
+> > > 
+> > > Switching to a new api would be better as we could warn users of the old
+> > > api then.  Maybe it'd be worth it if there was some other change we'd
+> > > been wanting to make?   Can't think of anything off the top of my head.
+> > > 
+> > > We may be adding more lock types--will lslk and lslocks handle that
+> > > gracefully?
+> > 
+> > Adding a whole new interface is pretty attractive.  It lets us get it
+> > right this time.  In particular, something which is extensible given
+> > certain simple rules.  As we've learned, the current /proc/locks didn't
+> > get that right!
 > 
-> This series generalizes the "irq_host" infrastructure from powerpc
-> so that it can be used by all architectures and renames it to "irq_domain".
+> Ok, however I'm a bit confused on what you mean by extensible; since
+> what we decide to export to userspace is pretty much permanent, how can
+> we change (extend) it later? We'd pretty much be running into
+> the /proc/locks situation now.
 
-drivers/mfd/twl-core.c is fairly horked on i386 allmodconfig:
+Mainly by avoiding the use of implicit identification via fixed
+positions.  Look at /proc/stat and weep.
 
-drivers/mfd/twl-core.c: In function 'twl_probe':
-drivers/mfd/twl-core.c:1218: error: implicit declaration of function 'irq_alloc_descs'
-drivers/mfd/twl-core.c:1226: error: implicit declaration of function 'irq_domain_add_legacy'
-drivers/mfd/twl-core.c:1227: error: 'irq_domain_simple_ops' undeclared (first use in this function)
-drivers/mfd/twl-core.c:1227: error: (Each undeclared identifier is reported only once
-drivers/mfd/twl-core.c:1227: error: for each function it appears in.)
+If we use a name:value format then we can add new fields later and
+things work OK.  We add stuff to /proc/meminfo and /proc/vmstat all the
+time.
 
+Removing things is of course much harder.  The best fix is to avoid
+adding things which we might ever have a reason for removing!  If we
+have a field which we simply can no longer support and which we think
+we must retain for back-compat reasons then we just have to find some
+way to emulate it.  In extremis we could hardwire the value to "0" so
+tools won't crash.
 
-This is today's linux-next so it has rmk's "ARM: omap: fix broken
-twl-core dependencies and ifdefs" in there, which looks like it
-attempts to repair this stuff.
-
-It's looking for things which are in both linux/irq.h and in
-linux/irqdomain.h.
-
-
-
-btw, Russell, regarding this comment in include/linux/irq.h:
-
-/*
- * Please do not include this file in generic code.  There is currently
- * no requirement for any architecture to implement anything held
- * within this file.
- *
- * Thanks. --rmk
- */
-
-A quick grep indicates that we've lost this battle ;) Is the comments
-still true?  Should we stop discouraging inclusion of linux/irq.h? 
-Does anyone even know that it's discouraged ;)
-
-
+sysfs has a different convention: one-value-per-file.  That means
+there's no need for the name part of name:value.  Extensibility means
+"go add another sysfs file".
 
