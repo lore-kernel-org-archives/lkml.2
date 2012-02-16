@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab2BPWiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:38:12 -0500
+	id S1756111Ab2BPWje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 17:39:34 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:35363 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431Ab2BPWiK (ORCPT
+	with ESMTP id S1751708Ab2BPWiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:38:10 -0500
+	Thu, 16 Feb 2012 17:38:11 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/9] block: restructure get_request()
-Date: Thu, 16 Feb 2012 14:37:52 -0800
-Message-Id: <1329431878-28300-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/9] block: interface update for ioc/icq creation functions
+Date: Thu, 16 Feb 2012 14:37:53 -0800
+Message-Id: <1329431878-28300-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329431878-28300-1-git-send-email-tj@kernel.org>
 References: <1329431878-28300-1-git-send-email-tj@kernel.org>
@@ -21,122 +21,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_request() is structured a bit unusually in that failure path is
-inlined in the usual flow with goto labels atop and inside it.
-Relocate the error path to the end of the function.
+Make the following interface updates to prepare for future ioc related
+changes.
 
-This is to prepare for icq handling changes in get_request() and
-doesn't introduce any behavior change.
+* create_io_context() returning ioc only works for %current because it
+  doesn't increment ref on the ioc.  Drop @task parameter from it and
+  always assume %current.
+
+* Make create_io_context_slowpath() return 0 or -errno and rename it
+  to create_task_io_context().
+
+* Make ioc_create_icq() take @ioc as parameter instead of assuming
+  that of %current.  The caller, get_request(), is updated to create
+  ioc explicitly and then pass it into ioc_create_icq().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c |   60 ++++++++++++++++++++++++++---------------------------
- 1 files changed, 29 insertions(+), 31 deletions(-)
+ block/blk-core.c |    8 +++++---
+ block/blk-ioc.c  |   22 ++++++++++------------
+ block/blk.h      |   24 +++++++++++-------------
+ 3 files changed, 26 insertions(+), 28 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index bf06d1d..69fa8c4 100644
+index 69fa8c4..195c5f7 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -825,7 +825,7 @@ static bool blk_rq_should_init_elevator(struct bio *bio)
- static struct request *get_request(struct request_queue *q, int rw_flags,
- 				   struct bio *bio, gfp_t gfp_mask)
- {
--	struct request *rq = NULL;
-+	struct request *rq;
- 	struct request_list *rl = &q->rq;
- 	struct elevator_type *et;
- 	struct io_context *ioc;
-@@ -877,7 +877,7 @@ retry:
- 					 * process is not a "batcher", and not
- 					 * exempted by the IO scheduler
- 					 */
--					goto out;
-+					return NULL;
- 				}
- 			}
- 		}
-@@ -890,7 +890,7 @@ retry:
- 	 * allocated with any setting of ->nr_requests
- 	 */
- 	if (rl->count[is_sync] >= (3 * q->nr_requests / 2))
--		goto out;
-+		return NULL;
+@@ -854,7 +854,7 @@ retry:
+ 			 */
+ 			if (!ioc && !retried) {
+ 				spin_unlock_irq(q->queue_lock);
+-				create_io_context(current, gfp_mask, q->node);
++				create_io_context(gfp_mask, q->node);
+ 				spin_lock_irq(q->queue_lock);
+ 				retried = true;
+ 				goto retry;
+@@ -918,7 +918,9 @@ retry:
  
- 	rl->count[is_sync]++;
- 	rl->starved[is_sync] = 0;
-@@ -920,36 +920,12 @@ retry:
+ 	/* create icq if missing */
  	if ((rw_flags & REQ_ELVPRIV) && unlikely(et->icq_cache && !icq)) {
- 		icq = ioc_create_icq(q, gfp_mask);
+-		icq = ioc_create_icq(q, gfp_mask);
++		ioc = create_io_context(gfp_mask, q->node);
++		if (ioc)
++			icq = ioc_create_icq(ioc, q, gfp_mask);
  		if (!icq)
--			goto fail_icq;
-+			goto fail_alloc;
+ 			goto fail_alloc;
  	}
+@@ -1004,7 +1006,7 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
+ 		 * up to a big batch of them for a small period time.
+ 		 * See ioc_batching, ioc_set_batching
+ 		 */
+-		create_io_context(current, GFP_NOIO, q->node);
++		create_io_context(GFP_NOIO, q->node);
+ 		ioc_set_batching(q, current->io_context);
  
- 	rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
--
--fail_icq:
--	if (unlikely(!rq)) {
--		/*
--		 * Allocation failed presumably due to memory. Undo anything
--		 * we might have messed up.
--		 *
--		 * Allocating task should really be put onto the front of the
--		 * wait queue, but this is pretty rare.
--		 */
--		spin_lock_irq(q->queue_lock);
--		freed_request(q, rw_flags);
--
--		/*
--		 * in the very unlikely event that allocation failed and no
--		 * requests for this direction was pending, mark us starved
--		 * so that freeing of a request in the other direction will
--		 * notice us. another possible fix would be to split the
--		 * rq mempool into READ and WRITE
--		 */
--rq_starved:
--		if (unlikely(rl->count[is_sync] == 0))
--			rl->starved[is_sync] = 1;
--
--		goto out;
--	}
-+	if (unlikely(!rq))
-+		goto fail_alloc;
+ 		spin_lock_irq(q->queue_lock);
+diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+index 92bf555..1092874 100644
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -212,15 +212,14 @@ void ioc_clear_queue(struct request_queue *q)
+ 	}
+ }
  
- 	/*
- 	 * ioc may be NULL here, and ioc_batching will be false. That's
-@@ -961,8 +937,30 @@ rq_starved:
- 		ioc->nr_batch_requests--;
+-void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_flags,
+-				int node)
++int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+ {
+ 	struct io_context *ioc;
  
- 	trace_block_getrq(q, bio, rw_flags & 1);
--out:
- 	return rq;
+ 	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags | __GFP_ZERO,
+ 				    node);
+ 	if (unlikely(!ioc))
+-		return;
++		return -ENOMEM;
+ 
+ 	/* initialize */
+ 	atomic_long_set(&ioc->refcount, 1);
+@@ -244,6 +243,8 @@ void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_flags,
+ 	else
+ 		kmem_cache_free(iocontext_cachep, ioc);
+ 	task_unlock(task);
 +
-+fail_alloc:
-+	/*
-+	 * Allocation failed presumably due to memory. Undo anything we
-+	 * might have messed up.
-+	 *
-+	 * Allocating task should really be put onto the front of the wait
-+	 * queue, but this is pretty rare.
-+	 */
-+	spin_lock_irq(q->queue_lock);
-+	freed_request(q, rw_flags);
-+
-+	/*
-+	 * in the very unlikely event that allocation failed and no
-+	 * requests for this direction was pending, mark us starved so that
-+	 * freeing of a request in the other direction will notice
-+	 * us. another possible fix would be to split the rq mempool into
-+	 * READ and WRITE
-+	 */
-+rq_starved:
-+	if (unlikely(rl->count[is_sync] == 0))
-+		rl->starved[is_sync] = 1;
-+	return NULL;
++	return 0;
  }
  
  /**
+@@ -275,7 +276,7 @@ struct io_context *get_task_io_context(struct task_struct *task,
+ 			return ioc;
+ 		}
+ 		task_unlock(task);
+-	} while (create_io_context(task, gfp_flags, node));
++	} while (!create_task_io_context(task, gfp_flags, node));
+ 
+ 	return NULL;
+ }
+@@ -319,26 +320,23 @@ EXPORT_SYMBOL(ioc_lookup_icq);
+ 
+ /**
+  * ioc_create_icq - create and link io_cq
++ * @ioc: io_context of interest
+  * @q: request_queue of interest
+  * @gfp_mask: allocation mask
+  *
+- * Make sure io_cq linking %current->io_context and @q exists.  If either
+- * io_context and/or icq don't exist, they will be created using @gfp_mask.
++ * Make sure io_cq linking @ioc and @q exists.  If icq doesn't exist, they
++ * will be created using @gfp_mask.
+  *
+  * The caller is responsible for ensuring @ioc won't go away and @q is
+  * alive and will stay alive until this function returns.
+  */
+-struct io_cq *ioc_create_icq(struct request_queue *q, gfp_t gfp_mask)
++struct io_cq *ioc_create_icq(struct io_context *ioc, struct request_queue *q,
++			     gfp_t gfp_mask)
+ {
+ 	struct elevator_type *et = q->elevator->type;
+-	struct io_context *ioc;
+ 	struct io_cq *icq;
+ 
+ 	/* allocate stuff */
+-	ioc = create_io_context(current, gfp_mask, q->node);
+-	if (!ioc)
+-		return NULL;
+-
+ 	icq = kmem_cache_alloc_node(et->icq_cache, gfp_mask | __GFP_ZERO,
+ 				    q->node);
+ 	if (!icq)
+diff --git a/block/blk.h b/block/blk.h
+index de15f92..aa81afd 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -200,32 +200,30 @@ static inline int blk_do_io_stat(struct request *rq)
+  */
+ void get_io_context(struct io_context *ioc);
+ struct io_cq *ioc_lookup_icq(struct io_context *ioc, struct request_queue *q);
+-struct io_cq *ioc_create_icq(struct request_queue *q, gfp_t gfp_mask);
++struct io_cq *ioc_create_icq(struct io_context *ioc, struct request_queue *q,
++			     gfp_t gfp_mask);
+ void ioc_clear_queue(struct request_queue *q);
+ 
+-void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_mask,
+-				int node);
++int create_task_io_context(struct task_struct *task, gfp_t gfp_mask, int node);
+ 
+ /**
+  * create_io_context - try to create task->io_context
+- * @task: target task
+  * @gfp_mask: allocation mask
+  * @node: allocation node
+  *
+- * If @task->io_context is %NULL, allocate a new io_context and install it.
+- * Returns the current @task->io_context which may be %NULL if allocation
+- * failed.
++ * If %current->io_context is %NULL, allocate a new io_context and install
++ * it.  Returns the current %current->io_context which may be %NULL if
++ * allocation failed.
+  *
+  * Note that this function can't be called with IRQ disabled because
+- * task_lock which protects @task->io_context is IRQ-unsafe.
++ * task_lock which protects %current->io_context is IRQ-unsafe.
+  */
+-static inline struct io_context *create_io_context(struct task_struct *task,
+-						   gfp_t gfp_mask, int node)
++static inline struct io_context *create_io_context(gfp_t gfp_mask, int node)
+ {
+ 	WARN_ON_ONCE(irqs_disabled());
+-	if (unlikely(!task->io_context))
+-		create_io_context_slowpath(task, gfp_mask, node);
+-	return task->io_context;
++	if (unlikely(!current->io_context))
++		create_task_io_context(current, gfp_mask, node);
++	return current->io_context;
+ }
+ 
+ /*
 -- 
 1.7.7.3
 
