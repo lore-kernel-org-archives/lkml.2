@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab2BPLCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 06:02:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53562 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab2BPLCb (ORCPT
+	id S1751532Ab2BPLFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 06:05:34 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:40655 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab2BPLFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 06:02:31 -0500
-Message-ID: <4F3CE243.9050203@openvz.org>
-Date: Thu, 16 Feb 2012 15:02:27 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Thu, 16 Feb 2012 06:05:33 -0500
+Message-ID: <4F3CE2EF.60709@free-electrons.com>
+Date: Thu, 16 Feb 2012 12:05:19 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
-References: <20120215224221.22050.80605.stgit@zurg>	<20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>	<4F3C9798.7050800@openvz.org> <20120216172409.5fa18608.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120216172409.5fa18608.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: nicolas.pitre@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: boot/compressed/decompress.c cleanup
+References: <1329370449-12033-1-git-send-email-michael.opdenacker@free-electrons.com> <20120216085010.GI13673@n2100.arm.linux.org.uk>
+In-Reply-To: <20120216085010.GI13673@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 16 Feb 2012 09:43:52 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> KAMEZAWA Hiroyuki wrote:
->>> On Thu, 16 Feb 2012 02:57:04 +0400
->>> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
->
->>>> * optimize page to book translations, move it upper in the call stack,
->>>>     replace some struct zone arguments with struct book pointer.
->>>>
->>>
->>> a page->book transrater from patch 2/15
->>>
->>> +struct book *page_book(struct page *page)
->>> +{
->>> +	struct mem_cgroup_per_zone *mz;
->>> +	struct page_cgroup *pc;
->>> +
->>> +	if (mem_cgroup_disabled())
->>> +		return&page_zone(page)->book;
->>> +
->>> +	pc = lookup_page_cgroup(page);
->>> +	if (!PageCgroupUsed(pc))
->>> +		return&page_zone(page)->book;
->>> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
->>> +	smp_rmb();
->>> +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
->>> +			page_to_nid(page), page_zonenum(page));
->>> +	return&mz->book;
->>> +}
->>>
->>> What happens when pc->mem_cgroup is rewritten by move_account() ?
->>> Where is the guard for lockless access of this ?
->>
->> Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
->
-> Hmm, VM_BUG_ON(!PageLRU(page)) ?
+Hi Russell,
 
-Where?
+Thank you for reviewing my patch.
 
->
-> move_account() overwrites pc->mem_cgroup with isolating page from LRU.
-> but it doesn't take lru_lock.
+On 02/16/2012 09:50 AM, Russell King - ARM Linux wrote:
+> On Thu, Feb 16, 2012 at 06:34:09AM +0100, Michael Opdenacker wrote:
+>> - Remove the ARCH_HAS_DECOMP_WDOG define
+>>   because it is only used in lib/deflate.c, which
+>>   only the alpha architecture uses. No other architecture
+>>   uses this define
+> No.  Your grepping is broken.
+Oops, my mistake. Actually, only arm uses this feature.
 
-There three kinds of lock_page_book() users:
-1) caller want to catch page in LRU, it will lock either old or new book and
-    recheck PageLRU() after locking, if page not it in LRU it don't touch anything.
-    some of these functions has stable reference to page, some of them not.
-  [ There actually exist small race, I knew about it, just forget to pick this chunk from old code. See below. ]
-2) page is isolated by caller, it want to put it back. book link is stable. no problems.
-3) page-release functions. page-counter is zero. no references -- no problems.
+I'll soon post an updated patch.
 
-race for 1)
+Thanks again,
 
-catcher					switcher
+Michael.
 
-					# isolate
-					old_book = lock_page_book(page)
-					ClearPageLRU(page)
-					unlock_book(old_book)				
-					# charge
-old_book = lock_page_book(page)		
-					# switch
-					page->book = new_book
-					# putback
-					lock_book(new_book)
-					SetPageLRU(page)
-					unlock_book(new_book)
-if (PageLRU(page))
-	oops, page actually in new_book
-unlock_book(old_book)
-
-
-I'll protect "switch" phase with old_book lru-lock:
-
-lock_book(old_book)
-page->book = new_book
-unlock_book(old_book)
-
-The other option is recheck in "catcher" page book after PageLRU()
-maybe there exists some other variants.
-
-> BTW, what amount of perfomance benefit ?
-
-It depends, but usually lru_lock is very-very hot.
-This lock splitting can be used without cgroups and containers,
-now huge zones can be easily sliced into arbitrary pieces, for example one book per 256Mb.
-
-
-
-According to my experience, one of complicated thing there is how to postpone "book" destroying
-if some its pages are isolated. For example lumpy reclaim and memory compaction isolates pages
-from several books. And they wants to put them back. Currently this can be broken, if someone removes
-cgroup in wrong moment. There appears funny races with three players: catcher, switcher and destroyer.
-This can be fixed with some extra reference-counting or some other sleepable synchronizing.
-In my rhel6-based implementation I uses extra reference-counting, and it looks ugly. So I want to invent something better.
-Other option is just never release books, reuse them after rcu grace period for rcu-list iterating.
-
->
-> Thanks,
-> -Kame
->
+-- 
+Michael Opdenacker, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
++33 484 253 396
 
