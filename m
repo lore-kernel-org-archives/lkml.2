@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab2BPNrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 08:47:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34600 "EHLO mx2.suse.de"
+	id S1753384Ab2BPNrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 08:47:22 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:4635 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753033Ab2BPNq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 08:46:57 -0500
-From: Jan Kara <jack@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 11/11] mm: Update file times from fault path only if .page_mkwrite is not set
-Date: Thu, 16 Feb 2012 14:46:19 +0100
-Message-Id: <1329399979-3647-12-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1329399979-3647-1-git-send-email-jack@suse.cz>
-References: <1329399979-3647-1-git-send-email-jack@suse.cz>
+	id S1753033Ab2BPNrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 08:47:20 -0500
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Subject: Re: linux-next: manual merge of the net-next tree with the net
+ tree
+From: "Yuval Mintz" <yuvalmin@broadcom.com>
+To: sfr@canb.auug.org.au
+cc: davem@davemloft.net, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eilong@broadcom.com,
+        eric.dumazet@gmail.com
+In-Reply-To: <1329391450.16698.27.camel@lb-tlvb-eilong.il.broadcom.com>
+References: <20120216123803.8efe3d23eee5c3a80aceef61@canb.auug.org.au>
+ <1329391450.16698.27.camel@lb-tlvb-eilong.il.broadcom.com>
+Organization: Broadcom
+Date: Thu, 16 Feb 2012 15:47:04 +0200
+Message-ID: <1329400024.16698.36.camel@lb-tlvb-eilong.il.broadcom.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3
+X-WSS-ID: 6323D56E50423692784-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystems wanting to properly support freezing need to have control
-when file_update_time() is called. After pushing file_update_time()
-to all relevant .page_mkwrite implementations we can just stop calling
-file_update_time() when filesystem implements .page_mkwrite.
+On Thu, 2012-02-16 at 13:24 +0200, Yuval Mintz wrote:
+> On Wed, 2012-02-15 at 17:38 -0800, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Today's linux-next merge of the net-next tree got a conflict in
+> > drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c between commit
+> > 66d885cba670 ("bnx2x: fix bnx2x_storm_stats_update() on big endian") from
+> > the net tree and commit 1355b704b9ba ("bnx2x: consistent statistics after
+> > internal driver reload") from the net-next tree.
+> > 
+> > I fixed it up (see below) but suspect that there may be more needed.
+> 
+> Hey Stephen,
+> 
+> I don't fully understand your merge - it seems to create a mash between
+> the "bnx2x: fix bnx2x_storm_stats_update() on big endian" patch in net,
+> and the "bnx2x: consistent statistics after internal driver reload"
+> patch in net-next.
+> 
+> If the purpose of this merge is simply to update net-next tree with the
+> changes from "bnx2x: fix bnx2x_storm_stats_update() on big endian", you
+> might consider the following patch:
+> 
+> Subject: [PATCH 1/1] bnx2x: merge net --> net-next
+> From: Mintz Yuval <yuvalmin@broadcom.com>
+> 
+> This patch applies the changes made in the patch
+> "bnx2x: fix bnx2x_storm_stats_update() on big endian" to net into net-next.
+> 
+> Signed-off-by: Mintz Yuval <yuvalmin@broadcom.com>
+> Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
+> ---
+We need of course to thank Eric Dumazet <eric.dumazet@gmail.com> for the
+original patch.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- mm/memory.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index fa2f04e..17b72d7 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2621,6 +2621,9 @@ reuse:
- 		if (!page_mkwrite) {
- 			wait_on_page_locked(dirty_page);
- 			set_page_dirty_balance(dirty_page, page_mkwrite);
-+			/* file_update_time outside page_lock */
-+			if (vma->vm_file)
-+				file_update_time(vma->vm_file);
- 		}
- 		put_page(dirty_page);
- 		if (page_mkwrite) {
-@@ -2638,10 +2641,6 @@ reuse:
- 			}
- 		}
- 
--		/* file_update_time outside page_lock */
--		if (vma->vm_file)
--			file_update_time(vma->vm_file);
--
- 		return ret;
- 	}
- 
-@@ -3324,7 +3323,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 
- 		/* file_update_time outside page_lock */
--		if (vma->vm_file)
-+		if (vma->vm_file && !page_mkwrite)
- 			file_update_time(vma->vm_file);
- 	} else {
- 		unlock_page(vmf.page);
--- 
-1.7.1
 
