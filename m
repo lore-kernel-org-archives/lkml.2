@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2BPTBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:01:23 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12336 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab2BPTBU convert rfc822-to-8bit (ORCPT
+	id S1754816Ab2BPTE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:04:27 -0500
+Received: from smtp-out01.msg.oleane.net ([62.161.3.10]:58550 "EHLO
+	smtp-out01.msg.oleane.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2BPTE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:01:20 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 16 Feb 2012 11:01:18 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Barry Song <21cnbao@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Date: Thu, 16 Feb 2012 11:01:17 -0800
-Subject: RE: [PATCH] serial/sirf: fixup for changes to pin control
-Thread-Topic: [PATCH] serial/sirf: fixup for changes to pin control
-Thread-Index: Aczs2vfEPBF+96NhRmefQf8gIGJbpAAAf4Dw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1790EC8791@HQMAIL01.nvidia.com>
-References: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 Feb 2012 14:04:26 -0500
+X-Oleane-Rep: REPC
+Reply-To: <sogawa@msnzone.cn>
+From: "Shoichi Ogawa" <info@mail.com>
+Subject: [SPAM?] Hello..
+Date: Thu, 16 Feb 2012 13:58:47 -0500
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <SRVLgFuoe5cizlK4nNA0001e4d1@smtp.rossini.fr>
+X-CTCH-ID: _63A290CA-1B35-440A-8C25-FD8A74D3DFBD_
+X-CTCH-RefID: str=0001.0A0B0205.4F3D4FFE.0097,ss=3,sh,fgs=0
+X-CTCH-Action: ToJMF
+X-OriginalArrivalTime: 16 Feb 2012 18:56:55.0356 (UTC) FILETIME=[C08147C0:01CCECDC]
+X-Spam-Flag: NO
+X-PMX-Spam: Probability=57%
+X-PFSI-Info: PMX 5.6.0.2009776, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.2.16.184214 (no antivirus check)
+X-Orange-Auth: c3ludGVjQHN5bnRpbmZvLmZyLmZ0bw==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Thursday, February 16, 2012 11:44 AM:
-> We changed the signature of the pin multiplexing functions to
-> handle any pin business, so fix up the Sirf driver to call this
-> new interface and rename some variables to make the semantics
-> understandable.
-> 
-> Cc: linux-serial@vger.kernel.org
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Hello Friend 
 
-Looks good to me for now.
+I am sorry to encroach on your privacy. I have a business proposal foryou. Please contact me if you are interested to know more.
 
-I'll have to do another similar change when I implement the pinctrl_get
-API changes we discussed at Linaro Connect (I should start implementing
-that today), but I guess that's no big deal.
+Best Regards 
 
-Should this patch be put into the pinctrl tree since that's where the
-API changed, perhaps even squashed into the original commit to avoid
-git bisect breakage, unless your branch needs to be stable? Otherwise,
-this change will conflict with my future similar change if pulled for
-the same kernel version.
-
--- 
-nvpublic
-
+Shoichi Ogawa
