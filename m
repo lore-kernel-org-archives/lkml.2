@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2BPRBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:01:44 -0500
-Received: from 124-248-200-30.sunnyvision.com ([124.248.200.30]:51586 "EHLO
-	smtp3.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2BPRBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org,>);
-	Thu, 16 Feb 2012 12:01:42 -0500
-X-Greylist: delayed 1187 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 12:01:42 EST
-X-DKIM: OpenDKIM Filter v2.4.1 smtp3.edmhongkong.com CA14F50A60
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com B78BC595A3
-Message-ID: <wQSb49Lcc2b@ksmail.seed.net.tw>
-From: moder@datacentre.com.hk
-To: IT@vger.kernel.org, Dept@vger.kernel.org
-Subject: Web & Email Hosting
-X-Mailer: USrp7RgxKXxZsSSaDjH3
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Antivirus: avast! (VPS 120216-0, 2012/02/16), Outbound message
-X-Antivirus-Status: Clean
-Date: Fri, 17 Feb 2012 00:40:54 +0800 (HKT)
+	id S1753323Ab2BPRDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 12:03:24 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39972 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab2BPRDX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 12:03:23 -0500
+Message-ID: <1329411783.2293.257.camel@twins>
+Subject: Re: [PATCHv5 0/8] perf tool: parser generator for events parsing
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 16 Feb 2012 18:03:03 +0100
+In-Reply-To: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
+References: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1GH1pGa025672
 
-Dear Sir / Madam,
+On Thu, 2012-02-16 at 13:00 +0100, Jiri Olsa wrote:
+> hi,
+> here's new version of event parsing patchset.
+> 
+> I saw Arnaldo already sent patches 1-3 to Ingo, but they did not make it
+> to the tree yet, so I'm still attaching them here.
+> 
+> v5 changes:
+>  4/8 - patch updated by Peter with actual format definitions
+>        for x86 processors
+>  6/8 - added hardcoded terms for config[12] and sample_period
+>        the code is ready to include branch_sample_type once
+>        this field is available in perf_event_attr, just
+>        uncommenting one line.. ;) 
+>      - allow config option to be used without value in which
+>        case 1 is assigned as value
+> 
+> Overall summarize:
+>  - adding event parser bison/flex generator
+>  - the event syntax stays as it was
+>  - adding event format sysfs group attribute
+>    for pmu device
+>  - adding new syntax to specify raw events based
+>    on the sysfs pmu's format attribute
+>    eg. "cpu/config=1,config1=2,config2=3/u"
+> 
+> Attached patches:
+>  1/8 perf, tool: Remove unused functions from debugfs object
+>  2/8 perf, tool: Add sysfs mountpoint interface
+>  3/8 perf, tool: Add bitmap_or function into bitmap object
+>  4/8 perf: Adding sysfs group format attribute for pmu device
+>  5/8 perf, tool: Add parser generator for events parsing
+>  6/8 perf, tool: Add config options support for event parsing
+>  7/8 perf, tool: Add perf pmu object to access pmu format definition
+>  8/8 perf, tool: Add support to specify pmu style event
 
-Data Centre Hong Kong is well established over 10 years ago.
+I'm fine with this going fwd, and since this is mostly tools/perf I
+suggest acme take it, so:
 
-Our Tier-3 state-of-art data center, network equipments and professional technical team are serving a lot of listed companies and Government Departments in Hong Kong.
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-With our stable International Bandwidth, above 20% of our clients are from different countries all over the world.
+Also, it might make sense to CC everybody who has/maintains a hardware
+pmu implementation on patch 4.
 
-Today, I would like to Specially Offer you one of our Dedicated Server Rental packages as follows,
-
-Dedicated Server Rental with Crazy Price   -   USD$160 / month
-
-Special Offer Enterprise Rack Mount Server
-- Intel(R) Core i3-2100 Processor (3.10GHz, 8M Cache, Turbo, 4C/4T, 80W)
-- 4GB RAM, 1x4GB, 1333MHz, DDR-3, Single Ranked UDIMMs
-- 500GB, 3.5", SATA III
-- Remote IP-vKVM/IPMI 2.0
-- Virtual media over LAN
-- Intel Gigabit Ethernet LAN port
-
-Software Configuration
-OS: Linux
-
-Data Center Facilities
-- Shared Local & International Bandwidth
-- IP Addresses Allocation
-- Un-interruptible Power Supply (UPS) backed up by private diesel generator
-- FM200 gas-based fire suppression system
-- 24x7 CRAC Air Conditioning and Humidity Control
-- 24x7 Security Control
-
-For more details, please kindly contact me at +852 90845753 or through moder@datacentre.com.hk
-
-Thanks & regards,
-
-Mr. Moder YIP
-
-Infrastructure Specialist
-Data Centre Hong Kong
-Phone: +852 90845753
-Email: moder@datacentre.com.hk
-
-
+Thanks Jiri!
