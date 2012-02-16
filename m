@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab2BPKk3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:40:29 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:61565 "EHLO mail.gnudd.com"
+	id S1751960Ab2BPKkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:40:42 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:61566 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751627Ab2BPKk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:40:26 -0500
-Date: Thu, 16 Feb 2012 11:40:03 +0100
+	id S1751787Ab2BPKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 05:40:37 -0500
+Date: Thu, 16 Feb 2012 11:40:15 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, andrzej.p@samsung.com,
         mingo@elte.hu, jbarnes@virtuousgeek.org
-Subject: [PATCH 1/3] x86/PCI: change sta2x11-fixup to account for commit
- aa04651
-Message-ID: <b30d620534d0a74feda1fe1fcf23e7891b0d0f03.1329387617.git.rubini@gnudd.com>
+Subject: [PATCH 2/3] x86: introduce CONFIG_X86_DEV_DMA_OPS
+Message-ID: <062dabe45976022e2cc5b2d8e483bf469324c86a.1329387617.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,49 +23,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit aa04651 changed the prototypes for swiotlb methods, so
-the sta2x11 fixup file won't compile any more. This fixes our own
-prototypes.
+32-bit x86 systems may need their own DMA operations, so add
+a new config option, which is turned on for 64-bit systems and sta2x11.
+Core sta2x11 support has already been accepted, but it won't compile
+without this option.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: Alan Cox <alan@linux.intel.com>
 ---
- arch/x86/pci/sta2x11-fixup.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ arch/x86/Kconfig                   |    6 ++++++
+ arch/x86/include/asm/device.h      |    4 ++--
+ arch/x86/include/asm/dma-mapping.h |    2 +-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index f61ce8b..5aaa434 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -168,21 +168,23 @@ static dma_addr_t a2p(dma_addr_t a, struct pci_dev *pdev)
- static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- 					    size_t size,
- 					    dma_addr_t *dma_handle,
--					    gfp_t flags)
-+					    gfp_t flags,
-+					    struct dma_attrs *attrs)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index dd18c2b..5bb23c3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -12,6 +12,7 @@ config X86_32
+ 
+ config X86_64
+ 	def_bool 64BIT
++	select X86_DEV_DMA_OPS
+ 
+ ### Arch settings
+ config X86
+@@ -510,6 +511,7 @@ config STA2X11
+ 	bool "STA2X11 Companion Chip Support"
+ 	depends on X86_32_NON_STANDARD && PCI
+ 	select SWIOTLB
++	select X86_DEV_DMA_OPS
+ 	select MFD_STA2X11
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	default n
+@@ -2249,6 +2251,10 @@ config HAVE_TEXT_POKE_SMP
+ 	bool
+ 	select STOP_MACHINE if SMP
+ 
++config X86_DEV_DMA_OPS
++	bool
++	depends on X86_64 || STA2X11
++
+ source "net/Kconfig"
+ 
+ source "drivers/Kconfig"
+diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
+index 63a2a03..93e1c55 100644
+--- a/arch/x86/include/asm/device.h
++++ b/arch/x86/include/asm/device.h
+@@ -5,8 +5,8 @@ struct dev_archdata {
+ #ifdef CONFIG_ACPI
+ 	void	*acpi_handle;
+ #endif
+-#ifdef CONFIG_X86_64
+-struct dma_map_ops *dma_ops;
++#ifdef CONFIG_X86_DEV_DMA_OPS
++	struct dma_map_ops *dma_ops;
+ #endif
+ #if defined(CONFIG_INTEL_IOMMU) || defined(CONFIG_AMD_IOMMU)
+ 	void *iommu; /* hook for IOMMU specific extension */
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index 4b4331d..09aa473 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -30,7 +30,7 @@ extern struct dma_map_ops *dma_ops;
+ 
+ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
  {
- 	void *vaddr;
- 
--	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags);
-+	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags, attrs);
- 	if (!vaddr)
--		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
-+		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags,
-+					       attrs);
- 	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
- 	return vaddr;
- }
- 
- /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
- static struct dma_map_ops sta2x11_dma_ops = {
--	.alloc_coherent = sta2x11_swiotlb_alloc_coherent,
--	.free_coherent = swiotlb_free_coherent,
-+	.alloc = sta2x11_swiotlb_alloc_coherent,
-+	.free = swiotlb_free_coherent,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
- 	.map_sg = swiotlb_map_sg_attrs,
+-#ifdef CONFIG_X86_32
++#ifndef CONFIG_X86_DEV_DMA_OPS
+ 	return dma_ops;
+ #else
+ 	if (unlikely(!dev) || !dev->archdata.dma_ops)
 -- 
 1.7.7.2
