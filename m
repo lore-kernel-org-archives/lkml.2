@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab2BPUC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:02:58 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:58184 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751791Ab2BPUC5 (ORCPT
+	id S1755382Ab2BPUDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:03:17 -0500
+Received: from 15.mo5.mail-out.ovh.net ([178.33.107.29]:49480 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755217Ab2BPUDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:02:57 -0500
-Date: Thu, 16 Feb 2012 15:02:50 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: [RELEASE] LTTng 2.0 prerelease bundle 20120216
-Message-ID: <20120216200250.GA20296@Krystal>
+	Thu, 16 Feb 2012 15:03:13 -0500
+X-Greylist: delayed 16799 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 15:03:13 EST
+Date: Thu, 16 Feb 2012 16:09:33 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
+        s.hauer@pengutronix.de, magnus.damm@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 1/2] ARM: remove memmove from boot/compressed/string.c
+Message-ID: <20120216150933.GD19779@game.jcrosoft.org>
+References: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:56:55 up 450 days,  1:00,  5 users,  load average: 0.17, 0.09,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 2144557847889947465
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
+On 15:54 Thu 16 Feb     , Michael Opdenacker wrote:
+> This patch removes the memmove function from boot/compressed/string.c
+> - This definition conflicts with the one in lib/decompress_unxz.c
+>   This change is required to support xz compression on ARM.
+> - memmove is not used in any of the other decompressors
+>   in lib/decompress_*.c
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  arch/arm/boot/compressed/string.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/compressed/string.c b/arch/arm/boot/compressed/string.c
+> index 36e53ef..369443a 100644
+> --- a/arch/arm/boot/compressed/string.c
+> +++ b/arch/arm/boot/compressed/string.c
+> @@ -40,6 +40,7 @@ void *memcpy(void *__dest, __const void *__src, size_t __n)
+>  	return __dest;
+>  }
+>  
+> +/*
+>  void *memmove(void *__dest, __const void *__src, size_t count)
+>  {
+>  	unsigned char *d = __dest;
+> @@ -55,6 +56,7 @@ void *memmove(void *__dest, __const void *__src, size_t count)
+>  		d[count] = s[count];
+>  	return __dest;
+>  }
+> +*/
+so why not drop it cleanly
 
-You can get a the current release "bundle" (recommanded set of packages)
-at the following URL:
-
-http://lttng.org/bundles/
-
-Current versions as of 20120216:
-
-babeltrace-0.12
-lttng-modules-2.0-pre15
-lttng-tools-2.0-pre23
-lttng-ust-1.9.8
-userspace-rcu-0.6.7
-
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-(please refer to the README files for installation instructions and
-lttng-tools doc/quickstart.txt for usage information)
-
-Key Features:
-
-- Efficient synchronized User-space and Kernel tracing using the same
-  time source provides view of correlated kernel and user-space events.
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches,
-- Tracepoints, detailed syscall tracing (fast strace replacement),
-  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
-  probing (kprobes) and function call/return tracing (kretprobes support),
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
-- Integrated interface for both kernel and userspace tracing,
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Best Regards,
+J.
