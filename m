@@ -1,98 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2BPA62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 19:58:28 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:54497 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751916Ab2BPA60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 19:58:26 -0500
-X-Sasl-enc: u67LOwrm7NSE5q04mSIjObNCGPH1hrdrcC3qvhlx1gVH 1329353905
-Date: Wed, 15 Feb 2012 16:54:37 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Egmont Koblinger <egmont@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
-Message-ID: <20120216005437.GA22858@kroah.com>
-References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
- <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
- <20120215233002.GB20816@kroah.com>
- <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756240Ab2BPBET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 20:04:19 -0500
+Received: from ozlabs.org ([203.10.76.45]:49638 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751572Ab2BPBEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 20:04:16 -0500
+Message-ID: <1329354245.6976.25.camel@concordia>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: qemu-devel@nongnu.org, Alexander Graf <agraf@suse.de>,
+        KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Eric Northup <digitaleric@google.com>,
+        Scott Wood <scottwood@freescale.com>, Avi Kivity <avi@redhat.com>
+Date: Thu, 16 Feb 2012 12:04:05 +1100
+In-Reply-To: <201202152221.36154.arnd@arndb.de>
+References: <4F2AB552.2070909@redhat.com>
+	 <1328597934.6802.6.camel@concordia>
+	 <F1B17875-23E2-4965-BE05-6A3858995D21@suse.de>
+	 <201202152221.36154.arnd@arndb.de>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-xIbcLUSlXIG2kPgm1IXr"
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-A: No.
-Q: Should I include quotations after my reply?
+--=-xIbcLUSlXIG2kPgm1IXr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-http://daringfireball.net/2007/07/on_top
+On Wed, 2012-02-15 at 22:21 +0000, Arnd Bergmann wrote:
+> On Tuesday 07 February 2012, Alexander Graf wrote:
+> > On 07.02.2012, at 07:58, Michael Ellerman wrote:
+> >=20
+> > > On Mon, 2012-02-06 at 13:46 -0600, Scott Wood wrote:
+> > >> You're exposing a large, complex kernel subsystem that does very
+> > >> low-level things with the hardware.  It's a potential source of expl=
+oits
+> > >> (from bugs in KVM or in hardware).  I can see people wanting to be
+> > >> selective with access because of that.
+> > >=20
+> > > Exactly.
+> > >=20
+> > > In a perfect world I'd agree with Anthony, but in reality I think
+> > > sysadmins are quite happy that they can prevent some users from using
+> > > KVM.
+> > >=20
+> > > You could presumably achieve something similar with capabilities or
+> > > whatever, but a node in /dev is much simpler.
+> >=20
+> > Well, you could still keep the /dev/kvm node and then have syscalls ope=
+rate on the fd.
+> >=20
+> > But again, I don't see the problem with the ioctl interface. It's nice,=
+ extensible and works great for us.
+> >=20
+>=20
+> ioctl is good for hardware devices and stuff that you want to enumerate
+> and/or control permissions on. For something like KVM that is really a
+> core kernel service, a syscall makes much more sense.
 
-On Thu, Feb 16, 2012 at 01:39:59AM +0100, Egmont Koblinger wrote:
-> Hi Greg,
-> 
-> Sorry, I didn't emphasize the point that makes me suspect it's a kernel issue:
-> 
-> - strace reveals that the terminal emulator writes the correct data
-> into /dev/ptmx, and the kernel reports no short writes(!), all the
-> write(..., ..., 68) calls actually return 68 (the length of the
-> example file's lines incl. newline; I'm naively assuming I can trust
-> strace here.)
-> - strace reveals that the receiving application (bash) doesn't receive
-> all the data from /dev/pts/N.
-> - so: the data gets lost after writing to /dev/ptmx, but before
-> reading it out from /dev/pts/N.
+Yeah maybe. That distinction is at least in part just historical.
 
-Which it will, if the reader doesn't read fast enough, right?  Is the
-data somewhere guaranteed to never "overrun" the buffer?  If so, how do
-we handle not just running out of memory?
+The first problem I see with using a syscall is that you don't need one
+syscall for KVM, you need ~90. OK so you wouldn't do that, you'd use a
+multiplexed syscall like epoll_ctl() - or probably several
+(vm/vcpu/etc).
 
-> First I was also hoping for a bug in the terminal emulators not
-> handling short writes correctly, but it's not the case.
+Secondly you still need a handle/context for those syscalls, and I think
+the most sane thing to use for that is an fd.
 
-Yes, that would make things easier.
+At that point you've basically reinvented ioctl :)
 
-> Could you please verify that stracing the terminal and the app shows
-> the same behavior to you?  If it's the same, and if strace correctly
-> reports the actual number of bytes written, then can it still be an
-> application bug?
+I also think it is an advantage that you have a node in /dev for
+permissions. I know other "core kernel" interfaces don't use a /dev
+node, but arguably that is their loss.
 
-You can do that stracing vim if you want to, I'm currently on the road
-at the moment, and have to give a presentation in a few minutes, so my
-spare time for this is a bit limited :)
+> I would certainly never mix the two concepts: If you use a chardev to get
+> a file descriptor, use ioctl to do operations on it, and if you use a=20
+> syscall to get the file descriptor then use other syscalls to do operatio=
+ns
+> on it.
 
-> Not being able to reproduce in vim/whatever doesn't mean too much, as
-> it seems to be some kind of race condition (behaves differently on
-> different machines, buggy only at ~10% of the time for me), the actual
-> circumstances that trigger the bug might depend on timing or the way
-> the applications read the buffer (byte by byte, or larger chunks) or
-> number of processors or I don't know what.
+Sure, we use a syscall to get the fd (open) and then other syscalls to
+do operations on it, ioctl and kvm_vcpu_run. ;)
 
-Not being able to reproduce it with a different userspace program is
-important, in that there is at least one "known good" userspace program
-here that does things correctly.
+But seriously, I guess that makes sense. Though it's a bit of a pity
+because if you want a syscall for any of it, eg. vcpu_run(), then you
+have to basically reinvent ioctl for all the other little operations.
 
-I bet you can write a simple userspace program that also does this
-correctly, have you tried that?  That might be best to provide a "tiny"
-reproducer.
+cheers
 
-Odds are bash and python don't do things properly, as they aren't
-accustomed to such large buffers coming in at this rate of speed.  They
-are designed for this type of thing, while vim is used to it.
+--=-xIbcLUSlXIG2kPgm1IXr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-> Unfortunately I have no information about "known good" reference
-> point, but I recall seeing a similar bug a year or two ago, I just
-> didn't pay attention to it. So probably it's not a new one.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-If you can trace something down in the kernel to point to where we are
-doing something wrong, I would be glad to look at it.  But without that,
-there's not much I can do here, sorry.
+iQIcBAABCAAGBQJPPFYFAAoJEFHr6jzI4aWAnxYP+QGUAtzWO6Pz341fZMhMqwQc
+oxDEOW2Wnpa7+yPfpNyCG6TUagfvxoQQ7hJfuSTLS2b/6JDtRd0dXBSD8YLqz4pV
+CtBYZ6LbfZdwWo8R7JElbMlyHiSPYD2w2DgWsh64Q3nT5dn9jBxq++zHM1W/x3Et
+6/oZIT1Dm3hvrgeRE5Ly5WWopTpin/GnX82czlv6Wd3+XGCDpzHQa9ibHyMvP28U
+mb+9WpG0BpQrjynqUCG/gyK/1i+3vV8E/AbiPhJKatH51YdHrKeKJTrlGBPJPxUO
+MVIMQMIaetrAneMDdbpBKROTDyVXS5YuppdDNYm9Kbym/NQYHR+mYpkptk/XGMgx
+YpaWwEgnKYHsY/9BGHHOFDWt6EZ0vCW7fUX6wmyYwXMPaP0tEgQsoy0XUWkH2m/n
+8NF//68+YSvIX4ht7ldnDwDApSC27MqmZanNuY8zZDYIY9zS2epjdUIejwT+A6tk
+Yx6gfpUw/cMJS8BhdbYsv+gyyzYCUH747g/dJcGIdiix8Qf/pJdD2G+eSdDib0wC
+516nQoDcuCv6CmL3NgISoUKDyqCMyaKw4ouy/D2pWdfEqCXCk2msacSF9Ug2ZNd7
+JCFU3j4GZInJQv25adeB7zzxOnX37dcsQqn5wvFpqj2hnOgXcyJcDuWUjlPL9Yhl
+ZsOmNw2PQeVx0+MmR2og
+=EYya
+-----END PGP SIGNATURE-----
 
-thanks,
+--=-xIbcLUSlXIG2kPgm1IXr--
 
-greg k-h
