@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab2BPNoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 08:44:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23709 "EHLO mx1.redhat.com"
+	id S1753136Ab2BPNq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 08:46:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34589 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab2BPNox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 08:44:53 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1328677745-20121-16-git-send-email-hpa@zytor.com>
-References: <1328677745-20121-16-git-send-email-hpa@zytor.com> <1328677745-20121-1-git-send-email-hpa@zytor.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 15/21] powerpc: Use generic posix_types.h
-Date: Thu, 16 Feb 2012 13:44:44 +0000
-Message-ID: <3399.1329399884@redhat.com>
+	id S1753004Ab2BPNqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 08:46:55 -0500
+From: Jan Kara <jack@suse.cz>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Jan Kara <jack@suse.cz>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH 10/11] nfs: Push file_update_time() into nfs_vm_page_mkwrite()
+Date: Thu, 16 Feb 2012 14:46:18 +0100
+Message-Id: <1329399979-3647-11-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1329399979-3647-1-git-send-email-jack@suse.cz>
+References: <1329399979-3647-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: linux-nfs@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/nfs/file.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-PowerPC exports __FD_SET() and co. to userspace under some circumstances,
-therefore this patch potentially breaks the userspace ABI.  Is this okay, Ben?
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index c43a452..2407922 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -525,6 +525,9 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	/* make sure the cache has finished storing the page */
+ 	nfs_fscache_wait_on_page_write(NFS_I(dentry->d_inode), page);
+ 
++	/* Update file times before taking page lock */
++	file_update_time(filp);
++
+ 	lock_page(page);
+ 	mapping = page->mapping;
+ 	if (mapping != dentry->d_inode->i_mapping)
+-- 
+1.7.1
 
-David
