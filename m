@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2BPEjC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 23:39:02 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:40437 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754423Ab2BPEjA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 23:39:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F33DC0F.7090704@zytor.com>
-References: <1328582733-31804-1-git-send-email-h.mitake@gmail.com>
-	<2d1a4f3c-48b0-4105-bbc6-18d164512405@email.android.com>
-	<CAMO-S2h-maRLhkX255XX=TPrMH5d5F_3w-aJr7g=GRHcQ+LAXg@mail.gmail.com>
-	<4F33DC0F.7090704@zytor.com>
-Date: Thu, 16 Feb 2012 13:39:00 +0900
-Message-ID: <CAMO-S2gdp-GUsJz05hkQbesmwsZUSja4b8KLwYytMYq2kYRymA@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic: architecture independent readq/writeq for
- 32bit environment
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-        Kashyap Desai <Kashyap.Desai@lsi.com>, Len Brown <lenb@kernel.org>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jason Uhlenkott <juhlenko@akamai.com>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755922Ab2BPEpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 23:45:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40681 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754803Ab2BPEp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 23:45:28 -0500
+Message-ID: <1329367521.3048.165.camel@deadeye>
+Subject: Re: [PATCH 1/2] kbuild: Fix link to headers in 'make deb-pkg'
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        maximilian attems <max@stro.at>, debian-kernel@lists.debian.org,
+        linux-kbuild@vger.kernel.org
+Date: Thu, 16 Feb 2012 04:45:21 +0000
+In-Reply-To: <1329323907-7696-1-git-send-email-joerg.roedel@amd.com>
+References: <1329323907-7696-1-git-send-email-joerg.roedel@amd.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-U0D+VeLGdmT4foiX6BHD"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 9, 2012 at 23:45, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/09/2012 05:37 AM, Hitoshi Mitake wrote:
->>
->> On Tue, Feb 7, 2012 at 12:47, hpanvin@gmail.com<hpa@zytor.com>  wrote:
->>>
->>> Should be volatile u64 * not volatile void *...
->>
->>
->> Is this the type of parameters?
->> The parameters of atomic readq/writeq defined in arch/x86/include/asm/io.h
->> are defined as void *. I think that atomic readq/writeq and non-atomic
->> readq/writeq
->> should have same typed parameters and return values.
->>
->
-> That sounds like a bug.
->
->        -hpa
->
 
-Sorry for my bad writing, I didn't mention:
-the parameter type == the return value type
+--=-U0D+VeLGdmT4foiX6BHD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-My intention is:
-parameter type of atomic readq/writeq == parameter type of non-atomic
-readq/writeq
-&&
-return value type of atomic readq/writeq == return value type of
-non-atomic readq/writeq
+On Wed, 2012-02-15 at 17:38 +0100, Joerg Roedel wrote:
+> The Link to the kernel header files in the debian packages
+> point to the original build directory. This is a bad choice
+> if the packages were installed on a different machine. Fix
+> this in by manually re-creating the link in the builddeb
+> script.
+>=20
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: maximilian attems <max@stro.at>
+> Cc: Ben Hutchings <ben@decadent.org.uk>
+> Cc: debian-kernel@lists.debian.org
+> Cc: linux-kbuild@vger.kernel.org
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+[...]
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
 
-# == means "should be equal"
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+--=-U0D+VeLGdmT4foiX6BHD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATzyJ4ee/yOyVhhEJAQqjHhAAqhfG/G7p07aaNL2wNGqm4Aiv0mWY/Kpo
+cdoTRphuYl7+oRxGF6u6upvdGS8yDE55FngIt93F62eK9J4Z7OOkR4a6lgPj3UBo
+tfz4zII+pW08/8aFZcul+3naTa7yReLpHi2n4XviKMo89oa9rb/a81xL10R/vp2c
+uNPhfKPqupkvfMtrBQRoSgOGP9SDMKzB0rXY8m9sLULKcK0//jougVBioWnzblTL
+fZqbM9/3DscIzsCctG+ElJcHtLD3/eyCT0Zi1kW6wAUC6Esbu+NLfnBm12BjmQt6
+LoiwMoylAVFoZ11zHKBSEqvbiKg7jwMyPFi4tmMSdG4f1+O5dfDhMnfiOzFguiH6
+f/u669txOtIy1EmTk7p0djPT1+YJn5mNQSOJGFqeRWKxLgndvEKfG88t36OhJnvE
+vAVMR8XyHuP969ZB7xEzHyp72nVLU+2DRu5pJJqCp5FDNTqUFIjQfZVShPxr+HsH
+E+Eq1/Ph32fV/wi1cQmqcQaFHdr59w/dTmZ+b+Jbt7UMaR5gepUQxbimd9HFKWbp
+mFHszzap8bZ2I0z+68Bxu9pvHZKfXLcFUYnYFh139E1wcuVTI76B1S+UYHcOHQ9i
+2JlvT/sbPGbTZwtMBeaZ5k8BxOpNhRdBvTg14tHqYMt02wPP6BrwGa8AMsk5WygJ
+/9kENlERmBM=
+=h2GT
+-----END PGP SIGNATURE-----
+
+--=-U0D+VeLGdmT4foiX6BHD--
