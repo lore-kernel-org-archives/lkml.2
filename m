@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab2BPRKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:10:21 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:41804 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752000Ab2BPRJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753435Ab2BPRJw (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 16 Feb 2012 12:09:52 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:41787 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751133Ab2BPRJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 12:09:50 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Danny Kukawka <dkukawka@suse.de>, Mike Frysinger <vapier@gentoo.org>,
-        Sonic Zhang <sonic.zhang@analog.com>,
+To: linux-kernel@vger.kernel.org
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        Bob Liu <bob.liu@analog.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
-Date: Thu, 16 Feb 2012 18:09:31 +0100
-Message-Id: <1329412171-20704-3-git-send-email-danny.kukawka@bisect.de>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Mike Frysinger <vapier@gentoo.org>, netdev@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Scott Jiang <scott.jiang@analog.com>,
+        Sonic Zhang <sonic.zhang@analog.com>, Steven Miao <realmz6@gmail.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH v2 0/2] Part 3: handle random addresses on blackfin
+Date: Thu, 16 Feb 2012 18:09:29 +0100
+Message-Id: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
-References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329412192;d5a71e4d;
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329412190;7f03eeb1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adapt adi ethernet driver to changes in bfin_get_ether_addr()
-from arch/blackfin. bfin_get_ether_addr() returns now a state.
-Set a random mac address via new eth_hw_addr_random() in case
-the return value is not 0.
+The third part of my patch series to fix the handling of 
+addr_assign_type for random MAC addresses. This contains the 
+changes for the blackfin architecture and the adi ethernet
+driver.
 
-Reset the state to NET_ADDR_PERM as soon as the MAC get
-changed via .ndo_set_mac_address.
+Please make sure you do a short compile test before pushing them.
 
-v2: change the logic to reduce unneeded checks
+Thanks!
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- drivers/net/ethernet/adi/bfin_mac.c |   15 +++++++++------
- drivers/net/ethernet/adi/bfin_mac.h |    2 +-
- 2 files changed, 10 insertions(+), 7 deletions(-)
+Danny Kukawka (2):
+  arch/blackfin: don't generate random mac in bfin_get_ether_addr()
+  adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
 
-diff --git a/drivers/net/ethernet/adi/bfin_mac.c b/drivers/net/ethernet/adi/bfin_mac.c
-index d812a10..905f0e1 100644
---- a/drivers/net/ethernet/adi/bfin_mac.c
-+++ b/drivers/net/ethernet/adi/bfin_mac.c
-@@ -621,6 +621,7 @@ static int bfin_mac_set_mac_address(struct net_device *dev, void *p)
- 	if (netif_running(dev))
- 		return -EBUSY;
- 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
-+	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
- 	setup_mac_addr(dev->dev_addr);
- 	return 0;
- }
-@@ -1496,12 +1497,14 @@ static int __devinit bfin_mac_probe(struct platform_device *pdev)
- 	 * Grab the MAC from the board somehow
- 	 * this is done in the arch/blackfin/mach-bfxxx/boards/eth_mac.c
- 	 */
--	if (!is_valid_ether_addr(ndev->dev_addr))
--		bfin_get_ether_addr(ndev->dev_addr);
--
--	/* If still not valid, get a random one */
--	if (!is_valid_ether_addr(ndev->dev_addr))
--		random_ether_addr(ndev->dev_addr);
-+	if (!is_valid_ether_addr(ndev->dev_addr)) {
-+		if (bfin_get_ether_addr(ndev->dev_addr) || 
-+		     !is_valid_ether_addr(ndev->dev_addr)) {
-+			/* Still not valid, get a random one */
-+			netdev_warn(ndev, "Setting Ethernet MAC to a random one\n");
-+			eth_hw_addr_random(ndev);
-+		}
-+	}
- 
- 	setup_mac_addr(ndev->dev_addr);
- 
-diff --git a/drivers/net/ethernet/adi/bfin_mac.h b/drivers/net/ethernet/adi/bfin_mac.h
-index f8559ac..960905c 100644
---- a/drivers/net/ethernet/adi/bfin_mac.h
-+++ b/drivers/net/ethernet/adi/bfin_mac.h
-@@ -101,6 +101,6 @@ struct bfin_mac_local {
- #endif
- };
- 
--extern void bfin_get_ether_addr(char *addr);
-+extern int bfin_get_ether_addr(char *addr);
- 
- #endif
+ arch/blackfin/mach-bf518/boards/ezbrd.c      |    3 ++-
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c  |    5 ++---
+ arch/blackfin/mach-bf527/boards/ad7160eval.c |    3 ++-
+ arch/blackfin/mach-bf527/boards/cm_bf527.c   |    5 ++---
+ arch/blackfin/mach-bf527/boards/ezbrd.c      |    3 ++-
+ arch/blackfin/mach-bf527/boards/ezkit.c      |    3 ++-
+ arch/blackfin/mach-bf527/boards/tll6527m.c   |    3 ++-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c  |    5 ++---
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c  |    5 ++---
+ arch/blackfin/mach-bf537/boards/dnp5370.c    |    3 ++-
+ arch/blackfin/mach-bf537/boards/pnav10.c     |    5 ++---
+ arch/blackfin/mach-bf537/boards/stamp.c      |    3 ++-
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c  |    5 ++---
+ drivers/net/ethernet/adi/bfin_mac.c          |   15 +++++++++------
+ drivers/net/ethernet/adi/bfin_mac.h          |    2 +-
+ 15 files changed, 36 insertions(+), 32 deletions(-)
+
 -- 
 1.7.8.3
 
