@@ -1,67 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab2BPOND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:13:03 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52020 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2BPONB (ORCPT
+	id S1751708Ab2BPOOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:14:42 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:50655 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab2BPOOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:13:01 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 16 Feb 2012 15:12:19 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 07/11] firewire-sbp-target: add
- sbp_management_agent.{c,h}
-Message-ID: <20120216151219.151c2339@stein>
-In-Reply-To: <4F3CDA54.3030905@bootc.net>
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-1-git-send-email-bootc@bootc.net>
-	<1329317248-94128-8-git-send-email-bootc@bootc.net>
-	<20120215204836.063bbd36@stein>
-	<4F3CDA54.3030905@bootc.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 16 Feb 2012 09:14:41 -0500
+Message-ID: <4F3D0F41.1010205@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 22:14:25 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v4] sched: Avoid unnecessary work in reweight_entity
+References: <4F2F9F6C.1090608@linux.vnet.ibm.com> <4F3089F9.6010609@linux.vnet.ibm.com> <4F308E25.7060101@linux.vnet.ibm.com> <4F31D9B2.5090501@linux.vnet.ibm.com>
+In-Reply-To: <4F31D9B2.5090501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12021604-0260-0000-0000-0000008CE20C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 16 Chris Boot wrote:
-> Reading about mutexes though I see I can't use them from interrupt 
-> context, but doesn't the FireWire address handler execute in interrupt 
-> context? I have to check the state of the management agent in the 
-> address handler to properly reject requests from the initiator when the 
-> agent is busy. I guess a spinlock is called for in this situation, 
-> possibly using spin_trylock() in the address handler to avoid blocking?
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-Yes; the request-receive callback (address handler) is executed in tasklet
-context.  All drivers which use this currently use the spin_lock_irqsave
-API variant.  I am considering to change the entire subsystem to use
-spin_lock_bh only.  IMO you could use spin_lock_bh in your target code, or
-spin_lock for locks which are _only_ ever taken in tasklet context.
+In original code, using account_entity_dequeue and account_entity_enqueue
+as a pair will do some work unnecessary, such like remove node from list
+and add it back again immediately.
 
-Plain spin_lock cannot be used, neither in the address handler nor in any
-process context which grabs the same lock as the address handler.
+And because there are no really enqueue and dequeue happen here, it is not
+suitable to use account_entity_dequeue and account_entity_enqueue here.
 
-The use cases for trylock variants of the locking APIs are somewhat
-special.  If in doubt, ignore that trylock APIs exist.
+This patch combine the work of them in order to save time.
 
-In strict terms, spin_trylock avoids busy-waiting for a contended lock.
-mutex_trylock avoids blocking in the sense of sleeping wait for a contended
-mutex.  However, to expand on the obvious, the trylock variants are only
-useful if whatever action which was meant to be performed can be aborted
-without problem, e.g. if upper layers would be able to retry at some later
-occasion.
+v2:
+	Add more description and revise wrong code.
 
-(I am still interested in closer looks at the execution contexts and object
-lifetime rules in your code, but spare time vs. mental capacity seem
-regularly at odds...)
+v3:
+	Mark add_cfs_task_weight and sub_add_cfs_task_weight as inline. 
+
+v4:
+	Now we invoke update_curr when really necessary. 
+
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c  |   27 +++++++++++++++++++++------
+ kernel/sched/sched.h |    8 ++++++++
+ 2 files changed, 29 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7c6414f..fda63ec 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -777,16 +777,28 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  */
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-static void
++static inline void
+ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ 	cfs_rq->task_weight += weight;
+ }
++
++static inline void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++	cfs_rq->task_weight -= sub;
++	cfs_rq->task_weight += add;
++}
+ #else
+ static inline void
+ add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
+ {
+ }
++
++static inline void
++sub_add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long sub, unsigned long add)
++{
++}
+ #endif
+ 
+ static void
+@@ -938,6 +950,7 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+ {
+ }
+ # endif /* CONFIG_SMP */
++
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 			    unsigned long weight)
+ {
+@@ -945,13 +958,15 @@ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 		/* commit outstanding execution time */
+ 		if (cfs_rq->curr == se)
+ 			update_curr(cfs_rq);
+-		account_entity_dequeue(cfs_rq, se);
++		update_load_sub_add(&cfs_rq->load, se->load.weight, weight);
++		if (!parent_entity(se)) {
++			update_load_sub_add(&rq_of(cfs_rq)->load, se->load.weight, weight);
++		}
++		if (entity_is_task(se)) {
++			sub_add_cfs_task_weight(cfs_rq, se->load.weight, weight);
++		}
+ 	}
+-
+ 	update_load_set(&se->load, weight);
+-
+-	if (se->on_rq)
+-		account_entity_enqueue(cfs_rq, se);
+ }
+ 
+ static void update_cfs_shares(struct cfs_rq *cfs_rq)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 98c0c26..ec4430f 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -779,6 +779,14 @@ static inline void update_load_sub(struct load_weight *lw, unsigned long dec)
+ 	lw->inv_weight = 0;
+ }
+ 
++static inline void update_load_sub_add(struct load_weight *lw, unsigned long dec,
++					unsigned long inc)
++{
++	lw->weight -= dec;
++	lw->weight += inc;
++	lw->inv_weight = 0;
++}
++
+ static inline void update_load_set(struct load_weight *lw, unsigned long w)
+ {
+ 	lw->weight = w;
 -- 
-Stefan Richter
--=====-===-- --=- =----
-http://arcgraph.de/sr/
+1.7.4.1
+
