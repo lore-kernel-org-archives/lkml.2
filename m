@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2BPWiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:38:07 -0500
+	id S1755810Ab2BPWiQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 17:38:16 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:35363 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2BPWiF (ORCPT
+	with ESMTP id S1755431Ab2BPWiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:38:05 -0500
+	Thu, 16 Feb 2012 17:38:13 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCHSET] blkcg: update locking and fix stacking
-Date: Thu, 16 Feb 2012 14:37:49 -0800
-Message-Id: <1329431878-28300-1-git-send-email-tj@kernel.org>
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/9] block: ioc_task_link() can't fail
+Date: Thu, 16 Feb 2012 14:37:54 -0800
+Message-Id: <1329431878-28300-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1329431878-28300-1-git-send-email-tj@kernel.org>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, guys.
+ioc_task_link() is used to share %current's ioc on clone.  If
+%current->is_context is set, %current is guaranteed to have refcount
+on the ioc and, thus, ioc_task_link() can't fail.
 
-This is the third patchset of blkcg API cleanup series and does the
-following two things.
+Replace error checking in ioc_task_link() with WARN_ON_ONCE() and make
+it just increment refcount and nr_tasks.
 
-* Drops RCU and use double locking.  As with ioc, we might want to
-  re-introduce RCU in more restricted form to walk blkg from blkcg but
-  for now there's no need.  cgroup deletion is much colder than task
-  exit and there's no other path which requires reverse double
-  locking.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ include/linux/iocontext.h |   16 +++++-----------
+ kernel/fork.c             |    5 ++---
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-* Before this patchset, blk-throttle and cfq-iosched propio couldn't
-  be used together because for any bios delayed by blk-throttle would
-  be issued by a worker thread and get dumped to the default cgroup.
-  So, bios will be nondeterministically thrown into the root cg.  This
-  isn't a problem limited to blk-throttle.  Any mechanism which punts
-  bios to a different task (e.g. btrfs) would mess up IO scheduling
-  for both cgroups and iocontexts.
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index 1a30180..81a8870 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -120,18 +120,12 @@ struct io_context {
+ 	struct work_struct release_work;
+ };
+ 
+-static inline struct io_context *ioc_task_link(struct io_context *ioc)
++static inline void ioc_task_link(struct io_context *ioc)
+ {
+-	/*
+-	 * if ref count is zero, don't allow sharing (ioc is going away, it's
+-	 * a race).
+-	 */
+-	if (ioc && atomic_long_inc_not_zero(&ioc->refcount)) {
+-		atomic_inc(&ioc->nr_tasks);
+-		return ioc;
+-	}
+-
+-	return NULL;
++	WARN_ON_ONCE(atomic_long_read(&ioc->refcount) <= 0);
++	WARN_ON_ONCE(atomic_read(&ioc->nr_tasks) <= 0);
++	atomic_long_inc(&ioc->refcount);
++	atomic_inc(&ioc->nr_tasks);
+ }
+ 
+ struct task_struct;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b77fd55..a1b6327 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -901,9 +901,8 @@ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
+ 	 * Share io context with parent, if CLONE_IO is set
+ 	 */
+ 	if (clone_flags & CLONE_IO) {
+-		tsk->io_context = ioc_task_link(ioc);
+-		if (unlikely(!tsk->io_context))
+-			return -ENOMEM;
++		ioc_task_link(ioc);
++		tsk->io_context = ioc;
+ 	} else if (ioprio_valid(ioc->ioprio)) {
+ 		new_ioc = get_task_io_context(tsk, GFP_KERNEL, NUMA_NO_NODE);
+ 		if (unlikely(!new_ioc))
+-- 
+1.7.7.3
 
-  This patchset implements a mechanism to associate a bio to a task
-  (its cgroup and ioc actually) and block layer will handle the
-  request as if it were issued by the associated task no matter which
-  task actually ends up issuing it to block layer.  It's applied to
-  blk-throttle such that any delayed bio is associated to the original
-  task.
-
-This patchset contains the following 9 patches.
-
- 0001-blkcg-use-double-locking-instead-of-RCU-for-blkg-syn.patch
- 0002-blkcg-drop-unnecessary-RCU-locking.patch
- 0003-block-restructure-get_request.patch
- 0004-block-interface-update-for-ioc-icq-creation-function.patch
- 0005-block-ioc_task_link-can-t-fail.patch
- 0006-block-add-io_context-active_ref.patch
- 0007-block-implement-bio_associate_current.patch
- 0008-block-make-block-cgroup-policies-follow-bio-task-ass.patch
- 0009-block-make-blk-throttle-preserve-the-issuing-task-on.patch
-
- 0001-0002 updates locking and strips out RCU.
-
- 0003-0006 prepare for bio task association.
-
- 0007-0009 implement bio task association and apply it to
- blk-throttle.
-
-This patchset is on top of
-
-  block/for-linus 621032ad6eaabf2fe771c4fa0d8f58e1fcfcdba6
-+ [1] blkcg: kill policy node and blkg->dev, take#4
-+ [2] blkcg: unify blkgs for different policies (updated)
-
-and is also available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-locking
-
-The git branch has separate branches for previous patchsets, so using
-it probably is the easiest way to review this series.  Jens, if you
-want the whole thing reposted, please let me know.
-
-diffstat follows.
-
- block/blk-cgroup.c        |  167 +++++++++++++++++-----------------------------
- block/blk-cgroup.h        |   12 +--
- block/blk-core.c          |   92 ++++++++++++++-----------
- block/blk-ioc.c           |   58 +++++++++------
- block/blk-throttle.c      |   41 +----------
- block/blk.h               |   24 +++---
- block/cfq-iosched.c       |   54 ++++----------
- block/cfq.h               |   10 --
- block/elevator.c          |    5 -
- fs/bio.c                  |   61 ++++++++++++++++
- include/linux/bio.h       |    8 ++
- include/linux/blk_types.h |   10 ++
- include/linux/blkdev.h    |    1 
- include/linux/elevator.h  |    6 +
- include/linux/iocontext.h |   32 ++++++--
- kernel/fork.c             |    5 -
- 16 files changed, 299 insertions(+), 287 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1247152
-[2] http://thread.gmane.org/gmane.linux.kernel/1247287
