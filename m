@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2BPTJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:09:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58971 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab2BPTJ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:09:26 -0500
-Date: Thu, 16 Feb 2012 20:09:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
-In-Reply-To: <20120216150139.GA16634@srcf.ucam.org>
-Message-ID: <alpine.LFD.2.02.1202161946530.2794@ionos>
-References: <20120215145225.GA21448@srcf.ucam.org> <alpine.LFD.2.02.1202152059230.2794@ionos> <20120215202221.GA29552@srcf.ucam.org> <alpine.LFD.2.02.1202152125500.2794@ionos> <20120215203814.GA29795@srcf.ucam.org> <alpine.LFD.2.02.1202152140110.2794@ionos>
- <20120215204757.GA30275@srcf.ucam.org> <20120216142733.GA15632@srcf.ucam.org> <20120216143132.293c8f50@pyramind.ukuu.org.uk> <1329403876.2293.232.camel@twins> <20120216150139.GA16634@srcf.ucam.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754996Ab2BPTKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:10:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab2BPTKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 14:10:12 -0500
+Message-ID: <4F3D3F59.80807@redhat.com>
+Date: Thu, 16 Feb 2012 19:39:37 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Amit Shah <amit.shah@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        kvm list <kvm@vger.kernel.org>
+Subject: Re: [KVM paravirt issue?] Re: vsyscall=emulate regression
+References: <20120203082748.GB782@amit.redhat.com> <20120214122205.GA29418@amit.redhat.com> <CALCETrVCzErebXrVk8Bi+k1TjigD3XvJsmZFVZb=ksmSCOTVLg@mail.gmail.com> <20120215110122.GA3136@amit.redhat.com> <CALCETrUmk+kpG9qLqSfrMP8Go9affMJCgybHFoK7Z2wm7ABXpA@mail.gmail.com> <4F3D2C09.1020803@redhat.com> <CALCETrUhGY8C8JLz6DrbBxukV58K=2jrMSfDyAm=eF7OWbKx7g@mail.gmail.com> <4F3D395B.1000708@redhat.com> <CALCETrXjJtKLhe2rRkuy57Ai+5X2-+qh9eMbE5y-UhX=CPWftA@mail.gmail.com>
+In-Reply-To: <CALCETrXjJtKLhe2rRkuy57Ai+5X2-+qh9eMbE5y-UhX=CPWftA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012, Matthew Garrett wrote:
+On 02/16/2012 07:35 PM, Andy Lutomirski wrote:
+> >
+> > so it seems like kvm doesn't set PF_INSTR?
+>
+> Yes, this is on purpose, and you're almost certainly right (and I feel
+> dumb for not figuring this out immediately).  The error message is:
+>
+> segfault at ffffffffff600400 ip ffffffffff600400 sp 00007fff103d72f8 error 5
+>
+> which is garbage.  The instruction at 0xffffffffff600400 can't fetch
+> itself as data and fault on the data access (at least not in 64-bit
+> mode, as far as I can think of, without evil messing with the TLBs).
+>
+> So... what do we do about this?  This (whitespace-damaged, untested)
+> patch will probably work around it well enough to boot the system:
+>
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 9d74824..52b9522 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -741,8 +741,11 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long
+>                  * Instruction fetch faults in the vsyscall page might need
+>                  * emulation.
+>                  */
+> -               if (unlikely((error_code & PF_INSTR) &&
+> +               if (unlikely(address == regs->ip && !(error_code & PF_WRITE) &&
+>                              ((address & ~0xfff) == VSYSCALL_START))) {
+> +                       WARN_ONCE(!(error_code & PF_INSTR),
+> +                                 "Fixing up bogus vsyscall read fault -- "
+> +                                 "your hypervisor is buggy.");
+>                         if (emulate_vsyscall(regs, address))
+>                                 return;
+>                 }
+>
+> Before we patch the guest like this, though, it would be nice to know
+> what hosts are affected.  If it's just one version of RHEL6, maybe it
+> makes sense to fix the hypervisor and either leave the guest alone or
+> just add a warning saying to fix your hypervisor, like:
+>
+> WARN_ONCE(address == regs->ip && !(error_code & (PF_INSTR | PF_WRITE))
+> && user_64bit_mode(regs), "Fishy page fault -- you might need to fix
+> your hypervisor");
+>
+> near some exit path in the page fault handler.  The 64-bit check is
+> because (I think) 32-bit code can mess with regs->ip using a cs offset
+> in the LDT and trigger the warning at will.
+>
 
-> On Thu, Feb 16, 2012 at 03:51:16PM +0100, Peter Zijlstra wrote:
-> > On Thu, 2012-02-16 at 14:31 +0000, Alan Cox wrote:
-> > > In historical Unix sleep(0) ends up the nearest equivalent it had to
-> > > triggering a reschedule and giving up the rest of the timeslice.
-> > > 
-> > > I suspect special casing it as yield() isn't far from the right result ?
-> > 
-> > But why go that way? Using sleep(0) or yield() is pretty much always the
-> > wrong thing to do anyway, this is a great opportunity for all folks to
-> > find these sites and fix them.
-> > 
-> > Wasn't that what open-source is all about, doing the right thing?
-> 
-> Doing the right thing if practical. How about we special-case for now 
-> with a once-per-process printk and kill it further down the line?
+We'll just fix all affected hypervisor versions.  No need to uglify the
+guest for a clear kvm bug.
 
-We've done this for stuff which was once kinda guaranteed
-(intentionally or not), but sleep(0) has never had any guarantee
-whatsoever. Quite the contrary it changed its behaviour several times
-over the last decades and there is no reason to manifest some weird
-ass semantics now.
+-- 
+error compiling committee.c: too many arguments to function
 
-> > Why should we care about obviously broken crap?
-> > 
-> > Furthermore, pushing slack to several seconds will also break stuff that
-> > needed those timers to expire sooner, who is going to fix that?
-> 
-> The reason to change timer slack is because we're willing to break 
-> polling applications in order to gain power savings. The problem is that 
-> there are event-driven applications that are also going to be broken 
-> because some ridiculous proportion of userspace believes that sleep(0) 
-> is a thing that they can do in an event-driven application. The question 
-
-If we are willing to break polling crap, then there is no fricking
-reason not to break lousy programmed "event driven" crap while we are
-at it.
-
-> is whether the cost of special-casing that in the kernel is more than 
-> fixing all of them.
-
-The cost of special casing stuff is maintainence, inconsistance of
-interfaces and extended confusion. And each of that is worse than
-breaking some (i.e. 1% of the total app stack out there) weirdo apps.
-
-> > What's next, we're actually going to give people their O_PONIES?
-> 
-> If we could give people O_PONIES then why wouldn't we? The only reason 
-> not to is because it costs too much elsewhere.
-
-Wrong. The reason is that O_PONIES is impossible to define and that's
-equally true for any exception to the (nano)sleep interface.
-
-Thanks,
-
-	tglx
