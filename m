@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab2BPKkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:40:42 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:61566 "EHLO mail.gnudd.com"
+	id S1751661Ab2BPKks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:40:48 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:61567 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab2BPKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:40:37 -0500
-Date: Thu, 16 Feb 2012 11:40:15 +0100
+	id S1751787Ab2BPKko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 05:40:44 -0500
+Date: Thu, 16 Feb 2012 11:40:27 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, andrzej.p@samsung.com,
         mingo@elte.hu, jbarnes@virtuousgeek.org
-Subject: [PATCH 2/3] x86: introduce CONFIG_X86_DEV_DMA_OPS
-Message-ID: <062dabe45976022e2cc5b2d8e483bf469324c86a.1329387617.git.rubini@gnudd.com>
+Subject: [PATCH 3/3] x86: introduce CONFIG_X86_DMA_REMAP
+Message-ID: <60eae1275eab92e527ac19f40b56f703fd6c6c5a.1329387617.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,78 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-32-bit x86 systems may need their own DMA operations, so add
-a new config option, which is turned on for 64-bit systems and sta2x11.
-Core sta2x11 support has already been accepted, but it won't compile
-without this option.
+The default functions phys_to_dma, dma_to_phys implement identity
+mapping as fast inline functions.  Some systems, however, need a
+custom function to implement its own mapping between CPU addresses and
+device addresses. This option is needed to support the sta2x11 I/O Hub,
+whose support has been accepted but won't compile without this patch.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 Cc: Alan Cox <alan@linux.intel.com>
 ---
- arch/x86/Kconfig                   |    6 ++++++
- arch/x86/include/asm/device.h      |    4 ++--
- arch/x86/include/asm/dma-mapping.h |    2 +-
- 3 files changed, 9 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig                   |    5 +++++
+ arch/x86/include/asm/dma-mapping.h |    7 +++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index dd18c2b..5bb23c3 100644
+index 5bb23c3..5426833 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -12,6 +12,7 @@ config X86_32
- 
- config X86_64
- 	def_bool 64BIT
-+	select X86_DEV_DMA_OPS
- 
- ### Arch settings
- config X86
-@@ -510,6 +511,7 @@ config STA2X11
- 	bool "STA2X11 Companion Chip Support"
+@@ -512,6 +512,7 @@ config STA2X11
  	depends on X86_32_NON_STANDARD && PCI
  	select SWIOTLB
-+	select X86_DEV_DMA_OPS
+ 	select X86_DEV_DMA_OPS
++	select X86_DMA_REMAP
  	select MFD_STA2X11
  	select ARCH_REQUIRE_GPIOLIB
  	default n
-@@ -2249,6 +2251,10 @@ config HAVE_TEXT_POKE_SMP
+@@ -2255,6 +2256,10 @@ config X86_DEV_DMA_OPS
  	bool
- 	select STOP_MACHINE if SMP
+ 	depends on X86_64 || STA2X11
  
-+config X86_DEV_DMA_OPS
++config X86_DMA_REMAP
 +	bool
-+	depends on X86_64 || STA2X11
++	depends on STA2X11
 +
  source "net/Kconfig"
  
  source "drivers/Kconfig"
-diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
-index 63a2a03..93e1c55 100644
---- a/arch/x86/include/asm/device.h
-+++ b/arch/x86/include/asm/device.h
-@@ -5,8 +5,8 @@ struct dev_archdata {
- #ifdef CONFIG_ACPI
- 	void	*acpi_handle;
- #endif
--#ifdef CONFIG_X86_64
--struct dma_map_ops *dma_ops;
-+#ifdef CONFIG_X86_DEV_DMA_OPS
-+	struct dma_map_ops *dma_ops;
- #endif
- #if defined(CONFIG_INTEL_IOMMU) || defined(CONFIG_AMD_IOMMU)
- 	void *iommu; /* hook for IOMMU specific extension */
 diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
-index 4b4331d..09aa473 100644
+index 09aa473..61c0bd2 100644
 --- a/arch/x86/include/asm/dma-mapping.h
 +++ b/arch/x86/include/asm/dma-mapping.h
-@@ -30,7 +30,7 @@ extern struct dma_map_ops *dma_ops;
+@@ -62,6 +62,12 @@ extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 					dma_addr_t *dma_addr, gfp_t flag,
+ 					struct dma_attrs *attrs);
  
- static inline struct dma_map_ops *get_dma_ops(struct device *dev)
++#ifdef CONFIG_X86_DMA_REMAP /* Platform code defines bridge-specific code */
++extern bool dma_capable(struct device *dev, dma_addr_t addr, size_t size);
++extern dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr);
++extern phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr);
++#else
++
+ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
  {
--#ifdef CONFIG_X86_32
-+#ifndef CONFIG_X86_DEV_DMA_OPS
- 	return dma_ops;
- #else
- 	if (unlikely(!dev) || !dev->archdata.dma_ops)
+ 	if (!dev->dma_mask)
+@@ -79,6 +85,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+ {
+ 	return daddr;
+ }
++#endif /* CONFIG_X86_DMA_REMAP */
+ 
+ static inline void
+ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
 -- 
 1.7.7.2
