@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab2BPQhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:37:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53707 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2BPQhj convert rfc822-to-8bit (ORCPT
+	id S1752955Ab2BPQkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:40:43 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33079 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2BPQkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:37:39 -0500
+	Thu, 16 Feb 2012 11:40:42 -0500
+Date: Thu, 16 Feb 2012 16:40:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Oskar Schirmer <oskar@scara.com>
+Cc: sameo@linux.intel.com, dmitry.torokhov@gmail.com, kernel@pengutronix.de,
+        u.kleine-koenig@pengutronix.de, philippe.retornaz@epfl.ch,
+        michael.thalmeier@hale.at, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] mfd: add I2C handling to mc13xxx driver
+Message-ID: <20120216164029.GA27239@sirena.org.uk>
+References: <1329215672-15706-1-git-send-email-oskar@scara.com>
+ <1329215672-15706-4-git-send-email-oskar@scara.com>
 MIME-Version: 1.0
-In-Reply-To: <1329409183.2293.245.camel@twins>
-References: <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
-	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
-	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
-	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
-	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
-	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
-	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
-	<CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
-	<1329323900.2293.150.camel@twins>
-	<CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
-	<20120216150004.GE2641@mudshark.cambridge.arm.com>
-	<CACVXFVM472hz+na7o2wJr1CPq-W=YB7i0UwtrsUf62+ryzWp8A@mail.gmail.com>
-	<1329409183.2293.245.camel@twins>
-Date: Fri, 17 Feb 2012 00:37:35 +0800
-Message-ID: <CACVXFVOygObWqPMLjg6uOB6inBkvvUjsQncNW0fbmpa4Xspw0Q@mail.gmail.com>
-Subject: Re: oprofile and ARM A9 hardware counter
-From: Ming Lei <ming.lei@canonical.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Will Deacon <will.deacon@arm.com>, "eranian@gmail.com" <eranian@gmail.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        David Long <dave.long@linaro.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329215672-15706-4-git-send-email-oskar@scara.com>
+X-Cookie: Results are not typical.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 12:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2012-02-17 at 00:12 +0800, Ming Lei wrote:
->> is triggered: u64 delta = 100 -  1000000 = 18446744073708551716.
->
-> on x86 we do:
->
->  int shift = 64 - x86_pmu.cntval_bits;
->  s64 delta;
->
->  delta = (new_raw_count << shift) - (prev_raw_count << shift);
->  delta >>= shift;
->
-> This deals with short overflows (on x86 the registers are typically 40
-> or 48 bits wide). If the arm register is 32 you can of course also get
-> there with some u32 casts.
+On Tue, Feb 14, 2012 at 10:34:28AM +0000, Oskar Schirmer wrote:
+> mc13xxx chips may be wired to SPI or I2C, alternatively.
+> Up to now, mc13xxx did support SPI wiring solely.
+> Add support for I2C wiring, make the two alternatives
+> separate menu option in configuration.
 
-Good idea, but it may not work if new_raw_count is bigger than prev_raw_count.
-
-thanks
---
-Ming Lei
+As with the last time you posted this it really would be better to
+convert this to regmap rather than add new open coded register map I/O
+support.
