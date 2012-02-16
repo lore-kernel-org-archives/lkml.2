@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab2BPF3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:29:13 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:33342 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914Ab2BPF3L (ORCPT
+	id S1752194Ab2BPFcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:32:11 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:35953 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab2BPFcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:29:11 -0500
-Date: Thu, 16 Feb 2012 16:29:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ondrej Zary <linux@rainbow-software.org>
-Subject: linux-next: build failure after merge of the final tree (fbdev tree
- related)
-Message-Id: <20120216162900.e2dd164732084f48e5b239f0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Feb_2012_16_29_00_+1100_xAQJtgvzlUsJ2MKl"
+	Thu, 16 Feb 2012 00:32:09 -0500
+Date: Thu, 16 Feb 2012 16:32:00 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 3.3
+Message-ID: <20120216053200.GA20581@gondor.apana.org.au>
+References: <20100716022648.GA28219@gondor.apana.org.au> <20100722055043.GA25689@gondor.apana.org.au> <20100903060055.GA28915@gondor.apana.org.au> <20100903110722.GA31826@gondor.apana.org.au> <20101215115035.GA25248@gondor.apana.org.au> <20110216053911.GA10999@gondor.apana.org.au> <20110328071322.GA6569@gondor.apana.org.au> <20110629235153.GA16559@gondor.apana.org.au> <20120126024342.GA12492@gondor.apana.org.au> <20120214033504.GA26895@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120214033504.GA26895@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Feb_2012_16_29_00_+1100_xAQJtgvzlUsJ2MKl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus:
 
-Hi all,
+Dave reported that even with the latest stack bloat reduction
+fix for i386, the stack usage of sha512 still exceeded 1024 bytes
+on sparc32.  However, with Alexey's ror64 patch applied, the stack
+usage goes back down to a more respectable 824.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+So I've moved the ror64 patch from cryptodev to crypto and I'm
+pushing it to you now.
+ 
+Please pull from
 
-drivers/video/i740fb.c: In function 'i740fb_remove':
-drivers/video/i740fb.c:1192:7: error: 'par' undeclared (first use in this f=
-unction)
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
-Caused by commit 5350c65f4f15 ("Resurrect Intel740 driver: i740fb") from
-the fbdev tree.  CONFIG_MTRR is not defined for this build ...
+or
 
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
 
---Signature=_Thu__16_Feb_2012_16_29_00_+1100_xAQJtgvzlUsJ2MKl
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Alexey Dobriyan (1):
+      crypto: sha512 - use standard ror64()
 
-iQIcBAEBCAAGBQJPPJQcAAoJEECxmPOUX5FEoWUP/35QFVh8eV6jSARbZKmJHXsc
-CQsmKf2GRBd678ZVFTyZfP7q7S2dYn61y1NnGG0cgJMi5Yr8LCbLD9jcU0pnZxB1
-qetP9nQsWRBXK8my8/ICBHJ2C4D2hCv8ZL2X1SsCL14z8EluaAbQ0bItSXMX9gpJ
-Ele/6bCcgrgLQ/a1Dn7iClfnXW0HjDSdK1eZ4T65gIiJX1uV5/GdakJGCbAIXakF
-dVSbI9Tp017j2yPMxcODH82kJ5A6pxzZ6CKPRfE03oR7zqPR4ntiwMzepZ8Mpy0Z
-7pVYY8HuZvDoYFGaPvheC3hlb78V1zTi6EptdXjQfqP6fdrnomZ6ekSSA6D4YX3w
-URSpgMYD1+FfoWmMtid2fBWxAJA8c+D+9eRZ33wEP1rnffyLS+RMwQOx95H6aSC8
-oS39L5qbF+pLrVrIDLP5g1/ecF9owDRHffFtKSe5X1ZRju7XyOwu6BxDIeH4Hjco
-YaDmAJD2Ye+LzELfjxsBmfWZ1brz8dp7fV8YrLopBwULNe8ZiOLg8Aeob8XfQDJi
-BTnWEiY1PRMLpwRYoYlzgiM4jR6FYna6totb0iFS4GKaK9HUP9RVxOnxOIiVDtT7
-dmc39l/L5MuKQuBJ5eWTcFOd9YEoz24snBbs2cucZtUklUsiBFj4XPgfdiRkO79x
-IDW6JTjCZkeHti/8cFjc
-=hKgu
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Feb_2012_16_29_00_+1100_xAQJtgvzlUsJ2MKl--
+ crypto/sha512_generic.c |   13 ++++---------
+ include/linux/bitops.h  |   20 ++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 9 deletions(-)
+ 
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
