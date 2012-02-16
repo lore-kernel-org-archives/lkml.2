@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2BPVRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 16:17:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34618 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab2BPVRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 16:17:53 -0500
-Message-ID: <4F3D7250.6040504@zytor.com>
-Date: Thu, 16 Feb 2012 13:17:04 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1755857Ab2BPVX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 16:23:56 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:31734 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab2BPVXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 16:23:54 -0500
+Date: Thu, 16 Feb 2012 22:23:52 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Meelis Roos <mroos@linux.ee>, Tejun Heo <tj@kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+Message-ID: <20120216212352.GA11346@merkur.ravnborg.org>
+References: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee> <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee>
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        keescook@chromium.org
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-References: <1329422549-16407-1-git-send-email-wad@chromium.org> <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com> <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-In-Reply-To: <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.SOC.1.00.1202162151030.16208@math.ut.ee>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2012 12:25 PM, Will Drewry wrote:
->
-> I agree :)  BPF being a 32-bit creature introduced some edge cases.  I
-> has started with a
->      union { u32 args32[6]; u64 args64[6]; }
->
-> This was somewhat derailed by CONFIG_COMPAT behavior where
-> syscall_get_arguments always writes to argument of register width --
-> not bad, just irritating (since a copy isn't strictly necessary nor
-> actually done in the patch).  Also, Indan pointed out that while BPF
-> programs expect constants in the machine-local endian layout, any
-> consumers would need to change how they accessed the arguments across
-> big/little endian machines since a load of the low-order bits would
-> vary.
->
-> In a second pass, I attempted to resolve this like aio_abi.h:
->     union {
->       struct {
->          u32 ENDIAN_SWAP(lo32, hi32);
->        };
->        u64 arg64;
->      } args[6];
-> It wasn't clear that this actually made matters better (though it did
-> mean syscall_get_arguments() could write directly to arg64).  Usings
-> offsetof() in the user program would be fine, but any offsets set
-> another way would be invalid.  At that point, I moved to Indan's
-> proposal to stabilize low order and high order offsets -- what is in
-> the patch series.  Now a BPF program can reliably index into the low
-> bits of an argument and into the high bits without endianness changing
-> the filter program structure.
->
-> I don't feel strongly about any given data layout, and this one seems
-> to balance the 32-bit-ness of BPF and the impact that has on
-> endianness.  I'm happy to hear alternatives that might be more
-> aesthetically pleasing :)
->
+On Thu, Feb 16, 2012 at 09:53:14PM +0200, Meelis Roos wrote:
+> > Ugh; that looks bad.  If it failed there, then the global device node list
+> > is corrupted.  I hate to ask you this, but would you be able to git bisect to
+> > narrow down the commit that causes the problem?
+> 
+> Finished bisecting on E2500 (the original machine where I found the 
+> problem). Bisecting leads to
+> [0ee332c1451869963626bf9cac88f165a90990e1] memblock: Kill early_node_map[]
+> So yes, it looks like memblock.
 
-I would have to say I think native endian is probably the sane thing 
-still, out of several bad alternatives.  Certainly splitting the high 
-and low halves of arguments is insane.
+Added Tejun.
 
-The other thing that you really need in addition to system call number 
-is ABI identifier, since a syscall number may mean different things for 
-different entry points.  For example, on x86-64 system call number 4 is 
-write() if called via int $0x80 but stat() if called via syscall64. 
-This is a local property of the system call, not a global per process.
-
-	-hpa
-
+	Sam
