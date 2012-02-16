@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2BPPOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:14:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36865 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab2BPPOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:14:12 -0500
-Date: Thu, 16 Feb 2012 16:14:25 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: extend prefault helpers to fault in more than
- PAGE_SIZE
-Message-ID: <20120216151425.GB19158@phenom.ffwll.local>
-Mail-Followup-To: Hillf Danton <dhillf@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-References: <1329393696-4802-1-git-send-email-daniel.vetter@ffwll.ch>
- <1329393696-4802-2-git-send-email-daniel.vetter@ffwll.ch>
- <CAJd=RBBr4EkCwAaS3xZZrm0QE71Z0soyZXTuwXyBn6ohp3pU2Q@mail.gmail.com>
+	id S1753738Ab2BPPOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:14:55 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58074 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752306Ab2BPPOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 10:14:54 -0500
+Date: Thu, 16 Feb 2012 07:13:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
+ implementation
+Message-ID: <20120216151319.GH2976@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120213020951.GA12138@linux.vnet.ibm.com>
+ <20120215143116.GA1696@Krystal>
+ <20120215145144.GA6277@Krystal>
+ <20120216063805.GF2976@linux.vnet.ibm.com>
+ <20120216110030.GA1425@Krystal>
+ <1329393115.2293.204.camel@twins>
+ <20120216121807.GA3426@Krystal>
+ <1329396281.2293.213.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBBr4EkCwAaS3xZZrm0QE71Z0soyZXTuwXyBn6ohp3pU2Q@mail.gmail.com>
-X-Operating-System: Linux phenom 3.2.0-1-amd64
+In-Reply-To: <1329396281.2293.213.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021615-9360-0000-0000-000003952867
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 09:32:08PM +0800, Hillf Danton wrote:
-> On Thu, Feb 16, 2012 at 8:01 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> > @@ -416,17 +417,20 @@ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-> >         * Writing zeroes into userspace here is OK, because we know that if
-> >         * the zero gets there, we'll be overwriting it.
-> >         */
-> > -       ret = __put_user(0, uaddr);
-> > +       while (uaddr <= end) {
-> > +               ret = __put_user(0, uaddr);
-> > +               if (ret != 0)
-> > +                       return ret;
-> > +               uaddr += PAGE_SIZE;
-> > +       }
+On Thu, Feb 16, 2012 at 01:44:41PM +0100, Peter Zijlstra wrote:
+> On Thu, 2012-02-16 at 07:18 -0500, Mathieu Desnoyers wrote:
+> > 
+> > Hrm, I think we'd need a little more than just lock/unlock ordering
+> > guarantees. Let's consider the following, where the stores would be
+> > expected to be seen as "store A before store B" by CPU 2
+> > 
+> > CPU 0             CPU 1               CPU 2
+> > 
+> >                                       load B, smp_rmb, load A in loop,
+> >                                       expecting that when updated A is
+> >                                       observed, B is always observed as
+> >                                       updated too.
+> > store A
+> > (lock is permeable:
+> > outside can leak
+> > inside)
+> > lock(rq->lock)
+> > 
+> >       -> migration ->
+> > 
+> >                   unlock(rq->lock)
+> >                   (lock is permeable:
+> >                   outside can leak inside)
+> >                   store B
 > 
-> What if
->              uaddr & ~PAGE_MASK == PAGE_SIZE -3 &&
->                 end & ~PAGE_MASK == 2
+> You got the pairing the wrong way around, I suggested:
+> 
+>   store A
+> 
+>   switch-out
+>     UNLOCK
+> 
+>   	-> migration ->
+> 
+> 			switch-in
+> 			  LOCK
+> 
+> 			store B
+> 
+> While both LOCK and UNLOCK are semi-permeable, A won't pass the UNLOCK
+> and B won't pass the LOCK.
+> 
+> Yes, A can pass switch-out LOCK, but that doesn't matter much since the
+> switch-in cannot happen until we've passed UNLOCK.
+> 
+> And yes B can pass switch-in UNLOCK, but again, I can't see that being a
+> problem since the LOCK will avoid it being visible before A.
+> 
+> > Does that make sense, or should I get my first morning coffee ? :) 
+> 
+> Probably.. but that's not saying I'm not wrong ;-)
 
-I don't quite follow - can you elaborate upon which issue you're seeing?
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+It does look good to me, but given that I don't drink coffee, you should
+take that with a large grain of salt.
+
+							Thanx, Paul
+
