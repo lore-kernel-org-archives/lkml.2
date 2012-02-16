@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab2BPHCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 02:02:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60174 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262Ab2BPHCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 02:02:49 -0500
-Message-ID: <4F3CAA13.1090906@openvz.org>
-Date: Thu, 16 Feb 2012 11:02:43 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] memcg: use vm_swappiness from current memcg
-References: <20120215162830.13902.60256.stgit@zurg>	<20120215162834.13902.37262.stgit@zurg> <20120216091511.350882a7.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120216091511.350882a7.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757350Ab2BPHH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 02:07:59 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:42975 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757237Ab2BPHH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 02:07:58 -0500
+Message-ID: <1329376076.7658.4.camel@joe2Laptop>
+Subject: Re: [PATCH 4/4] PCI: quirk print dev name with duration
+From: Joe Perches <joe@perches.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Date: Wed, 15 Feb 2012 23:07:56 -0800
+In-Reply-To: <1329371019.5082.9.camel@joe2Laptop>
+References: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
+	 <1329369296-4255-5-git-send-email-yinghai@kernel.org>
+	 <1329369930.5082.4.camel@joe2Laptop>
+	 <CAE9FiQUK8m5KKb0or59wH7BD6Eo5ddx9NaF7vszNeR0T3UYMRw@mail.gmail.com>
+	 <1329371019.5082.9.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Wed, 15 Feb 2012 20:28:34 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> At this point this is always the same cgroup, but it allows to drop one argument.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> Do you mean "no logic change but clean up, dropping an argument" ?
->
-> I'm not sure using complicated sc->  is easier than passing an argument..
+On Wed, 2012-02-15 at 21:43 -0800, Joe Perches wrote:
+> On Wed, 2012-02-15 at 21:35 -0800, Yinghai Lu wrote:
+> > On Wed, Feb 15, 2012 at 9:25 PM, Joe Perches <joe@perches.com> wrote:
+> > > On Wed, 2012-02-15 at 21:14 -0800, Yinghai Lu wrote:
+> > >> So could find out which device is involved with the calling
+> > > []
+> > >> +++ linux-2.6/drivers/pci/quirks.c
+> > >> @@ -2854,14 +2854,15 @@ static void do_one_fixup_debug(void (*fn
+> > >>       ktime_t calltime, delta, rettime;
+> > >>       unsigned long long duration;
+> > >>
+> > >> -     printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
+> > >> +     printk(KERN_DEBUG "calling  %pF @ %i for %s\n",
+> > >> +                     fn, task_pid_nr(current), dev_name(&dev->dev));
+> > >
+> > > Might be better to use dev_dbg
+> > >
+> > >        dev_dbg(&dev->dev, "calling %pF @ %i\n", fn, task_pid_nr(current));
+> > >
+> > > []
+> > >
+> > >> -     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs\n", fn,
+> > >> -             duration);
+> > >> +     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs for %s\n",
+> > >> +                     fn, duration, dev_name(&dev->dev));
+> > >
+> > >        dev_dbg(&dev->dev, "pci fixup %pF returned after %llu usecs\n",
+> > >                fn, duration);
+> > Not sure if that is going to break Arjan 's tool that analyze the boot time.
+> That depends on the tool code.
+[]
+> Do you have a link to the tool?
 
-It also was cleanup-preparation for "memory book keeping",
-there I replace struct mem_cgroup_zone *mz with struct book *book,
-struct book doesn't know anything about memory-cgroups.
+That tool would be scripts/bootgraph.pl and using
+dev_dbg would break it unless it's adapted to the
+change.  Your change seems fine for now.
 
->
-> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
