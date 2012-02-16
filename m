@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2BPW7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:59:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38294 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab2BPW7f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:59:35 -0500
-Date: Thu, 16 Feb 2012 14:59:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: dave@gnu.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] locks: export device name
-Message-Id: <20120216145934.5fd9772e.akpm@linux-foundation.org>
-In-Reply-To: <1329431831.2753.3.camel@offbook>
-References: <1328907967.3138.1.camel@offbook>
-	<20120213163425.dd9adfde.akpm@linux-foundation.org>
-	<20120214190906.GA5115@fieldses.org>
-	<1329303162.3356.6.camel@offbook>
-	<20120215124230.GA11393@fieldses.org>
-	<20120215123929.6888c867.akpm@linux-foundation.org>
-	<1329431831.2753.3.camel@offbook>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755546Ab2BPXAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 18:00:25 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48013 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753300Ab2BPXAV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 18:00:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F3D7DD4.6070103@zytor.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+	<1329422549-16407-3-git-send-email-wad@chromium.org>
+	<4F3D61CB.2000301@zytor.com>
+	<CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+	<4F3D7250.6040504@zytor.com>
+	<CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
+	<4F3D766E.7040205@zytor.com>
+	<CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
+	<4F3D7DD4.6070103@zytor.com>
+Date: Thu, 16 Feb 2012 17:00:19 -0600
+Message-ID: <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Markus Gutschke <markus@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 23:37:11 +0100
-Davidlohr Bueso <dave@gnu.org> wrote:
+On Thu, Feb 16, 2012 at 4:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/16/2012 01:51 PM, Will Drewry wrote:
+>>>
+>>> Put the bloody bit in there and let the pattern program make that decision.
+>>
+>> Easy enough to add a bit for the mode: 32-bit or 64-bit.  It seemed
+>> like a waste of cycles for every 32-bit program or every 64-bit
+>> program to check to see that its calling convention hadn't changed,
+>> but it does take away a valid decision the pattern program should be
+>> making.
+>>
+>> I'll add a flag for 32bit/64bit while cleaning up seccomp_data. I
+>> think that will properly encapsulate the is_compat_task() behavior in
+>> a way that is stable for compat and non-compat tasks to use.  If
+>> there's a more obvious way, I'm all ears.
+>>
+>
+> is_compat_task() is not going to be the right thing for x86 going
+> forward, as we're introducing the x32 ABI (which uses the normal x86-64
+> entry point, but with different eax numbers, and bit 30 set.)
+>
+> The actual state is the TS_COMPAT flag in the thread_info structure,
+> which currently matches is_compat_task(), but perhaps we should add a
+> new helper function syscall_namespace() or something like that...
 
-> On Wed, 2012-02-15 at 12:39 -0800, Andrew Morton wrote:
-> > On Wed, 15 Feb 2012 07:42:30 -0500
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > 
-> > > > > Perhaps safest would be to replace /proc/locks by another interface and
-> > > > > deprecate this one.
-> > > > 
-> > > > If exporting the name in the current /proc/locks file is out of the
-> > > > question, then IMHO I don't think it would be worth adding a new
-> > > > interface just for such a small change.
-> > > 
-> > > OK.
-> > > 
-> > > If you want to just change this over, I guess the thing to do would be
-> > > to stick something in feature-removal-schedule.txt saying "we'll switch
-> > > this in 2 years" (or however long you think before there are
-> > > realistically no more lslk users left), then do it then.
-> > > 
-> > > Switching to a new api would be better as we could warn users of the old
-> > > api then.  Maybe it'd be worth it if there was some other change we'd
-> > > been wanting to make?   Can't think of anything off the top of my head.
-> > > 
-> > > We may be adding more lock types--will lslk and lslocks handle that
-> > > gracefully?
-> > 
-> > Adding a whole new interface is pretty attractive.  It lets us get it
-> > right this time.  In particular, something which is extensible given
-> > certain simple rules.  As we've learned, the current /proc/locks didn't
-> > get that right!
-> 
-> Ok, however I'm a bit confused on what you mean by extensible; since
-> what we decide to export to userspace is pretty much permanent, how can
-> we change (extend) it later? We'd pretty much be running into
-> the /proc/locks situation now.
+Without the addition of x32, it is still the intersection of
+is_compat_task()/TS_COMPAT and CONFIG_64BIT for all arches to
+determine if the call is 32-bit or 64-bit, but this will add another
+wrinkle.  Would it make sense to assume that system call namespaces
+may be ever expanding and offer up an unsigned integer value?
 
-Mainly by avoiding the use of implicit identification via fixed
-positions.  Look at /proc/stat and weep.
+struct seccomp_data {
+  int nr;
+  u32 namespace;
+  u64 instruction_pointer;
+  u64 args[6];
+}
 
-If we use a name:value format then we can add new fields later and
-things work OK.  We add stuff to /proc/meminfo and /proc/vmstat all the
-time.
+Then syscall_namespace(current, regs) returns
+* 0 - SYSCALL_NS_32 (for existing 32 and config_compat)
+* 1 - SYSCALL_NS_64 (for existing 64 bit)
+* 2 - SYSCALL_NS_X32 (everything after 2 is arch specific)
+* ..
 
-Removing things is of course much harder.  The best fix is to avoid
-adding things which we might ever have a reason for removing!  If we
-have a field which we simply can no longer support and which we think
-we must retain for back-compat reasons then we just have to find some
-way to emulate it.  In extremis we could hardwire the value to "0" so
-tools won't crash.
+This patch series is pegged to x86 right now, so it's not a big deal
+to add a simple syscall_namespace to asm/syscall.h.  Of course, the
+code is always the easy part.  Even easier would be to only assign 0
+and 1 in the seccomp_data for 32-bit or 64-bit, then leave the rest of
+the u32 untouched until x32 stabilizes and the TS_COMPAT interactions
+are sorted.
 
-sysfs has a different convention: one-value-per-file.  That means
-there's no need for the name part of name:value.  Extensibility means
-"go add another sysfs file".
+The other option, of course, is to hide it from the users and peg to
+is_compat_task and later to however x32 is exposed, but that might
+just be me trying to avoid adding more dependencies to this patch
+series :)
 
+> Either that or we can just use another bit in the syscall number field...
+
+That would simplify the case here. The seccomp_data bit would say the
+call is 64-bit and then the syscall number with the extra bit would
+say that it is x32 and wouldn't collide with the existing 64-bit
+numbering, and the filter program author wouldn't make a filter
+program that allows a call that it shouldn't.
+
+Another option could be to expose the task_user_regset_view() of
+e_machine and e_osabi for the current/active calling convention
+assuming x32 gets a new marker there.  (There is a small amount
+pain[1] there since x86 uses TIF_IA32 and not TS_COMPAT for regset's
+e_machine value and not the current calling convention.  It's not
+clear to me if TS_COMPAT would be set during a core
+dump/fill_note_info, and not many people use ptrace's GET/SETREGSET,
+but I'm not super confident unraveling that mystery myself. Perhaps,
+current_user_regset_view() )
+
+For now, I'll just drop in a u32 for the calling convention.
+
+Thanks!
+will
+
+1 - http://lxr.linux.no/linux+v3.2.6/arch/x86/kernel/ptrace.c#L1310
