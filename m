@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2BPXWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 18:22:51 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:38354 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753700Ab2BPXWu (ORCPT
+	id S1755149Ab2BPX1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 18:27:07 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52970 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696Ab2BPX1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 18:22:50 -0500
+	Thu, 16 Feb 2012 18:27:05 -0500
+Date: Thu, 16 Feb 2012 23:26:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v5 00/27] irq_domain generalization and rework
+Message-ID: <20120216232648.GM27825@n2100.arm.linux.org.uk>
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <20120216145219.0f1c1b98.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <201202170016.14313.rjw@sisk.pl>
-References: <201202162251.47063.rjw@sisk.pl>
-	<Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org>
-	<CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com>
-	<201202170016.14313.rjw@sisk.pl>
-Date: Fri, 17 Feb 2012 00:22:50 +0100
-Message-ID: <CAFLxGvw1-mgHsM3oqqTJN=tXRPOddhtWt_vWgRTA2jwZMqnvaQ@mail.gmail.com>
-Subject: Re: [linux-pm] Corrupted files after suspend to disk
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
-        linux-pm@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, esandeen@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216145219.0f1c1b98.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 12:16 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, February 17, 2012, richard -rw- weinberger wrote:
->> On Thu, Feb 16, 2012 at 11:26 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > On Thu, 16 Feb 2012, Rafael J. Wysocki wrote:
->> >
->> >> > FWIW, we've been seeing a number of hard to diagnose failures
->> >> > with suspend to disk for the last few releases in Fedora.
->> >> > Eric Sandeen has been chasing https://bugzilla.redhat.com/show_bug.cgi?id=744275
->> >> > for a while, but there's no smoking gun that really explains what's
->> >> > getting into these states. Further complicating things, is that it
->> >> > doesn't seem to be 100% reproducable.
->> >>
->> >> I wonder if that's reproducible with the filesystems freezing patch I posted
->> >> some time ago (it will need some rebasing to apply to the current mainline or
->> >> 3.2.y).
->>
->> Where can I find this patch?
->> I'll happily test it.
->> But it may take some time as the bug is not easy to reproduce.
->
-> This is the last version posted:
->
-> http://marc.info/?l=linux-kernel&m=132775832509351&w=4
->
-> However, it only may help if you use the kernel-based hibernation i.e.
-> "echo disk > /sys/power/state" (that may be worth testing without the
-> patch too, but Fedora is using this AFAICS, so it probably has that
-> problem too).
+On Thu, Feb 16, 2012 at 02:52:19PM -0800, Andrew Morton wrote:
+> On Thu, 16 Feb 2012 02:09:01 -0700
+> Grant Likely <grant.likely@secretlab.ca> wrote:
+> > This series generalizes the "irq_host" infrastructure from powerpc
+> > so that it can be used by all architectures and renames it to "irq_domain".
+> 
+> drivers/mfd/twl-core.c is fairly horked on i386 allmodconfig:
+> 
+> drivers/mfd/twl-core.c: In function 'twl_probe':
+> drivers/mfd/twl-core.c:1218: error: implicit declaration of function 'irq_alloc_descs'
+> drivers/mfd/twl-core.c:1226: error: implicit declaration of function 'irq_domain_add_legacy'
+> drivers/mfd/twl-core.c:1227: error: 'irq_domain_simple_ops' undeclared (first use in this function)
+> drivers/mfd/twl-core.c:1227: error: (Each undeclared identifier is reported only once
+> drivers/mfd/twl-core.c:1227: error: for each function it appears in.)
+> 
+> This is today's linux-next so it has rmk's "ARM: omap: fix broken
+> twl-core dependencies and ifdefs" in there, which looks like it
+> attempts to repair this stuff.
 
-Okay, I'll use kernel-based hibernation from now on.
-If the problem still occurs I'll apply your patch.
+Yes, you're the third to report this breakage.
 
-Stay tuned!
+Grant's response on Tuesday over this was:
+| This is irq_domain related.  It's related to an API change.  I'm
+| tracking to get it solved, either by moving the twl commit into the
+| irqdomain branch or by deferring the api change to v3.5.
+|
+| I've also got a patch that converts x86 over to the new api, but I
+| don't have sufficient review to put it into the irqdomain tree yet.
 
--- 
-Thanks,
-//richard
+> btw, Russell, regarding this comment in include/linux/irq.h:
+> 
+> /*
+>  * Please do not include this file in generic code.  There is currently
+>  * no requirement for any architecture to implement anything held
+>  * within this file.
+>  *
+>  * Thanks. --rmk
+>  */
+> 
+> A quick grep indicates that we've lost this battle ;) Is the comments
+> still true?  Should we stop discouraging inclusion of linux/irq.h? 
+> Does anyone even know that it's discouraged ;)
+
+It's still true for any platform which hasn't been converted to genirq,
+as such a platform would not have asm/hw_irq.h.  That said, since
+genirq, it's now necessary for any driver which contains interrupt
+controller code like GPIO drivers.  So I suspect the comment should now
+be lost, even though it's not really a replacement for asm/irq.h.
