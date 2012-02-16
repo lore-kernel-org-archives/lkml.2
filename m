@@ -1,111 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab2BPFoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:44:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49485 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab2BPFn4 (ORCPT
+	id S1753414Ab2BPFyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:54:09 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:52245 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab2BPFyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:43:56 -0500
-Message-ID: <4F3C9798.7050800@openvz.org>
-Date: Thu, 16 Feb 2012 09:43:52 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	Thu, 16 Feb 2012 00:54:05 -0500
+Message-ID: <4F3C9995.3010800@ct.jp.nec.com>
+Date: Thu, 16 Feb 2012 14:52:21 +0900
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
-References: <20120215224221.22050.80605.stgit@zurg> <20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] sched: Make initial SCHED_RR timeslace DEF_TIMESLICE
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Thu, 16 Feb 2012 02:57:04 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> There should be no logic changes in this patchset, this is only tossing bits around.
->> [ This patchset is on top some memcg cleanup/rework patches,
->>    which I sent to linux-mm@ today/yesterday ]
->>
->> Most of things in this patchset are self-descriptive, so here brief plan:
->>
->
-> AFAIK, Hugh Dickins said he has per-zone-per-lru-lock and is testing it.
-> So, please CC him and Johannes, at least.
->
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-Ok
+Current the initial SCHED_RR timeslice of init_task is HZ, which means
+1s, and is not same as the default SCHED_RR timeslice DEF_TIMESLICE.
 
->
->> * Transmute struct lruvec into struct book. Like real book this struct will
->>    store set of pages for one zone. It will be working unit for reclaimer code.
->> [ If memcg is disabled in config there will only one book embedded into struct zone ]
->>
->
-> Why you need to add new structure rahter than enhancing lruvec ?
-> "book" means a binder of pages ?
->
+Change that initial timeslice to the DEF_TIMESLICE.
 
-I responded to this in the reply to Hugh Dickins.
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+---
+ include/linux/init_task.h |    2 +-
+ include/linux/sched.h     |    6 ++++++
+ kernel/sched/sched.h      |    4 ----
+ 3 files changed, 7 insertions(+), 5 deletions(-)
 
->
->> * move page-lru counters to struct book
->> [ this adds extra overhead in add_page_to_lru_list()/del_page_from_lru_list() for
->>    non-memcg case, but I believe it will be invisible, only one non-atomic add/sub
->>    in the same cacheline with lru list ]
->>
->
-> This seems straightforward.
->
->> * unify inactive_list_is_low_global() and cleanup reclaimer code
->> * replace struct mem_cgroup_zone with single pointer to struct book
->
-> Hm, ok.
->
->> * optimize page to book translations, move it upper in the call stack,
->>    replace some struct zone arguments with struct book pointer.
->>
->
-> a page->book transrater from patch 2/15
->
-> +struct book *page_book(struct page *page)
-> +{
-> +	struct mem_cgroup_per_zone *mz;
-> +	struct page_cgroup *pc;
-> +
-> +	if (mem_cgroup_disabled())
-> +		return&page_zone(page)->book;
-> +
-> +	pc = lookup_page_cgroup(page);
-> +	if (!PageCgroupUsed(pc))
-> +		return&page_zone(page)->book;
-> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> +	smp_rmb();
-> +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-> +			page_to_nid(page), page_zonenum(page));
-> +	return&mz->book;
-> +}
->
-> What happens when pc->mem_cgroup is rewritten by move_account() ?
-> Where is the guard for lockless access of this ?
-
-Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
-After final patch all page_book() calls are collected in [__re]lock_page_book[_irq]() functions.
-They pick some book reference, lock its lru and recheck page -> book reference in loop till success.
-
-Currently I found there only one potential problem: free_mem_cgroup_per_zone_info() in "mm: memory bookkeeping core"
-maybe should call spin_unlock_wait(&zone->lru_lock), because some guy can pick page_book(pfn_to_page(pfn))
-and try to isolate this page. But I not sure, how this is possible. In final patch it is totally fixed with rcu.
-
->
-> Thanks,
-> -Kame
->
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 9c66b1a..d04d67d 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -149,7 +149,7 @@ extern struct cred init_cred;
+ 	},								\
+ 	.rt		= {						\
+ 		.run_list	= LIST_HEAD_INIT(tsk.rt.run_list),	\
+-		.time_slice	= HZ, 					\
++		.time_slice	= DEF_TIMESLICE,			\
+ 		.nr_cpus_allowed = NR_CPUS,				\
+ 	},								\
+ 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3dbc6b5..e84315a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1234,6 +1234,12 @@ struct sched_rt_entity {
+ #endif
+ };
+ 
++/*
++ * default timeslice is 100 msecs (used only for SCHED_RR tasks).
++ * Timeslices get refilled after they expire.
++ */
++#define DEF_TIMESLICE		(100 * HZ / 1000)
++
+ struct rcu_node;
+ 
+ enum perf_event_task_context {
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 8a2c768..c0660a1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -36,11 +36,7 @@ extern __read_mostly int scheduler_running;
+ 
+ /*
+  * These are the 'tuning knobs' of the scheduler:
+- *
+- * default timeslice is 100 msecs (used only for SCHED_RR tasks).
+- * Timeslices get refilled after they expire.
+  */
+-#define DEF_TIMESLICE		(100 * HZ / 1000)
+ 
+ /*
+  * single value that denotes runtime == period, ie unlimited time.
+-- 
+1.7.7.6
 
