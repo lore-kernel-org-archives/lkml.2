@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2BPWhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:37:20 -0500
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:60092 "EHLO
-	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751708Ab2BPWhQ (ORCPT
+	id S1755297Ab2BPWiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 17:38:07 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35363 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab2BPWiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:37:16 -0500
-X-Greylist: delayed 128670 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 17:37:16 EST
-Subject: Re: [PATCH] locks: export device name
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120215123929.6888c867.akpm@linux-foundation.org>
-References: <1328907967.3138.1.camel@offbook>
-	 <20120213163425.dd9adfde.akpm@linux-foundation.org>
-	 <20120214190906.GA5115@fieldses.org> <1329303162.3356.6.camel@offbook>
-	 <20120215124230.GA11393@fieldses.org>
-	 <20120215123929.6888c867.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Thu, 16 Feb 2012 23:37:11 +0100
-Message-ID: <1329431831.2753.3.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Feb 2012 17:38:05 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCHSET] blkcg: update locking and fix stacking
+Date: Thu, 16 Feb 2012 14:37:49 -0800
+Message-Id: <1329431878-28300-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 12:39 -0800, Andrew Morton wrote:
-> On Wed, 15 Feb 2012 07:42:30 -0500
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > > > Perhaps safest would be to replace /proc/locks by another interface and
-> > > > deprecate this one.
-> > > 
-> > > If exporting the name in the current /proc/locks file is out of the
-> > > question, then IMHO I don't think it would be worth adding a new
-> > > interface just for such a small change.
-> > 
-> > OK.
-> > 
-> > If you want to just change this over, I guess the thing to do would be
-> > to stick something in feature-removal-schedule.txt saying "we'll switch
-> > this in 2 years" (or however long you think before there are
-> > realistically no more lslk users left), then do it then.
-> > 
-> > Switching to a new api would be better as we could warn users of the old
-> > api then.  Maybe it'd be worth it if there was some other change we'd
-> > been wanting to make?   Can't think of anything off the top of my head.
-> > 
-> > We may be adding more lock types--will lslk and lslocks handle that
-> > gracefully?
-> 
-> Adding a whole new interface is pretty attractive.  It lets us get it
-> right this time.  In particular, something which is extensible given
-> certain simple rules.  As we've learned, the current /proc/locks didn't
-> get that right!
+Hey, guys.
 
-Ok, however I'm a bit confused on what you mean by extensible; since
-what we decide to export to userspace is pretty much permanent, how can
-we change (extend) it later? We'd pretty much be running into
-the /proc/locks situation now.
+This is the third patchset of blkcg API cleanup series and does the
+following two things.
 
-> 
-> We can eventually remove the old code - it may take longer than two
-> years, but whatever.  If we go this way, we should arrange for the
-> kernel to emit a warning (printk_once) into the logs the first time
-> someone accesses the old file.  This will help to prompt people to
-> migrate off the deprecated interface.  After a while, we can add a
-> config option to make the old interface go away.  Distros will start to
-> disable the feature.  Later, we zap it altogether.
+* Drops RCU and use double locking.  As with ioc, we might want to
+  re-introduce RCU in more restricted form to walk blkg from blkcg but
+  for now there's no need.  cgroup deletion is much colder than task
+  exit and there's no other path which requires reverse double
+  locking.
 
-Kind if like what was done with the /proc/x/oom_adj interface.
+* Before this patchset, blk-throttle and cfq-iosched propio couldn't
+  be used together because for any bios delayed by blk-throttle would
+  be issued by a worker thread and get dumped to the default cgroup.
+  So, bios will be nondeterministically thrown into the root cg.  This
+  isn't a problem limited to blk-throttle.  Any mechanism which punts
+  bios to a different task (e.g. btrfs) would mess up IO scheduling
+  for both cgroups and iocontexts.
 
+  This patchset implements a mechanism to associate a bio to a task
+  (its cgroup and ioc actually) and block layer will handle the
+  request as if it were issued by the associated task no matter which
+  task actually ends up issuing it to block layer.  It's applied to
+  blk-throttle such that any delayed bio is associated to the original
+  task.
+
+This patchset contains the following 9 patches.
+
+ 0001-blkcg-use-double-locking-instead-of-RCU-for-blkg-syn.patch
+ 0002-blkcg-drop-unnecessary-RCU-locking.patch
+ 0003-block-restructure-get_request.patch
+ 0004-block-interface-update-for-ioc-icq-creation-function.patch
+ 0005-block-ioc_task_link-can-t-fail.patch
+ 0006-block-add-io_context-active_ref.patch
+ 0007-block-implement-bio_associate_current.patch
+ 0008-block-make-block-cgroup-policies-follow-bio-task-ass.patch
+ 0009-block-make-blk-throttle-preserve-the-issuing-task-on.patch
+
+ 0001-0002 updates locking and strips out RCU.
+
+ 0003-0006 prepare for bio task association.
+
+ 0007-0009 implement bio task association and apply it to
+ blk-throttle.
+
+This patchset is on top of
+
+  block/for-linus 621032ad6eaabf2fe771c4fa0d8f58e1fcfcdba6
++ [1] blkcg: kill policy node and blkg->dev, take#4
++ [2] blkcg: unify blkgs for different policies (updated)
+
+and is also available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-locking
+
+The git branch has separate branches for previous patchsets, so using
+it probably is the easiest way to review this series.  Jens, if you
+want the whole thing reposted, please let me know.
+
+diffstat follows.
+
+ block/blk-cgroup.c        |  167 +++++++++++++++++-----------------------------
+ block/blk-cgroup.h        |   12 +--
+ block/blk-core.c          |   92 ++++++++++++++-----------
+ block/blk-ioc.c           |   58 +++++++++------
+ block/blk-throttle.c      |   41 +----------
+ block/blk.h               |   24 +++---
+ block/cfq-iosched.c       |   54 ++++----------
+ block/cfq.h               |   10 --
+ block/elevator.c          |    5 -
+ fs/bio.c                  |   61 ++++++++++++++++
+ include/linux/bio.h       |    8 ++
+ include/linux/blk_types.h |   10 ++
+ include/linux/blkdev.h    |    1 
+ include/linux/elevator.h  |    6 +
+ include/linux/iocontext.h |   32 ++++++--
+ kernel/fork.c             |    5 -
+ 16 files changed, 299 insertions(+), 287 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1247152
+[2] http://thread.gmane.org/gmane.linux.kernel/1247287
