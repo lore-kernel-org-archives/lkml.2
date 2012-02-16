@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab2BPOLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:11:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab2BPOLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:11:54 -0500
-Message-ID: <4F3D0E9C.8030302@redhat.com>
-Date: Thu, 16 Feb 2012 16:11:40 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 V13] Add ioctl for KVM_KVMCLOCK_CTRL
-References: <1328713666-11424-1-git-send-email-emunson@mgebm.net> <1328713666-11424-4-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1328713666-11424-4-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751970Ab2BPOND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:13:03 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52020 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab2BPONB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 09:13:01 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 16 Feb 2012 15:12:19 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 07/11] firewire-sbp-target: add
+ sbp_management_agent.{c,h}
+Message-ID: <20120216151219.151c2339@stein>
+In-Reply-To: <4F3CDA54.3030905@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-8-git-send-email-bootc@bootc.net>
+	<20120215204836.063bbd36@stein>
+	<4F3CDA54.3030905@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2012 05:07 PM, Eric B Munson wrote:
-> Now that we have a flag that will tell the guest it was suspended, create an
-> interface for that communication using a KVM ioctl.
->
-> +
-> +Capability: KVM_CAP_KVMCLOCK_CTRL
-> +Architectures: Any that implement pvclocks (currently x86 only)
-> +Type: vcpu ioctl
-> +Parameters: None
-> +Returns: 0 on success, -1 on error
-> +
-> +This signals to the host kernel that the specified guest is being paused by
-> +userspace.  The host will set a flag in the pvclock structure that is checked
-> +from the soft lockup watchdog.  
+On Feb 16 Chris Boot wrote:
+> Reading about mutexes though I see I can't use them from interrupt 
+> context, but doesn't the FireWire address handler execute in interrupt 
+> context? I have to check the state of the management agent in the 
+> address handler to properly reject requests from the initiator when the 
+> agent is busy. I guess a spinlock is called for in this situation, 
+> possibly using spin_trylock() in the address handler to avoid blocking?
 
-This needs to be expanded.  There is a protocol between the host and
-guest that needs to be documented, including the requirement to use a
-single instruction (or ll/sc) to clear the flag.  See
-Documentation/virtual/kvm/msr.txt
+Yes; the request-receive callback (address handler) is executed in tasklet
+context.  All drivers which use this currently use the spin_lock_irqsave
+API variant.  I am considering to change the entire subsystem to use
+spin_lock_bh only.  IMO you could use spin_lock_bh in your target code, or
+spin_lock for locks which are _only_ ever taken in tasklet context.
 
-> This ioctl can be called during pause or
-> +unpause.
-> +
+Plain spin_lock cannot be used, neither in the address handler nor in any
+process context which grabs the same lock as the address handler.
 
-After pausing the vcpu, but before resuming it.
+The use cases for trylock variants of the locking APIs are somewhat
+special.  If in doubt, ignore that trylock APIs exist.
 
+In strict terms, spin_trylock avoids busy-waiting for a contended lock.
+mutex_trylock avoids blocking in the sense of sleeping wait for a contended
+mutex.  However, to expand on the obvious, the trylock variants are only
+useful if whatever action which was meant to be performed can be aborted
+without problem, e.g. if upper layers would be able to retry at some later
+occasion.
 
+(I am still interested in closer looks at the execution contexts and object
+lifetime rules in your code, but spare time vs. mental capacity seem
+regularly at odds...)
 -- 
-error compiling committee.c: too many arguments to function
-
+Stefan Richter
+-=====-===-- --=- =----
+http://arcgraph.de/sr/
