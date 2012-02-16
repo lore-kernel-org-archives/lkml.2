@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2BPFei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:34:38 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55163 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752552Ab2BPFeb (ORCPT
+	id S1752982Ab2BPFfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:35:14 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44965 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab2BPFfM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:34:31 -0500
-X-Sasl-enc: DgIa6PRKVo/+sPjTUwjHKi4LKBKXpob12JsyhhJPHZMY 1329370469
-Date: Wed, 15 Feb 2012 21:15:52 -0800
-From: Greg KH <greg@kroah.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20120216051552.GA5676@kroah.com>
-References: <20120216152316.821ac82e04a5ee30327b81c3@canb.auug.org.au>
+	Thu, 16 Feb 2012 00:35:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216152316.821ac82e04a5ee30327b81c3@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329369930.5082.4.camel@joe2Laptop>
+References: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
+	<1329369296-4255-5-git-send-email-yinghai@kernel.org>
+	<1329369930.5082.4.camel@joe2Laptop>
+Date: Wed, 15 Feb 2012 21:35:11 -0800
+X-Google-Sender-Auth: CRZcWl_V1LUDrRMFjrrX5BYEH_4
+Message-ID: <CAE9FiQUK8m5KKb0or59wH7BD6Eo5ddx9NaF7vszNeR0T3UYMRw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] PCI: quirk print dev name with duration
+From: Yinghai Lu <yinghai@kernel.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 03:23:16PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/staging/ramster/zcache-main.c:2969:2: error: unknown field 'invalidate_page' specified in initializer
-> drivers/staging/ramster/zcache-main.c:2969:2: warning: initialization from incompatible pointer type [enabled by default]
-> drivers/staging/ramster/zcache-main.c:2969:2: warning: (near initialization for 'zcache_cleancache_ops.put_page') [enabled by default]
-> drivers/staging/ramster/zcache-main.c:2970:2: error: unknown field 'invalidate_inode' specified in initializer
-> drivers/staging/ramster/zcache-main.c:2970:2: warning: initialization from incompatible pointer type [enabled by default]
-> drivers/staging/ramster/zcache-main.c:2970:2: warning: (near initialization for 'zcache_cleancache_ops.flush_page') [enabled by default]
-> drivers/staging/ramster/zcache-main.c:2971:2: error: unknown field 'invalidate_fs' specified in initializer
-> drivers/staging/ramster/zcache-main.c:2971:2: warning: initialization from incompatible pointer type [enabled by default]
-> drivers/staging/ramster/zcache-main.c:2971:2: warning: (near initialization for 'zcache_cleancache_ops.flush_inode') [enabled by default]
-> drivers/staging/ramster/zcache-main.c:913:13: warning: 'zcache_do_remotify_ops' defined but not used [-Wunused-function]
-> drivers/staging/ramster/zcache-main.c:1002:13: warning: 'ramster_remotify_init' defined but not used [-Wunused-function]
-> 
-> I do wonder if any of this was build tested with CONFIG_CLEANCACHE enabled ...
-> 
-> Caused by commit 19ee3ef5f4bb ("staging: ramster: local compression + tmem").
-> 
-> I have used the staging tree from next-20120215 for today.
+On Wed, Feb 15, 2012 at 9:25 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-02-15 at 21:14 -0800, Yinghai Lu wrote:
+>> So could find out which device is involved with the calling
+> []
+>> +++ linux-2.6/drivers/pci/quirks.c
+>> @@ -2854,14 +2854,15 @@ static void do_one_fixup_debug(void (*fn
+>>       ktime_t calltime, delta, rettime;
+>>       unsigned long long duration;
+>>
+>> -     printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
+>> +     printk(KERN_DEBUG "calling  %pF @ %i for %s\n",
+>> +                     fn, task_pid_nr(current), dev_name(&dev->dev));
+>
+> Might be better to use dev_dbg
+>
+>        dev_dbg(&dev->dev, "calling %pF @ %i\n", fn, task_pid_nr(current));
+>
+> []
+>
+>> -     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs\n", fn,
+>> -             duration);
+>> +     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs for %s\n",
+>> +                     fn, duration, dev_name(&dev->dev));
+>
+>        dev_dbg(&dev->dev, "pci fixup %pF returned after %llu usecs\n",
+>                fn, duration);
 
-Dan, can you please fix this?
+Not sure if that is going to break Arjan 's tool that analyze the boot time.
 
-greg k-h
+Thanks
+
+Yinghai
