@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2BPIZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 03:25:35 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44155 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2BPIZe (ORCPT
+	id S1755741Ab2BPIbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 03:31:00 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18488 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab2BPIa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 03:25:34 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Feb 2012 17:24:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Thu, 16 Feb 2012 03:30:56 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 16 Feb 2012 00:30:56 -0800
+Message-ID: <4F3CBE3F.1090604@nvidia.com>
+Date: Thu, 16 Feb 2012 13:58:47 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "dunlap@xenotime.net" <dunlap@xenotime.net>, "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock
- splitting
-Message-Id: <20120216172409.5fa18608.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4F3C9798.7050800@openvz.org>
-References: <20120215224221.22050.80605.stgit@zurg>
-	<20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
-	<4F3C9798.7050800@openvz.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V1 2/3] Documentation: gpio: Add details of open-drain
+ configuration
+References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>	<1329114588-15430-3-git-send-email-ldewangan@nvidia.com>	<20120213211809.GI11077@ponder.secretlab.ca> <CACRpkdZzcN5oi0ejeTQn3BNJ_w6XHsBQ_RoQMvpf8Lt2bOARAg@mail.gmail.com>
+In-Reply-To: <CACRpkdZzcN5oi0ejeTQn3BNJ_w6XHsBQ_RoQMvpf8Lt2bOARAg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 09:43:52 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+On Thursday 16 February 2012 03:55 AM, Linus Walleij wrote:
+>> Have you though about support for lines that are pulled low instead of
+>> high?  Those aren't as common, but it is conceivable that some
+>> hardware would need it.
+> So if the idea is (if I get it correctly) that this thing is an input
+> sometimes and open drain/collector output sometimes, then
+> open source/emitter for the inverse situation is an equally valid
+> case right? In that case I think it'd be best to add both.
+>
+> The COH901 driver for U300 supports open source/emitter
+> BTW.
+>
 
-> KAMEZAWA Hiroyuki wrote:
-> > On Thu, 16 Feb 2012 02:57:04 +0400
-> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+Yes, I can add the open source also but like to be in incremental 
+change. Not together with open drain.
+We can go with:
+- open drain core driver support.
+- open drain sysfs interface support
+- open source core driver support
+- open source sysfs interface.
 
-> >> * optimize page to book translations, move it upper in the call stack,
-> >>    replace some struct zone arguments with struct book pointer.
-> >>
-> >
-> > a page->book transrater from patch 2/15
-> >
-> > +struct book *page_book(struct page *page)
-> > +{
-> > +	struct mem_cgroup_per_zone *mz;
-> > +	struct page_cgroup *pc;
-> > +
-> > +	if (mem_cgroup_disabled())
-> > +		return&page_zone(page)->book;
-> > +
-> > +	pc = lookup_page_cgroup(page);
-> > +	if (!PageCgroupUsed(pc))
-> > +		return&page_zone(page)->book;
-> > +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> > +	smp_rmb();
-> > +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-> > +			page_to_nid(page), page_zonenum(page));
-> > +	return&mz->book;
-> > +}
-> >
-> > What happens when pc->mem_cgroup is rewritten by move_account() ?
-> > Where is the guard for lockless access of this ?
-> 
-> Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
+I have already changes for the first 2 which we can review/apply,
+Meanwhile I will work on open source support.
 
-Hmm, VM_BUG_ON(!PageLRU(page)) ?
+Does it look good?
 
-move_account() overwrites pc->mem_cgroup with isolating page from LRU.
-but it doesn't take lru_lock.
-
-BTW, what amount of perfomance benefit ?
-
-Thanks,
--Kame
+> Yours,
+> Linus Walleij
 
