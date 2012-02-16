@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab2BPJNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 04:13:00 -0500
-Received: from kamaji.grokhost.net ([87.117.218.43]:46274 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab2BPJMv (ORCPT
+	id S932465Ab2BPJNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:13:13 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39105 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932239Ab2BPJNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 04:12:51 -0500
-Message-ID: <4F3CC88D.3020701@bootc.net>
-Date: Thu, 16 Feb 2012 09:12:45 +0000
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Thu, 16 Feb 2012 04:13:02 -0500
+Message-ID: <4F3CC899.4070302@monstr.eu>
+Date: Thu, 16 Feb 2012 10:12:57 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
-        nab@linux-iscsi.org
-Subject: Re: [PATCH v2 01/11] firewire: Add function to get speed from opaque
- struct fw_request
-References: <1328989452-20921-1-git-send-email-bootc@bootc.net> <1329317248-94128-1-git-send-email-bootc@bootc.net> <1329317248-94128-2-git-send-email-bootc@bootc.net> <20120215200919.10d9e2eb@stein> <4F3C0333.6060306@bootc.net> <20120215230151.3467cd8a@stein>
-In-Reply-To: <20120215230151.3467cd8a@stein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+CC: Ohad Ben-Cohen <ohad@wizery.com>, LKML <linux-kernel@vger.kernel.org>,
+        John Williams <john.williams@petalogix.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: remoteproc: Load coprocessor code to the specific main memory
+ location
+References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com> <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu>
+In-Reply-To: <4F3BC30A.4030301@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/02/2012 22:01, Stefan Richter wrote:
-> On Feb 15 Chris Boot wrote:
->> On 15/02/2012 19:09, Stefan Richter wrote:
->>> On Feb 15 Chris Boot wrote:
->>>> --- a/drivers/firewire/core-transaction.c
->>>> +++ b/drivers/firewire/core-transaction.c
->>>> @@ -820,6 +820,22 @@ void fw_send_response(struct fw_card *card,
->>>>    }
->>>>    EXPORT_SYMBOL(fw_send_response);
+Michal Simek wrote:
+> Michal Simek wrote:
+>> Ohad Ben-Cohen wrote:
+>>> On Mon, Feb 13, 2012 at 3:20 PM, Michal Simek <monstr@monstr.eu> wrote:
+>>>> Here is how it is achieve
+>>>>        ret = dma_declare_coherent_memory(&zynq_freertos.dev, 0,
+>>>>                                0, 0x10000000, DMA_MEMORY_MAP);
 >>>>
->>>> +/**
->>>> + * fw_get_request_speed() - Discover bus speed used for this request
->>>> + * @request:	The struct fw_request from which to obtain the speed.
->>>> + *
->>>> + * In certain circumstances it's important to be able to obtain the speed at
->>>> + * which a request was made to an address handler, for example when
->>>> + * implementing an SBP-2 or SBP-3 target. This function inspects the response
->>>> + * object to obtain the speed, which is copied from the request packet in
->>>> + * allocate_request().
->>>> + */
->>>> +int fw_get_request_speed(struct fw_request *request)
->>>> +{
->>>> +	return request->response.speed;
->>>> +}
->>>> +EXPORT_SYMBOL(fw_get_request_speed);
+>>>> which is fully compatible with remoteproc.
 >>>
->>> Uh oh, what have I done by asking for a comment? :-)
+>>> Great, this is what we've been doing with davinci too.
+>>
+>> Cool.
+>>
 >>>
->>> Can you tell what's wrong with this API documentation?
+>>>> Do you have any example of using it?
+>>>
+>>> What exactly are you looking for ? RTOS or Linux side ?
 >>
->> Better to have too much than too little? :-)
+>> Both side will be great. Rtos is freertos.
 >>
->> Linux 3.4, now with added Enterprise.
+>>>
+>>> On the Linux side, you can just make the rpmsg sample work (it's part
+>>> of the rpmsg patch set). For the RTOS side, feel free to just take our
+>>> code (it's BSD licensed and hosted on github) and adapt it to your
+>>> environment.
 >>
->> Shall I cut it down a bit?
->
-> a)  The implementation of the function should not be explained here;
-> after all it is meant to be opaque to API users.  Besides, if somebody
-> changes the implementation he will for sure forget to change the comment.
->
-> b)  It is fairly self-evident at which occasions an API user would want
-> to use this function.  (Everytime when he needs to know that speed.)
->
-> c)  The function call argument does not really need to be explained
-> either as soon as the purpose of the function has been made known.
->
-> So in my first response where I already acked your patch I should have
-> simply asked for
->
-> /**
->   * fw_get_request_speed() - returns speed at which the @request was received
->   */
->
-> to be added to your patch.  :-)
->
-> Patch review could be so easy for everyone involved if the reviewer knew
-> how to express himself...
+>> You mean that server_sample and rpmsg_omx right?
+>> I have also found rpmsg-omx demo application.
+>> What I am missing is how to probe rpmsg bus.
+>> Do you have any working example?
+>>
+>> Communication between cpus is done through swirqs. I have test sending 
+>> it from linux to rtos.
+> 
+> ok. How that rpmsg channels are created? Is it based on data sent from 
+> remoteproc?
+> Or based on resource table?
 
-I guess it comes from me just trying too hard... Will fix for v3.
+I should be more specific. Can you point me to remoteproc code which publish
+remote service based on them Linux rpmsg driver will be probed? It is rtos part of code.
+In your ELCE presentation is called rpmsg-client-sample service.
 
-Cheers,
-Chris
+Thanks,
+Michal
+
 
 -- 
-Chris Boot
-bootc@bootc.net
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
