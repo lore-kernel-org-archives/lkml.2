@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2BPS0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:26:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61548 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab2BPSZ6 (ORCPT
+	id S1754432Ab2BPScw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:32:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36391 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab2BPScv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:25:58 -0500
-Date: Thu, 16 Feb 2012 22:21:06 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120216182106.GA17020@albatros>
-References: <20120215184336.GA24182@redhat.com>
- <20120215195610.GJ4533@moon>
- <20120215195733.GA8021@albatros>
- <20120215200533.GQ1894@moon>
- <20120215202538.GK4533@moon>
- <20120215210934.GL4533@moon>
- <20120215215807.GM4533@moon>
- <20120216144954.GA11953@redhat.com>
- <20120216151340.GI1905@moon>
- <20120216164901.GD3849@moon>
-MIME-Version: 1.0
+	Thu, 16 Feb 2012 13:32:51 -0500
+Subject: Re: Uninline kcalloc
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216164901.GD3849@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1202160845320.25847@router.home>
+Date: Thu, 16 Feb 2012 13:32:45 -0500
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Content-Transfer-Encoding: 7bit
+Message-Id: <5716B9E7-4E65-42ED-B429-92B278BC1E56@gmail.com>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <FE5A0944-E520-4D3F-987E-A357411DD60B@gmail.com> <alpine.DEB.2.00.1202130958470.23562@router.home> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home> <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com> <alpine.DEB.2.00.1202141329360.24883@router.home> <20120214124518.f42bc03e.akpm@linux-foundation.org> <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com> <alpine.DEB.2.00.1202141503470.29019@router.home> <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com> <alpine.DEB.2.00.1202141605240.32407 @router.home> <07635976-4FC3-4E14-9B94-CE4D6446FD4E@gmail.com> <alpine.DEB.2.00.1202151324060.28225@router.home> <E307A48D-2146-4052-8A84-E7FA690A6703@gmail.com> <alpine.DEB.2.00.1202160845320.25847@router.home>
+To: Christoph Lameter <cl@linux.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 20:49 +0400, Cyrill Gorcunov wrote:
-> +	err = mutex_lock_killable(m1);
-> +	if (!err && likely(m1 != m2)) {
-> +		err = mutex_lock_killable_nested(m2, SINGLE_DEPTH_NESTING);
+On Feb 16, 2012, at 9:51 AM, Christoph Lameter wrote:
+> Then there is
+> 
+> vzalloc
+> kzalloc
+> vmalloc_32
+> alloc_bootmem (MAXORDER limit may not work)
+> alloc_remap
+> 
+> ...
+> 
+> This would also work for special subsystem allocations like
+> 
+> usb_alloc_coherent
+> dm_vcalloc
+> devres_alloc
+> 
+> ....
+> 
+> 
+> The use of a function or macro makes the overflow check much more
+> universal and allows these array allocations to occur with different
+> allocation functions throughout the kernel.
 
-Doesn't it lead to a deadlock?
+No, it does NOT.  It can be easily misued to introduce more bugs.
 
-mutex_lock_killable(task1)
-|					mutex_lock_killable(task2)
-mutex_lock_killable_nested(task2)	|
-(locked)				|
-					mutex_lock_killable_nested(task1)
-					(locked)
+1) Should calculate_array_size() return 0 on overflow, as you
+   orginally proposed?
 
-I suppose you should use some global lock (kcmp_lock) before both locks.
+No, as Dan, Pekka, and some others already pointed out.
 
-Thanks,
+2) Should calculate_array_size() return something like
+   KMALLOC_MAX_SIZE + 1?
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+No, because you intended to use it with other allocators such as
+vmalloc().
+
+3) Should calculate_array_size() return ULONG_MAX/SIZE_MAX/-1?
+
+No!  Consider devres_alloc() you mentioned.  Then you do
+
+devres_alloc(..., calculate_array_size(n, size), ...).
+
+It internally invokes kmalloc() with allocation size:
+
+sizeof(struct devres) + calculate_array_size(n, size).
+
+When n * size overflows, calculate_array_size() returns ULONG_MAX,
+and the allocation size wraps around to a small integer!
+
+I like the idea of "do not add an allocator unless necessary".
+However, "universal" calculate_array_size() just doesn't work,
+unless you can find the correct semantics or limit its use.
+It can be easily misused and bring more trouble than it's worth.
+
+- xi
+
