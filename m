@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2BPPEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:04:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44657 "EHLO mx1.redhat.com"
+	id S1753267Ab2BPPGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:06:37 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:16743 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751279Ab2BPPEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:04:21 -0500
-Date: Thu, 16 Feb 2012 17:04:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: shpc with acpi=off?
-Message-ID: <20120216150421.GA26167@redhat.com>
+	id S1751627Ab2BPPGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 10:06:36 -0500
+Subject: [RFC PATCH] SUNRPC: connect local transports synchronously
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Thu, 16 Feb 2012 19:06:25 +0400
+Message-ID: <20120216150507.19081.28659.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a box where shpc works fine with acpi,
-as well as when acpi is not built into kernel,
-but fails with acpi=off
-Some debugging seems to indicate that
-acpi_get_hp_hw_control_from_firmware
-fails with acpi=off.
+Local tranports uses UNIX sockets and connecting of these sockets is done in
+context of file system namespace (i.e. task file system root).
+Currenly, all sockets connect operations are performed by rpciod work queue,
+which actually means, that any service will be registered in the same rpcbind
+instance regardless to process file system root.
+This is not containers, which usually have it's own nested root. There are 2
+approaches, how to solve the problem. First one is to store proper root in
+tranport and switch to it in rpciod workqueue function for connect operations.
+But this looks ugly. The second one is to connect to unix sockets
+synchronously. This aptch implements the last one.
 
-Is this a bug or is there a reason to prevent shpc
-from working in this setup?
-Do we even care about acpi=off?
-Assuming we want to make acpi_get_hp_hw_control_from_firmware
-succeed with acpi=off, what is the best way to do this?
-Check acpi_pci_disabled?
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Thoughts?
--- 
-MST
+---
+ net/sunrpc/xprtsock.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
+
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 55472c4..365cd6d 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2177,6 +2177,26 @@ out:
+ }
+ 
+ /**
++ * xs_local_connect - connect a local (unix) socket to a remote endpoint
++ * @task: address of RPC task that manages state of connect request
++ *
++ * We have to connect unix sockets synchronously. Otherwise this connection
++ * will be done in file system context of rpciod queue, which is not suitable
++ * for processes with other root (changed root is a usual part of environment
++ * for containers).
++ */
++
++static void xs_local_connect(struct rpc_task *task)
++{
++	struct rpc_xprt *xprt = task->tk_xprt;
++	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct work_struct *work = &transport->connect_worker.work;
++
++	dprintk("RPC:       xs_local_connect xprt %p\n", xprt);
++	work->func(work);
++}
++
++/**
+  * xs_connect - connect a socket to a remote endpoint
+  * @task: address of RPC task that manages state of connect request
+  *
+@@ -2414,7 +2434,7 @@ static struct rpc_xprt_ops xs_local_ops = {
+ 	.release_xprt		= xs_tcp_release_xprt,
+ 	.rpcbind		= xs_local_rpcbind,
+ 	.set_port		= xs_local_set_port,
+-	.connect		= xs_connect,
++	.connect		= xs_local_connect,
+ 	.buf_alloc		= rpc_malloc,
+ 	.buf_free		= rpc_free,
+ 	.send_request		= xs_local_send_request,
+
