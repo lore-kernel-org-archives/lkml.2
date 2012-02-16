@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2BPAyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 19:54:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56173 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab2BPAyK (ORCPT
+	id S1756014Ab2BPA4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 19:56:16 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:59586 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab2BPA4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 19:54:10 -0500
-Date: Wed, 15 Feb 2012 16:54:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Wed, 15 Feb 2012 19:56:13 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 5C693821A8
+Date: Thu, 16 Feb 2012 01:56:08 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] introduce pmd_to_pte_t()
-Message-Id: <20120215165408.a111eefa.akpm@linux-foundation.org>
-In-Reply-To: <1328716302-16871-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1328716302-16871-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120216005608.GC21685@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
+ <20120215233537.GA20724@dev3310.snc6.facebook.com>
+ <20120215234724.GA21685@thinkpad>
+ <4F3C467B.1@fb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F3C467B.1@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  8 Feb 2012 10:51:41 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-
-> Casting pmd into pte_t to handle thp is strongly architecture dependent.
-> This patch introduces a new function to separate this dependency from
-> independent part.
+On Wed, Feb 15, 2012 at 03:57:47PM -0800, Arun Sharma wrote:
 > 
->
-> ...
->
-> --- 3.3-rc2.orig/include/asm-generic/pgtable.h
-> +++ 3.3-rc2/include/asm-generic/pgtable.h
-> @@ -434,6 +434,10 @@ static inline int pmd_trans_splitting(pmd_t pmd)
->  {
->  	return 0;
->  }
-> +static inline pte_t pmd_to_pte_t(pmd_t *pmd)
-> +{
-> +	return 0;
-> +}
+> 
+> On 2/15/12 3:47 PM, Andrea Righi wrote:
+> >>index 74b6a97..b4e45e6 100644
+> >>--- a/include/linux/fs.h
+> >>+++ b/include/linux/fs.h
+> >>@@ -9,7 +9,6 @@
+> >>  #include<linux/limits.h>
+> >>  #include<linux/ioctl.h>
+> >>  #include<linux/blk_types.h>
+> >>-#include<linux/kinterval.h>
+> >>  #include<linux/types.h>
+> >>
+> >>  /*
+> >>@@ -656,7 +655,7 @@ struct address_space {
+> >>  	spinlock_t		private_lock;	/* for use by the address_space */
+> >>  	struct list_head	private_list;	/* ditto */
+> >>  	struct address_space	*assoc_mapping;	/* ditto */
+> >>-	struct rb_root		nocache_tree;	/* noreuse cache range tree */
+> >>+	void			*nocache_tree;	/* noreuse cache range tree */
+> >>  	rwlock_t		nocache_lock;	/* protect the nocache_tree */
+> >>  } __attribute__((aligned(sizeof(long))));
+> >>  	/*
+> >
+> >mmh.. a forward declaration of rb_root in fs.h shouldn't be better than
+> >this?
+> >
+> 
+> Forward declaration works if the type was struct rb_root *. But the
+> type in your patch was a struct and the compiler can't figure out
+> its size.
+> 
+> include/linux/fs.h:659:17: error: field ‘nocache_tree’ has incomplete type
+> 
+> Did you mean forward declaring struct rb_node instead of rb_root?
+> 
+> If we go down this path, a few more places need fixups (I ignored
+> the compiler warnings about casting void * to struct rb_root *).
+> 
+>  -Arun
 
-This doesn't compile.
+Oh sorry, you're right! nocache_tree is not a pointer inside
+address_space, so the compiler must know the size.
 
-And I can't think of a sensible way of generating a stub for this
-operation - if you have a pmd_t and want to convert it to a pte_t then
-just convert it, dammit.  And there's no rationality behind making that
-conversion unavailable or inoperative if CONFIG_TRANSPARENT_HUGEPAGE=n?
+mmh... move the definition of the rb_root struct in linux/types.h? or
+simply use a rb_root pointer. The (void *) looks a bit scary and too bug
+prone.
 
-Shudder.  I'll drop the patch.  Rethink, please.
+-Andrea
