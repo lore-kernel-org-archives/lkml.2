@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab2BPN4b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 08:56:31 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:51516 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189Ab2BPN41 (ORCPT
+	id S1751583Ab2BPN6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 08:58:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40800 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2BPN63 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 08:56:27 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Danny Kukawka <dkukawka@suse.de>, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/blackfin/mach-bf537/boards/pnav10.c: included linux/export.h twice
-Date: Thu, 16 Feb 2012 14:56:24 +0100
-Message-Id: <1329400584-32069-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.8.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329400587;6b0464ba;
+	Thu, 16 Feb 2012 08:58:29 -0500
+Message-ID: <1329400699.2293.221.camel@twins>
+Subject: Re: [PATCH v3 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ definition
+From: Peter Zijlstra <peterz@infradead.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <will.deacon@arm.com>
+Date: Thu, 16 Feb 2012 14:58:19 +0100
+In-Reply-To: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
+References: <1327081352-13178-1-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/blackfin/mach-bf537/boards/pnav10.c: included 'linux/export.h'
-twice. No need to include the file a second time in a #ifdef block
-if already included at top. Remove the duplicate.
+On Fri, 2012-01-20 at 17:42 +0000, Catalin Marinas wrote:
+> Hi,
+> 
+> This is version 3 of the set of patches removing
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW on ARM. The series was rebased on top of
+> 3.3-rc1 and fixed the conflicts with the kernel/sched/ changes and the
+> ARM LPAE patches. There are no functional changes from v2. I plan to
+> push this to -next and get it ready for 3.4-rc1.
+> 
+> Question for Peter/Ingo - how do we merge the first patch that
+> introduces finish_arch_post_lock_switch? Do you pick it up or I can
+> merge it via rmk (with your ack)?
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- arch/blackfin/mach-bf537/boards/pnav10.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Russell, what's the status of these patches? I'd like to see them land
+in 3.4 if possible.
 
-diff --git a/arch/blackfin/mach-bf537/boards/pnav10.c b/arch/blackfin/mach-bf537/boards/pnav10.c
-index 6fd8470..7d15a30 100644
---- a/arch/blackfin/mach-bf537/boards/pnav10.c
-+++ b/arch/blackfin/mach-bf537/boards/pnav10.c
-@@ -101,7 +101,6 @@ static struct platform_device smc91x_device = {
- 
- #if defined(CONFIG_BFIN_MAC) || defined(CONFIG_BFIN_MAC_MODULE)
- #include <linux/bfin_mac.h>
--#include <linux/export.h>
- static const unsigned short bfin_mac_peripherals[] = P_RMII0;
- 
- static struct bfin_phydev_platform_data bfin_phydev_data[] = {
--- 
-1.7.8.3
-
+If you take them in your arm tree, I can ask Ingo to pull from there and
+then I can build on them from there..
