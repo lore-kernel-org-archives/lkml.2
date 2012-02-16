@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2BPFnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:43:47 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:33379 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752361Ab2BPFno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:43:44 -0500
-Message-ID: <1329371019.5082.9.camel@joe2Laptop>
-Subject: Re: [PATCH 4/4] PCI: quirk print dev name with duration
-From: Joe Perches <joe@perches.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>
-Date: Wed, 15 Feb 2012 21:43:39 -0800
-In-Reply-To: <CAE9FiQUK8m5KKb0or59wH7BD6Eo5ddx9NaF7vszNeR0T3UYMRw@mail.gmail.com>
-References: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
-	 <1329369296-4255-5-git-send-email-yinghai@kernel.org>
-	 <1329369930.5082.4.camel@joe2Laptop>
-	 <CAE9FiQUK8m5KKb0or59wH7BD6Eo5ddx9NaF7vszNeR0T3UYMRw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753249Ab2BPFoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:44:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49485 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab2BPFn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 00:43:56 -0500
+Message-ID: <4F3C9798.7050800@openvz.org>
+Date: Thu, 16 Feb 2012 09:43:52 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
+References: <20120215224221.22050.80605.stgit@zurg> <20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-15 at 21:35 -0800, Yinghai Lu wrote:
-> On Wed, Feb 15, 2012 at 9:25 PM, Joe Perches <joe@perches.com> wrote:
-> > On Wed, 2012-02-15 at 21:14 -0800, Yinghai Lu wrote:
-> >> So could find out which device is involved with the calling
-> > []
-> >> +++ linux-2.6/drivers/pci/quirks.c
-> >> @@ -2854,14 +2854,15 @@ static void do_one_fixup_debug(void (*fn
-> >>       ktime_t calltime, delta, rettime;
-> >>       unsigned long long duration;
-> >>
-> >> -     printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
-> >> +     printk(KERN_DEBUG "calling  %pF @ %i for %s\n",
-> >> +                     fn, task_pid_nr(current), dev_name(&dev->dev));
-> >
-> > Might be better to use dev_dbg
-> >
-> >        dev_dbg(&dev->dev, "calling %pF @ %i\n", fn, task_pid_nr(current));
-> >
-> > []
-> >
-> >> -     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs\n", fn,
-> >> -             duration);
-> >> +     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs for %s\n",
-> >> +                     fn, duration, dev_name(&dev->dev));
-> >
-> >        dev_dbg(&dev->dev, "pci fixup %pF returned after %llu usecs\n",
-> >                fn, duration);
-> 
-> Not sure if that is going to break Arjan 's tool that analyze the boot time.
+KAMEZAWA Hiroyuki wrote:
+> On Thu, 16 Feb 2012 02:57:04 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> There should be no logic changes in this patchset, this is only tossing bits around.
+>> [ This patchset is on top some memcg cleanup/rework patches,
+>>    which I sent to linux-mm@ today/yesterday ]
+>>
+>> Most of things in this patchset are self-descriptive, so here brief plan:
+>>
+>
+> AFAIK, Hugh Dickins said he has per-zone-per-lru-lock and is testing it.
+> So, please CC him and Johannes, at least.
+>
 
-That depends on the tool code.
-Either change might break it.
-Did you test your change with Arjan's tool?
-Do you have a link to the tool?
+Ok
+
+>
+>> * Transmute struct lruvec into struct book. Like real book this struct will
+>>    store set of pages for one zone. It will be working unit for reclaimer code.
+>> [ If memcg is disabled in config there will only one book embedded into struct zone ]
+>>
+>
+> Why you need to add new structure rahter than enhancing lruvec ?
+> "book" means a binder of pages ?
+>
+
+I responded to this in the reply to Hugh Dickins.
+
+>
+>> * move page-lru counters to struct book
+>> [ this adds extra overhead in add_page_to_lru_list()/del_page_from_lru_list() for
+>>    non-memcg case, but I believe it will be invisible, only one non-atomic add/sub
+>>    in the same cacheline with lru list ]
+>>
+>
+> This seems straightforward.
+>
+>> * unify inactive_list_is_low_global() and cleanup reclaimer code
+>> * replace struct mem_cgroup_zone with single pointer to struct book
+>
+> Hm, ok.
+>
+>> * optimize page to book translations, move it upper in the call stack,
+>>    replace some struct zone arguments with struct book pointer.
+>>
+>
+> a page->book transrater from patch 2/15
+>
+> +struct book *page_book(struct page *page)
+> +{
+> +	struct mem_cgroup_per_zone *mz;
+> +	struct page_cgroup *pc;
+> +
+> +	if (mem_cgroup_disabled())
+> +		return&page_zone(page)->book;
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	if (!PageCgroupUsed(pc))
+> +		return&page_zone(page)->book;
+> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+> +	smp_rmb();
+> +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
+> +			page_to_nid(page), page_zonenum(page));
+> +	return&mz->book;
+> +}
+>
+> What happens when pc->mem_cgroup is rewritten by move_account() ?
+> Where is the guard for lockless access of this ?
+
+Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
+After final patch all page_book() calls are collected in [__re]lock_page_book[_irq]() functions.
+They pick some book reference, lock its lru and recheck page -> book reference in loop till success.
+
+Currently I found there only one potential problem: free_mem_cgroup_per_zone_info() in "mm: memory bookkeeping core"
+maybe should call spin_unlock_wait(&zone->lru_lock), because some guy can pick page_book(pfn_to_page(pfn))
+and try to isolate this page. But I not sure, how this is possible. In final patch it is totally fixed with rcu.
+
+>
+> Thanks,
+> -Kame
+>
 
