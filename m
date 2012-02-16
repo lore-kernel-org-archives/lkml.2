@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab2BPSRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:17:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50278 "EHLO mx1.redhat.com"
+	id S1754566Ab2BPSSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:18:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40812 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab2BPSRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:17:49 -0500
-Date: Thu, 16 Feb 2012 18:27:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: apw@canonical.com, arjan@linux.intel.com, fhrbata@redhat.com,
-        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        rientjes@google.com, rusty@rustcorp.com.au, tj@kernel.org,
+	id S1754495Ab2BPSSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 13:18:09 -0500
+Date: Thu, 16 Feb 2012 15:35:34 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] coredump_wait: don't call complete_vfork_done()
-Message-ID: <20120216172724.GD30393@redhat.com>
-References: <20120214164709.GA21178@redhat.com> <20120214164914.GF21185@redhat.com> <20120215123049.6e938eed.akpm@linux-foundation.org> <20120216150429.GB11953@redhat.com> <20120216172626.GA30393@redhat.com>
+Subject: Re: [PATCHv5 0/8] perf tool: parser generator for events parsing
+Message-ID: <20120216173534.GG27941@infradead.org>
+References: <1329393652-6055-1-git-send-email-jolsa@redhat.com> <1329411783.2293.257.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120216172626.GA30393@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1329411783.2293.257.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that CLONE_VFORK is killable, coredump_wait() no longer needs
-complete_vfork_done(). zap_threads() should find and kill all tasks
-with the same ->mm, this includes our parent if ->vfork_done is set.
+Em Thu, Feb 16, 2012 at 06:03:03PM +0100, Peter Zijlstra escreveu:
+> On Thu, 2012-02-16 at 13:00 +0100, Jiri Olsa wrote:
+> > hi,
+> > here's new version of event parsing patchset.
+> > 
+> > I saw Arnaldo already sent patches 1-3 to Ingo, but they did not make it
+> > to the tree yet, so I'm still attaching them here.
 
-mm_release() becomes the only caller, unexport complete_vfork_done().
+Right, I'll take the rest (read this just now, keeping the dup comments
+below :-) ).
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- fs/exec.c             |   14 ++------------
- include/linux/sched.h |    1 -
- kernel/fork.c         |    2 +-
- 3 files changed, 3 insertions(+), 14 deletions(-)
+> > v5 changes:
+> >  4/8 - patch updated by Peter with actual format definitions
+> >        for x86 processors
+> >  6/8 - added hardcoded terms for config[12] and sample_period
+> >        the code is ready to include branch_sample_type once
+> >        this field is available in perf_event_attr, just
+> >        uncommenting one line.. ;) 
+> >      - allow config option to be used without value in which
+> >        case 1 is assigned as value
+> > 
+> > Overall summarize:
+> >  - adding event parser bison/flex generator
+> >  - the event syntax stays as it was
+> >  - adding event format sysfs group attribute
+> >    for pmu device
+> >  - adding new syntax to specify raw events based
+> >    on the sysfs pmu's format attribute
+> >    eg. "cpu/config=1,config1=2,config2=3/u"
+> > 
+> > Attached patches:
+> >  1/8 perf, tool: Remove unused functions from debugfs object
+> >  2/8 perf, tool: Add sysfs mountpoint interface
+> >  3/8 perf, tool: Add bitmap_or function into bitmap object
+> >  4/8 perf: Adding sysfs group format attribute for pmu device
+> >  5/8 perf, tool: Add parser generator for events parsing
+> >  6/8 perf, tool: Add config options support for event parsing
+> >  7/8 perf, tool: Add perf pmu object to access pmu format definition
+> >  8/8 perf, tool: Add support to specify pmu style event
+> 
+> I'm fine with this going fwd, and since this is mostly tools/perf I
+> suggest acme take it, so:
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Also, it might make sense to CC everybody who has/maintains a hardware
+> pmu implementation on patch 4.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index dccdcec..153dee1 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1926,19 +1926,9 @@ static int coredump_wait(int exit_code, struct core_state *core_state)
- 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
- 	up_write(&mm->mmap_sem);
- 
--	if (unlikely(core_waiters < 0))
--		goto fail;
--
--	/*
--	 * Make sure nobody is waiting for us to release the VM,
--	 * otherwise we can deadlock when we wait on each other
--	 */
--	if (tsk->vfork_done)
--		complete_vfork_done(tsk);
--
--	if (core_waiters)
-+	if (core_waiters > 0)
- 		wait_for_completion(&core_state->startup);
--fail:
-+
- 	return core_waiters;
- }
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b646771..11fcafa 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2291,7 +2291,6 @@ extern int do_execve(const char *,
- 		     const char __user * const __user *,
- 		     const char __user * const __user *, struct pt_regs *);
- extern long do_fork(unsigned long, unsigned long, struct pt_regs *, unsigned long, int __user *, int __user *);
--extern void complete_vfork_done(struct task_struct *tsk);
- struct task_struct *fork_idle(int);
- 
- extern void set_task_comm(struct task_struct *tsk, char *from);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index fc2c2f0..57ebebb 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -667,7 +667,7 @@ struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
- 	return mm;
- }
- 
--void complete_vfork_done(struct task_struct *tsk)
-+static void complete_vfork_done(struct task_struct *tsk)
- {
- 	struct completion *vfork;
- 
--- 
-1.5.5.1
+I'll do it, I already merged patch 1, 2, 3 in my perf/core branch, will
+look and merge the rest, adding your a-b.
 
-
+- Arnaldo
