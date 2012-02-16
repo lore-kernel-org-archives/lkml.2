@@ -1,82 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab2BPFGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:06:09 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58736 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2BPFGF (ORCPT
+	id S1751823Ab2BPFPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:15:22 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:38805 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab2BPFPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:06:05 -0500
-Date: Thu, 16 Feb 2012 16:05:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "James M. Leddy" <james.leddy@canonical.com>
-Subject: linux-next: manual merge of the akpm tree with the wireless tree
-Message-Id: <20120216160551.dd41d2675bab32ff23afd712@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ"
+	Thu, 16 Feb 2012 00:15:18 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 1/4] PCI: Add class support in quirk handling
+Date: Wed, 15 Feb 2012 21:14:53 -0800
+Message-Id: <1329369296-4255-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
+References: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4F3C90E4.0019,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Recently there is new support to make quirk calling will report duration time.
+That will boot log get more print out with initcall_debug is specified.
 
-Hi Adnrew,
+Found a lot of quirks are calling for not related devices.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/bluetooth/btusb.c between commit 403f048a5705 ("Bluetooth: btusb:
-Add vendor specific ID (0a5c 21f3) for BCM20702A0") from the wireless
-tree and commit "bluetooth: add support for BCM20702A0 [0a5c:21e6]" from
-the akpm tree.
+Reason is quirk frame do not support class handling. So quirk code have to
+use PCI_ANY_ID for vendor/device and let quirk code itself to check class
+inside the func.
 
-I fixed it up (see below) an can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The patch add class and cls_shift into struct pci_fixup.
+Also update related macro to accept the class and shift.
 
-diff --cc drivers/bluetooth/btusb.c
-index 789c9b5,e618cf1..0000000
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@@ -102,7 -102,7 +102,8 @@@ static struct usb_device_id btusb_table
- =20
-  	/* Broadcom BCM20702A0 */
-  	{ USB_DEVICE(0x0a5c, 0x21e3) },
-+ 	{ USB_DEVICE(0x0a5c, 0x21e6) },
- +	{ USB_DEVICE(0x0a5c, 0x21f3) },
-  	{ USB_DEVICE(0x413c, 0x8197) },
- =20
-  	{ }	/* Terminating entry */
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/quirks.c |   19 ++++++++++--------
+ include/linux/pci.h  |   53 ++++++++++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 53 insertions(+), 19 deletions(-)
 
---Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPPI6vAAoJEECxmPOUX5FENSAQAKI3X48I5g7m8Kmtrf4CPnb3
-nJMSQFC/xb8vJrJuFe/l9+Mz3JNi7yL96Hd4GjTqZdAklkerOPDSGcUZjwnkyV2c
-vUc0qh7lwWXFrARl9Q6dxznpNWMNvdroqpZ3ZkMS3ne/5uF1MaORWYQPUFpBIZXh
-Nx2pSnm99Qo9uAYtIw4zPJsErs19exA4JE34cgY2G42Jd/EGSeML2T8Vvw0FoOE7
-jTucktPEwWOTHLzws0NjBSDnjBqu8gqLT7Fj8/LXFeH40HlK8cdMK85BKpMQ0+Ce
-6vNovA6beUJRYtl7QsuC1YYguqyhtwb5kLHnD2R/vd79S7psheiwRBH+EkWptdrD
-7qmqH9EgpS3O6XeQyCnr6wVslrRd8LmyZLIsCp40PfEdzFcsXdLq/RQQ3BXwVCaR
-g8PAEVE/Kph0G+kK+YvD2ugDJC6IdXWyIQCr7y081zKI+ufyDJbAL6aEcQiO8vrV
-6Xr5WKmUhiSgfyYDjOYd4VK7CNLLxkipRNkd0qa5VJRo/h6xCPMh9DEt8mmm8+z1
-Oc26LQHWfKMuFY8FM6KleHSzBMEWbZwr785Xep3TI161Sgdy0uAwaw/Xmi6X8+FO
-0yW7U8O51iIEVU3cGT73mJZ4fm0LWuREwjU9la9IpXzEJaFQl8LHE27jNyXQPrSp
-Moe6qpnQ0kN/v+h776ud
-=Wy2m
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ--
+Index: linux-2.6/drivers/pci/quirks.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/quirks.c
++++ linux-2.6/drivers/pci/quirks.c
+@@ -2914,14 +2914,15 @@ static void do_one_fixup_debug(void (*fn
+ 	ktime_t calltime, delta, rettime;
+ 	unsigned long long duration;
+ 
+-	printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
++	printk(KERN_DEBUG "calling  %pF @ %i for %s\n",
++			fn, task_pid_nr(current), dev_name(&dev->dev));
+ 	calltime = ktime_get();
+ 	fn(dev);
+ 	rettime = ktime_get();
+ 	delta = ktime_sub(rettime, calltime);
+ 	duration = (unsigned long long) ktime_to_ns(delta) >> 10;
+-	printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs\n", fn,
+-		duration);
++	printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs for %s\n",
++			fn, duration, dev_name(&dev->dev));
+ }
+ 
+ /*
+@@ -2961,17 +2962,19 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_IN
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
+-	while (f < end) {
+-		if ((f->vendor == dev->vendor || f->vendor == (u16) PCI_ANY_ID) &&
+-		    (f->device == dev->device || f->device == (u16) PCI_ANY_ID)) {
++	for (; f < end; f++)
++		if ((f->class == (u32) (dev->class >> f->cls_shift) ||
++		     f->class == (u32) PCI_ANY_ID) &&
++		    (f->vendor == dev->vendor ||
++		     f->vendor == (u16) PCI_ANY_ID) &&
++		    (f->device == dev->device ||
++		     f->device == (u16) PCI_ANY_ID)) {
+ 			dev_dbg(&dev->dev, "calling %pF\n", f->hook);
+ 			if (initcall_debug)
+ 				do_one_fixup_debug(f->hook, dev);
+ 			else
+ 				f->hook(dev);
+ 		}
+-		f++;
+-	}
+ }
+ 
+ extern struct pci_fixup __start_pci_fixups_early[];
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -1389,7 +1389,10 @@ static inline void pci_resource_to_user(
+  */
+ 
+ struct pci_fixup {
+-	u16 vendor, device;	/* You can use PCI_ANY_ID here of course */
++	u16 vendor;		/* You can use PCI_ANY_ID here of course */
++	u16 device;		/* You can use PCI_ANY_ID here of course */
++	u32 class;		/* You can use PCI_ANY_ID here too */
++	unsigned int cls_shift;	/* should be 0, 8, 16 */
+ 	void (*hook)(struct pci_dev *dev);
+ };
+ 
+@@ -1404,30 +1407,58 @@ enum pci_fixup_pass {
+ };
+ 
+ /* Anonymous variables would be nice... */
+-#define DECLARE_PCI_FIXUP_SECTION(section, name, vendor, device, hook)	\
+-	static const struct pci_fixup __pci_fixup_##name __used		\
+-	__attribute__((__section__(#section))) = { vendor, device, hook };
++#define DECLARE_PCI_FIXUP_SECTION(section, name, vendor, device, c, cs, hook)\
++	static const struct pci_fixup const __pci_fixup_##name __used	     \
++	__attribute__((__section__(#section), aligned((sizeof(void *)))))    \
++		= { vendor, device, c, cs, hook };
++
++#define DECLARE_PCI_FIXUP_CLASS_EARLY(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_early,			\
++		vendor##device##hook, vendor, device, cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_HEADER(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_header,			\
++		vendor##device##hook, vendor, device, cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_FINAL(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_final,			\
++		vendor##device##hook, vendor, device, cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_ENABLE(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_enable,			\
++		vendor##device##hook, vendor, device, cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_RESUME(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume,			\
++		resume##vendor##device##hook, vendor, device, cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_RESUME_EARLY(vendor, device, cls, clt, hook) \
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume_early,		\
++		resume_early##vendor##device##hook, vendor, device,	\
++		cls, clt, hook)
++#define DECLARE_PCI_FIXUP_CLASS_SUSPEND(vendor, device, cls, clt, hook)	\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
++		suspend##vendor##device##hook, vendor, device, cls, clt, hook)
++
+ #define DECLARE_PCI_FIXUP_EARLY(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_early,			\
+-			vendor##device##hook, vendor, device, hook)
++		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_HEADER(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_header,			\
+-			vendor##device##hook, vendor, device, hook)
++		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_FINAL(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_final,			\
+-			vendor##device##hook, vendor, device, hook)
++		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_ENABLE(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_enable,			\
+-			vendor##device##hook, vendor, device, hook)
++		vendor##device##hook, vendor, device, PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_RESUME(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume,			\
+-			resume##vendor##device##hook, vendor, device, hook)
++		resume##vendor##device##hook, vendor, device,		\
++		PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_RESUME_EARLY(vendor, device, hook)		\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_resume_early,		\
+-			resume_early##vendor##device##hook, vendor, device, hook)
++		resume_early##vendor##device##hook, vendor, device,	\
++		PCI_ANY_ID, 0, hook)
+ #define DECLARE_PCI_FIXUP_SUSPEND(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
+-			suspend##vendor##device##hook, vendor, device, hook)
++		suspend##vendor##device##hook, vendor, device,		\
++		PCI_ANY_ID, 0, hook)
+ 
+ #ifdef CONFIG_PCI_QUIRKS
+ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
