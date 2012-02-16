@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2BPQWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 11:22:13 -0500
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:46470 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752425Ab2BPQWL (ORCPT
+	id S1752976Ab2BPQWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 11:22:51 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:57751 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab2BPQWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 11:22:11 -0500
-Message-ID: <4F3D2D30.8070403@akamai.com>
-Date: Thu, 16 Feb 2012 10:22:08 -0600
-From: Josh Hunt <johunt@akamai.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Thu, 16 Feb 2012 11:22:49 -0500
+Message-ID: <4F3D2D55.8000104@garzik.org>
+Date: Thu, 16 Feb 2012 11:22:45 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2] compat: poll() in 32-bit applications does not
- handle negative timeout values properly on 64-bit kernels
-References: <4F3602A9.3060206@akamai.com> <1328975240.5661.31.camel@edumazet-laptop>
-In-Reply-To: <1328975240.5661.31.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        Norbert Preining <preining@logic.at>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        "stern@rowland.harvard.edu >> Alan Stern" <stern@rowland.harvard.edu>,
+        linux-ide@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>, valdis.kletnieks@vt.edu,
+        Mark Lord <kernel@teksavvy.com>
+Subject: Re: Regression 3.2 -> 3.3-rc1 10 sec hang at boot and resume, COMRESET
+ failed
+References: <20120206024052.GI9413@gamma.logic.tuwien.ac.at> <1328496591.15079.40.camel@minggr> <20120206031528.GA16093@gamma.logic.tuwien.ac.at> <1328503376.15079.55.camel@minggr> <20120206161943.GA3926@google.com> <CAN8TOE9SM1X_rQCScE8hCZYrWVY9K-B_TM+Vvzx3tZQ2LoGxXw@mail.gmail.com> <20120213174445.GD12117@google.com> <CAN8TOE-hFvDs4mGeYVRBDyfbyg8t_7YXDintLeG1QHvMXhVh+A@mail.gmail.com> <20120215165706.GA24986@google.com> <4F3BF989.8060607@garzik.org> <20120215183139.GC24986@google.com> <4F3C04EF.7070404@garzik.org> <CAN8TOE8cuUU_Gh5gPKNWQGvunMdzDf9nLNq3GqoQuwvdnD1p8g@mail.gmail.com>
+In-Reply-To: <CAN8TOE8cuUU_Gh5gPKNWQGvunMdzDf9nLNq3GqoQuwvdnD1p8g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2012 09:47 AM, Eric Dumazet wrote:
-> Le vendredi 10 février 2012 à 23:54 -0600, Josh Hunt a écrit :
->> We have hit an issue where our 32-bit applications using poll() and
->> passing in a value of -1 for the timeout value return after ~49 days
->> (2^32 msec), instead of waiting indefinitely. I've instrumented the
->> kernel and found we are hitting the case where poll() believes we've
->> passed in a positive number and thus creates a timespec, etc. I've
->> implemented compat_sys_poll() to sign-extend the timeout value and
->> resolve the issue.
+On 02/15/2012 06:39 PM, Brian Norris wrote:
+> On Wed, Feb 15, 2012 at 11:18 AM, Jeff Garzik<jeff@garzik.org>  wrote:
+>> On 02/15/2012 01:31 PM, Tejun Heo wrote:
+>>> The problem is that there's no way to identify the controller in
+>>> question, so we can't do this automatically, so might just as well do
+>>> it in the simplest way for now.  :(
 >>
->> There was an almost identical patch submitted last year, but for
->> whatever reason did not make it in:
->> https://lkml.org/lkml/2011/9/18/19
-> 
-> Probably because Thomas Meyer didnt answer to patch reviewers, and not
-> enough people cared.
-> 
-> By the way, an inline patch is better, as stated in
-> Documentation/SubmittingPatches
-> 
-> Anyway, its time to fix this bug...
-> 
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> 
+>>
+>> See ahci_devtype[] and ahci_port_info[] in ahci_platform.c for how to do
+>> this.  Brian would not have to tweak the driver out of tree as claimed; we
+>> put all changes in tree, and the platform calls itself "spec-strict-ahci" or
+>> whatever string you prefer.
+>
+> OK, so can it seems I would add a flag in include/linux/libata.h that
+> can be added to a new entry in ahci_port_info[]? It seems a little
+> awkward to put in "libata.h", plus I'm not sure if all the flags have
+> direct meaning to ATA or if they can be AHCI-specific.
 
-I can resubmit the patch inline if you feel that will get more attention
-by whoever needs to do the final approval on this.
+Nothing needs to go into libata.h.  grep for IMX53_AHCI, and see how 
+that differentiates ata_port_info information.  There you may vary 
+AHCI-specific flags (defined in ahci.h), port operations, or anything 
+else specific to the controller.
 
-Josh
+Create a flag, add it to ahci.h, guard the spec-strict behavior creating 
+problems with said flag, and apply said flag to your controller in 
+ahci_platform.
+
+	Jeff
 
 
