@@ -1,154 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2BPS54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 13:57:56 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:57512
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752037Ab2BPS5x (ORCPT
+	id S1754801Ab2BPS6C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 13:58:02 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:37220 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2BPS56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 13:57:53 -0500
-X-SpamScore: -8
-X-BigFish: VPS-8(zz444eM13e6Kzz1202hzz8275bh8275dhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZI20C-01-EH9-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>, Michal Marek <mmarek@suse.cz>,
-        maximilian attems <max@stro.at>, Ben Hutchings <ben@decadent.org.uk>,
-        <debian-kernel@lists.debian.org>, <linux-kbuild@vger.kernel.org>
-Subject: [RFC PATCH] kbuild: Build linux-tools package with 'make deb-pkg'
-Date: Thu, 16 Feb 2012 19:57:44 +0100
-Message-ID: <1329418664-1750-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 16 Feb 2012 13:57:58 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 51A698232F
+Date: Thu, 16 Feb 2012 19:57:53 +0100
+From: Andrea Righi <andrea@betterlinux.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Julius Plenz <julius@plenz.com>, linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3/3] fadvise: implement POSIX_FADV_NOREUSE
+Message-ID: <20120216185753.GD13354@thinkpad>
+References: <1329006098-5454-1-git-send-email-andrea@betterlinux.com>
+ <1329006098-5454-4-git-send-email-andrea@betterlinux.com>
+ <20120215233537.GA20724@dev3310.snc6.facebook.com>
+ <20120215234724.GA21685@thinkpad>
+ <4F3C467B.1@fb.com>
+ <20120216005608.GC21685@thinkpad>
+ <4F3C6594.3030709@fb.com>
+ <20120216103944.GA1440@thinkpad>
+ <4F3D4E34.9060105@fb.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3D4E34.9060105@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also build a linux-tools package for installation so that
-common tools run without issues (e.g. perf).
+On Thu, Feb 16, 2012 at 10:43:00AM -0800, Arun Sharma wrote:
+> On 2/16/12 2:39 AM, Andrea Righi wrote:
+> 
+> >Arun, thank you very much for your review and testing. Probably we'll
+> >move to a different, memcg-based solution, so I don't think I'll post
+> >another version of this patch set as is. In case, I'll apply one of
+> >the workarounds for the rb_root attribute.
+> 
+> I'm not sure if the proposed memory.file.limit_in_bytes is the right
+> interface. Two problems:
+> 
+> * The user is now required to figure out what is the right amount of
+> page cache for the app (may change over time)
 
-[RFC note: This may break with x-compilation when the
-           x-compilation environment is not set up to
-	   compile user-space programs. Is that acceptable?
-	   I also thought about a compile-time parameter
-	   such as 'make TOOLS=1 deb-pkg' or a special
-	   'make deb-tools-pkg' target.	Opinions? ]
+Right.
 
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: maximilian attems <max@stro.at>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: debian-kernel@lists.debian.org
-Cc: linux-kbuild@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- scripts/package/builddeb |   55 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 54 insertions(+), 1 deletions(-)
+> 
+> * If the app touches two sets of files, one with streaming access
+> and the other which benefits from page cache (eg: a mapper task in a
+> map reduce), memcg doesn't allow the user to specify the access
+> pattern per-fd.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index eee5f8e..8466380 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -78,17 +78,19 @@ tmpdir="$objtree/debian/tmp"
- fwdir="$objtree/debian/fwtmp"
- kernel_headers_dir="$objtree/debian/hdrtmp"
- libc_headers_dir="$objtree/debian/headertmp"
-+tools_dir="$objtree/debian/toolstmp"
- packagename=linux-image-$version
- fwpackagename=linux-firmware-image
- kernel_headers_packagename=linux-headers-$version
- libc_headers_packagename=linux-libc-dev
-+tools_packagename=linux-tools-$version
- 
- if [ "$ARCH" = "um" ] ; then
- 	packagename=user-mode-linux-$version
- fi
- 
- # Setup the directory structure
--rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-+rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$tools_dir"
- mkdir -m 755 -p "$tmpdir/DEBIAN"
- mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
- mkdir -m 755 -p "$fwdir/DEBIAN"
-@@ -98,6 +100,9 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
- mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
- mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
- mkdir -p "$kernel_headers_dir/lib/modules/$version/"
-+mkdir -m 755 -p "$tools_dir/DEBIAN"
-+mkdir -p "$tools_dir/usr/share/doc/$tools_packagename"
-+mkdir -p "$tools_dir/usr/bin/"
- if [ "$ARCH" = "um" ] ; then
- 	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
- fi
-@@ -120,6 +125,39 @@ else
- 	fi
- fi
- 
-+# Build the tools
-+num_tools="0"
-+tools_flavour_abi=${version#*-}
-+tools_flavour=${tools_flavour_abi#*-}
-+tools_version=${version%-$tools_flavour}
-+if grep -q '^CONFIG_PERF_EVENTS=y' .config ; then
-+	# Build perf
-+	(
-+	 mkdir -p $objtree/tools/perf
-+	 cd "$srctree/tools/perf"
-+	 $MAKE LDFLAGS= O=$O/tools/perf
-+	 cp $objtree/tools/perf/perf "$tools_dir/usr/bin/perf_$tools_version"
-+	)
-+	num_tools=$(($num_tools+1))
-+fi
-+
-+if [[ "$ARCH" = "i386" || "$ARCH" = "x86_64" ]]; then
-+	# Build turbostat
-+	(
-+	 cd "$srctree/tools/power/x86/turbostat/"
-+	 $MAKE 
-+	 cp turbostat "$tools_dir/usr/bin/turbostat_$tools_version"
-+	)
-+
-+	# Build x86_energy_perf_policy
-+	(
-+	 cd "$srctree/tools/power/x86/x86_energy_perf_policy"
-+	 $MAKE 
-+	 cp x86_energy_perf_policy "$tools_dir/usr/bin/x86_energy_perf_policy_$tools_version"
-+	)
-+	num_tools=$(($num_tools+2))
-+fi
-+
- if grep -q '^CONFIG_MODULES=y' .config ; then
- 	INSTALL_MOD_PATH="$tmpdir" $MAKE KBUILD_SRC= modules_install
- 	rm -f "$tmpdir/lib/modules/$version/build"
-@@ -291,9 +329,24 @@ Description: Linux support headers for userspace development
-  are used by the installed headers for GNU glibc and other system libraries.
- EOF
- 
-+cat <<EOF >> debian/control
-+
-+Package: $tools_packagename
-+Section: devel
-+Architecture: $arch
-+Depends: \${shlibs:Depends}, linux-tools-common
-+Description: Linux kernel tools for version $version
-+ This package provides the architecture dependant parts for kernel
-+ version locked tools for version $version
-+EOF
-+
- if [ "$ARCH" != "um" ]; then
- 	create_package "$kernel_headers_packagename" "$kernel_headers_dir"
- 	create_package "$libc_headers_packagename" "$libc_headers_dir"
-+	if [ "$num_tools" > "0" ]; then
-+		dpkg-shlibdeps $tools_dir/usr/bin/*
-+		create_package "$tools_packagename" "$tools_dir"
-+	fi
- fi
- 
- create_package "$packagename" "$tmpdir"
--- 
-1.7.5.4
+Yes, of course the memcg approach is probably too coarse-grained for
+certain apps.
 
+If we want to provide the per-fd granularity the fadvise() solution is
+a way better. However, the memcg solution could be enough to resolve
+most of the common data streaming issues (like "the backup is trashing
+the page cache" problem) and it doesn't require modification of the
+application source code. This is an important advantage that we
+shouldn't ignore IMHO, because it means that the new feature will be
+available _immediately_ for any application.
 
+Maybe we should try to push ...something... in the memcg code for the
+short-term future, make it as much generic as possible, and for the
+long-term try to reuse the same feature (totally or in part) in the
+per-fd approach via fadvise().
+
+Thanks,
+-Andrea
