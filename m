@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2BPJLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 04:11:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62065 "EHLO
+	id S932289Ab2BPJLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:11:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40612 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756325Ab2BPJJm (ORCPT
+	with ESMTP id S932119Ab2BPJJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 04:09:42 -0500
+	Thu, 16 Feb 2012 04:09:46 -0500
 MIME-Version: 1.0
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
@@ -15,10 +15,11 @@ To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
         Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v5 09/27] irq_domain: remove NO_IRQ from irq domain code
-Date: Thu, 16 Feb 2012 02:09:10 -0700
-Message-Id: <1329383368-12122-10-git-send-email-grant.likely@secretlab.ca>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v5 16/27] irq_domain: Remove irq_domain_add_simple()
+Date: Thu, 16 Feb 2012 02:09:17 -0700
+Message-Id: <1329383368-12122-17-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
 References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca>
@@ -26,176 +27,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zero always means no irq when using irq domains.  Get rid of the NO_IRQ
-references.
+irq_domain_add_simple() was a stop-gap measure until complete irq_domain
+support was complete.  This patch removes the irq_domain_add_simple()
+interface.
+
+This patch also drops the explicit irq_domain initialization performed
+by the mach-versatile code because the versatile interrupt controller
+already has irq_domain support built into it.  This was a bug that was
+hanging around quietly for a while, but with the full irq_domain which
+actually verifies that irq_domain ranges are available it would cause
+the registration to fail and the system wouldn't boot.
+
+v4: Fixed number of irqs in mx5 gpio code
+v2: Updated to pass in host_data pointer on irq_domain allocation.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Milton Miller <miltonm@bga.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Tested-by: Olof Johansson <olof@lixom.net>
 ---
- kernel/irq/irqdomain.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ arch/arm/mach-imx/imx51-dt.c        |    4 ++--
+ arch/arm/mach-imx/imx53-dt.c        |    4 ++--
+ arch/arm/mach-imx/mach-imx6q.c      |    3 ++-
+ arch/arm/mach-msm/board-msm8x60.c   |    8 ++------
+ arch/arm/mach-omap2/board-generic.c |    2 +-
+ arch/arm/mach-prima2/irq.c          |    2 +-
+ include/linux/irqdomain.h           |    1 -
+ kernel/irq/irqdomain.c              |   10 ++--------
+ 8 files changed, 12 insertions(+), 22 deletions(-)
 
+diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
+index e6bad17..1e03ef4 100644
+--- a/arch/arm/mach-imx/imx51-dt.c
++++ b/arch/arm/mach-imx/imx51-dt.c
+@@ -47,7 +47,7 @@ static const struct of_dev_auxdata imx51_auxdata_lookup[] __initconst = {
+ static int __init imx51_tzic_add_irq_domain(struct device_node *np,
+ 				struct device_node *interrupt_parent)
+ {
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 128, 0, 0, &irq_domain_simple_ops, NULL);
+ 	return 0;
+ }
+ 
+@@ -57,7 +57,7 @@ static int __init imx51_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops, NULL);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-imx/imx53-dt.c b/arch/arm/mach-imx/imx53-dt.c
+index 05ebb3e..fd5be0f 100644
+--- a/arch/arm/mach-imx/imx53-dt.c
++++ b/arch/arm/mach-imx/imx53-dt.c
+@@ -51,7 +51,7 @@ static const struct of_dev_auxdata imx53_auxdata_lookup[] __initconst = {
+ static int __init imx53_tzic_add_irq_domain(struct device_node *np,
+ 				struct device_node *interrupt_parent)
+ {
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 128, 0, 0, &irq_domain_simple_ops, NULL);
+ 	return 0;
+ }
+ 
+@@ -61,7 +61,7 @@ static int __init imx53_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops, NULL);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index c257281..6075d4d 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -97,7 +97,8 @@ static int __init imx6q_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops,
++			      NULL);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 0a11342..962e711 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -80,12 +80,8 @@ static struct of_device_id msm_dt_gic_match[] __initdata = {
+ 
+ static void __init msm8x60_dt_init(void)
+ {
+-	struct device_node *node;
+-
+-	node = of_find_matching_node_by_address(NULL, msm_dt_gic_match,
+-			MSM8X60_QGIC_DIST_PHYS);
+-	if (node)
+-		irq_domain_add_simple(node, GIC_SPI_START);
++	irq_domain_generate_simple(msm_dt_gic_match, MSM8X60_QGIC_DIST_PHYS,
++				GIC_SPI_START);
+ 
+ 	if (of_machine_is_compatible("qcom,msm8660-surf")) {
+ 		printk(KERN_INFO "Init surf UART registers\n");
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index d587560..00b1d02 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -67,7 +67,7 @@ static void __init omap_generic_init(void)
+ {
+ 	struct device_node *node = of_find_matching_node(NULL, intc_match);
+ 	if (node)
+-		irq_domain_add_simple(node, 0);
++		irq_domain_add_legacy(node, 32, 0, 0, &irq_domain_simple_ops, NULL);
+ 
+ 	omap_sdrc_init(NULL, NULL);
+ 
+diff --git a/arch/arm/mach-prima2/irq.c b/arch/arm/mach-prima2/irq.c
+index d93ceef..37c2de9 100644
+--- a/arch/arm/mach-prima2/irq.c
++++ b/arch/arm/mach-prima2/irq.c
+@@ -68,7 +68,7 @@ void __init sirfsoc_of_irq_init(void)
+ 	if (!sirfsoc_intc_base)
+ 		panic("unable to map intc cpu registers\n");
+ 
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops, NULL);
+ 
+ 	of_node_put(np);
+ 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 624e9ac..e7379a3 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -164,7 +164,6 @@ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+ 
+ extern struct irq_domain_ops irq_domain_simple_ops;
+ #if defined(CONFIG_OF_IRQ)
+-extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
+ extern void irq_domain_generate_simple(const struct of_device_id *match,
+ 					u64 phys_base, unsigned int irq_start);
+ #else /* CONFIG_OF_IRQ */
 diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 3fb4880..b1c4e21 100644
+index dad793f..03f571a 100644
 --- a/kernel/irq/irqdomain.c
 +++ b/kernel/irq/irqdomain.c
-@@ -108,7 +108,7 @@ struct irq_domain *irq_alloc_host(struct device_node *of_node,
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		rmap = (unsigned int *)(host + 1);
- 		for (i = 0; i < revmap_arg; i++)
--			rmap[i] = NO_IRQ;
-+			rmap[i] = 0;
- 		host->revmap_data.linear.size = revmap_arg;
- 		host->revmap_data.linear.revmap = rmap;
- 		break;
-@@ -218,9 +218,9 @@ unsigned int irq_create_direct_mapping(struct irq_domain *host)
- 	WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_NOMAP);
+@@ -722,13 +722,6 @@ struct irq_domain_ops irq_domain_simple_ops = {
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
  
- 	virq = irq_alloc_desc_from(1, 0);
--	if (virq == NO_IRQ) {
-+	if (!virq) {
- 		pr_debug("irq: create_direct virq allocation failed\n");
--		return NO_IRQ;
-+		return 0;
- 	}
- 	if (virq >= irq_virq_count) {
- 		pr_err("ERROR: no free irqs available below %i maximum\n",
-@@ -233,7 +233,7 @@ unsigned int irq_create_direct_mapping(struct irq_domain *host)
- 
- 	if (irq_setup_virq(host, virq, virq)) {
- 		irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	return virq;
-@@ -263,13 +263,13 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		printk(KERN_WARNING "irq_create_mapping called for"
- 		       " NULL host, hwirq=%lx\n", hwirq);
- 		WARN_ON(1);
--		return NO_IRQ;
-+		return 0;
- 	}
- 	pr_debug("irq: -> using host @%p\n", host);
- 
- 	/* Check if mapping already exists */
- 	virq = irq_find_mapping(host, hwirq);
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		pr_debug("irq: -> existing mapping on virq %d\n", virq);
- 		return virq;
- 	}
-@@ -279,7 +279,7 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		/* Handle legacy */
- 		virq = (unsigned int)hwirq;
- 		if (virq == 0 || virq >= NUM_ISA_INTERRUPTS)
--			return NO_IRQ;
-+			return 0;
- 		return virq;
- 	} else {
- 		/* Allocate a virtual interrupt number */
-@@ -289,16 +289,16 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		virq = irq_alloc_desc_from(hint, 0);
- 		if (!virq)
- 			virq = irq_alloc_desc_from(1, 0);
--		if (virq == NO_IRQ) {
-+		if (!virq) {
- 			pr_debug("irq: -> virq allocation failed\n");
--			return NO_IRQ;
-+			return 0;
- 		}
- 	}
- 
- 	if (irq_setup_virq(host, virq, hwirq)) {
- 		if (host->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
- 			irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	pr_debug("irq: irq %lu on host %s mapped to virtual irq %u\n",
-@@ -323,7 +323,7 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	if (host == NULL) {
- 		printk(KERN_WARNING "irq: no irq host found for %s !\n",
- 		       controller->full_name);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	/* If host has no translation, then we assume interrupt line */
-@@ -332,12 +332,12 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	else {
- 		if (host->ops->xlate(host, controller, intspec, intsize,
- 				     &hwirq, &type))
--			return NO_IRQ;
-+			return 0;
- 	}
- 
- 	/* Create mapping */
- 	virq = irq_create_mapping(host, hwirq);
--	if (virq == NO_IRQ)
-+	if (!virq)
- 		return virq;
- 
- 	/* Set type if specified and different than the current one */
-@@ -358,7 +358,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	struct irq_domain *host;
- 	irq_hw_number_t hwirq;
- 
--	if (virq == NO_IRQ || !irq_data)
-+	if (!virq || !irq_data)
- 		return;
- 
- 	host = irq_data->domain;
-@@ -387,7 +387,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	switch(host->revmap_type) {
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		if (hwirq < host->revmap_data.linear.size)
--			host->revmap_data.linear.revmap[hwirq] = NO_IRQ;
-+			host->revmap_data.linear.revmap[hwirq] = 0;
- 		break;
- 	case IRQ_DOMAIN_MAP_TREE:
- 		mutex_lock(&revmap_trees_mutex);
-@@ -422,7 +422,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 	if (host == NULL)
- 		host = irq_default_host;
- 	if (host == NULL)
--		return NO_IRQ;
-+		return 0;
- 
- 	/* legacy -> bail early */
- 	if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-@@ -440,7 +440,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 		if (i >= irq_virq_count)
- 			i = 1
- 	} while(i != hint);
--	return NO_IRQ;
-+	return 0;
+ #ifdef CONFIG_OF_IRQ
+-void irq_domain_add_simple(struct device_node *controller, int irq_base)
+-{
+-	irq_domain_add_legacy(controller, 32, irq_base, 0,
+-			      &irq_domain_simple_ops, NULL);
+-}
+-EXPORT_SYMBOL_GPL(irq_domain_add_simple);
+-
+ void irq_domain_generate_simple(const struct of_device_id *match,
+ 				u64 phys_base, unsigned int irq_start)
+ {
+@@ -737,7 +730,8 @@ void irq_domain_generate_simple(const struct of_device_id *match,
+ 		(unsigned long long) phys_base, (int) irq_start);
+ 	node = of_find_matching_node_by_address(NULL, match, phys_base);
+ 	if (node)
+-		irq_domain_add_simple(node, irq_start);
++		irq_domain_add_legacy(node, 32, irq_start, 0,
++				      &irq_domain_simple_ops, NULL);
  }
- EXPORT_SYMBOL_GPL(irq_find_mapping);
- 
-@@ -493,7 +493,7 @@ void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
- 	if (WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_TREE))
- 		return;
- 
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		mutex_lock(&revmap_trees_mutex);
- 		radix_tree_insert(&host->revmap_data.tree, hwirq, irq_data);
- 		mutex_unlock(&revmap_trees_mutex);
-@@ -527,7 +527,7 @@ unsigned int irq_linear_revmap(struct irq_domain *host,
- 		return irq_find_mapping(host, hwirq);
- 
- 	/* Fill up revmap with slow path if no mapping found */
--	if (unlikely(revmap[hwirq] == NO_IRQ))
-+	if (unlikely(!revmap[hwirq]))
- 		revmap[hwirq] = irq_find_mapping(host, hwirq);
- 
- 	return revmap[hwirq];
+ EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
+ #endif
 -- 
 1.7.9
 
