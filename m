@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab2BPK06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:26:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab2BPK0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:26:55 -0500
-Message-ID: <4F3CD9D9.2050900@redhat.com>
-Date: Thu, 16 Feb 2012 12:26:33 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1752773Ab2BPK1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:27:33 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:43750 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750948Ab2BPK1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 05:27:30 -0500
+Message-ID: <4F3CDA0A.3070409@ti.com>
+Date: Thu, 16 Feb 2012 15:57:22 +0530
+From: Aneesh V <aneesh@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: qemu-devel@nongnu.org, Alexander Graf <agraf@suse.de>,
-        michael@ellerman.id.au, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Eric Northup <digitaleric@google.com>,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-References: <4F2AB552.2070909@redhat.com> <1328597934.6802.6.camel@concordia> <F1B17875-23E2-4965-BE05-6A3858995D21@suse.de> <201202152221.36154.arnd@arndb.de>
-In-Reply-To: <201202152221.36154.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Benoit Cousson <b-cousson@ti.com>
+Subject: Re: [RFC PATCH 1/8] OMAP4: hwmod: add EMIF hw mod data
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com> <1328357771-31644-2-git-send-email-aneesh@ti.com> <4F3CD448.6030401@ti.com>
+In-Reply-To: <4F3CD448.6030401@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2012 12:21 AM, Arnd Bergmann wrote:
-> ioctl is good for hardware devices and stuff that you want to enumerate
-> and/or control permissions on. For something like KVM that is really a
-> core kernel service, a syscall makes much more sense.
->
-> I would certainly never mix the two concepts: If you use a chardev to get
-> a file descriptor, use ioctl to do operations on it, and if you use a 
-> syscall to get the file descriptor then use other syscalls to do operations
-> on it.
->
-> I don't really have a good recommendation whether or not to change from an
-> ioctl based interface to syscall for KVM now. On the one hand I believe it
-> would be significantly cleaner, on the other hand we cannot remove the
-> chardev interface any more since there are many existing users.
->
+Santosh,
 
-This sums up my feelings exactly.  Moving to syscalls would be an
-improvement, but not so much an improvement as to warrant the thrashing
-and the pain from having to maintain the old interface for a long while.
+Thanks for the review.
 
--- 
-error compiling committee.c: too many arguments to function
+On Thursday 16 February 2012 03:32 PM, Santosh Shilimkar wrote:
+> On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+>> From: Benoit Cousson<b-cousson@ti.com>
+>>
+> One line of change log will do here.
 
+Ok. Will add.
+
+br,
+Aneesh
