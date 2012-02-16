@@ -1,86 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab2BPK7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:59:09 -0500
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:53572 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751174Ab2BPK7F (ORCPT
+	id S1751597Ab2BPLAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 06:00:41 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:54446 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751257Ab2BPLAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:59:05 -0500
-Message-ID: <4F3CE15D.6010902@st.com>
-Date: Thu, 16 Feb 2012 16:28:37 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Thu, 16 Feb 2012 06:00:38 -0500
+Date: Thu, 16 Feb 2012 06:00:30 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
+	implementation
+Message-ID: <20120216110030.GA1425@Krystal>
+References: <20120213020951.GA12138@linux.vnet.ibm.com> <20120215143116.GA1696@Krystal> <20120215145144.GA6277@Krystal> <20120216063805.GF2976@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-Cc: "baruch@tkos.co.il" <baruch@tkos.co.il>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] gpio/gpio-pl061: No need of thaw and poweroff routines
- for hibernate
-References: <7662253849428ce018fb7f7359e0585fca9fb597.1326274467.git.viresh.kumar@st.com>
-In-Reply-To: <7662253849428ce018fb7f7359e0585fca9fb597.1326274467.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216063805.GF2976@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 05:53:30 up 449 days, 15:56,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/11/2012 3:25 PM, Viresh KUMAR wrote:
-> pl061 uses same routines for suspend/freeze/poweroff and resume/thaw/restore.
-> We are only saving and restoring register values on these routines.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Wed, Feb 15, 2012 at 09:51:44AM -0500, Mathieu Desnoyers wrote:
+> > * Mathieu Desnoyers (mathieu.desnoyers@polymtl.ca) wrote:
+> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > [...]
+> > > > +/*
+> > > > + * To be called from the update side after an index flip.  Returns true
+> > > > + * if the modulo sum of the counters is stably zero, false if there is
+> > > > + * some possibility of non-zero.
+> > > > + */
+> > > > +static bool srcu_readers_active_idx_check(struct srcu_struct *sp, int idx)
+> > > >  {
+> > > >  	int cpu;
+> > > > -	int sum;
+> > > >  
+> > > > -	sum = 0;
+> > > > +	/*
+> > > > +	 * Note that srcu_readers_active_idx() can incorrectly return
+> > > > +	 * zero even though there is a pre-existing reader throughout.
+> > > > +	 * To see this, suppose that task A is in a very long SRCU
+> > > > +	 * read-side critical section that started on CPU 0, and that
+> > > > +	 * no other reader exists, so that the modulo sum of the counters
+> > > > +	 * is equal to one.  Then suppose that task B starts executing
+> > > > +	 * srcu_readers_active_idx(), summing up to CPU 1, and then that
+> > > > +	 * task C starts reading on CPU 0, so that its increment is not
+> > > > +	 * summed, but finishes reading on CPU 2, so that its decrement
+> > > > +	 * -is- summed.  Then when task B completes its sum, it will
+> > > > +	 * incorrectly get zero, despite the fact that task A has been
+> > > > +	 * in its SRCU read-side critical section the whole time.
+> > > > +	 *
+> > > > +	 * We therefore do a validation step should srcu_readers_active_idx()
+> > > > +	 * return zero.
+> > > > +	 */
+> > > > +	if (srcu_readers_active_idx(sp, idx) != 0)
+> > > > +		return false;
+> > > > +
+> > > > +	/*
+> > > > +	 * Since the caller recently flipped ->completed, we can see at
+> > > > +	 * most one increment of each CPU's counter from this point
+> > > > +	 * forward.  The reason for this is that the reader CPU must have
+> > > > +	 * fetched the index before srcu_readers_active_idx checked
+> > > > +	 * that CPU's counter, but not yet incremented its counter.
+> > > > +	 * Its eventual counter increment will follow the read in
+> > > > +	 * srcu_readers_active_idx(), and that increment is immediately
+> > > > +	 * followed by smp_mb() B.  Because smp_mb() D is between
+> > > > +	 * the ->completed flip and srcu_readers_active_idx()'s read,
+> > > > +	 * that CPU's subsequent load of ->completed must see the new
+> > > > +	 * value, and therefore increment the counter in the other rank.
+> > > > +	 */
+> > > > +	smp_mb(); /* A */
+> > > > +
+> > > > +	/*
+> > > > +	 * Now, we check the ->snap array that srcu_readers_active_idx()
+> > > > +	 * filled in from the per-CPU counter values.  Since both
+> > > > +	 * __srcu_read_lock() and __srcu_read_unlock() increment the
+> > > > +	 * upper bits of the per-CPU counter, an increment/decrement
+> > > > +	 * pair will change the value of the counter.  Since there is
+> > > > +	 * only one possible increment, the only way to wrap the counter
+> > > > +	 * is to have a huge number of counter decrements, which requires
+> > > > +	 * a huge number of tasks and huge SRCU read-side critical-section
+> > > > +	 * nesting levels, even on 32-bit systems.
+> > > > +	 *
+> > > > +	 * All of the ways of confusing the readings require that the scan
+> > > > +	 * in srcu_readers_active_idx() see the read-side task's decrement,
+> > > > +	 * but not its increment.  However, between that decrement and
+> > > > +	 * increment are smb_mb() B and C.  Either or both of these pair
+> > > > +	 * with smp_mb() A above to ensure that the scan below will see
+> > > > +	 * the read-side tasks's increment, thus noting a difference in
+> > > > +	 * the counter values between the two passes.
+> > > 
+> > > Hi Paul,
+> > > 
+> > > I think the implementation is correct, but the explanation above might
+> > > be improved. Let's consider the following a scenario, where a reader is
+> > > migrated between increment of the counter and issuing the memory barrier
+> > > in the read lock:
+> > > 
+> > > A,B,C are readers
+> > > D is synchronize_rcu (one flip'n'wait)
+> > > 
+> > > CPU A               CPU B           CPU C         CPU D
+> > >                                     c[1]++
+> > >                                     smp_mb(1)
+> > >                                                   read c[0] -> 0
+> > > c[0]++
+> > > (implicit smp_mb (2))
+> > >       -> migrated ->
+> > >                     (implicit smp_mb (3))
+> > >                     smp_mb (4)
+> > >                     smp_mb (5)
+> > >                     c[1]--
+> > >                                                   read c[1] -> -1
+> > >                                                   read c[2] -> 1
+> > >                                                   (false 0 sum)
+> > >                                                   smp_mb (6)
+> > >                                                   re-check each.
+> > >                                     c[1]--
+> > > 
+> > > re-check: because we observed c[1] == -1, thanks to the implicit memory
+> > > barriers within thread migration (2 and 3), we can assume that we _will_
+> > > observe the updated value of c[0] after smp_mb (6).
+> > > 
+> > > The current explanation states that memory barriers 4 and 5, along with  
+> > > 6, are responsible for ensuring that the increment will be observed by 
+> > > the re-check. However, I doubt they have anything to do with it: it's 
+> > > rather the implicit memory barriers in thread migration, along with
+> > > program order guarantees on writes to the same address, that seems to be
+> > > the reason why we can do this ordering assumption.
+> > 
+> > Please disregard the part about program order: CPU A writes to c[0], and
+> > CPU B writes to c[1], which are two different memory locations. The rest
+> > of my discussion stands though.
+> > 
+> > Simply reasoning about write to c[0], memory barriers 2-3, write to
+> > c[1], along with c[1] read, memory barrier 6, and then c[0] read is
+> > enough to explain the ordering guarantees you need, without invoking
+> > program order.
 > 
-> During hibernation, in freeze() we take a snapshot of gpio registers. In thaw()
-> we don't actually need to restore these registers, as power was never shut down
-> till now. Similarly, in poweroff() we don't need to take snapshot of these
-> registers again, as it was done during freeze() and by now the image is already
-> saved on disk.
+> I am assuming that if the scheduler migrates a process, it applies enough
+> memory ordering to allow the proof to operate as if it had stayed on a
+> single CPU throughout.
+
+When applied to per-cpu variables, the reasoning cannot invoke program
+order though, since we're touching two different memory locations.
+
+> The reasoning for this would consider the
+> scheduler access and memory barriers
+
+indeed,
+
+>-- but there would be an arbitrarily
+> large number of migration patterns, so I am not convinced that it would
+> help...
+
+This brings the following question then: which memory barriers, in the
+scheduler activity, act as full memory barriers to migrated threads ? I
+see that the rq_lock is taken, but this lock is permeable in one
+direction (operations can spill into the critical section). I'm probably
+missing something else, but this something else probably needs to be
+documented somewhere, since we are doing tons of assumptions based on
+it.
+
+Thanks,
+
+Mathieu
+
 > 
-> This patch passes poweroff() and thaw() routines as NULL to avoid this extra
-> work done.
+> 							Thanx, Paul
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
-
-Hi Grant/Rafael,
-
-Any feedback on the below patch?
-
->  drivers/gpio/gpio-pl061.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > > 
+> > > Does it make sense, or shall I get another coffee to wake myself up ?
+> > > ;)
+> > > 
+> > > Thanks,
+> > > 
+> > > Mathieu
+> > > 
+> > > > +	 *
+> > > > +	 * Therefore, if srcu_readers_active_idx() returned zero, and
+> > > > +	 * none of the counters changed, we know that the zero was the
+> > > > +	 * correct sum.
+> > > > +	 *
+> > > > +	 * Of course, it is possible that a task might be delayed
+> > > > +	 * for a very long time in __srcu_read_lock() after fetching
+> > > > +	 * the index but before incrementing its counter.  This
+> > > > +	 * possibility will be dealt with in __synchronize_srcu().
+> > > > +	 */
+> > > >  	for_each_possible_cpu(cpu)
+> > > > -		sum += per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx];
+> > > > -	return sum;
+> > > > +		if (sp->snap[cpu] !=
+> > > > +		    ACCESS_ONCE(per_cpu_ptr(sp->per_cpu_ref, cpu)->c[idx]))
+> > > > +			return false;  /* False zero reading! */
+> > > > +	return true;
+> > > >  }
+> > > 
+> > > 
+> > > -- 
+> > > Mathieu Desnoyers
+> > > Operating System Efficiency R&D Consultant
+> > > EfficiOS Inc.
+> > > http://www.efficios.com
+> > 
+> > -- 
+> > Mathieu Desnoyers
+> > Operating System Efficiency R&D Consultant
+> > EfficiOS Inc.
+> > http://www.efficios.com
+> > 
 > 
-> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-> index 84ba1dd..45b884b 100644
-> --- a/drivers/gpio/gpio-pl061.c
-> +++ b/drivers/gpio/gpio-pl061.c
-> @@ -430,7 +430,12 @@ static int pl061_resume(struct device *dev)
->  	return 0;
->  }
->  
-> -static SIMPLE_DEV_PM_OPS(pl061_dev_pm_ops, pl061_suspend, pl061_resume);
-> +static const struct dev_pm_ops pl061_dev_pm_ops = {
-> +	.suspend = pl061_suspend,
-> +	.resume = pl061_resume,
-> +	.freeze = pl061_suspend,
-> +	.restore = pl061_resume,
-> +};
->  #endif
->  
->  static struct amba_id pl061_ids[] = {
-
 
 -- 
-viresh
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
