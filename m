@@ -1,161 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab2BPJxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 04:53:36 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42482 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2BPJxd (ORCPT
+	id S1751942Ab2BPJzy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:55:54 -0500
+Received: from kamaji.grokhost.net ([87.117.218.43]:46506 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab2BPJzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 04:53:33 -0500
-Date: Thu, 16 Feb 2012 01:53:04 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kernel-team@fedoraproject.org
-Subject: Re: exit_mmap() BUG_ON triggering since 3.1
-In-Reply-To: <20120216070753.GA23585@redhat.com>
-Message-ID: <alpine.LSU.2.00.1202160130500.16147@eggly.anvils>
-References: <20120215183317.GA26977@redhat.com> <alpine.LSU.2.00.1202151801020.19691@eggly.anvils> <20120216070753.GA23585@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 16 Feb 2012 04:55:52 -0500
+Message-ID: <4F3CD2A2.3010700@bootc.net>
+Date: Thu, 16 Feb 2012 09:55:46 +0000
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 04/11] firewire-sbp-target: Add sbp_base.h header
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net> <1329317248-94128-1-git-send-email-bootc@bootc.net> <1329317248-94128-5-git-send-email-bootc@bootc.net> <20120215201509.37949cb0@stein>
+In-Reply-To: <20120215201509.37949cb0@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012, Andrea Arcangeli wrote:
-> On Wed, Feb 15, 2012 at 06:14:12PM -0800, Hugh Dickins wrote:
-> > Now most of those paths in THP also hold mmap_sem for read or write (with
-> > appropriate checks on mm_users), but two do not: when split_huge_page()
-> > is called by hwpoison_user_mappings(), and when called by add_to_swap().
-> 
-> So the race is split_huge_page_map() called by add_to_swap() running
-> concurrently with free_pgtables. Great catch!!
-> 
-> > Or should we try harder to avoid the extra locking: test mm_users?
-> > #ifdef on THP?  Or consider the accuracy of this count not worth
-> > extra locking, and just scrap the BUG_ON now?
-> 
-> It's probably also happening with a large munmap, while add_to_swap
-> runs on another vma. Process didn't exit yet, but the actual BUG_ON
-> check runs at exit. So I doubt aborting split_huge_page on zero
-> mm_users could solve it.
+On 15/02/2012 19:15, Stefan Richter wrote:
+> On Feb 15 Chris Boot wrote:
+>> --- /dev/null
+>> +++ b/drivers/target/sbp/sbp_base.h
+>> @@ -0,0 +1,204 @@
+> [...]
+>> +struct sbp2_pointer {
+>> +	__be32 high;
+>> +	__be32 low;
+>> +};
+> [...]
+>> +struct sbp_tport {
+>> +	/* Target Unit Identifier (EUI-64) */
+>> +	u64 guid;
+>> +	/* Target port name */
+>> +	char tport_name[SBP_NAMELEN];
+>> +	/* Returned by sbp_make_tport() */
+>> +	struct se_wwn tport_wwn;
+>> +
+>> +	struct sbp_tpg *tpg;
+>> +
+>> +	/* FireWire unit directory */
+>> +	struct fw_descriptor unit_directory;
+>> +
+>> +	/* SBP Management Agent */
+>> +	struct sbp_management_agent *mgt_agt;
+>> +
+>> +	/* Parameters */
+>> +	int enable;
+>> +	s32 directory_id;
+>> +	int mgt_orb_timeout;
+>> +	int max_reconnect_timeout;
+>> +	int max_logins_per_lun;
+>> +};
+>> +
+>> +extern struct target_fabric_configfs *sbp_fabric_configfs;
+>> +extern const struct fw_address_region sbp_register_region;
+>> +extern struct workqueue_struct *sbp_workqueue;
+> [...]
+>
+> Generally, any source file (.c or .h) is meant to be self-contained WRT
+> type definitions etc., meaning that they should have all required
+> #include's in themselves rather than rely on indirect includes.
+>
+> So here you should include the headers which define __be32, u64, struct
+> se_wwn, struct workqueue and so on.
 
-Indeed, what I meant was, I was wondering whether to make the
-spin_lock and spin_unlock in my patch conditional on mm_users,
-not to make split_huge_page conditional on it.
+Thanks. I'll work on fixing this.
 
-> 
-> Good part is, this being a false positive makes these oopses a
-> nuisance, so it means they can't corrupt any memory or disk etc...
+Cheers,
+Chris
 
-Yes (and I think less troublesome than most BUGs, coming at exit
-while not holding locks; though we could well make it a WARN_ON,
-I don't think that existed back in the day).
-
-> 
-> The simplest is probably to change nr_ptes to count THPs too. I tried
-> that and no oopses so far but it's not very well tested yet.
-
-Oh, I like that, that's a much nicer fix than mine.  If you're happy
-to change the THP end (which I could hardly blame for getting those odd
-rules slightly wrong), and it passes your testing, then certainly add my
-
-Acked-by: Hugh Dickins <hughd@google.com>
-
-In looking into the bug, it had actually bothered me a little that you
-were setting aside those pages, yet not counting them into nr_ptes;
-though the only thing that cares is oom_kill.c, and the count of pages
-in each hugepage can only dwarf the count in nr_ptes (whereas, without
-hugepages, it's possible to populate very sparsely and nr_ptes become
-significant).
-
-> 
-> ====
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> Subject: [PATCH] mm: thp: fix BUG on mm->nr_ptes
-> 
-> Quoting Hugh's discovery and explanation of the SMP race condition:
-> 
-> ===
-> mm->nr_ptes had unusual locking: down_read mmap_sem plus
-> page_table_lock when incrementing, down_write mmap_sem (or mm_users 0)
-> when decrementing; whereas THP is careful to increment and decrement
-> it under page_table_lock.
-> 
-> Now most of those paths in THP also hold mmap_sem for read or write
-> (with appropriate checks on mm_users), but two do not: when
-> split_huge_page() is called by hwpoison_user_mappings(), and when
-> called by add_to_swap().
-> 
-> It's conceivable that the latter case is responsible for the
-> exit_mmap() BUG_ON mm->nr_ptes that has been reported on Fedora.
-> ===
-> 
-> The simplest way to fix it without having to alter the locking is to
-> make split_huge_page() a noop in nr_ptes terms, so by counting the
-> preallocated pagetables that exists for every mapped hugepage. It was
-> an arbitrary choice not to count them and either way is not wrong or
-> right, because they are not used but they're still allocated.
-> 
-> Reported-by: Dave Jones <davej@redhat.com>
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  mm/huge_memory.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 91d3efb..8f7fc39 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -671,6 +671,7 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
->  		set_pmd_at(mm, haddr, pmd, entry);
->  		prepare_pmd_huge_pte(pgtable, mm);
->  		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
-> +		mm->nr_ptes++;
->  		spin_unlock(&mm->page_table_lock);
->  	}
->  
-> @@ -789,6 +790,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->  	pmd = pmd_mkold(pmd_wrprotect(pmd));
->  	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
->  	prepare_pmd_huge_pte(pgtable, dst_mm);
-> +	dst_mm->nr_ptes++;
->  
->  	ret = 0;
->  out_unlock:
-> @@ -887,7 +889,6 @@ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
->  	}
->  	kfree(pages);
->  
-> -	mm->nr_ptes++;
->  	smp_wmb(); /* make pte visible before pmd */
->  	pmd_populate(mm, pmd, pgtable);
->  	page_remove_rmap(page);
-> @@ -1047,6 +1048,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  			VM_BUG_ON(page_mapcount(page) < 0);
->  			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
->  			VM_BUG_ON(!PageHead(page));
-> +			tlb->mm->nr_ptes--;
->  			spin_unlock(&tlb->mm->page_table_lock);
->  			tlb_remove_page(tlb, page);
->  			pte_free(tlb->mm, pgtable);
-> @@ -1375,7 +1377,6 @@ static int __split_huge_page_map(struct page *page,
->  			pte_unmap(pte);
->  		}
->  
-> -		mm->nr_ptes++;
->  		smp_wmb(); /* make pte visible before pmd */
->  		/*
->  		 * Up to this point the pmd is present and huge and
-> @@ -1988,7 +1989,6 @@ static void collapse_huge_page(struct mm_struct *mm,
->  	set_pmd_at(mm, address, pmd, _pmd);
->  	update_mmu_cache(vma, address, _pmd);
->  	prepare_pmd_huge_pte(pgtable, mm);
-> -	mm->nr_ptes--;
->  	spin_unlock(&mm->page_table_lock);
->  
->  #ifndef CONFIG_NUMA
+-- 
+Chris Boot
+bootc@bootc.net
