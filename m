@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2BPXaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 18:30:25 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58976 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab2BPXaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 18:30:23 -0500
-Date: Fri, 17 Feb 2012 10:30:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Yuval Mintz" <yuvalmin@broadcom.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eilong@broadcom.com,
-        eric.dumazet@gmail.com
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20120217103011.b2223e28a89839d09a4a4053@canb.auug.org.au>
-In-Reply-To: <1329391450.16698.27.camel@lb-tlvb-eilong.il.broadcom.com>
-References: <20120216123803.8efe3d23eee5c3a80aceef61@canb.auug.org.au>
-	<1329391450.16698.27.camel@lb-tlvb-eilong.il.broadcom.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Feb_2012_10_30_11_+1100_qVTHZNImqUhwVK3/"
+	id S1755087Ab2BPXhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 18:37:19 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49271 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751896Ab2BPXhR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 18:37:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F3D90E1.6010001@redhat.com>
+References: <AANLkTinRC1hXvaXDVV5pOA4YyCdXwAjziZsDzm=LuHqK@mail.gmail.com>
+	<AANLkTinewk=mJZifVxEJkCtKfNauOjHnLAqwbGn139C=@mail.gmail.com>
+	<AANLkTikui_HQ5JMcMJUqMr9WLyTRNzF-z4G7wAUNPOFy@mail.gmail.com>
+	<201103242330.14416.rjw@sisk.pl>
+	<CAFLxGvzzHDRma_Y_XEpOD+fY+vonbkoR1mvQp4Vb4c3M6fTsPA@mail.gmail.com>
+	<20120216163030.GA32651@redhat.com>
+	<4F3D90E1.6010001@redhat.com>
+Date: Fri, 17 Feb 2012 00:37:17 +0100
+Message-ID: <CAFLxGvz4MUQrLUs=CWVbWspKQoBC7qiLTUyWQMKzgeX8r3L8VA@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Dave Jones <davej@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, esandeen@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Feb_2012_10_30_11_+1100_qVTHZNImqUhwVK3/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Thu, 16 Feb 2012 13:24:10 +0200 "Yuval Mintz" <yuvalmin@broadcom.com> wr=
-ote:
+On Fri, Feb 17, 2012 at 12:27 AM, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 2/16/12 8:30 AM, Dave Jones wrote:
+>> On Thu, Feb 16, 2012 at 11:52:27AM +0100, richard -rw- weinberger wrote:
+>>
+>>  > >> >> Of course, please test the above separately. :-)
+>>  > >> >
+>>  > >> > Ok, I'll test this when I'm at home.
+>>  > >> >
+>>  > >> > BTW: dropping the caches helps, when some files seem corrupted.
+>>  > >> > Today /usr/bin/okular was broken.
+>>  > >> > After setting vm.drop_caches=1 it worked again.
+>>  > >>
+>>  > >> On Linux 2.6.38 I'm unable to reproduce the issue.
+>>  > >> Only 2.6.37 seems to be affected.
+>>  > >> So, I'm moving over to 2.6.38. :)
+>>  > >
+>>  > Bad news:
+>>  > I saw the issue on 3.x too but thought it's because my IdeaPad s10 is crap.
+>>  > Now with my shiny new Lenovo x121e I have the same issue! :-(
+>>  >
+>>  > OpenSUSE 12.1, kernel 3.2.7.
+>>  > After a few suspend2disk iterations random files are corrupted.
+>>  > But only cached files. A reboot solves the problem.
 >
-> I don't fully understand your merge - it seems to create a mash between
-> the "bnx2x: fix bnx2x_storm_stats_update() on big endian" patch in net,
-> and the "bnx2x: consistent statistics after internal driver reload"
-> patch in net-next.
+> Just to be clear - you see _data_ corruption in files, but only
+> until a reboot, and after that they are ok?  Ok, reading above
+> about using drop_caches that sounds like the case.
 
-That is exactly what the merge conflict resolution did.  i.e. the patch
-you supplied below is not needed in linux-next because that is
-effectively what I did.  It is the same as Dave will do when he merges
-the net tree into the net-next tree as well, I assume.
+Yes.
+A reboot always solved the data corruption.
+drop_caches solved it in 99% of all cases.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On-disk data was never corrupted.
 
---Signature=_Fri__17_Feb_2012_10_30_11_+1100_qVTHZNImqUhwVK3/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPPZGDAAoJEECxmPOUX5FELbMP/ji5hCU6x69EkPJpjn8jy7Nx
-+hF802yCYxJgdg+dtnm2nWYKtHJbpVhFlov++Gm/U632LkltXhne/stdtXkpfUCy
-huEAr5wYWcRCLScNkQ3Dy3AFN1BQkmUo5L9J/XWyGgK2Sv+poEdchOIXvqgdITJP
-EPtqAACAaFWc130LGZiephxycO9nBj+6SV/N05c345pWPGOUobPWlT3v/cN83ETx
-sH89WYLDyutyMoH3dG43fr77iKze+xVjoxTT/j+nV161QLphf00M+LfZ5RYEWUbS
-FIWHtrzUblBxu3zonZ3IKC76goKsGygXrjL6+jokqASEqGsr77SpHmU7Ee4qlFJ9
-YzJuu8mYXFf9UzrdiCWyJg5fYtHcSqTAdft40wSTWIcojhTXIvJIICHmddlIvLv2
-mv2y0mxiw76M8EYHfXyO3b/fFWfhLlPvIGr9A++e6PJYtSeuoduAn6t4lejIOves
-TyJ9ty3GMYcIpaQ6tT1k3vUEkuc+db8c5srlavTI3GV5/WBPJIXxx1xMePYBYTQX
-SOOI8AMuqQ51zwcF6sxIqI8vRSzTlT1mbw0cnkwyYnZ71fYt0XZLtuwTI7ep4vki
-JVzn8YwdD2BmyPhtTUhMkT8GBA+Aljf8Ha1cddU4kZqmSG4FkDBo3Jrygx7uusVL
-ephc5i/DxLPstpyzKMcI
-=6nhC
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Feb_2012_10_30_11_+1100_qVTHZNImqUhwVK3/--
+-- 
+Thanks,
+//richard
