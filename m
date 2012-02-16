@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab2BPRtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:49:25 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33375 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab2BPRtV convert rfc822-to-8bit (ORCPT
+	id S1753701Ab2BPRwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 12:52:35 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:43575 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab2BPRwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 12:49:21 -0500
+	Thu, 16 Feb 2012 12:52:34 -0500
+Message-ID: <4F3D424C.2020306@ti.com>
+Date: Thu, 16 Feb 2012 18:52:12 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1329376076.7658.4.camel@joe2Laptop>
-References: <1329369296-4255-1-git-send-email-yinghai@kernel.org>
- <1329369296-4255-5-git-send-email-yinghai@kernel.org> <1329369930.5082.4.camel@joe2Laptop>
- <CAE9FiQUK8m5KKb0or59wH7BD6Eo5ddx9NaF7vszNeR0T3UYMRw@mail.gmail.com>
- <1329371019.5082.9.camel@joe2Laptop> <1329376076.7658.4.camel@joe2Laptop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 16 Feb 2012 09:49:00 -0800
-Message-ID: <CAErSpo57hL9dFyFDvdEQcLKCPOeCh3MY3UCURvrXKPpA8W3y3A@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PCI: quirk print dev name with duration
-To: Joe Perches <joe@perches.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Milton Miller <miltonm@bga.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v5 08/27] irq_domain: Move irq_domain code from powerpc
+ to kernel/irq
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <1329383368-12122-9-git-send-email-grant.likely@secretlab.ca> <4F3D3F21.3060905@ti.com>
+In-Reply-To: <4F3D3F21.3060905@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 11:07 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2012-02-15 at 21:43 -0800, Joe Perches wrote:
->> On Wed, 2012-02-15 at 21:35 -0800, Yinghai Lu wrote:
->> > On Wed, Feb 15, 2012 at 9:25 PM, Joe Perches <joe@perches.com> wrote:
->> > > On Wed, 2012-02-15 at 21:14 -0800, Yinghai Lu wrote:
->> > >> So could find out which device is involved with the calling
->> > > []
->> > >> +++ linux-2.6/drivers/pci/quirks.c
->> > >> @@ -2854,14 +2854,15 @@ static void do_one_fixup_debug(void (*fn
->> > >>       ktime_t calltime, delta, rettime;
->> > >>       unsigned long long duration;
->> > >>
->> > >> -     printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
->> > >> +     printk(KERN_DEBUG "calling  %pF @ %i for %s\n",
->> > >> +                     fn, task_pid_nr(current), dev_name(&dev->dev));
->> > >
->> > > Might be better to use dev_dbg
->> > >
->> > >        dev_dbg(&dev->dev, "calling %pF @ %i\n", fn, task_pid_nr(current));
->> > >
->> > > []
->> > >
->> > >> -     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs\n", fn,
->> > >> -             duration);
->> > >> +     printk(KERN_DEBUG "pci fixup %pF returned after %lld usecs for %s\n",
->> > >> +                     fn, duration, dev_name(&dev->dev));
->> > >
->> > >        dev_dbg(&dev->dev, "pci fixup %pF returned after %llu usecs\n",
->> > >                fn, duration);
->> > Not sure if that is going to break Arjan 's tool that analyze the boot time.
->> That depends on the tool code.
-> []
->> Do you have a link to the tool?
+OK, forget about it, I've just seen your email on that and pulled your 
+latest update.
+
+Regards,
+Benoit
+
+On 2/16/2012 6:38 PM, Cousson, Benoit wrote:
+> Hi Grant,
 >
-> That tool would be scripts/bootgraph.pl and using
-> dev_dbg would break it unless it's adapted to the
-> change.  Your change seems fine for now.
+> It looks like there is a small regression in that update, it cannot
+> build due to a missing semi-colon.
+>
+> On 2/16/2012 10:09 AM, Grant Likely wrote:
+>> +/**
+>> + * irq_find_mapping() - Find a linux irq from an hw irq number.
+>> + * @host: domain owning this hardware interrupt
+>> + * @hwirq: hardware irq number in that host space
+>> + *
+>> + * This is a slow path, for use by generic code. It's expected that an
+>> + * irq controller implementation directly calls the appropriate low
+>> level
+>> + * mapping function.
+>> + */
+>> +unsigned int irq_find_mapping(struct irq_domain *host,
+>> + irq_hw_number_t hwirq)
+>> +{
+>> + unsigned int i;
+>> + unsigned int hint = hwirq % irq_virq_count;
+>> +
+>> + /* Look for default host if nececssary */
+>> + if (host == NULL)
+>> + host = irq_default_host;
+>> + if (host == NULL)
+>> + return NO_IRQ;
+>> +
+>> + /* legacy -> bail early */
+>> + if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
+>> + return hwirq;
+>> +
+>> + /* Slow path does a linear search of the map */
+>> + if (hint == 0)
+>> + hint = 1;
+>> + i = hint;
+>> + do {
+>> + struct irq_data *data = irq_get_irq_data(i);
+>> + if (data&& (data->domain == host)&& (data->hwirq == hwirq))
+>> + return i;
+>> + i++;
+>> + if (i>= irq_virq_count)
+>> + i = 1
+>
+> The ";" is missing.
+>
+> Regards,
+> Benoit
 
-Since we're adding new functionality (analyzing quirk durations), I
-think it would be fair game to update the tool at the same time so it
-could parse the dev_dbg() format.
-
-For things related specifically to a device, we have a pretty good
-record of trying to use dev_*() consistently, so I do have a
-preference for continuing that.
-
-If you do change, remember that dev_dbg() is different from
-printk(KERN_DEBUG) in that printk(KERN_DEBUG) is always compiled-in
-and always goes to the dmesg, but dev_dbg() is only compiled in when
-DEBUG is defined, so dev_printk(KERN_DEBUG) would be a more direct
-replacement for printk(KERN_DEBUG).
-
-Bjorn
