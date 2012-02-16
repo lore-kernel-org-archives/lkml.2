@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab2BPLwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 06:52:47 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57220 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2BPLwq convert rfc822-to-8bit (ORCPT
+	id S1751713Ab2BPLze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 06:55:34 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:39346 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750981Ab2BPLzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 06:52:46 -0500
-Message-ID: <1329393115.2293.204.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Date: Thu, 16 Feb 2012 12:51:55 +0100
-In-Reply-To: <20120216110030.GA1425@Krystal>
-References: <20120213020951.GA12138@linux.vnet.ibm.com>
-	 <20120215143116.GA1696@Krystal> <20120215145144.GA6277@Krystal>
-	 <20120216063805.GF2976@linux.vnet.ibm.com> <20120216110030.GA1425@Krystal>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 16 Feb 2012 06:55:32 -0500
+Message-ID: <4F3CEEAE.40907@ti.com>
+Date: Thu, 16 Feb 2012 17:25:26 +0530
+From: Aneesh V <aneesh@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 2/8] misc: ddr: add LPDDR2 data from JESD209-2
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com>	<1328357771-31644-3-git-send-email-aneesh@ti.com>	<4F3CD55C.2020002@ti.com>	<4F3CDA2D.2060001@ti.com> <20120216111043.3256189f@pyramind.ukuu.org.uk>
+In-Reply-To: <20120216111043.3256189f@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-16 at 06:00 -0500, Mathieu Desnoyers wrote:
-> This brings the following question then: which memory barriers, in the
-> scheduler activity, act as full memory barriers to migrated threads ? I
-> see that the rq_lock is taken, but this lock is permeable in one
-> direction (operations can spill into the critical section). I'm probably
-> missing something else, but this something else probably needs to be
-> documented somewhere, since we are doing tons of assumptions based on
-> it. 
+On Thursday 16 February 2012 04:40 PM, Alan Cox wrote:
+> On Thu, 16 Feb 2012 15:57:57 +0530
+> Aneesh V<aneesh@ti.com>  wrote:
+>
+>> On Thursday 16 February 2012 03:37 PM, Santosh Shilimkar wrote:
+>>> On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+>>>> add LPDDR2 data from the JEDEC spec JESD209-2. The data
+>>>> includes:
+>>>>
+>>>> 1. Addressing information for LPDDR2 memories of different
+>>>>      densities and types(S2/S4)
+>>>> 2. AC timing data.
+>>>>
+>>>> This data will useful for memory controller device drivers
+>
+> I don't think it belongs in drivers/misc. It's not a driver but a
+> library. lib/ might be a better place for it perhaps ?
 
-A migration consists of two context switches, one switching out the task
-on the old cpu, and one switching in the task on the new cpu.
+Agree. I shall move it to lib/
 
-Now on x86 all the rq->lock grabbery is plenty implied memory barriers
-to make anybody happy.
+br,
+Aneesh
 
-But I think, since there's guaranteed order (can't switch to before
-switching from) you can match the UNLOCK from the switch-from to the
-LOCK from the switch-to to make your complete MB.
-
-Does that work or do we need more?
