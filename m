@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750991Ab2BPMdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 07:33:53 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37287 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2BPMdw convert rfc822-to-8bit (ORCPT
+	id S1751137Ab2BPMgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 07:36:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46168 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2BPMgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 07:33:52 -0500
+	Thu, 16 Feb 2012 07:36:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
-References: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
-	<1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
-Date: Thu, 16 Feb 2012 20:33:51 +0800
-Message-ID: <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
-From: Hillf Danton <dhillf@gmail.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: akpm@linux-foundation.org, abarry@cray.com, hughd@google.com,
-        mgorman@suse.de, minchan.kim@gmail.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1329374591.5646.23.camel@edumazet-laptop>
+References: <1329063403.1449.14.camel@localhost.localdomain>
+	<CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
+	<1329204997.24837.15.camel@edumazet-laptop>
+	<1329366846.5646.1.camel@edumazet-laptop>
+	<C6B7BB6C-D1B8-4454-A2B2-558FCA5B0BBD@m3y3r.de>
+	<1329373082.5646.9.camel@edumazet-laptop>
+	<21390AB8-BD9B-44D7-B2CE-B20AF7605CE7@m3y3r.de>
+	<1329374591.5646.23.camel@edumazet-laptop>
+Date: Thu, 16 Feb 2012 07:36:09 -0500
+Message-ID: <CA+5PVA74bejZhPxUAFHaeHLB0NBd7PCRc1sQvmSY7QdmarCWEw@mail.gmail.com>
+Subject: Re: [PATCH] atl1c: dont use highprio tx queue
+From: Josh Boyer <jwboyer@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Meyer <thomas@m3y3r.de>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "jcliburn@gmail.com" <jcliburn@gmail.com>,
+        "chris.snook@gmail.com" <chris.snook@gmail.com>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 12:24 PM, David Gibson
-<david@gibson.dropbear.id.au> wrote:
-> @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->        if (!page) {
->                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->                if (!page) {
-> -                       hugetlb_put_quota(inode->i_mapping, chg);
-> +                       hugepage_subpool_put_pages(spool, chg);
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->                }
->        }
+On Thu, Feb 16, 2012 at 1:43 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> This driver attempts to use two TX rings but lacks proper support :
 >
-> -       set_page_private(page, (unsigned long) mapping);
-> +       set_page_private(page, (unsigned long)spool);
+> 1) IRQ handler only takes care of TX completion on first TX ring
+> 2) the stop/start logic uses the legacy functions (for non multiqueue
+> drivers)
 >
-
-Page mapping is used in unmap_ref_private(), and I am
-wondering it no longer works:-(
-
-> @@ -2392,7 +2471,8 @@ retry_avoidcopy:
+> This means all packets witk skb mark set to 1 are sent through high
+> queue but are never cleaned and queue eventualy fills and block the
+> device, triggering the infamous "NETDEV WATCHDOG" message.
 >
->        /* Drop page_table_lock as buddy allocator may be called */
->        spin_unlock(&mm->page_table_lock);
-> -       new_page = alloc_huge_page(vma, address, outside_reserve);
-> +       new_page = alloc_huge_page(vma, address, outside_reserve,
-> +                                  subpool_vma(vma));
+> Lets use a single TX ring to fix the problem, this driver is not a real
+> multiqueue one yet.
+>
+> Minimal fix for stable kernels.
+>
+> Reported-by: Thomas Meyer <thomas@m3y3r.de>
+> Tested-by: Thomas Meyer <thomas@m3y3r.de>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Jay Cliburn <jcliburn@gmail.com>
+> Cc: Chris Snook <chris.snook@gmail.com>
 
-Change in the number of parameters of alloc_huge_page()
-looks unnecessary.
+As I think David handles netdev patches a bit differently for stable releases,
+I'd like to suggest this get included in the next batch for the 3.2 kernel.
+We've been seeing the bug this patch fixes in Fedora for quite a while now.
+
+josh
