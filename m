@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2BPCDC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 21:03:02 -0500
-Received: from colo.foxharp.net ([166.84.7.52]:35588 "EHLO colo.foxharp.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756040Ab2BPCC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 21:02:57 -0500
-X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Feb 2012 21:02:57 EST
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] Input: Add ioctl to block suspend while event queue is not empty.
-From: Paul Fox <pgf@laptop.org>
-cc: NeilBrown <neilb@suse.de>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        linux-input@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-In-reply-to: <201202160030.26503.rjw@sisk.pl> (sfid-20120215_182725_824505_3D84E0E2)
-References: <1327112659-31145-1-git-send-email-arve@android.com> <20120214142540.04de41df@notabene.brown> <201202160030.26503.rjw@sisk.pl> (sfid-20120215_182725_824505_3D84E0E2)
+	id S1756868Ab2BPCDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 21:03:45 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:31714
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756040Ab2BPCDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 21:03:43 -0500
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4F3C6466.9000500@freescale.com>
+Date: Thu, 16 Feb 2012 10:05:26 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <20864.1329357211.1@foxharp.boston.ma.us>
-Date: Wed, 15 Feb 2012 20:53:31 -0500
-Message-ID: <20867.1329357211@foxharp.boston.ma.us>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <vinod.koul@intel.com>, <artem.bityutskiy@intel.com>,
+        <w.sang@pengutronix.de>, <LW@KARO-electronics.de>,
+        <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>, <cjb@laptop.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <linux-mmc@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 2/2] mxs-dma : rewrite the last parameter of mxs_dma_prep_slave_sg()
+References: <1329110756-14434-1-git-send-email-b32955@freescale.com> <1329110756-14434-3-git-send-email-b32955@freescale.com> <20120215195552.GB2399@r65073-Latitude-D630>
+In-Reply-To: <20120215195552.GB2399@r65073-Latitude-D630>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rafael j. wysocki wrote:
- > On Tuesday, February 14, 2012, NeilBrown wrote:
- > 
- > > (or just keep this stuff out of the kernel and let a user-space daemon make
- > > those decisions).
- > 
- > Which is never going to really work, IMHO.
- > 
- > Realistically, do you know of any distro, vendor, whoever, who tried to
- > actually do that in a released product (or even in a release candidate,
- > or milestone, or whatever different from a prototype running only on one's
- > personal desktop)?  I don't.
+Hi Shawn:
+> I'm trying to give it a test.  But it does not apply on either mainline
+> or next tree.  You probably had a wrong base for this patch.
+>
+thanks for your work.
 
-well, depending on your decision of "that", there are something like
-2.5 million OLPC XO laptops that do it.  do they count?  ;-)
+As the previous email said, this patch set bases on :[PATCH v2] mtd/gpmi 
+: add gpmi support for mx6q.
 
-we're still in the middle of converting our 2.6-era home-grown power
-management mechanisms to the 3.0-era level, using the
-.../power/wakeup[_count] and /sys/power/wakeup_count mechanisms. 
-(change comes slowly to shipping products.)  but we do have a
-user-level suspend manager.
+BR
+Huang Shijie
 
-to the real point of your question:  no, i don't think it does what
-you're talking about yet -- i.e., control by applications over whether
-suspend should be permitted or not exists, but isn't nearly as
-reliable or as foolproof as any of the mechanisms discussed here
-recently.
 
-paul
-=---------------------
- paul fox, pgf@laptop.org
