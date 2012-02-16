@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2BPUTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:19:10 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:46020 "EHLO mail.mgebm.net"
+	id S1755366Ab2BPUVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:21:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab2BPUTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:19:08 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+	id S1754009Ab2BPUVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 15:21:54 -0500
+Date: Thu, 16 Feb 2012 15:21:37 -0500
+From: David Teigland <teigland@redhat.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Christine Caulfield <ccaulfie@redhat.com>,
+        Danny Kukawka <dkukawka@suse.de>, cluster-devel@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4 V14] Add flag to indicate that a vm was stopped by the host
-Date: Thu, 16 Feb 2012 15:18:58 -0500
-Message-Id: <1329423541-11677-2-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1329423541-11677-1-git-send-email-emunson@mgebm.net>
-References: <1329423541-11677-1-git-send-email-emunson@mgebm.net>
+Subject: Re: [PATCH] fs/dlm/rcom.c: included member.h twice
+Message-ID: <20120216202137.GA4231@redhat.com>
+References: <1329400521-31738-1-git-send-email-danny.kukawka@bisect.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329400521-31738-1-git-send-email-danny.kukawka@bisect.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag will be used to check if the vm was stopped by the host when a soft
-lockup was detected.  The host will set the flag when it stops the guest.  On
-resume, the guest will check this flag if a soft lockup is detected and skip
-issuing the warning.
+On Thu, Feb 16, 2012 at 02:55:21PM +0100, Danny Kukawka wrote:
+> fs/dlm/rcom.c included 'member.h' twice, remove the duplicate.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/x86/include/asm/pvclock-abi.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I'll fold this into the current patch I'm working on.
 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index 35f2d19..6167fd7 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -40,5 +40,6 @@ struct pvclock_wall_clock {
- } __attribute__((__packed__));
- 
- #define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
-+#define PVCLOCK_GUEST_STOPPED	(1 << 1)
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_X86_PVCLOCK_ABI_H */
--- 
-1.7.5.4
-
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  fs/dlm/rcom.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/dlm/rcom.c b/fs/dlm/rcom.c
+> index ac5c616..3464d6c 100644
+> --- a/fs/dlm/rcom.c
+> +++ b/fs/dlm/rcom.c
+> @@ -23,7 +23,6 @@
+>  #include "memory.h"
+>  #include "lock.h"
+>  #include "util.h"
+> -#include "member.h"
+>  
+>  
+>  static int rcom_response(struct dlm_ls *ls)
+> -- 
+> 1.7.8.3
