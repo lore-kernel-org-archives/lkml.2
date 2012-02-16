@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2BPUDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:03:17 -0500
-Received: from 15.mo5.mail-out.ovh.net ([178.33.107.29]:49480 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755217Ab2BPUDN (ORCPT
+	id S1755418Ab2BPUDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:03:19 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60880 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755216Ab2BPUDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 16 Feb 2012 15:03:13 -0500
-X-Greylist: delayed 16799 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Feb 2012 15:03:13 EST
-Date: Thu, 16 Feb 2012 16:09:33 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
-        s.hauer@pengutronix.de, magnus.damm@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 1/2] ARM: remove memmove from boot/compressed/string.c
-Message-ID: <20120216150933.GD19779@game.jcrosoft.org>
-References: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com>
- <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329404057-26346-2-git-send-email-michael.opdenacker@free-electrons.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2144557847889947465
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.org, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v8 2/8] seccomp: kill the seccomp_t typedef
+Date: Thu, 16 Feb 2012 14:02:23 -0600
+Message-Id: <1329422549-16407-2-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1329422549-16407-1-git-send-email-wad@chromium.org>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:54 Thu 16 Feb     , Michael Opdenacker wrote:
-> This patch removes the memmove function from boot/compressed/string.c
-> - This definition conflicts with the one in lib/decompress_unxz.c
->   This change is required to support xz compression on ARM.
-> - memmove is not used in any of the other decompressors
->   in lib/decompress_*.c
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  arch/arm/boot/compressed/string.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/compressed/string.c b/arch/arm/boot/compressed/string.c
-> index 36e53ef..369443a 100644
-> --- a/arch/arm/boot/compressed/string.c
-> +++ b/arch/arm/boot/compressed/string.c
-> @@ -40,6 +40,7 @@ void *memcpy(void *__dest, __const void *__src, size_t __n)
->  	return __dest;
->  }
->  
-> +/*
->  void *memmove(void *__dest, __const void *__src, size_t count)
->  {
->  	unsigned char *d = __dest;
-> @@ -55,6 +56,7 @@ void *memmove(void *__dest, __const void *__src, size_t count)
->  		d[count] = s[count];
->  	return __dest;
->  }
-> +*/
-so why not drop it cleanly
+Replaces the seccomp_t typedef with struct seccomp to match modern
+kernel style.
 
-Best Regards,
-J.
+v7: struct seccomp_struct -> struct seccomp
+v6: original inclusion in this series.
+
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/sched.h   |    2 +-
+ include/linux/seccomp.h |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..c30526f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1418,7 +1418,7 @@ struct task_struct {
+ 	uid_t loginuid;
+ 	unsigned int sessionid;
+ #endif
+-	seccomp_t seccomp;
++	struct seccomp seccomp;
+ 
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index cc7a4e9..d61f27f 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -7,7 +7,9 @@
+ #include <linux/thread_info.h>
+ #include <asm/seccomp.h>
+ 
+-typedef struct { int mode; } seccomp_t;
++struct seccomp {
++	int mode;
++};
+ 
+ extern void __secure_computing(int);
+ static inline void secure_computing(int this_syscall)
+@@ -19,7 +21,7 @@ static inline void secure_computing(int this_syscall)
+ extern long prctl_get_seccomp(void);
+ extern long prctl_set_seccomp(unsigned long);
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return s->mode;
+ }
+@@ -28,7 +30,7 @@ static inline int seccomp_mode(seccomp_t *s)
+ 
+ #include <linux/errno.h>
+ 
+-typedef struct { } seccomp_t;
++struct seccomp { };
+ 
+ #define secure_computing(x) do { } while (0)
+ 
+@@ -42,7 +44,7 @@ static inline long prctl_set_seccomp(unsigned long arg2)
+ 	return -EINVAL;
+ }
+ 
+-static inline int seccomp_mode(seccomp_t *s)
++static inline int seccomp_mode(struct seccomp *s)
+ {
+ 	return 0;
+ }
+-- 
+1.7.5.4
+
