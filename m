@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab2BPMZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 07:25:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57765 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2BPMZu convert rfc822-to-8bit (ORCPT
+	id S1750991Ab2BPMdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 07:33:53 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37287 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2BPMdw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 07:25:50 -0500
-Message-ID: <1329395138.2293.206.camel@twins>
-Subject: Re: [RFC PATCH 04/14] sched: maintain the load contribution of
- blocked entities
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Thu, 16 Feb 2012 13:25:38 +0100
-In-Reply-To: <20120202013826.20844.16743.stgit@kitami.mtv.corp.google.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	 <20120202013826.20844.16743.stgit@kitami.mtv.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 16 Feb 2012 07:33:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
+References: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
+	<1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
+Date: Thu, 16 Feb 2012 20:33:51 +0800
+Message-ID: <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
+From: Hillf Danton <dhillf@gmail.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: akpm@linux-foundation.org, abarry@cray.com, hughd@google.com,
+        mgorman@suse.de, minchan.kim@gmail.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
-> +static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
-> +                                                long load_contrib)
-> +{
-> +       if (likely(load_contrib < cfs_rq->blocked_load_avg))
-> +               cfs_rq->blocked_load_avg -= load_contrib;
-> +       else
-> +               cfs_rq->blocked_load_avg = 0;
-> +}
-> +
->  /* Update a sched_entity's runnable average */
-> -static inline void update_entity_load_avg(struct sched_entity *se)
-> +static inline void update_entity_load_avg(struct sched_entity *se,
-> +                                         int update_cfs_rq)
->  {
->         struct cfs_rq *cfs_rq = cfs_rq_of(se);
->         long contrib_delta;
-> @@ -1106,8 +1130,34 @@ static inline void update_entity_load_avg(struct sched_entity *se)
->                 return;
->  
->         contrib_delta = __update_entity_load_avg_contrib(se);
-> +
-> +       if (!update_cfs_rq)
-> +               return;
-> +
->         if (se->on_rq)
->                 cfs_rq->runnable_load_avg += contrib_delta;
-> +       else
-> +               subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
-> +} 
+On Thu, Feb 16, 2012 at 12:24 PM, David Gibson
+<david@gibson.dropbear.id.au> wrote:
+> @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>        if (!page) {
+>                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>                if (!page) {
+> -                       hugetlb_put_quota(inode->i_mapping, chg);
+> +                       hugepage_subpool_put_pages(spool, chg);
+>                        return ERR_PTR(-VM_FAULT_SIGBUS);
+>                }
+>        }
+>
+> -       set_page_private(page, (unsigned long) mapping);
+> +       set_page_private(page, (unsigned long)spool);
+>
 
-So that last bit is add_blocked_load_contrib(), right? 
+Page mapping is used in unmap_ref_private(), and I am
+wondering it no longer works:-(
+
+> @@ -2392,7 +2471,8 @@ retry_avoidcopy:
+>
+>        /* Drop page_table_lock as buddy allocator may be called */
+>        spin_unlock(&mm->page_table_lock);
+> -       new_page = alloc_huge_page(vma, address, outside_reserve);
+> +       new_page = alloc_huge_page(vma, address, outside_reserve,
+> +                                  subpool_vma(vma));
+
+Change in the number of parameters of alloc_huge_page()
+looks unnecessary.
