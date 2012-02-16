@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2BPE61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 23:58:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:33846 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab2BPE60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 23:58:26 -0500
-Date: Thu, 16 Feb 2012 15:57:49 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: eranian@google.com, peterz@infradead.org, mingo@elte.hu, gleb@redhat.com,
-        wcohen@redhat.com, vince@deater.net, asharma@fb.com,
-        andi@firstfloor.org, emunson@mgebm.net, imunsie@au1.ibm.com,
-        benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] powerpc: perf: power_pmu_start restores incorrect
- values, breaking frequency events
-Message-ID: <20120216045749.GA25364@bloggs.ozlabs.ibm.com>
-References: <20120216154822.5bfad11d@kryten>
+	id S1751031Ab2BPFAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:00:19 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59788 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab2BPFAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 00:00:16 -0500
+Message-ID: <4F3C8D3F.9010105@linux.vnet.ibm.com>
+Date: Thu, 16 Feb 2012 12:59:43 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216154822.5bfad11d@kryten>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Ahern <dsahern@gmail.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
+References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com> <4F38E091.5070504@linux.vnet.ibm.com> <4F3931D6.2090305@gmail.com>
+In-Reply-To: <4F3931D6.2090305@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021604-3864-0000-0000-0000016974E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 03:48:22PM +1100, Anton Blanchard wrote:
-> 
-> perf on POWER stopped working after commit e050e3f0a71b (perf: Fix
-> broken interrupt rate throttling). That patch exposed a bug in
-> the POWER perf_events code.
-> 
-> Since the PMCs count upwards and take an exception when the top bit
-> is set, we want to write 0x80000000 - left in power_pmu_start. We were
-> instead programming in left which effectively disables the counter
-> until we eventually hit 0x80000000. This could take seconds or longer.
-> 
-> With the patch applied I get the expected number of samples:
-> 
-> # taskset -c 0 yes > /dev/null &
-> # perf record -C 0 -a sleep 10
-> # perf report -D | grep SAMPLE | tail -1
->           SAMPLE events:       9948
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
+On 02/13/2012 11:52 PM, David Ahern wrote:
 
-Acked-by: Paul Mackerras <paulus@samba.org>
+
+>> The first patch is only needed for code compilation, after kvm-events is
+>> compiled, you can analyse any kernels. :)
+> 
+> understood.
+> 
+> Now that I recall perf's way of handling out of tree builds, a couple of
+> comments:
+> 
+> 1. you need to add the following to tools/perf/MANIFEST
+> arch/x86/include/asm/svm.h
+> arch/x86/include/asm/vmx.h
+> arch/x86/include/asm/kvm_host.h
+> 
+
+
+Right.
+
+> 2.scripts/checkpatch.pl is an unhappy camper.
+> 
+
+
+It seems checkpath always complains about TRACE_EVENT and many more
+than-80-characters lines in perf tools.
+
+> I'll take a look at the code and try out the command when I get some time.
+> 
+
+
+Okay, i will post the next version after collecting your new comments!
+
+Thanks for your time, David! :)
+
