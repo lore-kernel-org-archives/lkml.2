@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab2BPIbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 03:31:00 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18488 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab2BPIa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 03:30:56 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 16 Feb 2012 00:30:56 -0800
-Message-ID: <4F3CBE3F.1090604@nvidia.com>
-Date: Thu, 16 Feb 2012 13:58:47 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "dunlap@xenotime.net" <dunlap@xenotime.net>, "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V1 2/3] Documentation: gpio: Add details of open-drain
- configuration
-References: <1329114588-15430-1-git-send-email-ldewangan@nvidia.com>	<1329114588-15430-3-git-send-email-ldewangan@nvidia.com>	<20120213211809.GI11077@ponder.secretlab.ca> <CACRpkdZzcN5oi0ejeTQn3BNJ_w6XHsBQ_RoQMvpf8Lt2bOARAg@mail.gmail.com>
-In-Reply-To: <CACRpkdZzcN5oi0ejeTQn3BNJ_w6XHsBQ_RoQMvpf8Lt2bOARAg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755821Ab2BPImQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 03:42:16 -0500
+Received: from mail.nudt.edu.cn ([61.187.54.11]:38169 "HELO eyou.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752009Ab2BPImO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 03:42:14 -0500
+X-EYOU-SPAMVALUE: 0
+X-EYOU-DEALDRC: 
+X-EMDG-VER: 2011-01-28
+Message-ID: <529380691.15452@eyou.net>
+X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
+From: Li Wang <liwang@nudt.edu.cn>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: <ecryptfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Wang <liwang@nudt.edu.cn>,
+        Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+Subject: [PATCH 1/3] eCryptfs: Write bug for non-ecryptfs file
+Date: Fri, 17 Feb 2012 00:36:48 +0800
+Message-Id: <1329410210-2712-1-git-send-email-liwang@nudt.edu.cn>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 February 2012 03:55 AM, Linus Walleij wrote:
->> Have you though about support for lines that are pulled low instead of
->> high?  Those aren't as common, but it is conceivable that some
->> hardware would need it.
-> So if the idea is (if I get it correctly) that this thing is an input
-> sometimes and open drain/collector output sometimes, then
-> open source/emitter for the inverse situation is an equally valid
-> case right? In that case I think it'd be best to add both.
->
-> The COH901 driver for U300 supports open source/emitter
-> BTW.
->
+The following code segment in ecryptfs_write_begin(mmap.c) is problematic,
 
-Yes, I can add the open source also but like to be in incremental 
-change. Not together with open drain.
-We can go with:
-- open drain core driver support.
-- open drain sysfs interface support
-- open source core driver support
-- open source sysfs interface.
+1  if (!PageUptodate(page)) {
+2	if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
+3		...
+4	} else if(crypt_stat->flags & ECRYPTFS_VIEW_AS_ENCRYPTED) {
+5		...
+6	} else {
+7		if (prev_page_end_size >= i_size_read(page->mapping->host)) {
+8			zero_user(page, 0, PAGE_CACHE_SIZE);
+9		}
+10		...
+11	}
+12	...
+13      /* Writing to a new page, and creating a small hole from start
+14       * of page? Zero it out. */
+15	if ((i_size_read(mapping->host)==prev_page_end_size) && (pos!=0))
+16		zero_user(page, 0, PAGE_CACHE_SIZE);
 
-I have already changes for the first 2 which we can review/apply,
-Meanwhile I will work on open source support.
+1 The check on 'pos!=0' for the IF statement in line 15 implies that while
+  pos==0, the page needs not be zeroed. Unfortunately, that is not true,
+  suppose an empty non-ecryptfs file has been created beforehand, currently the
+  writter want to write at pos==0 with a length of m bytes, m<PAGE_CACHE_SIZE,
+  now the page will not be zeroed, and set to Uptodate! Then the data within
+  (m,PAGE_CACHE_SIZE) read by any reader will be undefined.
+2 Even remove 'pos!=0', there is further more a case which does not be taken
+  into account,
+  if a file satisfies (i_size_read(mapping->host) > prev_page_end_size), and is
+  non-ecryptfs file, then the page is not zeroed, but the data within
+  (i_size_read(mapping->host), (prev_page_end_size+1)<<PAGE_CACHE_SHIFT) need
+  be zeroed as well.
+3 For ecryptfs file, if satisfies (prev_page_end_size == i_size_read(page->
+  mapping->host) && pos!=0, this page will be double zeroed.
 
-Does it look good?
+This patch solves the above problem.
 
-> Yours,
-> Linus Walleij
+Signed-off-by: Li Wang <liwang@nudt.edu.cn>
+Signed-off-by: Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+---
+ fs/ecryptfs/mmap.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index 10ec695..27c0da8 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -308,6 +308,8 @@ static int ecryptfs_write_begin(struct file *file,
+ 			&ecryptfs_inode_to_private(mapping->host)->crypt_stat;
+ 
+ 		if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
++			if ((i_size_read(mapping->host) >> PAGE_CACHE_SHIFT) <= index)
++				zero_user(page, 0, PAGE_CACHE_SIZE);
+ 			rc = ecryptfs_read_lower_page_segment(
+ 				page, index, 0, PAGE_CACHE_SIZE, mapping->host);
+ 			if (rc) {
+@@ -379,11 +381,6 @@ static int ecryptfs_write_begin(struct file *file,
+ 			}
+ 		}
+ 	}
+-	/* Writing to a new page, and creating a small hole from start
+-	 * of page?  Zero it out. */
+-	if ((i_size_read(mapping->host) == prev_page_end_size)
+-	    && (pos != 0))
+-		zero_user(page, 0, PAGE_CACHE_SIZE);
+ out:
+ 	if (unlikely(rc)) {
+ 		unlock_page(page);
+-- 
+1.7.6.5
 
