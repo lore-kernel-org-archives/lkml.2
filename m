@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab2BPKRY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 05:17:24 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42979 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2BPKRV (ORCPT
+	id S1752406Ab2BPKZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 05:25:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52011 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab2BPKZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 05:17:21 -0500
-Date: Thu, 16 Feb 2012 11:17:14 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        tony.luck@intel.com, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, marcos.mage@gmail.com,
-        prasad@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86, mce: Fix rcu splat in drain_mce_log_buffer()
-Message-ID: <20120216101714.GA17412@aftab>
-References: <20120111142213.16610.85866.stgit@srivatsabhat.in.ibm.com>
- <20120111161153.GA2925@linux.vnet.ibm.com>
- <4F102353.1040109@linux.vnet.ibm.com>
- <20120113214435.GC2909@linux.vnet.ibm.com>
- <20120206161802.GC31237@aftab>
- <20120212174133.GL3737@linux.vnet.ibm.com>
+	Thu, 16 Feb 2012 05:25:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120212174133.GL3737@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329323900.2293.150.camel@twins>
+References: <1328578047.1724.17.camel@dave-Dell-System-XPS-L502X>
+	<CAMQu2gwfo5JXAqQaLUNs7C7J3TUhEO2zOcyD0Rk-D_O61Yrfag@mail.gmail.com>
+	<CAMsRxfLNBbQO5XF+EHJqNsnW+s=ay3mjSV5dh=sxdwzktUu03g@mail.gmail.com>
+	<CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
+	<CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
+	<CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
+	<CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
+	<CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
+	<CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
+	<CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
+	<CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
+	<1329323900.2293.150.camel@twins>
+Date: Thu, 16 Feb 2012 18:25:05 +0800
+Message-ID: <CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
+Subject: Re: oprofile and ARM A9 hardware counter
+From: Ming Lei <ming.lei@canonical.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: eranian@gmail.com, "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        David Long <dave.long@linaro.org>, b-cousson@ti.com, mans@mansr.com,
+        will.deacon@arm.com, linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 12, 2012 at 09:41:33AM -0800, Paul E. McKenney wrote:
-> On Mon, Feb 06, 2012 at 05:18:02PM +0100, Borislav Petkov wrote:
-> > On Fri, Jan 13, 2012 at 01:44:35PM -0800, Paul E. McKenney wrote:
-> > > Looks good to me, but I do need to defer to people who know this code
-> > > better than do I.  The key thing that (from what I can see) makes
-> > > rcu_dereference() unnecessary is that the smp_rmb() used in conjunction
-> > > with polling the .finished field takes care of ordering.
-> > 
-> > Right, this was me trying hard not to screw up touching mcelog.next,
-> > thus trying to use the rcu_dereference_index_check() primitive without
-> > thinking it through too much. But you're right, I'm polling the
-> > ->finished field 4 times (totally arbitrary, btw) which should suffice
-> > while the mce_log() routine above writes those entries.
-> > 
-> > Although, the question still remains, since mce_log() accesses
-> > mcelog.next through the rcu_dereference_index_check() primitive,
-> > shouldn't I do it the same way?
-> 
-> I don't claim to be an mce_log() expert, but when I looked it over,
-> I didn't see a need for rcu_dereference_index_check().  Unless I am
-> confused (quite possible), the memory barriers are sufficient.
-> 
-> The rcu_read_lock() and rcu_read_unlock() seem to be needed to avoid
-> premature freeing, though.
+Hi,
 
-Looka ere:
+On Thu, Feb 16, 2012 at 12:38 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> So what this patch seems to do is put that filter on period in
+> perf_ctx_adjust_freq(). Not making sense.. nor can I see a HZ
+> dependency, perf_ctx_adjust_freq() uses TICK_NSEC as time base.
 
-commit f56e8a0765cc4374e02f4e3a79e2427b5096b075
-Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Date:   Fri Mar 5 15:03:27 2010 -0800
+Yes, you are right, I remembered it was observed it on -rc1, and
+Stephane's unthrottling
+patch was not merged at that time. Today I investigated the problem
+further on -rc3 and found that seems the problem is caused by arm pmu code.
 
-    x86/mce: Fix RCU lockdep splats
+The patch below may fix the problem, now about 40000 sample events
+can be generated on the command:
 
-    Create an rcu_dereference_check_mce() that checks for RCU-sched
-    read side and mce_read_mutex being held on update side.  Replace
-    uses of rcu_dereference() in arch/x86/kernel/cpu/mcheck/mce.c
-    with this new macro.
+	'perf record -e cycles -F 4000  ./noploop 10&& perf report -D | tail -20'
 
-...
+armpmu_event_update may be called in tick path, so the running counter
+will be overflowed and produce a great value of 'delta', then a mistaken
+count is stored into event->count and event->hw.freq_count_stamp. Finally
+the two variables are not synchronous, then a invalid and large period is
+computed and written to pmu, and sample events are decreased much.
 
-+#define rcu_dereference_check_mce(p) \
-+       rcu_dereference_check((p), \
-+                             rcu_read_lock_sched_held() || \
-+                             lockdep_is_held(&mce_read_mutex))
-+
+Will, this patch simplifies the 'delta' computation and doesn't use the
+overflow flag, even though which can be read directly from PMOVSR, could you
+comment on the patch?
 
-So I guess the check is to see that we're rather holding the
-mce_chrdev_read_mutex when accessing this from userspace (the mcelog
-userspace thing).
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 5bb91bf..789700a 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -193,13 +193,8 @@ again:
+ 			     new_raw_count) != prev_raw_count)
+ 		goto again;
 
-I can't comment on the RCU-sched thing because I don't know it that
-well. It has to do with extended CPU idle times but why do we require to
-be in RCU read-side critical section when accessing the index? Hmmm, I
-think a guy called Paul should know :-) ...
+-	new_raw_count &= armpmu->max_period;
+-	prev_raw_count &= armpmu->max_period;
+-
+-	if (overflow)
+-		delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
+-	else
+-		delta = new_raw_count - prev_raw_count;
++	delta = (armpmu->max_period - prev_raw_count + new_raw_count
++				+ 1) & armpmu->max_period;
 
-Thanks.
+ 	local64_add(delta, &event->count);
+ 	local64_sub(delta, &hwc->period_left);
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+thanks,
+--
+Ming Lei
