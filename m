@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2BPWje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 17:39:34 -0500
+	id S1755489Ab2BPWiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 17:38:10 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:35363 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2BPWiL (ORCPT
+	with ESMTP id S1751708Ab2BPWiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 17:38:11 -0500
+	Thu, 16 Feb 2012 17:38:08 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/9] block: interface update for ioc/icq creation functions
-Date: Thu, 16 Feb 2012 14:37:53 -0800
-Message-Id: <1329431878-28300-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/9] blkcg: drop unnecessary RCU locking
+Date: Thu, 16 Feb 2012 14:37:51 -0800
+Message-Id: <1329431878-28300-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329431878-28300-1-git-send-email-tj@kernel.org>
 References: <1329431878-28300-1-git-send-email-tj@kernel.org>
@@ -21,181 +21,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the following interface updates to prepare for future ioc related
-changes.
+Now that blkg additions / removals are always done under both q and
+blkcg locks, the only place RCU locking is used is blkg_lookup() for
+lockless lookup.  This patch drops unncessary RCU locking replacing it
+with plain blkcg / q locking as necessary.
 
-* create_io_context() returning ioc only works for %current because it
-  doesn't increment ref on the ioc.  Drop @task parameter from it and
-  always assume %current.
+* blkg_lookup_create() and blkiocg_pre_destroy() already perform
+  proper locking and don't need RCU.  Dropped.
 
-* Make create_io_context_slowpath() return 0 or -errno and rename it
-  to create_task_io_context().
+* queue_lock coverage extended to cover @blkg usage in
+  blkio_policy_parse_and_set() and RCU dropped.  This means all config
+  update callbacks are now called under queue_lock.
 
-* Make ioc_create_icq() take @ioc as parameter instead of assuming
-  that of %current.  The caller, get_request(), is updated to create
-  ioc explicitly and then pass it into ioc_create_icq().
+* blkio_read_blkg_stats() now uses blkcg->lock instead of RCU read
+  lock.  This isn't a hot path.
+
+* RCU locking around blkg_lookup_create() in cfq_init_queue() and
+  blk_throtl_init() removed.
+
+* Now unnecessary synchronize_rcu() from queue exit paths removed.
+  This makes q->nr_blkgs unnecessary.  Dropped.
+
+* RCU annotation on blkg->q removed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c |    8 +++++---
- block/blk-ioc.c  |   22 ++++++++++------------
- block/blk.h      |   24 +++++++++++-------------
- 3 files changed, 26 insertions(+), 28 deletions(-)
+ block/blk-cgroup.c     |   26 +++++++-------------------
+ block/blk-cgroup.h     |    4 ++--
+ block/blk-throttle.c   |   35 +----------------------------------
+ block/cfq-iosched.c    |   26 --------------------------
+ include/linux/blkdev.h |    1 -
+ 5 files changed, 10 insertions(+), 82 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 69fa8c4..195c5f7 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -854,7 +854,7 @@ retry:
- 			 */
- 			if (!ioc && !retried) {
- 				spin_unlock_irq(q->queue_lock);
--				create_io_context(current, gfp_mask, q->node);
-+				create_io_context(gfp_mask, q->node);
- 				spin_lock_irq(q->queue_lock);
- 				retried = true;
- 				goto retry;
-@@ -918,7 +918,9 @@ retry:
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index aee71ef..fb5f21b 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -500,7 +500,7 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 		return NULL;
  
- 	/* create icq if missing */
- 	if ((rw_flags & REQ_ELVPRIV) && unlikely(et->icq_cache && !icq)) {
--		icq = ioc_create_icq(q, gfp_mask);
-+		ioc = create_io_context(gfp_mask, q->node);
-+		if (ioc)
-+			icq = ioc_create_icq(ioc, q, gfp_mask);
- 		if (!icq)
- 			goto fail_alloc;
- 	}
-@@ -1004,7 +1006,7 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
- 		 * up to a big batch of them for a small period time.
- 		 * See ioc_batching, ioc_set_batching
- 		 */
--		create_io_context(current, GFP_NOIO, q->node);
-+		create_io_context(GFP_NOIO, q->node);
- 		ioc_set_batching(q, current->io_context);
- 
- 		spin_lock_irq(q->queue_lock);
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 92bf555..1092874 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -212,15 +212,14 @@ void ioc_clear_queue(struct request_queue *q)
- 	}
- }
- 
--void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_flags,
--				int node)
-+int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+ 	spin_lock_init(&blkg->stats_lock);
+-	rcu_assign_pointer(blkg->q, q);
++	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+ 	blkg->refcnt = 1;
+@@ -551,7 +551,6 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
  {
- 	struct io_context *ioc;
+ 	struct blkio_group *blkg, *new_blkg;
  
- 	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags | __GFP_ZERO,
- 				    node);
- 	if (unlikely(!ioc))
--		return;
-+		return -ENOMEM;
+-	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
  
- 	/* initialize */
- 	atomic_long_set(&ioc->refcount, 1);
-@@ -244,6 +243,8 @@ void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_flags,
- 	else
- 		kmem_cache_free(iocontext_cachep, ioc);
- 	task_unlock(task);
-+
-+	return 0;
- }
+ 	/*
+@@ -581,11 +580,9 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+ 	 * allocation is fixed.
+ 	 */
+ 	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
  
- /**
-@@ -275,7 +276,7 @@ struct io_context *get_task_io_context(struct task_struct *task,
- 			return ioc;
- 		}
- 		task_unlock(task);
--	} while (create_io_context(task, gfp_flags, node));
-+	} while (!create_task_io_context(task, gfp_flags, node));
+ 	new_blkg = blkg_alloc(blkcg, q);
  
- 	return NULL;
- }
-@@ -319,26 +320,23 @@ EXPORT_SYMBOL(ioc_lookup_icq);
+-	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
  
- /**
-  * ioc_create_icq - create and link io_cq
-+ * @ioc: io_context of interest
-  * @q: request_queue of interest
-  * @gfp_mask: allocation mask
-  *
-- * Make sure io_cq linking %current->io_context and @q exists.  If either
-- * io_context and/or icq don't exist, they will be created using @gfp_mask.
-+ * Make sure io_cq linking @ioc and @q exists.  If icq doesn't exist, they
-+ * will be created using @gfp_mask.
-  *
-  * The caller is responsible for ensuring @ioc won't go away and @q is
-  * alive and will stay alive until this function returns.
-  */
--struct io_cq *ioc_create_icq(struct request_queue *q, gfp_t gfp_mask)
-+struct io_cq *ioc_create_icq(struct io_context *ioc, struct request_queue *q,
-+			     gfp_t gfp_mask)
- {
- 	struct elevator_type *et = q->elevator->type;
--	struct io_context *ioc;
- 	struct io_cq *icq;
+ 	/* did bypass get turned on inbetween? */
+@@ -611,7 +608,6 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
  
- 	/* allocate stuff */
--	ioc = create_io_context(current, gfp_mask, q->node);
--	if (!ioc)
--		return NULL;
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+ 	list_add(&blkg->q_node, &q->blkg_list);
+-	q->nr_blkgs++;
+ 
+ 	spin_unlock(&blkcg->lock);
+ out:
+@@ -648,9 +644,6 @@ static void blkg_destroy(struct blkio_group *blkg)
+ 	list_del_init(&blkg->q_node);
+ 	hlist_del_init_rcu(&blkg->blkcg_node);
+ 
+-	WARN_ON_ONCE(q->nr_blkgs <= 0);
+-	q->nr_blkgs--;
 -
- 	icq = kmem_cache_alloc_node(et->icq_cache, gfp_mask | __GFP_ZERO,
- 				    q->node);
- 	if (!icq)
-diff --git a/block/blk.h b/block/blk.h
-index de15f92..aa81afd 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -200,32 +200,30 @@ static inline int blk_do_io_stat(struct request *rq)
-  */
- void get_io_context(struct io_context *ioc);
- struct io_cq *ioc_lookup_icq(struct io_context *ioc, struct request_queue *q);
--struct io_cq *ioc_create_icq(struct request_queue *q, gfp_t gfp_mask);
-+struct io_cq *ioc_create_icq(struct io_context *ioc, struct request_queue *q,
-+			     gfp_t gfp_mask);
- void ioc_clear_queue(struct request_queue *q);
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+@@ -1041,11 +1034,8 @@ static int blkio_policy_parse_and_set(char *buf, enum blkio_policy_id plid,
+ 	if (!disk || part)
+ 		goto out;
  
--void create_io_context_slowpath(struct task_struct *task, gfp_t gfp_mask,
--				int node);
-+int create_task_io_context(struct task_struct *task, gfp_t gfp_mask, int node);
+-	rcu_read_lock();
+-
+ 	spin_lock_irq(disk->queue->queue_lock);
+ 	blkg = blkg_lookup_create(blkcg, disk->queue, plid, false);
+-	spin_unlock_irq(disk->queue->queue_lock);
  
- /**
-  * create_io_context - try to create task->io_context
-- * @task: target task
-  * @gfp_mask: allocation mask
-  * @node: allocation node
-  *
-- * If @task->io_context is %NULL, allocate a new io_context and install it.
-- * Returns the current @task->io_context which may be %NULL if allocation
-- * failed.
-+ * If %current->io_context is %NULL, allocate a new io_context and install
-+ * it.  Returns the current %current->io_context which may be %NULL if
-+ * allocation failed.
-  *
-  * Note that this function can't be called with IRQ disabled because
-- * task_lock which protects @task->io_context is IRQ-unsafe.
-+ * task_lock which protects %current->io_context is IRQ-unsafe.
-  */
--static inline struct io_context *create_io_context(struct task_struct *task,
--						   gfp_t gfp_mask, int node)
-+static inline struct io_context *create_io_context(gfp_t gfp_mask, int node)
- {
- 	WARN_ON_ONCE(irqs_disabled());
--	if (unlikely(!task->io_context))
--		create_io_context_slowpath(task, gfp_mask, node);
--	return task->io_context;
-+	if (unlikely(!current->io_context))
-+		create_task_io_context(current, gfp_mask, node);
-+	return current->io_context;
+ 	if (IS_ERR(blkg)) {
+ 		ret = PTR_ERR(blkg);
+@@ -1092,7 +1082,7 @@ static int blkio_policy_parse_and_set(char *buf, enum blkio_policy_id plid,
+ 	}
+ 	ret = 0;
+ out_unlock:
+-	rcu_read_unlock();
++	spin_unlock_irq(disk->queue->queue_lock);
+ out:
+ 	put_disk(disk);
+ 
+@@ -1224,7 +1214,8 @@ static int blkio_read_blkg_stats(struct blkio_cgroup *blkcg,
+ 	struct hlist_node *n;
+ 	uint64_t cgroup_total = 0;
+ 
+-	rcu_read_lock();
++	spin_lock_irq(&blkcg->lock);
++
+ 	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {
+ 		const char *dname = dev_name(blkg->q->backing_dev_info.dev);
+ 		int plid = BLKIOFILE_POLICY(cft->private);
+@@ -1241,7 +1232,8 @@ static int blkio_read_blkg_stats(struct blkio_cgroup *blkcg,
+ 	}
+ 	if (show_total)
+ 		cb->fill(cb, "Total", cgroup_total);
+-	rcu_read_unlock();
++
++	spin_unlock_irq(&blkcg->lock);
+ 	return 0;
  }
  
- /*
+@@ -1573,28 +1565,24 @@ static int blkiocg_pre_destroy(struct cgroup_subsys *subsys,
+ {
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 
+-	rcu_read_lock();
+ 	spin_lock_irq(&blkcg->lock);
+ 
+ 	while (!hlist_empty(&blkcg->blkg_list)) {
+ 		struct blkio_group *blkg = hlist_entry(blkcg->blkg_list.first,
+ 						struct blkio_group, blkcg_node);
+-		struct request_queue *q = rcu_dereference(blkg->q);
++		struct request_queue *q = blkg->q;
+ 
+ 		if (spin_trylock(q->queue_lock)) {
+ 			blkg_destroy(blkg);
+ 			spin_unlock(q->queue_lock);
+ 		} else {
+ 			spin_unlock_irq(&blkcg->lock);
+-			rcu_read_unlock();
+ 			cpu_relax();
+-			rcu_read_lock();
+ 			spin_lock(&blkcg->lock);
+ 		}
+ 	}
+ 
+ 	spin_unlock_irq(&blkcg->lock);
+-	rcu_read_unlock();
+ 	return 0;
+ }
+ 
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index bebc442..1a80619 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -176,8 +176,8 @@ struct blkg_policy_data {
+ };
+ 
+ struct blkio_group {
+-	/* Pointer to the associated request_queue, RCU protected */
+-	struct request_queue __rcu *q;
++	/* Pointer to the associated request_queue */
++	struct request_queue *q;
+ 	struct list_head q_node;
+ 	struct hlist_node blkcg_node;
+ 	struct blkio_cgroup *blkcg;
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index e35ee7a..8cd13ec 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -1026,7 +1026,6 @@ int blk_throtl_init(struct request_queue *q)
+ 	td->queue = q;
+ 
+ 	/* alloc and init root group. */
+-	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	blkg = blkg_lookup_create(&blkio_root_cgroup, q, BLKIO_POLICY_THROTL,
+@@ -1035,7 +1034,6 @@ int blk_throtl_init(struct request_queue *q)
+ 		td->root_tg = blkg_to_tg(blkg);
+ 
+ 	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
+ 
+ 	if (!td->root_tg) {
+ 		kfree(td);
+@@ -1046,39 +1044,8 @@ int blk_throtl_init(struct request_queue *q)
+ 
+ void blk_throtl_exit(struct request_queue *q)
+ {
+-	struct throtl_data *td = q->td;
+-	bool wait;
+-
+-	BUG_ON(!td);
+-
++	BUG_ON(!q->td);
+ 	throtl_shutdown_wq(q);
+-
+-	/* If there are other groups */
+-	spin_lock_irq(q->queue_lock);
+-	wait = q->nr_blkgs;
+-	spin_unlock_irq(q->queue_lock);
+-
+-	/*
+-	 * Wait for tg_to_blkg(tg)->q accessors to exit their grace periods.
+-	 * Do this wait only if there are other undestroyed groups out
+-	 * there (other than root group). This can happen if cgroup deletion
+-	 * path claimed the responsibility of cleaning up a group before
+-	 * queue cleanup code get to the group.
+-	 *
+-	 * Do not call synchronize_rcu() unconditionally as there are drivers
+-	 * which create/delete request queue hundreds of times during scan/boot
+-	 * and synchronize_rcu() can take significant time and slow down boot.
+-	 */
+-	if (wait)
+-		synchronize_rcu();
+-
+-	/*
+-	 * Just being safe to make sure after previous flush if some body did
+-	 * update limits through cgroup and another work got queued, cancel
+-	 * it.
+-	 */
+-	throtl_shutdown_wq(q);
+-
+ 	kfree(q->td);
+ }
+ 
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 637cd76..cc8e9ef 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3449,7 +3449,6 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ {
+ 	struct cfq_data *cfqd = e->elevator_data;
+ 	struct request_queue *q = cfqd->queue;
+-	bool wait = false;
+ 
+ 	cfq_shutdown_timer_wq(cfqd);
+ 
+@@ -3462,31 +3461,8 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 
+ 	spin_unlock_irq(q->queue_lock);
+ 
+-#ifdef CONFIG_BLK_CGROUP
+-	/*
+-	 * If there are groups which we could not unlink from blkcg list,
+-	 * wait for a rcu period for them to be freed.
+-	 */
+-	spin_lock_irq(q->queue_lock);
+-	wait = q->nr_blkgs;
+-	spin_unlock_irq(q->queue_lock);
+-#endif
+ 	cfq_shutdown_timer_wq(cfqd);
+ 
+-	/*
+-	 * Wait for cfqg->blkg->key accessors to exit their grace periods.
+-	 * Do this wait only if there are other unlinked groups out
+-	 * there. This can happen if cgroup deletion path claimed the
+-	 * responsibility of cleaning up a group before queue cleanup code
+-	 * get to the group.
+-	 *
+-	 * Do not call synchronize_rcu() unconditionally as there are drivers
+-	 * which create/delete request queue hundreds of times during scan/boot
+-	 * and synchronize_rcu() can take significant time and slow down boot.
+-	 */
+-	if (wait)
+-		synchronize_rcu();
+-
+ #ifndef CONFIG_CFQ_GROUP_IOSCHED
+ 	kfree(cfqd->root_group);
+ #endif
+@@ -3511,7 +3487,6 @@ static int cfq_init_queue(struct request_queue *q)
+ 
+ 	/* Init root group and prefer root group over other groups by default */
+ #ifdef CONFIG_CFQ_GROUP_IOSCHED
+-	rcu_read_lock();
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	blkg = blkg_lookup_create(&blkio_root_cgroup, q, BLKIO_POLICY_PROP,
+@@ -3520,7 +3495,6 @@ static int cfq_init_queue(struct request_queue *q)
+ 		cfqd->root_group = blkg_to_cfqg(blkg);
+ 
+ 	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
+ #else
+ 	cfqd->root_group = kzalloc_node(sizeof(*cfqd->root_group),
+ 					GFP_KERNEL, cfqd->queue->node);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index b4d1d4b..33f1b29 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -365,7 +365,6 @@ struct request_queue {
+ #ifdef CONFIG_BLK_CGROUP
+ 	/* XXX: array size hardcoded to avoid include dependency (temporary) */
+ 	struct list_head	blkg_list;
+-	int			nr_blkgs;
+ #endif
+ 
+ 	struct queue_limits	limits;
 -- 
 1.7.7.3
 
