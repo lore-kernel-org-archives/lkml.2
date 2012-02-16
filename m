@@ -1,72 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2BPRDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 12:03:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39972 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab2BPRDX convert rfc822-to-8bit (ORCPT
+	id S1753631Ab2BPRJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 12:09:53 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:41795 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751428Ab2BPRJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 12:03:23 -0500
-Message-ID: <1329411783.2293.257.camel@twins>
-Subject: Re: [PATCHv5 0/8] perf tool: parser generator for events parsing
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 16 Feb 2012 18:03:03 +0100
-In-Reply-To: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
-References: <1329393652-6055-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 16 Feb 2012 12:09:50 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: linux-kernel@vger.kernel.org
+Cc: Danny Kukawka <dkukawka@suse.de>, uclinux-dist-devel@blackfin.uclinux.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Miao <realmz6@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        Scott Jiang <scott.jiang@analog.com>, netdev@vger.kernel.org
+Subject: [PATCH v2 1/2] arch/blackfin: don't generate random mac in bfin_get_ether_addr()
+Date: Thu, 16 Feb 2012 18:09:30 +0100
+Message-Id: <1329412171-20704-2-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329412190;7f03eeb1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-16 at 13:00 +0100, Jiri Olsa wrote:
-> hi,
-> here's new version of event parsing patchset.
-> 
-> I saw Arnaldo already sent patches 1-3 to Ingo, but they did not make it
-> to the tree yet, so I'm still attaching them here.
-> 
-> v5 changes:
->  4/8 - patch updated by Peter with actual format definitions
->        for x86 processors
->  6/8 - added hardcoded terms for config[12] and sample_period
->        the code is ready to include branch_sample_type once
->        this field is available in perf_event_attr, just
->        uncommenting one line.. ;) 
->      - allow config option to be used without value in which
->        case 1 is assigned as value
-> 
-> Overall summarize:
->  - adding event parser bison/flex generator
->  - the event syntax stays as it was
->  - adding event format sysfs group attribute
->    for pmu device
->  - adding new syntax to specify raw events based
->    on the sysfs pmu's format attribute
->    eg. "cpu/config=1,config1=2,config2=3/u"
-> 
-> Attached patches:
->  1/8 perf, tool: Remove unused functions from debugfs object
->  2/8 perf, tool: Add sysfs mountpoint interface
->  3/8 perf, tool: Add bitmap_or function into bitmap object
->  4/8 perf: Adding sysfs group format attribute for pmu device
->  5/8 perf, tool: Add parser generator for events parsing
->  6/8 perf, tool: Add config options support for event parsing
->  7/8 perf, tool: Add perf pmu object to access pmu format definition
->  8/8 perf, tool: Add support to specify pmu style event
+Changed bfin_get_ether_addr() to return a state and to
+set no random mac address if the board don't provide one.
 
-I'm fine with this going fwd, and since this is mostly tools/perf I
-suggest acme take it, so:
+Let the caller of bfin_get_ether_addr() set a random mac
+address if the return value is not 0.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+v2: don't set random mac in bfin_get_ether_addr()
 
-Also, it might make sense to CC everybody who has/maintains a hardware
-pmu implementation on patch 4.
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ arch/blackfin/mach-bf518/boards/ezbrd.c      |    3 ++-
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c  |    5 ++---
+ arch/blackfin/mach-bf527/boards/ad7160eval.c |    3 ++-
+ arch/blackfin/mach-bf527/boards/cm_bf527.c   |    5 ++---
+ arch/blackfin/mach-bf527/boards/ezbrd.c      |    3 ++-
+ arch/blackfin/mach-bf527/boards/ezkit.c      |    3 ++-
+ arch/blackfin/mach-bf527/boards/tll6527m.c   |    3 ++-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c  |    5 ++---
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c  |    5 ++---
+ arch/blackfin/mach-bf537/boards/dnp5370.c    |    3 ++-
+ arch/blackfin/mach-bf537/boards/pnav10.c     |    5 ++---
+ arch/blackfin/mach-bf537/boards/stamp.c      |    3 ++-
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c  |    5 ++---
+ 13 files changed, 26 insertions(+), 25 deletions(-)
 
-Thanks Jiri!
+diff --git a/arch/blackfin/mach-bf518/boards/ezbrd.c b/arch/blackfin/mach-bf518/boards/ezbrd.c
+index a2d96d3..a173957 100644
+--- a/arch/blackfin/mach-bf518/boards/ezbrd.c
++++ b/arch/blackfin/mach-bf518/boards/ezbrd.c
+@@ -821,7 +821,7 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	/* the MAC is stored in OTP memory page 0xDF */
+ 	u32 ret;
+@@ -834,5 +834,6 @@ void bfin_get_ether_addr(char *addr)
+ 		for (ret = 0; ret < 6; ++ret)
+ 			addr[ret] = otp_mac_p[5 - ret];
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf518/boards/tcm-bf518.c b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
+index f271310..6eebee4 100644
+--- a/arch/blackfin/mach-bf518/boards/tcm-bf518.c
++++ b/arch/blackfin/mach-bf518/boards/tcm-bf518.c
+@@ -730,9 +730,8 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf527/boards/ad7160eval.c b/arch/blackfin/mach-bf527/boards/ad7160eval.c
+index c8d5d2b..fad7fea 100644
+--- a/arch/blackfin/mach-bf527/boards/ad7160eval.c
++++ b/arch/blackfin/mach-bf527/boards/ad7160eval.c
+@@ -846,7 +846,7 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	/* the MAC is stored in OTP memory page 0xDF */
+ 	u32 ret;
+@@ -859,5 +859,6 @@ void bfin_get_ether_addr(char *addr)
+ 		for (ret = 0; ret < 6; ++ret)
+ 			addr[ret] = otp_mac_p[5 - ret];
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf527/boards/cm_bf527.c b/arch/blackfin/mach-bf527/boards/cm_bf527.c
+index 7330607..65b7fbd 100644
+--- a/arch/blackfin/mach-bf527/boards/cm_bf527.c
++++ b/arch/blackfin/mach-bf527/boards/cm_bf527.c
+@@ -983,9 +983,8 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf527/boards/ezbrd.c b/arch/blackfin/mach-bf527/boards/ezbrd.c
+index db3ecfc..17c6a24 100644
+--- a/arch/blackfin/mach-bf527/boards/ezbrd.c
++++ b/arch/blackfin/mach-bf527/boards/ezbrd.c
+@@ -870,7 +870,7 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	/* the MAC is stored in OTP memory page 0xDF */
+ 	u32 ret;
+@@ -883,5 +883,6 @@ void bfin_get_ether_addr(char *addr)
+ 		for (ret = 0; ret < 6; ++ret)
+ 			addr[ret] = otp_mac_p[5 - ret];
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf527/boards/ezkit.c b/arch/blackfin/mach-bf527/boards/ezkit.c
+index dfdd8e6..2f9a2bd 100644
+--- a/arch/blackfin/mach-bf527/boards/ezkit.c
++++ b/arch/blackfin/mach-bf527/boards/ezkit.c
+@@ -1311,7 +1311,7 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	/* the MAC is stored in OTP memory page 0xDF */
+ 	u32 ret;
+@@ -1324,5 +1324,6 @@ void bfin_get_ether_addr(char *addr)
+ 		for (ret = 0; ret < 6; ++ret)
+ 			addr[ret] = otp_mac_p[5 - ret];
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf527/boards/tll6527m.c b/arch/blackfin/mach-bf527/boards/tll6527m.c
+index 360e97f..d192c0a 100644
+--- a/arch/blackfin/mach-bf527/boards/tll6527m.c
++++ b/arch/blackfin/mach-bf527/boards/tll6527m.c
+@@ -931,7 +931,7 @@ void native_machine_restart(char *cmd)
+ 		bfin_reset_boot_spi_cs(P_DEFAULT_BOOT_SPI_CS);
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	/* the MAC is stored in OTP memory page 0xDF */
+ 	u32 ret;
+@@ -945,5 +945,6 @@ void bfin_get_ether_addr(char *addr)
+ 		for (ret = 0; ret < 6; ++ret)
+ 			addr[ret] = otp_mac_p[5 - ret];
+ 	}
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/cm_bf537e.c b/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+index 0d4a2f6..27fd2c3 100644
+--- a/arch/blackfin/mach-bf537/boards/cm_bf537e.c
++++ b/arch/blackfin/mach-bf537/boards/cm_bf537e.c
+@@ -813,9 +813,8 @@ void __init native_machine_early_platform_add_devices(void)
+ 		ARRAY_SIZE(cm_bf537e_early_devices));
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/cm_bf537u.c b/arch/blackfin/mach-bf537/boards/cm_bf537u.c
+index f553698..3f3abad 100644
+--- a/arch/blackfin/mach-bf537/boards/cm_bf537u.c
++++ b/arch/blackfin/mach-bf537/boards/cm_bf537u.c
+@@ -790,9 +790,8 @@ void __init native_machine_early_platform_add_devices(void)
+ 		ARRAY_SIZE(cm_bf537u_early_devices));
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/dnp5370.c b/arch/blackfin/mach-bf537/boards/dnp5370.c
+index 11dadeb..6f77bf7 100644
+--- a/arch/blackfin/mach-bf537/boards/dnp5370.c
++++ b/arch/blackfin/mach-bf537/boards/dnp5370.c
+@@ -399,9 +399,10 @@ arch_initcall(dnp5370_init);
+ /*
+  * Currently the MAC address is saved in Flash by U-Boot
+  */
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	*(u32 *)(&(addr[0])) = bfin_read32(FLASH_MAC);
+ 	*(u16 *)(&(addr[4])) = bfin_read16(FLASH_MAC + 4);
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/pnav10.c b/arch/blackfin/mach-bf537/boards/pnav10.c
+index 6fd8470..e9507fe 100644
+--- a/arch/blackfin/mach-bf537/boards/pnav10.c
++++ b/arch/blackfin/mach-bf537/boards/pnav10.c
+@@ -535,9 +535,8 @@ void __init native_machine_early_platform_add_devices(void)
+ 		ARRAY_SIZE(stamp_early_devices));
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 2221173..0b80725 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -2993,9 +2993,10 @@ void native_machine_restart(char *cmd)
+  * Currently the MAC address is saved in Flash by U-Boot
+  */
+ #define FLASH_MAC	0x203f0000
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+ 	*(u32 *)(&(addr[0])) = bfin_read32(FLASH_MAC);
+ 	*(u16 *)(&(addr[4])) = bfin_read16(FLASH_MAC + 4);
++	return 0;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+diff --git a/arch/blackfin/mach-bf537/boards/tcm_bf537.c b/arch/blackfin/mach-bf537/boards/tcm_bf537.c
+index 9885176..3fb4218 100644
+--- a/arch/blackfin/mach-bf537/boards/tcm_bf537.c
++++ b/arch/blackfin/mach-bf537/boards/tcm_bf537.c
+@@ -780,9 +780,8 @@ void __init native_machine_early_platform_add_devices(void)
+ 		ARRAY_SIZE(cm_bf537_early_devices));
+ }
+ 
+-void bfin_get_ether_addr(char *addr)
++int bfin_get_ether_addr(char *addr)
+ {
+-	random_ether_addr(addr);
+-	printk(KERN_WARNING "%s:%s: Setting Ethernet MAC to a random one\n", __FILE__, __func__);
++	return 1;
+ }
+ EXPORT_SYMBOL(bfin_get_ether_addr);
+-- 
+1.7.8.3
+
