@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2BPI5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 03:57:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44262 "EHLO mx1.redhat.com"
+	id S1756236Ab2BPJD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 04:03:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33366 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab2BPI5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 03:57:48 -0500
-Date: Thu, 16 Feb 2012 10:57:41 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, Rusty Russell <rusty@ozlabs.org>,
-        qemu-devel <qemu-devel@nongnu.org>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Message-ID: <20120216085741.GB19771@redhat.com>
-References: <4F2AB552.2070909@redhat.com>
- <20120205093723.GQ23536@redhat.com>
- <4F2E4F8B.8090504@redhat.com>
- <20120205095153.GA29265@redhat.com>
- <4F2EAFF6.7030006@codemonkey.ws>
- <4F2F9E89.7090607@redhat.com>
- <87vcnih5qt.fsf@rustcorp.com.au>
- <4F3BB59D.2020505@redhat.com>
- <4F3C2AC5.80400@codemonkey.ws>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3C2AC5.80400@codemonkey.ws>
+	id S1755154Ab2BPJDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 04:03:21 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] introduce pmd_to_pte_t()
+Date: Thu, 16 Feb 2012 04:02:42 -0500
+Message-Id: <1329382962-27039-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20120215165408.a111eefa.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 03:59:33PM -0600, Anthony Liguori wrote:
-> On 02/15/2012 07:39 AM, Avi Kivity wrote:
-> >On 02/07/2012 08:12 PM, Rusty Russell wrote:
-> >>>I would really love to have this, but the problem is that we'd need a
-> >>>general purpose bytecode VM with binding to some kernel APIs.  The
-> >>>bytecode VM, if made general enough to host more complicated devices,
-> >>>would likely be much larger than the actual code we have in the kernel now.
-> >>
-> >>We have the ability to upload bytecode into the kernel already.  It's in
-> >>a great bytecode interpreted by the CPU itself.
+On Wed, Feb 15, 2012 at 04:54:08PM -0800, Andrew Morton wrote:
+> On Wed,  8 Feb 2012 10:51:41 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > Casting pmd into pte_t to handle thp is strongly architecture dependent.
+> > This patch introduces a new function to separate this dependency from
+> > independent part.
+> > 
 > >
-> >Unfortunately it's inflexible (has to come with the kernel) and open to
-> >security vulnerabilities.
+> > ...
+> >
+> > --- 3.3-rc2.orig/include/asm-generic/pgtable.h
+> > +++ 3.3-rc2/include/asm-generic/pgtable.h
+> > @@ -434,6 +434,10 @@ static inline int pmd_trans_splitting(pmd_t pmd)
+> >  {
+> >  	return 0;
+> >  }
+> > +static inline pte_t pmd_to_pte_t(pmd_t *pmd)
+> > +{
+> > +	return 0;
+> > +}
 > 
-> I wonder if there's any reasonable way to run device emulation
-> within the context of the guest.  Could we effectively do something
-> like SMM?
-> 
-> For a given set of traps, reflect back into the guest quickly
-> changing the visibility of the VGA region. It may require installing
-> a new CR3 but maybe that wouldn't be so bad with VPIDs.
-> 
-What will it buy us? Surely not speed. Entering a guest is not much
-(if at all) faster than exiting to userspace and any non trivial
-operation will require exit to userspace anyway, so we just added one
-more guest entry/exit operation on the way to userspace.
+> This doesn't compile.
 
-> Then you could implement the PIT as guest firmware using kvmclock as the time base.
-> 
-> Once you're back in the guest, you could install the old CR3.
-> Perhaps just hide a portion of the physical address space with the
-> e820.
-> 
-> Regards,
-> 
-> Anthony Liguori
-> 
-> >>If every user were emulating different machines, LPF this would make
-> >>sense.  Are they?
-> >
-> >They aren't.
-> >
-> >>Or should we write those helpers once, in C, and
-> >>provide that for them.
-> >
-> >There are many of them: PIT/PIC/IOAPIC/MSIX tables/HPET/kvmclock/Hyper-V
-> >stuff/vhost-net/DMA remapping/IO remapping (just for x86), and some of
-> >them are quite complicated.  However implementing them in bytecode
-> >amounts to exposing a stable kernel ABI, since they use such a vast
-> >range of kernel services.
-> >
+Sorry for my failing to make sure of compile testing.
+The return value should be cast to pte_t to pass the complie.
 
---
-			Gleb.
+> And I can't think of a sensible way of generating a stub for this
+> operation - if you have a pmd_t and want to convert it to a pte_t then
+> just convert it, dammit.  And there's no rationality behind making that
+> conversion unavailable or inoperative if CONFIG_TRANSPARENT_HUGEPAGE=n?
+> 
+> Shudder.  I'll drop the patch.  Rethink, please.
+
+OK for dropping it.
+This patch is not enough to solve the problem of isolating arch dependency.
+
+Although it's not clear from the name, the intension of this function was
+to get the lowest level of entry in page table hierarchy which points to
+a hugepage.  It is pmd for x86_64, but pte for powerpc64 for example.
+So I thought it's useful to introduce a stub like above.
+But the callers of this function assume that pmd points to hugepage,
+so arch dependency in arch independent code still remains.
+We need to work on it when thp supports other archs,
+but anyway, removing this patch is not critical for others of this series,
+so I'm ok about it.
