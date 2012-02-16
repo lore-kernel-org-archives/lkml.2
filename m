@@ -1,90 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2BPEX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 23:23:29 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38689 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2BPEX0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 23:23:26 -0500
-Date: Thu, 16 Feb 2012 15:23:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20120216152316.821ac82e04a5ee30327b81c3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__16_Feb_2012_15_23_16_+1100_7a2csSZoc5eXdZ/j"
+	id S1755261Ab2BPEYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 23:24:13 -0500
+Received: from ozlabs.org ([203.10.76.45]:59653 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754268Ab2BPEYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Feb 2012 23:24:11 -0500
+From: David Gibson <david@gibson.dropbear.id.au>
+To: akpm@linux-foundation.org, abarry@cray.com
+Cc: hughd@google.com, mgorman@suse.de, minchan.kim@gmail.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Cleanup to hugetlb.h
+Date: Thu, 16 Feb 2012 15:23:59 +1100
+Message-Id: <1329366240-11663-2-git-send-email-david@gibson.dropbear.id.au>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
+References: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__16_Feb_2012_15_23_16_+1100_7a2csSZoc5eXdZ/j
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch makes a couple of small cleanups to linux/include/hugetlb.h.
+The set_file_hugepages() function, which was not used anywhere is removed,
+and the hugetlbfs_config and hugetlbfs_inode_info structures with its
+HUGETLBFS_I helper function are moved into inode.c, the only place they
+were used.
 
-Hi Greg,
+These structures are really linked to the hugetlbfs filesystem specifically
+not to hugepage mm handling in general, so they belong in the filesystem
+code not in a generally available header.  It would be nice to move the
+hugetlbfs_sb_info (superblock) structure in there as well, but it's
+currently needed in a number of places via the hstate_vma() and
+hstate_inode().
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+---
+ fs/hugetlbfs/inode.c    |   19 +++++++++++++++++++
+ include/linux/hugetlb.h |   25 -------------------------
+ 2 files changed, 19 insertions(+), 25 deletions(-)
 
-drivers/staging/ramster/zcache-main.c:2969:2: error: unknown field 'invalid=
-ate_page' specified in initializer
-drivers/staging/ramster/zcache-main.c:2969:2: warning: initialization from =
-incompatible pointer type [enabled by default]
-drivers/staging/ramster/zcache-main.c:2969:2: warning: (near initialization=
- for 'zcache_cleancache_ops.put_page') [enabled by default]
-drivers/staging/ramster/zcache-main.c:2970:2: error: unknown field 'invalid=
-ate_inode' specified in initializer
-drivers/staging/ramster/zcache-main.c:2970:2: warning: initialization from =
-incompatible pointer type [enabled by default]
-drivers/staging/ramster/zcache-main.c:2970:2: warning: (near initialization=
- for 'zcache_cleancache_ops.flush_page') [enabled by default]
-drivers/staging/ramster/zcache-main.c:2971:2: error: unknown field 'invalid=
-ate_fs' specified in initializer
-drivers/staging/ramster/zcache-main.c:2971:2: warning: initialization from =
-incompatible pointer type [enabled by default]
-drivers/staging/ramster/zcache-main.c:2971:2: warning: (near initialization=
- for 'zcache_cleancache_ops.flush_inode') [enabled by default]
-drivers/staging/ramster/zcache-main.c:913:13: warning: 'zcache_do_remotify_=
-ops' defined but not used [-Wunused-function]
-drivers/staging/ramster/zcache-main.c:1002:13: warning: 'ramster_remotify_i=
-nit' defined but not used [-Wunused-function]
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 1e85a7a..bb0e366 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -41,6 +41,25 @@ const struct file_operations hugetlbfs_file_operations;
+ static const struct inode_operations hugetlbfs_dir_inode_operations;
+ static const struct inode_operations hugetlbfs_inode_operations;
+ 
++struct hugetlbfs_config {
++	uid_t   uid;
++	gid_t   gid;
++	umode_t mode;
++	long	nr_blocks;
++	long	nr_inodes;
++	struct hstate *hstate;
++};
++
++struct hugetlbfs_inode_info {
++	struct shared_policy policy;
++	struct inode vfs_inode;
++};
++
++static inline struct hugetlbfs_inode_info *HUGETLBFS_I(struct inode *inode)
++{
++	return container_of(inode, struct hugetlbfs_inode_info, vfs_inode);
++}
++
+ static struct backing_dev_info hugetlbfs_backing_dev_info = {
+ 	.name		= "hugetlbfs",
+ 	.ra_pages	= 0,	/* No readahead */
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index d9d6c86..7adc492 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -128,15 +128,6 @@ enum {
+ };
+ 
+ #ifdef CONFIG_HUGETLBFS
+-struct hugetlbfs_config {
+-	uid_t   uid;
+-	gid_t   gid;
+-	umode_t mode;
+-	long	nr_blocks;
+-	long	nr_inodes;
+-	struct hstate *hstate;
+-};
+-
+ struct hugetlbfs_sb_info {
+ 	long	max_blocks;   /* blocks allowed */
+ 	long	free_blocks;  /* blocks free */
+@@ -146,17 +137,6 @@ struct hugetlbfs_sb_info {
+ 	struct hstate *hstate;
+ };
+ 
+-
+-struct hugetlbfs_inode_info {
+-	struct shared_policy policy;
+-	struct inode vfs_inode;
+-};
+-
+-static inline struct hugetlbfs_inode_info *HUGETLBFS_I(struct inode *inode)
+-{
+-	return container_of(inode, struct hugetlbfs_inode_info, vfs_inode);
+-}
+-
+ static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
+ {
+ 	return sb->s_fs_info;
+@@ -179,14 +159,9 @@ static inline int is_file_hugepages(struct file *file)
+ 	return 0;
+ }
+ 
+-static inline void set_file_hugepages(struct file *file)
+-{
+-	file->f_op = &hugetlbfs_file_operations;
+-}
+ #else /* !CONFIG_HUGETLBFS */
+ 
+ #define is_file_hugepages(file)			0
+-#define set_file_hugepages(file)		BUG()
+ static inline struct file *hugetlb_file_setup(const char *name, size_t size,
+ 		vm_flags_t acctflag, struct user_struct **user, int creat_flags)
+ {
+-- 
+1.7.9
 
-I do wonder if any of this was build tested with CONFIG_CLEANCACHE enabled =
-...
-
-Caused by commit 19ee3ef5f4bb ("staging: ramster: local compression + tmem"=
-).
-
-I have used the staging tree from next-20120215 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__16_Feb_2012_15_23_16_+1100_7a2csSZoc5eXdZ/j
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPPIS0AAoJEECxmPOUX5FEaE4P/0TaIcTAwY4fICzCxIKSWQHE
-W6U3zEXS29E5DdRnkXCAUuM9Gq4eY7SYsSkfGlXaVWDzEoo5zJTVCMmHbbvvHwOa
-a4PJTdoZ01CRxtd9X1XBjkXz8ntRei4zUolc2fQncheKXNVxIjCzbICszr7jd5hi
-vYL/+ttVoeqihCBW29/tF8mIVfnAePKcmhbEZlofrvI+1z6/hUJm4DPTPOW+UYmd
-8FFzIiCm1b5gw76mwd2iNI63g17bwkRvx45Jxjuiinmd7rs9Z33VdPfk8v61BS0E
-WAUhCmGMV2G1hE03TY0h+3HtXIrzCgIn9L4QToHC30wbENi+L+DPU6Cwvcl1Y9v8
-+0nw/VduWQQY/hnIr7nNKAz+z7zKscKFrOn+j+M5mDscHID/tVi1+Z3CU8RwyNuu
-rTUqTlvQh19sRxC4+4N7DlorusfkC1Iu4WURhl6FXI2koh0bZVnU32K+DxgiwGIz
-CPCkuEbkwyJe9zC7TMhjaOkqE/o2ALGwoIIMogdYOyMOSX/D4R2xQBLRkS+3k002
-czMvx997PztmHLcTMQfvb97Aw35X2Av0zqvpslE4jmWE/o06oyFx8C5wALfP5A9K
-Z9CUntQ6tVcw9nF8rDAMdrX2qFvnPmFzK/M2gv868CBAake9EyTbHUHwCLQJ+cYJ
-UFaXCTUTPfRXLVDkzM3L
-=oEdT
------END PGP SIGNATURE-----
-
---Signature=_Thu__16_Feb_2012_15_23_16_+1100_7a2csSZoc5eXdZ/j--
