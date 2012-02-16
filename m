@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab2BPUpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 15:45:33 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:58114 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab2BPUpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 15:45:32 -0500
-Date: Thu, 16 Feb 2012 12:45:15 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Subject: Re: Add overflow protection to kref
-Message-ID: <20120216204515.GH20420@outflux.net>
+	id S1755822Ab2BPUrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 15:47:07 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:37648 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755498Ab2BPUrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 15:47:05 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vXqa9.kVM1keWznWlIe9TDW.DoA5RmNjC4051NRpCfXka5a
+ mA81K588EvAaWs53bIemK.yqMtBxrj_VAY3koGut200f8QNoH9HzTCM8Hwkc
+ 8HOqqxazlahIal1R80AYKYmQdM4jSDS5E19prRl21DdhDCMP_EhDRrlxuTK5
+ 6rOKBrQ.2b.bEm12G.so7fqBu__nCpJaV3dIVh3vrK49twRo3_TX4zLXNq6v
+ hsitNghmJA7OjxI2KASKzABG4WVQ_BIUYVa0fA8IaB85coXP3OYxteT3psgz
+ AvUEKwcDfjPF8qjpVQbgUY4LixRhrvHWzOwvXPGzQXEznuAnBC8eKhDMPkpK
+ tzMnt0GF1Ci7CJW4n_etAddz1YFPLCvArwFXp4eLr6WXeCpg75YIJIdY89Ua
+ ppZ8gb8s1Nxyfhazye0HmHVqz4YP_nGvDB43J
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 16 Feb 2012 14:47:00 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Xi Wang <xi.wang@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jesper Juhl <jj@chaosbits.net>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: Uninline kcalloc
+In-Reply-To: <5716B9E7-4E65-42ED-B429-92B278BC1E56@gmail.com>
+Message-ID: <alpine.DEB.2.00.1202161442320.26083@router.home>
+References: <CAOJsxLG0Lq7XZQWPxU=ut3Eec6UiRpwhsxU-k5Ooi7H1EBKT2A@mail.gmail.com> <20120213194446.GD26353@mwanda> <alpine.DEB.2.00.1202131424020.25908@router.home> <20120214072017.GF26353@mwanda> <alpine.DEB.2.00.1202140858080.20013@router.home>
+ <8F83835C-366C-46AC-A50A-3F680B7D2D83@gmail.com> <alpine.DEB.2.00.1202141032410.22250@router.home> <ADCFB33D-7284-4D3F-8280-545AF82EC744@gmail.com> <alpine.DEB.2.00.1202141329360.24883@router.home> <20120214124518.f42bc03e.akpm@linux-foundation.org>
+ <CAOJsxLEdSr983jQ00_YuSWr3=pfmQHbebX87347K6v1HoCiyLw@mail.gmail.com> <alpine.DEB.2.00.1202141503470.29019@router.home> <59F64CB9-832E-4F7C-8A6C-E2CD18563795@gmail.com> <alpine.DEB.2.00.1202141605240.32407 @router.home> <07635976-4FC3-4E14-9B94-CE4D6446FD4E@gmail.com>
+ <alpine.DEB.2.00.1202151324060.28225@router.home> <E307A48D-2146-4052-8A84-E7FA690A6703@gmail.com> <alpine.DEB.2.00.120216084532 0.25847@router.home> <5716B9E7-4E65-42ED-B429-92B278BC1E56@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
-Organization: ChromeOS
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 16 Feb 2012, Xi Wang wrote:
 
-[This should probably be discussed on LKML for an even wider audience, so
-I've added a CC for it there.]
+> > The use of a function or macro makes the overflow check much more
+> > universal and allows these array allocations to occur with different
+> > allocation functions throughout the kernel.
+>
+> No, it does NOT.  It can be easily misued to introduce more bugs.
+>
+> 1) Should calculate_array_size() return 0 on overflow, as you
+>    orginally proposed?
 
-On Thu, Feb 16, 2012 at 09:02:13AM -0500, David Windsor wrote:
-> Hi,
-> 
-> We are attempting to add various grsecurity/PAX features to upstream
-> Ubuntu kernels.
+I thought you worked that out?
 
-This didn't parse quite right for me. I think you meant that the intent
-is to get these features into the upstream Linux kernel, with potential
-staging in Ubuntu kernels.
+> No, as Dan, Pekka, and some others already pointed out.
+>
+> 2) Should calculate_array_size() return something like
+>    KMALLOC_MAX_SIZE + 1?
+>
+> No, because you intended to use it with other allocators such as
+> vmalloc().
 
-(Also s/PAX/PaX/g)
+vmalloc will also fail if you pass a large number.
 
-> The PAX folks added refcount overflow protection by inserting
-> architecture-specific code in the increment paths of atomic_t.  For
-> instance:
-> 
-> static inline void atomic_inc(atomic_t *v)
->  {
-> 	asm volatile(LOCK_PREFIX "incl %0\n"
-> 
-> #ifdef CONFIG_PAX_REFCOUNT
-> 		     "jno 0f\n"
-> 		     LOCK_PREFIX "decl %0\n"
-> 		     "int $4\n0:\n"
-> 		     _ASM_EXTABLE(0b, 0b)
-> #endif
-> 
-> 		     : "+m" (v->counter));
-> }
-> 
-> There are two distinct classes of users we need to consider here:
-> those who use atomic_t for reference counters and those who use
-> atomic_t for keeping track of statistics, like performance counters,
-> etc.; it makes little sense to overflow a performance counter, so we
-> shouldn't subject those users to the same protections as imposed on
-> actual reference counters.  The solution implemented by PAX is to
-> create a family of *_unchecked() functions and to patch
-> statistics-based users of atomic_t to use this interface.
-> 
-> PAX refcount overflow protection was developed before kref was
-> created.  I'd like to move overflow protection out of atomic_t and
-> into kref and gradually migrate atomic_t users to kref, leaving
-> atomic_t for those users who don't need overflow protection (e.g.
-> statistics-based counters).
+> 3) Should calculate_array_size() return ULONG_MAX/SIZE_MAX/-1?
+>
+> No!  Consider devres_alloc() you mentioned.  Then you do
+>
+> devres_alloc(..., calculate_array_size(n, size), ...).
+>
+> It internally invokes kmalloc() with allocation size:
+>
+> sizeof(struct devres) + calculate_array_size(n, size).
 
-For people new to this, can you give an overview of what attacks are foiled
-by adding overflow protection?
+That is an addition which is less likely to overflow. Especially if you
+return MAX_ORDER << PAGE_SIZE from the array size calculation.
 
-> I realize that there are many users of atomic_t needing overflow
-> protection, but the move to kref seems like the right thing to do in
-> this case.
-> 
-> Leaving the semantics of overflow detection aside for the moment, what
-> are everyone's thoughts on adding overflow protection to kref rather
-> than to atomic_t?
+It would be best to be universal if you want to introduce size overflow
+checking rather than just dealing with one case and let the rest of the
+kernel fend for themselves. I think we need something like
+calculate_array_size() with proper error handling (and no I am not
+particular set on having it done a particular way. Just that is it done).
 
-Why was kref introduced? Or rather, how is kref currently different from
-atomic_t?
 
-> Also, I cherrypicked the refcount protection feature directly from the
-> PAX patch, with the original atomic_t protections in place, before
-> considering kref.  If anyone is interested, I can post that patch.
-> 
-> Thanks,
-> David Windsor
-> 
-> -- 
-> PGP: 6141 5FFD 11AE 9844 153E  F268 7C98 7268 6B19 6CC9
-
-Thanks for bringing this up!
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
