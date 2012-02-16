@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab2BPOqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:46:43 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:43545 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753129Ab2BPOql (ORCPT
+	id S1752750Ab2BPOvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:51:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33051 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab2BPOvb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:46:41 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Danny Kukawka <dkukawka@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/arm/mach-shmobile/board-ag5evm.c: included linux/dma-mapping.h twice
-Date: Thu, 16 Feb 2012 15:46:38 +0100
-Message-Id: <1329403598-304-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.8.3
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329403601;eef3fa8d;
+	Thu, 16 Feb 2012 09:51:31 -0500
+Message-ID: <1329403876.2293.232.camel@twins>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Date: Thu, 16 Feb 2012 15:51:16 +0100
+In-Reply-To: <20120216143132.293c8f50@pyramind.ukuu.org.uk>
+References: <1317308372-6810-1-git-send-email-mjg@redhat.com>
+	 <alpine.LFD.2.02.1202151537500.2794@ionos>
+	 <20120215145225.GA21448@srcf.ucam.org>
+	 <alpine.LFD.2.02.1202152059230.2794@ionos>
+	 <20120215202221.GA29552@srcf.ucam.org>
+	 <alpine.LFD.2.02.1202152125500.2794@ionos>
+	 <20120215203814.GA29795@srcf.ucam.org>
+	 <alpine.LFD.2.02.1202152140110.2794@ionos>
+	 <20120215204757.GA30275@srcf.ucam.org>
+	 <20120216142733.GA15632@srcf.ucam.org>
+	 <20120216143132.293c8f50@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/arm/mach-shmobile/board-ag5evm.c: included 'linux/dma-mapping.h'
-twice, remove the duplicate.
+On Thu, 2012-02-16 at 14:31 +0000, Alan Cox wrote:
+> > Userspace clearly has an expectation that sleep(0) is magic in some 
+> > ill-defined way. We'd be well within our rights to break that 
+> > expectation, but I think it's common enough to warrant special casing.
+> 
+> In historical Unix sleep(0) ends up the nearest equivalent it had to
+> triggering a reschedule and giving up the rest of the timeslice.
+> 
+> I suspect special casing it as yield() isn't far from the right result ?
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- arch/arm/mach-shmobile/board-ag5evm.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+But why go that way? Using sleep(0) or yield() is pretty much always the
+wrong thing to do anyway, this is a great opportunity for all folks to
+find these sites and fix them.
 
-diff --git a/arch/arm/mach-shmobile/board-ag5evm.c b/arch/arm/mach-shmobile/board-ag5evm.c
-index eff8a96..014b8e2 100644
---- a/arch/arm/mach-shmobile/board-ag5evm.c
-+++ b/arch/arm/mach-shmobile/board-ag5evm.c
-@@ -37,7 +37,6 @@
- #include <linux/mmc/sh_mobile_sdhi.h>
- #include <linux/mfd/tmio.h>
- #include <linux/sh_clk.h>
--#include <linux/dma-mapping.h>
- #include <video/sh_mobile_lcdc.h>
- #include <video/sh_mipi_dsi.h>
- #include <sound/sh_fsi.h>
--- 
-1.7.8.3
+Wasn't that what open-source is all about, doing the right thing?
+
+Why should we care about obviously broken crap?
+
+Furthermore, pushing slack to several seconds will also break stuff that
+needed those timers to expire sooner, who is going to fix that?
+
+So we've got a stacking of two ill-considered things:
+ - applications using yield()/sleep(0)
+ - weirdos pushing timer slack to the seconds range
+
+Individually both cause/are borkage, and now you want to add code to the
+kernel to mitigate some, but nowhere near all, of it?
+
+What's next, we're actually going to give people their O_PONIES?
+
 
