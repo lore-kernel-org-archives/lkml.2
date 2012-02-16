@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2BPAJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 19:09:50 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:40664 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2BPAJr (ORCPT
+	id S1756552Ab2BPAK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 19:10:57 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53120 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751172Ab2BPAK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 19:09:47 -0500
-X-AuditID: cbfee61a-b7b78ae000001ceb-18-4f3c494ae6ab
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org
-Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-References: <000b01ccdc0a$0336abc0$09a40340$%jun@samsung.com>
- <fd4b8ef9df0d19e20c07923077937231.squirrel@www.codeaurora.org>
-In-reply-to: <fd4b8ef9df0d19e20c07923077937231.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH v4 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Thu, 16 Feb 2012 09:09:45 +0900
-Message-id: <004301ccec3f$4a4e9320$deebb960$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczrxXAtHh2SiX1qRQ6YTVJH8mMMkQAdYpug
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 15 Feb 2012 19:10:56 -0500
+X-Sasl-enc: /sAx+K5a3qJQ2tp8YfgnEkfWkJqSEnxpwuAU4TBx52ef 1329351055
+Date: Wed, 15 Feb 2012 16:10:40 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Egmont Koblinger <egmont@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
+Message-ID: <20120216001040.GA21919@kroah.com>
+References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
+ <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+ <CAOULuObKZX_VER0ERPNBb0gS8GBQBHpJBHQcpJi2kNBBysL=2A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOULuObKZX_VER0ERPNBb0gS8GBQBHpJBHQcpJi2kNBBysL=2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya Erez <merez@codeaurora.org> wrote:
-> > @@ -1065,12 +1075,60 @@ static int mmc_blk_err_check(struct mmc_card
-> > *card,
-> >  	if (!brq->data.bytes_xfered)
-> >  		return MMC_BLK_RETRY;
+On Wed, Feb 15, 2012 at 06:58:12PM -0500, Parag Warudkar wrote:
+> On Wed, Feb 15, 2012 at 1:50 PM, Egmont Koblinger <egmont@gmail.com> wrote:
+> > Hi,
 > >
-> > +	if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
-> > +		if (unlikely(brq->data.blocks << 9 != brq->data.bytes_xfered))
-> > +			return MMC_BLK_PARTIAL;
-> > +		else
-> > +			return MMC_BLK_SUCCESS;
-> > +	}
-> > +
-> >  	if (blk_rq_bytes(req) != brq->data.bytes_xfered)
-> >  		return MMC_BLK_PARTIAL;
+> > Short summary:  When pasting large amount of data (>4kB) to terminals,
+> > often the data gets mangled.
 > >
-> >  	return MMC_BLK_SUCCESS;
-> >  }
-> I think it would be best to keep the request length (brq->data.blocks << 9
-> or blk_rq_bytes(req)) in a variable and use it in the original if above.
-> This way you can avoid doubling the exit points from the function.
-In case of packed command, brq->data.blocks contains the sum of blocks for individual request.
-That means blk_rq_bytes(req) doesn't represent all packed length bytes.
-And "brq->data.blocks << 9" is not idential to blk_rq_bytes(req) in non-packed command.
-"brq->data.blocks" is overwritten during request preparation by the following reasons.
-- brq->data.blocks > card->host->max_blk_count
-- disable_multi
-- do_rel_wr
-So "brq->data.blocks << 9" is not good choice for request length  in non-packed command.
-
-Thanks,
-Seungwon Jeon
-
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> > How to reproduce:
+> > Create a text file that contains this line about 100 times:
+> > a=(123456789123456789123456789123456789123456789123456789123456789)
+> > (also available at http://pastebin.com/LAH2bmaw for a while)
+> > and then copy-paste its entire contents in one step into a "bash" or
+> > "python" running in a graphical terminal.
+> >
 > 
+> FWIW, this also works fine on cygwin / Windows 7.  No errors.
 > 
+> $ bash --version
+> GNU bash, version 4.1.10(4)-release (i686-pc-cygwin)
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Unsure what that means though - probably nothing!
+> 
+> Greg - when you said it works in vim - since of course vim isn't
+> 'parsing' the input may be you did not see an error - or did you
+> actually verify all 4KB somehow? ;)
 
+I verified that the input actually matched the paste buffer.  It's
+pretty trivial to do so.
+
+Odds are emacs also does this correctly, anyone care to verify that?
+
+thanks,
+
+greg k-h
