@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab2BPO7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:59:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:41811 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab2BPO67 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:58:59 -0500
-Message-ID: <1329404302.2293.237.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
- implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Date: Thu, 16 Feb 2012 15:58:22 +0100
-In-Reply-To: <20120216145233.GA6275@Krystal>
-References: <20120213020951.GA12138@linux.vnet.ibm.com>
-	 <20120215143116.GA1696@Krystal> <20120215145144.GA6277@Krystal>
-	 <20120216063805.GF2976@linux.vnet.ibm.com> <20120216110030.GA1425@Krystal>
-	 <1329393115.2293.204.camel@twins> <20120216121807.GA3426@Krystal>
-	 <1329396281.2293.213.camel@twins> <20120216145233.GA6275@Krystal>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753263Ab2BPO7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:59:06 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:36098 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753056Ab2BPO7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 09:59:02 -0500
+Date: Thu, 16 Feb 2012 08:59:00 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20120216145900.GA3772@sgi.com>
+References: <20111108191149.GA7236@sgi.com>
+ <alpine.LFD.2.02.1202151512420.2794@ionos>
+ <20120215143710.GA10543@sgi.com>
+ <alpine.LFD.2.02.1202151547520.2794@ionos>
+ <20120215153438.GB11343@sgi.com>
+ <alpine.LFD.2.02.1202152131280.2794@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1202152131280.2794@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-16 at 09:52 -0500, Mathieu Desnoyers wrote:
-> Ah, so this is what I missed: the context switch has its lock/unlock
-> pair, the following migration is performed under its own lock/unlock
-> pair, and the following context switch also has its lock/unlock pair. So
-> yes, this should be sufficient to act as a full memory barrier. 
+On Wed, Feb 15, 2012 at 09:36:47PM +0100, Thomas Gleixner wrote:
+> On Wed, 15 Feb 2012, Dimitri Sivanich wrote:
+> > On Wed, Feb 15, 2012 at 03:52:06PM +0100, Thomas Gleixner wrote:
+> > > So the first CPU which registers a clock event device takes it. That's
+> > > the boot CPU, no matter what.
+> > >
+> > Both kernel tracing and the original patch that I proposed for this
+> > showed plainly (at the time) that the tick_do_timer_cpu was not always cpu 0
+> > prior to modifying it for nohz=off.  Maybe that is no longer the case?
+> 
+> This logic has not been changed in years.
 
-In fact it typically looks like:
+I did some tracing of all points where tick_do_timer_cpu is set in the
+3.3.0-rc3+ kernel.
 
- LOCK(rq0->lock)
-  switch-from-A
- UNLOCK(rq0->lock);
+> 
+> tick_do_timer_cpu is initialized to TICK_DO_TIMER_BOOT and the first
+> cpu which registers either a global or a per cpu clock event device
+> takes it over. This is at least on x86 always the boot cpu, i.e. cpu0.
+> After that point nothing touches that variable when nohz is disabled
+> (runtime or compile time).
 
-	LOCK(rq0->lock);
-	LOCK(rq1->lock);
-	  migrate-A
-	UNLOCK(rq1->lock);
-	UNLOCK(rq0->lock);
+At that point it is set to cpu 0.  However, when we go into highres mode
+it does change.  Below are the two places it was set during boot with
+nohz=off on one of our x86 based machines.
 
-		LOCK(rq1->lock);
-		  switch-to-A
-		UNLOCK(rq1->lock);
+[    0.000000] tick_setup_device: tick_do_timer_cpu 0
+[    1.924098] tick_broadcast_setup_oneshot: tick_do_timer_cpu 17
 
-the migrate taking both locks involved guarantees that the switch-to
-always comes _after_ the switch_from. The migrate might be performed on
-a completely unrelated cpu although typically it would be either the old
-(push) or the new (pull).
+So in this example it's now cpu 17, and it stays that way from that point on.
+
+A traceback at that point shows tick_init_highres is indeed initiating this:
+
+[    1.924863]  [<ffffffff81087e01>] tick_broadcast_setup_oneshot+0x71/0x160
+[    1.924863]  [<ffffffff81087f23>] tick_broadcast_switch_to_oneshot+0x33/0x50
+[    1.924863]  [<ffffffff81088841>] tick_switch_to_oneshot+0x81/0xd0
+[    1.924863]  [<ffffffff810888a0>] tick_init_highres+0x10/0x20
+[    1.924863]  [<ffffffff81061e71>] hrtimer_run_pending+0x71/0xd0
+
+> 
+> So I really want to see proper proof why that would not be the
+> case. If it really happens then we fix the root cause instead of
+> adding random sysfs interfaces.
+
+If you're willing to consider it a bug that tick_do_timer_cpu is not cpu 0,
+than I'm very much in agreement.
+
+> 
+> Thanks,
+> 
+> 	tglx
