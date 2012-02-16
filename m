@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2BPT36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 14:29:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59877 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2BPT35 (ORCPT
+	id S1754076Ab2BPTev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 14:34:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38423 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab2BPTet convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 14:29:57 -0500
-Date: Thu, 16 Feb 2012 23:29:52 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: + syscalls-x86-add-__nr_kcmp-syscall-v8.patch added to -mm tree
-Message-ID: <20120216192952.GN1905@moon>
-References: <20120215200533.GQ1894@moon>
- <20120215202538.GK4533@moon>
- <20120215210934.GL4533@moon>
- <20120215215807.GM4533@moon>
- <20120216144954.GA11953@redhat.com>
- <20120216151340.GI1905@moon>
- <20120216164901.GD3849@moon>
- <20120216174047.GA31176@redhat.com>
- <20120216175809.GJ1905@moon>
- <20120216190321.GA2216@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216190321.GA2216@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Feb 2012 14:34:49 -0500
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4F3D57E3.7020503@redhat.com>
+Date: Thu, 16 Feb 2012 20:34:47 +0100
+Cc: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <810F6879-64A9-4FCF-9C22-00BCC945D6B0@suse.de>
+References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de> <4F3BB33C.1000908@redhat.com> <1FE08D00-49E8-4371-9F23-C5D2EE568FA8@suse.de> <4F3BB9DC.6040102@redhat.com> <3DC824A5-5D5A-4BCC-A0FB-1B459B7E362D@suse.de> <4F3D57E3.7020503@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 08:03:21PM +0100, Oleg Nesterov wrote:
-> On 02/16, Cyrill Gorcunov wrote:
-> >
-> > On Thu, Feb 16, 2012 at 06:40:47PM +0100, Oleg Nesterov wrote:
-> > > On 02/16, Cyrill Gorcunov wrote:
-> > > >
-> > > > -static void access_unlock(struct task_struct *task)
-> > > > +static void kcmp_unlock(struct mutex *m1, struct mutex *m2)
-> > > >  {
-> > > > -	mutex_unlock(&task->signal->cred_guard_mutex);
-> > > > +	if (m2 > m1)
-> > > > +		swap(m1, m2);
-> > >
-> > > Well, the order doesn't matter in case of _unlock, you can remove
-> > > this part. Not that it really hurts though, I won't argue.
-> >
-> > It drops some instructions so I think it worth removing
+
+On 16.02.2012, at 20:24, Avi Kivity wrote:
+
+> On 02/15/2012 04:08 PM, Alexander Graf wrote:
+>>> 
+>>> Well, the scatter/gather registers I proposed will give you just one
+>>> register or all of them.
+>> 
+>> One register is hardly any use. We either need all ways of a respective address to do a full fledged lookup or all of them. 
 > 
-> Yes.
+> I should have said, just one register, or all of them, or anything in
+> between.
 > 
+>> By sharing the same data structures between qemu and kvm, we actually managed to reuse all of the tcg code for lookups, just like you do for x86.
+> 
+> Sharing the data structures is not need.  Simply synchronize them before
+> lookup, like we do for ordinary registers.
 
-Final one ;) I agreed on every line of your comment, thanks a lot Oleg!
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: syscalls, x86: Make __NR_kcmp to work with equivalent pids
+Ordinary registers are a few bytes. We're talking of dozens of kbytes here.
 
-In case if pid1 is equal to pid2 the kcmp will return -EBUSY,
-which makes no sence. Make it able to work with equivalent pids.
-Selftest is extended as well.
+> 
+>> On x86 you also have shared memory for page tables, it's just guest visible, hence in guest memory. The concept is the same.
+> 
+> But cr3 isn't, and if we put it in shared memory, we'd have to VMREAD it
+> on every exit.  And you're risking the same thing if your hardware gets
+> cleverer.
 
-Repored-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
-diff -u linux-2.6.git/kernel/kcmp.c linux-2.6.git/kernel/kcmp.c
---- linux-2.6.git/kernel/kcmp.c
-+++ linux-2.6.git/kernel/kcmp.c
-@@ -58,22 +58,28 @@
- 	return file;
- }
- 
--static void access_unlock(struct task_struct *task)
-+static void kcmp_unlock(struct mutex *m1, struct mutex *m2)
- {
--	mutex_unlock(&task->signal->cred_guard_mutex);
-+	if (likely(m2 != m1))
-+		mutex_unlock(m2);
-+	mutex_unlock(m1);
- }
- 
--static int access_trylock(struct task_struct *task)
-+static int kcmp_lock(struct mutex *m1, struct mutex *m2)
- {
--	if (!mutex_trylock(&task->signal->cred_guard_mutex))
--		return -EBUSY;
-+	int err;
- 
--	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
--		mutex_unlock(&task->signal->cred_guard_mutex);
--		return -EPERM;
-+	if (m2 > m1)
-+		swap(m1, m2);
-+
-+	err = mutex_lock_killable(m1);
-+	if (!err && likely(m1 != m2)) {
-+		err = mutex_lock_killable_nested(m2, SINGLE_DEPTH_NESTING);
-+		if (err)
-+			mutex_unlock(m1);
- 	}
- 
--	return 0;
-+	return err;
- }
- 
- SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
-@@ -100,12 +106,15 @@
- 	/*
- 	 * One should have enough rights to inspect task details.
- 	 */
--	ret = access_trylock(task1);
-+	ret = kcmp_lock(&task1->signal->cred_guard_mutex,
-+			&task2->signal->cred_guard_mutex);
- 	if (ret)
- 		goto err;
--	ret = access_trylock(task2);
--	if (ret)
-+	if (!ptrace_may_access(task1, PTRACE_MODE_READ) ||
-+	    !ptrace_may_access(task2, PTRACE_MODE_READ)) {
-+		ret = -EPERM;
- 		goto err_unlock;
-+	}
- 
- 	switch (type) {
- 	case KCMP_FILE: {
-@@ -149,9 +158,9 @@
- 		break;
- 	}
- 
--	access_unlock(task2);
- err_unlock:
--	access_unlock(task1);
-+	kcmp_unlock(&task1->signal->cred_guard_mutex,
-+		    &task2->signal->cred_guard_mutex);
- err:
- 	put_task_struct(task1);
- 	put_task_struct(task2);
-diff -u linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
---- linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
-+++ linux-2.6.git/tools/testing/selftests/kcmp/kcmp_test.c
-@@ -74,6 +74,15 @@
- 			ret = -1;
- 		} else
- 			printf("PASS: 0 returned as expected\n");
-+
-+		/* Compare with self */
-+		ret = sys_kcmp(pid1, pid1, KCMP_VM, 0, 0);
-+		if (ret) {
-+			printf("FAIL: 0 expected but %li returned\n", ret);
-+			ret = -1;
-+		} else
-+			printf("PASS: 0 returned as expected\n");
-+
- 		exit(ret);
- 	}
- 
+Yes, we do. When that day comes, we forget the CAP and do it another way. Which way we will find out by the time that day of more clever hardware comes :).
+
+> 
+>>> 
+>>>>> btw, why are you interested in virtual addresses in userspace at all?
+>>>> 
+>>>> We need them for gdb and monitor introspection.
+>>> 
+>>> Hardly fast paths that justify shared memory.  I should be much harder
+>>> on you.
+>> 
+>> It was a tradeoff on speed and complexity. This way we have the least amount of complexity IMHO. All KVM code paths just magically fit in with the TCG code. 
+> 
+> It's too magical, fitting a random version of a random userspace
+> component.  Now you can't change this tcg code (and still keep the magic).
+> 
+> Some complexity is part of keeping software as separate components.
+
+Why? If another user space wants to use this, they can
+
+a) do the slow copy path
+or
+b) simply use our struct definitions
+
+The whole copy thing really only makes sense when you have existing code in user space that you don't want to touch, but easily add on KVM to it. If KVM is part of your whole design, then integrating things makes a lot more sense.
+
+> 
+>> There are essentially no if(kvm_enabled)'s in our MMU walking code, because the tables are just there. Makes everything a lot easier (without dragging down performance).
+> 
+> We have the same issue with registers.  There we call
+> cpu_synchronize_state() before every access.  No magic, but we get to
+> reuse the code just the same.
+
+Yes, and for those few bytes it's ok to do so - most of the time. On s390, even those get shared by now. And it makes sense to do so - if we synchronize it every time anyways, why not do so implicitly?
+
+
+Alex
+
