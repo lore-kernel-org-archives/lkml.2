@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2BPOUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:20:30 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:47427
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab2BPOU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:20:29 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: rdunlap@xenotime.net, linux-doc@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] Documentation: Fix typo in events-power.txt
-Date: Thu, 16 Feb 2012 23:19:56 +0900
-Message-Id: <1329401996-2244-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1751859Ab2BPOX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:23:26 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:49789 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab2BPOXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 09:23:24 -0500
+X-IronPort-AV: E=Sophos;i="4.73,429,1325491200"; 
+   d="scan'208";a="625955660"
+Message-ID: <4F3D115A.5060008@netapp.com>
+Date: Thu, 16 Feb 2012 09:23:22 -0500
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120212 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Danny Kukawka <dkukawka@suse.de>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/nfs/dns_resolve.c: included linux/nfs_fs.h twice
+References: <1329400481-31627-1-git-send-email-danny.kukawka@bisect.de> <4F3D101C.6080805@netapp.com>
+In-Reply-To: <4F3D101C.6080805@netapp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "Fequency" to "Frequency" in
-Documentation/trace/events-power.txt
+On 02/16/12 09:18, Bryan Schumaker wrote:
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- Documentation/trace/events-power.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On 02/16/12 08:54, Danny Kukawka wrote:
+> 
+>> fs/nfs/dns_resolve.c: included 'linux/nfs_fs.h' twice. No need
+> 
+>          ^^^^^^^^^^^^^
+> You probably meant idamp.c here...
+> 
+> Good catch.  My idmapper fallback changes from a few weeks ago should have already done this see:
+> 
+> e6499c6f4b5f56a16f8b8ef60529c1da28b13aea  NFS: Fall back on old idmapper if request_key() fails
+> 3cd0f37a2cc9e4d6188df10041a2441eaa41d991  NFS: Keep idmapper include files in one place
+> 
+> in Trond's nfs-for-next branch.
 
-diff --git a/Documentation/trace/events-power.txt b/Documentation/trace/events-power.txt
-index 96d87b6..cf794af 100644
---- a/Documentation/trace/events-power.txt
-+++ b/Documentation/trace/events-power.txt
-@@ -57,7 +57,7 @@ power_end		"cpu_id=%lu"
- The 'type' parameter takes one of those macros:
-  . POWER_NONE	= 0,
-  . POWER_CSTATE	= 1,	/* C-State */
-- . POWER_PSTATE	= 2,	/* Fequency change or DVFS */
-+ . POWER_PSTATE	= 2,	/* Frequency change or DVFS */
- 
- The 'state' parameter is set depending on the type:
-  . Target C-state for type=POWER_CSTATE,
--- 
-1.7.6.5
+
+After looking closer, I see that I'm still including <linux/nfs_fs.h> twice even after those commits.  It's gone after the patches I plan on submitting today...
+
+- Bryan
+
+> 
+> - Bryan
+> 
+>> to include it in the 'CONFIG_NFS_USE_NEW_IDMAPPER not defined'
+>> block since it's already included at the top of the file.
+>>
+>> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+>> ---
+>>  fs/nfs/idmap.c |    2 --
+>>  1 files changed, 0 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+>> index 2c05f19..1526b5f 100644
+>> --- a/fs/nfs/idmap.c
+>> +++ b/fs/nfs/idmap.c
+>> @@ -374,8 +374,6 @@ int nfs_map_gid_to_group(const struct nfs_server *server, __u32 gid, char *buf,
+>>  #include <linux/workqueue.h>
+>>  #include <linux/sunrpc/rpc_pipe_fs.h>
+>>  
+>> -#include <linux/nfs_fs.h>
+>> -
+>>  #include "nfs4_fs.h"
+>>  
+>>  #define IDMAP_HASH_SZ          128
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
