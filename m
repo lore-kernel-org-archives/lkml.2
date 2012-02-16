@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab2BPPAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 10:00:36 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50395 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751377Ab2BPPAf (ORCPT
+	id S1752821Ab2BPPBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 10:01:54 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:59766 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab2BPPBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 10:00:35 -0500
-Date: Thu, 16 Feb 2012 15:00:04 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        David Long <dave.long@linaro.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: oprofile and ARM A9 hardware counter
-Message-ID: <20120216150004.GE2641@mudshark.cambridge.arm.com>
-References: <CAMQu2gzfNAwtf1c6jrTZpfGMSqBgBrQKmFTeCFzbvMh9ESBDUg@mail.gmail.com>
- <CAMsRxfKR1ODH56BtcUT5Dv6qOVEYGVheEcW9ugXsZmLKok==bg@mail.gmail.com>
- <CAMQu2gwWt6oQPjxc1YHgOoxVkHdck_q78Xf==7ncwRj0_uS-JQ@mail.gmail.com>
- <CAMQu2gyCPtbNfBa5V8ve2JORN+sDeAY+hvR0g0_9U354JgcuiA@mail.gmail.com>
- <CAMsRxfJVEgVJoHcaPQbMg5mwz=tZUce4oibDUxtnevSF8bGY9g@mail.gmail.com>
- <CAMQu2gxVUqDF2HkPD=QeX0N_tUd=9FTd+T+1LHCR0tsCgQxC8Q@mail.gmail.com>
- <CAMsRxfJH+9MS=Svmh0BvDSb8xqsPe2HPobkeKcn8JO35npjhwQ@mail.gmail.com>
- <CACVXFVMx9Zx3ZQr6Q-17x5NVL8iuBJjOjtw39FJiWX=fGkZNZA@mail.gmail.com>
- <1329323900.2293.150.camel@twins>
- <CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
+	Thu, 16 Feb 2012 10:01:53 -0500
+Date: Thu, 16 Feb 2012 15:01:39 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] hrtimers: Special-case zero length sleeps
+Message-ID: <20120216150139.GA16634@srcf.ucam.org>
+References: <20120215145225.GA21448@srcf.ucam.org>
+ <alpine.LFD.2.02.1202152059230.2794@ionos>
+ <20120215202221.GA29552@srcf.ucam.org>
+ <alpine.LFD.2.02.1202152125500.2794@ionos>
+ <20120215203814.GA29795@srcf.ucam.org>
+ <alpine.LFD.2.02.1202152140110.2794@ionos>
+ <20120215204757.GA30275@srcf.ucam.org>
+ <20120216142733.GA15632@srcf.ucam.org>
+ <20120216143132.293c8f50@pyramind.ukuu.org.uk>
+ <1329403876.2293.232.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVPce0A3LfL=mFo3UbN-Om7xLOo_d-LfKXDjdN5dFQdhiA@mail.gmail.com>
-Thread-Topic: oprofile and ARM A9 hardware counter
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329403876.2293.232.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 10:25:05AM +0000, Ming Lei wrote:
-> On Thu, Feb 16, 2012 at 12:38 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > So what this patch seems to do is put that filter on period in
-> > perf_ctx_adjust_freq(). Not making sense.. nor can I see a HZ
-> > dependency, perf_ctx_adjust_freq() uses TICK_NSEC as time base.
+On Thu, Feb 16, 2012 at 03:51:16PM +0100, Peter Zijlstra wrote:
+> On Thu, 2012-02-16 at 14:31 +0000, Alan Cox wrote:
+> > In historical Unix sleep(0) ends up the nearest equivalent it had to
+> > triggering a reschedule and giving up the rest of the timeslice.
+> > 
+> > I suspect special casing it as yield() isn't far from the right result ?
 > 
-> Yes, you are right, I remembered it was observed it on -rc1, and
-> Stephane's unthrottling
-> patch was not merged at that time. Today I investigated the problem
-> further on -rc3 and found that seems the problem is caused by arm pmu code.
-
-As I reported previously, Stephane's patch is causing warnings on -rc3:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-February/084391.html
-
-so I'd like to get to the bottom of that before changing anything else.
-
-I'd also like to know why this has only been reported on OMAP4 and I can't
-reproduce it on my boards.
-
-> The patch below may fix the problem, now about 40000 sample events
-> can be generated on the command:
+> But why go that way? Using sleep(0) or yield() is pretty much always the
+> wrong thing to do anyway, this is a great opportunity for all folks to
+> find these sites and fix them.
 > 
-> 	'perf record -e cycles -F 4000  ./noploop 10&& perf report -D | tail -20'
+> Wasn't that what open-source is all about, doing the right thing?
+
+Doing the right thing if practical. How about we special-case for now 
+with a once-per-process printk and kill it further down the line?
+
+> Why should we care about obviously broken crap?
 > 
-> armpmu_event_update may be called in tick path, so the running counter
-> will be overflowed and produce a great value of 'delta', then a mistaken
-> count is stored into event->count and event->hw.freq_count_stamp. Finally
-> the two variables are not synchronous, then a invalid and large period is
-> computed and written to pmu, and sample events are decreased much.
+> Furthermore, pushing slack to several seconds will also break stuff that
+> needed those timers to expire sooner, who is going to fix that?
 
-Hmm, so are you observing an event overflow during the tick handler? This
-should be fine unless the new value has wrapped past the previous one (i.e.
-more than 2^32 events have occurred). I find this extremely unlikely for
-sample-based profiling unless you have some major IRQ latency issues...
+The reason to change timer slack is because we're willing to break 
+polling applications in order to gain power savings. The problem is that 
+there are event-driven applications that are also going to be broken 
+because some ridiculous proportion of userspace believes that sleep(0) 
+is a thing that they can do in an event-driven application. The question 
+is whether the cost of special-casing that in the kernel is more than 
+fixing all of them.
 
-The only way I can think of improving this (bearing in mind that at some
-point we're limited by 32 bits of counter) is to check for overflow in the
-tick path and then invoke the PMU irq handler if there is an overflow, but
-that's really not very nice.
-
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 5bb91bf..789700a 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -193,13 +193,8 @@ again:
->  			     new_raw_count) != prev_raw_count)
->  		goto again;
+> So we've got a stacking of two ill-considered things:
+>  - applications using yield()/sleep(0)
+>  - weirdos pushing timer slack to the seconds range
 > 
-> -	new_raw_count &= armpmu->max_period;
-> -	prev_raw_count &= armpmu->max_period;
-> -
-> -	if (overflow)
-> -		delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
-> -	else
-> -		delta = new_raw_count - prev_raw_count;
-> +	delta = (armpmu->max_period - prev_raw_count + new_raw_count
-> +				+ 1) & armpmu->max_period;
+> Individually both cause/are borkage, and now you want to add code to the
+> kernel to mitigate some, but nowhere near all, of it?
+> 
+> What's next, we're actually going to give people their O_PONIES?
 
-This breaks when more than max_period events have passed. See a737823d
-("ARM: 6835/1: perf: ensure overflows aren't missed due to IRQ latency").
+If we could give people O_PONIES then why wouldn't we? The only reason 
+not to is because it costs too much elsewhere.
 
-Will
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
