@@ -1,408 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab2BPBkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Feb 2012 20:40:13 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60264 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab2BPBkK (ORCPT
+	id S932088Ab2BPBkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Feb 2012 20:40:25 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:32963 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab2BPBkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Feb 2012 20:40:10 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 16 Feb 2012 10:38:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: rework inactive_ratio logic
-Message-Id: <20120216103842.0c3e9258.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120215162442.13588.21790.stgit@zurg>
-References: <20120215162442.13588.21790.stgit@zurg>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 15 Feb 2012 20:40:22 -0500
+Date: Thu, 16 Feb 2012 12:40:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20120216124013.c4bf2842a3da777df184b7d9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Feb_2012_12_40_13_+1100_Dw65BnVMIAS+.=Vl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Feb 2012 20:24:42 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+--Signature=_Thu__16_Feb_2012_12_40_13_+1100_Dw65BnVMIAS+.=Vl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This patch adds mem_cgroup->inactive_ratio calculated from hierarchical memory limit.
-> It updated at each limit change before shrinking cgroup to this new limit.
-> Ratios for all child cgroups are updated too, because parent limit can affect them.
-> Update precedure can be greatly optimized if its performance becomes the problem.
-> Inactive ratio for unlimited or huge limit does not matter, because we'll never hit it.
-> 
-> At global reclaim always use global ratio from zone->inactive_ratio.
-> At mem-cgroup reclaim use inactive_ratio from target memory cgroup,
-> this is cgroup which hit its limit and cause this reclaimer invocation.
-> 
-> Thus, global memory reclaimer will try to keep ratio for all lru lists in zone
-> above one mark, this guarantee that total ratio in this zone will be above too.
-> Meanwhile mem-cgroup will do the same thing for its lru lists in all zones, and
-> for all lru lists in all sub-cgroups in hierarchy.
-> 
-> Also this patch removes some redundant code.
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Hi all,
 
-Hmm, the main purpose of this patch is to remove calculation per get_scan_ratio() ?
+Today's linux-next merge of the net-next tree got a conflict in
+net/mac80211/sta_info.h between commit 4b5a433ae534 ("mac80211: call rate
+control only after init") from the wireless tree and commit 83d5cc012441
+("mac80211: station state transition error handling") from the net-next
+tree.
 
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc net/mac80211/sta_info.h
+index bfed851,381de37..0000000
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@@ -52,7 -52,7 +52,8 @@@
+   * @WLAN_STA_SP: Station is in a service period, so don't try to
+   *	reply to other uAPSD trigger frames or PS-Poll.
+   * @WLAN_STA_4ADDR_EVENT: 4-addr event was already sent for this frame.
+ + * @WLAN_STA_RATE_CONTROL: rate control was initialized for this station.
++  * @WLAN_STA_INSERTED: This station is inserted into the hash table.
+   */
+  enum ieee80211_sta_info_flags {
+  	WLAN_STA_AUTH,
+@@@ -72,7 -72,7 +73,8 @@@
+  	WLAN_STA_UAPSD,
+  	WLAN_STA_SP,
+  	WLAN_STA_4ADDR_EVENT,
+ +	WLAN_STA_RATE_CONTROL,
++ 	WLAN_STA_INSERTED,
+  };
+ =20
+  enum ieee80211_sta_state {
 
+--Signature=_Thu__16_Feb_2012_12_40_13_+1100_Dw65BnVMIAS+.=Vl
+Content-Type: application/pgp-signature
 
-> ---
->  include/linux/memcontrol.h |   16 ++------
->  mm/memcontrol.c            |   85 ++++++++++++++++++++++++--------------------
->  mm/vmscan.c                |   82 +++++++++++++++++++++++-------------------
->  3 files changed, 93 insertions(+), 90 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 4d34356..453a3dd 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -113,10 +113,7 @@ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
->  /*
->   * For memory reclaim.
->   */
-> -int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg,
-> -				    struct zone *zone);
-> -int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
-> -				    struct zone *zone);
-> +unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg);
->  int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
->  unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
->  					int nid, int zid, unsigned int lrumask);
-> @@ -319,16 +316,9 @@ static inline bool mem_cgroup_disabled(void)
->  	return true;
->  }
->  
-> -static inline int
-> -mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
-> -{
-> -	return 1;
-> -}
-> -
-> -static inline int
-> -mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
-> +static inline unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg)
->  {
-> -	return 1;
-> +	return 0;
->  }
->  
->  static inline unsigned long
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6728a7a..343324a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -212,6 +212,8 @@ struct mem_cgroup_eventfd_list {
->  
->  static void mem_cgroup_threshold(struct mem_cgroup *memcg);
->  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
-> +static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
-> +		unsigned long long *mem_limit, unsigned long long *memsw_limit);
->  
->  /*
->   * The memory controller data structure. The memory controller controls both
-> @@ -256,6 +258,10 @@ struct mem_cgroup {
->  	atomic_t	refcnt;
->  
->  	int	swappiness;
-> +
-> +	/* The target ratio of ACTIVE_ANON to INACTIVE_ANON pages */
-> +	unsigned int inactive_ratio;
-> +
->  	/* OOM-Killer disable */
->  	int		oom_kill_disable;
->  
-> @@ -1155,44 +1161,6 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
->  	return ret;
->  }
->  
-> -int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
-> -{
-> -	unsigned long inactive_ratio;
-> -	int nid = zone_to_nid(zone);
-> -	int zid = zone_idx(zone);
-> -	unsigned long inactive;
-> -	unsigned long active;
-> -	unsigned long gb;
-> -
-> -	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-> -						BIT(LRU_INACTIVE_ANON));
-> -	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-> -					      BIT(LRU_ACTIVE_ANON));
-> -
-> -	gb = (inactive + active) >> (30 - PAGE_SHIFT);
-> -	if (gb)
-> -		inactive_ratio = int_sqrt(10 * gb);
-> -	else
-> -		inactive_ratio = 1;
-> -
-> -	return inactive * inactive_ratio < active;
-> -}
-> -
-> -int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
-> -{
-> -	unsigned long active;
-> -	unsigned long inactive;
-> -	int zid = zone_idx(zone);
-> -	int nid = zone_to_nid(zone);
-> -
-> -	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-> -						BIT(LRU_INACTIVE_FILE));
-> -	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-> -					      BIT(LRU_ACTIVE_FILE));
-> -
-> -	return (active > inactive);
-> -}
-> -
->  struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
->  						      struct zone *zone)
->  {
-> @@ -3373,6 +3341,32 @@ void mem_cgroup_print_bad_page(struct page *page)
->  
->  static DEFINE_MUTEX(set_limit_mutex);
->  
-> +/*
-> + * Update inactive_ratio accoring to new memory limit
-> + */
-> +static void mem_cgroup_update_inactive_ratio(struct mem_cgroup *memcg,
-> +					     unsigned long long target)
-> +{
-> +	unsigned long long mem_limit, memsw_limit, gb;
-> +	struct mem_cgroup *iter;
-> +
-> +	for_each_mem_cgroup_tree(iter, memcg) {
-> +		memcg_get_hierarchical_limit(iter, &mem_limit, &memsw_limit);
-> +		mem_limit = min(mem_limit, target);
-> +
-> +		gb = mem_limit >> 30;
-> +		if (gb && 10 * gb < INT_MAX)
-> +			iter->inactive_ratio = int_sqrt(10 * gb);
-> +		else
-> +			iter->inactive_ratio = 1;
-> +	}
-> +}
-> +
-> +unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg)
-> +{
-> +	return memcg->inactive_ratio;
-> +}
-> +
->  static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  				unsigned long long val)
->  {
-> @@ -3422,6 +3416,7 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  			else
->  				memcg->memsw_is_minimum = false;
->  		}
-> +		mem_cgroup_update_inactive_ratio(memcg, val);
->  		mutex_unlock(&set_limit_mutex);
->  
->  		if (!ret)
-> @@ -3439,6 +3434,12 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  	if (!ret && enlarge)
->  		memcg_oom_recover(memcg);
->  
-> +	if (ret) {
-> +		mutex_lock(&set_limit_mutex);
-> +		mem_cgroup_update_inactive_ratio(memcg, RESOURCE_MAX);
-> +		mutex_unlock(&set_limit_mutex);
-> +	}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Why RESOUECE_MAX ?
+iQIcBAEBCAAGBQJPPF59AAoJEECxmPOUX5FE2qEP/05nkhq7fD87ISOqxRC/3QYA
+yWlCbdSizjPcEdTX0v6qM0xGrnxxgFHHcGmBWU9W+CFxhCnunthX/b4ruMOCN7Wf
+EC/oFQ3As1FVm8qEb6lUCexD0lTh2HFsfK4ClQXhleqRuUlXj56TAlXCELqw4WfV
+J0ONNjuLfg48cSmN7lRCIsame8P1BmyXT8rSAA3c4inlekv4mq+cik4g5gKNWbSX
+O1QUCW4H4fIY5y5eiyWP3QJQid+YqUs7kNAToVKhdbQb0dnWTeD61t0WX4TtDXdM
+gfBuUnh6SvUIpz1PSZ5Q4o8hwbPGY++7bnSLgW8gBsf7xM53pOxB2shJHZDcFwKd
+cIWhE5+lTCU76vWJ9ysJS4C4QytSoF9iHOsZmIKMVUtBix5VvcNXX+bjNfgzu5rA
+HLodAwt4iiqz0yFQa8yrwaPioQWRSNBrpMBQyKYIkWpW9/tX0bzrEN9kc4k1PWJe
+2KKsGYANTWSHFEVcG8PL9FrWIjjEb+Y6KjgAso2oQQGDPXwGq3i8NWhiSgMWPqRs
+9bGgcW4nFwnx012MrgmRFvPt+XdFA1tAhIWBQZtoO/IHarCS1Y8BOciYjkUZTGy1
+BAGM7KkN8HZhuT0m9BJUsOM8vLpyQknrKA+4Ott2mkVPUOaIBKPdD8E4V4B+aszH
+TDmKh25VofYUBYh0F0wv
+=15RM
+-----END PGP SIGNATURE-----
 
-Thanks,
--Kame
-
-> +
->  	return ret;
->  }
->  
-> @@ -4155,6 +4156,8 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
->  	}
->  
->  #ifdef CONFIG_DEBUG_VM
-> +	cb->fill(cb, "inactive_ratio", mem_cont->inactive_ratio);
-> +
->  	{
->  		int nid, zid;
->  		struct mem_cgroup_per_zone *mz;
-> @@ -4936,8 +4939,12 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->  	memcg->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&memcg->oom_notify);
->  
-> -	if (parent)
-> +	if (parent) {
->  		memcg->swappiness = mem_cgroup_swappiness(parent);
-> +		memcg->inactive_ratio = parent->inactive_ratio;
-> +	} else
-> +		memcg->inactive_ratio = 1;
-> +
->  	atomic_set(&memcg->refcnt, 1);
->  	memcg->move_charge_at_immigrate = 0;
->  	mutex_init(&memcg->thresholds_lock);
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 4061e91..531abcc 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1788,19 +1788,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
->  }
->  
->  #ifdef CONFIG_SWAP
-> -static int inactive_anon_is_low_global(struct zone *zone)
-> -{
-> -	unsigned long active, inactive;
-> -
-> -	active = zone_page_state(zone, NR_ACTIVE_ANON);
-> -	inactive = zone_page_state(zone, NR_INACTIVE_ANON);
-> -
-> -	if (inactive * zone->inactive_ratio < active)
-> -		return 1;
-> -
-> -	return 0;
-> -}
-> -
->  /**
->   * inactive_anon_is_low - check if anonymous pages need to be deactivated
->   * @zone: zone to check
-> @@ -1809,8 +1796,12 @@ static int inactive_anon_is_low_global(struct zone *zone)
->   * Returns true if the zone does not have enough inactive anon pages,
->   * meaning some active anon pages need to be deactivated.
->   */
-> -static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
-> +static int inactive_anon_is_low(struct mem_cgroup_zone *mz,
-> +				struct scan_control *sc)
->  {
-> +	unsigned long active, inactive;
-> +	unsigned int ratio;
-> +
->  	/*
->  	 * If we don't have swap space, anonymous page deactivation
->  	 * is pointless.
-> @@ -1818,29 +1809,33 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
->  	if (!total_swap_pages)
->  		return 0;
->  
-> -	if (!scanning_global_lru(mz))
-> -		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
-> -						       mz->zone);
-> +	if (global_reclaim(sc))
-> +		ratio = mz->zone->inactive_ratio;
-> +	else
-> +		ratio = mem_cgroup_inactive_ratio(sc->target_mem_cgroup);
->  
-> -	return inactive_anon_is_low_global(mz->zone);
-> +	if (scanning_global_lru(mz)) {
-> +		active = zone_page_state(mz->zone, NR_ACTIVE_ANON);
-> +		inactive = zone_page_state(mz->zone, NR_INACTIVE_ANON);
-> +	} else {
-> +		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
-> +				zone_to_nid(mz->zone), zone_idx(mz->zone),
-> +				BIT(LRU_ACTIVE_ANON));
-> +		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
-> +				zone_to_nid(mz->zone), zone_idx(mz->zone),
-> +				BIT(LRU_INACTIVE_ANON));
-> +	}
-> +
-> +	return inactive * ratio < active;
->  }
->  #else
-> -static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
-> +static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz,
-> +				       struct scan_control *sc)
->  {
->  	return 0;
->  }
->  #endif
->  
-> -static int inactive_file_is_low_global(struct zone *zone)
-> -{
-> -	unsigned long active, inactive;
-> -
-> -	active = zone_page_state(zone, NR_ACTIVE_FILE);
-> -	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-> -
-> -	return (active > inactive);
-> -}
-> -
->  /**
->   * inactive_file_is_low - check if file pages need to be deactivated
->   * @mz: memory cgroup and zone to check
-> @@ -1857,19 +1852,30 @@ static int inactive_file_is_low_global(struct zone *zone)
->   */
->  static int inactive_file_is_low(struct mem_cgroup_zone *mz)
->  {
-> -	if (!scanning_global_lru(mz))
-> -		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
-> -						       mz->zone);
-> +	unsigned long active, inactive;
-> +
-> +	if (scanning_global_lru(mz)) {
-> +		active = zone_page_state(mz->zone, NR_ACTIVE_FILE);
-> +		inactive = zone_page_state(mz->zone, NR_INACTIVE_FILE);
-> +	} else {
-> +		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
-> +				zone_to_nid(mz->zone), zone_idx(mz->zone),
-> +				BIT(LRU_ACTIVE_FILE));
-> +		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
-> +				zone_to_nid(mz->zone), zone_idx(mz->zone),
-> +				BIT(LRU_INACTIVE_FILE));
-> +	}
->  
-> -	return inactive_file_is_low_global(mz->zone);
-> +	return inactive < active;
->  }
->  
-> -static int inactive_list_is_low(struct mem_cgroup_zone *mz, int file)
-> +static int inactive_list_is_low(struct mem_cgroup_zone *mz,
-> +				struct scan_control *sc, int file)
->  {
->  	if (file)
->  		return inactive_file_is_low(mz);
->  	else
-> -		return inactive_anon_is_low(mz);
-> +		return inactive_anon_is_low(mz, sc);
->  }
->  
->  static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
-> @@ -1879,7 +1885,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
->  	int file = is_file_lru(lru);
->  
->  	if (is_active_lru(lru)) {
-> -		if (inactive_list_is_low(mz, file))
-> +		if (inactive_list_is_low(mz, sc, file))
->  			shrink_active_list(nr_to_scan, mz, sc, priority, file);
->  		return 0;
->  	}
-> @@ -2129,7 +2135,7 @@ restart:
->  	 * Even if we did not try to evict anon pages at all, we want to
->  	 * rebalance the anon lru active/inactive ratio.
->  	 */
-> -	if (inactive_anon_is_low(mz))
-> +	if (inactive_anon_is_low(mz, sc))
->  		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
->  
->  	/* reclaim/compaction might need reclaim to continue */
-> @@ -2558,7 +2564,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc,
->  			.zone = zone,
->  		};
->  
-> -		if (inactive_anon_is_low(&mz))
-> +		if (inactive_anon_is_low(&mz, sc))
->  			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
->  					   sc, priority, 0);
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+--Signature=_Thu__16_Feb_2012_12_40_13_+1100_Dw65BnVMIAS+.=Vl--
