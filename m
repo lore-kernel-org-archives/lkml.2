@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2BPVkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 16:40:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:56552 "EHLO ogre.sisk.pl"
+	id S1756038Ab2BPVmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 16:42:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab2BPVkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 16:40:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Fox <pgf@laptop.org>
-Subject: Re: [PATCH] Input: Add ioctl to block suspend while event queue is not empty.
-Date: Thu, 16 Feb 2012 22:44:00 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: NeilBrown <neilb@suse.de>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        linux-input@vger.kernel.org, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-References: <1327112659-31145-1-git-send-email-arve@android.com> <201202160030.26503.rjw@sisk.pl> <20867.1329357211@foxharp.boston.ma.us>
-In-Reply-To: <20867.1329357211@foxharp.boston.ma.us>
+	id S1755993Ab2BPVmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 16:42:00 -0500
+Date: Thu, 16 Feb 2012 16:41:41 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-tip-commits@vger.kernel.org, mingo@elte.hu,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, ebiederm@xmission.com, hpa@zytor.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, vgoyal@redhat.com
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+Message-ID: <20120216214141.GG9751@redhat.com>
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+ <CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+ <20120213152808.GD9751@redhat.com>
+ <CAE9FiQXX7BXKuVHZ9NRCEmeTnPj4zVJL5gf5eSp6b+4e3jN3EA@mail.gmail.com>
+ <20120216025331.GT9751@redhat.com>
+ <CAE9FiQW4utm0roHR7zHS_tHbOAhqi4SECjH8cwJ3H=zEKhQLXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202162244.00267.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQW4utm0roHR7zHS_tHbOAhqi4SECjH8cwJ3H=zEKhQLXA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 16, 2012, Paul Fox wrote:
-> rafael j. wysocki wrote:
->  > On Tuesday, February 14, 2012, NeilBrown wrote:
->  > 
->  > > (or just keep this stuff out of the kernel and let a user-space daemon make
->  > > those decisions).
->  > 
->  > Which is never going to really work, IMHO.
->  > 
->  > Realistically, do you know of any distro, vendor, whoever, who tried to
->  > actually do that in a released product (or even in a release candidate,
->  > or milestone, or whatever different from a prototype running only on one's
->  > personal desktop)?  I don't.
+On Thu, Feb 16, 2012 at 10:43:06AM -0800, Yinghai Lu wrote:
+> On Wed, Feb 15, 2012 at 6:53 PM, Don Zickus <dzickus@redhat.com> wrote:
+> >
+> > For some reason using gzip instead of xz makes things work for me with
+> > your config.
+> >
+> > CONFIG_KERNEL_GZIP=y
+> > CONFIG_KERNEL_XZ=n
+> >
+> > Do you see the same thing?
 > 
-> well, depending on your decision of "that", there are something like
-> 2.5 million OLPC XO laptops that do it.  do they count?  ;-)
+> no.
 > 
-> we're still in the middle of converting our 2.6-era home-grown power
-> management mechanisms to the 3.0-era level, using the
-> .../power/wakeup[_count] and /sys/power/wakeup_count mechanisms. 
-> (change comes slowly to shipping products.)  but we do have a
-> user-level suspend manager.
-> 
-> to the real point of your question:  no, i don't think it does what
-> you're talking about yet -- i.e., control by applications over whether
-> suspend should be permitted or not exists, but isn't nearly as
-> reliable or as foolproof as any of the mechanisms discussed here
-> recently.
+> with GZIP still get instant reset.
 
-OK, cool!
+What about my other idea, 'echo 0 > /proc/sys/kernel/nmi_watchdog'?
 
-I was wrong then, but good to hear that. :-)
-
-Thanks,
-Rafael
+Cheers,
+Don
