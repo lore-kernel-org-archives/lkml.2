@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab2BPOwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 09:52:42 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:50297 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751262Ab2BPOwk (ORCPT
+	id S1752174Ab2BPOyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 09:54:39 -0500
+Received: from mail.free-electrons.com ([88.190.12.23]:42776 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2BPOyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 09:52:40 -0500
-Date: Thu, 16 Feb 2012 09:52:33 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
-	implementation
-Message-ID: <20120216145233.GA6275@Krystal>
-References: <20120213020951.GA12138@linux.vnet.ibm.com> <20120215143116.GA1696@Krystal> <20120215145144.GA6277@Krystal> <20120216063805.GF2976@linux.vnet.ibm.com> <20120216110030.GA1425@Krystal> <1329393115.2293.204.camel@twins> <20120216121807.GA3426@Krystal> <1329396281.2293.213.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329396281.2293.213.camel@twins>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:44:59 up 449 days, 19:48,  1 user,  load average: 0.04, 0.03,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 16 Feb 2012 09:54:38 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: linux@arm.linux.org.uk, nicolas.pitre@linaro.org, tony@atomide.com,
+        s.hauer@pengutronix.de, magnus.damm@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: ARM: add xz kernel compression support
+Date: Thu, 16 Feb 2012 15:54:15 +0100
+Message-Id: <1329404057-26346-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2012-02-16 at 07:18 -0500, Mathieu Desnoyers wrote:
-> > 
-> > Hrm, I think we'd need a little more than just lock/unlock ordering
-> > guarantees. Let's consider the following, where the stores would be
-> > expected to be seen as "store A before store B" by CPU 2
-> > 
-> > CPU 0             CPU 1               CPU 2
-> > 
-> >                                       load B, smp_rmb, load A in loop,
-> >                                       expecting that when updated A is
-> >                                       observed, B is always observed as
-> >                                       updated too.
-> > store A
-> > (lock is permeable:
-> > outside can leak
-> > inside)
-> > lock(rq->lock)
-> > 
-> >       -> migration ->
-> > 
-> >                   unlock(rq->lock)
-> >                   (lock is permeable:
-> >                   outside can leak inside)
-> >                   store B
-> 
-> You got the pairing the wrong way around, I suggested:
-> 
->   store A
-> 
->   switch-out
->     UNLOCK
-> 
->   	-> migration ->
-> 
-> 			switch-in
-> 			  LOCK
-> 
-> 			store B
-> 
-> While both LOCK and UNLOCK are semi-permeable, A won't pass the UNLOCK
-> and B won't pass the LOCK.
-> 
-> Yes, A can pass switch-out LOCK, but that doesn't matter much since the
-> switch-in cannot happen until we've passed UNLOCK.
-> 
-> And yes B can pass switch-in UNLOCK, but again, I can't see that being a
-> problem since the LOCK will avoid it being visible before A.
+This patchset applies on Linus' tree
 
-Ah, so this is what I missed: the context switch has its lock/unlock
-pair, the following migration is performed under its own lock/unlock
-pair, and the following context switch also has its lock/unlock pair. So
-yes, this should be sufficient to act as a full memory barrier.
+It adds xz support to the ARM tree. x86 already has it, so let's have it too!
+My benchmarks below show that xz is better than lzma in terms of image size
+and uncompression time.
 
-> 
-> > Does that make sense, or should I get my first morning coffee ? :) 
-> 
-> Probably.. but that's not saying I'm not wrong ;-)
+My benchmarks below show that xz is better than lzma in terms of image size
+and uncompression time.
 
-It does pass my 1st morning coffee test still, so it looks good, at
-least to me. :-)
+lzma and xz remain pretty bad in terms of boot time, but they may be useful
+in cases where RAM usage and kernel size are critical (booting on FPGAs in early
+CPU design?).
 
-Back to the initial subject: I think it would be important for general
-code understanding that when RCU operates tricks on per-cpu variables
-based on scheduler migration memory ordering assumption, that it tells
-so explicitely, rather than claiming that the memory barriers match
-those at RCU read lock/unlock sites, which is not quite right.
+However, on fast CPUs like OMAP4 with slow storage, xz is almost as good as
+lzo, but uses much less space. Therefore, it can be a good compromise.
 
-Thanks,
+This patch and all other compression options were tested on two boards:
+- OMAP4430 Panda board
+- AT91SAM9623 USB-A9263 board from Calao Systems
 
-Mathieu
+Results on OMAP4 Panda
+----------------------
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Booting from MMC
+
+Comp.           Size            Loading time    Uncompressing time      Total time
+gzip            3355768         2.213376        0.501500                2.714876
+lzma            2488144         1.647410        1.399552                3.046962
+xz              2366192         1.566978        1.299516                2.866494
+lzo             3697840         2.471497        0.160596                2.632093
+None            6965644         4.626749        0                       4.626749
+
+Results on Calao Systems USB-A9263 (AT91)
+-----------------------------------------
+
+Booting from NAND
+
+Compression     Size            Loading time    Uncompressing time      Total time
+gzip            2386936         5.843289        0.935495                6.778784
+lzma            1794344         4.465542        6.513644                10.979186
+xz              1725360         4.308605        4.816191                9.124796
+lzo             2608624         6.351539        0.447336                6.798875
+None            4647908         11.080560       0                       11.080560
+
+Loading time: between "reading uImage" and "OK" (right before "Starting kernel")
+Compression time measured by:
+~/bin/grabserial -v -d /dev/ttyUSB0 -e 15 -t -m "Uncompressing Linux" -i "done," > booting-lzo.log
