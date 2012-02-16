@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2BPXAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 18:00:25 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48013 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300Ab2BPXAV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 18:00:21 -0500
+	id S1752503Ab2BPXHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 18:07:44 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47852 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751301Ab2BPXHn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 18:07:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F3D7DD4.6070103@zytor.com>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
-	<1329422549-16407-3-git-send-email-wad@chromium.org>
-	<4F3D61CB.2000301@zytor.com>
-	<CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-	<4F3D7250.6040504@zytor.com>
-	<CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
-	<4F3D766E.7040205@zytor.com>
-	<CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
-	<4F3D7DD4.6070103@zytor.com>
-Date: Thu, 16 Feb 2012 17:00:19 -0600
-Message-ID: <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Markus Gutschke <markus@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, indan@nul.nu, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        keescook@chromium.org
+In-Reply-To: <Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org>
+References: <201202162251.47063.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org>
+Date: Fri, 17 Feb 2012 00:07:43 +0100
+Message-ID: <CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com>
+Subject: Re: [linux-pm] Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Jones <davej@redhat.com>,
+        linux-pm@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>, esandeen@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 4:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/16/2012 01:51 PM, Will Drewry wrote:
->>>
->>> Put the bloody bit in there and let the pattern program make that decision.
->>
->> Easy enough to add a bit for the mode: 32-bit or 64-bit.  It seemed
->> like a waste of cycles for every 32-bit program or every 64-bit
->> program to check to see that its calling convention hadn't changed,
->> but it does take away a valid decision the pattern program should be
->> making.
->>
->> I'll add a flag for 32bit/64bit while cleaning up seccomp_data. I
->> think that will properly encapsulate the is_compat_task() behavior in
->> a way that is stable for compat and non-compat tasks to use.  If
->> there's a more obvious way, I'm all ears.
->>
+On Thu, Feb 16, 2012 at 11:26 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Thu, 16 Feb 2012, Rafael J. Wysocki wrote:
 >
-> is_compat_task() is not going to be the right thing for x86 going
-> forward, as we're introducing the x32 ABI (which uses the normal x86-64
-> entry point, but with different eax numbers, and bit 30 set.)
+>> > FWIW, we've been seeing a number of hard to diagnose failures
+>> > with suspend to disk for the last few releases in Fedora.
+>> > Eric Sandeen has been chasing https://bugzilla.redhat.com/show_bug.cgi?id=744275
+>> > for a while, but there's no smoking gun that really explains what's
+>> > getting into these states. Further complicating things, is that it
+>> > doesn't seem to be 100% reproducable.
+>>
+>> I wonder if that's reproducible with the filesystems freezing patch I posted
+>> some time ago (it will need some rebasing to apply to the current mainline or
+>> 3.2.y).
+
+Where can I find this patch?
+I'll happily test it.
+But it may take some time as the bug is not easy to reproduce.
+
+>> I also thing that this problem discovered by Alan Stern may be involved:
+>>
+>> http://marc.info/?l=linux-pm&m=132940331030253&w=4
 >
-> The actual state is the TS_COMPAT flag in the thread_info structure,
-> which currently matches is_compat_task(), but perhaps we should add a
-> new helper function syscall_namespace() or something like that...
+> Probably not, unless the filesystems in question are on a USB drive.
 
-Without the addition of x32, it is still the intersection of
-is_compat_task()/TS_COMPAT and CONFIG_64BIT for all arches to
-determine if the call is 32-bit or 64-bit, but this will add another
-wrinkle.  Would it make sense to assume that system call namespaces
-may be ever expanding and offer up an unsigned integer value?
+The filesystems are no on a USB device.
 
-struct seccomp_data {
-  int nr;
-  u32 namespace;
-  u64 instruction_pointer;
-  u64 args[6];
-}
-
-Then syscall_namespace(current, regs) returns
-* 0 - SYSCALL_NS_32 (for existing 32 and config_compat)
-* 1 - SYSCALL_NS_64 (for existing 64 bit)
-* 2 - SYSCALL_NS_X32 (everything after 2 is arch specific)
-* ..
-
-This patch series is pegged to x86 right now, so it's not a big deal
-to add a simple syscall_namespace to asm/syscall.h.  Of course, the
-code is always the easy part.  Even easier would be to only assign 0
-and 1 in the seccomp_data for 32-bit or 64-bit, then leave the rest of
-the u32 untouched until x32 stabilizes and the TS_COMPAT interactions
-are sorted.
-
-The other option, of course, is to hide it from the users and peg to
-is_compat_task and later to however x32 is exposed, but that might
-just be me trying to avoid adding more dependencies to this patch
-series :)
-
-> Either that or we can just use another bit in the syscall number field...
-
-That would simplify the case here. The seccomp_data bit would say the
-call is 64-bit and then the syscall number with the extra bit would
-say that it is x32 and wouldn't collide with the existing 64-bit
-numbering, and the filter program author wouldn't make a filter
-program that allows a call that it shouldn't.
-
-Another option could be to expose the task_user_regset_view() of
-e_machine and e_osabi for the current/active calling convention
-assuming x32 gets a new marker there.  (There is a small amount
-pain[1] there since x86 uses TIF_IA32 and not TS_COMPAT for regset's
-e_machine value and not the current calling convention.  It's not
-clear to me if TS_COMPAT would be set during a core
-dump/fill_note_info, and not many people use ptrace's GET/SETREGSET,
-but I'm not super confident unraveling that mystery myself. Perhaps,
-current_user_regset_view() )
-
-For now, I'll just drop in a u32 for the calling convention.
-
-Thanks!
-will
-
-1 - http://lxr.linux.no/linux+v3.2.6/arch/x86/kernel/ptrace.c#L1310
+-- 
+Thanks,
+//richard
