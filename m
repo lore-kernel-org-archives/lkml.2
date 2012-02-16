@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279Ab2BPFFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 00:05:16 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47383 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2BPFFO (ORCPT
+	id S1751732Ab2BPFGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 00:06:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58736 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab2BPFGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 00:05:14 -0500
-Message-ID: <4F3C8E84.80905@gmail.com>
-Date: Wed, 15 Feb 2012 22:05:08 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: perf: kvm events analysis tool
-References: <j8pru203h6n22hdd9bryyyfr.1329110982240@email.android.com> <4F38E091.5070504@linux.vnet.ibm.com> <4F3931D6.2090305@gmail.com> <4F3C8D3F.9010105@linux.vnet.ibm.com>
-In-Reply-To: <4F3C8D3F.9010105@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 16 Feb 2012 00:06:05 -0500
+Date: Thu, 16 Feb 2012 16:05:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manoj Iyer <manoj.iyer@canonical.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "James M. Leddy" <james.leddy@canonical.com>
+Subject: linux-next: manual merge of the akpm tree with the wireless tree
+Message-Id: <20120216160551.dd41d2675bab32ff23afd712@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/15/12 9:59 PM, Xiao Guangrong wrote:
->
->
-> Okay, i will post the next version after collecting your new comments!
->
-> Thanks for your time, David! :)
->
+--Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I had more comments, but got sidetracked and forgot to come back to 
-this. I still haven't looked at the code yet, but some comments from 
-testing:
+Hi Adnrew,
 
-1. The error message:
-   Warning: Error: expected type 5 but read 4
-   Warning: Error: expected type 5 but read 0
-   Warning: unknown op '}'
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/bluetooth/btusb.c between commit 403f048a5705 ("Bluetooth: btusb:
+Add vendor specific ID (0a5c 21f3) for BCM20702A0") from the wireless
+tree and commit "bluetooth: add support for BCM20702A0 [0a5c:21e6]" from
+the akpm tree.
 
-is fixed by this patch which has not yet made its way into perf:
-https://lkml.org/lkml/2011/9/4/41
+I fixed it up (see below) an can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The most recent request:
-https://lkml.org/lkml/2012/2/8/479
+diff --cc drivers/bluetooth/btusb.c
+index 789c9b5,e618cf1..0000000
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@@ -102,7 -102,7 +102,8 @@@ static struct usb_device_id btusb_table
+ =20
+  	/* Broadcom BCM20702A0 */
+  	{ USB_DEVICE(0x0a5c, 0x21e3) },
++ 	{ USB_DEVICE(0x0a5c, 0x21e6) },
+ +	{ USB_DEVICE(0x0a5c, 0x21f3) },
+  	{ USB_DEVICE(0x413c, 0x8197) },
+ =20
+  	{ }	/* Terminating entry */
 
-Arnaldo: the patch still applies cleanly (but with an offset of -2 lines).
+--Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-2. negatve testing:
+iQIcBAEBCAAGBQJPPI6vAAoJEECxmPOUX5FENSAQAKI3X48I5g7m8Kmtrf4CPnb3
+nJMSQFC/xb8vJrJuFe/l9+Mz3JNi7yL96Hd4GjTqZdAklkerOPDSGcUZjwnkyV2c
+vUc0qh7lwWXFrARl9Q6dxznpNWMNvdroqpZ3ZkMS3ne/5uF1MaORWYQPUFpBIZXh
+Nx2pSnm99Qo9uAYtIw4zPJsErs19exA4JE34cgY2G42Jd/EGSeML2T8Vvw0FoOE7
+jTucktPEwWOTHLzws0NjBSDnjBqu8gqLT7Fj8/LXFeH40HlK8cdMK85BKpMQ0+Ce
+6vNovA6beUJRYtl7QsuC1YYguqyhtwb5kLHnD2R/vd79S7psheiwRBH+EkWptdrD
+7qmqH9EgpS3O6XeQyCnr6wVslrRd8LmyZLIsCp40PfEdzFcsXdLq/RQQ3BXwVCaR
+g8PAEVE/Kph0G+kK+YvD2ugDJC6IdXWyIQCr7y081zKI+ufyDJbAL6aEcQiO8vrV
+6Xr5WKmUhiSgfyYDjOYd4VK7CNLLxkipRNkd0qa5VJRo/h6xCPMh9DEt8mmm8+z1
+Oc26LQHWfKMuFY8FM6KleHSzBMEWbZwr785Xep3TI161Sgdy0uAwaw/Xmi6X8+FO
+0yW7U8O51iIEVU3cGT73mJZ4fm0LWuREwjU9la9IpXzEJaFQl8LHE27jNyXQPrSp
+Moe6qpnQ0kN/v+h776ud
+=Wy2m
+-----END PGP SIGNATURE-----
 
-perf kvm-events record -e kvm:* -p 2603 -- sleep 10
-
-   Warning: Error: expected type 4 but read 7
-   Warning: Error: expected type 5 but read 0
-   Warning: failed to read event print fmt for kvm_apic
-   Warning: Error: expected type 4 but read 7
-   Warning: Error: expected type 5 but read 0
-   Warning: failed to read event print fmt for kvm_inj_exception
-   Fatal: bad op token {
-
-If other kvm events are specified in the record line they appear to be 
-silently ignored in the report in which case why allow the -e option to 
-record?
-
-
-3. What is happening for multiple VMs?
-
-a. perf kvm-events report
-data is collected for all VMs. What is displayed in the report? An
-average for all VMs?
-
-b. perf kvm-events report --vcpu 1
-Does this given an average of all vcpu 1's?
-
-Perhaps a -p option for the report to pull out events related to a 
-single VM. Really this could be a generic option (to perf-report and 
-perf-script as well) to only show/analyze events for the specified pid. 
-ie., data is recorded for all VMs (or system wide for the regular 
-perf-record) and you want to only consider events for a specific pid. 
-e.g., in process_sample_event() skip event if event->ip.pid != 
-report_pid (works for perf code because PERF_SAMPLE_TID attribute is 
-always set).
-
-David
+--Signature=_Thu__16_Feb_2012_16_05_51_+1100_5uYLSAHwVKqu=uBZ--
