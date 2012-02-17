@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab2BQA7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:59:49 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:44481 "EHLO
+	id S1756792Ab2BQBAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:00:01 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55835 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756672Ab2BQA7r (ORCPT
+	by vger.kernel.org with ESMTP id S1756771Ab2BQA77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:59:47 -0500
-X-Sasl-enc: HD0+52ByalEQsAHN0ssxqdpHkmMX0e8ckfjHmSXVqcpL 1329440386
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:10 2012
-Message-Id: <20120217005509.959166336@linuxfoundation.org>
+	Thu, 16 Feb 2012 19:59:59 -0500
+X-Sasl-enc: /aEr/gNd1HgdBb/B4f/lyh/7We1v/HWinZBS4LDLCNv/ 1329440397
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:36 2012
+Message-Id: <20120217005536.273054495@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:10 -0800
+Date: Thu, 16 Feb 2012 16:55:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [01/15] perf evsel: Fix an issue where perf report fails to show the proper percentage
-In-Reply-To: <20120217005650.GA17119@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin@rab.in>,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [16/28] writeback: fix dereferencing NULL bdi->dev on trace_writeback_queue
+In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit a4a03fc7ef89020baca4f19174e6a43767c6d78a upstream.
+commit 977b7e3a52a7421ad33a393a38ece59f3d41c2fa upstream.
 
-This patch fixes an issue where perf report shows nan% for certain
-perf.data files. The below is from a report for a do_fork probe:
+When a SD card is hot removed without umount, del_gendisk() will call
+bdi_unregister() without destroying/freeing it. This leaves the bdi in
+the bdi->dev = NULL, bdi->wb.task = NULL, bdi->bdi_list removed state.
 
-   -nan%           sshd  [kernel.kallsyms]  [k] do_fork
-   -nan%    packagekitd  [kernel.kallsyms]  [k] do_fork
-   -nan%    dbus-daemon  [kernel.kallsyms]  [k] do_fork
-   -nan%           bash  [kernel.kallsyms]  [k] do_fork
+When sync(2) gets the bdi before bdi_unregister() and calls
+bdi_queue_work() after the unregister, trace_writeback_queue will be
+dereferencing the NULL bdi->dev. Fix it with a simple test for NULL.
 
-A git bisect shows commit f3bda2c as the cause. However, looking back
-through the git history, I saw commit 640c03c which seems to have
-removed the required initialization for perf_sample->period. The problem
-only started showing after commit f3bda2c. The below patch re-introduces
-the initialization and it fixes the problem for me.
-
-With the below patch, for the same perf.data:
-
-  73.08%             bash  [kernel.kallsyms]  [k] do_fork
-   8.97%      11-dhclient  [kernel.kallsyms]  [k] do_fork
-   6.41%             sshd  [kernel.kallsyms]  [k] do_fork
-   3.85%        20-chrony  [kernel.kallsyms]  [k] do_fork
-   2.56%         sendmail  [kernel.kallsyms]  [k] do_fork
-
-This patch applies over current linux-tip commit 9949284.
-
-Problem introduced in:
-
-$ git describe 640c03c
-v2.6.37-rc3-83-g640c03c
-
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20120203170113.5190.25558.stgit@localhost6.localdomain6
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-reference: http://lkml.org/lkml/2012/1/18/346
+Reported-by: Rabin Vincent <rabin@rab.in>
+Tested-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/evsel.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/trace/events/writeback.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -348,6 +348,7 @@ int perf_event__parse_sample(const union
- 
- 	data->cpu = data->pid = data->tid = -1;
- 	data->stream_id = data->id = data->time = -1ULL;
-+	data->period = 1;
- 
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
- 		if (!sample_id_all)
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -47,7 +47,10 @@ DECLARE_EVENT_CLASS(writeback_work_class
+ 		__field(int, reason)
+ 	),
+ 	TP_fast_assign(
+-		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		struct device *dev = bdi->dev;
++		if (!dev)
++			dev = default_backing_dev_info.dev;
++		strncpy(__entry->name, dev_name(dev), 32);
+ 		__entry->nr_pages = work->nr_pages;
+ 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
+ 		__entry->sync_mode = work->sync_mode;
 
 
