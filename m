@@ -1,120 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab2BQRuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:50:22 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:64989 "EHLO
+	id S1752195Ab2BQRua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:50:30 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:25461 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab2BQRuV (ORCPT
+	with ESMTP id S1751918Ab2BQRu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:50:21 -0500
+	Fri, 17 Feb 2012 12:50:26 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 00/18] at91 first cleanup series for 3.4
-Date: Fri, 17 Feb 2012 18:49:52 +0100
-Message-Id: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+Subject: [PATCH 05/18] ARM: at91/pm_slowclock: rename register to named define
+Date: Fri, 17 Feb 2012 18:49:57 +0100
+Message-Id: <88767ad4afbe3853924b41a7e9620a4449488e3f.1329500622.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
+References: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series removes the at91_sys_read/write() functions that where
-used for all System Controller devices. The static offsets that were
-used prevented us from compiling several AT91 SoC support in a single
-zImage.
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-The other cleanup is the move of some early console initialization.
+This patch will give a name to ARM registers in the assembly
+source code (using #defines). It is done to simplify the code
+reading and the passing of parameters to functions.
 
-All this goes on top of current material that is already in arm-soc
-git tree (merge of all at91/* branches).
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/pm_slowclock.S |  177 +++++++++++++++++++------------------
+ 1 files changed, 91 insertions(+), 86 deletions(-)
 
-Jean-Christophe PLAGNIOL-VILLARD (18):
-      ARM: at91: factorise duplicated at91sam9 idle
-      ARM: at91/at91x40: remove use of at91_sys_read/write
-      ARM: at91: make matrix register base soc independent
-      ARM: at91: make ST (System Timer) soc independent
-      ARM: at91/pm_slowclock: rename register to named define
-      ARM: at91/pm_slowclock: function slow_clock() accepts parameters
-      ARM: at91: move at91rm9200 sdramc defines to at91rm9200_sdramc.h
-      ARM: at91: make sdram/ddr register base soc independent
-      ARM: at91/pm_slowclock: add runtime detection of memory contoller
-      ARM: at91/PMC: make register base soc independent
-      ARM: at91/rtc-at91sam9: each SoC can select the RTT device to use
-      ARM: at91:rtc/rtc-at91sam9: ioremap register bank
-      ARM: at91/rtc-at91sam9: pass the GPBR to use via ressources
-      ARM: at91: finally drop at91_sys_read/write
-      ARM: at91: merge SRAM Memory banks thanks to mirroring
-      Atmel: move console default platform_device to serial driver
-      ARM: at91/board-dt: drop default console
-      ARM: at91/board-dt: move at91_initialize() to init_irq()
-
- arch/arm/mach-at91/at91rm9200.c                    |    7 +-
- arch/arm/mach-at91/at91rm9200_devices.c            |   14 +-
- arch/arm/mach-at91/at91rm9200_time.c               |   37 ++-
- arch/arm/mach-at91/at91sam9260.c                   |   23 +-
- arch/arm/mach-at91/at91sam9260_devices.c           |   31 ++-
- arch/arm/mach-at91/at91sam9261.c                   |   10 +-
- arch/arm/mach-at91/at91sam9261_devices.c           |   24 ++-
- arch/arm/mach-at91/at91sam9263.c                   |   11 +-
- arch/arm/mach-at91/at91sam9263_devices.c           |   49 +++-
- arch/arm/mach-at91/at91sam9_alt_reset.S            |   12 +-
- arch/arm/mach-at91/at91sam9g45.c                   |   11 +-
- arch/arm/mach-at91/at91sam9g45_devices.c           |   24 ++-
- arch/arm/mach-at91/at91sam9g45_reset.S             |   12 +-
- arch/arm/mach-at91/at91sam9rl.c                    |   10 +-
- arch/arm/mach-at91/at91sam9rl_devices.c            |   24 ++-
- arch/arm/mach-at91/at91sam9x5.c                    |    5 +-
- arch/arm/mach-at91/at91x40.c                       |    2 +-
- arch/arm/mach-at91/at91x40_time.c                  |   28 ++-
- arch/arm/mach-at91/board-cpu9krea.c                |    5 +-
- arch/arm/mach-at91/board-cpuat91.c                 |    1 +
- arch/arm/mach-at91/board-dt.c                      |   16 +-
- arch/arm/mach-at91/board-eco920.c                  |    5 +-
- arch/arm/mach-at91/board-kb9202.c                  |    1 +
- arch/arm/mach-at91/board-picotux200.c              |    1 +
- arch/arm/mach-at91/board-rm9200dk.c                |    1 +
- arch/arm/mach-at91/board-rm9200ek.c                |    1 +
- arch/arm/mach-at91/board-yl-9200.c                 |    3 +-
- arch/arm/mach-at91/clock.c                         |   81 ++++---
- arch/arm/mach-at91/generic.h                       |   10 +
- arch/arm/mach-at91/include/mach/at91_matrix.h      |   23 ++
- arch/arm/mach-at91/include/mach/at91_pmc.h         |   56 +++--
- arch/arm/mach-at91/include/mach/at91_ramc.h        |   32 +++
- arch/arm/mach-at91/include/mach/at91_st.h          |   32 ++-
- arch/arm/mach-at91/include/mach/at91rm9200.h       |   10 +-
- arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   58 +----
- .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   63 +++++
- arch/arm/mach-at91/include/mach/at91sam9260.h      |   14 +-
- .../mach-at91/include/mach/at91sam9260_matrix.h    |   36 ++--
- arch/arm/mach-at91/include/mach/at91sam9261.h      |   10 +-
- .../mach-at91/include/mach/at91sam9261_matrix.h    |   18 +-
- arch/arm/mach-at91/include/mach/at91sam9263.h      |   12 +-
- .../mach-at91/include/mach/at91sam9263_matrix.h    |   74 +++---
- arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h  |    6 -
- arch/arm/mach-at91/include/mach/at91sam9_sdramc.h  |    6 -
- arch/arm/mach-at91/include/mach/at91sam9g45.h      |   12 +-
- .../mach-at91/include/mach/at91sam9g45_matrix.h    |   84 +++---
- arch/arm/mach-at91/include/mach/at91sam9rl.h       |    7 +-
- .../arm/mach-at91/include/mach/at91sam9rl_matrix.h |   42 ++--
- arch/arm/mach-at91/include/mach/at91sam9x5.h       |    5 +-
- arch/arm/mach-at91/include/mach/at91x40.h          |   18 +-
- arch/arm/mach-at91/include/mach/hardware.h         |    3 +-
- arch/arm/mach-at91/include/mach/io.h               |   18 --
- arch/arm/mach-at91/pm.c                            |   35 ++-
- arch/arm/mach-at91/pm.h                            |   11 +-
- arch/arm/mach-at91/pm_slowclock.S                  |  271 ++++++++++----------
- arch/arm/mach-at91/setup.c                         |    9 +
- arch/avr32/mach-at32ap/at32ap700x.c                |    2 -
- drivers/pcmcia/at91_cf.c                           |    5 +-
- drivers/rtc/rtc-at91sam9.c                         |  103 ++++-----
- drivers/tty/serial/atmel_serial.c                  |    2 +
- drivers/usb/gadget/at91_udc.c                      |    9 +-
- drivers/usb/gadget/atmel_usba_udc.c                |    6 +-
- drivers/watchdog/at91rm9200_wdt.c                  |    8 +-
- 63 files changed, 877 insertions(+), 682 deletions(-)
- create mode 100644 arch/arm/mach-at91/include/mach/at91_matrix.h
- create mode 100644 arch/arm/mach-at91/include/mach/at91_ramc.h
- create mode 100644 arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
-
-Best regards,
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index f8539a8..97124f5 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -46,17 +46,22 @@
+ #define PLLALOCK_TIMEOUT	1000
+ #define PLLBLOCK_TIMEOUT	1000
+ 
++#define pmc	r1
++#define sdramc	r2
++#define tmp1	r3
++#define tmp2	r4
++#define ramc1	r5
+ 
+ /*
+  * Wait until master clock is ready (after switching master clock source)
+  */
+ 	.macro wait_mckrdy
+-	mov	r4, #MCKRDY_TIMEOUT
+-1:	sub	r4, r4, #1
+-	cmp	r4, #0
++	mov	tmp2, #MCKRDY_TIMEOUT
++1:	sub	tmp2, tmp2, #1
++	cmp	tmp2, #0
+ 	beq	2f
+-	ldr	r3, [r1, #(AT91_PMC_SR - AT91_PMC)]
+-	tst	r3, #AT91_PMC_MCKRDY
++	ldr	tmp1, [pmc, #(AT91_PMC_SR - AT91_PMC)]
++	tst	tmp1, #AT91_PMC_MCKRDY
+ 	beq	1b
+ 2:
+ 	.endm
+@@ -65,12 +70,12 @@
+  * Wait until master oscillator has stabilized.
+  */
+ 	.macro wait_moscrdy
+-	mov	r4, #MOSCRDY_TIMEOUT
+-1:	sub	r4, r4, #1
+-	cmp	r4, #0
++	mov	tmp2, #MOSCRDY_TIMEOUT
++1:	sub	tmp2, tmp2, #1
++	cmp	tmp2, #0
+ 	beq	2f
+-	ldr	r3, [r1, #(AT91_PMC_SR - AT91_PMC)]
+-	tst	r3, #AT91_PMC_MOSCS
++	ldr	tmp1, [pmc, #(AT91_PMC_SR - AT91_PMC)]
++	tst	tmp1, #AT91_PMC_MOSCS
+ 	beq	1b
+ 2:
+ 	.endm
+@@ -79,12 +84,12 @@
+  * Wait until PLLA has locked.
+  */
+ 	.macro wait_pllalock
+-	mov	r4, #PLLALOCK_TIMEOUT
+-1:	sub	r4, r4, #1
+-	cmp	r4, #0
++	mov	tmp2, #PLLALOCK_TIMEOUT
++1:	sub	tmp2, tmp2, #1
++	cmp	tmp2, #0
+ 	beq	2f
+-	ldr	r3, [r1, #(AT91_PMC_SR - AT91_PMC)]
+-	tst	r3, #AT91_PMC_LOCKA
++	ldr	tmp1, [pmc, #(AT91_PMC_SR - AT91_PMC)]
++	tst	tmp1, #AT91_PMC_LOCKA
+ 	beq	1b
+ 2:
+ 	.endm
+@@ -93,12 +98,12 @@
+  * Wait until PLLB has locked.
+  */
+ 	.macro wait_pllblock
+-	mov	r4, #PLLBLOCK_TIMEOUT
+-1:	sub	r4, r4, #1
+-	cmp	r4, #0
++	mov	tmp2, #PLLBLOCK_TIMEOUT
++1:	sub	tmp2, tmp2, #1
++	cmp	tmp2, #0
+ 	beq	2f
+-	ldr	r3, [r1, #(AT91_PMC_SR - AT91_PMC)]
+-	tst	r3, #AT91_PMC_LOCKB
++	ldr	tmp1, [pmc, #(AT91_PMC_SR - AT91_PMC)]
++	tst	tmp1, #AT91_PMC_LOCKB
+ 	beq	1b
+ 2:
+ 	.endm
+@@ -117,55 +122,55 @@ ENTRY(at91_slow_clock)
+ 	 *  R4 = temporary register
+ 	 *  R5 = Base address of second RAM Controller or 0 if not present
+ 	 */
+-	ldr	r1, .at91_va_base_pmc
+-	ldr	r2, .at91_va_base_sdramc
+-	ldr	r5, .at91_va_base_ramc1
++	ldr	pmc, .at91_va_base_pmc
++	ldr	sdramc, .at91_va_base_sdramc
++	ldr	ramc1, .at91_va_base_ramc1
+ 
+ 	/* Drain write buffer */
+-	mov	r0, #0
+-	mcr	p15, 0, r0, c7, c10, 4
++	mov	tmp1, #0
++	mcr	p15, 0, tmp1, c7, c10, 4
+ 
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	/* Put SDRAM in self-refresh mode */
+-	mov	r3, #1
+-	str	r3, [r2, #AT91_SDRAMC_SRR]
++	mov	tmp1, #1
++	str	tmp1, [sdramc, #AT91_SDRAMC_SRR]
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ 
+ 	/* prepare for DDRAM self-refresh mode */
+-	ldr	r3, [r2, #AT91_DDRSDRC_LPR]
+-	str	r3, .saved_sam9_lpr
+-	bic	r3, #AT91_DDRSDRC_LPCB
+-	orr	r3, #AT91_DDRSDRC_LPCB_SELF_REFRESH
++	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
++	str	tmp1, .saved_sam9_lpr
++	bic	tmp1, #AT91_DDRSDRC_LPCB
++	orr	tmp1, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+ 
+ 	/* figure out if we use the second ram controller */
+-	cmp	r5, #0
+-	ldrne	r4, [r5, #AT91_DDRSDRC_LPR]
+-	strne	r4, .saved_sam9_lpr1
+-	bicne	r4, #AT91_DDRSDRC_LPCB
+-	orrne	r4, #AT91_DDRSDRC_LPCB_SELF_REFRESH
++	cmp	ramc1, #0
++	ldrne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
++	strne	tmp2, .saved_sam9_lpr1
++	bicne	tmp2, #AT91_DDRSDRC_LPCB
++	orrne	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+ 
+ 	/* Enable DDRAM self-refresh mode */
+-	str	r3, [r2, #AT91_DDRSDRC_LPR]
+-	strne	r4, [r5, #AT91_DDRSDRC_LPR]
++	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
++	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ #else
+ 	/* Enable SDRAM self-refresh mode */
+-	ldr	r3, [r2, #AT91_SDRAMC_LPR]
+-	str	r3, .saved_sam9_lpr
++	ldr	tmp1, [sdramc, #AT91_SDRAMC_LPR]
++	str	tmp1, .saved_sam9_lpr
+ 
+-	bic	r3, #AT91_SDRAMC_LPCB
+-	orr	r3, #AT91_SDRAMC_LPCB_SELF_REFRESH
+-	str	r3, [r2, #AT91_SDRAMC_LPR]
++	bic	tmp1, #AT91_SDRAMC_LPCB
++	orr	tmp1, #AT91_SDRAMC_LPCB_SELF_REFRESH
++	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+ #endif
+ 
+ 	/* Save Master clock setting */
+-	ldr	r3, [r1, #(AT91_PMC_MCKR - AT91_PMC)]
+-	str	r3, .saved_mckr
++	ldr	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
++	str	tmp1, .saved_mckr
+ 
+ 	/*
+ 	 * Set the Master clock source to slow clock
+ 	 */
+-	bic	r3, r3, #AT91_PMC_CSS
+-	str	r3, [r1, #(AT91_PMC_MCKR - AT91_PMC)]
++	bic	tmp1, tmp1, #AT91_PMC_CSS
++	str	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 
+ 	wait_mckrdy
+ 
+@@ -175,61 +180,61 @@ ENTRY(at91_slow_clock)
+ 	 *
+ 	 * See AT91RM9200 errata #27 and #28 for details.
+ 	 */
+-	mov	r3, #0
+-	str	r3, [r1, #(AT91_PMC_MCKR - AT91_PMC)]
++	mov	tmp1, #0
++	str	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 
+ 	wait_mckrdy
+ #endif
+ 
+ 	/* Save PLLA setting and disable it */
+-	ldr	r3, [r1, #(AT91_CKGR_PLLAR - AT91_PMC)]
+-	str	r3, .saved_pllar
++	ldr	tmp1, [pmc, #(AT91_CKGR_PLLAR - AT91_PMC)]
++	str	tmp1, .saved_pllar
+ 
+-	mov	r3, #AT91_PMC_PLLCOUNT
+-	orr	r3, r3, #(1 << 29)		/* bit 29 always set */
+-	str	r3, [r1, #(AT91_CKGR_PLLAR - AT91_PMC)]
++	mov	tmp1, #AT91_PMC_PLLCOUNT
++	orr	tmp1, tmp1, #(1 << 29)		/* bit 29 always set */
++	str	tmp1, [pmc, #(AT91_CKGR_PLLAR - AT91_PMC)]
+ 
+ 	/* Save PLLB setting and disable it */
+-	ldr	r3, [r1, #(AT91_CKGR_PLLBR - AT91_PMC)]
+-	str	r3, .saved_pllbr
++	ldr	tmp1, [pmc, #(AT91_CKGR_PLLBR - AT91_PMC)]
++	str	tmp1, .saved_pllbr
+ 
+-	mov	r3, #AT91_PMC_PLLCOUNT
+-	str	r3, [r1, #(AT91_CKGR_PLLBR - AT91_PMC)]
++	mov	tmp1, #AT91_PMC_PLLCOUNT
++	str	tmp1, [pmc, #(AT91_CKGR_PLLBR - AT91_PMC)]
+ 
+ 	/* Turn off the main oscillator */
+-	ldr	r3, [r1, #(AT91_CKGR_MOR - AT91_PMC)]
+-	bic	r3, r3, #AT91_PMC_MOSCEN
+-	str	r3, [r1, #(AT91_CKGR_MOR - AT91_PMC)]
++	ldr	tmp1, [pmc, #(AT91_CKGR_MOR - AT91_PMC)]
++	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
++	str	tmp1, [pmc, #(AT91_CKGR_MOR - AT91_PMC)]
+ 
+ 	/* Wait for interrupt */
+-	mcr	p15, 0, r0, c7, c0, 4
++	mcr	p15, 0, tmp1, c7, c0, 4
+ 
+ 	/* Turn on the main oscillator */
+-	ldr	r3, [r1, #(AT91_CKGR_MOR - AT91_PMC)]
+-	orr	r3, r3, #AT91_PMC_MOSCEN
+-	str	r3, [r1, #(AT91_CKGR_MOR - AT91_PMC)]
++	ldr	tmp1, [pmc, #(AT91_CKGR_MOR - AT91_PMC)]
++	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
++	str	tmp1, [pmc, #(AT91_CKGR_MOR - AT91_PMC)]
+ 
+ 	wait_moscrdy
+ 
+ 	/* Restore PLLB setting */
+-	ldr	r3, .saved_pllbr
+-	str	r3, [r1, #(AT91_CKGR_PLLBR - AT91_PMC)]
++	ldr	tmp1, .saved_pllbr
++	str	tmp1, [pmc, #(AT91_CKGR_PLLBR - AT91_PMC)]
+ 
+-	tst	r3, #(AT91_PMC_MUL &  0xff0000)
++	tst	tmp1, #(AT91_PMC_MUL &  0xff0000)
+ 	bne	1f
+-	tst	r3, #(AT91_PMC_MUL & ~0xff0000)
++	tst	tmp1, #(AT91_PMC_MUL & ~0xff0000)
+ 	beq	2f
+ 1:
+ 	wait_pllblock
+ 2:
+ 
+ 	/* Restore PLLA setting */
+-	ldr	r3, .saved_pllar
+-	str	r3, [r1, #(AT91_CKGR_PLLAR - AT91_PMC)]
++	ldr	tmp1, .saved_pllar
++	str	tmp1, [pmc, #(AT91_CKGR_PLLAR - AT91_PMC)]
+ 
+-	tst	r3, #(AT91_PMC_MUL &  0xff0000)
++	tst	tmp1, #(AT91_PMC_MUL &  0xff0000)
+ 	bne	3f
+-	tst	r3, #(AT91_PMC_MUL & ~0xff0000)
++	tst	tmp1, #(AT91_PMC_MUL & ~0xff0000)
+ 	beq	4f
+ 3:
+ 	wait_pllalock
+@@ -242,11 +247,11 @@ ENTRY(at91_slow_clock)
+ 	 *
+ 	 * See AT91RM9200 errata #27 and #28 for details.
+ 	 */
+-	ldr	r3, .saved_mckr
+-	tst	r3, #AT91_PMC_PRES
++	ldr	tmp1, .saved_mckr
++	tst	tmp1, #AT91_PMC_PRES
+ 	beq	2f
+-	and	r3, r3, #AT91_PMC_PRES
+-	str	r3, [r1, #(AT91_PMC_MCKR - AT91_PMC)]
++	and	tmp1, tmp1, #AT91_PMC_PRES
++	str	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 
+ 	wait_mckrdy
+ #endif
+@@ -254,8 +259,8 @@ ENTRY(at91_slow_clock)
+ 	/*
+ 	 * Restore master clock setting
+ 	 */
+-2:	ldr	r3, .saved_mckr
+-	str	r3, [r1, #(AT91_PMC_MCKR - AT91_PMC)]
++2:	ldr	tmp1, .saved_mckr
++	str	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 
+ 	wait_mckrdy
+ 
+@@ -263,18 +268,18 @@ ENTRY(at91_slow_clock)
+ 	/* Do nothing - self-refresh is automatically disabled. */
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ 	/* Restore LPR on AT91 with DDRAM */
+-	ldr	r3, .saved_sam9_lpr
+-	str	r3, [r2, #AT91_DDRSDRC_LPR]
++	ldr	tmp1, .saved_sam9_lpr
++	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+ 
+ 	/* if we use the second ram controller */
+-	cmp	r5, #0
+-	ldrne	r4, .saved_sam9_lpr1
+-	strne	r4, [r5, #AT91_DDRSDRC_LPR]
++	cmp	ramc1, #0
++	ldrne	tmp2, .saved_sam9_lpr1
++	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ 
+ #else
+ 	/* Restore LPR on AT91 with SDRAM */
+-	ldr	r3, .saved_sam9_lpr
+-	str	r3, [r2, #AT91_SDRAMC_LPR]
++	ldr	tmp1, .saved_sam9_lpr
++	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+ #endif
+ 
+ 	/* Restore registers, and return */
+-- 
+1.7.9
 
