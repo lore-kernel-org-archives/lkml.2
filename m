@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab2BQDZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:25:29 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41791 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab2BQDZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:25:28 -0500
-Message-ID: <1329449121.17110.2.camel@phoenix>
-Subject: [PATCH 2/2] ARM: imx/pcm038: Don't specify regulator consumers by
- struct device
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 17 Feb 2012 11:25:21 +0800
-In-Reply-To: <1329449029.17110.1.camel@phoenix>
-References: <1329449029.17110.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1753384Ab2BQDZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:25:57 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:44010 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab2BQDZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 22:25:56 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Subject: Re: [PATCH] arch/blackfin/mach-bf537/boards/pnav10.c: included linux/export.h twice
+Date: Thu, 16 Feb 2012 22:25:57 -0500
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: Danny Kukawka <dkukawka@suse.de>, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org
+References: <1329400584-32069-1-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1329400584-32069-1-git-send-email-danny.kukawka@bisect.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2526128.lnhZrB35Yp";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201202162225.59076.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev field is remove from struct regulator_consumer_supply since commit
-737f36 "regulator: Remove support for supplies specified by struct device".
+--nextPart2526128.lnhZrB35Yp
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-This fixes below build error:
-  CC      arch/arm/mach-imx/mach-pcm038.o
-arch/arm/mach-imx/mach-pcm038.c:236: error: unknown field 'dev' specified in initializer
-make[1]: *** [arch/arm/mach-imx/mach-pcm038.o] Error 1
-make: *** [arch/arm/mach-imx] Error 2
+On Thursday 16 February 2012 08:56:24 Danny Kukawka wrote:
+> arch/blackfin/mach-bf537/boards/pnav10.c: included 'linux/export.h'
+> twice. No need to include the file a second time in a #ifdef block
+> if already included at top. Remove the duplicate.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This patch is against linux-next 20120217.
+thanks, added to the Blackfin tree!
+-mike
 
- arch/arm/mach-imx/mach-pcm038.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+--nextPart2526128.lnhZrB35Yp
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
-index 16f126d..bfcc1ea 100644
---- a/arch/arm/mach-imx/mach-pcm038.c
-+++ b/arch/arm/mach-imx/mach-pcm038.c
-@@ -233,7 +233,6 @@ static struct regulator_init_data sdhc1_data = {
- 
- static struct regulator_consumer_supply cam_consumers[] = {
- 	{
--		.dev	= NULL,
- 		.supply	= "imx_cam_vcc",
- 	},
- };
--- 
-1.7.5.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
+iQIcBAABAgAGBQJPPcjGAAoJEEFjO5/oN/WB8foQAIn2CeTxfFsz1jIBEBETv1rc
+3BuFrS1dB1KUmrnTFVsVtyEevc6oOJrmuZ64sg7fpxOHYs5jzP41MjrxNZDQKjUh
+CGwN7fJDYR84eNITufRjMIZhGhHioXeXyCp/vd0CP5c/FsqEOJkg8dMbbCd0b1g6
+tsMhXisAY4PEvLTTzUkNaPj0BzQMs/1AQQKYxDP/IxlTFhKYl7wVG0lKT1MkCwa9
+6vIIFMscQfz9glTnnysUBpK/+c+hyV2yiO+ZzhZU2Tn+dmtJPpiuUpV/YRhRFl1G
+xy18JeUXKUcexWztgrJedgwsiVBl8nmH6oQiBnPjAkUYG6xXAZxnKsDKyFdVSnld
+TYVeQ6k8RO0ztBlhkW5IuKDdgMMhO1B3eQeeSHww/zrTzFSlIFI3v9PqdLG+WQmb
+4aj615z/8qfxFnXg8YmTf80QVFencAahXpEpd1+tg4f3vHO51G8C9VfmUhVk6cKv
+cIMHl2Gog4bJ+NY2efr6J+jTU2TMolkfjHZQhxJFGCqH0xhkFz8pvpThxgX0J+VP
+bAnmliYgC1L07Q5nUI96o4qouXsfhx1lPYVAL+qaRJ+CN/N5HjaqBj1J61866lYx
+aREw4Yc/6PT7XAWwq674Mli3LdSO5cTcwN+hT4ms2xLnWayoLRZ8gFzgxpV+oeZg
+3wqyf6woX59Za6r96pnR
+=Lpel
+-----END PGP SIGNATURE-----
 
-
+--nextPart2526128.lnhZrB35Yp--
