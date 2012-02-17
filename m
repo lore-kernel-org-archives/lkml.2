@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2BQXmR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:42:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50265 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2BQXmO (ORCPT
+	id S1755102Ab2BQXtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:49:32 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38753 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab2BQXtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:42:14 -0500
-Date: Fri, 17 Feb 2012 15:42:13 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.2] fs: symlink restrictions on sticky directories
-Message-Id: <20120217154213.ecf4f7b4.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5jJ629rrEuQX1MSiqM2SvhCSmZYuNZdOA4zBr5GZHtFcuw@mail.gmail.com>
-References: <20120107185548.GA30748@outflux.net>
-	<20120217152432.112fdace.akpm@linux-foundation.org>
-	<CAGXu5jJ629rrEuQX1MSiqM2SvhCSmZYuNZdOA4zBr5GZHtFcuw@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Feb 2012 18:49:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.216.134 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Fri, 17 Feb 2012 15:49:02 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Holger Macht <holger@homac.de>
+cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: dock_link_device is oopsy
+In-Reply-To: <20120217230107.GA12929@homac.suse.de>
+Message-ID: <alpine.LSU.2.00.1202171541040.3155@eggly.anvils>
+References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils> <20120217222922.GA2741@homac.suse.de> <alpine.LSU.2.00.1202171436490.10222@eggly.anvils> <20120217230107.GA12929@homac.suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012 15:36:09 -0800
-Kees Cook <keescook@chromium.org> wrote:
-
-> > I think I disagree with this. __If the person compiling the kernel
-> > includes the feature in his kernel via the time-honoured process of
-> > "wtf is that thing? __Yeah, whatev", it gets turned on by default. __This
-> > could easily result in weird failures which would take a *long* time
-> > for an unsuspecting person to debug.
-> >
-> > Would it not be kinder to our users to start this out as
-> > turned-off-at-runtime unless the kernel configurer has deliberately
-> > gone in and enabled it?
+On Sat, 18 Feb 2012, Holger Macht wrote:
+> On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
+> > On Fri, 17 Feb 2012, Holger Macht wrote:
+> > > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
+> > > > Matthew,
+> > > > 
+> > > > A linux-next oops at bootup in dock_link_device() tells me that you
+> > > > were not feeling well when you wrote that and dock_unlink_device():
+> > > > I hope you're feeling better now and can rewrite them soon.
+> > > 
+> > > Andrew Morton experienced a similar problem. What system are you using?
+> > > I didn't encounter this problem with the systems I tested with.
+> > 
+> > The two systems I got that on were both 4-year-old Core2 Duo systems,
+> > one an HP quad desktop, one a Fujitsu-Siemens laptop.
 > 
-> There was a fair bit of back-and-forth discussion about it.
-> Originally, I had it disabled, but, IIRC, Ingo urged me to have it be
-> the default. I can sent a patch to disable it if you want.
+> Thanks for the information I think this is really independent from the
+> fact if a laptop, or more precicely if a system with dock station/bay is
+> used.
+> 
+> > 
+> > > 
+> > > Do you actually have a /sys/devices/platform/dock.?/ directory with a
+> > > file 'type' that contains 'dock_station'?
+> > 
+> > I'll have to report back on that this evening, I'm away from them now.
+> 
+> I actually guess that those systems don't have a
+> /sys/devices/platform/dock.? directory at all, which is fine.
+> 
+> I also think this will fix it, would be great if you could confirm this:
+> 
+> acpi: Bail out when linking devices and there are no dock stations
+> 
+> If dock_station_count is zero, we allocate zero memory and don't check
+> this at future references. So bail out if there are actually no dock
+> stations.
+> 
+> Signed-off-by: Holger Macht <holger@homac.de>
 
-What is the reasoning behind the current setting?
+Certainly won't fix it as is (well, it shifts the crash over into kfree).
+This function is expected to return a pointer, not an error or success code.
+
+I've little doubt that returning NULL rather than -ENODEV there would fix
+the boot crash; and if you're in a hurry to fix up booting (understandable)
+then I suppose that would do for the moment.
+
+But it won't address the rest of the breakage and leakage in here,
+which I suspect will reveal more once Matthew has time to look.
+
+Hugh
+
+> ---
+>  drivers/acpi/dock.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index b5e4142..8641912 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -286,6 +286,9 @@ struct device **dock_link_device(acpi_handle handle)
+>  	int ret, dock = 0;
+>  	struct device **devices;
+>  
+> +	if (!dock_station_count)
+> +		return -ENODEV;
+> +
+>  	devices = kmalloc(dock_station_count * sizeof(struct device *),
+>  			  GFP_KERNEL);
+>  
+> @@ -323,9 +326,13 @@ struct device **dock_unlink_device(acpi_handle handle)
+>  	struct device *dev = acpi_get_physical_device(handle);
+>  	struct dock_station *dock_station;
+>  	int dock = 0;
+> -	struct device **devices =
+> -		kmalloc(dock_station_count * sizeof(struct device *),
+> -			GFP_KERNEL);
+> +	struct device **devices;
+> +
+> +	if (!dock_station_count)
+> +		return -ENODEV;
+> +
+> +	devices = kmalloc(dock_station_count * sizeof(struct device *),
+> +			  GFP_KERNEL);
+>  
+>  	if (!dev)
+>  		return NULL;
+> -- 
+> 1.7.7
