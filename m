@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab2BQRBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:01:40 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36032 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038Ab2BQRBi (ORCPT
+	id S1752224Ab2BQRHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:07:22 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39018 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab2BQRHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:01:38 -0500
-X-Sasl-enc: Wewk0MopRJ/pKqVMIOltzEArV7cD1BFyMGKnIlCrzIdE 1329498097
-Date: Fri, 17 Feb 2012 08:59:38 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-usb@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, tglx@linutronix.de,
-        devicetree-discuss@lists.ozlabs.org, avictor.za@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 3/9] ARM/USB: at91/ohci-at91: remove the use of
- irq_to_gpio
-Message-ID: <20120217165938.GB25671@kroah.com>
-References: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com>
- <fab15f7eaf6622e68e62bc3afa533b12f48ca27e.1329139662.git.nicolas.ferre@atmel.com>
- <4F3E20CC.5090205@atmel.com>
+	Fri, 17 Feb 2012 12:07:21 -0500
+Date: Fri, 17 Feb 2012 09:07:13 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] blkcg: drop unnecessary RCU locking
+Message-ID: <20120217170713.GA26575@google.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-3-git-send-email-tj@kernel.org>
+ <20120217161958.GB26620@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F3E20CC.5090205@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120217161958.GB26620@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 10:41:32AM +0100, Nicolas Ferre wrote:
-> On 02/13/2012 03:43 PM, Nicolas Ferre :
-> > irq_to_gpio() macro will be removed from AT91 GPIO interrupt
-> > controller. So we replace it with the use of gpio_to_irq()
-> > and a reworked test.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > Cc: linux-usb@vger.kernel.org
-> 
-> Hi Greg,
-> 
-> I would like to queue this patch through arm-soc git tree (with all AT91
-> material of this patch series).
-> 
-> So, can I have your "Acked-by" on this one?
+Hey, Vivek.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Fri, Feb 17, 2012 at 11:19:58AM -0500, Vivek Goyal wrote:
+> On Thu, Feb 16, 2012 at 02:37:51PM -0800, Tejun Heo wrote:
+> > Now that blkg additions / removals are always done under both q and
+> > blkcg locks, the only place RCU locking is used is blkg_lookup() for
+> > lockless lookup.  This patch drops unncessary RCU locking replacing it
+> > with plain blkcg / q locking as necessary.
+> > 
+> > * blkg_lookup_create() and blkiocg_pre_destroy() already perform
+> >   proper locking and don't need RCU.  Dropped.
+> 
+> But blkg_lookup_create() is called under rcu() to protect blkcg pointer.
+> And blkg_lookup() is also happening under same rcu read lock. So I think
+> you can't drop rcu from blkg_lookup_create().
+
+Ooh, right.  Will fix.
+
+> >  {
+> >  	struct blkio_group *blkg, *new_blkg;
+> >  
+> > -	WARN_ON_ONCE(!rcu_read_lock_held());
+> 
+> Don't we want to be called with rcu lock held needed for blkg_lookup()?
+
+We want WARN_ON_ONCE(none of RCU, blkcg and queue lock held).  We can
+do it using lockdep macros inside #ifdef CONFIG_LOCKDEP.  It's just a
+bit clunky.
+
+Thanks.
+
+-- 
+tejun
