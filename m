@@ -1,15 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab2BQTei (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 14:34:38 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:16691 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2BQTeg (ORCPT
+	id S1754902Ab2BQTev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 14:34:51 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:59099 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab2BQTes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 14:34:36 -0500
-Date: Fri, 17 Feb 2012 20:30:30 +0100
+	Fri, 17 Feb 2012 14:34:48 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 17 Feb 2012 20:30:32 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv22 10/16] mm: Serialize access to min_free_kbytes
+Subject: [PATCHv22 12/16] mm: trigger page reclaim in alloc_contig_range() to
+ stabilise watermarks
 In-reply-to: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -28,72 +32,147 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1329507036-24362-11-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
+Message-id: <1329507036-24362-13-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
 References: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mgorman@suse.de>
+alloc_contig_range() performs memory allocation so it also should keep
+track on keeping the correct level of memory watermarks. This commit adds
+a call to *_slowpath style reclaim to grab enough pages to make sure that
+the final collection of contiguous pages from freelists will not starve
+the system.
 
-There is a race between the min_free_kbytes sysctl, memory hotplug
-and transparent hugepage support enablement.  Memory hotplug uses a
-zonelists_mutex to avoid a race when building zonelists. Reuse it to
-serialise watermark updates.
-
-[a.p.zijlstra@chello.nl: Older patch fixed the race with spinlock]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+Tested-by: Rob Clark <rob.clark@linaro.org>
+Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
+Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Tested-by: Robert Nelson <robertcnelson@gmail.com>
 ---
- mm/page_alloc.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
+ include/linux/mmzone.h |    9 +++++++
+ mm/page_alloc.c        |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 82f4fa5..6a6c2cc 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -63,8 +63,10 @@ enum {
+ 
+ #ifdef CONFIG_CMA
+ #  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
++#  define cma_wmark_pages(zone)	zone->min_cma_pages
+ #else
+ #  define is_migrate_cma(migratetype) false
++#  define cma_wmark_pages(zone) 0
+ #endif
+ 
+ #define for_each_migratetype_order(order, type) \
+@@ -371,6 +373,13 @@ struct zone {
+ 	/* see spanned/present_pages for more description */
+ 	seqlock_t		span_seqlock;
+ #endif
++#ifdef CONFIG_CMA
++	/*
++	 * CMA needs to increase watermark levels during the allocation
++	 * process to make sure that the system is not starved.
++	 */
++	unsigned long		min_cma_pages;
++#endif
+ 	struct free_area	free_area[MAX_ORDER];
+ 
+ #ifndef CONFIG_SPARSEMEM
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5d23933..444e3fd 100644
+index e42b4a3..443f623 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -4976,14 +4976,7 @@ static void setup_per_zone_lowmem_reserve(void)
- 	calculate_totalreserve_pages();
+@@ -5035,6 +5035,11 @@ static void __setup_per_zone_wmarks(void)
+ 
+ 		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
+ 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
++
++		zone->watermark[WMARK_MIN] += cma_wmark_pages(zone);
++		zone->watermark[WMARK_LOW] += cma_wmark_pages(zone);
++		zone->watermark[WMARK_HIGH] += cma_wmark_pages(zone);
++
+ 		setup_zone_migrate_reserve(zone);
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+ 	}
+@@ -5637,6 +5642,56 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 	return ret > 0 ? 0 : ret;
  }
  
--/**
-- * setup_per_zone_wmarks - called when min_free_kbytes changes
-- * or when memory is hot-{added|removed}
-- *
-- * Ensures that the watermark[min,low,high] values for each zone are set
-- * correctly with respect to min_free_kbytes.
-- */
--void setup_per_zone_wmarks(void)
-+static void __setup_per_zone_wmarks(void)
- {
- 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
- 	unsigned long lowmem_pages = 0;
-@@ -5038,6 +5031,20 @@ void setup_per_zone_wmarks(void)
- 	calculate_totalreserve_pages();
- }
- 
-+/**
-+ * setup_per_zone_wmarks - called when min_free_kbytes changes
-+ * or when memory is hot-{added|removed}
-+ *
-+ * Ensures that the watermark[min,low,high] values for each zone are set
-+ * correctly with respect to min_free_kbytes.
++/*
++ * Update zone's cma pages counter used for watermark level calculation.
 + */
-+void setup_per_zone_wmarks(void)
++static inline void __update_cma_watermarks(struct zone *zone, int count)
 +{
-+	mutex_lock(&zonelists_mutex);
-+	__setup_per_zone_wmarks();
-+	mutex_unlock(&zonelists_mutex);
++	unsigned long flags;
++	spin_lock_irqsave(&zone->lock, flags);
++	zone->min_cma_pages += count;
++	spin_unlock_irqrestore(&zone->lock, flags);
++	setup_per_zone_wmarks();
 +}
 +
- /*
-  * The inactive anon list should be small enough that the VM never has to
-  * do too much work, but large enough that each inactive page has a chance
++/*
++ * Trigger memory pressure bump to reclaim some pages in order to be able to
++ * allocate 'count' pages in single page units. Does similar work as
++ *__alloc_pages_slowpath() function.
++ */
++static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
++{
++	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
++	struct zonelist *zonelist = node_zonelist(0, gfp_mask);
++	int did_some_progress = 0;
++	int order = 1;
++	unsigned long watermark;
++
++	/*
++	 * Increase level of watermarks to force kswapd do his job
++	 * to stabilise at new watermark level.
++	 */
++	__update_cma_watermarks(zone, count);
++
++	/* Obey watermarks as if the page was being allocated */
++	watermark = low_wmark_pages(zone) + count;
++	while (!zone_watermark_ok(zone, 0, watermark, 0, 0)) {
++		wake_all_kswapd(order, zonelist, high_zoneidx, zone_idx(zone));
++
++		did_some_progress = __perform_reclaim(gfp_mask, order, zonelist,
++						      NULL);
++		if (!did_some_progress) {
++			/* Exhausted what can be done so it's blamo time */
++			out_of_memory(zonelist, gfp_mask, order, NULL);
++		}
++	}
++
++	/* Restore original watermark levels. */
++	__update_cma_watermarks(zone, -count);
++
++	return count;
++}
++
+ /**
+  * alloc_contig_range() -- tries to allocate given range of pages
+  * @start:	start PFN to allocate
+@@ -5735,6 +5790,13 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 		goto done;
+ 	}
+ 
++	/*
++	 * Reclaim enough pages to make sure that contiguous allocation
++	 * will not starve the system.
++	 */
++	__reclaim_pages(zone, GFP_HIGHUSER_MOVABLE, end-start);
++
++	/* Grab isolated pages from freelists. */
+ 	outer_end = isolate_freepages_range(outer_start, end);
+ 	if (!outer_end) {
+ 		ret = -EBUSY;
 -- 
 1.7.1
 
