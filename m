@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab2BQILQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 03:11:16 -0500
-Received: from smtprelay05.ispgateway.de ([80.67.31.100]:40676 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab2BQILP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 03:11:15 -0500
-Message-ID: <4F3E0C3D.4030307@ladisch.de>
-Date: Fri, 17 Feb 2012 09:13:49 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Alex,Shi" <alex.shi@intel.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, stern@rowland.harvard.edu,
-        Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
-        trenn@suse.de, linux-pci@vger.kernel.org,
-        Michal Marek <MMarek@suse.com>
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>  <4F311233.9070404@intel.com> <20120207144204.GA7214@kroah.com>  <20120207172743.GA4780@xanatos> <20120207221317.GA6103@xanatos>  <1328664392.12669.233.camel@debian> <1328682430.12669.443.camel@debian>  <1328692300.12669.593.camel@debian>  <20120214002030.GA10364@xanatos>  <1329359801.12669.2872.camel@debian> <1329461087.12669.2911.camel@debian>
-In-Reply-To: <1329461087.12669.2911.camel@debian>
-Content-Type: text/plain; charset=us-ascii
+	id S1752055Ab2BQIW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 03:22:58 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28567 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751805Ab2BQIW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 03:22:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118558084"
+Subject: TCP_STREAM performance regression on commit b3613118
+From: "Alex,Shi" <alex.shi@intel.com>
+To: davem@davemloft.net
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@intel.com>, "Huang, Ying" <ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Feb 2012 16:18:14 +0800
+Message-ID: <1329466694.12669.2976.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgtdXNiQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex,Shi wrote:
-> On Thu, 2012-02-16 at 10:36 +0800, Alex,Shi wrote:
->>>> +/* msi irq handler should be here, if driver has */
->>>> +irqreturn_t hcd_msi_irq(int irq, struct usb_hcd *hcd)
->>>> +{
->>>> +	return hcd->driver->irq(hcd);
->>>> +}
->>>
->>> This works for now, but it isn't going to work in the future.  We need
->>> the USB core to provide us with the irq number so we can map the MSI-X
->>> interrupt to the event ring that generated the interrupt, whenever we
->>> get around to adding multiple event rings.
->>
->> Do you mean to add 2 new vectors for MSI/MSIX in hc_driver?
->
-> +	irqreturn_t	(*msi_irq) (struct usb_hcd *hcd);
-> +	irqreturn_t	(*msix_irq) (struct usb_hcd *hcd);
+The tcp_stream loop back performance has about 10% drop on the
+commitment on our core2 2 sockets server. This commit has 2
+parents(7505afe28, 5983fe), but both of them have no regression. So
+guess the impact just happened when this 2 parents joint. That beyond
+our capability to dig it more.
 
-The controller driver will need to know which of the multiple MSI-X
-interrupts has been raised:
+Any ideas? 
 
-irqreturn_t (*msix_irq)(struct usb_hcd *hcd, unsigned int nr_or_index);
+Regards! 
+Alex 
 
-
-Regards,
-Clemens
