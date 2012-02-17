@@ -1,117 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2BQXtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:49:32 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38753 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2BQXtb (ORCPT
+	id S1752874Ab2BQXu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:50:59 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58858 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab2BQXu4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:49:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.216.134 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Fri, 17 Feb 2012 15:49:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Holger Macht <holger@homac.de>
-cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: dock_link_device is oopsy
-In-Reply-To: <20120217230107.GA12929@homac.suse.de>
-Message-ID: <alpine.LSU.2.00.1202171541040.3155@eggly.anvils>
-References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils> <20120217222922.GA2741@homac.suse.de> <alpine.LSU.2.00.1202171436490.10222@eggly.anvils> <20120217230107.GA12929@homac.suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 17 Feb 2012 18:50:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+Date: Sat, 18 Feb 2012 00:54:49 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org> <201202142339.59423.rjw@sisk.pl> <1329378119.28581.34.camel@rui.sh.intel.com>
+In-Reply-To: <1329378119.28581.34.camel@rui.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202180054.49284.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 Feb 2012, Holger Macht wrote:
-> On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
-> > On Fri, 17 Feb 2012, Holger Macht wrote:
-> > > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
-> > > > Matthew,
+On Thursday, February 16, 2012, Zhang Rui wrote:
+> On 二, 2012-02-14 at 23:39 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, February 14, 2012, Zhang Rui wrote:
+> > > On 一, 2012-02-13 at 20:38 +0100, Rafael J. Wysocki wrote:
+> > > > On Monday, February 13, 2012, Alan Stern wrote:
+> > > > > On Mon, 13 Feb 2012, Lin Ming wrote:
+> > > > > 
+> > > > > > From: Zhang Rui <rui.zhang@intel.com>
+> > > > > > 
+> > > > > > Introduce flag can_power_off in device structure to support runtime
+> > > > > > power off/on.
+> > > > > > 
+> > > > > > Note that, for a specific device driver,
+> > > > > > "support runtime power off/on" means that the driver .runtime_suspend
+> > > > > > callback needs to
+> > > > > > 1) save all the context so that it can restore the device back to the previous
+> > > > > >    working state after powered on.
+> > > > > > 2) set can_power_off flag to tell the driver model that it's ready for power off.
+> > > > > > 
+> > > > > > The following example shows how this works.
+> > > > > > 
+> > > > > > device A
+> > > > > >  |---------|
+> > > > > >  v         v
+> > > > > > device B  device C
+> > > > > > 
+> > > > > > A is the parent of device B and device C, and device A/B/C shares the
+> > > > > > same power logic
+> > > > > > (Only device A knows how to turn on/off the power).
+> > > > > > 
+> > > > > > In order to power off A, B, C at runtime,
+> > > > > > 1) device B and device C should support runtime power off
+> > > > > >    (runtime suspended with can_power_off flag set)
+> > > > > > 2) pm idle request for device A is fired by runtime PM core.
+> > > > > > 3) in device A .runtime_suspend callback, it tries to set can_power_off flag.
+> > > > > > 4) if succeed, it means all its children have been ready for power off
+> > > > > >    and it can turn off the power at any time.
+> > > > > > 5) if failed, it means at least one of its children does not support runtime
+> > > > > >    power off, thus the power can not be turned off.
+> > > > > 
+> > > > > I'm not sure if this is really the right approach.  What you're trying 
+> > > > > to do is implement two different low-power states, basically D3hot and 
+> > > > > D3cold.  Currently the runtime PM core doesn't support such things; all 
+> > > > > it knows about is low power and full power.
 > > > > 
-> > > > A linux-next oops at bootup in dock_link_device() tells me that you
-> > > > were not feeling well when you wrote that and dock_unlink_device():
-> > > > I hope you're feeling better now and can rewrite them soon.
+> > > > I'd rather say all it knows about is "suspended" and "active", which mean
+> > > > "the device is not processing I/O" and "the device may be processing I/O",
+> > > > respectively.  A "suspended" device may or may not be in a low-power state,
+> > > > but the runtime PM core doesn't care about that.
+> > > > 
+> > > yes, I know that.
 > > > 
-> > > Andrew Morton experienced a similar problem. What system are you using?
-> > > I didn't encounter this problem with the systems I tested with.
-> > 
-> > The two systems I got that on were both 4-year-old Core2 Duo systems,
-> > one an HP quad desktop, one a Fujitsu-Siemens laptop.
-> 
-> Thanks for the information I think this is really independent from the
-> fact if a laptop, or more precicely if a system with dock station/bay is
-> used.
-> 
-> > 
+> > > > > Before doing an ad-hoc implementation, it would be best to step back
+> > > > > and think about other subsystems.  Other sorts of devices may well have
+> > > > > multiple low-power states.  What's the best way for this to be
+> > > > > supported by the PM core?
+> > > > 
+> > > > Well, I honestly don't think there's any way they all can be covered at the
+> > > > same time and that's why we chose to support only "suspended" and "active"
+> > > > as defined above.
 > > > 
-> > > Do you actually have a /sys/devices/platform/dock.?/ directory with a
-> > > file 'type' that contains 'dock_station'?
+> > > > The handling of multiple low-power states must be
+> > > > implemented outside of the runtime PM core (like in the PCI core, for example).
+> > > 
+> > > Surely I'd prefer to implement it in the bus code, :), but the problem
+> > > is that several buses maybe involved at the same time.
+> > > Let's take ZPODD for example,
+> > > ZPODD is attached to a SATA port. Only SATA port knows that it can be
+> > > runtime powered off, because its ACPI node has _PR3._OFF.
+> > > But when ATA layer code tries to put SATA port to D3_COLD at runtime,it
+> > > must make sure all the devices/drivers in the same power domain are
+> > > ready for power off, and in this case, we need to get this info from
+> > > SCSI layer.
 > > 
-> > I'll have to report back on that this evening, I'm away from them now.
+> > Then you need to get it from there.  I know that this is a difficult problem,
 > 
-> I actually guess that those systems don't have a
-> /sys/devices/platform/dock.? directory at all, which is fine.
+> Yeah, I have thought about this for quite a while before, there ARE
+> several ways to do this, but these need a lot of changes in bus code, at
+> least for the buses that support device runtime D3 (off) by ACPI.
 > 
-> I also think this will fix it, would be great if you could confirm this:
-> 
-> acpi: Bail out when linking devices and there are no dock stations
-> 
-> If dock_station_count is zero, we allocate zero memory and don't check
-> this at future references. So bail out if there are actually no dock
-> stations.
-> 
-> Signed-off-by: Holger Macht <holger@homac.de>
+> Lets also take SATA port and ZPODD for example,
+> proposal one,
+> 1) introduce scsi_can_power_off and ata_can_power_off.
+> 2) sr driver set scsi_can_power_off bit and scsi layer is aware of this,
+> thus the scsi host can set this bit as well.
+> 3) in the .runtime_suspend callback of ata port, it knows that its scsi
+> host interface can be powered off, thus it invokes ata_can_power_off to
+> tell the ata layer.
 
-Certainly won't fix it as is (well, it shifts the crash over into kfree).
-This function is expected to return a pointer, not an error or success code.
+Hmm.  I'm not sure why you want to introduce this special "power off"
+condition.  In fact, it's nothing special, it only means that the device
+in question shouldn't be accessed by software, which pretty much is equivalent
+to the "suspended" condition (as defined in the runtime PM docs).
 
-I've little doubt that returning NULL rather than -ENODEV there would fix
-the boot crash; and if you're in a hurry to fix up booting (understandable)
-then I suppose that would do for the moment.
-
-But it won't address the rest of the breakage and leakage in here,
-which I suspect will reveal more once Matthew has time to look.
-
-Hugh
-
-> ---
->  drivers/acpi/dock.c |   13 ++++++++++---
->  1 files changed, 10 insertions(+), 3 deletions(-)
+> proposal two,
+> introduce a platform callback for each bus.
+> And it is invoked immediately after the scsi_driver->runtime_suspend
+> being invoked in scsi_bus->runtime_suspend.
+> The platform callback checks the scsi lower power state of the
+> scsi_device and choose a compatible ACPI D-state for the device.
+> The decision of whether to use ACPI D3 (off) or not is made in the
+> platform callback.
 > 
-> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index b5e4142..8641912 100644
-> --- a/drivers/acpi/dock.c
-> +++ b/drivers/acpi/dock.c
-> @@ -286,6 +286,9 @@ struct device **dock_link_device(acpi_handle handle)
->  	int ret, dock = 0;
->  	struct device **devices;
->  
-> +	if (!dock_station_count)
-> +		return -ENODEV;
-> +
->  	devices = kmalloc(dock_station_count * sizeof(struct device *),
->  			  GFP_KERNEL);
->  
-> @@ -323,9 +326,13 @@ struct device **dock_unlink_device(acpi_handle handle)
->  	struct device *dev = acpi_get_physical_device(handle);
->  	struct dock_station *dock_station;
->  	int dock = 0;
-> -	struct device **devices =
-> -		kmalloc(dock_station_count * sizeof(struct device *),
-> -			GFP_KERNEL);
-> +	struct device **devices;
-> +
-> +	if (!dock_station_count)
-> +		return -ENODEV;
-> +
-> +	devices = kmalloc(dock_station_count * sizeof(struct device *),
-> +			  GFP_KERNEL);
->  
->  	if (!dev)
->  		return NULL;
-> -- 
-> 1.7.7
+> what do you think?
+
+I think you need to consider that at a more abstract level.
+
+> > have been working on a similar one for several months now. :-)
+> 
+> That's why generic power domain is introduced?
+> Can you tell me what's your idea please?
+> It would be GREAT if you can share your experience on this.
+
+Well, a power domain (which seems to be what you have in the ZPODD case)
+is analogous to a package with multiple CPU cores.  In that case you
+can put individual cores into per-core low-power ("idle") states (that
+roughly corresponds to the D1-D3hot device states) or you can put the
+whole package into a low-power state ("package idle") resulting in the
+removal of power from all the cores (more-or-less).  Now, it has to be
+decided which approach to use and if the "package idle" is used, it may
+be necessary to restore the cores' "state" when they are "resumed".
+
+Analogously, for devices in a power domain you usually can use some
+programmable mechanism to put each of them into some sort of a low-power
+state (e.g. D3hot or "stop clock" etc.) such that the device may be programmed
+to go out of it.  Alternatively, you can use a different mechanism to
+remove power from the entire domain, in which case devices, when power is
+restored, may need to be re-initialized.  Of course, you need to know when
+this happens, so that you know when to carry out the re-initialization.
+
+Our approach in the generic PM domains framework is, essentially, to provide
+a special set of PM callbacks ("domain callbacks") that are run (by the PM
+core) instead of bus-type PM callbacks.  Those domain callbacks are added to
+every device in the domain through its pm_domain pointer.  Of course, this
+means that devices have to be added to the domains explicitly and we have some
+helpers for that.  We also use some additional data structures allowing the
+domain callbacks to track devices in the domain.
+
+Now, when a device in a domain is "suspended" (meaning its runtime PM status
+changes from "active" to "suspended"), the domain callbacks check if this is
+the last device in the domain whose status is "active" at that point.  If
+that is not the case, they simply call a special .stop() callback to put the
+device into a "normal" per-device low-power state (the .stop() callback may be
+defined per device and in principle it may be designed to call the bus-type
+or driver .runtime_suspend() callback for the device).  Otherwise (i.e. if
+this is the last device in the domain whose status was "active" before) and if
+the PM QoS constraints allow that to happen, power is removed from the domain
+as a whole.  Then, all devices in the domain are marked as "need re-init upon
+resume" and the resume domain callbacks take care of re-initializing them as
+appropriate when their status changes from "suspended" back to "active".  [The
+domain callbacks use the subsys_data pointer in dev_pm_info to attach their own
+data to device objects.]
+
+The actual code is more complicated than that, but that's the idea.
+
+Thanks,
+Rafael
