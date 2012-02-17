@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab2BQJyt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 04:54:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38736 "EHLO
+	id S1752716Ab2BQJze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 04:55:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38756 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab2BQJyr (ORCPT
+	with ESMTP id S1752037Ab2BQJzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 04:54:47 -0500
-Date: Fri, 17 Feb 2012 01:53:58 -0800
+	Fri, 17 Feb 2012 04:55:33 -0500
+Date: Fri, 17 Feb 2012 01:54:47 -0800
 From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-08d95bd256277f914e525aeb292da52f15173e7d@git.kernel.org>
+Message-ID: <tip-f1c67db7e351bf9fd328e368ba045cbeca11d513@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@redhat.com, robert.richter@amd.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, robert.richter@amd.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1328884916-5901-1-git-send-email-robert.richter@amd.com>
-References: <1328884916-5901-1-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1328884916-5901-2-git-send-email-robert.richter@amd.com>
+References: <1328884916-5901-2-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Moving code in header.c
-Git-Commit-ID: 08d95bd256277f914e525aeb292da52f15173e7d
+Subject: [tip:perf/core] perf tools:
+  Factor out feature op to process header sections
+Git-Commit-ID: f1c67db7e351bf9fd328e368ba045cbeca11d513
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,345 +30,110 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 01:54:26 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 01:55:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08d95bd256277f914e525aeb292da52f15173e7d
-Gitweb:     http://git.kernel.org/tip/08d95bd256277f914e525aeb292da52f15173e7d
+Commit-ID:  f1c67db7e351bf9fd328e368ba045cbeca11d513
+Gitweb:     http://git.kernel.org/tip/f1c67db7e351bf9fd328e368ba045cbeca11d513
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Fri, 10 Feb 2012 15:41:55 +0100
+AuthorDate: Fri, 10 Feb 2012 15:41:56 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Feb 2012 23:32:32 -0200
+CommitDate: Mon, 13 Feb 2012 23:33:36 -0200
 
-perf tools: Moving code in header.c
+perf tools: Factor out feature op to process header sections
 
-Needed for later changes. No modified functionality.
+There is individual code for each feature to process header sections.
+
+Adding a function pointer .process to struct feature_ops for keeping the
+implementation in separate functions. Code to process header sections is
+now a generic function.
 
 Cc: Ingo Molnar <mingo@elte.hu>
-Link: http://lkml.kernel.org/r/1328884916-5901-1-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1328884916-5901-2-git-send-email-robert.richter@amd.com
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c |  300 +++++++++++++++++++++++-----------------------
- 1 files changed, 150 insertions(+), 150 deletions(-)
+ tools/perf/util/header.c |   44 +++++++++++++++++++++++++++++---------------
+ 1 files changed, 29 insertions(+), 15 deletions(-)
 
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 6f4187d..5bb2d75 100644
+index 5bb2d75..9f867d9 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -1316,6 +1316,156 @@ static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
- 	free(str);
+@@ -1466,25 +1466,48 @@ out:
+ 	return err;
  }
  
-+static int __event_process_build_id(struct build_id_event *bev,
-+				    char *filename,
-+				    struct perf_session *session)
++static int process_trace_info(struct perf_file_section *section __unused,
++			      struct perf_header *ph __unused,
++			      int feat __unused, int fd)
 +{
-+	int err = -1;
-+	struct list_head *head;
-+	struct machine *machine;
-+	u16 misc;
-+	struct dso *dso;
-+	enum dso_kernel_type dso_type;
-+
-+	machine = perf_session__findnew_machine(session, bev->pid);
-+	if (!machine)
-+		goto out;
-+
-+	misc = bev->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+
-+	switch (misc) {
-+	case PERF_RECORD_MISC_KERNEL:
-+		dso_type = DSO_TYPE_KERNEL;
-+		head = &machine->kernel_dsos;
-+		break;
-+	case PERF_RECORD_MISC_GUEST_KERNEL:
-+		dso_type = DSO_TYPE_GUEST_KERNEL;
-+		head = &machine->kernel_dsos;
-+		break;
-+	case PERF_RECORD_MISC_USER:
-+	case PERF_RECORD_MISC_GUEST_USER:
-+		dso_type = DSO_TYPE_USER;
-+		head = &machine->user_dsos;
-+		break;
-+	default:
-+		goto out;
-+	}
-+
-+	dso = __dsos__findnew(head, filename);
-+	if (dso != NULL) {
-+		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+
-+		dso__set_build_id(dso, &bev->build_id);
-+
-+		if (filename[0] == '[')
-+			dso->kernel = dso_type;
-+
-+		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
-+				  sbuild_id);
-+		pr_debug("build id event received for %s: %s\n",
-+			 dso->long_name, sbuild_id);
-+	}
-+
-+	err = 0;
-+out:
-+	return err;
-+}
-+
-+static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
-+						 int input, u64 offset, u64 size)
-+{
-+	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct {
-+		struct perf_event_header   header;
-+		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
-+		char			   filename[0];
-+	} old_bev;
-+	struct build_id_event bev;
-+	char filename[PATH_MAX];
-+	u64 limit = offset + size;
-+
-+	while (offset < limit) {
-+		ssize_t len;
-+
-+		if (read(input, &old_bev, sizeof(old_bev)) != sizeof(old_bev))
-+			return -1;
-+
-+		if (header->needs_swap)
-+			perf_event_header__bswap(&old_bev.header);
-+
-+		len = old_bev.header.size - sizeof(old_bev);
-+		if (read(input, filename, len) != len)
-+			return -1;
-+
-+		bev.header = old_bev.header;
-+
-+		/*
-+		 * As the pid is the missing value, we need to fill
-+		 * it properly. The header.misc value give us nice hint.
-+		 */
-+		bev.pid	= HOST_KERNEL_ID;
-+		if (bev.header.misc == PERF_RECORD_MISC_GUEST_USER ||
-+		    bev.header.misc == PERF_RECORD_MISC_GUEST_KERNEL)
-+			bev.pid	= DEFAULT_GUEST_KERNEL_ID;
-+
-+		memcpy(bev.build_id, old_bev.build_id, sizeof(bev.build_id));
-+		__event_process_build_id(&bev, filename, session);
-+
-+		offset += bev.header.size;
-+	}
-+
++	trace_report(fd, false);
 +	return 0;
 +}
 +
-+static int perf_header__read_build_ids(struct perf_header *header,
-+				       int input, u64 offset, u64 size)
++static int process_build_id(struct perf_file_section *section,
++			    struct perf_header *ph,
++			    int feat __unused, int fd)
 +{
-+	struct perf_session *session = container_of(header, struct perf_session, header);
-+	struct build_id_event bev;
-+	char filename[PATH_MAX];
-+	u64 limit = offset + size, orig_offset = offset;
-+	int err = -1;
-+
-+	while (offset < limit) {
-+		ssize_t len;
-+
-+		if (read(input, &bev, sizeof(bev)) != sizeof(bev))
-+			goto out;
-+
-+		if (header->needs_swap)
-+			perf_event_header__bswap(&bev.header);
-+
-+		len = bev.header.size - sizeof(bev);
-+		if (read(input, filename, len) != len)
-+			goto out;
-+		/*
-+		 * The a1645ce1 changeset:
-+		 *
-+		 * "perf: 'perf kvm' tool for monitoring guest performance from host"
-+		 *
-+		 * Added a field to struct build_id_event that broke the file
-+		 * format.
-+		 *
-+		 * Since the kernel build-id is the first entry, process the
-+		 * table using the old format if the well known
-+		 * '[kernel.kallsyms]' string for the kernel build-id has the
-+		 * first 4 characters chopped off (where the pid_t sits).
-+		 */
-+		if (memcmp(filename, "nel.kallsyms]", 13) == 0) {
-+			if (lseek(input, orig_offset, SEEK_SET) == (off_t)-1)
-+				return -1;
-+			return perf_header__read_build_ids_abi_quirk(header, input, offset, size);
-+		}
-+
-+		__event_process_build_id(&bev, filename, session);
-+
-+		offset += bev.header.size;
-+	}
-+	err = 0;
-+out:
-+	return err;
++	if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
++		pr_debug("Failed to read buildids, continuing...\n");
++	return 0;
 +}
 +
  struct feature_ops {
  	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
  	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1735,156 +1885,6 @@ int perf_file_header__read(struct perf_file_header *header,
- 	return 0;
- }
++	int (*process)(struct perf_file_section *section,
++		       struct perf_header *h, int feat, int fd);
+ 	const char *name;
+ 	bool full_only;
+ };
  
--static int __event_process_build_id(struct build_id_event *bev,
--				    char *filename,
--				    struct perf_session *session)
--{
--	int err = -1;
--	struct list_head *head;
--	struct machine *machine;
--	u16 misc;
--	struct dso *dso;
--	enum dso_kernel_type dso_type;
--
--	machine = perf_session__findnew_machine(session, bev->pid);
--	if (!machine)
--		goto out;
--
--	misc = bev->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--
--	switch (misc) {
--	case PERF_RECORD_MISC_KERNEL:
--		dso_type = DSO_TYPE_KERNEL;
--		head = &machine->kernel_dsos;
+ #define FEAT_OPA(n, func) \
+ 	[n] = { .name = #n, .write = write_##func, .print = print_##func }
++#define FEAT_OPP(n, func) \
++	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
++		.process = process_##func }
+ #define FEAT_OPF(n, func) \
+-	[n] = { .name = #n, .write = write_##func, .print = print_##func, .full_only = true }
++	[n] = { .name = #n, .write = write_##func, .print = print_##func, \
++		.full_only = true }
+ 
+ /* feature_ops not implemented: */
+ #define print_trace_info		NULL
+ #define print_build_id			NULL
+ 
+ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+-	FEAT_OPA(HEADER_TRACE_INFO,	trace_info),
+-	FEAT_OPA(HEADER_BUILD_ID,	build_id),
++	FEAT_OPP(HEADER_TRACE_INFO,	trace_info),
++	FEAT_OPP(HEADER_BUILD_ID,	build_id),
+ 	FEAT_OPA(HEADER_HOSTNAME,	hostname),
+ 	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
+ 	FEAT_OPA(HEADER_VERSION,	version),
+@@ -1900,19 +1923,10 @@ static int perf_file_section__process(struct perf_file_section *section,
+ 		return 0;
+ 	}
+ 
+-	switch (feat) {
+-	case HEADER_TRACE_INFO:
+-		trace_report(fd, false);
 -		break;
--	case PERF_RECORD_MISC_GUEST_KERNEL:
--		dso_type = DSO_TYPE_GUEST_KERNEL;
--		head = &machine->kernel_dsos;
--		break;
--	case PERF_RECORD_MISC_USER:
--	case PERF_RECORD_MISC_GUEST_USER:
--		dso_type = DSO_TYPE_USER;
--		head = &machine->user_dsos;
+-	case HEADER_BUILD_ID:
+-		if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
+-			pr_debug("Failed to read buildids, continuing...\n");
 -		break;
 -	default:
--		goto out;
+-		break;
 -	}
--
--	dso = __dsos__findnew(head, filename);
--	if (dso != NULL) {
--		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--		dso__set_build_id(dso, &bev->build_id);
--
--		if (filename[0] == '[')
--			dso->kernel = dso_type;
--
--		build_id__sprintf(dso->build_id, sizeof(dso->build_id),
--				  sbuild_id);
--		pr_debug("build id event received for %s: %s\n",
--			 dso->long_name, sbuild_id);
--	}
--
--	err = 0;
--out:
--	return err;
--}
--
--static int perf_header__read_build_ids_abi_quirk(struct perf_header *header,
--						 int input, u64 offset, u64 size)
--{
--	struct perf_session *session = container_of(header, struct perf_session, header);
--	struct {
--		struct perf_event_header   header;
--		u8			   build_id[ALIGN(BUILD_ID_SIZE, sizeof(u64))];
--		char			   filename[0];
--	} old_bev;
--	struct build_id_event bev;
--	char filename[PATH_MAX];
--	u64 limit = offset + size;
--
--	while (offset < limit) {
--		ssize_t len;
--
--		if (read(input, &old_bev, sizeof(old_bev)) != sizeof(old_bev))
--			return -1;
--
--		if (header->needs_swap)
--			perf_event_header__bswap(&old_bev.header);
--
--		len = old_bev.header.size - sizeof(old_bev);
--		if (read(input, filename, len) != len)
--			return -1;
--
--		bev.header = old_bev.header;
--
--		/*
--		 * As the pid is the missing value, we need to fill
--		 * it properly. The header.misc value give us nice hint.
--		 */
--		bev.pid	= HOST_KERNEL_ID;
--		if (bev.header.misc == PERF_RECORD_MISC_GUEST_USER ||
--		    bev.header.misc == PERF_RECORD_MISC_GUEST_KERNEL)
--			bev.pid	= DEFAULT_GUEST_KERNEL_ID;
--
--		memcpy(bev.build_id, old_bev.build_id, sizeof(bev.build_id));
--		__event_process_build_id(&bev, filename, session);
--
--		offset += bev.header.size;
--	}
--
++	if (!feat_ops[feat].process)
++		return 0;
+ 
 -	return 0;
--}
--
--static int perf_header__read_build_ids(struct perf_header *header,
--				       int input, u64 offset, u64 size)
--{
--	struct perf_session *session = container_of(header, struct perf_session, header);
--	struct build_id_event bev;
--	char filename[PATH_MAX];
--	u64 limit = offset + size, orig_offset = offset;
--	int err = -1;
--
--	while (offset < limit) {
--		ssize_t len;
--
--		if (read(input, &bev, sizeof(bev)) != sizeof(bev))
--			goto out;
--
--		if (header->needs_swap)
--			perf_event_header__bswap(&bev.header);
--
--		len = bev.header.size - sizeof(bev);
--		if (read(input, filename, len) != len)
--			goto out;
--		/*
--		 * The a1645ce1 changeset:
--		 *
--		 * "perf: 'perf kvm' tool for monitoring guest performance from host"
--		 *
--		 * Added a field to struct build_id_event that broke the file
--		 * format.
--		 *
--		 * Since the kernel build-id is the first entry, process the
--		 * table using the old format if the well known
--		 * '[kernel.kallsyms]' string for the kernel build-id has the
--		 * first 4 characters chopped off (where the pid_t sits).
--		 */
--		if (memcmp(filename, "nel.kallsyms]", 13) == 0) {
--			if (lseek(input, orig_offset, SEEK_SET) == (off_t)-1)
--				return -1;
--			return perf_header__read_build_ids_abi_quirk(header, input, offset, size);
--		}
--
--		__event_process_build_id(&bev, filename, session);
--
--		offset += bev.header.size;
--	}
--	err = 0;
--out:
--	return err;
--}
--
- static int perf_file_section__process(struct perf_file_section *section,
- 				      struct perf_header *ph,
- 				      int feat, int fd, void *data __used)
++	return feat_ops[feat].process(section, ph, feat, fd);
+ }
+ 
+ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
