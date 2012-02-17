@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab2BQB5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:57:46 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:47189 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865Ab2BQB5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:57:44 -0500
+	id S1756314Ab2BQCAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 21:00:31 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:57884 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab2BQCA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 21:00:28 -0500
+Message-ID: <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F3DAE5D.3080000@zytor.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+    <1329422549-16407-3-git-send-email-wad@chromium.org>
+    <4F3D61CB.2000301@zytor.com>
+    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+    <4F3D7250.6040504@zytor.com>
+    <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
+    <4F3DAE5D.3080000@zytor.com>
+Date: Fri, 17 Feb 2012 03:00:16 +0100
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 16 Feb 2012 20:57:40 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: soft lockup detector & virtualisation
-In-Reply-To: <CANcMJZAfT7Sz=5D=PVQwoy_hvEYZxowUxBo4EXN-U72mecE9SQ@mail.gmail.com>
-References: <20120216231533.GA7392@redhat.com>
- <CANcMJZAfT7Sz=5D=PVQwoy_hvEYZxowUxBo4EXN-U72mecE9SQ@mail.gmail.com>
-Message-ID: <78aa6599cf8dddc4d44f39bcdd0bb917@mgebm.net>
-User-Agent: Roundcube Webmail/0.5.3
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: d58e29c6f4e42f76447094ef3ccb23d2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 17:39:38 -0800, john stultz wrote:
-> On Thu, Feb 16, 2012 at 3:15 PM, Dave Jones <davej@redhat.com> wrote:
->> Lately I've noticed quite a few soft lockup bugs being reported.
->> In many of them, they're coming from inside virtual guests.
+On Fri, February 17, 2012 02:33, H. Peter Anvin wrote:
+> On 02/16/2012 04:48 PM, Indan Zupancic wrote:
+>> On Thu, February 16, 2012 22:17, H. Peter Anvin wrote:
 >>
->> Is the softlockup detector fundamentally broken in this situation ?
+>> I would go for something like:
 >>
->> If the host doesn't schedule the guest for whatever reason,
->> or the user suspends the VM and resumes it later ?
+>> struct seccomp_data {
+>> 	int nr;
+>> 	__u32 arg_low[6];
+>> 	__u32 arg_high[6];
+>> 	__u32 instruction_pointer_low;
+>> 	__u32 instruction_pointer_high;
+>> 	__u32 __reserved[3];
+>> };
 >>
->> Here's the most recent example:
->> https://bugzilla.redhat.com/attachment.cgi?id=563767
->>
->> In many of these, the code where it's "stuck" isn't anything
->> special, which is why I think the guest just hasn't had a
->> timeslice in 185 seconds.
->>
->> Is there some way we can perhaps detect we're running virtualised,
->> and disable the detector automatically ?
 >
-> I think Eric's work (See "Add check for suspended vm in softlockup
-> detector" sent out today) tries to address this issue.
+> Uh, that is the absolutely WORST way to do it - not only are you
+> creating two fields, they're not even adjacent.
+
+You want:
+
+struct seccomp_data {
+	int nr;
+	__u32 __reserved[3];
+	__u64 arg[6];
+	__u64 instruction_pointer;
+};
+
+And I agree it looks a lot nicer.
+
+You can pretend a 64-bit arg will be one field, but it won't be. It will
+be always two fields no matter what. Making them adjacent is only good
+because seccomp_data won't have to change if 64-bit support is ever added
+to BPF.
+
+It looks nicer, but it only makes it harder to know the right offset for
+the fields for the 32-bit only BPF programs. You can try to hide reality,
+but that won't change it.
+
+>> (Not sure what use the IP is because that doesn't tell anything about how
+>> the system call instruction was reached.)
+>>
+>> The only way to avoid splitting args is to add 64-bit support to BPF.
+>> That is probably the best way forwards, but would require breaking the
+>> BPF ABI by either adding a 64-bit version directly or adding extra
+>> instructions.
 >
-> thanks
-> -john
+> Or the compiler or whatever generates the BPF code just is going to have
+> to generate two instructions -- just like we always have to handle
+> [u]int64_t on 32-bit platforms.  There is no difference here.
+
+Except that if you don't hide the platform differences your compiler
+or whatever needs to generate different instructions depending on the
+endianess, while it could always generate the same instructions instead.
+
+My impression is that you want to push all extra complexity into the
+compiler or whatever instead of making the ABI cross-platform, because
+it looks nicer. I don't care that much, but I think you're just pushing
+the ugliness around instead of getting rid of it.
+
+Greetings,
+
+Indan
 
 
-The work I have been doing specifically handles the case where the 
-hypervisor suspends the guest.  There is talk of extending that work to 
-handle preemption as well, which I think will cover your use case.
-
-Eric
