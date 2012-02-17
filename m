@@ -1,47 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2BQEmH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 23:42:07 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60648 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab2BQEmE (ORCPT
+	id S1752521Ab2BQEqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 23:46:03 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41686 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751581Ab2BQEqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 23:42:04 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org
-Cc: Venki Pallipadi <venki@google.com>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 06/14] sched: aggregate total task_group load
-In-Reply-To: <20120202013826.20844.94427.stgit@kitami.mtv.corp.google.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com> <20120202013826.20844.94427.stgit@kitami.mtv.corp.google.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Fri, 17 Feb 2012 10:11:22 +0530
-Message-ID: <87y5s2cbrh.fsf@linux.vnet.ibm.com>
+	Thu, 16 Feb 2012 23:46:01 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAHPaPU95LI9Y/2dsb2JhbABCsHeBCIFyAQEEATocIwULCAMYLhQlAyETh3+2FQQTi1UBBgYBCgYIBgIHCxAIAgICDAGDUQMoFAIDgy4ElTaJOIlF
+Date: Fri, 17 Feb 2012 15:45:57 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: NeilBrown <neilb@suse.de>
+Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+Message-ID: <20120217044557.GI14132@dastard>
+References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+ <1328832993-23228-2-git-send-email-john.stultz@linaro.org>
+ <20120214051659.GH14132@dastard>
+ <1329198932.2753.62.camel@work-vm>
+ <20120214235106.GL7479@dastard>
+ <1329265750.2340.17.camel@work-vm>
+ <20120215123750.3333141f@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12021704-5564-0000-0000-000001678C60
+Content-Disposition: inline
+In-Reply-To: <20120215123750.3333141f@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Feb 2012 17:38:26 -0800, Paul Turner <pjt@google.com> wrote:
-> +static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
-> +						 int force_update)
-> +{
-> +	struct task_group *tg = cfs_rq->tg;
-> +	s64 tg_contrib;
-> +
-> +	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-> +	tg_contrib -= cfs_rq->tg_load_contrib;
-> +
-> +	if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
->
-Not obvious to me where this 8 is coming from?
+On Wed, Feb 15, 2012 at 12:37:50PM +1100, NeilBrown wrote:
+> On Tue, 14 Feb 2012 16:29:10 -0800 John Stultz <john.stultz@linaro.org> wrote:
+> 
+> > But I'm open to other ideas and arguments.
+> 
+> I didn't notice the original patch, but found it at
+> https://lwn.net/Articles/468837/
+> and had a look.
+> 
+> My first comment is -ENODOC.  A bit background always helps, so let me try to
+> construct that:
+> 
+>  The goal is to allow applications to interact with the kernel's cache
+>  management infrastructure.  In particular an application can say "this
+>  memory contains data that might be useful in the future, but can be
+>  reconstructed if necessary, and it is cheaper to reconstruct it than to read
+>  it back from disk, so don't bother writing it out".
+> 
+>  The proposed mechanism - at a high level - is for user-space to be able to
+>  say "This memory is volatile" and then later "this memory is no longer
+>  volatile".  If the content of the memory is still available the second
+>  request succeeds.  If not, it fails.. Well, actually it succeeds but reports
+>  that some content has been lost. (not sure what happens then - can the app do
+>  a binary search to find which pages it still has or something).
+> 
+>  (technically we should probably include the cost to reconstruct the page,
+>  which the kernel measures as 'seeks' but maybe that isn't necessary).
+> 
+>  This is implemented by using files in a 'tmpfs' filesystem.  These file
+>  support three new flags to fadvise:
+> 
+>  POSIX_FADV_VOLATILE - this marks a range of pages as 'volatile'.  They may be
+>         removed from the page cache as needed, even if they are not 'clean'.
+>  POSIX_FADV_NONVOLATILE - this marks a range of pages as non-volatile.
+>         If any pages in the range were previously volatile but have since been
+>         removed, then a status is returned reporting this.
+>  POSIX_FADV_ISVOLATILE - this does not actually give any advice to the kernel
+>         but rather asks a question: Are any of these pages volatile?
 
-Regards
-Nikunj
+What about for files that aren't on tmpfs? the fadvise() interface
+is not tmpfs specific, and given that everyone is talking about
+volatility of page cache pages, I fail to see what is tmpfs specific
+about this proposal.
 
+So what are the semantics that are supposed to apply to a file that
+is on a filesystem with stable storage that is cached in the page
+cache?
+
+If this is tmpfs specific behaviour that is required, then IMO
+fadvise is not the correct interface to use here because fadvise is
+supposed to be a generic interface to controlling the page cache
+behaviour on any given file....
+
+> As a counter-point,  this is my first thought of an implementation approach
+> (-ENOPATCH, sorry)
+> 
+> - new mount option for tmpfs e.g. 'volatile'.  Any file in a filesystem
+>   mounted with that option and which is not currently open by any process can
+>   have blocks removed at any time.  The file name must remain, and the file
+>   size must not change.
+> - lseek can be used to determine if anything has been purged with 'SEEK_DATA'
+>   and 'SEEK_HOLE'.
+> 
+> So you can only mark volatility on a whole-file granularity (hence the
+> question above).
+>  'open' says "NONVOLATILE".
+>  'close' says "VOLATILE".
+>  'lseek' is used to check if anything was discarded.
+> 
+> This approach would allow multiple processes to share a cache (might this be
+> valuable?) as it doesn't become truly volatile until all processes close
+> their handles.
+
+If this functionality is only useful for tmpfs, then I'd much prefer
+a tmpfs specific approach like this....
+
+Cheers,
+
+Dave.
+
+
+-- 
+Dave Chinner
+david@fromorbit.com
