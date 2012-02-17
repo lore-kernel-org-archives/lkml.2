@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2BQNxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 08:53:02 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40178 "EHLO
+	id S1752549Ab2BQNx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 08:53:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40188 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab2BQNxA (ORCPT
+	with ESMTP id S1751142Ab2BQNx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 08:53:00 -0500
-Date: Fri, 17 Feb 2012 05:52:02 -0800
-From: tip-bot for Johannes Berg <johannes.berg@intel.com>
-Message-ID: <tip-95100358491abaa2e9a5483811370059bbca4645@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, hch@infradead.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, johannes.berg@intel.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, a.p.zijlstra@chello.nl,
-        johannes.berg@intel.com, tglx@linutronix.de, hch@infradead.org
-In-Reply-To: <1322161388.5366.54.camel@jlt3.sipsolutions.net>
-References: <1322161388.5366.54.camel@jlt3.sipsolutions.net>
+	Fri, 17 Feb 2012 08:53:56 -0500
+Date: Fri, 17 Feb 2012 05:52:51 -0800
+From: tip-bot for Thomas Meyer <thomas@m3y3r.de>
+Message-ID: <tip-47b0edcb599ea6eb9ef16d3a08932a0e01485293@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, thomas@m3y3r.de, hpa@zytor.com,
+        mingo@redhat.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1322600880.1534.347.camel@localhost.localdomain>
+References: <1322600880.1534.347.camel@localhost.localdomain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] printk/tracing: Add console output tracing
-Git-Commit-ID: 95100358491abaa2e9a5483811370059bbca4645
+Subject: [tip:perf/core] tracing/trivial:
+  Use kcalloc instead of kzalloc to allocate array
+Git-Commit-ID: 47b0edcb599ea6eb9ef16d3a08932a0e01485293
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,106 +28,94 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 05:52:30 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 05:53:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  95100358491abaa2e9a5483811370059bbca4645
-Gitweb:     http://git.kernel.org/tip/95100358491abaa2e9a5483811370059bbca4645
-Author:     Johannes Berg <johannes.berg@intel.com>
-AuthorDate: Thu, 24 Nov 2011 20:03:08 +0100
+Commit-ID:  47b0edcb599ea6eb9ef16d3a08932a0e01485293
+Gitweb:     http://git.kernel.org/tip/47b0edcb599ea6eb9ef16d3a08932a0e01485293
+Author:     Thomas Meyer <thomas@m3y3r.de>
+AuthorDate: Tue, 29 Nov 2011 22:08:00 +0100
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 13 Feb 2012 13:46:05 -0500
+CommitDate: Mon, 13 Feb 2012 13:48:11 -0500
 
-printk/tracing: Add console output tracing
+tracing/trivial: Use kcalloc instead of kzalloc to allocate array
 
-Add a printk.console trace point to record any printk
-messages into the trace, regardless of the current
-console loglevel. This can help correlate (existing)
-printk debugging with other tracing.
+The advantage of kcalloc is, that will prevent integer overflows which could
+result from the multiplication of number of elements and size and it is also
+a bit nicer to read.
 
-Link: http://lkml.kernel.org/r/1322161388.5366.54.camel@jlt3.sipsolutions.net
+The semantic patch that makes this change is available
+in https://lkml.org/lkml/2011/11/25/107
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Link: http://lkml.kernel.org/r/1322600880.1534.347.camel@localhost.localdomain
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/events/printk.h |   41 +++++++++++++++++++++++++++++++++++++++++
- kernel/printk.c               |    5 +++++
- 2 files changed, 46 insertions(+), 0 deletions(-)
+ kernel/trace/ftrace.c              |    2 +-
+ kernel/trace/trace_events_filter.c |    7 +++----
+ kernel/trace/trace_syscalls.c      |    4 ++--
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/include/trace/events/printk.h b/include/trace/events/printk.h
-new file mode 100644
-index 0000000..94ec79c
---- /dev/null
-+++ b/include/trace/events/printk.h
-@@ -0,0 +1,41 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM printk
-+
-+#if !defined(_TRACE_PRINTK_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_PRINTK_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT_CONDITION(console,
-+	TP_PROTO(const char *log_buf, unsigned start, unsigned end,
-+		 unsigned log_buf_len),
-+
-+	TP_ARGS(log_buf, start, end, log_buf_len),
-+
-+	TP_CONDITION(start != end),
-+
-+	TP_STRUCT__entry(
-+		__dynamic_array(char, msg, end - start + 1)
-+	),
-+
-+	TP_fast_assign(
-+		if ((start & (log_buf_len - 1)) > (end & (log_buf_len - 1))) {
-+			memcpy(__get_dynamic_array(msg),
-+			       log_buf + (start & (log_buf_len - 1)),
-+			       log_buf_len - (start & (log_buf_len - 1)));
-+			memcpy((char *)__get_dynamic_array(msg) +
-+			       log_buf_len - (start & (log_buf_len - 1)),
-+			       log_buf, end & (log_buf_len - 1));
-+		} else
-+			memcpy(__get_dynamic_array(msg),
-+			       log_buf + (start & (log_buf_len - 1)),
-+			       end - start);
-+		((char *)__get_dynamic_array(msg))[end - start] = 0;
-+	),
-+
-+	TP_printk("%s", __get_str(msg))
-+);
-+#endif /* _TRACE_PRINTK_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 13c0a11..cb8a6bd 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -44,6 +44,9 @@
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index e2e0597..d1499e9 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1129,7 +1129,7 @@ static struct ftrace_hash *alloc_ftrace_hash(int size_bits)
+ 		return NULL;
  
- #include <asm/uaccess.h>
+ 	size = 1 << size_bits;
+-	hash->buckets = kzalloc(sizeof(*hash->buckets) * size, GFP_KERNEL);
++	hash->buckets = kcalloc(size, sizeof(*hash->buckets), GFP_KERNEL);
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/printk.h>
-+
- /*
-  * Architectures can override it:
-  */
-@@ -542,6 +545,8 @@ MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
- static void _call_console_drivers(unsigned start,
- 				unsigned end, int msg_log_level)
+ 	if (!hash->buckets) {
+ 		kfree(hash);
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 24aee71..76afaee 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -685,7 +685,7 @@ find_event_field(struct ftrace_event_call *call, char *name)
+ 
+ static int __alloc_pred_stack(struct pred_stack *stack, int n_preds)
  {
-+	trace_console(&LOG_BUF(0), start, end, log_buf_len);
-+
- 	if ((msg_log_level < console_loglevel || ignore_loglevel) &&
- 			console_drivers && start != end) {
- 		if ((start & LOG_BUF_MASK) > (end & LOG_BUF_MASK)) {
+-	stack->preds = kzalloc(sizeof(*stack->preds)*(n_preds + 1), GFP_KERNEL);
++	stack->preds = kcalloc(n_preds + 1, sizeof(*stack->preds), GFP_KERNEL);
+ 	if (!stack->preds)
+ 		return -ENOMEM;
+ 	stack->index = n_preds;
+@@ -826,8 +826,7 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
+ 	if (filter->preds)
+ 		__free_preds(filter);
+ 
+-	filter->preds =
+-		kzalloc(sizeof(*filter->preds) * n_preds, GFP_KERNEL);
++	filter->preds = kcalloc(n_preds, sizeof(*filter->preds), GFP_KERNEL);
+ 
+ 	if (!filter->preds)
+ 		return -ENOMEM;
+@@ -1486,7 +1485,7 @@ static int fold_pred(struct filter_pred *preds, struct filter_pred *root)
+ 	children = count_leafs(preds, &preds[root->left]);
+ 	children += count_leafs(preds, &preds[root->right]);
+ 
+-	root->ops = kzalloc(sizeof(*root->ops) * children, GFP_KERNEL);
++	root->ops = kcalloc(children, sizeof(*root->ops), GFP_KERNEL);
+ 	if (!root->ops)
+ 		return -ENOMEM;
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index cb65454..4350015 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -468,8 +468,8 @@ int __init init_ftrace_syscalls(void)
+ 	unsigned long addr;
+ 	int i;
+ 
+-	syscalls_metadata = kzalloc(sizeof(*syscalls_metadata) *
+-					NR_syscalls, GFP_KERNEL);
++	syscalls_metadata = kcalloc(NR_syscalls, sizeof(*syscalls_metadata),
++				    GFP_KERNEL);
+ 	if (!syscalls_metadata) {
+ 		WARN_ON(1);
+ 		return -ENOMEM;
