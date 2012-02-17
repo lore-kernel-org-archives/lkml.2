@@ -1,132 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab2BQHd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 02:33:28 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:49990 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751735Ab2BQHd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 02:33:26 -0500
-From: Joe Perches <joe@perches.com>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 1/3] bluetooth: Add logging functions bt_info and bt_err
-Date: Thu, 16 Feb 2012 23:32:42 -0800
-Message-Id: <5c5e8180081e57e6098139fadd9275073048f448.1329461203.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1329461202.git.joe@perches.com>
-References: <cover.1329461202.git.joe@perches.com>
+	id S1751875Ab2BQHdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 02:33:33 -0500
+Received: from mail.southpole.se ([193.12.106.18]:60537 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2BQHda (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 02:33:30 -0500
+Message-ID: <1329464011.2670.139.camel@crucifix>
+Subject: Re: [PATCH] arch/openrisc/include/asm/uaccess.h: included
+ linux/thread_info.h twice
+From: Jonas Bonn <jonas@southpole.se>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Danny Kukawka <dkukawka@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux@openrisc.net, linux-kernel@vger.kernel.org
+Date: Fri, 17 Feb 2012 08:33:31 +0100
+In-Reply-To: <1329400574-32014-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329400574-32014-1-git-send-email-danny.kukawka@bisect.de>
+Organization: South Pole AB
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Assp-Version: 2.1.1(11364) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 64006-11300
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use specific logging functions instead of a generic
-bt_printk function can save some text.
 
-Remove now unused bt_printk function.
-Add compatibility BT_INFO and BT_ERR macros.
+On Thu, 2012-02-16 at 14:56 +0100, Danny Kukawka wrote:
+> arch/openrisc/include/asm/uaccess.h: included 'linux/thread_info.h'
+> twice, remove the duplicate.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-(compiled x86 and defconfig with bluetooth and all bluetooth drivers)
 
-$ size net/bluetooth/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 381662	  20072	 100416	 502150	  7a986	net/bluetooth/built-in.o.allyesconfig.new
- 382463	  20072	 100400	 502935	  7ac97	net/bluetooth/built-in.o.allyesconfig.old
- 126635	   1388	    132	 128155	  1f49b	net/bluetooth/built-in.o.defconfig.new
- 127175	   1388	    132	 128695	  1f6b7	net/bluetooth/built-in.o.defconfig.old
+Thanks, applied.
+/Jonas
 
-$ size drivers/bluetooth/built-in.o*
- 127575	   8976	  29476	 166027	  2888b	drivers/bluetooth/built-in.o.allyesconfig.new
- 129512	   8976	  29516	 168004	  29044	drivers/bluetooth/built-in.o.allyesconfig.old
-  52998	   3292	    156	  56446	   dc7e	drivers/bluetooth/built-in.o.defconfig.new
-  54358	   3292	    156	  57806	   e1ce	drivers/bluetooth/built-in.o.defconfig.old
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/net/bluetooth/bluetooth.h |   14 ++++++++------
- net/bluetooth/lib.c               |   27 ++++++++++++++++++++++++---
- 2 files changed, 32 insertions(+), 9 deletions(-)
+> ---
+>  arch/openrisc/include/asm/uaccess.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/openrisc/include/asm/uaccess.h b/arch/openrisc/include/asm/uaccess.h
+> index c310e45..f5abaa0 100644
+> --- a/arch/openrisc/include/asm/uaccess.h
+> +++ b/arch/openrisc/include/asm/uaccess.h
+> @@ -26,7 +26,6 @@
+>  #include <linux/thread_info.h>
+>  #include <linux/prefetch.h>
+>  #include <linux/string.h>
+> -#include <linux/thread_info.h>
+>  #include <asm/page.h>
+>  
+>  #define VERIFY_READ	0
 
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 4a82ca0..9f5f2c1 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -109,12 +109,14 @@ struct bt_power {
-  */
- #define BT_CHANNEL_POLICY_AMP_PREFERRED		2
- 
--__printf(2, 3)
--int bt_printk(const char *level, const char *fmt, ...);
--
--#define BT_INFO(fmt, arg...)   bt_printk(KERN_INFO, pr_fmt(fmt), ##arg)
--#define BT_ERR(fmt, arg...)    bt_printk(KERN_ERR, pr_fmt(fmt), ##arg)
--#define BT_DBG(fmt, arg...)    pr_debug(fmt "\n", ##arg)
-+__printf(1, 2)
-+int bt_info(const char *fmt, ...);
-+__printf(1, 2)
-+int bt_err(const char *fmt, ...);
-+
-+#define BT_INFO(fmt, ...)	bt_info(fmt "\n", ##__VA_ARGS__)
-+#define BT_ERR(fmt, ...)	bt_err(fmt "\n", ##__VA_ARGS__)
-+#define BT_DBG(fmt, ...)	pr_debug(fmt "\n", ##__VA_ARGS__)
- 
- /* Connection and socket states */
- enum {
-diff --git a/net/bluetooth/lib.c b/net/bluetooth/lib.c
-index 86a6bed..5066288 100644
---- a/net/bluetooth/lib.c
-+++ b/net/bluetooth/lib.c
-@@ -24,6 +24,8 @@
- 
- /* Bluetooth kernel library. */
- 
-+#define pr_fmt(fmt) "Bluetooth: " fmt
-+
- #include <linux/module.h>
- 
- #include <linux/kernel.h>
-@@ -151,7 +153,26 @@ int bt_to_errno(__u16 code)
- }
- EXPORT_SYMBOL(bt_to_errno);
- 
--int bt_printk(const char *level, const char *format, ...)
-+int bt_info(const char *format, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int r;
-+
-+	va_start(args, format);
-+
-+	vaf.fmt = format;
-+	vaf.va = &args;
-+
-+	r = pr_info("%pV", &vaf);
-+
-+	va_end(args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(bt_info);
-+
-+int bt_err(const char *format, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
-@@ -162,10 +183,10 @@ int bt_printk(const char *level, const char *format, ...)
- 	vaf.fmt = format;
- 	vaf.va = &args;
- 
--	r = printk("%sBluetooth: %pV\n", level, &vaf);
-+	r = pr_err("%pV", &vaf);
- 
- 	va_end(args);
- 
- 	return r;
- }
--EXPORT_SYMBOL(bt_printk);
-+EXPORT_SYMBOL(bt_err);
--- 
-1.7.8.111.gad25c.dirty
 
