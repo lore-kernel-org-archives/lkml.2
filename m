@@ -1,48 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2BQBjl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:39:41 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53129 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab2BQBjk (ORCPT
+	id S1756143Ab2BQBks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:40:48 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34750 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754770Ab2BQBkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:39:40 -0500
+	Thu, 16 Feb 2012 20:40:47 -0500
+X-Sasl-enc: XtXOocx9GMms0eTM3GRUy/icM+i7wqOHZ6x/H35ew90I 1329442845
+Date: Thu, 16 Feb 2012 17:40:08 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        pageexec@freemail.hu, spender@grsecurity.net
+Subject: Re: Add overflow protection to kref
+Message-ID: <20120217014008.GA18763@kroah.com>
+References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
+ <20120216204515.GH20420@outflux.net>
+ <20120217002405.GB7746@kroah.com>
+ <20120217010624.GA6541@outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20120216231533.GA7392@redhat.com>
-References: <20120216231533.GA7392@redhat.com>
-Date: Thu, 16 Feb 2012 17:39:38 -0800
-X-Google-Sender-Auth: 3ptaknIgeL-45Fw1wZ27Fftqe98
-Message-ID: <CANcMJZAfT7Sz=5D=PVQwoy_hvEYZxowUxBo4EXN-U72mecE9SQ@mail.gmail.com>
-Subject: Re: soft lockup detector & virtualisation
-From: john stultz <johnstul@us.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Eric B Munson <emunson@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120217010624.GA6541@outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 3:15 PM, Dave Jones <davej@redhat.com> wrote:
-> Lately I've noticed quite a few soft lockup bugs being reported.
-> In many of them, they're coming from inside virtual guests.
->
-> Is the softlockup detector fundamentally broken in this situation ?
->
-> If the host doesn't schedule the guest for whatever reason,
-> or the user suspends the VM and resumes it later ?
->
-> Here's the most recent example:
-> https://bugzilla.redhat.com/attachment.cgi?id=563767
->
-> In many of these, the code where it's "stuck" isn't anything
-> special, which is why I think the guest just hasn't had a
-> timeslice in 185 seconds.
->
-> Is there some way we can perhaps detect we're running virtualised,
-> and disable the detector automatically ?
+On Thu, Feb 16, 2012 at 05:06:24PM -0800, Kees Cook wrote:
 
-I think Eric's work (See "Add check for suspended vm in softlockup
-detector" sent out today) tries to address this issue.
+Any reason you forgot to cc: me on the response?
 
-thanks
--john
+> On Thu, Feb 16, 2012 at 04:24:05PM -0800, Greg Kroah-Hartman wrote:
+> > On Thu, Feb 16, 2012 at 12:45:15PM -0800, Kees Cook wrote:
+> > > Hi,
+> > > 
+> > > [This should probably be discussed on LKML for an even wider audience, so
+> > > I've added a CC for it there.]
+> > > 
+> > > On Thu, Feb 16, 2012 at 09:02:13AM -0500, David Windsor wrote:
+> > > > Hi,
+> > > > 
+> > > > We are attempting to add various grsecurity/PAX features to upstream
+> > > > Ubuntu kernels.
+> > > 
+> > > This didn't parse quite right for me. I think you meant that the intent
+> > > is to get these features into the upstream Linux kernel, with potential
+> > > staging in Ubuntu kernels.
+> > > 
+> > > (Also s/PAX/PaX/g)
+> > > 
+> > > > The PAX folks added refcount overflow protection by inserting
+> > > > architecture-specific code in the increment paths of atomic_t.  For
+> > > > instance:
+> > > > 
+> > > > static inline void atomic_inc(atomic_t *v)
+> > > >  {
+> > > > 	asm volatile(LOCK_PREFIX "incl %0\n"
+> > > > 
+> > > > #ifdef CONFIG_PAX_REFCOUNT
+> > > > 		     "jno 0f\n"
+> > > > 		     LOCK_PREFIX "decl %0\n"
+> > > > 		     "int $4\n0:\n"
+> > > > 		     _ASM_EXTABLE(0b, 0b)
+> > > > #endif
+> > > > 
+> > > > 		     : "+m" (v->counter));
+> > > > }
+> > > > 
+> > > > There are two distinct classes of users we need to consider here:
+> > > > those who use atomic_t for reference counters and those who use
+> > > > atomic_t for keeping track of statistics, like performance counters,
+> > > > etc.; it makes little sense to overflow a performance counter, so we
+> > > > shouldn't subject those users to the same protections as imposed on
+> > > > actual reference counters.  The solution implemented by PAX is to
+> > > > create a family of *_unchecked() functions and to patch
+> > > > statistics-based users of atomic_t to use this interface.
+> > > > 
+> > > > PAX refcount overflow protection was developed before kref was
+> > > > created.  I'd like to move overflow protection out of atomic_t and
+> > > > into kref and gradually migrate atomic_t users to kref, leaving
+> > > > atomic_t for those users who don't need overflow protection (e.g.
+> > > > statistics-based counters).
+> > > 
+> > > For people new to this, can you give an overview of what attacks are foiled
+> > > by adding overflow protection?
+> > > 
+> > > > I realize that there are many users of atomic_t needing overflow
+> > > > protection, but the move to kref seems like the right thing to do in
+> > > > this case.
+> > > > 
+> > > > Leaving the semantics of overflow detection aside for the moment, what
+> > > > are everyone's thoughts on adding overflow protection to kref rather
+> > > > than to atomic_t?
+> > > 
+> > > Why was kref introduced? Or rather, how is kref currently different from
+> > > atomic_t?
+> > 
+> > a kref is to handle reference counting for an object, so you don't have
+> > to constantly "roll your own" all the time using an atomic_t or
+> > whatever.  It's the basis for the struct kobject and other object
+> > reference counting structures in the kernel for a very long time now.
+> > 
+> > And in all that time, I've never seen an instance where you can overflow
+> > the reference count, so I'm hard pressed to see how changing kref in
+> > this manner will help anything at all.
+> 
+> A quick search gives me:
+> CVE-2005-3359: https://bugzilla.redhat.com/show_bug.cgi?id=175769
+> CVE-2006-3741: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=b8444d00762703e1b6146fce12ce2684885f8bf6
+
+Neither of those are kref issues, just bugs with other types of
+counting things.
+
+> And actually an earlier discussion you were actually involved in:
+> https://lkml.org/lkml/2008/7/16/300
+
+That wasn't about a kref issue either.  It was also a fun flamefest, but
+I don't see how that is relevant here.  What am I missing?
+
+> > So no, I don't recommend changing this logic at all in kref.
+> 
+> If it's inexpensive and helps defend against problems, it seems sensible to
+> add to me.
+
+I have yet to see a patch, so why are we arguing about this?  :)
+
+Again, I don't know of any kref overflows that have ever happened, so
+trying to "protect" this type of thing, seems odd to me.
+
+thanks,
+
+greg k-h
