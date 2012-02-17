@@ -1,358 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2BQUzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 15:55:24 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58558 "EHLO ogre.sisk.pl"
+	id S1754592Ab2BQU5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 15:57:14 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58578 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab2BQUzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 15:55:21 -0500
+	id S1752642Ab2BQU5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 15:57:13 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Josh Boyer <jwboyer@gmail.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-Date: Fri, 17 Feb 2012 21:59:15 +0100
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH 4/7] PM / Domains: Rework system suspend callback routines
+Date: Fri, 17 Feb 2012 22:01:07 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <201201281445.49377.rjw@sisk.pl> <CA+5PVA6m4fM79hFujFXb1-w4UK7ki11yRjrbsFOYi1VeRM4CNw@mail.gmail.com> <CA+5PVA4YWsBx2P0aKER7avMEMRb+OiRuo4HErFO=n87QDKtpbQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA4YWsBx2P0aKER7avMEMRb+OiRuo4HErFO=n87QDKtpbQ@mail.gmail.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com
+References: <201111070101.33960.rjw@sisk.pl> <201111070108.11727.rjw@sisk.pl> <20120217192928.GI2707@elf.ucw.cz>
+In-Reply-To: <20120217192928.GI2707@elf.ucw.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202172159.15396.rjw@sisk.pl>
+Message-Id: <201202172201.07274.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 17, 2012, Josh Boyer wrote:
-> On Fri, Feb 17, 2012 at 10:41 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> > On Sat, Jan 28, 2012 at 8:45 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> From: Rafael J. Wysocki <rjw@sisk.pl>
-> >>
-> >> Freeze all filesystems during system suspend and (kernel-driven)
-> >> hibernation by calling freeze_supers() for all superblocks and thaw
-> >> them during the subsequent resume with the help of thaw_supers().
-> >>
-> >> This makes filesystems stay in a consistent state in case something
-> >> goes wrong between system suspend (or hibernation) and the subsequent
-> >> resume (e.g. journal replays won't be necessary in those cases).  In
-> >> particular, this should help to solve a long-standing issue that, in
-> >> some cases, during resume from hibernation the boot loader causes the
-> >> journal to be replied for the filesystem containing the kernel image
-> >> and/or initrd causing it to become inconsistent with the information
-> >> stored in the hibernation image.
-> >>
-> >> The user-space-driven hibernation (s2disk) is not covered by this
-> >> change, because the freezing of filesystems prevents s2disk from
-> >> accessing device special files it needs to do its job.
-> >>
-> >> This change is based on earlier work by Nigel Cunningham.
-> >>
-> >> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Do you happen to have a version of this patch that has been rebased to the
-> > latest 3.3 git tree?  I looked in the various archives and haven't found one
-> > yet.  I'd like to get this into Fedora rawhide to see if some of the hibernate
-> > issues we've been seeing clear up.
+On Friday, February 17, 2012, Pavel Machek wrote:
+> On Mon 2011-11-07 01:08:11, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > The current generic PM domains code attempts to use the generic
+> > system suspend operations along with the domains' device stop/start
+> > routines, which requires device drivers to assume that their
+> > system suspend/resume (and hibernation/restore) callbacks will always
+> > be used with generic PM domains.  However, in theory, the same
+> > hardware may be used in devices that don't belong to any PM domain,
+> > in which case it would be necessary to add "fake" PM domains to
+> > satisfy the above assumption.  Also, the domain the hardware belongs
+> > to may not be handled with the help of the generic code.
+> > 
+> > To allow device drivers that may be used along with the generic PM
+> > domains code of more flexibility, add new device callbacks, .freeze(),
+> > .freeze_late(), .thaw_early() and .thaw(), that can be supplied by
+> > the drivers in addition to their "standard" system suspend and
+> > hibernation callbacks.  These new callbacks, if defined, will be used
+> > by the generic PM domains code for the handling of system suspend and
+> > hibernation instead of the "standard" ones.  This will allow drivers
+> > to be designed to work with generic PM domains as well as without
+> > them.
 > 
-> I got impatient and decided to tackle this myself.  If others would like to
-> look at the forward port below, I'd appreciate it.
+> Should this go to Documentation/ somewhere? May concern is that we
+> have way too many callbacks these days. Why is fake PM domain such a
+> bad thing?
 
-It looks good at first sight, thanks for rebasing!
+I'm not sure what you mean, really.  This particular patch only affects
+the generic PM domains framework, which only has a few users now.
 
+Thanks,
 Rafael
-
-
-> commit b94887bbc0621e1e8402e7f0ec4bc3adf46c9a6e
-> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> Date:   Fri Feb 17 12:42:08 2012 -0500
-> 
->     Freeze all filesystems during system suspend and (kernel-driven)
->     hibernation by calling freeze_supers() for all superblocks and thaw
->     them during the subsequent resume with the help of thaw_supers().
-> 
->     This makes filesystems stay in a consistent state in case something
->     goes wrong between system suspend (or hibernation) and the subsequent
->     resume (e.g. journal replays won't be necessary in those cases).  In
->     particular, this should help to solve a long-standing issue that, in
->     some cases, during resume from hibernation the boot loader causes the
->     journal to be replied for the filesystem containing the kernel image
->     and/or initrd causing it to become inconsistent with the information
->     stored in the hibernation image.
-> 
->     The user-space-driven hibernation (s2disk) is not covered by this
->     change, because the freezing of filesystems prevents s2disk from
->     accessing device special files it needs to do its job.
-> 
->     This change is based on earlier work by Nigel Cunningham.
-> 
->     Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
->     Rebased to 3.3-rc3 by Josh Boyer <jwboyer@redhat.com>
-> 
-> diff --git a/fs/super.c b/fs/super.c
-> index 6015c02..c8057fa 100644
-> --- a/fs/super.c
-> +++ b/fs/super.c
-> @@ -594,6 +594,79 @@ void iterate_supers_type(struct file_system_type *type,
->  EXPORT_SYMBOL(iterate_supers_type);
-> 
->  /**
-> + *	thaw_supers - call thaw_super() for all superblocks
-> + */
-> +void thaw_supers(void)
-> +{
-> +	struct super_block *sb, *p = NULL;
-> +
-> +	spin_lock(&sb_lock);
-> +	list_for_each_entry(sb, &super_blocks, s_list) {
-> +		if (hlist_unhashed(&sb->s_instances))
-> +			continue;
-> +		sb->s_count++;
-> +		spin_unlock(&sb_lock);
-> +
-> +		if (sb->s_flags & MS_FROZEN) {
-> +			thaw_super(sb);
-> +			sb->s_flags &= ~MS_FROZEN;
-> +		}
-> +
-> +		spin_lock(&sb_lock);
-> +		if (p)
-> +			__put_super(p);
-> +		p = sb;
-> +	}
-> +	if (p)
-> +		__put_super(p);
-> +	spin_unlock(&sb_lock);
-> +}
-> +
-> +/**
-> + *	freeze_supers - call freeze_super() for all superblocks
-> + */
-> +int freeze_supers(void)
-> +{
-> +	struct super_block *sb, *p = NULL;
-> +	int error = 0;
-> +
-> +	spin_lock(&sb_lock);
-> +	/*
-> +	 * Freeze in reverse order so filesystems depending on others are
-> +	 * frozen in the right order (eg. loopback on ext3).
-> +	 */
-> +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> +		if (hlist_unhashed(&sb->s_instances))
-> +			continue;
-> +		sb->s_count++;
-> +		spin_unlock(&sb_lock);
-> +
-> +		if (sb->s_root && sb->s_frozen != SB_FREEZE_TRANS
-> +		    && !(sb->s_flags & MS_RDONLY)) {
-> +			error = freeze_super(sb);
-> +			if (!error)
-> +				sb->s_flags |= MS_FROZEN;
-> +		}
-> +
-> +		spin_lock(&sb_lock);
-> +		if (error)
-> +			break;
-> +		if (p)
-> +			__put_super(p);
-> +		p = sb;
-> +	}
-> +	if (p)
-> +		__put_super(p);
-> +	spin_unlock(&sb_lock);
-> +
-> +	if (error)
-> +		thaw_supers();
-> +
-> +	return error;
-> +}
-> +
-> +
-> +/**
->   *	get_super - get the superblock of a device
->   *	@bdev: device to get the superblock for
->   *	
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 386da09..a164f4a 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -210,6 +210,7 @@ struct inodes_stat_t {
->  #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
->  #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
->  #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-> +#define MS_FROZEN	(1<<25) /* Frozen filesystem */
->  #define MS_NOSEC	(1<<28)
->  #define MS_BORN		(1<<29)
->  #define MS_ACTIVE	(1<<30)
-> @@ -2501,6 +2502,8 @@ extern void drop_super(struct super_block *sb);
->  extern void iterate_supers(void (*)(struct super_block *, void *), void *);
->  extern void iterate_supers_type(struct file_system_type *,
->  			        void (*)(struct super_block *, void *), void *);
-> +extern int freeze_supers(void);
-> +extern void thaw_supers(void);
-> 
->  extern int dcache_dir_open(struct inode *, struct file *);
->  extern int dcache_dir_close(struct inode *, struct file *);
-> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index 6d6d288..492fc62 100644
-> --- a/kernel/power/hibernate.c
-> +++ b/kernel/power/hibernate.c
-> @@ -626,12 +626,17 @@ int hibernate(void)
->  	if (error)
->  		goto Finish;
-> 
-> -	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
-> +	error = freeze_supers();
->  	if (error)
->  		goto Thaw;
-> +
-> +	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
-> +	if (error)
-> +		goto Thaw_fs;
-> +
->  	if (freezer_test_done) {
->  		freezer_test_done = false;
-> -		goto Thaw;
-> +		goto Thaw_fs;
->  	}
-> 
->  	if (in_suspend) {
-> @@ -655,6 +660,8 @@ int hibernate(void)
->  		pr_debug("PM: Image restored successfully.\n");
->  	}
-> 
-> + Thaw_fs:
-> +	thaw_supers();
->   Thaw:
->  	thaw_processes();
->   Finish:
-> diff --git a/kernel/power/power.h b/kernel/power/power.h
-> index 21724ee..40d6f64 100644
-> --- a/kernel/power/power.h
-> +++ b/kernel/power/power.h
-> @@ -1,3 +1,4 @@
-> +#include <linux/fs.h>
->  #include <linux/suspend.h>
->  #include <linux/suspend_ioctls.h>
->  #include <linux/utsname.h>
-> @@ -227,45 +228,3 @@ enum {
->  #define TEST_MAX	(__TEST_AFTER_LAST - 1)
-> 
->  extern int pm_test_level;
-> -
-> -#ifdef CONFIG_SUSPEND_FREEZER
-> -static inline int suspend_freeze_processes(void)
-> -{
-> -	int error;
-> -
-> -	error = freeze_processes();
-> -
-> -	/*
-> -	 * freeze_processes() automatically thaws every task if freezing
-> -	 * fails. So we need not do anything extra upon error.
-> -	 */
-> -	if (error)
-> -		goto Finish;
-> -
-> -	error = freeze_kernel_threads();
-> -
-> -	/*
-> -	 * freeze_kernel_threads() thaws only kernel threads upon freezing
-> -	 * failure. So we have to thaw the userspace tasks ourselves.
-> -	 */
-> -	if (error)
-> -		thaw_processes();
-> -
-> - Finish:
-> -	return error;
-> -}
-> -
-> -static inline void suspend_thaw_processes(void)
-> -{
-> -	thaw_processes();
-> -}
-> -#else
-> -static inline int suspend_freeze_processes(void)
-> -{
-> -	return 0;
-> -}
-> -
-> -static inline void suspend_thaw_processes(void)
-> -{
-> -}
-> -#endif
-> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> index 4fd51be..5f51fc7 100644
-> --- a/kernel/power/suspend.c
-> +++ b/kernel/power/suspend.c
-> @@ -29,6 +29,62 @@
-> 
->  #include "power.h"
-> 
-> +#ifdef CONFIG_SUSPEND_FREEZER
-> +
-> +static inline int suspend_freeze_processes(void)
-> +{
-> +	int error;
-> +
-> +	error = freeze_processes();
-> +
-> +	/*
-> +	 * freeze_processes() automatically thaws every task if freezing
-> +	 * fails. So we need not do anything extra upon error.
-> +	 */
-> +
-> +	if (error)
-> +		goto Finish;
-> +
-> +	error = freeze_supers();
-> +	if (error) {
-> +		thaw_processes();
-> +		goto Finish;
-> +	}
-> +
-> +	error = freeze_kernel_threads();
-> +
-> +	/*
-> +	 * freeze_kernel_threads() thaws only kernel threads upon freezing
-> +	 * failure. So we have to thaw the userspace tasks ourselves.
-> +	 */
-> +	if (error) {
-> +		thaw_supers();
-> +		thaw_processes();
-> +	}
-> +
-> +Finish:
-> +	return error;
-> +}
-> +
-> +static inline void suspend_thaw_processes(void)
-> +{
-> +	thaw_supers();
-> +	thaw_processes();
-> +}
-> +
-> +#else /* !CONFIG_SUSPEND_FREEZER */
-> +
-> +static inline int suspend_freeze_processes(void)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void suspend_thaw_processes(void)
-> +{
-> +}
-> +
-> +#endif /* !CONFIG_SUSPEND_FREEZER */
-> +
->  const char *const pm_states[PM_SUSPEND_MAX] = {
->  	[PM_SUSPEND_STANDBY]	= "standby",
->  	[PM_SUSPEND_MEM]	= "mem",
-> 
-> 
-
