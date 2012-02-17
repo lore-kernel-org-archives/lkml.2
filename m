@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab2BQTGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 14:06:12 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:52779 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab2BQTGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 14:06:10 -0500
-Date: Fri, 17 Feb 2012 11:06:02 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Joe Perches <joe@perches.com>
-Cc: Luis Felipe Strano Moraes <lfelipe@profusion.mobi>, linville@tuxdriver.com,
-        johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cleaning up code formatting errors in net/wireless
- pointed out by checkpatch.
-Message-ID: <20120217110602.2c4e762a@nehalam.linuxnetplumber.net>
-In-Reply-To: <1329504344.584.18.camel@joe2Laptop>
-References: <1329492603-3972-1-git-send-email-lfelipe@profusion.mobi>
-	<1329504344.584.18.camel@joe2Laptop>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753644Ab2BQTJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 14:09:49 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40375 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab2BQTJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 14:09:48 -0500
+Date: Fri, 17 Feb 2012 14:06:31 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Jan Beulich <JBeulich@suse.com>, "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Kerneldevelopment list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PAD helper for native and paravirt platform
+Message-ID: <20120217190631.GA20584@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <4F3E345802000078000739B2@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC829233509F044@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233509F044@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090208.4F3EA5F5.0014,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012 10:45:44 -0800
-Joe Perches <joe@perches.com> wrote:
-
-> On Fri, 2012-02-17 at 07:30 -0800, Luis Felipe Strano Moraes wrote:
-> > These are mostly minor changes and they are being sent as one patch only in
-> > order to cause the smallest amount of disruption.
-> []
-> > diff --git a/net/wireless/core.c b/net/wireless/core.c
-> []
-> > @@ -668,7 +668,7 @@ void wiphy_unregister(struct wiphy *wiphy)
-> >  		mutex_lock(&rdev->devlist_mtx);
-> >  		__count = rdev->opencount;
-> >  		mutex_unlock(&rdev->devlist_mtx);
-> > -		__count == 0;}));
-> > +		__count == 0; }));
+On Fri, Feb 17, 2012 at 05:59:56PM +0000, Liu, Jinsong wrote:
+> >> 
+> >> +static inline int __acpi_pad_init(void)
+> >> +{
+> >> +	return PVOP_CALL0(int, pv_pad_ops.acpi_pad_init); +}
+> >> +
+> >> +static inline void __acpi_pad_exit(void)
+> >> +{
+> >> +	PVOP_VCALL0(pv_pad_ops.acpi_pad_exit);
+> >> +}
+> > 
+> > With this you, aiui, you aim at getting the calls patched. Are the
+> > callers of this really on performance critical paths? If not, the
+> > simpler approach of having an ops structure the fields of which get
+> > overwritten by 
+> > Xen initialization would seem a more appropriate approach.
+> > 
 > 
-> Inline statement expressions are pretty unusual
-> for kernel sources.  Normally these are used via
-> macro.
-> 
-> I'd try to make the statement expression visually
-> distinct.  Something like:
-> 
-> 	wait_event(rdev->dev_wait,
-> 		   ({
-> 			   int __count;
-> 			   mutex_lock(&rdev->devlist_mtx);
-> 			   __count = rdev->opencount;
-> 			   mutex_unlock(&rdev->devlist_mtx);
-> 			   __count == 0;
-> 		   })
-> 		  );
-> 
+> Yes, I agree. I code in this way just want to keep same coding style as other pv functions of paravirt.h.
+> I update the patch w/ a simpler approach, and will post later.
+> Of course, we need Konrad's comments.
 
-I prefer to see this done as an inline function
+The thing is that the paravirt approach also impacts lguests. While I don't
+think your patch will affect it, it just doesn't seem like the right place.
 
-wait_event(rdev->dev_wait, is_foo_ready(rdev))
+It seems that a more general approach, like the x86 one would be appropiate.
+Or since this is ACPI related - perhaps in the drivers/acpi/osl.c ? - That is
+all "OS dependent functions" and seem proper?
 
-Also, in this case wrapping a condition with a mutex really is
-meaningless because the state is longer protected out side the
-protected region; in other words the mutex here is bogus and
-provides no additional protection.
