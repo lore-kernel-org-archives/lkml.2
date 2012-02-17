@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab2BQONW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:13:22 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22016 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2BQONU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:13:20 -0500
-Date: Fri, 17 Feb 2012 09:10:05 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Miller <davem@davemloft.net>
-Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression in skge that started around acb42a3 (so past v3.3-rc1)
-Message-ID: <20120217141005.GA27808@phenom.dumpdata.com>
-References: <20120130155816.GA1400@phenom.dumpdata.com>
- <20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
- <20120130175738.GA4002@phenom.dumpdata.com>
- <20120130.130259.1190745234966440677.davem@davemloft.net>
- <20120130182230.GA4122@phenom.dumpdata.com>
+	id S1752650Ab2BQOQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:16:45 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:50309 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751862Ab2BQOQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 09:16:44 -0500
+Date: Fri, 17 Feb 2012 08:16:41 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Stultz <johnstul@us.ibm.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Jack Steiner <steiner@sgi.com>
+Subject: Re: [PATCH] x86 uv: lower UV rtc clocksource rating
+Message-ID: <20120217141641.GA28063@sgi.com>
+References: <20120216201042.GA10260@sgi.com>
+ <20120217120242.GC25601@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120130182230.GA4122@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F3E607E.00B9,ss=1,re=0.000,fgs=0
+In-Reply-To: <20120217120242.GC25601@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 30, 2012 at 01:22:30PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jan 30, 2012 at 01:02:59PM -0500, David Miller wrote:
-> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Date: Mon, 30 Jan 2012 12:57:38 -0500
-> > 
-> > > Ah, so you are saying that the problem above is already fixed in 3.3-rc1.
-> > 
-> > No he's not saying that, he says somewhere we probably need a fix
-> > "like" the commit he mentioned.
-> > 
-> > He did not say that commit fixes this bug.
+On Fri, Feb 17, 2012 at 01:02:42PM +0100, Ingo Molnar wrote:
 > 
-> Ayee. Sounds you guys have an idea about this bug then. If you want me to run
-> a test-patch I can certainly do so. Thanks!
+> * Dimitri Sivanich <sivanich@sgi.com> wrote:
+> 
+> > Lower the rating of the UV rtc clocksource to just below that of the tsc.
+> 
+> This changelog is deficient for obvious reasons, mind updating 
+> it?
+>
+OK.  Is this sufficient?
 
-ping?
+
+Lower the rating of the UV rtc clocksource to just below that of the tsc.
+
+Reading the tsc clocksource has lower latency than reading the rtc, so favor
+it in situations where it is synchronized and stable.  When the tsc is
+unsynchronized, the rtc needs to be the chosen clocksource.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ arch/x86/platform/uv/uv_time.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+Index: linux/arch/x86/platform/uv/uv_time.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/uv_time.c
++++ linux/arch/x86/platform/uv/uv_time.c
+@@ -37,7 +37,7 @@ static void uv_rtc_timer_setup(enum cloc
+ 
+ static struct clocksource clocksource_uv = {
+ 	.name		= RTC_NAME,
+-	.rating		= 400,
++	.rating		= 299,
+ 	.read		= uv_read_rtc,
+ 	.mask		= (cycle_t)UVH_RTC_REAL_TIME_CLOCK_MASK,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+@@ -379,10 +379,6 @@ static __init int uv_rtc_setup_clock(voi
+ 	if (!is_uv_system())
+ 		return -ENODEV;
+ 
+-	/* If single blade, prefer tsc */
+-	if (uv_num_possible_blades() == 1)
+-		clocksource_uv.rating = 250;
+-
+ 	rc = clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
+ 	if (rc)
+ 		printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
