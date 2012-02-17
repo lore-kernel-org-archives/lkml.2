@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab2BQQrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 11:47:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2BQQry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 11:47:54 -0500
-Date: Fri, 17 Feb 2012 11:47:49 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/9] blkcg: drop unnecessary RCU locking
-Message-ID: <20120217164749.GC26620@redhat.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-3-git-send-email-tj@kernel.org>
+	id S1751978Ab2BQRBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:01:40 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36032 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab2BQRBi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 12:01:38 -0500
+X-Sasl-enc: Wewk0MopRJ/pKqVMIOltzEArV7cD1BFyMGKnIlCrzIdE 1329498097
+Date: Fri, 17 Feb 2012 08:59:38 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-usb@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, tglx@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, avictor.za@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 3/9] ARM/USB: at91/ohci-at91: remove the use of
+ irq_to_gpio
+Message-ID: <20120217165938.GB25671@kroah.com>
+References: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com>
+ <fab15f7eaf6622e68e62bc3afa533b12f48ca27e.1329139662.git.nicolas.ferre@atmel.com>
+ <4F3E20CC.5090205@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329431878-28300-3-git-send-email-tj@kernel.org>
+In-Reply-To: <4F3E20CC.5090205@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 02:37:51PM -0800, Tejun Heo wrote:
-
-[..]
-> * queue_lock coverage extended to cover @blkg usage in
->   blkio_policy_parse_and_set() and RCU dropped.  This means all config
->   update callbacks are now called under queue_lock.
+On Fri, Feb 17, 2012 at 10:41:32AM +0100, Nicolas Ferre wrote:
+> On 02/13/2012 03:43 PM, Nicolas Ferre :
+> > irq_to_gpio() macro will be removed from AT91 GPIO interrupt
+> > controller. So we replace it with the use of gpio_to_irq()
+> > and a reworked test.
+> > 
+> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> > Cc: linux-usb@vger.kernel.org
 > 
+> Hi Greg,
+> 
+> I would like to queue this patch through arm-soc git tree (with all AT91
+> material of this patch series).
+> 
+> So, can I have your "Acked-by" on this one?
 
-[..]
-> @@ -1041,11 +1034,8 @@ static int blkio_policy_parse_and_set(char *buf, enum blkio_policy_id plid,
->  	if (!disk || part)
->  		goto out;
->  
-> -	rcu_read_lock();
-> -
->  	spin_lock_irq(disk->queue->queue_lock);
->  	blkg = blkg_lookup_create(blkcg, disk->queue, plid, false);
-> -	spin_unlock_irq(disk->queue->queue_lock);
->  
-
-So now in some cases we call blkg_lookup_create() with both queue and rcu
-read lock held (cfq_lookup_create_cfqg()) and in this case hold only queue
-lock. blkg_lookup_create() calls blkg_lookup() which expects a rcu_read_lock()
-to be held and we will be travesing that list without rcu_read_lock()
-held. Isn't that a problem? We might be examining a blkg belonging to
-a different queue and it might be being freed parallely.
-
-Or blkg destruction in this cgroup is serialized by cgroup_mutex() or
-by something else in this policy parse and set path?
-
-Thanks
-Vivek
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
