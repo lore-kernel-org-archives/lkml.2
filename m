@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2BQSVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 13:21:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:38816 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547Ab2BQSVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 13:21:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="111547732"
-Message-ID: <4F3E928E.8060908@linux.intel.com>
-Date: Fri, 17 Feb 2012 09:46:54 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "lkml, " <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: pch_uart and pch_phub clock selection
-References: <4F3DA617.5030805@linux.intel.com> <20120217013012.GA18530@kroah.com>
-In-Reply-To: <20120217013012.GA18530@kroah.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752696Ab2BQSYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 13:24:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48205 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab2BQSYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 13:24:07 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] gpiolib: Add comments explaining the _cansleep() WARN_ON()s
+Date: Fri, 17 Feb 2012 10:24:01 -0800
+Message-Id: <1329503041-11517-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've seen users getting very confused by the WARN_ON()s for can_sleep
+GPIOs in the atomic-safe paths, the discoverability of the non-atomic
+version of the API seems to be hampered by the fact that it's defined
+in a header file not the .c file where the warnings are.
 
+Add a couple of comments next to the warnings to help people on their
+way.
 
-On 02/16/2012 05:30 PM, Greg Kroah-Hartman wrote:
-> On Thu, Feb 16, 2012 at 04:57:59PM -0800, Darren Hart wrote:
->> I'm working on a tunnel creek (atom e6xx + topcliff PCH) development platform
->> that uses a 48MHz or 64MHz clock to drive the pch_uart. I've found that if I
->> force the uart_clock to 48MHz (or 64MHz on the latest rev) I can get the kernel
->> messages and getty on the serial port.
->>
->> I see that the the CM-iTC board is special-cased to set a 192MHz uart_clock.
->> This is done in pch_uart.c code, but there is some register manipulation done in
->> the pch_phub.c driver and I don't understand the connection. How are the two
->> related?
->>
->> Is the pch_phub.c register manipulation required for proper related? It seems to
->> work without touching those registers if I just force the clock.
->>
->> The device I'm working with is EFI, and the dmi_get_system_info(DMI_BOARD_NAME)
->> returns "(null)", so I can't use the same test to identify this board. Is there
->> another common mechanism I might be able to use?
-> 
-> There's no relevant DMI information for the board at all?  What does:
-> 	grep . /sys/class/dmi/id/*
-> show?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/gpio/gpiolib.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Duh.
-
-# cat /sys/class/dmi/id/product_name
-Fish River Island II
-
-
-> 
->>
->> The following patch (by way of example, not meant for inclusion) gets things
->> working for this particular board with this command line:
->>
->> console=ttyPCH1,115200 pch_uart.clock_param=48000000
->>
->> I believe the right thing to do here is to discover a way to identify the board
->> and special case the clock as is done for the CM-iTC, but I would like to
->> understand the purpose of the pch_phub register manipulation code. Does this
->> make sense?
->>
->> Thanks,
->>
->> Darren
->>
->>
->> >From f83fa6cb575844d8e37f136890fe32258eb88dd2 Mon Sep 17 00:00:00 2001
->> Message-Id: <f83fa6cb575844d8e37f136890fe32258eb88dd2.1329439822.git.dvhart@linux.intel.com>
->> From: Darren Hart <dvhart@linux.intel.com>
->> Date: Wed, 15 Feb 2012 15:44:18 -0800
->> Subject: [PATCH] pch_uart: Add clock parameter
->>
->> Allow for the specification of the clock as a module parameter. This is useful
->> when a board uses a non-standard clock, or when different versions of a board
->> use different clocks, and that board name or the version are not available to
->> the kernel.
-> 
-> You also rename base_baud to uart_clock here, so you might want to
-> mention it in the changelog entry :)
-> 
-
-Right, thanks. I suspect I'll end up breaking that change out as a
-semantic patch :-)
-
-> greg k-h
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 17fdf4b..2513af6 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1560,6 +1560,7 @@ int __gpio_get_value(unsigned gpio)
+ 	int value;
+ 
+ 	chip = gpio_to_chip(gpio);
++	/* Should be using gpio_get_value_cansleep() or a different GPIO */
+ 	WARN_ON(chip->can_sleep);
+ 	value = chip->get ? chip->get(chip, gpio - chip->base) : 0;
+ 	trace_gpio_value(gpio, 1, value);
+@@ -1581,6 +1582,7 @@ void __gpio_set_value(unsigned gpio, int value)
+ 	struct gpio_chip	*chip;
+ 
+ 	chip = gpio_to_chip(gpio);
++	/* Should be using gpio_set_value_cansleep() or a different GPIO */
+ 	WARN_ON(chip->can_sleep);
+ 	trace_gpio_value(gpio, 0, value);
+ 	chip->set(chip, gpio - chip->base, value);
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+1.7.9.rc1
+
