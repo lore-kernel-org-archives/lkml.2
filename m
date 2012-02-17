@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2BQCRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 21:17:00 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33798 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab2BQCQ5 convert rfc822-to-8bit (ORCPT
+	id S1756415Ab2BQCR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 21:17:28 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52546 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755537Ab2BQCR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 21:16:57 -0500
+	Thu, 16 Feb 2012 21:17:26 -0500
+X-Sasl-enc: UF6Ji4dsW4CD9Li1dH8fZRhk3gIahIWu+QdW1/uuEk3J 1329445045
+Date: Thu, 16 Feb 2012 18:17:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, herbert@gondor.hengli.com.au
+Subject: Re: [21/28] crypto: sha512 - Avoid stack bloat on i386
+Message-ID: <20120217021718.GA21573@kroah.com>
+References: <20120217005609.GA17081@kroah.com>
+ <20120217005536.880797019@linuxfoundation.org>
+ <20120216.205231.945122823725765709.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
- <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com>
- <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
- <4F3D7250.6040504@zytor.com> <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
- <4F3DAE5D.3080000@zytor.com> <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 16 Feb 2012 18:16:36 -0800
-X-Google-Sender-Auth: lFc0P6Eq-VjsINKlhvaeHHnysZw
-Message-ID: <CAObL_7GUTbc=Ew9mQw7CoWfdAfRWSWUrY3w+UnrYrqWEiHxtcQ@mail.gmail.com>
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-To: Indan Zupancic <indan@nul.nu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, keescook@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216.205231.945122823725765709.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 6:00 PM, Indan Zupancic <indan@nul.nu> wrote:
-> On Fri, February 17, 2012 02:33, H. Peter Anvin wrote:
->> On 02/16/2012 04:48 PM, Indan Zupancic wrote:
->>> On Thu, February 16, 2012 22:17, H. Peter Anvin wrote:
->>>
->>> I would go for something like:
->>>
->>> struct seccomp_data {
->>>      int nr;
->>>      __u32 arg_low[6];
->>>      __u32 arg_high[6];
->>>      __u32 instruction_pointer_low;
->>>      __u32 instruction_pointer_high;
->>>      __u32 __reserved[3];
->>> };
->>>
->>
->> Uh, that is the absolutely WORST way to do it - not only are you
->> creating two fields, they're not even adjacent.
->
-> You want:
->
-> struct seccomp_data {
->        int nr;
->        __u32 __reserved[3];
->        __u64 arg[6];
->        __u64 instruction_pointer;
-> };
->
-> And I agree it looks a lot nicer.
->
-> You can pretend a 64-bit arg will be one field, but it won't be. It will
-> be always two fields no matter what. Making them adjacent is only good
-> because seccomp_data won't have to change if 64-bit support is ever added
-> to BPF.
->
-> It looks nicer, but it only makes it harder to know the right offset for
-> the fields for the 32-bit only BPF programs. You can try to hide reality,
-> but that won't change it.
->
->>> (Not sure what use the IP is because that doesn't tell anything about how
->>> the system call instruction was reached.)
->>>
->>> The only way to avoid splitting args is to add 64-bit support to BPF.
->>> That is probably the best way forwards, but would require breaking the
->>> BPF ABI by either adding a 64-bit version directly or adding extra
->>> instructions.
->>
->> Or the compiler or whatever generates the BPF code just is going to have
->> to generate two instructions -- just like we always have to handle
->> [u]int64_t on 32-bit platforms.  There is no difference here.
->
-> Except that if you don't hide the platform differences your compiler
-> or whatever needs to generate different instructions depending on the
-> endianess, while it could always generate the same instructions instead.
->
-> My impression is that you want to push all extra complexity into the
-> compiler or whatever instead of making the ABI cross-platform, because
-> it looks nicer. I don't care that much, but I think you're just pushing
-> the ugliness around instead of getting rid of it.
+On Thu, Feb 16, 2012 at 08:52:31PM -0500, David Miller wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> Date: Thu, 16 Feb 2012 16:55:55 -0800
+> 
+> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> This causes a stack usage regression on sparc that Herbert
+> is in the middle of merging a fix for into Linus's tree.
 
-Is there really no syscall that cares about endianness?
+Ick.  Any idea when that will hit Linus's tree?  If it's before next
+Monday, we are good, and I can queue it up here, if not, then I'll drop
+this and have to add it back later.
 
-Even if it ends up working, forcing syscall arguments to have a
-particular endianness seems like a bad decision, especially if anyone
-ever wants to make a 64-bit BPF implementation.  (Or if any
-architecture adds 128-bit syscall arguments to a future syscall
-namespace or whatever it's called.  x86-64 has 128-bit xmm
-registers...)
+thanks,
 
---Andy
+greg k-h
