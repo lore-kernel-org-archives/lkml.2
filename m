@@ -1,61 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab2BQRsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:48:21 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35542 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2BQRsU (ORCPT
+	id S1751840Ab2BQRuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:50:22 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:64989 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab2BQRuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:48:20 -0500
-Date: Fri, 17 Feb 2012 17:48:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-fsdevel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Tyler Hicks <tyhicks@canonical.com>
-Subject: udf deadlock (was Re: hugetlbfs lockdep spew revisited.)
-Message-ID: <20120217174818.GP23916@ZenIV.linux.org.uk>
-References: <20120217000856.GA13112@redhat.com>
- <20120217001634.GH23550@zod.bos.redhat.com>
- <20120217003848.GB20071@boyd>
- <20120217004922.GN23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217004922.GN23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 Feb 2012 12:50:21 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 00/18] at91 first cleanup series for 3.4
+Date: Fri, 17 Feb 2012 18:49:52 +0100
+Message-Id: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 12:49:22AM +0000, Al Viro wrote:
-> Folks, this is not a false positive and it has nothing to do with misannotation
-> for directories.  Deadlock is real; I have no idea WTF do we what ->i_mutex
-> held over that area in hugetlbfs ->mmap(), but doing that is really, really
-> wrong, whatever the reason.
+This series removes the at91_sys_read/write() functions that where
+used for all System Controller devices. The static offsets that were
+used prevented us from compiling several AT91 SoC support in a single
+zImage.
 
-Arrrrgh...  Some grepping around has uncovered another deadlock on
-i_mutex/mmap_sem and this one is not hard to hit at all.
+The other cleanup is the move of some early console initialization.
 
-Thread A:
-	opens file on UDF (O_RDWR open)
-	does big, fat write() to it
-Thread B:
-	opens the same file (also O_RDWR)
-	mmaps it
-	closes
-	does munmap()
+All this goes on top of current material that is already in arm-soc
+git tree (merge of all at91/* branches).
 
-and there we are - munmap() will end up closing the second struct file,
-call udf_release_file() and we are hitting ->i_mutex while under
-->mmap_sem.  Blocking on it, actually, since generic_file_aio_write()
-in the first thread is holding ->i_mutex.  And as soon as thread A gets
-around to faulting the next piece of data in, well...  To widen the
-window a lot, mmap something large sitting on NFS and do write() from
-that mmapped area.  Race window as wide as one could ask for...
+Jean-Christophe PLAGNIOL-VILLARD (18):
+      ARM: at91: factorise duplicated at91sam9 idle
+      ARM: at91/at91x40: remove use of at91_sys_read/write
+      ARM: at91: make matrix register base soc independent
+      ARM: at91: make ST (System Timer) soc independent
+      ARM: at91/pm_slowclock: rename register to named define
+      ARM: at91/pm_slowclock: function slow_clock() accepts parameters
+      ARM: at91: move at91rm9200 sdramc defines to at91rm9200_sdramc.h
+      ARM: at91: make sdram/ddr register base soc independent
+      ARM: at91/pm_slowclock: add runtime detection of memory contoller
+      ARM: at91/PMC: make register base soc independent
+      ARM: at91/rtc-at91sam9: each SoC can select the RTT device to use
+      ARM: at91:rtc/rtc-at91sam9: ioremap register bank
+      ARM: at91/rtc-at91sam9: pass the GPBR to use via ressources
+      ARM: at91: finally drop at91_sys_read/write
+      ARM: at91: merge SRAM Memory banks thanks to mirroring
+      Atmel: move console default platform_device to serial driver
+      ARM: at91/board-dt: drop default console
+      ARM: at91/board-dt: move at91_initialize() to init_irq()
 
-What happens there is prealloc discard on close; do we even want ->i_mutex
-there these days?  Note that there's also
-	down_write(&UDF_I(inode)->i_data_sem);
-in udf_release_file()...
+ arch/arm/mach-at91/at91rm9200.c                    |    7 +-
+ arch/arm/mach-at91/at91rm9200_devices.c            |   14 +-
+ arch/arm/mach-at91/at91rm9200_time.c               |   37 ++-
+ arch/arm/mach-at91/at91sam9260.c                   |   23 +-
+ arch/arm/mach-at91/at91sam9260_devices.c           |   31 ++-
+ arch/arm/mach-at91/at91sam9261.c                   |   10 +-
+ arch/arm/mach-at91/at91sam9261_devices.c           |   24 ++-
+ arch/arm/mach-at91/at91sam9263.c                   |   11 +-
+ arch/arm/mach-at91/at91sam9263_devices.c           |   49 +++-
+ arch/arm/mach-at91/at91sam9_alt_reset.S            |   12 +-
+ arch/arm/mach-at91/at91sam9g45.c                   |   11 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c           |   24 ++-
+ arch/arm/mach-at91/at91sam9g45_reset.S             |   12 +-
+ arch/arm/mach-at91/at91sam9rl.c                    |   10 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c            |   24 ++-
+ arch/arm/mach-at91/at91sam9x5.c                    |    5 +-
+ arch/arm/mach-at91/at91x40.c                       |    2 +-
+ arch/arm/mach-at91/at91x40_time.c                  |   28 ++-
+ arch/arm/mach-at91/board-cpu9krea.c                |    5 +-
+ arch/arm/mach-at91/board-cpuat91.c                 |    1 +
+ arch/arm/mach-at91/board-dt.c                      |   16 +-
+ arch/arm/mach-at91/board-eco920.c                  |    5 +-
+ arch/arm/mach-at91/board-kb9202.c                  |    1 +
+ arch/arm/mach-at91/board-picotux200.c              |    1 +
+ arch/arm/mach-at91/board-rm9200dk.c                |    1 +
+ arch/arm/mach-at91/board-rm9200ek.c                |    1 +
+ arch/arm/mach-at91/board-yl-9200.c                 |    3 +-
+ arch/arm/mach-at91/clock.c                         |   81 ++++---
+ arch/arm/mach-at91/generic.h                       |   10 +
+ arch/arm/mach-at91/include/mach/at91_matrix.h      |   23 ++
+ arch/arm/mach-at91/include/mach/at91_pmc.h         |   56 +++--
+ arch/arm/mach-at91/include/mach/at91_ramc.h        |   32 +++
+ arch/arm/mach-at91/include/mach/at91_st.h          |   32 ++-
+ arch/arm/mach-at91/include/mach/at91rm9200.h       |   10 +-
+ arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   58 +----
+ .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   63 +++++
+ arch/arm/mach-at91/include/mach/at91sam9260.h      |   14 +-
+ .../mach-at91/include/mach/at91sam9260_matrix.h    |   36 ++--
+ arch/arm/mach-at91/include/mach/at91sam9261.h      |   10 +-
+ .../mach-at91/include/mach/at91sam9261_matrix.h    |   18 +-
+ arch/arm/mach-at91/include/mach/at91sam9263.h      |   12 +-
+ .../mach-at91/include/mach/at91sam9263_matrix.h    |   74 +++---
+ arch/arm/mach-at91/include/mach/at91sam9_ddrsdr.h  |    6 -
+ arch/arm/mach-at91/include/mach/at91sam9_sdramc.h  |    6 -
+ arch/arm/mach-at91/include/mach/at91sam9g45.h      |   12 +-
+ .../mach-at91/include/mach/at91sam9g45_matrix.h    |   84 +++---
+ arch/arm/mach-at91/include/mach/at91sam9rl.h       |    7 +-
+ .../arm/mach-at91/include/mach/at91sam9rl_matrix.h |   42 ++--
+ arch/arm/mach-at91/include/mach/at91sam9x5.h       |    5 +-
+ arch/arm/mach-at91/include/mach/at91x40.h          |   18 +-
+ arch/arm/mach-at91/include/mach/hardware.h         |    3 +-
+ arch/arm/mach-at91/include/mach/io.h               |   18 --
+ arch/arm/mach-at91/pm.c                            |   35 ++-
+ arch/arm/mach-at91/pm.h                            |   11 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |  271 ++++++++++----------
+ arch/arm/mach-at91/setup.c                         |    9 +
+ arch/avr32/mach-at32ap/at32ap700x.c                |    2 -
+ drivers/pcmcia/at91_cf.c                           |    5 +-
+ drivers/rtc/rtc-at91sam9.c                         |  103 ++++-----
+ drivers/tty/serial/atmel_serial.c                  |    2 +
+ drivers/usb/gadget/at91_udc.c                      |    9 +-
+ drivers/usb/gadget/atmel_usba_udc.c                |    6 +-
+ drivers/watchdog/at91rm9200_wdt.c                  |    8 +-
+ 63 files changed, 877 insertions(+), 682 deletions(-)
+ create mode 100644 arch/arm/mach-at91/include/mach/at91_matrix.h
+ create mode 100644 arch/arm/mach-at91/include/mach/at91_ramc.h
+ create mode 100644 arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
+
+Best regards,
+
