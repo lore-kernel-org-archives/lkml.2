@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2BQOvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:51:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab2BQOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:51:46 -0500
-Date: Fri, 17 Feb 2012 15:44:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: apw@canonical.com, arjan@linux.intel.com, fhrbata@redhat.com,
-        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        rientjes@google.com, rusty@rustcorp.com.au, tj@kernel.org,
+	id S1752847Ab2BQOwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:52:18 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52618 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab2BQOwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 09:52:17 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: dwmw2@infradead.org
+Cc: Artem.Bityutskiy@linux.intel.com, vimal.newwork@gmail.com,
+        tony@atomide.com, s-ghorai@ti.com, linux-mtd@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] vfork: make it killable
-Message-ID: <20120217144458.GB22440@redhat.com>
-References: <20120214164709.GA21178@redhat.com> <20120214164914.GF21185@redhat.com> <20120215123049.6e938eed.akpm@linux-foundation.org> <20120216150429.GB11953@redhat.com> <20120216172626.GA30393@redhat.com> <20120216172706.GC30393@redhat.com> <20120216163948.f2989a2b.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216163948.f2989a2b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: [PATCH] mtd: omap2: Release memory region in .remove function
+Date: Fri, 17 Feb 2012 15:49:32 +0100
+Message-Id: <1329490172-8043-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.9.1
+X-Provags-ID: V02:K0:oFooETUqHshyLaXowCnuzGnNFCPXInd5n4kEmcjpxpQ
+ 9hzx6yG1GBeihtWHItZi3f5RBPMPG7p0aLmf/P7GnxuWqfBT+F
+ Eq2/tADrvKFilwibE4ePwFpXBSkktXqSiioXupnQLB1psxMicm
+ 4Bu0gfOUZ937a4k6KbZ3bFT26D5KwmzBItKI1Snggk18Es9pYw
+ zHsXqT/18kQHTQNSbJMxono0xtWT5GiBXSOhhr6u3icFeDqHRC
+ w+mJxdCQhGANlocUH0mlXqCHVr4vEf6jToUlJ6S+ejghcM2QYQ
+ 9BIuhD6V8+Bf+PS7ZqmsG06a2SKM2uUtmvxVXf3LY7gy4rMlT/
+ OtvsjTGws3vSZEH/yHIxh0QygbW8Y8VaRTKOZRpVpwamkVnm1v
+ BmFZOcY6/QR8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16, Andrew Morton wrote:
->
-> On Thu, 16 Feb 2012 18:27:06 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -669,10 +669,34 @@ struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
-> >
-> >  void complete_vfork_done(struct task_struct *tsk)
-> >  {
-> > -	struct completion *vfork_done = tsk->vfork_done;
-> > +	struct completion *vfork;
-> >
-> > -	tsk->vfork_done = NULL;
-> > -	complete(vfork_done);
-> > +	task_lock(tsk);
-> > +	vfork = tsk->vfork_done;
-> > +	if (likely(vfork)) {
-> > +		tsk->vfork_done = NULL;
-> > +		complete(vfork);
-> > +	}
-> > +	task_unlock(tsk);
-> > +}
->
-> OK, so now we don't need to test tsk->vfork_done in callers.  But
-> mm_release() still does this, and it does it outside locks.
+When the driver is compiled as module, it's not possible to unload and
+reload the driver again:
 
-Yes, complete_vfork_done() can be called unconditionally,
+    omap2-nand: probe of omap2-nand.0 failed with error -16
 
-> Mistake,
-> or micro-optimisation?
+This patch fixes the problem because it releases the memory region, so
+that it can be requested again.
 
-micro-optimisation to avoid the unnecessary task_lock().
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/mtd/nand/omap2.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> If the latter, why is the lockless peek
-> race-free?
-
-If ->vfork_done != NULL, the child can never miss it. The parent
-sets this pointer before the first wakeup.
-
-However. The killed parent can clear ->vfork_done, see "if (killed)"
-int wait_for_vfork_done(). That is why complete_vfork_done() should
-re-check under task_lock().
-
-Oleg.
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index b3a883e..7dfcf68 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1132,6 +1132,7 @@ static int omap_nand_remove(struct platform_device *pdev)
+ 	/* Release NAND device, its internal structures and partitions */
+ 	nand_release(&info->mtd);
+ 	iounmap(info->nand.IO_ADDR_R);
++	release_mem_region(info->phys_base, NAND_IO_SIZE);
+ 	kfree(&info->mtd);
+ 	return 0;
+ }
+-- 
+1.7.9.1
 
