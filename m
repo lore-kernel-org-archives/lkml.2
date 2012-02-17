@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2BQO2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:28:48 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62857 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab2BQO2r (ORCPT
+	id S1752711Ab2BQOcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:32:04 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:37397
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab2BQOcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:28:47 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 2/2] rmap: anon_vma_prepare: Reduce code duplication by calling anon_vma_chain_link
-Date: Fri, 17 Feb 2012 09:28:28 -0500
-Message-Id: <1329488908-7304-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 17 Feb 2012 09:32:01 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
+Subject: [PATCH] [trivial] Documentation: Fix typo in unevictable-lru.txt
+Date: Fri, 17 Feb 2012 23:31:31 +0900
+Message-Id: <1329489091-2204-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce code duplication by calling anon_vma_chain_link from
-anon_vma_prepare.
+Correct spelling "semphore" to "semaphore" in
+Documentation/vm/unevictable-lru.txt
 
-Also move the anon_vmal_chain_link function to a more suitable location
-in the file.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- mm/rmap.c |   35 ++++++++++++++++-------------------
- 1 files changed, 16 insertions(+), 19 deletions(-)
+ Documentation/vm/unevictable-lru.txt |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 74aff97..4df80bb 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -120,6 +120,21 @@ static void anon_vma_chain_free(struct anon_vma_chain *anon_vma_chain)
- 	kmem_cache_free(anon_vma_chain_cachep, anon_vma_chain);
- }
+diff --git a/Documentation/vm/unevictable-lru.txt b/Documentation/vm/unevictable-lru.txt
+index 97bae3c..609d1a3 100644
+--- a/Documentation/vm/unevictable-lru.txt
++++ b/Documentation/vm/unevictable-lru.txt
+@@ -538,7 +538,7 @@ different reverse map mechanisms.
+      process because mlocked pages are migratable.  However, for reclaim, if
+      the page is mapped into a VM_LOCKED VMA, the scan stops.
  
-+static void anon_vma_chain_link(struct vm_area_struct *vma,
-+				struct anon_vma_chain *avc,
-+				struct anon_vma *anon_vma)
-+{
-+	avc->vma = vma;
-+	avc->anon_vma = anon_vma;
-+	list_add(&avc->same_vma, &vma->anon_vma_chain);
-+
-+	/*
-+	 * It's critical to add new vmas to the tail of the anon_vma,
-+	 * see comment in huge_memory.c:__split_huge_page().
-+	 */
-+	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+}
-+
- /**
-  * anon_vma_prepare - attach an anon_vma to a memory region
-  * @vma: the memory region in question
-@@ -175,10 +190,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
--			avc->anon_vma = anon_vma;
--			avc->vma = vma;
--			list_add(&avc->same_vma, &vma->anon_vma_chain);
--			list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+			anon_vma_chain_link(vma, avc, anon_vma);
- 			allocated = NULL;
- 			avc = NULL;
- 		}
-@@ -224,21 +236,6 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
- 		mutex_unlock(&root->mutex);
- }
+-     try_to_unmap_anon() attempts to acquire in read mode the mmap semphore of
++     try_to_unmap_anon() attempts to acquire in read mode the mmap semaphore of
+      the mm_struct to which the VMA belongs.  If this is successful, it will
+      mlock the page via mlock_vma_page() - we wouldn't have gotten to
+      try_to_unmap_anon() if the page were already mlocked - and will return
+@@ -623,7 +623,7 @@ mapped file pages with an additional argument specifing unlock versus unmap
+ processing.  Again, these functions walk the respective reverse maps looking
+ for VM_LOCKED VMAs.  When such a VMA is found for anonymous pages and file
+ pages mapped in linear VMAs, as in the try_to_unmap() case, the functions
+-attempt to acquire the associated mmap semphore, mlock the page via
++attempt to acquire the associated mmap semaphore, mlock the page via
+ mlock_vma_page() and return SWAP_MLOCK.  This effectively undoes the
+ pre-clearing of the page's PG_mlocked done by munlock_vma_page.
  
--static void anon_vma_chain_link(struct vm_area_struct *vma,
--				struct anon_vma_chain *avc,
--				struct anon_vma *anon_vma)
--{
--	avc->vma = vma;
--	avc->anon_vma = anon_vma;
--	list_add(&avc->same_vma, &vma->anon_vma_chain);
--
--	/*
--	 * It's critical to add new vmas to the tail of the anon_vma,
--	 * see comment in huge_memory.c:__split_huge_page().
--	 */
--	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
--}
--
- /*
-  * Attach the anon_vmas from src to dst.
-  * Returns 0 on success, -ENOMEM on failure.
+@@ -641,7 +641,7 @@ with it - the usual fallback position.
+ Note that try_to_munlock()'s reverse map walk must visit every VMA in a page's
+ reverse map to determine that a page is NOT mapped into any VM_LOCKED VMA.
+ However, the scan can terminate when it encounters a VM_LOCKED VMA and can
+-successfully acquire the VMA's mmap semphore for read and mlock the page.
++successfully acquire the VMA's mmap semaphore for read and mlock the page.
+ Although try_to_munlock() might be called a great many times when munlocking a
+ large region or tearing down a large address space that has been mlocked via
+ mlockall(), overall this is a fairly rare event.
 -- 
-1.7.5.4
+1.7.6.5
 
