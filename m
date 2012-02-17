@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab2BQPq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 10:46:57 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:42605 "EHLO
+	id S1753619Ab2BQPrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 10:47:19 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:42585 "EHLO
 	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751354Ab2BQPnt (ORCPT
+	by vger.kernel.org with ESMTP id S1751103Ab2BQPnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Feb 2012 10:43:49 -0500
 From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Marek Lindner <lindner_marek@yahoo.de>
-Cc: Danny Kukawka <dkukawka@suse.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+To: Jay Cliburn <jcliburn@gmail.com>
+Cc: Danny Kukawka <dkukawka@suse.de>, Chris Snook <chris.snook@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/10] batman-adv: use eth_hw_addr_random() instead of random_ether_addr()
-Date: Fri, 17 Feb 2012 16:43:27 +0100
-Message-Id: <1329493411-25750-7-git-send-email-danny.kukawka@bisect.de>
+Subject: [PATCH v2 09/10] atheros eth: set addr_assign_type if random_ether_addr() used
+Date: Fri, 17 Feb 2012 16:43:30 +0100
+Message-Id: <1329493411-25750-10-git-send-email-danny.kukawka@bisect.de>
 X-Mailer: git-send-email 1.7.8.3
 In-Reply-To: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de>
 References: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de>
@@ -25,51 +24,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use eth_hw_addr_random() instead of calling random_ether_addr()
-to set addr_assign_type correctly to NET_ADDR_RANDOM.
+Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+a random MAC address was generated and assigned to the netdevice.
 
-Remove dev_addr in interface_setup(), it's not needed anymore.
+Fix error handling in atl1c_probe(). If atl1c_read_mac_addr()
+couldn't get the hw mac address, and a random mac address get
+set return the error code. Don't go to err_eeprom in
+atl1c_probe(), use the generated MAC address in this case.
 
 Reset the state to NET_ADDR_PERM as soon as the MAC get
 changed via .ndo_set_mac_address.
 
-v2: use bitops, adapt to eth_hw_addr_random()
+v2: use bitops
 
 Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- net/batman-adv/soft-interface.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/atheros/atl1c/atl1c_hw.c   |    2 +-
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    9 ++++-----
+ drivers/net/ethernet/atheros/atlx/atl1.c        |   12 +++++++++---
+ drivers/net/ethernet/atheros/atlx/atlx.c        |    1 +
+ 4 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/net/batman-adv/soft-interface.c b/net/batman-adv/soft-interface.c
-index 987c75a..fd1d327 100644
---- a/net/batman-adv/soft-interface.c
-+++ b/net/batman-adv/soft-interface.c
-@@ -541,6 +541,7 @@ static int interface_set_mac_addr(struct net_device *dev, void *p)
- 	}
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
+index 23f2ab0..bd1667c 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_hw.c
+@@ -224,7 +224,7 @@ int atl1c_read_mac_addr(struct atl1c_hw *hw)
+ 		random_ether_addr(hw->perm_mac_addr);
  
- 	memcpy(dev->dev_addr, addr->sa_data, ETH_ALEN);
-+	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
- 	return 0;
+ 	memcpy(hw->mac_addr, hw->perm_mac_addr, sizeof(hw->perm_mac_addr));
+-	return 0;
++	return err;
  }
  
-@@ -783,7 +784,6 @@ static const struct net_device_ops bat_netdev_ops = {
- static void interface_setup(struct net_device *dev)
+ /*
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index b859124..1e4e645 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -468,6 +468,7 @@ static int atl1c_set_mac_addr(struct net_device *netdev, void *p)
+ 
+ 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+ 	memcpy(adapter->hw.mac_addr, addr->sa_data, netdev->addr_len);
++	netdev->addr_assign_type &= ~NET_ADDR_RANDOM;
+ 
+ 	atl1c_hw_set_mac_addr(&adapter->hw);
+ 
+@@ -2746,10 +2747,9 @@ static int __devinit atl1c_probe(struct pci_dev *pdev,
+ 		err = -EIO;
+ 		goto err_reset;
+ 	}
+-	if (atl1c_read_mac_addr(&adapter->hw) != 0) {
+-		err = -EIO;
+-		dev_err(&pdev->dev, "get mac address failed\n");
+-		goto err_eeprom;
++	if (atl1c_read_mac_addr(&adapter->hw)) {
++		/* got a random MAC address, set NET_ADDR_RANDOM to netdev */
++		netdev->addr_assign_type |= NET_ADDR_RANDOM;
+ 	}
+ 	memcpy(netdev->dev_addr, adapter->hw.mac_addr, netdev->addr_len);
+ 	memcpy(netdev->perm_addr, adapter->hw.mac_addr, netdev->addr_len);
+@@ -2774,7 +2774,6 @@ static int __devinit atl1c_probe(struct pci_dev *pdev,
+ err_reset:
+ err_register:
+ err_sw_init:
+-err_eeprom:
+ 	iounmap(adapter->hw.hw_addr);
+ err_init_netdev:
+ err_ioremap:
+diff --git a/drivers/net/ethernet/atheros/atlx/atl1.c b/drivers/net/ethernet/atheros/atlx/atl1.c
+index 9bd2049..40ac414 100644
+--- a/drivers/net/ethernet/atheros/atlx/atl1.c
++++ b/drivers/net/ethernet/atheros/atlx/atl1.c
+@@ -534,14 +534,17 @@ static int atl1_get_permanent_address(struct atl1_hw *hw)
+  */
+ static s32 atl1_read_mac_addr(struct atl1_hw *hw)
  {
- 	struct bat_priv *priv = netdev_priv(dev);
--	char dev_addr[ETH_ALEN];
++	s32 ret = 0;
+ 	u16 i;
  
- 	ether_setup(dev);
+-	if (atl1_get_permanent_address(hw))
++	if (atl1_get_permanent_address(hw)) {
+ 		random_ether_addr(hw->perm_mac_addr);
++		ret = 1;
++	}
  
-@@ -800,8 +800,7 @@ static void interface_setup(struct net_device *dev)
- 	dev->hard_header_len = BAT_HEADER_LEN;
+ 	for (i = 0; i < ETH_ALEN; i++)
+ 		hw->mac_addr[i] = hw->perm_mac_addr[i];
+-	return 0;
++	return ret;
+ }
  
- 	/* generate random address */
--	random_ether_addr(dev_addr);
--	memcpy(dev->dev_addr, dev_addr, ETH_ALEN);
-+	eth_hw_addr_random(dev);
+ /*
+@@ -3007,7 +3010,10 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
+ 	}
  
- 	SET_ETHTOOL_OPS(dev, &bat_ethtool_ops);
+ 	/* copy the MAC address out of the EEPROM */
+-	atl1_read_mac_addr(&adapter->hw);
++	if (atl1_read_mac_addr(&adapter->hw)) {
++		/* mark random mac */
++		netdev->addr_assign_type |= NET_ADDR_RANDOM;
++	}
+ 	memcpy(netdev->dev_addr, adapter->hw.mac_addr, netdev->addr_len);
  
+ 	if (!is_valid_ether_addr(netdev->dev_addr)) {
+diff --git a/drivers/net/ethernet/atheros/atlx/atlx.c b/drivers/net/ethernet/atheros/atlx/atlx.c
+index 8ff7411..3cd8837 100644
+--- a/drivers/net/ethernet/atheros/atlx/atlx.c
++++ b/drivers/net/ethernet/atheros/atlx/atlx.c
+@@ -84,6 +84,7 @@ static int atlx_set_mac(struct net_device *netdev, void *p)
+ 
+ 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+ 	memcpy(adapter->hw.mac_addr, addr->sa_data, netdev->addr_len);
++	netdev->addr_assign_type &= ~NET_ADDR_RANDOM;
+ 
+ 	atlx_set_mac_addr(&adapter->hw);
+ 	return 0;
 -- 
 1.7.8.3
 
