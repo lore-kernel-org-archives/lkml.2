@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2BQLsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 06:48:40 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:58739 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751438Ab2BQLsj (ORCPT
+	id S1752250Ab2BQLxu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 06:53:50 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47805 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab2BQLxt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 06:48:39 -0500
-Message-ID: <4F3E3E92.30304@ti.com>
-Date: Fri, 17 Feb 2012 13:48:34 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120215 Thunderbird/10.0.1
+	Fri, 17 Feb 2012 06:53:49 -0500
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/7] TWL6040: Regulator support
-References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1329395138.2293.206.camel@twins>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+ <20120202013826.20844.16743.stgit@kitami.mtv.corp.google.com> <1329395138.2293.206.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 17 Feb 2012 03:53:18 -0800
+Message-ID: <CAPM31RL6OffvQ5ZfWXo8SPaiY0LsNX=2bHsMkEngVH1_hfdXyg@mail.gmail.com>
+Subject: Re: [RFC PATCH 04/14] sched: maintain the load contribution of
+ blocked entities
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Feb 16, 2012 at 4:25 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
+>> +static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
+>> +                                                long load_contrib)
+>> +{
+>> +       if (likely(load_contrib < cfs_rq->blocked_load_avg))
+>> +               cfs_rq->blocked_load_avg -= load_contrib;
+>> +       else
+>> +               cfs_rq->blocked_load_avg = 0;
+>> +}
+>> +
+>>  /* Update a sched_entity's runnable average */
+>> -static inline void update_entity_load_avg(struct sched_entity *se)
+>> +static inline void update_entity_load_avg(struct sched_entity *se,
+>> +                                         int update_cfs_rq)
+>>  {
+>>         struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>>         long contrib_delta;
+>> @@ -1106,8 +1130,34 @@ static inline void update_entity_load_avg(struct sched_entity *se)
+>>                 return;
+>>
+>>         contrib_delta = __update_entity_load_avg_contrib(se);
+>> +
+>> +       if (!update_cfs_rq)
+>> +               return;
+>> +
+>>         if (se->on_rq)
+>>                 cfs_rq->runnable_load_avg += contrib_delta;
+>> +       else
+>> +               subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
+>> +}
+>
+> So that last bit is add_blocked_load_contrib(), right?
 
-On 02/10/2012 12:05 PM, Peter Ujfalusi wrote:
-> Hello,
-> 
-> This series depends on the V3 of MFD: twl6040: Conversion to i2c driver set.
-> 
-> In order to have proper regulator support for twl6040 on SDP4430, and
-> PandaBoards I needed to add support for the V1V8, and V2V1 SMPS supplies from
-> twl6030.
-> The configuration on both boards (and the TRM recommendations) are the same, so
-> it make sens to have the V1V8, V2V1 supply configured in the twl-common to avoid
-> duplicated code in board files.
-> 
-> The last patch in this series was part of the V2 of MFD: twl6040: Conversion to
-> i2c driver set. I have added Mark's Reviewd-by tag, and also addressed his
-> comment regarding to the supplies member of the twl6040 struct (no need to
-> allocate it separately).
-> 
-> Regards,
-> Peter
-> ---
-> Peter Ujfalusi (7):
->   OMAP: 4430SDP: Correct fixed regulator device ID
->   regulator: twl-regulator: Add fixed LDO for V1V8, V2V1 supply
->   MFD: twl-core: regulator configuration for twl6030 V1V8, V2V1 SMPS
->   OMAP4: twl-common: Add twl6030 V1V8, V2V1 SMPS common configuration
->   OMAP: 4430SDP: Use common configuration for V1V8, V2V1 supplies
->   OMAP: omap4panda: Use common configuration for V1V8, V2V1 supplies
->   MFD: TWL6040: Add regulator support for VIO, V2V1 supplies
-> 
->  arch/arm/mach-omap2/board-4430sdp.c    |   11 ++++++--
->  arch/arm/mach-omap2/board-omap4panda.c |    4 ++-
->  arch/arm/mach-omap2/twl-common.c       |   43 ++++++++++++++++++++++++++++++++
->  arch/arm/mach-omap2/twl-common.h       |    2 +
->  drivers/mfd/twl-core.c                 |   10 +++++++
->  drivers/mfd/twl6040-core.c             |   33 +++++++++++++++++++++---
->  drivers/regulator/twl-regulator.c      |    2 +
->  include/linux/i2c/twl.h                |    2 +
->  include/linux/mfd/twl6040.h            |    2 +
->  9 files changed, 101 insertions(+), 8 deletions(-)
+Yes, although contrib_delta is signed.
 
-It has been a week since I have sent this series. It would be great if
-this be on time for 3.4 merge window (with the depending series which
-converts the twl6040 mfd part into i2c driver).
+I suppose this looks a little funny but there's a good explanation:
+When adding or removing a contribution to blocked_load_sum we have to
+be careful since rounding errors may mean the delta to our
+contribution and the delta to our portion of the blocked_load_sum may
+be off by a few bits.  Being low is fine since it's constantly
+decaying to zero so any error term is not long for this world -- but
+we do want to make sure we don't underflow in the other direction.
 
-Thank you,
-Péter
+This means any time we remove we have to do the whole
+	"if (likely(load_contrib < cfs_rq->blocked_load_avg))
+		cfs_rq->blocked_load_avg -= load_contrib;
+	else
+		cfs_rq->blocked_load_avg = 0"
+thing.
+
+Typically we only care about doing this on removing load (e.g. local
+wake-up); since we have no error going in the opposite direction; so
+we end up with subtract_blocked_load_contrib to handle the first case.
+
+Coming back to the use of it here:
+Since contrib_delta is on a freshly computed load_contribution we have
+to take the same care as when we are removing; but luckily we already
+have subtract_blocked_load_contrib from dealing with that everywhere
+else.  So we just re-use it and flip the sign.
+
+We could call it add everywhere else (and again flip the sign) but
+that's less intuitive since we really are only looking to (safely) remove in
+those cases.
