@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab2BQBA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:00:58 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33787 "EHLO
+	id S1756883Ab2BQBAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:00:14 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58559 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757125Ab2BQBAq (ORCPT
+	by vger.kernel.org with ESMTP id S1756828Ab2BQBAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:46 -0500
-X-Sasl-enc: Ab3Twh9HdXkNjg0P/sQ5dB+INT9ex7Yng6+CLAC0X9M/ 1329440445
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:36 2012
-Message-Id: <20120217005536.880797019@linuxfoundation.org>
+	Thu, 16 Feb 2012 20:00:11 -0500
+X-Sasl-enc: U+n80A8S8BP817XiCx9IBT+uX+/Ha+ogyyMzvEK+ueJf 1329440410
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:34 2012
+Message-Id: <20120217005534.460345654@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:55 -0800
+Date: Thu, 16 Feb 2012 16:55:37 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [21/28] crypto: sha512 - Avoid stack bloat on i386
+        alan@lxorguk.ukuu.org.uk,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [03/28] perf evsel: Fix an issue where perf report fails to show the proper percentage
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,111 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
 
-commit 3a92d687c8015860a19213e3c102cad6b722f83c upstream.
+commit a4a03fc7ef89020baca4f19174e6a43767c6d78a upstream.
 
-Unfortunately in reducing W from 80 to 16 we ended up unrolling
-the loop twice.  As gcc has issues dealing with 64-bit ops on
-i386 this means that we end up using even more stack space (>1K).
+This patch fixes an issue where perf report shows nan% for certain
+perf.data files. The below is from a report for a do_fork probe:
 
-This patch solves the W reduction by moving LOAD_OP/BLEND_OP
-into the loop itself, thus avoiding the need to duplicate it.
+   -nan%           sshd  [kernel.kallsyms]  [k] do_fork
+   -nan%    packagekitd  [kernel.kallsyms]  [k] do_fork
+   -nan%    dbus-daemon  [kernel.kallsyms]  [k] do_fork
+   -nan%           bash  [kernel.kallsyms]  [k] do_fork
 
-While the stack space still isn't great (>0.5K) it is at least
-in the same ball park as the amount of stack used for our C sha1
-implementation.
+A git bisect shows commit f3bda2c as the cause. However, looking back
+through the git history, I saw commit 640c03c which seems to have
+removed the required initialization for perf_sample->period. The problem
+only started showing after commit f3bda2c. The below patch re-introduces
+the initialization and it fixes the problem for me.
 
-Note that this patch basically reverts to the original code so
-the diff looks bigger than it really is.
+With the below patch, for the same perf.data:
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+  73.08%             bash  [kernel.kallsyms]  [k] do_fork
+   8.97%      11-dhclient  [kernel.kallsyms]  [k] do_fork
+   6.41%             sshd  [kernel.kallsyms]  [k] do_fork
+   3.85%        20-chrony  [kernel.kallsyms]  [k] do_fork
+   2.56%         sendmail  [kernel.kallsyms]  [k] do_fork
+
+This patch applies over current linux-tip commit 9949284.
+
+Problem introduced in:
+
+$ git describe 640c03c
+v2.6.37-rc3-83-g640c03c
+
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120203170113.5190.25558.stgit@localhost6.localdomain6
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/sha512_generic.c |   68 ++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 36 deletions(-)
+ tools/perf/util/evsel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -89,46 +89,42 @@ sha512_transform(u64 *state, const u8 *i
- 	int i;
- 	u64 W[16];
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -390,6 +390,7 @@ int perf_event__parse_sample(const union
  
--	/* load the input */
--        for (i = 0; i < 16; i++)
--                LOAD_OP(i, W, input);
--
- 	/* load the state into our registers */
- 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
- 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
+ 	data->cpu = data->pid = data->tid = -1;
+ 	data->stream_id = data->id = data->time = -1ULL;
++	data->period = 1;
  
--#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
--	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--	for (i = 0; i < 16; i += 8) {
--		SHA512_0_15(i, a, b, c, d, e, f, g, h);
--		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
--	}
--	for (i = 16; i < 80; i += 8) {
--		SHA512_16_79(i, a, b, c, d, e, f, g, h);
--		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
-+	/* now iterate */
-+	for (i=0; i<80; i+=8) {
-+		if (!(i & 8)) {
-+			int j;
-+
-+			if (i < 16) {
-+				/* load the input */
-+				for (j = 0; j < 16; j++)
-+					LOAD_OP(i + j, W, input);
-+			} else {
-+				for (j = 0; j < 16; j++) {
-+					BLEND_OP(i + j, W);
-+				}
-+			}
-+		}
-+
-+		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
-+		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
-+		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
-+		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
-+		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
-+		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
-+		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
-+		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
-+		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
- 	}
- 
- 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
+ 	if (event->header.type != PERF_RECORD_SAMPLE) {
+ 		if (!sample_id_all)
 
 
