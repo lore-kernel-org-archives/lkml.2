@@ -1,258 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab2BQT4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 14:56:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43049 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab2BQT4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 14:56:51 -0500
-Message-ID: <4F3EB0FD.1060501@openvz.org>
-Date: Fri, 17 Feb 2012 23:56:45 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+	id S1753306Ab2BQUMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 15:12:37 -0500
+Received: from mail.lang.hm ([64.81.33.126]:60720 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751960Ab2BQUMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 15:12:36 -0500
+Date: Fri, 17 Feb 2012 12:12:35 -0800 (PST)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: different speed cores in one system (aks arm big.LITTLE)
+Message-ID: <alpine.DEB.2.02.1202171149390.18831@asgard.lang.hm>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock splitting
-References: <20120215224221.22050.80605.stgit@zurg> <alpine.LSU.2.00.1202151815180.19722@eggly.anvils> <4F3C8B67.6090500@openvz.org> <alpine.LSU.2.00.1202161235430.2269@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202161235430.2269@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Thu, 16 Feb 2012, Konstantin Khlebnikov wrote:
->> Hugh Dickins wrote:
->>> On Thu, 16 Feb 2012, Konstantin Khlebnikov wrote:
->>>>
->>>> Finally, there appears some new locking primitives for decorating
->>>> lru_lock splitting logic.
->>>> Final patch actually splits zone->lru_lock into small per-book pieces.
->>>
->>> Well done, it looks like you've beaten me by a few days: my per-memcg
->>> per-zone locking patches are now split up and ready, except for the
->>> commit comments and performance numbers to support them.
->>
->> Heh, nice. How do you organize link from page to "book"?
->> My patchset still uses page_cgroup, and I afraid something broken in locking
->> around it.
->
-> By page_cgroup, yes.  The locking is not straightforward; but was pretty
-> much impossible in the days of PageCgroupAcctLRU, we had to get rid of
-> that to move forward.
+Following an article on lwn about more arm systems with different speed 
+cores in them ( subscribers: http://lwn.net/Articles/481055 
+non-subscribers: http://lwn.net/SubscriberLink/481055/cc3426371b328030 )
 
-Hmm, my old rhe6-based code has no extra locking except spited lru-lock
-and optimized resource counter. Though it does not account mapped pages for cgroup,
-but it is not so easy and seems completely useless in real life.
+It seems to me that the special case approach of pairing a 'fast' and 
+'slow' core together is a hack that will work with this particular part, 
+but not work more generally. The approaches discussed seem to be more 
+complicated than they needed to be. I've outlined my thoughts in the 
+comments there, but figured I'd post here to get the attention of the 
+scheduler folks.
 
->
-> Given your encouragement below, I'm thinking to post my patchset once
-> I've added in the patch comments, in a couple of days.  I won't wait
-> to include any performance results, those will have to follow.
->
-> So I'd rather work on those comments to the relevant patches,
-> than try to go into it now without showing them.
->
->>
->>>
->>> Or perhaps what we've been doing is orthogonal: I've not glanced beyond
->>> your Subjects yet, but those do look very familiar from my own work -
->>> though we're still using "lruvec"s rather than "book"s.
->>
->> I think, good name is always good. "book" sounds much better than
->> "mem_cgroup_zone".
->
-> "book" is fun, but I don't find it helpful: I prefer the current, more
-> boring "lruvec".  I guess I place a higher value on a book than as just
-> a bundle of pages, so hardly see the connection!
->
-> If we were designing a new user interface paradigm, then "book" might
-> be a great name for an object; but this is all just low-level mechanism.
+First off, even on Intel/AMD x86 systems we have (or soon will have) the 
+potential for different cores to be run at different speeds, including 
+thermal/current limitations that make it so that if you turn off some 
+cores you can run others at higher speeds. This means that the problem is 
+not an ARM specific problem.
 
-In my patchset book contains all required information for reclaimer.
-So, It not very low-level object, it much more than lru-vector.
-Thus, I want to call it with a short single-word name.
-It should not has a second meaning in the kernel, maybe "pile" =)
-if you want to reserve "book" for something more delicious.
+As I understand the current scheduler to work, there are two 'layers' to 
+the scheduler.
 
->
-> I was a bit disappointed at how much of your patchset is merely renaming.
-> I think it would be better if you cut back on that, then if you're really
-> keen on the "book" naming, do that in a final "lruvec" to "book" patch
-> that people can take or leave as they please.
+The first 'layer' runs independantly on each core (using cpu local 
+variables for performance) and schedules the next task to run from the 
+tasks assigned to that core.
 
-There only one renaming patch, and it not so big.
-Plus my "book", "pages_lru" and "pages_count" totally unique,
-there no other things in the kernel with these names.
-This is very is handy for grep-ing.
+The second 'layer' moves tasks from one core to another. Ideally it runs 
+when a core is otherwise idle, but it looks at the load on all the cores 
+and can choose to 'pull' work from another core to itself. Part of the 
+logic in deciding if it should pull a job could be considering the NUMA 
+positioning of the old and new core to decide if it's a benefit to pull it 
+or not.
 
->
-> (I was impressed to see that lwn.net already has a "Book review"
-> headlining; but then it turned out not to be of your work ;)
->
-> And disappointed it wasn't built on linux-next mm, so I had to revert the
-> cleanups I've already got in there.  But you may well have been wise to
-> post against a more stable upstream tree: linux-next shifts from day to
-> day, and is not always good - I did a lot on rc2-next-20120210, that was
-> a good tree, but rc3-next-20120210 had a number of issues (especially on
-> PowerPC, even reverting Arjan's parallel cpu bringup).  I'll probably
-> try moving on to tonight's, but don't know what to expect of it.
 
-I work on top of current Linus tree. I'll rebase it to linux-next.
+I believe that unless one tasks (i.e. thread) is using more CPU than the 
+slowest core can provide the current scheduler will 'just work' in the 
+presense of cores of differing speeds, a slower core will get less work 
+done, but that will just mean that it's utilization is higher for the same 
+amount of work, so work will migrate around until the utilization is 
+rougly the same.
 
->
->> Plus I want to split mm and mem-cg as much as possible, like this done in
->> sched-grouping.
->> After my patchset there no links from "book" to "memcg", so now there can
->> exist books of
->> different nature. It would be nice to use this memory management not only for
->> cgroups.
->> For example, what do you think about per-struct-user memory controller,
->> "rt" prio memory group, which never pruned by "normal" prio memory group
->> users.
->> or per-session-id memory auto-grouping =)
->
-> I'm not thinking of it at all - and probably not as interested in a forest
-> of cgroups as you guys are.  But I don't see "lruvec" as any more tied to
-> memcg than "book".
->
+I think it may be worth adding a check to the 'slow path' rebalancing 
+algorithm, probably in a similar place to where the NUMA checks are made 
+that will scale the tasks utilization to see if there is an advantage in 
+pulling a task that's maxing out one core onto the new core (if the new 
+core is faster, it can be a win), possibly adding a second check to make 
+sure that you aren't migrating a task to a core that's not fast enough.
 
-Actually, I'm not very interested in a cgroups too, they are very limited and bloated.
-Currently here required simple and effective basis for inventing more intelligent
-memory management. It must be automatic, and work without hundreds tuning handles.
+With this additional type of check, I think that the current scheduler 
+will work well on systems with different speed cores, including drastic 
+differences.
 
->>
->>>
->>> Anyway, I should be well-placed to review what you've done, and had
->>> better switch away from my own patches to testing and reviewing yours
->>> now, checking if we've caught anything that you're missing.  Or maybe
->>> it'll be worth posting mine anyway, we'll see: I'll look to yours first.
->>
->> Competition is good. It would be nice to see your patches too, if they are as
->> ready as my.
->
-> Thanks, I'll get on with them.
->
-> It is very very striking, the extent to which we have done the same:
-> with just args in a different order, or my page_relock_lruvec() versus
-> your relock_page_book().  As if I'd stolen your patches and then made
-> little mods to conceal the traces - I may need Ying to testify in a
-> court of law that I didn't, I gave her a copy of what I had on Monday!
->
-> (A lot of my cleanups, which converge with yours, were not in the rollup
-> I posted on December 5th: they came about as I tried to turn that into a
-> palatable series.)
->
-> If you move to lruvec, or I to book, then it will be easier for people
-> to compare the two.  I expect we'll find rather more difference once I
-> get deeper in (but will concentrate on mine for the moment): probably
-> when it comes to the locking, which was our whole motivation.
->
->>
->> I already found two bugs in my patchset:
->> in "mm: unify inactive_list_is_low()" NR_ACTIVE_* instead of LRU_ACTIVE_*
->> and in "mm: handle book relocks on lumpy reclaim" I forget locking in
->> isolate_lru_pages()
->> [ but with CONFIG_COMPACTION=y this branch never used, as I guess ]
->
-> I included those LRU_ instead of NR_ changes in what I ran up last night;
-> but didn't attempt to fix up your isolate_lru_pages() locking, and indeed
-> very soon crashed there, after lots of list_del warnings.
->
-> Yours are not the only patches I was testing in that tree, I tried to
-> gather several other series which I should be reviewing if I ever have
-> time: Kamezawa-san's page cgroup diet 6, Xiao Guangrong's 4 prio_tree
-> cleanups, your 3 radix_tree changes, your 6 shmem changes, your 4 memcg
-> miscellaneous, and then your 15 books.
->
-> The tree before your final 15 did well under pressure, until I tried to
-> rmdir one of the cgroups afterwards: then it crashed nastily, I'll have
-> to bisect into that, probably either Kamezawa's or your memcg changes.
->
-> The tree with your final 15 booted up fine, but very soon crashed under
-> load: I don't think I'll spend more time on that for now, probably you
-> need to work on your locking while I work on my descriptions.
+At that point, the remaining question is the policy question of what cores 
+should be powered up/down, clockspeeds changed, etc. Since that sort of 
+thing is very machine and workload specific, it seems to me that the 
+obvious answer is that a userspace daemon working completely independantly 
+to the kernel should watch the system and make the policy decisions to 
+reconfigure the CPUs (very similar to how userspace power management tools 
+work today), and 'just' extend the ability to change clock speeds to the 
+ability to power down particular cores entirely.
 
-Yeah, I found many bugs. Uptodate version there: there https://github.com/koct9i/linux
-I'll send v2 to review after testing.
+The lwn article positions this as a super complex thing to figure out and 
+is talking about doing hacks like pairing a fast and slow core togeather 
+to only use one of the two at a time and consider moving work from one to 
+the other 'just' a clockspeed change. This seems to me to be a far more 
+complex approach than just adding the extra check to the scheduler slow 
+path and doing the power management in userspace.
 
-I invented more clear locking. It does not interacts with memcg magic,
-and does not adds overhead, except one spin_unlock_wait(old_book->lru_lock) in mem_cgroup_move_account().
+Thoughts?
 
->
-> Hugh
->
->>
->>>
->>>> All this code currently *completely untested*, but seems like it already
->>>> can work.
->>>
->>> Oh, perhaps I'm ahead of you after all :)
->>
->> Not exactly, I already wrote the same code more than half-year ago.
->> So, it wasn't absolutely fair competition from the start. =)
->>
->>>
->>>>
->>>> After that, there two options how manage struct book on mem-cgroup
->>>> create/destroy:
->>>> a) [ currently implemented ] allocate and release by rcu.
->>>>      Thus lock_page_book() will be protected with rcu_read_lock().
->>>> b) allocate and never release struct book, reuse them after rcu grace
->>>> period.
->>>>      It allows to avoid some rcu_read_lock()/rcu_read_unlock() calls on
->>>> hot paths.
->>>>
->>>>
->>>> Motivation:
->>>> I wrote the similar memory controller for our rhel6-based
->>>> openvz/virtuozzo kernel,
->>>> including splitted lru-locks and some other [patented LOL] cool stuff.
->>>> [ common descrioption without techical details:
->>>> http://wiki.openvz.org/VSwap ]
->>>> That kernel already in production and rather stable for a long time.
->>>>
->>>> ---
->>>>
->>>> Konstantin Khlebnikov (15):
->>>>         mm: rename struct lruvec into struct book
->>>>         mm: memory bookkeeping core
->>>>         mm: add book->pages_count
->>>>         mm: unify inactive_list_is_low()
->>>>         mm: add book->reclaim_stat
->>>>         mm: kill struct mem_cgroup_zone
->>>>         mm: move page-to-book translation upper
->>>>         mm: introduce book locking primitives
->>>>         mm: handle book relocks on lumpy reclaim
->>>>         mm: handle book relocks in compaction
->>>>         mm: handle book relock in memory controller
->>>>         mm: optimize books in update_page_reclaim_stat()
->>>>         mm: optimize books in pagevec_lru_move_fn()
->>>>         mm: optimize putback for 0-order reclaim
->>>>         mm: split zone->lru_lock
->>>>
->>>>
->>>>    include/linux/memcontrol.h |   52 -------
->>>>    include/linux/mm_inline.h  |  222 ++++++++++++++++++++++++++++-
->>>>    include/linux/mmzone.h     |   26 ++-
->>>>    include/linux/swap.h       |    2
->>>>    init/Kconfig               |    4 +
->>>>    mm/compaction.c            |   35 +++--
->>>>    mm/huge_memory.c           |   10 +
->>>>    mm/memcontrol.c            |  238 ++++++++++---------------------
->>>>    mm/page_alloc.c            |   20 ++-
->>>>    mm/swap.c                  |  128 ++++++-----------
->>>>    mm/vmscan.c                |  334
->>>> +++++++++++++++++++-------------------------
->>>>    11 files changed, 554 insertions(+), 517 deletions(-)
->>>
->>> That's a very familiar list of files to me!
->>>
->>> Hugh
+Am I completely misunderstanding how the scheduler works? (I 
+know I'm _drastically_ simplifying it)
 
+Am I completely off base here? or am I seeing something that the ARM folks 
+have been missing because they are too close to the problem?
+
+David Lang
