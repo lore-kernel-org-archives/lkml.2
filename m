@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2BQN3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 08:29:46 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10392 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab2BQN3p (ORCPT
+	id S1751568Ab2BQNcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 08:32:15 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34219 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2BQNcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 08:29:45 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 17 Feb 2012 05:29:45 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
-        lars@metafoo.de, linux-kernel@vger.kernel.org
-Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V1] regmap: Bypassing cache when initializing cache
-Date: Fri, 17 Feb 2012 18:57:26 +0530
-Message-Id: <1329485246-14226-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 17 Feb 2012 08:32:14 -0500
+Message-ID: <4F3E56DA.3050203@openvz.org>
+Date: Fri, 17 Feb 2012 17:32:10 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
+References: <4F3E42E0.4030108@openvz.org>	<20120217120815.25909.15632.stgit@zurg> <20120217234508.8293a84fb3ebb7fed6d60ec3@canb.auug.org.au>
+In-Reply-To: <20120217234508.8293a84fb3ebb7fed6d60ec3@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During regcache_init, if client has not passed the
-default data of cached register then it is directly
-read from the hw to initialize cache. This hw register
-read happens before cache ops are initialized and hence
-avoiding register read to check for the data available
-on cache or not by enabling flag of cache_bypass.
+Stephen Rothwell wrote:
+> Hi Konstantin,
+>
+> On Fri, 17 Feb 2012 16:08:15 +0400 Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>>
+>> Config NUMA must be defined for all architectures,
+>> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
+>> Some arch-specific Kconfig already has this stub.
+>> This patch adds it to all remaining.
+>
+> Why not add it somewhere generic (like mm/Kconfig, maybe) and then it can
+> be removed from the architecture specific places over time (if necessary
+> - I am pretty sure it is ok to have it there twice)?
+>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Observed that regcache_hw_init() is gettign called before
-cache->ops->init() hapens. The function regcache_hw_init()
-is calling the regmap_bulk_read() which internally calls the
-regcache-read() and ending with cache->ops->read() and this
-cause of system crash as the cache ops are not initialized.
-With this patch, avoiding the regcache-read() from
-regmap_bulk_read() by enabling cache bypass.
+Different architectures has different dependencies for NUMA.
 
-
- drivers/base/regmap/regcache.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index a10e81c..853dfff 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -35,12 +35,17 @@ static int regcache_hw_init(struct regmap *map)
- 		return -EINVAL;
- 
- 	if (!map->reg_defaults_raw) {
-+		u32 cache_bypass = map->cache_bypass;
- 		dev_warn(map->dev, "No cache defaults, reading back from HW\n");
-+
-+		/* Bypass the cache access till data read from HW*/
-+		map->cache_bypass = 1;
- 		tmp_buf = kmalloc(map->cache_size_raw, GFP_KERNEL);
- 		if (!tmp_buf)
- 			return -EINVAL;
- 		ret = regmap_bulk_read(map, 0, tmp_buf,
- 				       map->num_reg_defaults_raw);
-+		map->cache_bypass = cache_bypass;
- 		if (ret < 0) {
- 			kfree(tmp_buf);
- 			return ret;
--- 
-1.7.1.1
-
+Seems like Kconfig allow config option duplication, but it use default state from first.
+If we add "config NUMA\n def_bool n" somewhere in generic Kconfig, default will be n if
+Kconfig see this declaration first.
