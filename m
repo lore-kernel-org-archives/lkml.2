@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2BQDao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:30:44 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:39790
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751395Ab2BQDam (ORCPT
+	id S1754089Ab2BQDbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:31:41 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48616 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753098Ab2BQDbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:30:42 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I936eK542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h93fhbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Qiang-B32616 <B32616@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Topic: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Index: AQHM66YJdm8vLXgwC0qeBDGVItKLnJZAprgA//+pphCAAIJUAP//ncEw
-Date: Fri, 17 Feb 2012 03:30:36 +0000
-Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB702C9DB@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1329284944-17943-1-git-send-email-qiang.liu@freescale.com>
-	 <1329439216.2892.36.camel@pasglop>
-	 <BCB48C05FCE8BC4D9E61E841ECBE6DB702B97D@039-SN2MPN1-013.039d.mgd.msft.net>
- <1329448660.2892.42.camel@pasglop>
-In-Reply-To: <1329448660.2892.42.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.94]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 Feb 2012 22:31:39 -0500
+X-Sasl-enc: AK8S5JrUX4F1Sqsqr+l+8GoiYouyQ9Y86aBjgZkf/Zbu 1329449498
+Date: Thu, 16 Feb 2012 19:30:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [21/28] crypto: sha512 - Avoid stack bloat on i386
+Message-ID: <20120217033054.GA22823@kroah.com>
+References: <20120217021718.GA21573@kroah.com>
+ <20120217022806.GA4980@gondor.apana.org.au>
+ <20120217023742.GA21909@kroah.com>
+ <20120216.215431.1415875817745523201.davem@davemloft.net>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216.215431.1415875817745523201.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1H3UovK029190
 
-> -----Original Message-----
-> From: Benjamin Herrenschmidt [mailto:benh@kernel.crashing.org]
-> Sent: Friday, February 17, 2012 11:18 AM
-> To: Liu Qiang-B32616
-> Cc: jgarzik@pobox.com; linux-ide@vger.kernel.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+On Thu, Feb 16, 2012 at 09:54:31PM -0500, David Miller wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> Date: Thu, 16 Feb 2012 18:37:42 -0800
 > 
-> On Fri, 2012-02-17 at 01:54 +0000, Liu Qiang-B32616 wrote:
-> > The default will be set in a common interface
-> > fsl_sata_set_irq_coalescing when initialize the controller. This
-> > interface will check the range of intr count and ticks and make sure
-> the values are reasonably.
+> > On Fri, Feb 17, 2012 at 01:28:06PM +1100, Herbert Xu wrote:
+> >> On Thu, Feb 16, 2012 at 06:17:18PM -0800, Greg KH wrote:
+> >> > On Thu, Feb 16, 2012 at 08:52:31PM -0500, David Miller wrote:
+> >> > > From: Greg KH <gregkh@linuxfoundation.org>
+> >> > > Date: Thu, 16 Feb 2012 16:55:55 -0800
+> >> > > 
+> >> > > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> >> > > 
+> >> > > This causes a stack usage regression on sparc that Herbert
+> >> > > is in the middle of merging a fix for into Linus's tree.
+> >> > 
+> >> > Ick.  Any idea when that will hit Linus's tree?  If it's before next
+> >> > Monday, we are good, and I can queue it up here, if not, then I'll drop
+> >> > this and have to add it back later.
+> >> 
+> >> I've pushed it though it hasn't been pulled yet:
+> >> 
+> >> The commit ID is f2ea0f5f04c97b48c88edccba52b0682fbe45087.
+> > 
+> > Thanks, I'll watch out for it.
 > 
-> Allright, but the current defaults are basically no coalescing right ?
-> 
-> > It's hard to find a aggressive value to adapt all scenarios, so I use
-> > echo to adjust the value. I remember P5020 have some performance issue,
-> I will check it.
-> > BTW, which filesystem do you use? Ext2 is lower than ext4 because
-> > metadata is continuously wrote to disk. You can try ext4 or xfs.
-> 
-> ext3 at the moment, I plan to switch to ext4 when I finish that fsck pass
-> which is taking hours... I am not aware of the 5020 performance issues,
-> is this something documented and/or fixable ?
-> 
+> Greg, keep in mind that this stuff is in your 3.0-stable series too.
 
-My patch may not meet your requirement:(
-For your performance requirement, I suggest use ext4 filesystem and SSD.
+I just checked, and I also have this in the 2.6.32-stable tree, which I
+haven't sent out for review, but will next week.
 
-Thanks.
+Thanks for pointing it out.
 
-> Cheers,
-> Ben.
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
