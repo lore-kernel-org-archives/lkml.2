@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2BQUPd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 15:15:33 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60903 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab2BQUPc (ORCPT
+	id S1753735Ab2BQUSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 15:18:00 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:54258 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab2BQUR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 15:15:32 -0500
-MIME-Version: 1.0
-From: Sebastiaan de Haan <sebastiaan@sebastiaandehaan.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sebastiaan de Haan <sebastiaan@sebastiaandehaan.org>
-Subject: [PATCH] staging: wlan-ng: p80211netdev.c: fixed checkpatch error
-Date: Fri, 17 Feb 2012 21:14:55 +0100
-Message-Id: <1329509695-9417-1-git-send-email-sebastiaan@sebastiaandehaan.org>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 17 Feb 2012 15:17:59 -0500
+Date: Fri, 17 Feb 2012 15:17:23 -0500 (EST)
+Message-Id: <20120217.151723.439729747666738170.davem@davemloft.net>
+To: richard@nod.at
+Cc: danny.kukawka@bisect.de, jdike@addtoit.com, dkukawka@suse.de,
+        akpm@linux-foundation.org, jpirko@redhat.com,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/10] UML net: set addr_assign_type if
+ random_ether_addr() used
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F3E787D.4020103@nod.at>
+References: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de>
+	<1329493411-25750-11-git-send-email-danny.kukawka@bisect.de>
+	<4F3E787D.4020103@nod.at>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 17 Feb 2012 12:17:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New kernel developer inspired by the 2010 FOSDEM talk. Running checkpatch on
-p80211netdev.c gave the error: p80211netdev.c:153: ERROR: "foo * bar" should
-be "foo *bar". Fixed it by doing what was suggested.
+From: Richard Weinberger <richard@nod.at>
+Date: Fri, 17 Feb 2012 16:55:41 +0100
 
-Signed-off-by: Sebastiaan de Haan <sebastiaan@sebastiaandehaan.org>
----
- drivers/staging/wlan-ng/p80211netdev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On 17.02.2012 16:43, Danny Kukawka wrote:
+>> Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+>> a random MAC address was generated and assigned to the netdevice.
+>>
+>> Return state from setup_etheraddr() about returning a random
+>> MAC address or not and check this state in eth_configure().
+>>
+>> Signed-off-by: Danny Kukawka<danny.kukawka@bisect.de>
+> 
+> Acked-by: Richard Weinberger <richard@nod.at>
+> 
+> Do you want me to pick up this patch or is it supposed to go though
+> the net tree?
 
-diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-index 14bfeb2..0f51b4a 100644
---- a/drivers/staging/wlan-ng/p80211netdev.c
-+++ b/drivers/staging/wlan-ng/p80211netdev.c
-@@ -150,7 +150,7 @@ static int p80211knetdev_init(netdevice_t *netdev)
- * Returns:
- *	the address of the statistics structure
- ----------------------------------------------------------------*/
--static struct net_device_stats *p80211knetdev_get_stats(netdevice_t * netdev)
-+static struct net_device_stats *p80211knetdev_get_stats(netdevice_t *netdev)
- {
- 	wlandevice_t *wlandev = netdev->ml_priv;
- 
--- 
-1.7.2.5
-
+I'll take care of it.
