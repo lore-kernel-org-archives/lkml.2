@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab2BQBAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:00:35 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40289 "EHLO
+	id S1757192Ab2BQBA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:00:58 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:33787 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756964Ab2BQBAc (ORCPT
+	by vger.kernel.org with ESMTP id S1757125Ab2BQBAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:32 -0500
-X-Sasl-enc: Njlf7WT5Ad2QvUR68GB1KcMOUsQIBczBv0niJDgASZRk 1329440431
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:37 2012
-Message-Id: <20120217005537.127774422@linuxfoundation.org>
+	Thu, 16 Feb 2012 20:00:46 -0500
+X-Sasl-enc: Ab3Twh9HdXkNjg0P/sQ5dB+INT9ex7Yng6+CLAC0X9M/ 1329440445
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:36 2012
+Message-Id: <20120217005536.880797019@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:57 -0800
+Date: Thu, 16 Feb 2012 16:55:55 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel T Chen <crimsun@ubuntu.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [23/28] ALSA: intel8x0: Fix default inaudible sound on Gateway M520
+        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [21/28] crypto: sha512 - Avoid stack bloat on i386
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 27c3afe6e1cf129faac90405121203962da08ff4 upstream.
+commit 3a92d687c8015860a19213e3c102cad6b722f83c upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/930842
+Unfortunately in reducing W from 80 to 16 we ended up unrolling
+the loop twice.  As gcc has issues dealing with 64-bit ops on
+i386 this means that we end up using even more stack space (>1K).
 
-The reporter states that audio is inaudible by default without muting
-'External Amplifier'. Add a quirk to handle his SSID so that changing
-the control is not necessary.
+This patch solves the W reduction by moving LOAD_OP/BLEND_OP
+into the loop itself, thus avoiding the need to duplicate it.
 
-Reported-and-tested-by: Benjamin Carlson <elderbubba0810@gmail.com>
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+While the stack space still isn't great (>0.5K) it is at least
+in the same ball park as the amount of stack used for our C sha1
+implementation.
+
+Note that this patch basically reverts to the original code so
+the diff looks bigger than it really is.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/intel8x0.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ crypto/sha512_generic.c |   68 ++++++++++++++++++++++--------------------------
+ 1 file changed, 32 insertions(+), 36 deletions(-)
 
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -2102,6 +2102,12 @@ static struct ac97_quirk ac97_quirks[] _
- 	},
- 	{
- 		.subvendor = 0x161f,
-+		.subdevice = 0x202f,
-+		.name = "Gateway M520",
-+		.type = AC97_TUNE_INV_EAPD
-+	},
-+	{
-+		.subvendor = 0x161f,
- 		.subdevice = 0x203a,
- 		.name = "Gateway 4525GZ",		/* AD1981B */
- 		.type = AC97_TUNE_INV_EAPD
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -89,46 +89,42 @@ sha512_transform(u64 *state, const u8 *i
+ 	int i;
+ 	u64 W[16];
+ 
+-	/* load the input */
+-        for (i = 0; i < 16; i++)
+-                LOAD_OP(i, W, input);
+-
+ 	/* load the state into our registers */
+ 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
+ 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
+ 
+-#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
+-	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
+-	t2 = e0(a) + Maj(a, b, c);				\
+-	d += t1;						\
+-	h = t1 + t2
+-
+-#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
+-	BLEND_OP(i, W);						\
+-	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
+-	t2 = e0(a) + Maj(a, b, c);				\
+-	d += t1;						\
+-	h = t1 + t2
+-
+-	for (i = 0; i < 16; i += 8) {
+-		SHA512_0_15(i, a, b, c, d, e, f, g, h);
+-		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
+-		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
+-		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
+-		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
+-		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
+-		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
+-		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
+-	}
+-	for (i = 16; i < 80; i += 8) {
+-		SHA512_16_79(i, a, b, c, d, e, f, g, h);
+-		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
+-		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
+-		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
+-		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
+-		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
+-		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
+-		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
++	/* now iterate */
++	for (i=0; i<80; i+=8) {
++		if (!(i & 8)) {
++			int j;
++
++			if (i < 16) {
++				/* load the input */
++				for (j = 0; j < 16; j++)
++					LOAD_OP(i + j, W, input);
++			} else {
++				for (j = 0; j < 16; j++) {
++					BLEND_OP(i + j, W);
++				}
++			}
++		}
++
++		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
++		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
++		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
++		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
++		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
++		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
++		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
++		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
++		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
++		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
++		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
++		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
++		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
++		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
++		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
++		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
+ 	}
+ 
+ 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
 
 
