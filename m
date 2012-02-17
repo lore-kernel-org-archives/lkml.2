@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2BQNoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 08:44:07 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:28826 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab2BQNoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 08:44:06 -0500
-Date: Fri, 17 Feb 2012 14:44:04 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
-Message-ID: <20120217134404.GA11353@merkur.ravnborg.org>
-References: <4F3E42E0.4030108@openvz.org> <20120217120815.25909.15632.stgit@zurg> <20120217234508.8293a84fb3ebb7fed6d60ec3@canb.auug.org.au> <4F3E56DA.3050203@openvz.org>
+	id S1752821Ab2BQNov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 08:44:51 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39881 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038Ab2BQNot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 08:44:49 -0500
+Message-ID: <4F3E59CD.6050108@ti.com>
+Date: Fri, 17 Feb 2012 14:44:45 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F3E56DA.3050203@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Aneesh V <aneesh@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 4/8] misc: emif: add basic infrastructure for EMIF
+ driver
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com> <1328357771-31644-5-git-send-email-aneesh@ti.com> <4F3D2F2F.8050406@ti.com> <4F3E558A.3060605@ti.com>
+In-Reply-To: <4F3E558A.3060605@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 05:32:10PM +0400, Konstantin Khlebnikov wrote:
-> Stephen Rothwell wrote:
->> Hi Konstantin,
->>
->> On Fri, 17 Feb 2012 16:08:15 +0400 Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->>>
->>> Config NUMA must be defined for all architectures,
->>> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
->>> Some arch-specific Kconfig already has this stub.
->>> This patch adds it to all remaining.
->>
->> Why not add it somewhere generic (like mm/Kconfig, maybe) and then it can
->> be removed from the architecture specific places over time (if necessary
->> - I am pretty sure it is ok to have it there twice)?
->>
->
-> Different architectures has different dependencies for NUMA.
->
-> Seems like Kconfig allow config option duplication, but it use default state from first.
-> If we add "config NUMA\n def_bool n" somewhere in generic Kconfig, default will be n if
-> Kconfig see this declaration first.
-Correct.
-And as n is default there is no need to specify it.
-But please add a help text that explain the symbol - even if it is not
-visible in menuconfig.
+Hi Aneesh,
 
-	Sam
+On 2/17/2012 2:26 PM, Aneesh V wrote:
+> On Thursday 16 February 2012 10:00 PM, Cousson, Benoit wrote:
+>> On 2/4/2012 1:16 PM, Aneesh V wrote:
+
+[...]
+
+>>> +/**
+>>> + * struct emif_data - Per device static data for driver's use
+>>> + * @duplicate: Whether the DDR devices attached to this EMIF
+>>> + * instance are exactly same as that on EMIF1. In
+>>> + * this case we can save some memory and processing
+>>> + * @temperature_level: Maximum temperature of LPDDR2 devices attached
+>>> + * to this EMIF - read from MR4 register. If there
+>>> + * are two devices attached to this EMIF, this
+>>> + * value is the maximum of the two temperature
+>>> + * levels.
+>>> + * @irq: IRQ number
+>>
+>> Do you really need to store the IRQ number?
+>
+> Yes, I need it right now because setup_interrupts() is called later,
+> after the first frequency notification, because that's when I have the
+> registers to be programmed on a temperature event. But I am re-thinking
+> on this strategy. I will move it back to probe() because other
+> interrupts can/should be enabled at probe() time. When I do that I
+> won't have to store it anymore and I will remove it.
+
+Yes, I saw the code in a later patch. But in that case you should have 
+introduced that attribute in the patch that will use it and not before.
+
+But I do agree, that requesting the interrupt in the probe is probably 
+better.
+
+[...]
+
+>>> + emif = kzalloc(sizeof(struct emif_data), GFP_KERNEL);
+>>
+>> You should use the devm_* version of this API to get the simplify the
+>> error handling / removal.
+>
+> Please note that most of my allocations are happening through
+> kmemdup(). kmemdup() doesn't have a devm_* equivalent. So, I have a
+> cleanup() function and in the interest of uniformity decided to avoid
+> devm_* variants altogether.
+
+I think it still worth using devm_kzalloc + memcopy here instead of 
+kmemdup to avoid the cleanup() and simplify as well the error handling.
+
+You might even propose a new devm_kmemdup API if you want.
+
+Regards,
+Benoit
