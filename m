@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab2BQJJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 04:09:49 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55608 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2BQJJr (ORCPT
+	id S1752229Ab2BQJUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 04:20:40 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:45986 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab2BQJUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 04:09:47 -0500
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
-To: lenb@kernel.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>
-Subject: [PATCH v2] drivers/idle/intel_idle.c: Fix confusing code identation
-Date: Fri, 17 Feb 2012 07:06:33 -0200
-Message-Id: <1329469593-6164-1-git-send-email-marcos.mage@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 17 Feb 2012 04:20:38 -0500
+Date: Fri, 17 Feb 2012 10:20:24 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/s390/kernel/crash_dump.c: included
+ linux/crash_dump.h twice
+Message-ID: <20120217102024.1c838437@de.ibm.com>
+In-Reply-To: <1329400541-31849-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329400541-31849-1-git-send-email-danny.kukawka@bisect.de>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12021709-4966-0000-0000-0000017C352A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a code indentation in the function intel_idle_cpu_init that looks confusing.o
+On Thu, 16 Feb 2012 14:55:41 +0100
+Danny Kukawka <danny.kukawka@bisect.de> wrote:
 
-Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
----
+> arch/s390/kernel/crash_dump.c included 'linux/crash_dump.h' twice,
+> remove the duplicate.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-v2 -> Just added a commit message
+Added to the s390 tree. Thanks.
 
- drivers/idle/intel_idle.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 54ab97b..5e71b98 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -495,8 +495,7 @@ int intel_idle_cpu_init(int cpu)
- 		int num_substates;
- 
- 		if (cstate > max_cstate) {
--			printk(PREFIX "max_cstate %d reached\n",
--			       max_cstate);
-+			printk(PREFIX "max_cstate %d reached\n", max_cstate);
- 			break;
- 		}
- 
-@@ -512,8 +511,9 @@ int intel_idle_cpu_init(int cpu)
- 		dev->states_usage[dev->state_count].driver_data =
- 			(void *)get_driver_data(cstate);
- 
--			dev->state_count += 1;
--		}
-+		dev->state_count += 1;
-+	}
-+
- 	dev->cpu = cpu;
- 
- 	if (cpuidle_register_device(dev)) {
 -- 
-1.7.7.6
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
