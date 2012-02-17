@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2BQBeD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:34:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36203 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab2BQBeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:34:00 -0500
-Message-ID: <4F3DAE5D.3080000@zytor.com>
-Date: Thu, 16 Feb 2012 17:33:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1756150Ab2BQBfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:35:30 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52365 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754860Ab2BQBf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 20:35:28 -0500
+X-Sasl-enc: 0Rt0/rtW6B+Uo87r43MN1ZdqQyPYJoPF1N9LbdLeIrWn 1329442527
+Date: Thu, 16 Feb 2012 17:30:12 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: "lkml, " <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: pch_uart and pch_phub clock selection
+Message-ID: <20120217013012.GA18530@kroah.com>
+References: <4F3DA617.5030805@linux.intel.com>
 MIME-Version: 1.0
-To: Indan Zupancic <indan@nul.nu>
-CC: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        keescook@chromium.org
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>    <1329422549-16407-3-git-send-email-wad@chromium.org>    <4F3D61CB.2000301@zytor.com>    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>    <4F3D7250.6040504@zytor.com> <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-In-Reply-To: <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3DA617.5030805@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2012 04:48 PM, Indan Zupancic wrote:
-> On Thu, February 16, 2012 22:17, H. Peter Anvin wrote:
+On Thu, Feb 16, 2012 at 04:57:59PM -0800, Darren Hart wrote:
+> I'm working on a tunnel creek (atom e6xx + topcliff PCH) development platform
+> that uses a 48MHz or 64MHz clock to drive the pch_uart. I've found that if I
+> force the uart_clock to 48MHz (or 64MHz on the latest rev) I can get the kernel
+> messages and getty on the serial port.
 > 
-> I would go for something like:
+> I see that the the CM-iTC board is special-cased to set a 192MHz uart_clock.
+> This is done in pch_uart.c code, but there is some register manipulation done in
+> the pch_phub.c driver and I don't understand the connection. How are the two
+> related?
 > 
-> struct seccomp_data {
-> 	int nr;
-> 	__u32 arg_low[6];
-> 	__u32 arg_high[6];
-> 	__u32 instruction_pointer_low;
-> 	__u32 instruction_pointer_high;
-> 	__u32 __reserved[3];
-> };
+> Is the pch_phub.c register manipulation required for proper related? It seems to
+> work without touching those registers if I just force the clock.
 > 
+> The device I'm working with is EFI, and the dmi_get_system_info(DMI_BOARD_NAME)
+> returns "(null)", so I can't use the same test to identify this board. Is there
+> another common mechanism I might be able to use?
 
-Uh, that is the absolutely WORST way to do it - not only are you
-creating two fields, they're not even adjacent.
+There's no relevant DMI information for the board at all?  What does:
+	grep . /sys/class/dmi/id/*
+show?
 
-> (Not sure what use the IP is because that doesn't tell anything about how
-> the system call instruction was reached.)
 > 
-> The only way to avoid splitting args is to add 64-bit support to BPF.
-> That is probably the best way forwards, but would require breaking the
-> BPF ABI by either adding a 64-bit version directly or adding extra
-> instructions.
+> The following patch (by way of example, not meant for inclusion) gets things
+> working for this particular board with this command line:
+> 
+> console=ttyPCH1,115200 pch_uart.clock_param=48000000
+> 
+> I believe the right thing to do here is to discover a way to identify the board
+> and special case the clock as is done for the CM-iTC, but I would like to
+> understand the purpose of the pch_phub register manipulation code. Does this
+> make sense?
+> 
+> Thanks,
+> 
+> Darren
+> 
+> 
+> >From f83fa6cb575844d8e37f136890fe32258eb88dd2 Mon Sep 17 00:00:00 2001
+> Message-Id: <f83fa6cb575844d8e37f136890fe32258eb88dd2.1329439822.git.dvhart@linux.intel.com>
+> From: Darren Hart <dvhart@linux.intel.com>
+> Date: Wed, 15 Feb 2012 15:44:18 -0800
+> Subject: [PATCH] pch_uart: Add clock parameter
+> 
+> Allow for the specification of the clock as a module parameter. This is useful
+> when a board uses a non-standard clock, or when different versions of a board
+> use different clocks, and that board name or the version are not available to
+> the kernel.
 
-Or the compiler or whatever generates the BPF code just is going to have
-to generate two instructions -- just like we always have to handle
-[u]int64_t on 32-bit platforms.  There is no difference here.
+You also rename base_baud to uart_clock here, so you might want to
+mention it in the changelog entry :)
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+greg k-h
