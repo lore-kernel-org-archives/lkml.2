@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab2BQBLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:11:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36053 "EHLO mail.zytor.com"
+	id S1756292Ab2BQBML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:12:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46113 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306Ab2BQBLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:11:18 -0500
-Message-ID: <4F3DA901.8030609@zytor.com>
-Date: Thu, 16 Feb 2012 17:10:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Indan Zupancic <indan@nul.nu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, keescook@chromium.org
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-References: <1329422549-16407-1-git-send-email-wad@chromium.org> <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com> <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com> <4F3D7250.6040504@zytor.com> <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl> <CAObL_7G7CvCVgjR-JYjNDi_Sy65UHXaqas4-sQCVej-4bX2PJA@mail.gmail.com>
-In-Reply-To: <CAObL_7G7CvCVgjR-JYjNDi_Sy65UHXaqas4-sQCVej-4bX2PJA@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1754860Ab2BQBMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 20:12:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="108972769"
+Subject: Re: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1202161010500.1268-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1202161010500.1268-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Feb 2012 09:12:06 +0800
+Message-ID: <1329441126.3376.30.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2012 04:51 PM, Andrew Lutomirski wrote:
+On Thu, 2012-02-16 at 10:13 -0500, Alan Stern wrote:
+> On Thu, 16 Feb 2012, Zhang Rui wrote:
 > 
-> IMO the best solution is to have the One True Seccomp Filter Compiler
-> (tm).  It would handle multiple namespaces, cross-arch differences,
-> and such, and it would do it correctly.  It could live in the kernel
-> tree.
+> > > I'm not exactly sure what you're trying to achieve and what you mean by
+> > > "resume a device directly"?  Do you want to run the device's resume
+> > > callback at the time when another device is being resumed?
+> > > 
+> > I mean, wakeup event is sent to ATA port, but our goal is to resume
+> > ZPODD after receiving this wakeup event.
+> > Ideally, it is ACPI that resumes ATA port. And then, the ATA port
+> > runtime resumes ZPODD. But this does not look good to runtime resume a
+> > child device in the parent's .runtime_resume callback.
+> > So I introduced these two APIs so that an runtime_resume request can be
+> > sent to ZPODD directly and the runtime PM core can resume all the
+> > parents of ZPODD automatically.
 > 
-> Without something like that or an incredible amount of special care,
-> actual portability is probably a pipe dream.
+> It's not clear what you're trying to achieve.  Do you basically want
+> the ZPODD always to be suspended and resumed along with the ATA port,
+> or should it be possible to suspend the ZPODD while the port remains
+> running?
+
+We want to ZPODD always to be suspended and resumed along with the ATA
+port.
+
+Below is part of the GPE handler for ZPODD device attention event.
+
+        Scope (\_GPE)
+        {
+            Method (_L13, 0, NotSerialized)
+            {
+                ADBG ("ZPODD DA Event")
+                ....
+
+                Notify (\_SB.PCI0.SAT0.PRT2, 0x02)
+                ....
+            }
+        }
+
+It maybe a bit confused, but actually, \_SB.PCI0.SAT0.PRT2 is bind to
+the attached device, not the ata port itself.
+
+See below commit in linux-next tree.
+75d22c(libata: Bind the Linux device tree to the ACPI device tree)
+
+And below notify handler(PATCH 6) will resume the attached device(CDROM
+in ZPODD case).
+
++static void ata_acpi_wake_dev(acpi_handle handle, u32 event, void *context)
++{
++       struct ata_device *ata_dev = context;
++
++       if (event == ACPI_NOTIFY_DEVICE_WAKE && ata_dev)
++               scsi_autopm_get_device(ata_dev->sdev);
++}
++
+
+But the code to power on/power off the device is in ata_acpi_set_state,
+which is called when ata port is resumed/suspended.
+
+ata_eh_handle_port_resume/suspend
+    ata_acpi_set_state
+        ata_for_each_dev {
+            acpi_bus_set_power(<the acpi handle of the device>, acpi_state)
+        }
+
+Could you take a look at PATCH 6?
+It's more clear over there.
+
+Thanks,
+Lin Ming
+
 > 
-> --Andy
+> Alan Stern
 > 
 
-Seconded!
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
