@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2BQDZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:25:57 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:44010 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab2BQDZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:25:56 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Subject: Re: [PATCH] arch/blackfin/mach-bf537/boards/pnav10.c: included linux/export.h twice
-Date: Thu, 16 Feb 2012 22:25:57 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Danny Kukawka <dkukawka@suse.de>, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org
-References: <1329400584-32069-1-git-send-email-danny.kukawka@bisect.de>
-In-Reply-To: <1329400584-32069-1-git-send-email-danny.kukawka@bisect.de>
+	id S1753808Ab2BQD1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:27:52 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:42045 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab2BQD1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 22:27:49 -0500
+Message-ID: <b33f697878e9b601d1d9bddfbf7a61cb.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F3DB9E8.7040406@zytor.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+    <1329422549-16407-3-git-send-email-wad@chromium.org>
+    <4F3D61CB.2000301@zytor.com>
+    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+    <4F3D7250.6040504@zytor.com>
+    <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
+    <4F3DAE5D.3080000@zytor.com>
+    <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
+    <CAObL_7GUTbc=Ew9mQw7CoWfdAfRWSWUrY3w+UnrYrqWEiHxtcQ@mail.gmail.com>
+    <4F3DB9E8.7040406@zytor.com>
+Date: Fri, 17 Feb 2012 04:27:45 +0100
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2526128.lnhZrB35Yp";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202162225.59076.vapier@gentoo.org>
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 4b95630a2805109a2fafe329e7ec4fd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2526128.lnhZrB35Yp
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On Fri, February 17, 2012 03:22, H. Peter Anvin wrote:
+> On 02/16/2012 06:16 PM, Andrew Lutomirski wrote:
+>>
+>> Is there really no syscall that cares about endianness?
 
-On Thursday 16 February 2012 08:56:24 Danny Kukawka wrote:
-> arch/blackfin/mach-bf537/boards/pnav10.c: included 'linux/export.h'
-> twice. No need to include the file a second time in a #ifdef block
-> if already included at top. Remove the duplicate.
+Perhaps when 64-bit syscall args are passed via two 32-bit registers.
+But that is no argument to make all argument accesses endianness aware.
 
-thanks, added to the Blackfin tree!
--mike
+>> Even if it ends up working, forcing syscall arguments to have a
+>> particular endianness seems like a bad decision, especially if anyone
+>> ever wants to make a 64-bit BPF implementation.  (Or if any
+>> architecture adds 128-bit syscall arguments to a future syscall
+>> namespace or whatever it's called.  x86-64 has 128-bit xmm
+>> registers...)
+>>
+>
+> Not to mention that the reshuffling code will add totally unnecessary
+> cost to the normal operation.
 
---nextPart2526128.lnhZrB35Yp
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+There is no such extra cost.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> Either way, Indan has it backwards ... it
+> *is* one field, the fact that two operations is needed to access it is a
+> function of the underlying byte code, and even if the byte code can't
+> support it, a JIT could merge adjacent operations if 64-bit operations
+> are possible -- or we could (and arguably should) add 64-bit opcodes in
+> the future for efficiency.
 
-iQIcBAABAgAGBQJPPcjGAAoJEEFjO5/oN/WB8foQAIn2CeTxfFsz1jIBEBETv1rc
-3BuFrS1dB1KUmrnTFVsVtyEevc6oOJrmuZ64sg7fpxOHYs5jzP41MjrxNZDQKjUh
-CGwN7fJDYR84eNITufRjMIZhGhHioXeXyCp/vd0CP5c/FsqEOJkg8dMbbCd0b1g6
-tsMhXisAY4PEvLTTzUkNaPj0BzQMs/1AQQKYxDP/IxlTFhKYl7wVG0lKT1MkCwa9
-6vIIFMscQfz9glTnnysUBpK/+c+hyV2yiO+ZzhZU2Tn+dmtJPpiuUpV/YRhRFl1G
-xy18JeUXKUcexWztgrJedgwsiVBl8nmH6oQiBnPjAkUYG6xXAZxnKsDKyFdVSnld
-TYVeQ6k8RO0ztBlhkW5IuKDdgMMhO1B3eQeeSHww/zrTzFSlIFI3v9PqdLG+WQmb
-4aj615z/8qfxFnXg8YmTf80QVFencAahXpEpd1+tg4f3vHO51G8C9VfmUhVk6cKv
-cIMHl2Gog4bJ+NY2efr6J+jTU2TMolkfjHZQhxJFGCqH0xhkFz8pvpThxgX0J+VP
-bAnmliYgC1L07Q5nUI96o4qouXsfhx1lPYVAL+qaRJ+CN/N5HjaqBj1J61866lYx
-aREw4Yc/6PT7XAWwq674Mli3LdSO5cTcwN+hT4ms2xLnWayoLRZ8gFzgxpV+oeZg
-3wqyf6woX59Za6r96pnR
-=Lpel
------END PGP SIGNATURE-----
+It is a virtual data structure with as sole purpose to provide syscall
+info to the byte code. The actual data structure as such never exists
+in memory. So giving something that is hard to digest is silly.
 
---nextPart2526128.lnhZrB35Yp--
+A JIT won't be able to merge accesses because it also has to merge other
+instructions and recognize when 64-bit operations are done with 32-bit
+instructions. I think that will be too hard for a JIT.
+
+The only good reason to use 64 bit fields is if 64-bit support will be
+added to BPF in the future. If not, then it's just unnecessary pain for
+no good reason.
+
+An alternative to struct seccomp_data would be to add special instructions
+that load the desired info to 'A'. E.g. BPF_S_ANC_SYSCALL_ARG with 'k'
+selecting which arg. But that's probably harder to fit into the current
+filter code.
+
+Greetings,
+
+Indan
+
+
