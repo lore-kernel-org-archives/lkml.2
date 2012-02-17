@@ -1,170 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab2BQRu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:50:29 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:57431 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab2BQRu1 (ORCPT
+	id S1752055Ab2BQR4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:56:13 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55101 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751635Ab2BQR4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:50:27 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 06/18] ARM: at91/pm_slowclock: function slow_clock() accepts parameters
-Date: Fri, 17 Feb 2012 18:49:58 +0100
-Message-Id: <3100bd0c483a03ced617f3ce168e661d6968d21b.1329500622.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
+	Fri, 17 Feb 2012 12:56:10 -0500
+X-Sasl-enc: P5E8Tsw1g2WY7zgzhZ8He7894YnbsiuSs6TtEs21v3uX 1329501368
+Date: Fri, 17 Feb 2012 09:50:46 -0800
+From: Greg KH <greg@kroah.com>
+To: Aneesh V <aneesh@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, akpm@linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8] Add TI EMIF SDRAM controller driver
+Message-ID: <20120217175046.GA29902@kroah.com>
+References: <1328357771-31644-1-git-send-email-aneesh@ti.com>
+ <4F3CDF9F.9080204@ti.com>
+ <20120216162359.GB20827@kroah.com>
+ <4F3E5C8D.7020506@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3E5C8D.7020506@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On Fri, Feb 17, 2012 at 07:26:29PM +0530, Aneesh V wrote:
+> Greg,
+> 
+> On Thursday 16 February 2012 09:53 PM, Greg KH wrote:
+> >On Thu, Feb 16, 2012 at 04:21:11PM +0530, Santosh Shilimkar wrote:
+> >>Andrew, Greg,
+> >>
+> >>On Saturday 04 February 2012 05:46 PM, Aneesh V wrote:
+> >>>Add a driver for the EMIF SDRAM controller used in TI SoCs
+> >>>
+> >>>EMIF is an SDRAM controller that supports, based on its revision,
+> >>>one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
+> >>>for LPDDR2.
+> >>>
+> >>>The driver supports the following features:
+> >>>- Calculates the DDR AC timing parameters to be set in EMIF
+> >>>   registers using data from the device data-sheets and based
+> >>>   on the DDR frequency. If data from data-sheets is not available
+> >>>   default timing values from the JEDEC spec are used. These
+> >>>   will be safe, but not necessarily optimal
+> >>>- API for changing timings during DVFS or at boot-up
+> >>>- Temperature alert configuration and handling of temperature
+> >>>   alerts, if any for LPDDR2 devices
+> >>>   * temperature alert is based on periodic polling of MR4 mode
+> >>>     register in DDR devices automatically performed by hardware
+> >>>   * timings are de-rated and brought back to nominal when
+> >>>     temperature raises and falls respectively
+> >>>- Cache of calculated register values to avoid re-calculating
+> >>>   them
+> >>>
+> >>>The driver will need some minor updates when it is eventually
+> >>>integrated with DVFS. This can not be done now as DVFS support
+> >>>is not available yet in mainline.
+> >>>
+> >>>Discussions with Santosh Shilimkar<santosh.shilimkar@ti.com>
+> >>>were immensely helpful in shaping up the interfaces. Vibhore Vardhan
+> >>><vvardhan@gmail.com>  did the initial code snippet for thermal
+> >>>handling.
+> >>>
+> >>>Testing:
+> >>>- The driver is tested on OMAP4430 SDP.
+> >>>- The driver in a slightly adapted form is also tested on OMAP5.
+> >>>- Since mainline kernel doesn't have DVFS support yet,
+> >>>   testing was done using a test module.
+> >>>- Temperature alert handling was tested with simulated interrupts
+> >>>   and faked temperature values as testing all cases in real-life
+> >>>   scenarios is difficult.
+> >>>
+> >>[...]
+> >>
+> >>>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++
+> >>>  drivers/misc/Kconfig                       |   20 +
+> >>>  drivers/misc/Makefile                      |    2 +
+> >>>  drivers/misc/emif.c                        | 1522 ++++++++++++++++++++++++++++
+> >>>  drivers/misc/emif_regs.h                   |  461 +++++++++
+> >>>  drivers/misc/jedec_ddr_data.c              |  141 +++
+> >>>  include/linux/emif.h                       |  257 +++++
+> >>>  include/linux/jedec_ddr.h                  |  174 ++++
+> >>
+> >>Any suggestion on where this driver can reside. It's a memory
+> >>controller driver which supports standard DDR functionality
+> >>as per JDEC specs including thermal alert. On top of
+> >>that it does support DVFS using the TI PRCM IP block.
+> >
+> >I don't know what any of those TLA words mean, so I really can't suggest
+> 
+> This is a driver for TI's memory controller(called EMIF). The
+> driver is needed for adjusting the controller settings on frequency,
+> voltage, and temperature changes. Any suggestion as to where this
+> should go?
 
-Change slow_clock()/at91_slow_clock() prototype to accept the PMC
-base address and one or two RAM controller addresses by parameters.
-The r0, r1 and r2 registers are used differently and preserved during
-function call.
-Those values are defined in pm.c and slow_clock() function is called
-from there with its new parameters.
+For those type of things, don't the iio framework provide what you need
+and what?  Or perhaps the cpufreq layer?
 
-This will allow to have a soc independent pm_slowclock.
+> >where this code should go.  But just from this diffstat, it looks like
+> >you are creating a new user/kernel interface, without documenting it
+> >anywhere, which isn't ok.
+> 
+> I think you are referring to the header files added in include/linux/
+> They are not creating new user/kernel interface per se.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Ached-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/pm.c           |   20 +++++++++++++++--
- arch/arm/mach-at91/pm_slowclock.S |   41 ++++++++----------------------------
- 2 files changed, 26 insertions(+), 35 deletions(-)
+Then why are they in include/linux/ ?
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index d554e67..aac00ce 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -188,13 +188,27 @@ int at91_suspend_entering_slow_clock(void)
- EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
- 
- 
--static void (*slow_clock)(void);
-+static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
- 
- #ifdef CONFIG_AT91_SLOW_CLOCK
--extern void at91_slow_clock(void);
-+extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
- extern u32 at91_slow_clock_sz;
- #endif
- 
-+static void __iomem *at91_pmc_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_PMC);
-+#ifdef CONFIG_ARCH_AT91RM9200
-+static void __iomem *at91_ramc0_base = (void __iomem*)AT91_VA_BASE_SYS;
-+#elif defined(CONFIG_ARCH_AT91SAM9G45)
-+static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC0);
-+#else
-+static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_SDRAMC0);
-+#endif
-+
-+#if defined(CONFIG_ARCH_AT91SAM9G45)
-+static void __iomem *at91_ramc1_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC1);
-+#else
-+static void __iomem *at91_ramc1_base = NULL;
-+#endif
- 
- static int at91_pm_enter(suspend_state_t state)
- {
-@@ -232,7 +246,7 @@ static int at91_pm_enter(suspend_state_t state)
- 				/* copy slow_clock handler to SRAM, and call it */
- 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
- #endif
--				slow_clock();
-+				slow_clock(at91_pmc_base, at91_ramc0_base, at91_ramc1_base);
- 				break;
- 			} else {
- 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 97124f5..33fc4a7 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -46,11 +46,11 @@
- #define PLLALOCK_TIMEOUT	1000
- #define PLLBLOCK_TIMEOUT	1000
- 
--#define pmc	r1
--#define sdramc	r2
-+#define pmc	r0
-+#define sdramc	r1
-+#define ramc1	r2
- #define tmp1	r3
- #define tmp2	r4
--#define ramc1	r5
- 
- /*
-  * Wait until master clock is ready (after switching master clock source)
-@@ -110,21 +110,19 @@
- 
- 	.text
- 
-+/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
- ENTRY(at91_slow_clock)
- 	/* Save registers on stack */
--	stmfd	sp!, {r0 - r12, lr}
-+	stmfd	sp!, {r3 - r12, lr}
- 
- 	/*
- 	 * Register usage:
--	 *  R1 = Base address of AT91_PMC
--	 *  R2 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
-+	 *  R0 = Base address of AT91_PMC
-+	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
-+	 *  R2 = Base address of second RAM Controller or 0 if not present
- 	 *  R3 = temporary register
- 	 *  R4 = temporary register
--	 *  R5 = Base address of second RAM Controller or 0 if not present
- 	 */
--	ldr	pmc, .at91_va_base_pmc
--	ldr	sdramc, .at91_va_base_sdramc
--	ldr	ramc1, .at91_va_base_ramc1
- 
- 	/* Drain write buffer */
- 	mov	tmp1, #0
-@@ -283,7 +281,7 @@ ENTRY(at91_slow_clock)
- #endif
- 
- 	/* Restore registers, and return */
--	ldmfd	sp!, {r0 - r12, pc}
-+	ldmfd	sp!, {r3 - r12, pc}
- 
- 
- .saved_mckr:
-@@ -301,26 +299,5 @@ ENTRY(at91_slow_clock)
- .saved_sam9_lpr1:
- 	.word 0
- 
--.at91_va_base_pmc:
--	.word AT91_VA_BASE_SYS + AT91_PMC
--
--#ifdef CONFIG_ARCH_AT91RM9200
--.at91_va_base_sdramc:
--	.word AT91_VA_BASE_SYS
--#elif defined(CONFIG_ARCH_AT91SAM9G45)
--.at91_va_base_sdramc:
--	.word AT91_VA_BASE_SYS + AT91_DDRSDRC0
--#else
--.at91_va_base_sdramc:
--	.word AT91_VA_BASE_SYS + AT91_SDRAMC0
--#endif
--
--.at91_va_base_ramc1:
--#if defined(CONFIG_ARCH_AT91SAM9G45)
--	.word AT91_VA_BASE_SYS + AT91_DDRSDRC1
--#else
--	.word 0
--#endif
--
- ENTRY(at91_slow_clock_sz)
- 	.word .-at91_slow_clock
--- 
-1.7.9
+> "include/linux/jedec_ddr.h" is the interface to a library that contains
+> data from the DDR specs. "include/linux/emif.h" has definitions for
+> platform data needed by the driver. Maybe these should go to some other
+> sub-directory within include/ or include/linux/ ?
 
+Who needs these files?  If it's only the drivers themselves, then put it
+in the same directory as the driver.  If it's platform data, then put
+it, and only it, in the include/linux/platform_data/ directory.
+
+> I shall add documentation for the driver in the next revision.
+
+That would be good.  Please also cc: me on the next revision if you wish
+me to take the patches (hint, get_maintainer.pl should have told you
+this...)
+
+thanks,
+
+greg k-h
