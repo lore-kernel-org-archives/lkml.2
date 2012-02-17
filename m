@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257Ab2BQSMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 13:12:25 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57341 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751831Ab2BQSMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 13:12:23 -0500
-Message-ID: <1329502342.584.4.camel@joe2Laptop>
-Subject: Re: [PATCH V2 2/3] bluetooth: Convert BT_ERR/BT_INFO to
- bt_err/bt_info
-From: Joe Perches <joe@perches.com>
-To: Johan Hedberg <johan.hedberg@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Fri, 17 Feb 2012 10:12:22 -0800
-In-Reply-To: <20120217094110.GB12814@x220>
-References: <cover.1329461202.git.joe@perches.com>
-	 <6737e9dc6d2528f9c94c122709a40e4c23c9477a.1329461203.git.joe@perches.com>
-	 <1329468018.28848.133.camel@aeonflux> <20120217094110.GB12814@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752436Ab2BQSQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 13:16:40 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50813 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab2BQSQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 13:16:39 -0500
+Date: Fri, 17 Feb 2012 10:16:34 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] blkcg: drop unnecessary RCU locking
+Message-ID: <20120217181634.GD29414@google.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-3-git-send-email-tj@kernel.org>
+ <20120217164749.GC26620@redhat.com>
+ <20120217171113.GB26575@google.com>
+ <20120217172857.GD26620@redhat.com>
+ <20120217174304.GC29414@google.com>
+ <20120217180800.GE26620@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120217180800.GE26620@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 11:41 +0200, Johan Hedberg wrote:
-> Patches 2/3 and 3/3 have never actually made it to the linux-bluetooth
-> list (I've never seen them and they're not visible in the archives
-> either). Doing the split like Marcel proposes would probably solve the
-> issue since I'm guessing the large message size is to blame.
+On Fri, Feb 17, 2012 at 01:08:00PM -0500, Vivek Goyal wrote:
+> > Modifying blkgs require both blkcg and queue locks,
+> > so read access can be done holding any lock.
+> 
+> This is the point I am not getting. How blkg_lookup() is safe just
+> under queue lock. What stops freeing up blkg associated with other
+> queues. I thought caller needs to hold rcu_read_lock() also to
+> make sure it can safely compare blkg->q == q and return the blkg
+> belonging to the queue in question.
 
-Hi Johan.
+Ooh, you're right.  I got confused.  We should be holding either blkcg
+lock or rcu_read_lock() across blkg_lookup().  Will update.
 
-I'm not subscribed to linux-bluetooth.
+Thanks.
 
-linux-bluetooth is a vger list so I would expect
-the maximum message size to be no different than
-lkml though.  These messages did get through to
-netdev and lkml.
-
-http://patchwork.ozlabs.org/patch/141748/
-http://patchwork.ozlabs.org/patch/141749/
-
-You're not listed as a bluetooth maintainer.
-Should you be?
-
-Do you want the original patch set sent directly
-to you?
-
+-- 
+tejun
