@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756668Ab2BQA7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:59:46 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46977 "EHLO
+	id S1756635Ab2BQA7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:59:49 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:44481 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756635Ab2BQA7n (ORCPT
+	by vger.kernel.org with ESMTP id S1756672Ab2BQA7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:59:43 -0500
-X-Sasl-enc: UVsrq+RAUMoFZDTF5iU0afQJ748j+1/x6pe7+9gBBhW/ 1329440382
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
-Message-Id: <20120217005511.147708184@linuxfoundation.org>
+	Thu, 16 Feb 2012 19:59:47 -0500
+X-Sasl-enc: HD0+52ByalEQsAHN0ssxqdpHkmMX0e8ckfjHmSXVqcpL 1329440386
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:10 2012
+Message-Id: <20120217005509.959166336@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:18 -0800
+Date: Thu, 16 Feb 2012 16:55:10 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Jander <david@protonic.nl>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Manfred Gruber <m.gruber@unverspurt.at>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [09/15] gpio/pca953x: Fix warning of enabled interrupts in handler
+        alan@lxorguk.ukuu.org.uk,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [01/15] perf evsel: Fix an issue where perf report fails to show the proper percentage
 In-Reply-To: <20120217005650.GA17119@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,46 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jander <david@protonic.nl>
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
 
-commit 6dd599f8af0166805951f4421a78ba716d78321a upstream.
+commit a4a03fc7ef89020baca4f19174e6a43767c6d78a upstream.
 
-When using nested threaded irqs, use handle_nested_irq(). This function
-does not call the chip handler, so no handler is set.
+This patch fixes an issue where perf report shows nan% for certain
+perf.data files. The below is from a report for a do_fork probe:
 
-Signed-off-by: David Jander <david@protonic.nl>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Manfred Gruber <m.gruber@unverspurt.at>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+   -nan%           sshd  [kernel.kallsyms]  [k] do_fork
+   -nan%    packagekitd  [kernel.kallsyms]  [k] do_fork
+   -nan%    dbus-daemon  [kernel.kallsyms]  [k] do_fork
+   -nan%           bash  [kernel.kallsyms]  [k] do_fork
+
+A git bisect shows commit f3bda2c as the cause. However, looking back
+through the git history, I saw commit 640c03c which seems to have
+removed the required initialization for perf_sample->period. The problem
+only started showing after commit f3bda2c. The below patch re-introduces
+the initialization and it fixes the problem for me.
+
+With the below patch, for the same perf.data:
+
+  73.08%             bash  [kernel.kallsyms]  [k] do_fork
+   8.97%      11-dhclient  [kernel.kallsyms]  [k] do_fork
+   6.41%             sshd  [kernel.kallsyms]  [k] do_fork
+   3.85%        20-chrony  [kernel.kallsyms]  [k] do_fork
+   2.56%         sendmail  [kernel.kallsyms]  [k] do_fork
+
+This patch applies over current linux-tip commit 9949284.
+
+Problem introduced in:
+
+$ git describe 640c03c
+v2.6.37-rc3-83-g640c03c
+
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20120203170113.5190.25558.stgit@localhost6.localdomain6
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/pca953x.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/evsel.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpio/pca953x.c
-+++ b/drivers/gpio/pca953x.c
-@@ -437,7 +437,7 @@ static irqreturn_t pca953x_irq_handler(i
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -348,6 +348,7 @@ int perf_event__parse_sample(const union
  
- 	do {
- 		level = __ffs(pending);
--		generic_handle_irq(level + chip->irq_base);
-+		handle_nested_irq(level + chip->irq_base);
+ 	data->cpu = data->pid = data->tid = -1;
+ 	data->stream_id = data->id = data->time = -1ULL;
++	data->period = 1;
  
- 		pending &= ~(1 << level);
- 	} while (pending);
-@@ -481,8 +481,8 @@ static int pca953x_irq_setup(struct pca9
- 			int irq = lvl + chip->irq_base;
- 
- 			irq_set_chip_data(irq, chip);
--			irq_set_chip_and_handler(irq, &pca953x_irq_chip,
--						 handle_simple_irq);
-+			irq_set_chip(irq, &pca953x_irq_chip);
-+			irq_set_nested_thread(irq, true);
- #ifdef CONFIG_ARM
- 			set_irq_flags(irq, IRQF_VALID);
- #else
+ 	if (event->header.type != PERF_RECORD_SAMPLE) {
+ 		if (!sample_id_all)
 
 
