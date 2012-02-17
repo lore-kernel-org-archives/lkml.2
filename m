@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab2BQUnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 15:43:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58508 "EHLO ogre.sisk.pl"
+	id S1754338Ab2BQUoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 15:44:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58517 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab2BQUnF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 15:43:05 -0500
+	id S1751823Ab2BQUoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 15:44:37 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 3/3] PM / Sleep: Make __pm_stay_awake() delete wakeup source timers
-Date: Fri, 17 Feb 2012 21:46:59 +0100
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [linux-pm] [PATCH] PM / QoS: unconditionally build the feature
+Date: Fri, 17 Feb 2012 21:48:32 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201202152318.04206.rjw@sisk.pl> <201202162320.44863.rjw@sisk.pl> <CAMP5Xgc5JtqH-PqS9+z1swg9CR5w6Az+_HNyuO9uG9WyGONRaw@mail.gmail.com>
-In-Reply-To: <CAMP5Xgc5JtqH-PqS9+z1swg9CR5w6Az+_HNyuO9uG9WyGONRaw@mail.gmail.com>
+Cc: Jean Pihet <jean.pihet@newoldbits.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Jean Pihet <j-pihet@ti.com>, linux-kernel@vger.kernel.org,
+        Mark Gross <markgross@thegnar.org>
+References: <1328603646-2714-2-git-send-email-j-pihet@ti.com> <201202131641.10535.rjw@sisk.pl> <20120217192724.GC2707@elf.ucw.cz>
+In-Reply-To: <20120217192724.GC2707@elf.ucw.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202172146.59236.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202172148.32168.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 17, 2012, Arve Hjønnevåg wrote:
-> 2012/2/16 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Thursday, February 16, 2012, Arve Hjønnevåg wrote:
-> >> 2012/2/15 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> ...
-> >> > --- linux.orig/drivers/base/power/wakeup.c
-> >> > +++ linux/drivers/base/power/wakeup.c
-> >> > @@ -365,9 +365,15 @@ void __pm_stay_awake(struct wakeup_sourc
-> >> >                return;
-> >> >
-> >> >        spin_lock_irqsave(&ws->lock, flags);
-> >> > +
-> >> > +       del_timer(&ws->timer);
-> >> > +       ws->timer_expires = 0;
-> >>
-> >> timer_expires gets overwritten in wakeup_source_activate,
-> >
-> > I actually don't remember why it does that and with the $subject changes
-> > it's just pointless.
-> >
-> >> so __pm_relax followed by __pm_stay_awake is still not safe.
-> >
-> > Yes, I overlooked that timer_expires modification.  Updated patch follows.
-> >
-> >> ...
-> >> > @@ -529,8 +535,12 @@ void __pm_wakeup_event(struct wakeup_sou
-> >> >        spin_lock_irqsave(&ws->lock, flags);
-> >> >
-> >> >        ws->event_count++;
-> >> > -       if (!ws->active)
-> >> > +       if (ws->active) {
-> >> > +               if (!ws->timer_expires)
-> >> > +                       goto unlock;
-> >> > +       } else {
-> >> >                wakeup_source_activate(ws);
-> >> > +       }
-> >> >
-> >> >        if (!msec) {
-> >> >                wakeup_source_deactivate(ws);
-> >> >
-> >>
-> >> I suggest dropping this and adding:
-> >
-> > Well, what exactly would you like to drop?  The above proposed changes I guess?
+On Friday, February 17, 2012, Pavel Machek wrote:
+> On Mon 2012-02-13 16:41:10, Rafael J. Wysocki wrote:
+> > On Monday, February 13, 2012, Jean Pihet wrote:
+> > > The PM QoS feature depends on CONFIG_PM which depends on
+> > > PM_SLEEP || PM_RUNTIME. This breaks CPU C-states with kernels
+> > > not having these CONFIGs.
+> > > 
+> > > This patch allows the feature in all cases.
+> > > 
+> > > Signed-off-by: Jean Pihet <j-pihet@ti.com>
+> > > Reported-by: Venkatesh Pallipadi <venki@google.com>
+> > > Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > > Cc: Mark Gross <markgross@thegnar.org>
+> > 
+> > Applied, but I modified the changelog (please have a look at the
+> > linux-pm/pm-qos branch for details).
 > 
-> Yes.
-> 
-> >
-> >> -       if (time_after(expires, ws->timer_expires)) {
-> >> +       if (!ws->timer_expires || time_after(expires, ws->timer_expires)) {
-> >
-> > I've tried to follow your suggestion, so that __pm_wakeup_event() always
-> > sets the timer, if msec is positive, or deactivates the wakeup source, if
-> > msec is 0.  Please let me know if that's what you wanted. :-)
-> >
-> 
-> Yes. I should be able to replace a wake_lock with a single wakeup_source now.
+> Is it good idea? For servers, power management / QoS is not
+> neccessary... 
 
-Good, thanks for the confirmation!
+Yes, it is.  They surely use CPUidle.
 
+Thanks,
 Rafael
