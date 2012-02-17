@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab2BQKND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 05:13:03 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52242 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751804Ab2BQKNA (ORCPT
+	id S1752571Ab2BQKUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 05:20:50 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43631 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab2BQKUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 05:13:00 -0500
-X-Sasl-enc: 9IdMbg4vt9by5anjo7LNUK8+3OzTEPzK1aw1iWX1x2S1 1329473579
-Message-ID: <4F3E28D1.1030509@ladisch.de>
-Date: Fri, 17 Feb 2012 11:15:45 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: "Alex,Shi" <alex.shi@intel.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, stern@rowland.harvard.edu,
-        Greg KH <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        andiry.xu@amd.com, linux-kernel@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
-        trenn@suse.de, linux-pci@vger.kernel.org,
-        Michal Marek <MMarek@suse.com>
-Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
-References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>  <4F311233.9070404@intel.com> <20120207144204.GA7214@kroah.com>  <20120207172743.GA4780@xanatos> <20120207221317.GA6103@xanatos>  <1328664392.12669.233.camel@debian> <1328682430.12669.443.camel@debian>  <1328692300.12669.593.camel@debian>  <20120214002030.GA10364@xanatos>  <1329359801.12669.2872.camel@debian> <1329461087.12669.2911.camel@debian>  <4F3E0C3D.4030307@ladisch.de> <1329468418.12669.2988.camel@debian>
-In-Reply-To: <1329468418.12669.2988.camel@debian>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Feb 2012 05:20:48 -0500
+Date: Fri, 17 Feb 2012 21:20:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20120217212037.0859c427418b73b2cb17428d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__17_Feb_2012_21_20_37_+1100_.F8CEvWcVe.plEaP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex,Shi wrote:
->> The controller driver will need to know which of the multiple MSI-X
->> interrupts has been raised:
->>
->> irqreturn_t (*msix_irq)(struct usb_hcd *hcd, unsigned int nr_or_index);
->
-> Actually, hcd has 2 object for msix, msix_count and msix_entries.
->
-> Do you mean msix_count maybe smaller than we decide in hcd_setup_msix()?
+--Signature=_Fri__17_Feb_2012_21_20_37_+1100_.F8CEvWcVe.plEaP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No.  But when msic_count > 1, we have multiple interrupts.
+Hi Andrew,
 
-> Which situation will make this?
+Today's linux-next fails to build (s390 allnoconfig) like this:
 
-Assume that an XHCI controller has two rings, and that each one gets its
-own MSI-X interrupt.  How should the driver decide which of the rings
-needs to be handled?
+In file included from arch/s390/mm/maccess.c:15:
+include/linux/gfp.h: In function 'gfp_zonelist':
+include/linux/gfp.h:267: error: '__enabled_CONFIG_NUMA' undeclared (first u=
+se in this function)
+include/linux/gfp.h:267: error: (Each undeclared identifier is reported onl=
+y once
+include/linux/gfp.h:267: error: for each function it appears in.)
+include/linux/gfp.h:267: error: '__enabled_CONFIG_NUMA_MODULE' undeclared (=
+first use in this function)
 
-irqreturn_t xhci_msix_irq(struct usb_hcd *hcd)
-{
-	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+and many more.  This also happens in other architectures and configs but
+(obviously) not all builds.
 
-	if (...)
-		handle(xhci->ring[0]);
-	else
-		handle(xhci->ring[1]);
-}
+Presumably caused by commit 053361e1a072 ("mm: replace NUMA_BUILD with
+IS_ENABLED(CONFIG_NUMA)").
 
-I.e., what should go into the if()?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__17_Feb_2012_21_20_37_+1100_.F8CEvWcVe.plEaP
+Content-Type: application/pgp-signature
 
-Regards,
-Clemens
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPPin1AAoJEECxmPOUX5FEENEP/2vnZNeHkVzoaeDqQ7Kcp+qw
+EjrPMxPzeHyjooOcpPJlHQx7XM8F7wf1dhcrlwdFKA35pk8H9pRDIR3XDjMtMxyO
+mrKoblwQ6kGcHmcA3WK4QJ3nMHI/vAQHHKI9A4KbTyxojW2JHE5t4SDY/IG0OV17
+rZkr8ejuwVfXdNkpBWoc8O6+IYF7PDXJXYyftGerT3Yw/7/g4i5hx9mPFOU9jtSi
+dJSkUHt9zZEubBEQdelhObM1gpuJKSkxxoFwYAfUYygjvw6UI13sVYRaTCA1RHUr
+gcFvFJQBO9XUcnIvcMa7cC1yhMO5Nxlnr4bGW5BLpuwp6QV/2snEkbYm/tP/BV7P
+TinmLCSSLia3TCCI3nhy8RRwC7JpvIZ2eI6P5+bhvWZXvKnFITFjmb7OzEY288Qa
+dUvbWzY8G0W1mrrNCPHxXaIn4m8gMW4KTzcA2GeMttyKckP5kGxu2Tdk98XRtFvj
+inIS/quqSjSQ5h4VLya2dSmK+QfSTbK9mtmEJcUNGhboMU+vZSL/CAyV8HyDW3fp
+RiSVd3KVvrm/DbtuKvmM7HowMLJOnjMGhfvs+hPdAdBy4fWjn2OhPlhIBD/K9X8S
+LfP0eXM6xAAeik3sgVd0fXCv29tGM9yg71dFSqd4mXl8BVdVcFmOWHRjwIRsMutR
+k36QFLwd21JSaKYZB3wL
+=suKi
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__17_Feb_2012_21_20_37_+1100_.F8CEvWcVe.plEaP--
