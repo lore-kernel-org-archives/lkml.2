@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2BQI0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 03:26:01 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:31788 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab2BQI0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 03:26:00 -0500
-Message-ID: <4F3E0F09.8020200@parallels.com>
-Date: Fri, 17 Feb 2012 12:25:45 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+	id S1752079Ab2BQI0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 03:26:18 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47148 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab2BQI0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 03:26:15 -0500
+Date: Fri, 17 Feb 2012 09:26:09 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: imx/pcm038: Don't specify regulator consumers
+ by struct device
+Message-ID: <20120217082609.GP3852@pengutronix.de>
+References: <1329449029.17110.1.camel@phoenix>
+ <1329449121.17110.2.camel@phoenix>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH] SUNRPC: connect local transports synchronously
-References: <20120216150507.19081.28659.stgit@localhost6.localdomain6> <1329405232.4279.4.camel@lade.trondhjem.org>
-In-Reply-To: <1329405232.4279.4.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329449121.17110.2.camel@phoenix>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:25:37 up 96 days, 16:12, 14 users,  load average: 0.00, 0.03,
+ 0.52
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16.02.2012 19:13, Myklebust, Trond пишет:
-> On Thu, 2012-02-16 at 19:06 +0400, Stanislav Kinsbursky wrote:
->> Local tranports uses UNIX sockets and connecting of these sockets is done in
->> context of file system namespace (i.e. task file system root).
->> Currenly, all sockets connect operations are performed by rpciod work queue,
->> which actually means, that any service will be registered in the same rpcbind
->> instance regardless to process file system root.
->> This is not containers, which usually have it's own nested root. There are 2
->> approaches, how to solve the problem. First one is to store proper root in
->> tranport and switch to it in rpciod workqueue function for connect operations.
->> But this looks ugly. The second one is to connect to unix sockets
->> synchronously. This aptch implements the last one.
->
-> That approach can fall afoul of the selinux restrictions on the process
-> context. Processes that are allowed to write data, may not be allowed to
-> create sockets or call connect(). That is the main reason for doing it
-> in the rpciod context, which is a clean kernel process context.
->
+On Fri, Feb 17, 2012 at 11:25:21AM +0800, Axel Lin wrote:
+> The dev field is remove from struct regulator_consumer_supply since commit
+> 737f36 "regulator: Remove support for supplies specified by struct device".
+> 
+> This fixes below build error:
+>   CC      arch/arm/mach-imx/mach-pcm038.o
+> arch/arm/mach-imx/mach-pcm038.c:236: error: unknown field 'dev' specified in initializer
+> make[1]: *** [arch/arm/mach-imx/mach-pcm038.o] Error 1
+> make: *** [arch/arm/mach-imx] Error 2
 
-Thanks for explanation, Trond.
-So, this connect have to be done in kernel process context.
-Now I can see 2 ways how to meet this requirement and reach the goal:
+This is a duplicate of one of Fabios patches, I just sent a pull
+request.
 
-1) Change the fs root for rpciod while connecting.
-2) Do not touch rpciod and launch special "connect" kernel thread to perform 
-connect operations for unix sockets.
+Sascha
 
-What do you think about this 2 ways above? Which one is less worse from your POW?
-Maybe you have even a better solution for the problem?
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> This patch is against linux-next 20120217.
+> 
+>  arch/arm/mach-imx/mach-pcm038.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
+> index 16f126d..bfcc1ea 100644
+> --- a/arch/arm/mach-imx/mach-pcm038.c
+> +++ b/arch/arm/mach-imx/mach-pcm038.c
+> @@ -233,7 +233,6 @@ static struct regulator_init_data sdhc1_data = {
+>  
+>  static struct regulator_consumer_supply cam_consumers[] = {
+>  	{
+> -		.dev	= NULL,
+>  		.supply	= "imx_cam_vcc",
+>  	},
+>  };
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
+> 
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
