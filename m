@@ -1,182 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2BQW6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 17:58:17 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58790 "EHLO ogre.sisk.pl"
+	id S1755174Ab2BQXBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:01:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60733 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab2BQW6P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 17:58:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] PM / Sleep: Add more wakeup source initialization routines
-Date: Sat, 18 Feb 2012 00:02:10 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201202070200.55505.rjw@sisk.pl> <201202162322.22105.rjw@sisk.pl> <CAMP5XgfNqRH_PWi6PR_aTfCwsb5tZRvhB=YtmB5YfngsCOE0DQ@mail.gmail.com>
-In-Reply-To: <CAMP5XgfNqRH_PWi6PR_aTfCwsb5tZRvhB=YtmB5YfngsCOE0DQ@mail.gmail.com>
+	id S1753287Ab2BQXBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 18:01:11 -0500
+Date: Sat, 18 Feb 2012 00:01:07 +0100
+From: Holger Macht <holger@homac.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: dock_link_device is oopsy
+Message-ID: <20120217230107.GA12929@homac.suse.de>
+References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils>
+ <20120217222922.GA2741@homac.suse.de>
+ <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202180002.10297.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
+> On Fri, 17 Feb 2012, Holger Macht wrote:
+> > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
+> > > Matthew,
+> > > 
+> > > A linux-next oops at bootup in dock_link_device() tells me that you
+> > > were not feeling well when you wrote that and dock_unlink_device():
+> > > I hope you're feeling better now and can rewrite them soon.
+> > 
+> > Andrew Morton experienced a similar problem. What system are you using?
+> > I didn't encounter this problem with the systems I tested with.
+> 
+> The two systems I got that on were both 4-year-old Core2 Duo systems,
+> one an HP quad desktop, one a Fujitsu-Siemens laptop.
 
-The existing wakeup source initialization routines are not
-particularly useful for wakeup sources that aren't created by
-wakeup_source_create(), because their users have to open code
-filling the objects with zeros and setting their names.  For this
-reason, introduce routines that can be used for initializing, for
-example, static wakeup source objects.
+Thanks for the information I think this is really independent from the
+fact if a laptop, or more precicely if a system with dock station/bay is
+used.
 
-Requested-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> > 
+> > Do you actually have a /sys/devices/platform/dock.?/ directory with a
+> > file 'type' that contains 'dock_station'?
+> 
+> I'll have to report back on that this evening, I'm away from them now.
+
+I actually guess that those systems don't have a
+/sys/devices/platform/dock.? directory at all, which is fine.
+
+I also think this will fix it, would be great if you could confirm this:
+
+acpi: Bail out when linking devices and there are no dock stations
+
+If dock_station_count is zero, we allocate zero memory and don't check
+this at future references. So bail out if there are actually no dock
+stations.
+
+Signed-off-by: Holger Macht <holger@homac.de>
 ---
+ drivers/acpi/dock.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-This patch is on top of the linux-next branch of the linux-pm tree.
-
-Thanks,
-Rafael
-
----
- drivers/base/power/wakeup.c |   41 ++++++++++++++++++++++++++++++++++-------
- include/linux/pm_wakeup.h   |   20 ++++++++++++++++++++
- 2 files changed, 54 insertions(+), 7 deletions(-)
-
-Index: linux/drivers/base/power/wakeup.c
-===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -53,6 +53,23 @@ static void pm_wakeup_timer_fn(unsigned
- static LIST_HEAD(wakeup_sources);
+diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+index b5e4142..8641912 100644
+--- a/drivers/acpi/dock.c
++++ b/drivers/acpi/dock.c
+@@ -286,6 +286,9 @@ struct device **dock_link_device(acpi_handle handle)
+ 	int ret, dock = 0;
+ 	struct device **devices;
  
- /**
-+ * wakeup_source_prepare - Prepare a new wakeup source for initialization.
-+ * @ws: Wakeup source to prepare.
-+ * @name: Pointer to the name of the new wakeup source.
-+ *
-+ * Callers must ensure that the @name string won't be freed when @ws is still in
-+ * use.
-+ */
-+void wakeup_source_prepare(struct wakeup_source *ws, const char *name)
-+{
-+	if (ws) {
-+		memset(ws, 0, sizeof(*ws));
-+		ws->name = name;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_prepare);
++	if (!dock_station_count)
++		return -ENODEV;
 +
-+/**
-  * wakeup_source_create - Create a struct wakeup_source object.
-  * @name: Name of the new wakeup source.
-  */
-@@ -60,31 +77,41 @@ struct wakeup_source *wakeup_source_crea
- {
- 	struct wakeup_source *ws;
+ 	devices = kmalloc(dock_station_count * sizeof(struct device *),
+ 			  GFP_KERNEL);
  
--	ws = kzalloc(sizeof(*ws), GFP_KERNEL);
-+	ws = kmalloc(sizeof(*ws), GFP_KERNEL);
- 	if (!ws)
+@@ -323,9 +326,13 @@ struct device **dock_unlink_device(acpi_handle handle)
+ 	struct device *dev = acpi_get_physical_device(handle);
+ 	struct dock_station *dock_station;
+ 	int dock = 0;
+-	struct device **devices =
+-		kmalloc(dock_station_count * sizeof(struct device *),
+-			GFP_KERNEL);
++	struct device **devices;
++
++	if (!dock_station_count)
++		return -ENODEV;
++
++	devices = kmalloc(dock_station_count * sizeof(struct device *),
++			  GFP_KERNEL);
+ 
+ 	if (!dev)
  		return NULL;
- 
--	if (name)
--		ws->name = kstrdup(name, GFP_KERNEL);
--
-+	wakeup_source_prepare(ws, name ? kstrdup(name, GFP_KERNEL) : NULL);
- 	return ws;
- }
- EXPORT_SYMBOL_GPL(wakeup_source_create);
- 
- /**
-- * wakeup_source_destroy - Destroy a struct wakeup_source object.
-- * @ws: Wakeup source to destroy.
-+ * wakeup_source_drop - Prepare a struct wakeup_source object for destruction.
-+ * @ws: Wakeup source to prepare for destruction.
-  *
-  * Callers must ensure that __pm_stay_awake() or __pm_wakeup_event() will never
-  * be run in parallel with this function for the same wakeup source object.
-  */
--void wakeup_source_destroy(struct wakeup_source *ws)
-+void wakeup_source_drop(struct wakeup_source *ws)
- {
- 	if (!ws)
- 		return;
- 
- 	del_timer_sync(&ws->timer);
- 	__pm_relax(ws);
-+}
-+EXPORT_SYMBOL_GPL(wakeup_source_drop);
-+
-+/**
-+ * wakeup_source_destroy - Destroy a struct wakeup_source object.
-+ * @ws: Wakeup source to destroy.
-+ *
-+ * Use only for wakeup source objects created with wakeup_source_create().
-+ */
-+void wakeup_source_destroy(struct wakeup_source *ws)
-+{
-+	wakeup_source_drop(ws);
- 	kfree(ws->name);
- 	kfree(ws);
- }
-Index: linux/include/linux/pm_wakeup.h
-===================================================================
---- linux.orig/include/linux/pm_wakeup.h
-+++ linux/include/linux/pm_wakeup.h
-@@ -73,7 +73,9 @@ static inline bool device_may_wakeup(str
- }
- 
- /* drivers/base/power/wakeup.c */
-+extern void wakeup_source_prepare(struct wakeup_source *ws, const char *name);
- extern struct wakeup_source *wakeup_source_create(const char *name);
-+extern void wakeup_source_drop(struct wakeup_source *ws);
- extern void wakeup_source_destroy(struct wakeup_source *ws);
- extern void wakeup_source_add(struct wakeup_source *ws);
- extern void wakeup_source_remove(struct wakeup_source *ws);
-@@ -103,11 +105,16 @@ static inline bool device_can_wakeup(str
- 	return dev->power.can_wakeup;
- }
- 
-+static inline void wakeup_source_prepare(struct wakeup_source *ws,
-+					 const char *name) {}
-+
- static inline struct wakeup_source *wakeup_source_create(const char *name)
- {
- 	return NULL;
- }
- 
-+static inline void wakeup_source_drop(struct wakeup_source *ws) {}
-+
- static inline void wakeup_source_destroy(struct wakeup_source *ws) {}
- 
- static inline void wakeup_source_add(struct wakeup_source *ws) {}
-@@ -165,4 +172,17 @@ static inline void pm_wakeup_event(struc
- 
- #endif /* !CONFIG_PM_SLEEP */
- 
-+static inline void wakeup_source_init(struct wakeup_source *ws,
-+				      const char *name)
-+{
-+	wakeup_source_prepare(ws, name);
-+	wakeup_source_add(ws);
-+}
-+
-+static inline void wakeup_source_trash(struct wakeup_source *ws)
-+{
-+	wakeup_source_remove(ws);
-+	wakeup_source_drop(ws);
-+}
-+
- #endif /* _LINUX_PM_WAKEUP_H */
+-- 
+1.7.7
 
+ 
