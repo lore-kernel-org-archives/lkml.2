@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2BQRxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:53:38 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:52763 "EHLO
+	id S1753369Ab2BQRxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:53:54 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:37109 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210Ab2BQRue (ORCPT
+	with ESMTP id S1752166Ab2BQRua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:50:34 -0500
+	Fri, 17 Feb 2012 12:50:30 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 15/18] ARM: at91: merge SRAM Memory banks thanks to mirroring
-Date: Fri, 17 Feb 2012 18:50:07 +0100
-Message-Id: <f3e34185733168991e0a35d60bbcd5f63f79fe4c.1329500622.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 12/18] ARM: at91:rtc/rtc-at91sam9: ioremap register bank
+Date: Fri, 17 Feb 2012 18:50:04 +0100
+Message-Id: <840d899dfcd707cb9fc282d6f04c6645fd3b84fe.1329500622.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
@@ -24,64 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
-merge them together to be able to have bigger and continuous
-internal RAM.
+Instead of computing virtual address with AT91_VA_BASE_SYS, use the
+appropriate ioremap() call on the driver "memory" resource.
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/at91sam9260.c              |   13 +++++--------
- arch/arm/mach-at91/include/mach/at91sam9260.h |    4 ++++
- 2 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/rtc/rtc-at91sam9.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index 14882ae..4ade265 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -310,15 +310,12 @@ static void __init at91sam9xe_map_io(void)
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 65896a3..08b69fd 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -307,8 +307,12 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
+ 		device_init_wakeup(&pdev->dev, 1);
  
- static void __init at91sam9260_map_io(void)
- {
--	if (cpu_is_at91sam9xe()) {
-+	if (cpu_is_at91sam9xe())
- 		at91sam9xe_map_io();
--	} else if (cpu_is_at91sam9g20()) {
--		at91_init_sram(0, AT91SAM9G20_SRAM0_BASE, AT91SAM9G20_SRAM0_SIZE);
--		at91_init_sram(1, AT91SAM9G20_SRAM1_BASE, AT91SAM9G20_SRAM1_SIZE);
--	} else {
--		at91_init_sram(0, AT91SAM9260_SRAM0_BASE, AT91SAM9260_SRAM0_SIZE);
--		at91_init_sram(1, AT91SAM9260_SRAM1_BASE, AT91SAM9260_SRAM1_SIZE);
--	}
-+	else if (cpu_is_at91sam9g20())
-+		at91_init_sram(0, AT91SAM9G20_SRAM_BASE, AT91SAM9G20_SRAM_SIZE);
-+	else
-+		at91_init_sram(0, AT91SAM9260_SRAM_BASE, AT91SAM9260_SRAM_SIZE);
- }
+ 	platform_set_drvdata(pdev, rtc);
+-	rtc->rtt = (void __force __iomem *) (AT91_VA_BASE_SYS - AT91_BASE_SYS);
+-	rtc->rtt += r->start;
++	rtc->rtt = ioremap(r->start, resource_size(r));
++	if (!rtc->rtt) {
++		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
++		ret = -ENOMEM;
++		goto fail;
++	}
  
- static void __init at91sam9260_ioremap_registers(void)
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
-index 2e47b6d..08ae9af 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9260.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
-@@ -113,6 +113,8 @@
- #define AT91SAM9260_SRAM0_SIZE	SZ_4K		/* Internal SRAM 0 size (4Kb) */
- #define AT91SAM9260_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
- #define AT91SAM9260_SRAM1_SIZE	SZ_4K		/* Internal SRAM 1 size (4Kb) */
-+#define AT91SAM9260_SRAM_BASE	0x002FF000	/* Internal SRAM base address */
-+#define AT91SAM9260_SRAM_SIZE	SZ_8K		/* Internal SRAM size (8Kb) */
+ 	mr = rtt_readl(rtc, MR);
  
- #define AT91SAM9260_UHP_BASE	0x00500000	/* USB Host controller */
+@@ -326,7 +330,7 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
+ 				&at91_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc->rtcdev)) {
+ 		ret = PTR_ERR(rtc->rtcdev);
+-		goto fail;
++		goto fail_register;
+ 	}
  
-@@ -126,6 +128,8 @@
- #define AT91SAM9G20_SRAM0_SIZE	SZ_16K		/* Internal SRAM 0 size (16Kb) */
- #define AT91SAM9G20_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
- #define AT91SAM9G20_SRAM1_SIZE	SZ_16K		/* Internal SRAM 1 size (16Kb) */
-+#define AT91SAM9G20_SRAM_BASE	0x002FC000	/* Internal SRAM base address */
-+#define AT91SAM9G20_SRAM_SIZE	SZ_32K		/* Internal SRAM size (32Kb) */
+ 	/* register irq handler after we know what name we'll use */
+@@ -351,6 +355,8 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
  
- #define AT91SAM9G20_UHP_BASE	0x00500000	/* USB Host controller */
+ 	return 0;
  
++fail_register:
++	iounmap(rtc->rtt);
+ fail:
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(rtc);
+@@ -371,6 +377,7 @@ static int __devexit at91_rtc_remove(struct platform_device *pdev)
+ 
+ 	rtc_device_unregister(rtc->rtcdev);
+ 
++	iounmap(rtc->rtt);
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(rtc);
+ 	return 0;
 -- 
 1.7.9
 
