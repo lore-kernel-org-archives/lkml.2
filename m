@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2BQKz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 05:55:27 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52716 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2BQKzZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 05:55:25 -0500
+	id S1751702Ab2BQK7A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 05:59:00 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:42376 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751151Ab2BQK66 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 05:58:58 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
+Date: Fri, 17 Feb 2012 11:57:54 +0100
+User-Agent: KMail/1.9.10
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de> <1329412171-20704-3-git-send-email-danny.kukawka@bisect.de> <CAMjpGUdAe66Nw16EyM1_dv4e8uHV02tcfqiuWL8ipeUrQ=HThg@mail.gmail.com>
+In-Reply-To: <CAMjpGUdAe66Nw16EyM1_dv4e8uHV02tcfqiuWL8ipeUrQ=HThg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1329399446.2293.217.camel@twins>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
- <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com> <1329399446.2293.217.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 17 Feb 2012 02:54:55 -0800
-Message-ID: <CAPM31RLKvmRr_76B12zTnqh6+htm++hmSiM9O3EsuRd47oFtpw@mail.gmail.com>
-Subject: Re: [RFC PATCH 14/14] sched: implement usage tracking
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Disposition: inline
+Message-Id: <201202171157.55585.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329476338;82bda794;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 5:37 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
->>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->>  {
->> -       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
->> +       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable,
->> +                                    runnable);
+On Freitag, 17. Februar 2012, Mike Frysinger wrote:
+> On Thu, Feb 16, 2012 at 12:09, Danny Kukawka wrote:
+> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  netdev_warn(ndev, "Setting Ethernet MAC to a
+> > random one\n"); + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  eth_hw_addr_random(ndev);
 >
-> Its not immediately obvious why we use @runnable for @running,
+> would it make sense to have the core dump the warning ?
 
-Isn't it?  An rq is the root of all scheduling -- if there are any
-runnable tasks than one of them better be running when this is called.
+Maybe. Many drivers already print information about setting a random mac 
+address to a netdevice. Some with printk, some via 
+netdev_warn/netdev_info/netdev_dbg or netif_dbg and other with costum 
+methods. I could unify this, in a next step with a netdev_info in 
+eth_hw_addr_random(), if it's okay for David. 
 
-I can add a comment to this effect.
+Danny
