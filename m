@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab2BQBDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:03:03 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58970 "EHLO
+	id S1757220Ab2BQBDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:03:25 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:50128 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756943Ab2BQBAW (ORCPT
+	by vger.kernel.org with ESMTP id S1756922Ab2BQBAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:22 -0500
-X-Sasl-enc: 7vs5JpDpG0M9SogrQVzuMBBJzvAQ3WRauU0VX75el2CE 1329440421
+	Thu, 16 Feb 2012 20:00:20 -0500
+X-Sasl-enc: fLtrgXaAZ7ueeAoh0D5Xj88/h7EHodtONPmvLntzF+Pi 1329440419
 X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:35 2012
-Message-Id: <20120217005535.079957995@linuxfoundation.org>
+Message-Id: <20120217005534.949357846@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:42 -0800
+Date: Thu, 16 Feb 2012 16:55:41 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        Laurent Bonnans <bonnans.l@gmail.com>,
-        Jurica Vukadin <u.ra604@googlemail.com>,
+        alan@lxorguk.ukuu.org.uk, Gary Morain <gmorain@google.com>,
+        Paul Stewart <pstew@google.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [08/28] ath9k: fix a WEP crypto related regression
+Subject: [07/28] ath9k: Fix kernel panic during driver initilization
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,43 +31,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit f88373fa47f3ce6590fdfaa742d0ddacc2ae017f upstream.
+commit 07445f688218a48bde72316aed9de4fdcc173131 upstream.
 
-commit b4a82a0 "ath9k_hw: fix interpretation of the rx KeyMiss flag"
-fixed the interpretation of the KeyMiss flag for keycache based lookups,
-however WEP encryption uses a static index, so KeyMiss is always asserted
-for it, even though frames are decrypted properly.
-Fix this by clearing the ATH9K_RXERR_KEYMISS flag if no keycache based
-lookup was performed.
+all works need to be initialized before ieee80211_register_hw
+to prevent mac80211 call backs such as drv_start, drv_config
+getting started. otherwise we would queue/cancel works before
+initializing them and it leads to kernel panic.
+this issue can be recreated with the following script
+in Chrome laptops with AR928X cards, with background scan
+running (or) Network manager is running
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Reported-by: Laurent Bonnans <bonnans.l@gmail.com>
-Reported-by: Jurica Vukadin <u.ra604@googlemail.com>
+while true
+do
+sudo modprobe -v ath9k
+sleep 3
+sudo modprobe -r ath9k
+sleep 3
+done
+
+	 EIP: [<81040a47>] __cancel_work_timer+0xb8/0xe1 SS:ESP 0068:f6be9d70
+	 ---[ end trace 4f86d6139a9900ef ]---
+	 Registered led device: ath9k-phy0
+	 ieee80211 phy0: Atheros AR9280 Rev:2 mem=0xf88a0000,
+	 irq=16
+	 Kernel panic - not syncing: Fatal exception
+	 Pid: 456, comm: wpa_supplicant Tainted: G      D
+	 3.0.13 #1
+	Call Trace:
+	 [<81379e21>] panic+0x53/0x14a
+	 [<81004a30>] oops_end+0x73/0x81
+	 [<81004b53>] die+0x4c/0x55
+	 [<81002710>] do_trap+0x7c/0x83
+	 [<81002855>] ? do_bounds+0x58/0x58
+	 [<810028cc>] do_invalid_op+0x77/0x81
+	 [<81040a47>] ? __cancel_work_timer+0xb8/0xe1
+	 [<810489ec>] ? sched_clock_cpu+0x81/0x11f
+	 [<8103f809>] ? wait_on_work+0xe2/0xf7
+	 [<8137f807>] error_code+0x67/0x6c
+	 [<810300d8>] ? wait_consider_task+0x4ba/0x84c
+	 [<81040a47>] ? __cancel_work_timer+0xb8/0xe1
+	 [<810380c9>] ? try_to_del_timer_sync+0x5f/0x67
+	 [<81040a91>] cancel_work_sync+0xf/0x11
+	 [<f88d7b7c>] ath_set_channel+0x62/0x25c [ath9k]
+	 [<f88d67d1>] ? ath9k_tx_last_beacon+0x26a/0x85c [ath9k]
+	 [<f88d8899>] ath_radio_disable+0x3f1/0x68e [ath9k]
+	 [<f90d0edb>] ieee80211_hw_config+0x111/0x116 [mac80211]
+	 [<f90dd95c>] __ieee80211_recalc_idle+0x919/0xa37 [mac80211]
+	 [<f90dda76>] __ieee80211_recalc_idle+0xa33/0xa37 [mac80211]
+	 [<812dbed8>] __dev_open+0x82/0xab
+
+Cc: Gary Morain <gmorain@google.com>
+Cc: Paul Stewart <pstew@google.com>
+Cc: Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>
+Tested-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/recv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/wireless/ath/ath9k/init.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -824,6 +824,14 @@ static bool ath9k_rx_accept(struct ath_c
- 		(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_CRC | ATH9K_RXERR_MIC |
- 		 ATH9K_RXERR_KEYMISS));
+--- a/drivers/net/wireless/ath/ath9k/init.c
++++ b/drivers/net/wireless/ath/ath9k/init.c
+@@ -775,6 +775,11 @@ int ath9k_init_device(u16 devid, struct
+ 		ARRAY_SIZE(ath9k_tpt_blink));
+ #endif
  
-+	/*
-+	 * Key miss events are only relevant for pairwise keys where the
-+	 * descriptor does contain a valid key index. This has been observed
-+	 * mostly with CCMP encryption.
-+	 */
-+	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID)
-+		rx_stats->rs_status &= ~ATH9K_RXERR_KEYMISS;
++	INIT_WORK(&sc->hw_reset_work, ath_reset_work);
++	INIT_WORK(&sc->hw_check_work, ath_hw_check);
++	INIT_WORK(&sc->paprd_work, ath_paprd_calibrate);
++	INIT_DELAYED_WORK(&sc->hw_pll_work, ath_hw_pll_work);
 +
- 	if (!rx_stats->rs_datalen)
- 		return false;
-         /*
+ 	/* Register with mac80211 */
+ 	error = ieee80211_register_hw(hw);
+ 	if (error)
+@@ -793,10 +798,6 @@ int ath9k_init_device(u16 devid, struct
+ 			goto error_world;
+ 	}
+ 
+-	INIT_WORK(&sc->hw_reset_work, ath_reset_work);
+-	INIT_WORK(&sc->hw_check_work, ath_hw_check);
+-	INIT_WORK(&sc->paprd_work, ath_paprd_calibrate);
+-	INIT_DELAYED_WORK(&sc->hw_pll_work, ath_hw_pll_work);
+ 	sc->last_rssi = ATH_RSSI_DUMMY_MARKER;
+ 
+ 	ath_init_leds(sc);
 
 
