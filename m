@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab2BQPCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 10:02:44 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:8833 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab2BQPCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 10:02:43 -0500
-Message-ID: <4F3E6BFF.9030307@atmel.com>
-Date: Fri, 17 Feb 2012 16:02:23 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1752995Ab2BQPHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 10:07:46 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:58591 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751871Ab2BQPHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 10:07:44 -0500
+Date: Fri, 17 Feb 2012 10:07:42 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Zhang, Rui" <rui.zhang@intel.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "Lin, Ming M" <ming.m.lin@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: RE: [RFC PATCH 2/6] ACPI: Reference devices in ACPI Power Resource
+In-Reply-To: <744357E9AAD1214791ACBA4B0B90926305BFDC@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1202171003060.1350-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [GIT PULL] at91 mmc fixes for 3.3-rc[45]
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Fri, 17 Feb 2012, Zhang, Rui wrote:
 
-This is a couple of patches that fixes a sequence in atmel-mci during 
-DMA/PDC detection + channel handling.
+> > Do you basically want
+> > the ZPODD always to be suspended and resumed along with the ATA port,
+> 
+> No. ZPODD suspends itself, which put ZPODD to a SCSI low power state (NOT power off/D3_COLD).
+> And then it is the "Runtime PM core" that suspends ATA port after ZPODD being suspended.
+> And the .runtime_suspend callback for ATA port actually turns off the ZPODD power.
+> 
+> During resume, ATA port is resumed first because of the ACPI wakeup event. 
+> But in fact, this wakeup event should be read as "ZPODD remote wakeup signal", thus runtime resume request is sent to ZPODD, done by Patch 3/6.
+> 
+> > or should it be possible to suspend the ZPODD while the port remains
+> > running?
+> > 
+> Sure, but the power is still on at this time.
 
-I also add the MAINTAINERS update and hand the SD/MMC drivers over to 
-Ludovic Desroches who already made great efforts to enhance them.
+Then maybe you can use pm_runtime_no_callbacks() for the ZPODD device.  
+It's explained in Documentation/power/runtime_pm.txt, and I use it for 
+USB interfaces.
 
-You can find that the following changes since commit d65b4e98d7ea3038b767b70fe8be959b2913f16d:
+The idea is that the ZPODD will never receive any runtime PM callbacks 
+from the PM core.  Instead the ATA port callback routines will be 
+responsible for power management of the ZPODD device.
 
-  Linux 3.3-rc3 (2012-02-08 19:21:53 -0800)
+Alan Stern
 
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git mmc-at91-fixes-for-3.3-rc4
-
-for you to fetch changes up to 71055393e9e76a0c03f0b3b9d370a0ad2bae2763:
-
-  MAINTAINERS: hand over atmel-mci (sd/mmc interface) (2012-02-17 15:40:18 +0100)
-
-----------------------------------------------------------------
-Ludovic Desroches (2):
-      mmc: atmel-mci: don't use dma features when dma is present but there is no chan available
-      mmc: atmel-mci: fix typo
-
-Nicolas Ferre (1):
-      MAINTAINERS: hand over atmel-mci (sd/mmc interface)
-
- MAINTAINERS                  |    4 ++--
- drivers/mmc/host/atmel-mci.c |   23 +++++++++++------------
-
-Thanks a lot, best regards,
--- 
-Nicolas Ferre
