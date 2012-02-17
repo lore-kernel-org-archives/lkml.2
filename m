@@ -1,111 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab2BQFii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 00:38:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60862 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751642Ab2BQFig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 00:38:36 -0500
-Message-ID: <4F3DE881.6090503@cn.fujitsu.com>
-Date: Fri, 17 Feb 2012 13:41:21 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>,
+	id S1751989Ab2BQFi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 00:38:58 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60757 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab2BQFit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 00:38:49 -0500
+Message-ID: <1329457113.2373.53.camel@js-netbook>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: John Stultz <john.stultz@linaro.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: NeilBrown <neilb@suse.de>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 0/2] cgroup: Fix some races against css_set task
- links
-References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-17 13:36:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-02-17 13:36:57,
-	Serialize complete at 2012-02-17 13:36:57
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>
+Date: Thu, 16 Feb 2012 21:38:33 -0800
+In-Reply-To: <20120217044557.GI14132@dastard>
+References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+	 <1328832993-23228-2-git-send-email-john.stultz@linaro.org>
+	 <20120214051659.GH14132@dastard> <1329198932.2753.62.camel@work-vm>
+	 <20120214235106.GL7479@dastard> <1329265750.2340.17.camel@work-vm>
+	 <20120215123750.3333141f@notabene.brown> <20120217044557.GI14132@dastard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021705-3270-0000-0000-000004186283
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sorry for the delayed reply. I had been off for quite a few days.
+On Fri, 2012-02-17 at 15:45 +1100, Dave Chinner wrote:
+> On Wed, Feb 15, 2012 at 12:37:50PM +1100, NeilBrown wrote:
+> > On Tue, 14 Feb 2012 16:29:10 -0800 John Stultz <john.stultz@linaro.org> wrote:
+> > 
+> > > But I'm open to other ideas and arguments.
+> > 
+> > I didn't notice the original patch, but found it at
+> > https://lwn.net/Articles/468837/
+> > and had a look.
+> > 
+> > My first comment is -ENODOC.  A bit background always helps, so let me try to
+> > construct that:
+> > 
+> >  The goal is to allow applications to interact with the kernel's cache
+> >  management infrastructure.  In particular an application can say "this
+> >  memory contains data that might be useful in the future, but can be
+> >  reconstructed if necessary, and it is cheaper to reconstruct it than to read
+> >  it back from disk, so don't bother writing it out".
+> > 
+> >  The proposed mechanism - at a high level - is for user-space to be able to
+> >  say "This memory is volatile" and then later "this memory is no longer
+> >  volatile".  If the content of the memory is still available the second
+> >  request succeeds.  If not, it fails.. Well, actually it succeeds but reports
+> >  that some content has been lost. (not sure what happens then - can the app do
+> >  a binary search to find which pages it still has or something).
+> > 
+> >  (technically we should probably include the cost to reconstruct the page,
+> >  which the kernel measures as 'seeks' but maybe that isn't necessary).
+> > 
+> >  This is implemented by using files in a 'tmpfs' filesystem.  These file
+> >  support three new flags to fadvise:
+> > 
+> >  POSIX_FADV_VOLATILE - this marks a range of pages as 'volatile'.  They may be
+> >         removed from the page cache as needed, even if they are not 'clean'.
+> >  POSIX_FADV_NONVOLATILE - this marks a range of pages as non-volatile.
+> >         If any pages in the range were previously volatile but have since been
+> >         removed, then a status is returned reporting this.
+> >  POSIX_FADV_ISVOLATILE - this does not actually give any advice to the kernel
+> >         but rather asks a question: Are any of these pages volatile?
+> 
+> What about for files that aren't on tmpfs? the fadvise() interface
+> is not tmpfs specific, and given that everyone is talking about
+> volatility of page cache pages, I fail to see what is tmpfs specific
+> about this proposal.
+> 
+> So what are the semantics that are supposed to apply to a file that
+> is on a filesystem with stable storage that is cached in the page
+> cache?
 
-Frederic Weisbecker wrote:
-> Hi,
-> 
-> This is trying to fix some races in the way to link all the tasks to
-> the css_set links. I hope some people can have a look at this, especially
-> as I'm definetly not an SMP ordering expert.
+Indeed, this is probably the most awkward case.  So currently, we use
+vmtruncate_range, which should punch a hole in the file. If I switch to
+invalidate_inode_pages2_range(), then I think dirty data is dropped and
+the backed page remains (I'm currently reading over that now).
 
-me neither.
+> If this is tmpfs specific behaviour that is required, then IMO
+> fadvise is not the correct interface to use here because fadvise is
+> supposed to be a generic interface to controlling the page cache
+> behaviour on any given file....
+>
+> > As a counter-point,  this is my first thought of an implementation approach
+> > (-ENOPATCH, sorry)
+> > 
+> > - new mount option for tmpfs e.g. 'volatile'.  Any file in a filesystem
+> >   mounted with that option and which is not currently open by any process can
+> >   have blocks removed at any time.  The file name must remain, and the file
+> >   size must not change.
+> > - lseek can be used to determine if anything has been purged with 'SEEK_DATA'
+> >   and 'SEEK_HOLE'.
+> > 
+> > So you can only mark volatility on a whole-file granularity (hence the
+> > question above).
+> >  'open' says "NONVOLATILE".
+> >  'close' says "VOLATILE".
+> >  'lseek' is used to check if anything was discarded.
+> > 
+> > This approach would allow multiple processes to share a cache (might this be
+> > valuable?) as it doesn't become truly volatile until all processes close
+> > their handles.
+> 
+> If this functionality is only useful for tmpfs, then I'd much prefer
+> a tmpfs specific approach like this....
 
-> 
-> To give you the big picture, as long as nobody never calls
-> cgroup_iter_start(), we don't link the tasks to their css_set (this 'link'
-> is a simple list_add()).
-> 
-> But once somebody calls cgroup_iter_start(), we call
-> cgroup_enable_task_cg_lists() that grossly does this:
-> 
-> cgroup_enable_task_cg_lists() {
-> 	use_task_set_css_links = 1;
-> 	do_each_thread(g, p) {
-> 		link p to css_set
-> 	} while_each_thread(g, p);
-> }
-> 
-> But this links only existing tasks, we also need to link all the tasks
-> that will be created later, this is what does cgroup_post_fork():
-> 
-> cgroup_post_fork() {
-> 	if (use_task_set_css_links)
-> 		link p to css_set
-> }
-> 
-> So we have some races here:
-> 
-> - cgroup_enable_task_cg_lists() iterates over the tasklist
->   without protection. The comments are advertizing we are using RCU
->   but we don't. And in fact RCU doesn't yet protect against
->   while_each_thread().
-> 
-> - Moreover with RCU there is a risk that we iterate the tasklist but
->   we don't immediately see all the last updates that happened. For
->   example if a task forks and passes cgroup_post_fork() while
->   use_task_set_css_links = 0 then another CPU calling
->   cgroup_enable_task_cg_list() can miss the new child while walking the
->   tasklist with RCU as it doesn't appear immediately.
-> 
-> - There is no ordering constraint on use_task_set_css_links read/write
->   against the tasklist traversal and modification. cgroup_post_fork()
->   may deal with a stale value.
-> 
-> The second patch of the series is a proposal to fix the three above
-> points. Tell me what you think.
-> 
+Since, as I think more on this, this seems to map closer to file hole
+punching, would fallocate be the right interface? FALLOC_FL_PUNCH_HOLE
+isn't supported by all filesystems, after all. 
 
-The patch looks good to me.
+Maybe FALLOC_FL_VOLATILE and FALLOC_FL_NONVOLATILE?
 
-As cgroup_enable_task_cg_lists() is an one-off function, won't be
-called more than once, so there's little chance it can happen
-in reality, so should be ok to queue it for 3.4.
+thanks
+-john
 
-> Thanks.
-> 
-> Frederic Weisbecker (2):
->   cgroup: Remove wrong comment on cgroup_enable_task_cg_list()
->   cgroup: Walk task list under tasklist_lock in
->     cgroup_enable_task_cg_list
-> 
-
-for both patches
-
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-
->  kernel/cgroup.c |   23 ++++++++++++++++++++---
->  1 files changed, 20 insertions(+), 3 deletions(-)
-> 
