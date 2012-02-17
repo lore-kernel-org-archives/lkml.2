@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab2BQNMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 08:12:05 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52580 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab2BQNMD (ORCPT
+	id S1752253Ab2BQNNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 08:13:48 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39320 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab2BQNNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 08:12:03 -0500
+	Fri, 17 Feb 2012 08:13:47 -0500
+Date: Fri, 17 Feb 2012 13:12:47 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: Jon Medhurst <tixy@yxit.co.uk>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sumit Bhattacharya <sumitb@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dma-mapping: fix leak in consistent_init
+Message-ID: <20120217131247.GN27825@n2100.arm.linux.org.uk>
+References: <1329484195-26361-1-git-send-email-ajeet.yadav.77@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120217115627.GA25601@elte.hu>
-References: <20120212111914.GC21493@elte.hu>
-	<1329178356-16645-1-git-send-email-kjwinchester@gmail.com>
-	<20120217115627.GA25601@elte.hu>
-Date: Fri, 17 Feb 2012 09:12:01 -0400
-Message-ID: <CAELBVzC=O3ViyGD4tKEdajr37WO7FfbM5OU_yjNSWn+8rES1ww@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Move per cpu cpu_llc_shared_map to a field in
- struct cpuinfo_x86
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329484195-26361-1-git-send-email-ajeet.yadav.77@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 February 2012 07:56, Ingo Molnar <mingo@elte.hu> wrote:
->
->>
->> I'm still wondering if I should I give the same treatment to:
->>
->> cpu_sibling_map
->> cpu_core_map
->> cpu_llc_id
->> cpu_number
->>
->
-> Yeah, I'd definitely give them the same treatment.
->
-> Would you like to update your series? I'd suggest you keep patch
-> #1 in place, as it's already probably reasonably well tested.
->
+On Fri, Feb 17, 2012 at 06:39:55PM +0530, Ajeet Yadav wrote:
+> Although the error in this case is unlikely, but logically
+> if error occurs then we leak memory.
+> 
+> Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+> ---
+>  arch/arm/mm/dma-mapping.c |   24 ++++++++++++------------
+>  1 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 04bfa76..b8cf062 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -161,7 +161,6 @@ static struct arm_vmregion_head consistent_head = {
+>   */
+>  static int __init consistent_init(void)
+>  {
+> -	int ret = 0;
+>  	pgd_t *pgd;
+>  	pud_t *pud;
+>  	pmd_t *pmd;
+> @@ -171,7 +170,7 @@ static int __init consistent_init(void)
+>  	unsigned long num_ptes = (CONSISTENT_END - base) >> PMD_SHIFT;
+>  
+>  	consistent_pte = kmalloc(num_ptes * sizeof(pte_t *), GFP_KERNEL);
+> -	if (!consistent_pte) {
+> +	if (unlikely(!consistent_pte)) {
 
-Sure, I'll leave that patch as #1, and add an additional patch per
-field.  It will take me a week or two to find the time to get it all
-together, but I'll keep working away at it.
-
--- 
-Kevin Winchester
+Please get rid of these unlikelys.  This really isn't a performance
+critical path.
