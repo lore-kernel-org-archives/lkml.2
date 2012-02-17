@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab2BQWvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 17:51:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab2BQWvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 17:51:31 -0500
-Date: Fri, 17 Feb 2012 17:51:26 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
-Message-ID: <20120217225125.GK26620@redhat.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-8-git-send-email-tj@kernel.org>
- <20120217011907.GA15073@google.com>
- <20120217221406.GJ29414@google.com>
- <20120217223420.GJ26620@redhat.com>
- <20120217224103.GN29414@google.com>
+	id S1755079Ab2BQWy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 17:54:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44212 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab2BQWy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 17:54:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keith.chew@gmail.com designates 10.236.72.170 as permitted sender) smtp.mail=keith.chew@gmail.com; dkim=pass header.i=keith.chew@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217224103.GN29414@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 18 Feb 2012 11:54:25 +1300
+Message-ID: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
+Subject: Hang on "echo b > /proc/sysrq-trigger"
+From: Keith Chew <keith.chew@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 02:41:03PM -0800, Tejun Heo wrote:
-> On Fri, Feb 17, 2012 at 05:34:20PM -0500, Vivek Goyal wrote:
-> > Nope. We make note of task migration and drop cic->cfqq association
-> > and establish a new association where new cfqq is part of new cgroup.
-> > (ioc_cgroup_changed()).
-> 
-> Yeah, that's the CHANGED bit thing.  I probably got confused with
-> blk-throttle losing blkcg while testing.  Anyways, it would be great
-> if we can either remove that altogether.  e.g. compare the cached
-> blkg->blkcg and see if it has changed from cfq.  Or add a callback and
-> do the shootdown synchronously at least.
+Hi
 
-I think dropping it lazily has advantage as once the cic->cfqq association
-is set, we don't worry about cgroups at all.
+To test the reliability of a hardware, I have a script which reboots a
+machine every 15 minutes after boot up. This machine has a dual video
+output, VGA and DVI-D, both driven via an intel GM45 chipset (I am
+using kernel 2.6.39.24 kernel intel drivers).
 
-Otherwise on every IO, we will end up comparing submitting tasks's
-cgroup and cic/cfqq's cgroup.
+Some interesting results (which can be reproduced consistently):
+"echo b > /proc/sysrq-trigger" via DVI-D - after 2-3 days, it hangs
+(freezes) before reboot (dmesg only shows "Resetting...", nothing
+after that, no panic, stack trace, etc)
+"echo b > /proc/sysrq-trigger" via VGA - runs > 1 week
+"reboot -fn" via VGA or DVI-D - runs > 1 week
+"reboot" via VGA or DVI-D - runs > 1 week
 
-Also this will create problems, if two threads sharing io context are
-in two different cgroups. We will frequently end up changing the
-association.
+I suspect that the intel graphics driver is not happy with the "echo b
+> /proc/sysrq-trigger" when it is still running.
 
-So comparing probably is not a very good idea. Doing something
-synchronously might be better if you don't like CGROUP_CHANGED
-bit in ioc.
+I would like to make the "echo b" successfully reboot the machine, but
+this would appear to be a hardware bug? Is there anything that can be
+done in the kernel to make the "echo b" successfully work 100%?
 
-Thanks
-Vivek
+Regards
+Keith
