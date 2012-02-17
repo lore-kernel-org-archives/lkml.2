@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2BQDtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:49:43 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:43902 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab2BQDtm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:49:42 -0500
-Message-ID: <1329450573.2373.11.camel@js-netbook>
-Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-From: John Stultz <john.stultz@linaro.org>
-To: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>
-Date: Thu, 16 Feb 2012 19:49:33 -0800
-In-Reply-To: <CAO6Zf6C5RfrK9x6Pq35O208zzF+0LDDAWTNUF-p4VD=FcdNY3A@mail.gmail.com>
-References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
-	 <1328832993-23228-2-git-send-email-john.stultz@linaro.org>
-	 <CAO6Zf6C5RfrK9x6Pq35O208zzF+0LDDAWTNUF-p4VD=FcdNY3A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021703-6148-0000-0000-000003846336
+	id S1754844Ab2BQDx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:53:58 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36993 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751114Ab2BQDxz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 22:53:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1329439809.2337.32.camel@localhost>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+	<1329422549-16407-3-git-send-email-wad@chromium.org>
+	<4F3D61CB.2000301@zytor.com>
+	<CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+	<4F3D7250.6040504@zytor.com>
+	<CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
+	<4F3D766E.7040205@zytor.com>
+	<CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
+	<4F3D7DD4.6070103@zytor.com>
+	<CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+	<1329439809.2337.32.camel@localhost>
+Date: Thu, 16 Feb 2012 21:53:53 -0600
+Message-ID: <CABqD9hY06gaA7T8f0Te9PFpip6ix7CcbRShWcXutxbivEZJ2og@mail.gmail.com>
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Markus Gutschke <markus@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-12 at 15:08 +0100, Dmitry Adamushko wrote:
-> On 10 February 2012 01:16, John Stultz <john.stultz@linaro.org> wrote:
-> Also, I have a question about mapping_range_volatile().
-[snip]
-> +       new->mapping = mapping;
-> +       new->range_node.start = start;
-> +       new->range_node.end = end;
-> +       new->purged = purged;
-> 
-> I'm wondering whether this 'inheritance' is always desirable.
-> 
-> Say,
-> 
-> mapping_range_volatile(mapping, X, X + 1);
-> ...
-> time goes by and volatile_shrink() has been called for this region.
-> 
-> now, a user does the following (is it considered bad user-behavior?)
-> 
-> mapping_range_volatile(mapping, Y = X - big_value, Z = X + big_value);
-> 
-> This new range will 'inherit' purged=1 from the old one and won't be
-> on the lru_list. Yet, it's much bigger than the old one and so many
-> pages are not really 'volatile'.
+On Thu, Feb 16, 2012 at 6:50 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Thu, 2012-02-16 at 17:00 -0600, Will Drewry wrote:
+>> On Thu, Feb 16, 2012 at 4:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> > On 02/16/2012 01:51 PM, Will Drewry wrote:
+>
+>> Then syscall_namespace(current, regs) returns
+>> * 0 - SYSCALL_NS_32 (for existing 32 and config_compat)
+>> * 1 - SYSCALL_NS_64 (for existing 64 bit)
+>> * 2 - SYSCALL_NS_X32 (everything after 2 is arch specific)
+>> * ..
+>>
+>> This patch series is pegged to x86 right now, so it's not a big deal
+>> to add a simple syscall_namespace to asm/syscall.h.  Of course, the
+>> code is always the easy part.  Even easier would be to only assign 0
+>> and 1 in the seccomp_data for 32-bit or 64-bit, then leave the rest of
+>> the u32 untouched until x32 stabilizes and the TS_COMPAT interactions
+>> are sorted.
+>
+> I don't know if anyone cares, but include/linux/audit.h tries to expose
+> this type of information so audit userspace can later piece things back
+> together.  (we get this info from the syscall entry exit code so we know
+> which arch it is).
+>
+> Not sure how x32 is hoping to expose its syscall info, but others are
+> going to have the same/similar problem.
 
-Yea, I think this is a interesting point, and we can probably be a
-little smarter then what is done here. We could only coalesce ranges
-that haven't been purged, for instance. Although, the coalescing of
-neighboring ranges in of itself is sort of questionable, as if they were
-marked volatile independently, they may be marked nonvolatile
-independently as well, so merging them together mucks up the lru
-ordering.
+An earlier change Roland had prodded me toward was adding a
+syscall_get_arch() call to asm/syscall.h which returned the
+appropriate audit arch value for the current calling convention.  I
+hate to suggest this, but should I go ahead and wire that up for x86
+now, make it a dependency for HAVE_ARCH_SECCOMP_FILTER (and officially
+part of asm/syscall.h) then let it trickle into existence?  Maybe
+something like:
 
-Robert/Brian: Is there strong rational for the coalescing of neighboring
-ranges in ashmem?
+static inline int syscall_get_arch(struct task_struct *task, struct
+pt_regs *regs)
+{
+#ifdef CONFIG_IA32_EMULATION
+  if (task_thread_info(task)->status & TS_COMPAT)
+    return AUDIT_ARCH_I386;
+#endif
+#ifdef CONFIG_64BIT
+  return AUDIT_ARCH_X86_64;
+#else
+  return AUDIT_ARCH_I386;
+#endif
+}
 
-thanks
--john
+There would be no other callers, though, because everywhere AUDIT_ARCH
+is used it is hardcoded as appropriate.  Then when x32 comes along, it
+can figure out where it belongs using tif status and/or regs.
 
+I'm not sure what the appropriate way to add things to asm/syscall.h,
+but I can certainly do a first cut in the x86 version.
 
+thanks!
