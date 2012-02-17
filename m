@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2BQJup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 04:50:45 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64229 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2BQJun (ORCPT
+	id S1752658Ab2BQJvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 04:51:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38689 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab2BQJvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 04:50:43 -0500
-Message-ID: <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: TCP_STREAM performance regression on commit b3613118
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: davem@davemloft.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@intel.com>, "Huang, Ying" <ying.huang@intel.com>
-Date: Fri, 17 Feb 2012 10:50:39 +0100
-In-Reply-To: <1329466694.12669.2976.camel@debian>
-References: <1329466694.12669.2976.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Fri, 17 Feb 2012 04:51:22 -0500
+Date: Fri, 17 Feb 2012 01:50:22 -0800
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-e334c726ca774d346cb7c4db487e80953a202b58@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
+        mingo@elte.hu
+In-Reply-To: <1328836217-9118-3-git-send-email-namhyung.kim@lge.com>
+References: <1328836217-9118-3-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Get rid of ctype.h in symbol.c
+Git-Commit-ID: e334c726ca774d346cb7c4db487e80953a202b58
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 01:50:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 17 février 2012 à 16:18 +0800, Alex,Shi a écrit :
-> The tcp_stream loop back performance has about 10% drop on the
-> commitment on our core2 2 sockets server. This commit has 2
-> parents(7505afe28, 5983fe), but both of them have no regression. So
-> guess the impact just happened when this 2 parents joint. That beyond
-> our capability to dig it more.
-> 
-> Any ideas? 
+Commit-ID:  e334c726ca774d346cb7c4db487e80953a202b58
+Gitweb:     http://git.kernel.org/tip/e334c726ca774d346cb7c4db487e80953a202b58
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 10 Feb 2012 10:10:17 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 13 Feb 2012 23:22:50 -0200
 
-Most probably the more accurate truesize determination is responsible of
-this tcp regression, since some prior assumptions might be wrong.
+perf tools: Get rid of ctype.h in symbol.c
 
-Want to give more information on the workload ?
-Is it a 32 or 64 bit kernel ?
+The ctype.h in symbol.c was needed because of isupper(). However we now
+have it in util.h, it can be changed to use our implementation.
 
-cat /proc/sys/net/ipv4/tcp_rmem
-cat /proc/sys/net/ipv4/tcp_wmem
-netstat -s
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1328836217-9118-3-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index fc6e12f..5dd83c3 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1,4 +1,3 @@
+-#include <ctype.h>
+ #include <dirent.h>
+ #include <errno.h>
+ #include <libgen.h>
+@@ -12,6 +11,7 @@
+ #include <unistd.h>
+ #include <inttypes.h>
+ #include "build-id.h"
++#include "util.h"
+ #include "debug.h"
+ #include "symbol.h"
+ #include "strlist.h"
