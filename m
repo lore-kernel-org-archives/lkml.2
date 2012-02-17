@@ -1,128 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab2BQHjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 02:39:12 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50884 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2BQHjL (ORCPT
+	id S1751884Ab2BQIEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 03:04:07 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42615 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2BQIEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 02:39:11 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH v2] block: avoid false positive warnings on ioctl to partition
-Date: Fri, 17 Feb 2012 08:38:58 +0100
-Message-Id: <1329464338-8351-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 17 Feb 2012 03:04:05 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/6] hugetlbfs: Add cgroup resource controller for hugetlbfs
+In-Reply-To: <20120214155843.42a090c2.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1328909806-15236-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120214155843.42a090c2.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 17 Feb 2012 13:33:38 +0530
+Message-ID: <87d39devj9.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12021708-5564-0000-0000-00000168291E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After a month of reports, the warnings from non-whitelisted ioctls to
-a partitions can be classified in three groups.
 
-BLKFLSBUF and BLKROSET are always sent to devices.  Not having them in
-the whitelist did not cause any visible harm, but anyway they can and
-should be added to the whitelist.
+Hi Kamezawa,
 
-Many unrecognized ioctls are sent to partitions as an attempt to probe for
-CD-ROMs, floppies and other kinds of devices.  Like CDROM_GET_CAPABILITY,
-they can be blocked safely.
+Sorry for the late response as I was out of office for last few days.
 
-Of the actual SCSI ioctls, only SG_IO was reported in the wild (twice).
-udev's scsi_id can issue INQUIRY commands if passed a partition; this
-only occurs with custom rules and is strictly speaking invalid, but we
-need a transition period so that people can fix their configuration.
-zfs-fuse also can issue SYNCHRONIZE CACHE commands, where it should
-simply use fdatasync.
+On Tue, 14 Feb 2012 15:58:43 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Sat, 11 Feb 2012 03:06:40 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> 
+> > Hi,
+> > 
+> > This patchset implements a cgroup resource controller for HugeTLB pages.
+> > It is similar to the existing hugetlb quota support in that the limit is
+> > enforced at mmap(2) time and not at fault time. HugeTLB quota limit the
+> > number of huge pages that can be allocated per superblock.
+> > 
+> > For shared mapping we track the region mapped by a task along with the
+> > hugetlb cgroup in inode region list. We keep the hugetlb cgroup charged
+> > even after the task that did mmap(2) exit. The uncharge happens during
+> > file truncate. For Private mapping we charge and uncharge from the current
+> > task cgroup.
+> > 
+> 
+> Hm, Could you provide an Documenation/cgroup/hugetlb.txt at RFC ?
+> It makes clear what your patch does.
 
-Therefore, this patch silently blocks all ioctls except SG_IO, since
-all of them turned out to be false positives; in case some escaped, it
-should be easily diagnosable or at least bisectable.  The warning text
-is separated for root and non-root.  The warning for SG_IO is left in
-because a) it will alert users to possible bugs, and b) we do want to
-hear about more uses in the wild.  However, no deprecation period is
-set for now.
+Will do in the next iteration.
 
-Cc: stable@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-	Note: I will take care of the stable backport as soon as this
-	patch or something similar hits Linus's tree.
+> 
+> I wonder whether this should be under memory cgroup or not. In the 1st design
+> of cgroup, I think it was considered one-feature-one-subsystem was good.
+> 
+> But in recent discussion, I tend to hear that's hard to use.
+> Now, memory cgroup has 
+> 
+>    memory.xxxxx for controlling anon/file
+>    memory.memsw.xxxx for controlling memory+swap
+>    memory.kmem.tcp_xxxx for tcp controlling.
+> 
+> How about memory.hugetlb.xxxxx ?
+> 
 
- block/scsi_ioctl.c |   40 ++++++++++++++++++++++++++++++-------------
- 1 files changed, 27 insertions(+), 13 deletions(-)
+That is how i did one of the earlier version of the patch. But there are
+few difference with the way we want to control hugetlb allocation. With
+hugetlb cgroup, we actually want to enable application to fall back to
+using normal pagesize if we are crossing cgroup limit. ie, we need to
+enforce the limit during mmap. memcg tracks cgroup details along
+with pages, hence implementing above gets challenging. Another
+difference is we keep the cgroup charged even if the task exit as long as
+the file is present in hugetlbfs. ie, if an application did mmap with
+MAP_SHARED in hugetlbfs, the file size will be extended to the requested
+length arg in mmap. This file will consume pages from hugetlb resource
+until it is truncated. We want to track that resource usage as a part
+of hugetlb cgroup. 
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 260fa80..fe86923 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -696,9 +696,6 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 	if (bd && bd == bd->bd_contains)
- 		return 0;
- 
--	/* Actually none of these is particularly useful on a partition,
--	 * but they are safe.
--	 */
- 	switch (cmd) {
- 	case SCSI_IOCTL_GET_IDLUN:
- 	case SCSI_IOCTL_GET_BUS_NUMBER:
-@@ -710,22 +707,39 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
- 	case SG_GET_RESERVED_SIZE:
- 	case SG_SET_RESERVED_SIZE:
- 	case SG_EMULATED_HOST:
-+		/* Actually none of these is particularly useful on a partition,
-+		 * but they are safe.
-+		 */
- 		return 0;
--	case CDROM_GET_CAPABILITY:
--		/* Keep this until we remove the printk below.  udev sends it
--		 * and we do not want to spam dmesg about it.   CD-ROMs do
--		 * not have partitions, so we get here only for disks.
--		 */
--		return -ENOIOCTLCMD;
-+
-+	case BLKROSET:
-+	case BLKFLSBUF:
-+		/* These are generic block layer ioctls that are nevertheless
-+		 * passed down to devices.  They are certainly valid for
-+		 * partitions!
-+		 */
-+		return 0;
-+
-+	case SG_IO:
-+		/* Accept this for root users, at least for now.  */
-+		break;
-+
- 	default:
--		break;
-+		/* In particular, rule out resets and host-specific ioctls.  */
-+		return -ENOIOCTLCMD;
- 	}
- 
--	/* In particular, rule out all resets and host-specific ioctls.  */
--	printk_ratelimited(KERN_WARNING
--			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
-+	if (capable(CAP_SYS_RAWIO)) {
-+		printk_ratelimited(KERN_WARNING
-+				   "%s: SG_IO to a partition is likely a bug\n",
-+				   current->comm);
-+		return 0;
-+	}
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
-+	printk_ratelimited(KERN_WARNING
-+			   "%s: rejecting SG_IO to a partition for non-root user\n",
-+			   current->comm);
-+	return -ENOIOCTLCMD;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
--- 
-1.7.1
+>From the interface point of view what we have in hugetlb cgroup is
+similar to what is in memcg. We end up with files like the below
+
+hugetlb.16GB.limit_in_bytes
+hugetlb.16GB.max_usage_in_bytes 
+hugetlb.16GB.usage_in_bytes
+hugetlb.16MB.limit_in_bytes
+hugetlb.16MB.max_usage_in_bytes  
+hugetlb.16MB.usage_in_bytes
+
+> 
+> > The current patchset doesn't support cgroup hierarchy. We also don't
+> > allow task migration across cgroup.
+> 
+> What happens when a user destroys a cgroup which contains alive hugetlb pages ?
+> 
+> Thanks,
+> -Kame
+> 
+
+Thanks
+-aneesh
 
