@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab2BQRyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:54:13 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:54074 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2BQRu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752076Ab2BQRu3 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 Feb 2012 12:50:29 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:57431 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2BQRu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 12:50:27 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/18] ARM: at91/pm_slowclock: add runtime detection of memory contoller
-Date: Fri, 17 Feb 2012 18:50:01 +0100
-Message-Id: <c5d5b80f4be2ad0facabfc11940015e2aacca748.1329500622.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 06/18] ARM: at91/pm_slowclock: function slow_clock() accepts parameters
+Date: Fri, 17 Feb 2012 18:49:58 +0100
+Message-Id: <3100bd0c483a03ced617f3ce168e661d6968d21b.1329500622.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
@@ -24,212 +24,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-This will allow to have all SoC in one kernel image.
+Change slow_clock()/at91_slow_clock() prototype to accept the PMC
+base address and one or two RAM controller addresses by parameters.
+The r0, r1 and r2 registers are used differently and preserved during
+function call.
+Those values are defined in pm.c and slow_clock() function is called
+from there with its new parameters.
+
+This will allow to have a soc independent pm_slowclock.
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Ached-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/include/mach/at91_ramc.h |    9 ++--
- arch/arm/mach-at91/pm.c                     |   15 +++++-
- arch/arm/mach-at91/pm_slowclock.S           |   66 +++++++++++++++++++++------
- 3 files changed, 68 insertions(+), 22 deletions(-)
+ arch/arm/mach-at91/pm.c           |   20 +++++++++++++++--
+ arch/arm/mach-at91/pm_slowclock.S |   41 ++++++++----------------------------
+ 2 files changed, 26 insertions(+), 35 deletions(-)
 
-diff --git a/arch/arm/mach-at91/include/mach/at91_ramc.h b/arch/arm/mach-at91/include/mach/at91_ramc.h
-index 3155499..d8aeb27 100644
---- a/arch/arm/mach-at91/include/mach/at91_ramc.h
-+++ b/arch/arm/mach-at91/include/mach/at91_ramc.h
-@@ -21,11 +21,12 @@ extern void __iomem *at91_ramc_base[];
- .extern at91_ramc_base
- #endif
- 
--#ifdef CONFIG_ARCH_AT91RM9200
--#include <mach/at91rm9200_mc.h>
--#else
-+#define AT91_MEMCTRL_MC		0
-+#define AT91_MEMCTRL_SDRAMC	1
-+#define AT91_MEMCTRL_DDRSDR	2
-+
-+#include <mach/at91rm9200_sdramc.h>
- #include <mach/at91sam9_ddrsdr.h>
- #include <mach/at91sam9_sdramc.h>
--#endif
- 
- #endif /* __AT91_RAMC_H__ */
 diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 6a02ea2..83a0051 100644
+index d554e67..aac00ce 100644
 --- a/arch/arm/mach-at91/pm.c
 +++ b/arch/arm/mach-at91/pm.c
-@@ -188,10 +188,12 @@ int at91_suspend_entering_slow_clock(void)
+@@ -188,13 +188,27 @@ int at91_suspend_entering_slow_clock(void)
  EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
  
  
--static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
-+static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
-+			  void __iomem *ramc1, int memctrl);
+-static void (*slow_clock)(void);
++static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
  
  #ifdef CONFIG_AT91_SLOW_CLOCK
--extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
-+extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
-+			    void __iomem *ramc1, int memctrl);
+-extern void at91_slow_clock(void);
++extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
  extern u32 at91_slow_clock_sz;
  #endif
  
-@@ -241,11 +243,18 @@ static int at91_pm_enter(suspend_state_t state)
- 			 * turning off the main oscillator; reverse on wakeup.
- 			 */
- 			if (slow_clock) {
-+				int memctrl = AT91_MEMCTRL_SDRAMC;
++static void __iomem *at91_pmc_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_PMC);
++#ifdef CONFIG_ARCH_AT91RM9200
++static void __iomem *at91_ramc0_base = (void __iomem*)AT91_VA_BASE_SYS;
++#elif defined(CONFIG_ARCH_AT91SAM9G45)
++static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC0);
++#else
++static void __iomem *at91_ramc0_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_SDRAMC0);
++#endif
 +
-+				if (cpu_is_at91rm9200())
-+					memctrl = AT91_MEMCTRL_MC;
-+				else if (cpu_is_at91sam9g45())
-+					memctrl = AT91_MEMCTRL_DDRSDR;
- #ifdef CONFIG_AT91_SLOW_CLOCK
++#if defined(CONFIG_ARCH_AT91SAM9G45)
++static void __iomem *at91_ramc1_base = (void __iomem*)(AT91_VA_BASE_SYS + AT91_DDRSDRC1);
++#else
++static void __iomem *at91_ramc1_base = NULL;
++#endif
+ 
+ static int at91_pm_enter(suspend_state_t state)
+ {
+@@ -232,7 +246,7 @@ static int at91_pm_enter(suspend_state_t state)
  				/* copy slow_clock handler to SRAM, and call it */
  				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
  #endif
--				slow_clock(at91_pmc_base, at91_ramc_base[0], at91_ramc_base[1]);
-+				slow_clock(at91_pmc_base, at91_ramc_base[0],
-+					   at91_ramc_base[1], memctrl);
+-				slow_clock();
++				slow_clock(at91_pmc_base, at91_ramc0_base, at91_ramc1_base);
  				break;
  			} else {
  				pr_info("AT91: PM - no slow clock mode enabled ...\n");
 diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 9c3117c..17f4d72 100644
+index 97124f5..33fc4a7 100644
 --- a/arch/arm/mach-at91/pm_slowclock.S
 +++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -42,8 +42,9 @@
- #define pmc	r0
- #define sdramc	r1
- #define ramc1	r2
--#define tmp1	r3
--#define tmp2	r4
-+#define memctrl	r3
-+#define tmp1	r4
-+#define tmp2	r5
+@@ -46,11 +46,11 @@
+ #define PLLALOCK_TIMEOUT	1000
+ #define PLLBLOCK_TIMEOUT	1000
+ 
+-#define pmc	r1
+-#define sdramc	r2
++#define pmc	r0
++#define sdramc	r1
++#define ramc1	r2
+ #define tmp1	r3
+ #define tmp2	r4
+-#define ramc1	r5
  
  /*
   * Wait until master clock is ready (after switching master clock source)
-@@ -103,29 +104,44 @@
+@@ -110,21 +110,19 @@
  
  	.text
  
--/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
-+/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
-+ *			void __iomem *ramc1, int memctrl)
-+ */
++/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
  ENTRY(at91_slow_clock)
  	/* Save registers on stack */
--	stmfd	sp!, {r3 - r12, lr}
-+	stmfd	sp!, {r4 - r12, lr}
+-	stmfd	sp!, {r0 - r12, lr}
++	stmfd	sp!, {r3 - r12, lr}
  
  	/*
  	 * Register usage:
- 	 *  R0 = Base address of AT91_PMC
- 	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
- 	 *  R2 = Base address of second RAM Controller or 0 if not present
--	 *  R3 = temporary register
-+	 *  R3 = Memory controller
+-	 *  R1 = Base address of AT91_PMC
+-	 *  R2 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
++	 *  R0 = Base address of AT91_PMC
++	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
++	 *  R2 = Base address of second RAM Controller or 0 if not present
+ 	 *  R3 = temporary register
  	 *  R4 = temporary register
-+	 *  R5 = temporary register
+-	 *  R5 = Base address of second RAM Controller or 0 if not present
  	 */
+-	ldr	pmc, .at91_va_base_pmc
+-	ldr	sdramc, .at91_va_base_sdramc
+-	ldr	ramc1, .at91_va_base_ramc1
  
  	/* Drain write buffer */
  	mov	tmp1, #0
- 	mcr	p15, 0, tmp1, c7, c10, 4
+@@ -283,7 +281,7 @@ ENTRY(at91_slow_clock)
+ #endif
  
--#ifdef CONFIG_ARCH_AT91RM9200
-+	cmp	memctrl, #AT91_MEMCTRL_MC
-+	bne	ddr_sr_enable
-+
-+	/*
-+	 * at91rm9200 Memory controller
-+	 */
- 	/* Put SDRAM in self-refresh mode */
- 	mov	tmp1, #1
- 	str	tmp1, [sdramc, #AT91RM9200_SDRAMC_SRR]
--#elif defined(CONFIG_ARCH_AT91SAM9G45)
-+	b	sdr_sr_done
-+
-+	/*
-+	 * DDRSDR Memory controller
-+	 */
-+ddr_sr_enable:
-+	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
-+	bne	sdr_sr_enable
- 
- 	/* prepare for DDRAM self-refresh mode */
- 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
-@@ -143,7 +159,13 @@ ENTRY(at91_slow_clock)
- 	/* Enable DDRAM self-refresh mode */
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
- 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
--#else
-+
-+	b	sdr_sr_done
-+
-+	/*
-+	 * SDRAMC Memory controller
-+	 */
-+sdr_sr_enable:
- 	/* Enable SDRAM self-refresh mode */
- 	ldr	tmp1, [sdramc, #AT91_SDRAMC_LPR]
- 	str	tmp1, .saved_sam9_lpr
-@@ -151,8 +173,8 @@ ENTRY(at91_slow_clock)
- 	bic	tmp1, #AT91_SDRAMC_LPCB
- 	orr	tmp1, #AT91_SDRAMC_LPCB_SELF_REFRESH
- 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
--#endif
- 
-+sdr_sr_done:
- 	/* Save Master clock setting */
- 	ldr	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
- 	str	tmp1, .saved_mckr
-@@ -255,9 +277,18 @@ ENTRY(at91_slow_clock)
- 
- 	wait_mckrdy
- 
--#ifdef CONFIG_ARCH_AT91RM9200
--	/* Do nothing - self-refresh is automatically disabled. */
--#elif defined(CONFIG_ARCH_AT91SAM9G45)
-+	/*
-+	 * at91rm9200 Memory controller
-+	 * Do nothing - self-refresh is automatically disabled.
-+	 */
-+	cmp	memctrl, #AT91_MEMCTRL_MC
-+	beq	ram_restored
-+
-+	/*
-+	 * DDRSDR Memory controller
-+	 */
-+	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
-+	bne	sdr_en_restore
- 	/* Restore LPR on AT91 with DDRAM */
- 	ldr	tmp1, .saved_sam9_lpr
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
-@@ -267,14 +298,19 @@ ENTRY(at91_slow_clock)
- 	ldrne	tmp2, .saved_sam9_lpr1
- 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
- 
--#else
-+	b	ram_restored
-+
-+	/*
-+	 * SDRAMC Memory controller
-+	 */
-+sdr_en_restore:
- 	/* Restore LPR on AT91 with SDRAM */
- 	ldr	tmp1, .saved_sam9_lpr
- 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
--#endif
- 
-+ram_restored:
  	/* Restore registers, and return */
--	ldmfd	sp!, {r3 - r12, pc}
-+	ldmfd	sp!, {r4 - r12, pc}
+-	ldmfd	sp!, {r0 - r12, pc}
++	ldmfd	sp!, {r3 - r12, pc}
  
  
  .saved_mckr:
+@@ -301,26 +299,5 @@ ENTRY(at91_slow_clock)
+ .saved_sam9_lpr1:
+ 	.word 0
+ 
+-.at91_va_base_pmc:
+-	.word AT91_VA_BASE_SYS + AT91_PMC
+-
+-#ifdef CONFIG_ARCH_AT91RM9200
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS + AT91_DDRSDRC0
+-#else
+-.at91_va_base_sdramc:
+-	.word AT91_VA_BASE_SYS + AT91_SDRAMC0
+-#endif
+-
+-.at91_va_base_ramc1:
+-#if defined(CONFIG_ARCH_AT91SAM9G45)
+-	.word AT91_VA_BASE_SYS + AT91_DDRSDRC1
+-#else
+-	.word 0
+-#endif
+-
+ ENTRY(at91_slow_clock_sz)
+ 	.word .-at91_slow_clock
 -- 
 1.7.9
 
