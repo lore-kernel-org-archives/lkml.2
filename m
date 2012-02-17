@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab2BQXBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:01:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60733 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab2BQXBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:01:11 -0500
-Date: Sat, 18 Feb 2012 00:01:07 +0100
-From: Holger Macht <holger@homac.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: dock_link_device is oopsy
-Message-ID: <20120217230107.GA12929@homac.suse.de>
-References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils>
- <20120217222922.GA2741@homac.suse.de>
- <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
+	id S1755207Ab2BQXGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:06:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41592 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab2BQXGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 18:06:48 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.195.99 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Fri, 17 Feb 2012 15:06:43 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
+Message-ID: <20120217230643.GQ29414@google.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-8-git-send-email-tj@kernel.org>
+ <20120217011907.GA15073@google.com>
+ <20120217221406.GJ29414@google.com>
+ <20120217223420.GJ26620@redhat.com>
+ <20120217224103.GN29414@google.com>
+ <20120217225615.GL26620@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120217225615.GL26620@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
-> On Fri, 17 Feb 2012, Holger Macht wrote:
-> > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
-> > > Matthew,
-> > > 
-> > > A linux-next oops at bootup in dock_link_device() tells me that you
-> > > were not feeling well when you wrote that and dock_unlink_device():
-> > > I hope you're feeling better now and can rewrite them soon.
-> > 
-> > Andrew Morton experienced a similar problem. What system are you using?
-> > I didn't encounter this problem with the systems I tested with.
-> 
-> The two systems I got that on were both 4-year-old Core2 Duo systems,
-> one an HP quad desktop, one a Fujitsu-Siemens laptop.
+On Fri, Feb 17, 2012 at 05:56:15PM -0500, Vivek Goyal wrote:
+> BTW, blk-throttle mangling the context, is a real problem you are facing
+> or it is just one of things which is nice to fix.
 
-Thanks for the information I think this is really independent from the
-fact if a laptop, or more precicely if a system with dock station/bay is
-used.
+Yeah, it is a real problem which makes blk-throttle useless if cfq
+propio is in use.
 
-> 
-> > 
-> > Do you actually have a /sys/devices/platform/dock.?/ directory with a
-> > file 'type' that contains 'dock_station'?
-> 
-> I'll have to report back on that this evening, I'm away from them now.
+> If a cgroup is being throttled do people really care about the
+> iopriority of original task that much. (Given the fact that
+> iopriority helps only so much and kills performance on fast
+> storage).
 
-I actually guess that those systems don't have a
-/sys/devices/platform/dock.? directory at all, which is fine.
+Yeap, apparently, people wanna apply hard limits on top of propio.
+Besides, it's just bad to mangle cgroup *randomly* as the current code
+does.
 
-I also think this will fix it, would be great if you could confirm this:
+Thanks.
 
-acpi: Bail out when linking devices and there are no dock stations
-
-If dock_station_count is zero, we allocate zero memory and don't check
-this at future references. So bail out if there are actually no dock
-stations.
-
-Signed-off-by: Holger Macht <holger@homac.de>
----
- drivers/acpi/dock.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index b5e4142..8641912 100644
---- a/drivers/acpi/dock.c
-+++ b/drivers/acpi/dock.c
-@@ -286,6 +286,9 @@ struct device **dock_link_device(acpi_handle handle)
- 	int ret, dock = 0;
- 	struct device **devices;
- 
-+	if (!dock_station_count)
-+		return -ENODEV;
-+
- 	devices = kmalloc(dock_station_count * sizeof(struct device *),
- 			  GFP_KERNEL);
- 
-@@ -323,9 +326,13 @@ struct device **dock_unlink_device(acpi_handle handle)
- 	struct device *dev = acpi_get_physical_device(handle);
- 	struct dock_station *dock_station;
- 	int dock = 0;
--	struct device **devices =
--		kmalloc(dock_station_count * sizeof(struct device *),
--			GFP_KERNEL);
-+	struct device **devices;
-+
-+	if (!dock_station_count)
-+		return -ENODEV;
-+
-+	devices = kmalloc(dock_station_count * sizeof(struct device *),
-+			  GFP_KERNEL);
- 
- 	if (!dev)
- 		return NULL;
 -- 
-1.7.7
-
- 
+tejun
