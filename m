@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2BQPzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 10:55:07 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33719 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab2BQPzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 10:55:05 -0500
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Jon Medhurst <tixy@yxit.co.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sumit Bhattacharya <sumitb@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Ajeet Yadav <ajeet.yadav.77@gmail.com>,
-        Naveen Yadav <yad.naveen@gmail.com>
-Subject: [PATCH 3/3] ARM: dma-mapping: fix array out of bound access
-Date: Fri, 17 Feb 2012 21:26:00 +0530
-Message-Id: <1329494160-26942-1-git-send-email-ajeet.yadav.77@gmail.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1753424Ab2BQPzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 10:55:50 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354Ab2BQPzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 10:55:49 -0500
+Message-ID: <4F3E787D.4020103@nod.at>
+Date: Fri, 17 Feb 2012 16:55:41 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Danny Kukawka <danny.kukawka@bisect.de>
+CC: Jeff Dike <jdike@addtoit.com>, Danny Kukawka <dkukawka@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/10] UML net: set addr_assign_type if random_ether_addr()
+ used
+References: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de> <1329493411-25750-11-git-send-email-danny.kukawka@bisect.de>
+In-Reply-To: <1329493411-25750-11-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __dma_alloc_remap(*,size,*,*)/ __dma_free_remap(*,size) functions
-if virtual address is in the last consistent mapping region
-i.e idx == ((CONSISTENT_END - base) >> PMD_SHIFT) - 1
-and off == PTRS_PER_PTE.
-then we have array out of bound access condition.
+On 17.02.2012 16:43, Danny Kukawka wrote:
+> Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+> a random MAC address was generated and assigned to the netdevice.
+>
+> Return state from setup_etheraddr() about returning a random
+> MAC address or not and check this state in eth_configure().
+>
+> Signed-off-by: Danny Kukawka<danny.kukawka@bisect.de>
 
-On entry to while loop we ensure that off is always < PTRS_PER_PTE
-via
-u32 off = CONSISTENT_OFFSET(c->vm_start) & (PTRS_PER_PTE-1);
+Acked-by: Richard Weinberger <richard@nod.at>
 
-therefore we can safely move that condition to begining of while
-loop, to ensure that we access consistent_pte[] only if
-while condition is true.
+Do you want me to pick up this patch or is it supposed to go though the 
+net tree?
 
-Signed-off-by: Naveen Yadav <yad.naveen@gmail.com>
-Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
----
- arch/arm/mm/dma-mapping.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 932d288..0e1a2a2 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -251,16 +251,16 @@ __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot)
- 		c->vm_pages = page;
- 
- 		do {
-+			if (off >= PTRS_PER_PTE) {
-+				off = 0;
-+				pte = consistent_pte[++idx];
-+			}
- 			BUG_ON(!pte_none(*pte));
- 
- 			set_pte_ext(pte, mk_pte(page, prot), 0);
- 			page++;
- 			pte++;
- 			off++;
--			if (off >= PTRS_PER_PTE) {
--				off = 0;
--				pte = consistent_pte[++idx];
--			}
- 		} while (size -= PAGE_SIZE);
- 
- 		dsb();
-@@ -275,6 +275,7 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
- 	struct arm_vmregion *c;
- 	unsigned long addr;
- 	pte_t *ptep;
-+	pte_t pte;
- 	int idx;
- 	u32 off;
- 
-@@ -298,16 +299,14 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
- 	ptep = consistent_pte[idx] + off;
- 	addr = c->vm_start;
- 	do {
--		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
--
--		ptep++;
--		addr += PAGE_SIZE;
--		off++;
- 		if (off >= PTRS_PER_PTE) {
- 			off = 0;
- 			ptep = consistent_pte[++idx];
- 		}
--
-+		pte = ptep_get_and_clear(&init_mm, addr, ptep);
-+		ptep++;
-+		addr += PAGE_SIZE;
-+		off++;
- 		if (pte_none(pte) || !pte_present(pte))
- 			printk(KERN_CRIT "%s: bad page in kernel page table\n",
- 			       __func__);
--- 
-1.7.8.4
-
+Thanks,
+//richard
