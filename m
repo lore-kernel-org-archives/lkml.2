@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2BQBAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:00:24 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49636 "EHLO
+	id S1756995Ab2BQBDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:03:03 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58970 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756879Ab2BQBAN (ORCPT
+	by vger.kernel.org with ESMTP id S1756943Ab2BQBAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:13 -0500
-X-Sasl-enc: u361VHQjR3rMyoW0rAaszM2fXmUzYIpBrh/ZMF46HCXb 1329440412
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:34 2012
-Message-Id: <20120217005534.580856919@linuxfoundation.org>
+	Thu, 16 Feb 2012 20:00:22 -0500
+X-Sasl-enc: 7vs5JpDpG0M9SogrQVzuMBBJzvAQ3WRauU0VX75el2CE 1329440421
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:35 2012
+Message-Id: <20120217005535.079957995@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:38 -0800
+Date: Thu, 16 Feb 2012 16:55:42 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clark Williams <williams@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [04/28] perf tools: Fix perf stack to non executable on x86_64
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        Laurent Bonnans <bonnans.l@gmail.com>,
+        Jurica Vukadin <u.ra604@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [08/28] ath9k: fix a WEP crypto related regression
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,53 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 7a0153ee15575a4d07b5da8c96b79e0b0fd41a12 upstream.
+commit f88373fa47f3ce6590fdfaa742d0ddacc2ae017f upstream.
 
-By adding following objects:
-  bench/mem-memcpy-x86-64-asm.o
-the x86_64 perf binary ended up with executable stack.
+commit b4a82a0 "ath9k_hw: fix interpretation of the rx KeyMiss flag"
+fixed the interpretation of the KeyMiss flag for keycache based lookups,
+however WEP encryption uses a static index, so KeyMiss is always asserted
+for it, even though frames are decrypted properly.
+Fix this by clearing the ATH9K_RXERR_KEYMISS flag if no keycache based
+lookup was performed.
 
-The reason was that above object are assembler sourced and is missing the
-GNU-stack note section. In such case the linker assumes that the final binary
-should not be restricted at all and mark the stack as RWX.
-
-Adding section ".note.GNU-stack" definition to mentioned object, with all
-flags disabled, thus omiting this object from linker stack flags decision.
-
-Problem introduced in:
-
-  $ git describe ea7872b
-  v2.6.37-rc2-19-gea7872b
-
-Reported-at: https://bugzilla.redhat.com/show_bug.cgi?id=783570
-Reported-by: Clark Williams <williams@redhat.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1328100848-5630-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-[ committer note: Backported fix to perf/urgent (3.3-rc2+) ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Reported-by: Laurent Bonnans <bonnans.l@gmail.com>
+Reported-by: Jurica Vukadin <u.ra604@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/bench/mem-memcpy-x86-64-asm.S |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/ath/ath9k/recv.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/tools/perf/bench/mem-memcpy-x86-64-asm.S
-+++ b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-@@ -1,2 +1,8 @@
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -824,6 +824,14 @@ static bool ath9k_rx_accept(struct ath_c
+ 		(ATH9K_RXERR_DECRYPT | ATH9K_RXERR_CRC | ATH9K_RXERR_MIC |
+ 		 ATH9K_RXERR_KEYMISS));
  
- #include "../../../arch/x86/lib/memcpy_64.S"
-+/*
-+ * We need to provide note.GNU-stack section, saying that we want
-+ * NOT executable stack. Otherwise the final linking will assume that
-+ * the ELF stack should not be restricted at all and set it RWX.
-+ */
-+.section .note.GNU-stack,"",@progbits
++	/*
++	 * Key miss events are only relevant for pairwise keys where the
++	 * descriptor does contain a valid key index. This has been observed
++	 * mostly with CCMP encryption.
++	 */
++	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID)
++		rx_stats->rs_status &= ~ATH9K_RXERR_KEYMISS;
++
+ 	if (!rx_stats->rs_datalen)
+ 		return false;
+         /*
 
 
