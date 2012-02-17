@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2BQDlj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:41:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49900 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751491Ab2BQDli (ORCPT
+	id S1754743Ab2BQDmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:42:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55783 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab2BQDmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:41:38 -0500
-Message-ID: <1329450094.3258.34.camel@deadeye>
-Subject: Re: pull request: linux-firmware: update cxgb* firmwares
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Divy Le Ray <divy@chelsio.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Date: Fri, 17 Feb 2012 03:41:34 +0000
-In-Reply-To: <4F3CADB7.1030802@chelsio.com>
-References: <4F35DB79.6070104@chelsio.com>
-	 <20120211140701.GA5194@neilslaptop.think-freely.org>
-	 <4F38A526.70900@chelsio.com> <4F3CADB7.1030802@chelsio.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-LokhhtfyEjgUXYscDoIO"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 16 Feb 2012 22:42:19 -0500
+Date: Thu, 16 Feb 2012 21:42:12 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Josh Boyer <jwboyer@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: hugetlbfs lockdep spew revisited.
+Message-ID: <20120217034211.GA24135@boyd>
+References: <20120217000856.GA13112@redhat.com>
+ <20120217001634.GH23550@zod.bos.redhat.com>
+ <20120217003848.GB20071@boyd>
+ <20120217004922.GN23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <20120217004922.GN23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-LokhhtfyEjgUXYscDoIO
-Content-Type: text/plain; charset="UTF-8"
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-02-15 at 23:18 -0800, Divy Le Ray wrote:
-[...]
-> The following changes since commit 38118a598df73d5a9fd72bf04910e8298db82a=
-46:
+On 2012-02-17 00:49:22, Al Viro wrote:
+> On Thu, Feb 16, 2012 at 06:38:49PM -0600, Tyler Hicks wrote:
+> > On 2012-02-16 19:16:34, Josh Boyer wrote:
+> > > On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
+> > > > Remember this ? https://lkml.org/lkml/2011/4/15/272
+> > > > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73=
+cf1f00,
+> > > > but it seems to still be there.
+> > >=20
+> > > I think Tyler Hicks actually noticed this a while ago, but his patch =
+has
+> > > been waiting on comment from Al and Christoph:
+> > >=20
+> > > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=3D59565
+> > >=20
+> > > I've been hesitant to comment because I obviously screwed up once
+> > > already.  We could try this patch in Fedora for a while if Al and
+> > > company don't speak up soon.
+> >=20
+> > I'm pretty confident that my patch that Josh linked to would "fix" the
+> > lockdep warning below. According to the backtrace, it is barking about a
+> > directory inode and a regular inode having a circular locking
+> > dependency, so deadlock is not possible in this case.
 >=20
->    linux-firmware: brcm: add firmware for bcm43236 usb device=20
-> (2012-02-11 19:20:10 +0000)
+> Sigh...  That patch is correct, but it has nothing to do with the locking
+> order violation that really *is* there.  The only benefit would be to
+> get rid of the "deadlock is not possible" nonsense, since you would see
+> read/write vs. mmap instead of readdir vs. mmap in the traces.  Locking
+> order is the *same* for directories and nondirectories; both can have
+> pagefaults under ->i_mutex on their respective inodes.  And while mmap
+> cannot happen for directories, it certainly can happen for regular files,
+> so taking ->i_mutex in ->mmap() is a plain and simple bug.  Should never
+> be done; in particular, hugetlbfs has ->i_mutex held in read() around
+> pagefaults, which gives you an obvious deadlock with its ->mmap().
 >=20
-> are available in the git repository at:
->    git://git.chelsio.net/pub/git/linux-firmware for-upstream
->=20
-> Divy Le Ray (3):
->        linux-firmware: rename t4fw.bin
->        linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
->        linux-firmware: update cxgb3 driver firmware to revision 7.12.0
->=20
->   WHENCE                  |    4 +++-
->   cxgb3/t3fw-7.12.0.bin   |  Bin 0 -> 31812 bytes
->   cxgb4/t4fw-1.3.10.0.bin |  Bin 0 -> 241664 bytes
->   cxgb4/t4fw-1.4.16.0.bin |  Bin 0 -> 298496 bytes
->   cxgb4/t4fw.bin          |  Bin 241664 -> 17 bytes
->   5 files changed, 3 insertions(+), 1 deletions(-)
->   create mode 100755 cxgb3/t3fw-7.12.0.bin
->   create mode 100644 cxgb4/t4fw-1.3.10.0.bin
->   create mode 100644 cxgb4/t4fw-1.4.16.0.bin
->   mode change 100644 =3D> 120000 cxgb4/t4fw.bin
+> Folks, this is not a false positive and it has nothing to do with misanno=
+tation
+> for directories.  Deadlock is real; I have no idea WTF do we what ->i_mut=
+ex
+> held over that area in hugetlbfs ->mmap(), but doing that is really, real=
+ly
+> wrong, whatever the reason.
 
-Are there any versions of the cxgb4 driver that will specifically
-request cxgb4/t4fw-1.3.10.0.bin?  If not, what's the point of keeping it
-around after changing the cxgb4/t4fw.bin symlink?
+Thanks for clearing that up, Al. I only knew that the inodes were being
+incorrectly annotated, but I wasn't sure about the correct locking order.
 
-Ben.
+Tyler
 
-> Cheers,
-> Divy
->=20
->=20
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
---=-LokhhtfyEjgUXYscDoIO
+--4Ckj6UjgE2iN1+kY
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUATz3Mbue/yOyVhhEJAQokWw//fQ3JnBJy/4NqkCIaZRELgwsYcBMhI3uu
-K0qlteoTPjP1GvTWPMWnXhPDaSn02ZBFJ4Myx9NNzTHFom5tWUt32syrNVmwk1W9
-VByi+LSCYA7Oqk5cicE63n9Lp+pvWQCiHE6mSGkKfYjfsbHjf2T3jtm/f8j/cwxR
-hCv3aLVKhByybLhnFxeG/VB2d9M1IuTnJIIMC1Y7WCL4nUkjVDYpb2ljLNIcOOFU
-4bdVhRiyskaunOHx7EUa0vO3riZP+m2WEN/7i171xwN05W6VpeL73WVpxGZFUpjq
-+OwfFJg10E9uTFX+Sztd8kQBOlDS1TyB67wu2FNXytoLGNfBVv01yf86roIMCYSw
-Wmx1oJGIsUKZ0DLpmP70M6fsw0krV8ViqlNbnN+DNY0NIHb+yCjmfpxuqaEz72Dt
-nO/xudw4xKUs8TBxghry5kanCuTfNUx2QwKjyrE3hnCdod+8hpsQRMaqbz8xc63A
-3Bq5KtDEJVhn33DYY6YeNW+5xkJLL0AZb++7OHg9/gBwpCfL3WtOgdhA2wWXo7MN
-Zx50KJvZ8W5BOKe6XWRvBWQZ/8zDTHzxroP2lttTlYc5h+aHl/4ceJwnqXJ1dvO0
-fVtQaXDGI75TjSGwyGUYYqU75mmdyeDP0yYycNhLQOTX31aF0sWW7VteziUXiAwt
-JDANGg7CiAY=
-=qHxt
+iQIcBAEBCgAGBQJPPcyTAAoJENaSAD2qAscKTBMQAKnJc6fIs3eU5a3MHH9eqHXL
+PVUXWNWxyuulBquLj7vyIKNwacghrqidW9s/hoIHRbkgZI3ukt+izhuCANGvH6NB
+v8iGg086dqtDvCDDrHvzVoOUNeepp/npjSbHCjmHfIdSrBq9A/owGsrDhchA3nIH
+38fP3MS3EgmnB1lCtDswXfW5NowLINp9479YB/vDslmVey5e6tIf64/nvYGrUXzP
+laRqD4jCQ35H7BOVKJvU7gDePNzeyp+UcdwT9ktT3CxxRnEIwqlaGXt2gTmxFaoW
+cCq172SVfWxMzuGYB0UyKbvtrGLcBWRH3NNk0zTJGu5jjLnq9bY36OkNvvzdS2iM
+W2amrttMmzQSa+xgwg9e504WVGRSOzFwAeIWBtiWf7DbDS0cD03hcWq7xND8Sme2
+6AO7jTEV/iVfWBpjCnLllRjv2qk0rhtMd9BUA+dKGcuEEMKB/rRP5iaZ2ojrwrAm
+p0MmQxj9/KjZ4ljIC8bMzYwKx8jV5rE2+m3sqFelh6Qk6Z+TfyRd9F4V+V2ygJu9
+CCeZ+hDi/vGm2VrTAgiGvEo2sNjt+n9EjnbP+ggDx5QaGRDhFncNtTd719hktN23
+Yho7f6alRNCnW6AGQ9lSTXk7FO3kXxRZMufNKU43Gs5RIWLLuMBYu5UBHe04cgE7
+2QuM7CAgPSccA8U6Lhnl
+=3CMt
 -----END PGP SIGNATURE-----
 
---=-LokhhtfyEjgUXYscDoIO--
+--4Ckj6UjgE2iN1+kY--
