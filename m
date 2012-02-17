@@ -1,91 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab2BQI0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 03:26:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47148 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab2BQI0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 03:26:15 -0500
-Date: Fri, 17 Feb 2012 09:26:09 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: imx/pcm038: Don't specify regulator consumers
- by struct device
-Message-ID: <20120217082609.GP3852@pengutronix.de>
-References: <1329449029.17110.1.camel@phoenix>
- <1329449121.17110.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329449121.17110.2.camel@phoenix>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:25:37 up 96 days, 16:12, 14 users,  load average: 0.00, 0.03,
- 0.52
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752134Ab2BQI0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 03:26:31 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53821 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab2BQI03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 03:26:29 -0500
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>
+Date: Fri, 17 Feb 2012 13:55:27 +0530
+Message-Id: <20120217082527.15283.72980.sendpatchset@oc5400248562.ibm.com>
+Subject: [PATCH 1/1] linux headers: header file(s) changes to enable spinlock use jumplabel
+x-cbid: 12021708-3534-0000-0000-000005B8B362
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 11:25:21AM +0800, Axel Lin wrote:
-> The dev field is remove from struct regulator_consumer_supply since commit
-> 737f36 "regulator: Remove support for supplies specified by struct device".
-> 
-> This fixes below build error:
->   CC      arch/arm/mach-imx/mach-pcm038.o
-> arch/arm/mach-imx/mach-pcm038.c:236: error: unknown field 'dev' specified in initializer
-> make[1]: *** [arch/arm/mach-imx/mach-pcm038.o] Error 1
-> make: *** [arch/arm/mach-imx] Error 2
+From:  Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-This is a duplicate of one of Fabios patches, I just sent a pull
-request.
+Changelog:
+  Reordering in header files and adding declarations to enable
+ spinlock header to use jump label technique.
+    
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
+ I was re-basing Jermey patches (https://lkml.org/lkml/2011/10/12/496), while working
+on paravirtualized ticket spinlock (3.3.-rc3).
 
-Sascha
+Currently <jump_label.h> includes <workqueue.h> (commit: b202952075f62603bea9bfb6ebc6b0420db11949)
 
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> This patch is against linux-next 20120217.
-> 
->  arch/arm/mach-imx/mach-pcm038.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
-> index 16f126d..bfcc1ea 100644
-> --- a/arch/arm/mach-imx/mach-pcm038.c
-> +++ b/arch/arm/mach-imx/mach-pcm038.c
-> @@ -233,7 +233,6 @@ static struct regulator_init_data sdhc1_data = {
->  
->  static struct regulator_consumer_supply cam_consumers[] = {
->  	{
-> -		.dev	= NULL,
->  		.supply	= "imx_cam_vcc",
->  	},
->  };
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
-> 
+ So we get following error when we try to include jump_label.h from
+arch/x86/include/asm/spinlock.h because of cyclic dependency
+<spinlock.h> -> <jumplabe.h> -> <workque.h> -> ... <seqlock.h> -> <spinlock.h>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      arch/x86/kernel/asm-offsets.s
+In file included from include/linux/time.h:8:0,
+                 from include/linux/ktime.h:24,
+                 from include/linux/timer.h:5,
+                 from include/linux/workqueue.h:8,
+                 from include/linux/jump_label.h:6,
+                 from /home/raghu/linux-3.3-rc3/arch/x86/include/asm/spinlock.h:4,
+                 from include/linux/spinlock.h:87,
+                 from include/linux/mmzone.h:7,
+                 from include/linux/gfp.h:4,
+                 from include/linux/slab.h:12,
+                 from include/linux/crypto.h:23,
+                 from arch/x86/kernel/asm-offsets.c:8:
+include/linux/seqlock.h: In function ‘write_seqlock’:
+include/linux/seqlock.h:60:2: error: implicit declaration of function ‘spin_lock’ [-Werror=implicit-function-declaration]
+include/linux/seqlock.h: In function ‘write_sequnlock’:
+include/linux/seqlock.h:69:2: error: implicit declaration of function ‘spin_unlock’ [-Werror=implicit-function-declaration]
+include/linux/seqlock.h: In function ‘write_tryseqlock’:
+include/linux/seqlock.h:74:2: error: implicit declaration of function ‘spin_trylock’ [-Werror=implicit-function-declaration]
+In file included from include/linux/mmzone.h:7:0,
+                 from include/linux/gfp.h:4,
+                 from include/linux/slab.h:12,
+                 from include/linux/crypto.h:23,
+                 from arch/x86/kernel/asm-offsets.c:8:
+include/linux/spinlock.h: At top level:
+include/linux/spinlock.h:283:20: warning: conflicting types for ‘spin_lock’ [enabled by default]
+include/linux/spinlock.h:283:20: error: static declaration of ‘spin_lock’ follows non-static declaration
+include/linux/seqlock.h:60:2: note: previous implicit declaration of ‘spin_lock’ was here
+include/linux/spinlock.h:293:19: error: static declaration of ‘spin_trylock’ follows non-static declaration
+include/linux/seqlock.h:74:12: note: previous implicit declaration of ‘spin_trylock’ was here
+include/linux/spinlock.h:323:20: warning: conflicting types for ‘spin_unlock’ [enabled by default]
+include/linux/spinlock.h:323:20: error: static declaration of ‘spin_unlock’ follows non-static declaration
+include/linux/seqlock.h:69:2: note: previous implicit declaration of ‘spin_unlock’ was here
+cc1: some warnings being treated as errors
+
+make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+make: *** [prepare0] Error 2
+
+The patch below fixes it. (Is there any alternative? But this patch is needed before paravirt
+ticket-spinlock can go in :( ).
+
+Tesing:
+Compile tested with i386 defconfig and  x86_64 defconfig. Below result is for x86_64
+
+size Before the patch
+================
+   text	   data	    bss	    dec	    hex	filename
+9901730	 937168	1146880	11985778	 b6e372	vmlinux
+
+size After the patch
+================
+   text	   data	    bss	    dec	    hex	filename
+9901730	 937168	1146880	11985778	 b6e372	vmlinux
+
+ include/linux/ktime.h     |    2 ++
+ include/linux/seqlock.h   |    4 ++++
+ include/linux/time.h      |   20 +++++++++++---------
+ include/linux/timer.h     |    4 ++--
+ include/linux/timex.h     |   11 ++++++-----
+ include/linux/workqueue.h |    3 +++
+ 6 files changed, 28 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index 603bec2..90547eb 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -289,6 +289,8 @@ static inline int ktime_equal(const ktime_t cmp1, const ktime_t cmp2)
+ 	return cmp1.tv64 == cmp2.tv64;
+ }
+ 
++extern struct timeval ns_to_timeval(const s64 nsec);
++
+ static inline s64 ktime_to_us(const ktime_t kt)
+ {
+ 	struct timeval tv = ktime_to_timeval(kt);
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index c6db9fb..5b4a9e9 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -51,6 +51,10 @@ typedef struct {
+ #define DEFINE_SEQLOCK(x) \
+ 		seqlock_t x = __SEQLOCK_UNLOCKED(x)
+ 
++static inline void spin_lock(spinlock_t *lock);
++static inline int spin_trylock(spinlock_t *lock);
++static inline void spin_unlock(spinlock_t *lock);
++
+ /* Lock out other writers and update the count.
+  * Acts like a normal spin_lock/unlock.
+  * Don't need preempt_disable() because that is in the spin_lock already.
+diff --git a/include/linux/time.h b/include/linux/time.h
+index b306178..b3ce366 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -3,12 +3,6 @@
+ 
+ #include <linux/types.h>
+ 
+-#ifdef __KERNEL__
+-# include <linux/cache.h>
+-# include <linux/seqlock.h>
+-# include <linux/math64.h>
+-#endif
+-
+ #ifndef _STRUCT_TIMESPEC
+ #define _STRUCT_TIMESPEC
+ struct timespec {
+@@ -28,9 +22,6 @@ struct timezone {
+ };
+ 
+ #ifdef __KERNEL__
+-
+-extern struct timezone sys_tz;
+-
+ /* Parameters used to convert the timespec values: */
+ #define MSEC_PER_SEC	1000L
+ #define USEC_PER_MSEC	1000L
+@@ -42,6 +33,17 @@ extern struct timezone sys_tz;
+ 
+ #define TIME_T_MAX	(time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1)
+ 
++# include <linux/cache.h>
++# include <linux/seqlock.h>
++# include <linux/math64.h>
++#endif
++
++
++#ifdef __KERNEL__
++
++extern struct timezone sys_tz;
++
++
+ static inline int timespec_equal(const struct timespec *a,
+                                  const struct timespec *b)
+ {
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 6abd913..25bd863 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -2,9 +2,7 @@
+ #define _LINUX_TIMER_H
+ 
+ #include <linux/list.h>
+-#include <linux/ktime.h>
+ #include <linux/stddef.h>
+-#include <linux/debugobjects.h>
+ #include <linux/stringify.h>
+ 
+ struct tvec_base;
+@@ -33,6 +31,8 @@ struct timer_list {
+ #endif
+ };
+ 
++#include <linux/ktime.h>
++#include <linux/debugobjects.h>
+ extern struct tvec_base boot_tvec_bases;
+ 
+ #ifdef CONFIG_LOCKDEP
+diff --git a/include/linux/timex.h b/include/linux/timex.h
+index aa60fe7..91ef0fa 100644
+--- a/include/linux/timex.h
++++ b/include/linux/timex.h
+@@ -53,6 +53,12 @@
+ #ifndef _LINUX_TIMEX_H
+ #define _LINUX_TIMEX_H
+ 
++#ifdef __KERNEL__
++/* The clock frequency of the i8253/i8254 PIT */
++#define PIT_TICK_RATE 1193182ul
++#include <asm/timex.h>
++#endif /* __KERNEL__ */
++
+ #include <linux/time.h>
+ 
+ #define NTP_API		4	/* NTP API version */
+@@ -171,8 +177,6 @@ struct timex {
+ #include <linux/types.h>
+ #include <linux/param.h>
+ 
+-#include <asm/timex.h>
+-
+ /*
+  * SHIFT_PLL is used as a dampening factor to define how much we
+  * adjust the frequency correction for a given offset in PLL mode.
+@@ -273,9 +277,6 @@ extern void hardpps(const struct timespec *, const struct timespec *);
+ 
+ int read_current_timer(unsigned long *timer_val);
+ 
+-/* The clock frequency of the i8253/i8254 PIT */
+-#define PIT_TICK_RATE 1193182ul
+-
+ #endif /* KERNEL */
+ 
+ #endif /* LINUX_TIMEX_H */
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index eb8b9f1..ba1588e 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -397,6 +397,9 @@ extern bool workqueue_congested(unsigned int cpu, struct workqueue_struct *wq);
+ extern unsigned int work_cpu(struct work_struct *work);
+ extern unsigned int work_busy(struct work_struct *work);
+ 
++extern int del_timer_sync(struct timer_list *timer);
++extern int del_timer(struct timer_list *timer);
++
+ /*
+  * Kill off a pending schedule_delayed_work().  Note that the work callback
+  * function may still be running on return from cancel_delayed_work(), unless
+
