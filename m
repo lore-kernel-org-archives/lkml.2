@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2BQDS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:18:59 -0500
-Received: from gate.crashing.org ([63.228.1.57]:49038 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356Ab2BQDS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:18:58 -0500
-Message-ID: <1329448724.2892.43.camel@pasglop>
-Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Li Yang-R58472 <r58472@freescale.com>
-Cc: Liu Qiang-B32616 <B32616@freescale.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 17 Feb 2012 14:18:44 +1100
-In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F0574273C@039-SN2MPN1-023.039d.mgd.msft.net>
-References: <1329284944-17943-1-git-send-email-qiang.liu@freescale.com>
-	 <1329439216.2892.36.camel@pasglop>
-	 <94F013E7935FF44C83EBE7784D62AD3F0574273C@039-SN2MPN1-023.039d.mgd.msft.net>
+	id S1753249Ab2BQDYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:24:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41011 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2BQDYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 22:24:18 -0500
+Message-ID: <1329449029.17110.1.camel@phoenix>
+Subject: [PATCH 1/2] ARM: U300: Don't specify regulator consumers by struct
+ device
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 17 Feb 2012 11:23:49 +0800
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 03:09 +0000, Li Yang-R58472 wrote:
-> >I tried a debian install on the p5020ds here and I find SATA to be
-> >extremely slow, generating millions of interrupts. I think the
-> defaults
-> >should be a lot more aggressive at coalescing.
-> 
-> The P5020 has a hardware problem with SATA, making it generate more
-> interrupts than it should.  A new revision of the silicon will fix it.
+The dev field is remove from struct regulator_consumer_supply since commit
+737f36 "regulator: Remove support for supplies specified by struct device".
 
-Ok cool. With a bit of luck you guys can send me a new silicon when it's
-available then :-) (The one in the board you got me seems to be in a
-socket).
+This fixes below build error:
+  CC      arch/arm/mach-u300/i2c.o
+arch/arm/mach-u300/i2c.c:63: error: unknown field 'dev' specified in initializer
+arch/arm/mach-u300/i2c.c:95: error: unknown field 'dev' specified in initializer
+make[1]: *** [arch/arm/mach-u300/i2c.o] Error 1
+make: *** [arch/arm/mach-u300] Error 2
 
-Cheers,
-Ben.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next 20120217.
+
+ arch/arm/mach-u300/i2c.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-u300/i2c.c b/arch/arm/mach-u300/i2c.c
+index 5140dee..a38f802 100644
+--- a/arch/arm/mach-u300/i2c.c
++++ b/arch/arm/mach-u300/i2c.c
+@@ -60,7 +60,6 @@ static struct regulator_consumer_supply supply_ldo_c[] = {
+  */
+ static struct regulator_consumer_supply supply_ldo_d[] = {
+ 	{
+-		.dev = NULL,
+ 		.supply = "vana15", /* Powers the SoC (CPU etc) */
+ 	},
+ };
+@@ -92,7 +91,6 @@ static struct regulator_consumer_supply supply_ldo_k[] = {
+  */
+ static struct regulator_consumer_supply supply_ldo_ext[] = {
+ 	{
+-		.dev = NULL,
+ 		.supply = "vext", /* External power */
+ 	},
+ };
+-- 
+1.7.5.4
+
 
 
