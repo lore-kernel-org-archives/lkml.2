@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab2BQOHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:07:24 -0500
-Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:37393
-	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab2BQOHX (ORCPT
+	id S1752660Ab2BQONW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:13:22 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:22016 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab2BQONU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:07:23 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, standby24x7@gmail.com
-Subject: [PATCH] [trivial] usb: Fix typo in ehci-dbg.c
-Date: Fri, 17 Feb 2012 23:06:47 +0900
-Message-Id: <1329487607-1995-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 17 Feb 2012 09:13:20 -0500
+Date: Fri, 17 Feb 2012 09:10:05 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Regression in skge that started around acb42a3 (so past v3.3-rc1)
+Message-ID: <20120217141005.GA27808@phenom.dumpdata.com>
+References: <20120130155816.GA1400@phenom.dumpdata.com>
+ <20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
+ <20120130175738.GA4002@phenom.dumpdata.com>
+ <20120130.130259.1190745234966440677.davem@davemloft.net>
+ <20120130182230.GA4122@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120130182230.GA4122@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F3E607E.00B9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling "peridic" to "periodic" in
-drivers/usb/host/ehci-dbg.c
+On Mon, Jan 30, 2012 at 01:22:30PM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 30, 2012 at 01:02:59PM -0500, David Miller wrote:
+> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Date: Mon, 30 Jan 2012 12:57:38 -0500
+> > 
+> > > Ah, so you are saying that the problem above is already fixed in 3.3-rc1.
+> > 
+> > No he's not saying that, he says somewhere we probably need a fix
+> > "like" the commit he mentioned.
+> > 
+> > He did not say that commit fixes this bug.
+> 
+> Ayee. Sounds you guys have an idea about this bug then. If you want me to run
+> a test-patch I can certainly do so. Thanks!
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/usb/host/ehci-dbg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/ehci-dbg.c b/drivers/usb/host/ehci-dbg.c
-index d6d74d2..fd9109d 100644
---- a/drivers/usb/host/ehci-dbg.c
-+++ b/drivers/usb/host/ehci-dbg.c
-@@ -107,7 +107,7 @@ static void dbg_hcc_params (struct ehci_hcd *ehci, char *label)
- 			HCC_PER_PORT_CHANGE_EVENT(params) ? " ppce" : "",
- 			HCC_HW_PREFETCH(params) ? " hw prefetch" : "",
- 			HCC_32FRAME_PERIODIC_LIST(params) ?
--				" 32 peridic list" : "");
-+				" 32 periodic list" : "");
- 	}
- }
- #else
--- 
-1.7.4.4
-
+ping?
