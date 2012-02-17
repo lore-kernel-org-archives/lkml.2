@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387Ab2BQHKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 02:10:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59663 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750814Ab2BQHKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 02:10:19 -0500
-Date: Thu, 16 Feb 2012 23:10:14 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] regulator: fix wrong header name in description
-Message-ID: <20120217071013.GB11464@opensource.wolfsonmicro.com>
-References: <B567DBAB974C0544994013492B949F8E381301284C@EXMAIL03.scwf.nsc.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
-Content-Disposition: inline
-In-Reply-To: <B567DBAB974C0544994013492B949F8E381301284C@EXMAIL03.scwf.nsc.com>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751439Ab2BQHLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 02:11:31 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37882 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082Ab2BQHLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 02:11:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="107815219"
+Subject: Re: [rfc PATCH]slub: per cpu partial statistics change
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cl@linux.com" <cl@linux.com>
+In-Reply-To: <alpine.DEB.2.00.1202080846030.29839@router.home>
+References: <1328256695.12669.24.camel@debian>
+	 <alpine.DEB.2.00.1202030920060.2420@router.home>
+	 <4F2C824E.8080501@intel.com>
+	 <alpine.DEB.2.00.1202060858510.393@router.home>
+	 <1328591165.12669.168.camel@debian>
+	 <alpine.DEB.2.00.1202070910320.29500@router.home>
+	 <1328676290.12669.431.camel@debian>
+	 <alpine.DEB.2.00.1202080846030.29839@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 Feb 2012 15:06:46 +0800
+Message-ID: <1329462406.12669.2919.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-02-08 at 08:46 -0600, Christoph Lameter wrote:
+> On Wed, 8 Feb 2012, Alex,Shi wrote:
+> 
+> > > A bit long I think. CPU_PARTIAL_DRAIN?
+> >
+> > Yes. it is more meaningful. :)
+> > Patch change here.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
 
---KFztAG8eRSV9hGtP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Pakka:
+Would you like to pick up this patch? It works on latest Linus' tree. 
 
-On Thu, Feb 16, 2012 at 10:41:32PM -0800, Kim, Milo wrote:
-> The 'mode' is defined in consumer.h.
->=20
-> * patch base version : linux-3.2.4
+Thanks!
+========
+>From af88a7b0134d3eea82a4cf9985026852e50f5343 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 3 Feb 2012 23:34:56 +0800
+Subject: [PATCH] slub: per cpu partial statistics change
 
-Applied, thanks, but you should only include administrative stuff like
-the above after the ---.  You should also always submit patches against
-either Linus' tree (for fixes) or -next (for everything else) rather
-than an old kernel.
+This patch split the cpu_partial_free into 2 parts: cpu_partial_node, PCP refilling
+times from node partial; and same name cpu_partial_free, PCP refilling times in
+slab_free slow path. A new statistic 'cpu_partial_drain' is added to get PCP
+drain to node partial times. These info are useful when do PCP tunning.
 
---KFztAG8eRSV9hGtP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The slabinfo.c code is unchanged, since cpu_partial_node is not on slow path.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+---
+ include/linux/slub_def.h |    6 ++++--
+ mm/slub.c                |   12 +++++++++---
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-iQIcBAEBAgAGBQJPPf00AAoJEBus8iNuMP3dy6oQAJrumdDmCk4klqAj7e+q59V7
-X/B2SRtPSDWbhd5YJr2ZKXHUQrYZssinWPDUJ0M2/750MV+PwAVRdVxLNSkErBAk
-nOmOIM6NOUCeMrXHpCUhM/2faapGg4c6SQYX+nh/EeXdshtX5wRDFDkKOxSj1zdx
-o/qSBc7knKfpu3OkmBdPhnTClI9U9PNHkts2mvbqNssaHQhJcssjcye/kPmuSOu/
-UDfFgAOdJG8d23lGgD7y2k0PDHYwXgeIiNayDxhwqPibgE1yWm08Gwk98G4lT/Qn
-ZkJS0RaRcrVIpW6Y7z3l1tHA4Sna7CeJE4eaxNPuRw+umzSjQiUXIY3l/PkyWawh
-+94Ds22c6S4lWQ93WlXfMD1sZ06yjSgW3v9TT+SkATZv+dnd9ek5YTpIen1ue2gy
-t4cvyOCTt+y7XZsedekhMv+6HSLtXfLUYndLDgW63X/SsFoGqVhXVwjudaMGQx8r
-3hMsrCdTzitxkpW/uXltBGLT5iLp7KVD7JGtU5tQkfR34n+OrA6anOPPqnfiVJVK
-Um0rxp4IUPUw5TS6beczt4rp3EuancVE/ZDjX+7jz6Pa4PtKO0xegX2Hovy2oB6I
-6jsTmW1n6HiY+NA+qq04QmYU+T07dLDC877VLg4BRCrs2KUhSiygkPeJSYbVYExm
-i1n49fA3vGh1qw8I5zEr
-=VFd4
------END PGP SIGNATURE-----
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index a32bcfd..6388a66 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -21,7 +21,7 @@ enum stat_item {
+ 	FREE_FROZEN,		/* Freeing to frozen slab */
+ 	FREE_ADD_PARTIAL,	/* Freeing moves slab to partial list */
+ 	FREE_REMOVE_PARTIAL,	/* Freeing removes last object */
+-	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
++	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from node partial list */
+ 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
+ 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
+ 	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
+@@ -37,7 +37,9 @@ enum stat_item {
+ 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
+ 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
+ 	CPU_PARTIAL_ALLOC,	/* Used cpu partial on alloc */
+-	CPU_PARTIAL_FREE,	/* USed cpu partial on free */
++	CPU_PARTIAL_FREE,	/* Refill cpu partial on free */
++	CPU_PARTIAL_NODE,	/* Refill cpu partial from node partial */
++	CPU_PARTIAL_DRAIN,	/* Drain cpu partial to node partial */
+ 	NR_SLUB_STAT_ITEMS };
+ 
+ struct kmem_cache_cpu {
+diff --git a/mm/slub.c b/mm/slub.c
+index 4907563..4e71a0a 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1560,6 +1560,7 @@ static void *get_partial_node(struct kmem_cache *s,
+ 		} else {
+ 			page->freelist = t;
+ 			available = put_cpu_partial(s, page, 0);
++			stat(s, CPU_PARTIAL_NODE);
+ 		}
+ 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
+ 			break;
+@@ -1973,6 +1974,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 				local_irq_restore(flags);
+ 				pobjects = 0;
+ 				pages = 0;
++				stat(s, CPU_PARTIAL_DRAIN);
+ 			}
+ 		}
+ 
+@@ -1984,7 +1986,6 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 		page->next = oldpage;
+ 
+ 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
+-	stat(s, CPU_PARTIAL_FREE);
+ 	return pobjects;
+ }
+ 
+@@ -2465,9 +2466,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		 * If we just froze the page then put it onto the
+ 		 * per cpu partial list.
+ 		 */
+-		if (new.frozen && !was_frozen)
++		if (new.frozen && !was_frozen) {
+ 			put_cpu_partial(s, page, 1);
+-
++			stat(s, CPU_PARTIAL_FREE);
++		}
+ 		/*
+ 		 * The list lock was not taken therefore no list
+ 		 * activity can be necessary.
+@@ -5059,6 +5061,8 @@ STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
+ STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
+ STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
+ STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
++STAT_ATTR(CPU_PARTIAL_NODE, cpu_partial_node);
++STAT_ATTR(CPU_PARTIAL_DRAIN, cpu_partial_drain);
+ #endif
+ 
+ static struct attribute *slab_attrs[] = {
+@@ -5124,6 +5128,8 @@ static struct attribute *slab_attrs[] = {
+ 	&cmpxchg_double_cpu_fail_attr.attr,
+ 	&cpu_partial_alloc_attr.attr,
+ 	&cpu_partial_free_attr.attr,
++	&cpu_partial_node_attr.attr,
++	&cpu_partial_drain_attr.attr,
+ #endif
+ #ifdef CONFIG_FAILSLAB
+ 	&failslab_attr.attr,
+-- 
+1.6.3.3
 
---KFztAG8eRSV9hGtP--
+
+
