@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab2BQSpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 13:45:49 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:45489 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752566Ab2BQSpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 13:45:47 -0500
-Message-ID: <1329504344.584.18.camel@joe2Laptop>
-Subject: Re: [PATCH] Cleaning up code formatting errors in net/wireless
- pointed out by checkpatch.
-From: Joe Perches <joe@perches.com>
-To: Luis Felipe Strano Moraes <lfelipe@profusion.mobi>
-Cc: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 17 Feb 2012 10:45:44 -0800
-In-Reply-To: <1329492603-3972-1-git-send-email-lfelipe@profusion.mobi>
-References: <1329492603-3972-1-git-send-email-lfelipe@profusion.mobi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754022Ab2BQSqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 13:46:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55161 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab2BQSqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 13:46:07 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] gpiolib: Add comments explaining the _cansleep() WARN_ON()s
+Date: Fri, 17 Feb 2012 10:46:00 -0800
+Message-Id: <1329504360-13770-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 07:30 -0800, Luis Felipe Strano Moraes wrote:
-> These are mostly minor changes and they are being sent as one patch only in
-> order to cause the smallest amount of disruption.
-[]
-> diff --git a/net/wireless/core.c b/net/wireless/core.c
-[]
-> @@ -668,7 +668,7 @@ void wiphy_unregister(struct wiphy *wiphy)
->  		mutex_lock(&rdev->devlist_mtx);
->  		__count = rdev->opencount;
->  		mutex_unlock(&rdev->devlist_mtx);
-> -		__count == 0;}));
-> +		__count == 0; }));
+I've seen users getting very confused by the WARN_ON()s for can_sleep
+GPIOs in the atomic-safe paths, the discoverability of the non-atomic
+version of the API seems to be hampered by the fact that it's defined
+in a header file not the .c file where the warnings are.
 
-Inline statement expressions are pretty unusual
-for kernel sources.  Normally these are used via
-macro.
+Add a couple of comments next to the warnings to help people on their
+way.
 
-I'd try to make the statement expression visually
-distinct.  Something like:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/gpio/gpiolib.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-	wait_event(rdev->dev_wait,
-		   ({
-			   int __count;
-			   mutex_lock(&rdev->devlist_mtx);
-			   __count = rdev->opencount;
-			   mutex_unlock(&rdev->devlist_mtx);
-			   __count == 0;
-		   })
-		  );
-
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 17fdf4b..10ce33d 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1560,6 +1560,7 @@ int __gpio_get_value(unsigned gpio)
+ 	int value;
+ 
+ 	chip = gpio_to_chip(gpio);
++	/* Should be using gpio_get_value_cansleep() */
+ 	WARN_ON(chip->can_sleep);
+ 	value = chip->get ? chip->get(chip, gpio - chip->base) : 0;
+ 	trace_gpio_value(gpio, 1, value);
+@@ -1581,6 +1582,7 @@ void __gpio_set_value(unsigned gpio, int value)
+ 	struct gpio_chip	*chip;
+ 
+ 	chip = gpio_to_chip(gpio);
++	/* Should be using gpio_set_value_cansleep() */
+ 	WARN_ON(chip->can_sleep);
+ 	trace_gpio_value(gpio, 0, value);
+ 	chip->set(chip, gpio - chip->base, value);
+-- 
+1.7.9.rc1
 
