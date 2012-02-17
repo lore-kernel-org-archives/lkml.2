@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2BQWD6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 17:03:58 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47750 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab2BQWD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 17:03:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.225.4 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Fri, 17 Feb 2012 14:03:51 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, Kent Overstreet <koverstreet@google.com>
-Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
-Message-ID: <20120217220351.GI29414@google.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-8-git-send-email-tj@kernel.org>
- <20120217213313.GG26620@redhat.com>
+	id S1754795Ab2BQWEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 17:04:05 -0500
+Received: from xes-mad.com ([216.165.139.218]:58143 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab2BQWEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 17:04:01 -0500
+Date: Fri, 17 Feb 2012 16:03:48 -0600 (CST)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter@roeck-us.net>, Peter Tyser <ptyser@xes-inc.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3 v3] mfd: Add LPC driver for Intel ICH chipsets
+Message-ID: <23e491f9-cb12-4bba-b5b0-a9948b17c984@zimbra>
+In-Reply-To: <20120217222155.435195d2@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217213313.GG26620@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [10.52.0.65]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vivek.
-
-On Fri, Feb 17, 2012 at 04:33:13PM -0500, Vivek Goyal wrote:
-> On Thu, Feb 16, 2012 at 02:37:56PM -0800, Tejun Heo wrote:
+> > +static void __devexit lpc_ich_remove(struct pci_dev *dev)
+> > +{
+> > +	mfd_remove_devices(&dev->dev);
+> > +
+> > +	if (lpc_ich_gpio_save > 0)
+> > +		pci_write_config_byte(dev, GPIOCTRL, (u8)lpc_ich_gpio_save);
+> > +	if (lpc_ich_acpi_save > 0)
+> > +		pci_write_config_byte(dev, ACPICTRL, (u8)lpc_ich_acpi_save);
 > 
-> [..]
-> > This patch implements bio_associate_current() which associates the
-> > specified bio with %current.  The bio will record the associated ioc
-> > and blkcg at that point and block layer will use the recorded ones
-> > regardless of which task actually ends up issuing the bio.  bio
-> > release puts the associated ioc and blkcg.
-> 
-> How about storing blkcg information in io_context instead of bio. We will
-> have less copies of bio pointers and I think logically it makes sense.
+> I think you really mean >= 0 above. And the casts aren't needed. You
+> should also reset lpc_ich_gpio_save and lpc_ich_acpi_save to -1 after
+> restoring the values, it matters if the device is removed and re-added
+> through sysfs.
 
-I don't know.  The problem with that approach is that we introduce a
-persistent state which needs to be kept in sync.  cgroup is a task
-property and the current code just grabs the current cgroup of
-%current and uses it for that bio.  It doesn't matter how the task
-changes its cgroup membership later - we're correct (in a sense) no
-matter what.  If we add cgroup pointer to ioc, we need to keep that in
-sync with task changing cgroup memberships and need to introduce
-synchronization scheme for accessing ioc->blkcg, which is a much
-bigger headache.
+I seriously almost changed that compare in this patch... I wish I had. I've
+made these changes, now.
 
-I think it's better to take an explicit ref now.  If the situation
-changes, it's an implementation detail only known to block layer
-proper anyway, so we should be able to change it without too much
-difficulty.
+> This cleanup is missing from the error path in lpc_ich_probe, BTW.
+> You may want to move it to a separate function so that you can call it
+> from both lpc_ich_probe and lpc_ich_remove.
 
-Thanks.
+Good point. I've got this change ready to go, too. Thanks.
 
--- 
-tejun
+-Aaron S.
