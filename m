@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab2BQA7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:59:54 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40399 "EHLO
+	id S1756668Ab2BQA7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:59:46 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46977 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756672Ab2BQA7v (ORCPT
+	by vger.kernel.org with ESMTP id S1756635Ab2BQA7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:59:51 -0500
-X-Sasl-enc: tULQbr/woAvvxsFY/HSQlq94caUx5KyJJrkhE0hAvWwj 1329440390
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:35 2012
-Message-Id: <20120217005535.717857148@linuxfoundation.org>
+	Thu, 16 Feb 2012 19:59:43 -0500
+X-Sasl-enc: UVsrq+RAUMoFZDTF5iU0afQJ748j+1/x6pe7+9gBBhW/ 1329440382
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
+Message-Id: <20120217005511.147708184@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:46 -0800
+Date: Thu, 16 Feb 2012 16:55:18 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ilya Tumaykin <librarian_rus@yahoo.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [12/28] lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit kernel
-In-Reply-To: <20120217005609.GA17081@kroah.com>
+        alan@lxorguk.ukuu.org.uk, David Jander <david@protonic.nl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Manfred Gruber <m.gruber@unverspurt.at>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [09/15] gpio/pca953x: Fix warning of enabled interrupts in handler
+In-Reply-To: <20120217005650.GA17119@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: David Jander <david@protonic.nl>
 
-commit 3310225dfc71a35a2cc9340c15c0e08b14b3c754 upstream.
+commit 6dd599f8af0166805951f4421a78ba716d78321a upstream.
 
-PROP_MAX_SHIFT should be set to <=32 on 64-bit box. This fixes two bugs
-in the below lines of bdi_dirty_limit():
+When using nested threaded irqs, use handle_nested_irq(). This function
+does not call the chip handler, so no handler is set.
 
-	bdi_dirty *= numerator;
-	do_div(bdi_dirty, denominator);
-
-1) divide error: do_div() only uses the lower 32 bit of the denominator,
-   which may trimmed to be 0 when PROP_MAX_SHIFT > 32.
-
-2) overflow: (bdi_dirty * numerator) could easily overflow if numerator
-   used up to 48 bits, leaving only 16 bits to bdi_dirty
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reported-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: David Jander <david@protonic.nl>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Manfred Gruber <m.gruber@unverspurt.at>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/proportions.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpio/pca953x.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/proportions.h
-+++ b/include/linux/proportions.h
-@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
-  * Limit the time part in order to ensure there are some bits left for the
-  * cycle counter and fraction multiply.
-  */
-+#if BITS_PER_LONG == 32
- #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
-+#else
-+#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
-+#endif
+--- a/drivers/gpio/pca953x.c
++++ b/drivers/gpio/pca953x.c
+@@ -437,7 +437,7 @@ static irqreturn_t pca953x_irq_handler(i
  
- #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
- #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
+ 	do {
+ 		level = __ffs(pending);
+-		generic_handle_irq(level + chip->irq_base);
++		handle_nested_irq(level + chip->irq_base);
+ 
+ 		pending &= ~(1 << level);
+ 	} while (pending);
+@@ -481,8 +481,8 @@ static int pca953x_irq_setup(struct pca9
+ 			int irq = lvl + chip->irq_base;
+ 
+ 			irq_set_chip_data(irq, chip);
+-			irq_set_chip_and_handler(irq, &pca953x_irq_chip,
+-						 handle_simple_irq);
++			irq_set_chip(irq, &pca953x_irq_chip);
++			irq_set_nested_thread(irq, true);
+ #ifdef CONFIG_ARM
+ 			set_irq_flags(irq, IRQF_VALID);
+ #else
 
 
