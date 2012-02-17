@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab2BQBAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:00:48 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:46781 "EHLO
+	id S1756768Ab2BQA75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:59:57 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47588 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757104Ab2BQBAo (ORCPT
+	by vger.kernel.org with ESMTP id S1756672Ab2BQA7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:44 -0500
-X-Sasl-enc: WVg7k5kwgHfQovOI6pMxjqJgjsHBe24IAujDLhn4ifMd 1329440442
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:37 2012
-Message-Id: <20120217005537.739931194@linuxfoundation.org>
+	Thu, 16 Feb 2012 19:59:55 -0500
+X-Sasl-enc: cDNBya5/hWpd2bYNJMeqxAIyEcMzQxKrsnALk5A4Rbr8 1329440394
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:36 2012
+Message-Id: <20120217005536.001809161@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:56:02 -0800
+Date: Thu, 16 Feb 2012 16:55:48 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [28/28] xen pvhvm: do not remap pirqs onto evtchns if !xen_have_vector_callback
+        alan@lxorguk.ukuu.org.uk, Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [14/28] mac80211: timeout a single frame in the rx reorder buffer
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,28 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 207d543f472c1ac9552df79838dc807cbcaa9740 upstream.
+commit 07ae2dfcf4f7143ce191c6436da1c33f179af0d6 upstream.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+The current code checks for stored_mpdu_num > 1, causing
+the reorder_timer to be triggered indefinitely, but the
+frame is never timed-out (until the next packet is received)
+
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/pci/xen.c |    2 +-
+ net/mac80211/rx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -374,7 +374,7 @@ int __init pci_xen_init(void)
- 
- int __init pci_xen_hvm_init(void)
- {
--	if (!xen_feature(XENFEAT_hvm_pirqs))
-+	if (!xen_have_vector_callback || !xen_feature(XENFEAT_hvm_pirqs))
- 		return 0;
- 
- #ifdef CONFIG_ACPI
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -616,7 +616,7 @@ static void ieee80211_sta_reorder_releas
+ 	index = seq_sub(tid_agg_rx->head_seq_num, tid_agg_rx->ssn) %
+ 						tid_agg_rx->buf_size;
+ 	if (!tid_agg_rx->reorder_buf[index] &&
+-	    tid_agg_rx->stored_mpdu_num > 1) {
++	    tid_agg_rx->stored_mpdu_num) {
+ 		/*
+ 		 * No buffers ready to be released, but check whether any
+ 		 * frames in the reorder buffer have timed out.
 
 
