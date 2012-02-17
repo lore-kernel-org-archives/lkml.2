@@ -1,50 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab2BQAeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:34:17 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56608 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2BQAeQ (ORCPT
+	id S1756242Ab2BQAfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:35:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab2BQAfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:34:16 -0500
-Date: Fri, 17 Feb 2012 00:34:15 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        tyhicks@canonical.com
-Subject: Re: hugetlbfs lockdep spew revisited.
-Message-ID: <20120217003415.GM23916@ZenIV.linux.org.uk>
-References: <20120217000856.GA13112@redhat.com>
- <20120217001634.GH23550@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217001634.GH23550@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Feb 2012 19:35:46 -0500
+Date: Thu, 16 Feb 2012 16:35:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: apw@canonical.com, arjan@linux.intel.com, fhrbata@redhat.com,
+        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
+        rientjes@google.com, rusty@rustcorp.com.au, tj@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] introduce complete_vfork_done()
+Message-Id: <20120216163544.4e41e5a5.akpm@linux-foundation.org>
+In-Reply-To: <20120216172647.GB30393@redhat.com>
+References: <20120214164709.GA21178@redhat.com>
+	<20120214164914.GF21185@redhat.com>
+	<20120215123049.6e938eed.akpm@linux-foundation.org>
+	<20120216150429.GB11953@redhat.com>
+	<20120216172626.GA30393@redhat.com>
+	<20120216172647.GB30393@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 07:16:34PM -0500, Josh Boyer wrote:
-> On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
-> > Remember this ? https://lkml.org/lkml/2011/4/15/272
-> > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
-> > but it seems to still be there.
-> 
-> I think Tyler Hicks actually noticed this a while ago, but his patch has
-> been waiting on comment from Al and Christoph:
-> 
-> http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
-> 
-> I've been hesitant to comment because I obviously screwed up once
-> already.  We could try this patch in Fedora for a while if Al and
-> company don't speak up soon.
+On Thu, 16 Feb 2012 18:26:47 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-That has nothing to do with the deadlock in question; it's *NOT* about
-directories at all and no, it's not a false positive.
+> No functional changes.
+> 
+> Move the clear-and-complete-vfork_done code into the new trivial
+> helper, complete_vfork_done().
+> 
+> ...
+>
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1915,7 +1915,6 @@ static int coredump_wait(int exit_code, struct core_state *core_state)
+>  {
+>  	struct task_struct *tsk = current;
+>  	struct mm_struct *mm = tsk->mm;
+> -	struct completion *vfork_done;
+>  	int core_waiters = -EBUSY;
+>  
+>  	init_completion(&core_state->startup);
+> @@ -1934,11 +1933,8 @@ static int coredump_wait(int exit_code, struct core_state *core_state)
+>  	 * Make sure nobody is waiting for us to release the VM,
+>  	 * otherwise we can deadlock when we wait on each other
+>  	 */
+> -	vfork_done = tsk->vfork_done;
+> -	if (vfork_done) {
+> -		tsk->vfork_done = NULL;
+> -		complete(vfork_done);
+> -	}
+> +	if (tsk->vfork_done)
+> +		complete_vfork_done(tsk);
+>  
+>  	if (core_waiters)
+>  		wait_for_completion(&core_state->startup);
+>
+> ...
+>
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -667,6 +667,14 @@ struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
+>  	return mm;
+>  }
+>  
+> +void complete_vfork_done(struct task_struct *tsk)
+> +{
+> +	struct completion *vfork_done = tsk->vfork_done;
+> +
+> +	tsk->vfork_done = NULL;
+> +	complete(vfork_done);
+> +}
+> +
+>  /* Please note the differences between mmput and mm_release.
+>   * mmput is called whenever we stop holding onto a mm_struct,
+>   * error success whatever.
+> @@ -682,8 +690,6 @@ struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
+>   */
+>  void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>  {
+> -	struct completion *vfork_done = tsk->vfork_done;
+> -
+>  	/* Get rid of any futexes when releasing the mm */
+>  #ifdef CONFIG_FUTEX
+>  	if (unlikely(tsk->robust_list)) {
+> @@ -703,11 +709,8 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+>  	/* Get rid of any cached register state */
+>  	deactivate_mm(tsk, mm);
+>  
+> -	/* notify parent sleeping on vfork() */
+> -	if (vfork_done) {
+> -		tsk->vfork_done = NULL;
+> -		complete(vfork_done);
+> -	}
+> +	if (tsk->vfork_done)
+> +		complete_vfork_done(tsk);
 
-This is very simple: ->mmap() should never take ->i_mutex.  Directories
-have nothing to do with that.  Simple grep for i_mutex in fs/hugetlbfs/*.c
-will instantly show its use for non-directories, with pagefaults taken
-while holding it.  Pagefault handlers take ->mmap_sem; so does ->mmap()
-caller.  QED.
+This all looks somewhat smelly.
+
+- Why do we zero tsk->vfork_done in this manner?  It *looks* like
+  it's done to prevent the kernel from running complete() twice against
+  a single task in a race situation.  If this is the case then it's
+  pretty lame, isn't it?  We'd need external locking to firm that up
+  and I'm not seeing it.
+
+- Moving the test for non-null tsk->vfork_done into
+  complete_vfork_done() would simplify things a bit?
+
+- The complete_vfork_done() interface isn't wonderful.  What prevents
+  tsk from getting freed?  Presumably the caller must have pinned it in
+  some fashion?  Or must hold some lock?  Or it's always run against
+  `current', in which case it would be clearer to not pass the
+  task_struct arg at all?
+
