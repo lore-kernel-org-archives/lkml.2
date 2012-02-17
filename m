@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2BQRXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:23:39 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36245 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2BQRXi convert rfc822-to-8bit (ORCPT
+	id S1753969Ab2BQRY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:24:59 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36449 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753471Ab2BQRY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:23:38 -0500
-MIME-Version: 1.0
-Message-ID: <f39ea8b1-32d8-4c55-b2ec-6ebf9f1292f2@default>
-Date: Fri, 17 Feb 2012 09:23:23 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>
-Subject: RE: linux-next: build failure after merge of the staging tree
-References: <20120217151030.59ce998d4b844faa0023750b@canb.auug.org.au>
- <20120217170407.GA25775@kroah.com>
-In-Reply-To: <20120217170407.GA25775@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F3E8D13.003A,ss=1,re=0.000,fgs=0
+	Fri, 17 Feb 2012 12:24:58 -0500
+Date: Fri, 17 Feb 2012 09:24:50 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20120217092450.340e2ac5@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/BGcF8AH.wyxInd9ddqM0HNz"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, February 17, 2012 10:04 AM
-> To: Stephen Rothwell
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Dan Magenheimer
-> Subject: Re: linux-next: build failure after merge of the staging tree
-> 
-> On Fri, Feb 17, 2012 at 03:10:30PM +1100, Stephen Rothwell wrote:
-> > Hi Greg,
-> >
-> > After merging the staging tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> >
-> > drivers/built-in.o: In function `r2hb_hb_group_drop_item':
-> > heartbeat.c:(.text+0x12cd7a): undefined reference to `config_item_put'
-> > <snip>
-> > drivers/built-in.o: In function `exit_r2nm':
-> > nodemanager.c:(.exit.text+0x99b): undefined reference to `configfs_unregister_subsystem'
-> >
-> > This after I moved the tmem tree to before the staging tree to fix
-> > yesterday's build failure.
-> >
-> > I have cherry-picked Greg's patch to disable building of the ramster code
-> > for today (since it wasn't in his tree when I fetched it this morning).
-> 
-> Thank you for doing that, sorry I didn't get any of these build errors
-> on my own.  That's what I get for applying patches while on the road and
-> away from my big build systems to verify this :(
+--Sig_/BGcF8AH.wyxInd9ddqM0HNz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, thanks from me also.  It occurs only for allmodconfig and I already have
-a Kconfig fix* but not fully-tested yet so, figuring that Greg's CONFIG_BROKEN
-patch would turn ramster off for now anyway, I didn't rush the fix to you or Greg.
+The following changes since commit
+acb42a3b611d7ad4cb173c3b37674b549df2ffeb:
 
-Apologies again, but I am (slowly) learning. :-(
+  Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux (=
+2012-01-27 07:56:25 -0800)
 
-Dan
+are available in the git repository at:
 
-* RAMster does work very nicely but, for various reasons, requires
-CONFIG_RAMSTER=y and CONFIG_CONFIGFS_FS=y, so ramster Kconfig needs
-"depends on CONFIGFS_FS=y" not just "depends on CONFIGFS_FS".
-(Patch forthcoming Greg.)
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci for-linus
+
+One regression fix for SR-IOV on PPC and a couple of misc fixes from
+Yinghai.
+
+Vaidyanathan Srinivasan (1):
+      PCI: set pci sriov page size before reading SRIOV BAR
+
+Yinghai Lu (2):
+      PCI: workaround hard-wired bus number V2
+      PCI: Fix pci cardbus removal
+
+ drivers/pci/iov.c    |    3 +--
+ drivers/pci/probe.c  |    5 +++++
+ drivers/pci/remove.c |   28 ++++++++++++++++++++++------
+ 3 files changed, 28 insertions(+), 8 deletions(-)
+
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/BGcF8AH.wyxInd9ddqM0HNz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPPo1iAAoJEIEoDkX4Qk9hAzsQAJKBxUq9Ea17/JA1cvFQWSnr
+mVqrH2diLAwVyB1Gzh0qWxgUCCQNEYspSlAN7ysqf3RCFyDvw2umm5RSsTT/GNku
+UNovSra8nSxgfnJgD1M7jkjoi84hPhpWCY4vkxIHkFVFAGg+xZOibj62WY8SrFt4
+rbsu5zvggAMBp8pmnDD8uVN4hjMaVl8fV1wCYbpeXITAPYHb56GGKW39GkDUbbyd
++FqYvUIAtmqSfeCZpEaTQg2b4jH3D4dXEmXJ54Siokp/BEyLqEyUsiU/RXynaDNv
+fGZ+ic56QyDEJPneQgkTNRwp+rnX0st3h4DR2HtHKbEudiVKwtyk7/zETZyGTPci
++X78pYTmD+WVPQLmN+hQtPGYIqfbsYAeeGzMMecMLdifYctc1rJL2kwNqwzuwXdr
+UOB4NgXocxDuJDCWan+Z67V4TZ6rFI1w7jAA7KOS4g60Su9lPjW1X6r6ViFTqPaN
+PZ8a4FsY75J/r3kcdWuiGGyos6p08p8rue9TwtZylrlJ5W4kXegyDpLCBRttX8XH
+DkNowYssk9CoFAa8z2cBeaiUHP7jki8yHcBdogISCxPmYvFcXybOD6GNBfvkL0pW
+DLbWasRQUcpeNkJJ/dshk4/gpi/MJUz2eiYcCmKffdNO5Z8Jr7hz43CZ0h5ATLCh
+iDX96RhzWzZnVWCawP2f
+=s6wp
+-----END PGP SIGNATURE-----
+
+--Sig_/BGcF8AH.wyxInd9ddqM0HNz--
