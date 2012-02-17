@@ -1,109 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2BQDmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:42:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:55783 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab2BQDmT (ORCPT
+	id S1754862Ab2BQDn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:43:59 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34149 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab2BQDn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:42:19 -0500
-Date: Thu, 16 Feb 2012 21:42:12 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Josh Boyer <jwboyer@redhat.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: hugetlbfs lockdep spew revisited.
-Message-ID: <20120217034211.GA24135@boyd>
-References: <20120217000856.GA13112@redhat.com>
- <20120217001634.GH23550@zod.bos.redhat.com>
- <20120217003848.GB20071@boyd>
- <20120217004922.GN23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
-Content-Disposition: inline
-In-Reply-To: <20120217004922.GN23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 16 Feb 2012 22:43:58 -0500
+Message-ID: <1329450227.2373.6.camel@js-netbook>
+Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
+ _NONVOLATILE flags
+From: John Stultz <john.stultz@linaro.org>
+To: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>
+Date: Thu, 16 Feb 2012 19:43:47 -0800
+In-Reply-To: <CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
+References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
+	 <1328832993-23228-2-git-send-email-john.stultz@linaro.org>
+	 <CAO6Zf6B6nGqsz5zpT3ixbO-+JWxMsScABasnwo-CVHuMKPqpLQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021703-2398-0000-0000-0000044F2923
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-02-12 at 13:48 +0100, Dmitry Adamushko wrote:
+> 
+> On 10 February 2012 01:16, John Stultz <john.stultz@linaro.org> wrote:
 
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>         +static inline void volatile_range_shrink(struct
+>         volatile_range *range,
+>         +                               pgoff_t start_index, pgoff_t
+>         end_index)
+>         +{
+>         +       size_t pre = range_size(range);
+>         +
+>         +       range->range_node.start = start_index;
+>         +       range->range_node.end = end_index;
+>         +
+> 
+> I guess, here we get a whole range of races with volatile_shrink(),
+> which may see inconsistent (in-the-middle-of-update) ranges
+> (e.g. .start and .end).
 
-On 2012-02-17 00:49:22, Al Viro wrote:
-> On Thu, Feb 16, 2012 at 06:38:49PM -0600, Tyler Hicks wrote:
-> > On 2012-02-16 19:16:34, Josh Boyer wrote:
-> > > On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
-> > > > Remember this ? https://lkml.org/lkml/2011/4/15/272
-> > > > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73=
-cf1f00,
-> > > > but it seems to still be there.
-> > >=20
-> > > I think Tyler Hicks actually noticed this a while ago, but his patch =
-has
-> > > been waiting on comment from Al and Christoph:
-> > >=20
-> > > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=3D59565
-> > >=20
-> > > I've been hesitant to comment because I obviously screwed up once
-> > > already.  We could try this patch in Fedora for a while if Al and
-> > > company don't speak up soon.
-> >=20
-> > I'm pretty confident that my patch that Josh linked to would "fix" the
-> > lockdep warning below. According to the backtrace, it is barking about a
-> > directory inode and a regular inode having a circular locking
-> > dependency, so deadlock is not possible in this case.
->=20
-> Sigh...  That patch is correct, but it has nothing to do with the locking
-> order violation that really *is* there.  The only benefit would be to
-> get rid of the "deadlock is not possible" nonsense, since you would see
-> read/write vs. mmap instead of readdir vs. mmap in the traces.  Locking
-> order is the *same* for directories and nondirectories; both can have
-> pagefaults under ->i_mutex on their respective inodes.  And while mmap
-> cannot happen for directories, it certainly can happen for regular files,
-> so taking ->i_mutex in ->mmap() is a plain and simple bug.  Should never
-> be done; in particular, hugetlbfs has ->i_mutex held in read() around
-> pagefaults, which gives you an obvious deadlock with its ->mmap().
->=20
-> Folks, this is not a false positive and it has nothing to do with misanno=
-tation
-> for directories.  Deadlock is real; I have no idea WTF do we what ->i_mut=
-ex
-> held over that area in hugetlbfs ->mmap(), but doing that is really, real=
-ly
-> wrong, whatever the reason.
+We should be holding the vlist_mutex to avoid any such races. But you
+also make clear that volatile_range_shrink() should really be called
+volatile_range_resize(), since having two _shrink calls is terrible. My
+apologies.
+ 
 
-Thanks for clearing that up, Al. I only knew that the inodes were being
-incorrectly annotated, but I wasn't sure about the correct locking order.
+>         +       unsigned long nr_to_scan = sc->nr_to_scan;
+>         +       const gfp_t gfp_mask = sc->gfp_mask;
+>         +
+>         +       /* We might recurse into filesystem code, so bail out
+>         if necessary */
+>         +       if (nr_to_scan && !(gfp_mask & __GFP_FS))
+>         +               return -1;
+>         +       if (!nr_to_scan)
+>         +               return lru_count;
+> 
+> So it's u64 -> int here, which is possibly 32 bits and signed. Can't
+> it lead to inconsistent results on 32bit platforms?
 
-Tyler
+Good point. Thanks for pointing that out.
+
+>         +               start = range->range_node.start * PAGE_SIZE;
+>         +               end = (range->range_node.end + 1) * PAGE_SIZE
+>         - 1;
+> 
+> PAGE_CACHE_SHIFT was used in fadvise() to calculate .start and .end
+> indexes, and here we use PAGE_SIZE to get back to 'normal' addresses.
+> Isn't it inconsistent at the very least?
+
+Fair enough.
+
+>         
+>         +               nr_to_scan -= range_size(range);
+> 
+> hmm, unsigned long -= u64
+>  
+>         +               if (nr_to_scan <= 0)
+> 
+> nr_to_scan is "unsigned long" :-))
+
+Good catch. 
+
+Thanks for the feedback!
+-john
 
 
---4Ckj6UjgE2iN1+kY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJPPcyTAAoJENaSAD2qAscKTBMQAKnJc6fIs3eU5a3MHH9eqHXL
-PVUXWNWxyuulBquLj7vyIKNwacghrqidW9s/hoIHRbkgZI3ukt+izhuCANGvH6NB
-v8iGg086dqtDvCDDrHvzVoOUNeepp/npjSbHCjmHfIdSrBq9A/owGsrDhchA3nIH
-38fP3MS3EgmnB1lCtDswXfW5NowLINp9479YB/vDslmVey5e6tIf64/nvYGrUXzP
-laRqD4jCQ35H7BOVKJvU7gDePNzeyp+UcdwT9ktT3CxxRnEIwqlaGXt2gTmxFaoW
-cCq172SVfWxMzuGYB0UyKbvtrGLcBWRH3NNk0zTJGu5jjLnq9bY36OkNvvzdS2iM
-W2amrttMmzQSa+xgwg9e504WVGRSOzFwAeIWBtiWf7DbDS0cD03hcWq7xND8Sme2
-6AO7jTEV/iVfWBpjCnLllRjv2qk0rhtMd9BUA+dKGcuEEMKB/rRP5iaZ2ojrwrAm
-p0MmQxj9/KjZ4ljIC8bMzYwKx8jV5rE2+m3sqFelh6Qk6Z+TfyRd9F4V+V2ygJu9
-CCeZ+hDi/vGm2VrTAgiGvEo2sNjt+n9EjnbP+ggDx5QaGRDhFncNtTd719hktN23
-Yho7f6alRNCnW6AGQ9lSTXk7FO3kXxRZMufNKU43Gs5RIWLLuMBYu5UBHe04cgE7
-2QuM7CAgPSccA8U6Lhnl
-=3CMt
------END PGP SIGNATURE-----
-
---4Ckj6UjgE2iN1+kY--
