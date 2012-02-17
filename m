@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab2BQLVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 06:21:39 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47409 "EHLO mx3.mail.elte.hu"
+	id S1751918Ab2BQLXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 06:23:40 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48238 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab2BQLVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 06:21:38 -0500
-Date: Fri, 17 Feb 2012 12:21:17 +0100
+	id S1751494Ab2BQLXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 06:23:39 -0500
+Date: Fri, 17 Feb 2012 12:22:58 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: [PATCH] Revert "x86, efi: Calling __pa() with an ioremap()ed
- address is invalid"
-Message-ID: <20120217112117.GB14789@elte.hu>
-References: <86sjkpiw8i.fsf@sumi.keithp.com>
- <1323962963.314.14.camel@mfleming-mobl1.ger.corp.intel.com>
- <1326705757.3629.18.camel@mfleming-mobl1.ger.corp.intel.com>
- <20120116093133.GB15333@elte.hu>
- <1326707367.3629.26.camel@mfleming-mobl1.ger.corp.intel.com>
- <20120116095529.GA838@elte.hu>
- <1326708966.3629.31.camel@mfleming-mobl1.ger.corp.intel.com>
- <1328705209.3718.1.camel@mfleming-mobl1.ger.corp.intel.com>
- <86d39pfdqd.fsf@sumi.keithp.com>
- <1329307981.3675.120.camel@mfleming-mobl1.ger.corp.intel.com>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, Venki Pallipadi <venki@google.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and
+ ARM
+Message-ID: <20120217112258.GC14789@elte.hu>
+References: <1328918525-7309-1-git-send-email-dmitry.antipov@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329307981.3675.120.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1328918525-7309-1-git-send-email-dmitry.antipov@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
  -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
                              [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+* Dmitry Antipov <dmitry.antipov@linaro.org> wrote:
 
-> On Wed, 2012-02-08 at 09:15 -0800, Keith Packard wrote:
-> > <#part sign=pgpmime>
-> > On Wed, 08 Feb 2012 12:46:49 +0000, Matt Fleming <matt@console-pimps.org> wrote:
-> > 
-> > > Ping? Keith, have you had chance to test this patch yet?
-> > 
-> > No, I haven't had a chance to try the patch, and I'm leaving 
-> > on vacation tomorrow until March 1...
-> 
-> Hmm... I haven't been able to find anybody else willing to 
-> test this patch either.
-> 
-> Ingo, got any opinions on how to handle this?
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -757,18 +757,20 @@ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+>  static DEFINE_PER_CPU(u64, cpu_softirq_time);
+>  
+>  static DEFINE_PER_CPU(u64, irq_start_time);
+> -static int sched_clock_irqtime;
+>  
+> -void enable_sched_clock_irqtime(void)
+> -{
+> -	sched_clock_irqtime = 1;
+> -}
+> +/* -1 if not initialized, 0 if disabled with "noirqtime" kernel option
+> + * or after unstable clock was detected, 1 if enabled and active.
+> + */
 
-Please send the latest and I'll apply it. If we don't get 
-voluntary testers then involuntary ones will have to do :-/
+Please use the customary (multi-line) comment style:
+
+  /*
+   * Comment .....
+   * ...... goes here.
+   */
+
+specified in Documentation/CodingStyle.
+
+> +int sched_clock_irqtime = -1;
+
+should be turned into __read_mostly I guess.
 
 Thanks,
 
