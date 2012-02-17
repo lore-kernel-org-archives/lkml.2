@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2BQRxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:53:19 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:31167 "EHLO
+	id S1752836Ab2BQRxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:53:38 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52763 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab2BQRug (ORCPT
+	with ESMTP id S1752210Ab2BQRue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:50:36 -0500
+	Fri, 17 Feb 2012 12:50:34 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 02/18] ARM: at91/at91x40: remove use of at91_sys_read/write
-Date: Fri, 17 Feb 2012 18:49:54 +0100
-Message-Id: <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329500622.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 15/18] ARM: at91: merge SRAM Memory banks thanks to mirroring
+Date: Fri, 17 Feb 2012 18:50:07 +0100
+Message-Id: <f3e34185733168991e0a35d60bbcd5f63f79fe4c.1329500622.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
@@ -24,121 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
+On at91sam9260 and at91sam9g20 the SRAM banks are mirrored. We can
+merge them together to be able to have bigger and continuous
+internal RAM.
+
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/at91x40.c              |    2 +-
- arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
- arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
- 3 files changed, 27 insertions(+), 21 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c              |   13 +++++--------
+ arch/arm/mach-at91/include/mach/at91sam9260.h |    4 ++++
+ 2 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
-index 0154b7f..5400a1d 100644
---- a/arch/arm/mach-at91/at91x40.c
-+++ b/arch/arm/mach-at91/at91x40.c
-@@ -44,7 +44,7 @@ static void at91x40_idle(void)
- 	 * Disable the processor clock.  The processor will be automatically
- 	 * re-enabled by an interrupt or by a reset.
- 	 */
--	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
-+	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
- 	cpu_do_idle();
- }
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 14882ae..4ade265 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -310,15 +310,12 @@ static void __init at91sam9xe_map_io(void)
  
-diff --git a/arch/arm/mach-at91/at91x40_time.c b/arch/arm/mach-at91/at91x40_time.c
-index dfff289..6ca680a 100644
---- a/arch/arm/mach-at91/at91x40_time.c
-+++ b/arch/arm/mach-at91/at91x40_time.c
-@@ -28,6 +28,12 @@
- #include <asm/mach/time.h>
- #include <mach/at91_tc.h>
- 
-+#define at91_tc_read(field) \
-+	__raw_readl(AT91_TC + field)
-+
-+#define at91_tc_write(field, value) \
-+	__raw_writel(value, AT91_TC + field);
-+
- /*
-  *	3 counter/timer units present.
-  */
-@@ -37,12 +43,12 @@
- 
- static unsigned long at91x40_gettimeoffset(void)
+ static void __init at91sam9260_map_io(void)
  {
--	return (at91_sys_read(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_CV) * 1000000 / (AT91X40_MASTER_CLOCK / 128));
-+	return (at91_tc_read(AT91_TC_CLK1BASE + AT91_TC_CV) * 1000000 / (AT91X40_MASTER_CLOCK / 128));
+-	if (cpu_is_at91sam9xe()) {
++	if (cpu_is_at91sam9xe())
+ 		at91sam9xe_map_io();
+-	} else if (cpu_is_at91sam9g20()) {
+-		at91_init_sram(0, AT91SAM9G20_SRAM0_BASE, AT91SAM9G20_SRAM0_SIZE);
+-		at91_init_sram(1, AT91SAM9G20_SRAM1_BASE, AT91SAM9G20_SRAM1_SIZE);
+-	} else {
+-		at91_init_sram(0, AT91SAM9260_SRAM0_BASE, AT91SAM9260_SRAM0_SIZE);
+-		at91_init_sram(1, AT91SAM9260_SRAM1_BASE, AT91SAM9260_SRAM1_SIZE);
+-	}
++	else if (cpu_is_at91sam9g20())
++		at91_init_sram(0, AT91SAM9G20_SRAM_BASE, AT91SAM9G20_SRAM_SIZE);
++	else
++		at91_init_sram(0, AT91SAM9260_SRAM_BASE, AT91SAM9260_SRAM_SIZE);
  }
  
- static irqreturn_t at91x40_timer_interrupt(int irq, void *dev_id)
- {
--	at91_sys_read(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_SR);
-+	at91_tc_read(AT91_TC_CLK1BASE + AT91_TC_SR);
- 	timer_tick();
- 	return IRQ_HANDLED;
- }
-@@ -57,20 +63,20 @@ void __init at91x40_timer_init(void)
- {
- 	unsigned int v;
+ static void __init at91sam9260_ioremap_registers(void)
+diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
+index 2e47b6d..08ae9af 100644
+--- a/arch/arm/mach-at91/include/mach/at91sam9260.h
++++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
+@@ -113,6 +113,8 @@
+ #define AT91SAM9260_SRAM0_SIZE	SZ_4K		/* Internal SRAM 0 size (4Kb) */
+ #define AT91SAM9260_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+ #define AT91SAM9260_SRAM1_SIZE	SZ_4K		/* Internal SRAM 1 size (4Kb) */
++#define AT91SAM9260_SRAM_BASE	0x002FF000	/* Internal SRAM base address */
++#define AT91SAM9260_SRAM_SIZE	SZ_8K		/* Internal SRAM size (8Kb) */
  
--	at91_sys_write(AT91_TC + AT91_TC_BCR, 0);
--	v = at91_sys_read(AT91_TC + AT91_TC_BMR);
-+	at91_tc_write(AT91_TC_BCR, 0);
-+	v = at91_tc_read(AT91_TC_BMR);
- 	v = (v & ~AT91_TC_TC1XC1S) | AT91_TC_TC1XC1S_NONE;
--	at91_sys_write(AT91_TC + AT91_TC_BMR, v);
-+	at91_tc_write(AT91_TC_BMR, v);
+ #define AT91SAM9260_UHP_BASE	0x00500000	/* USB Host controller */
  
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_CCR, AT91_TC_CLKDIS);
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_CMR, (AT91_TC_TIMER_CLOCK4 | AT91_TC_CPCTRG));
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_IDR, 0xffffffff);
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_RC, (AT91X40_MASTER_CLOCK / 128) / HZ - 1);
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_IER, (1<<4));
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_CCR, AT91_TC_CLKDIS);
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_CMR, (AT91_TC_TIMER_CLOCK4 | AT91_TC_CPCTRG));
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_IDR, 0xffffffff);
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_RC, (AT91X40_MASTER_CLOCK / 128) / HZ - 1);
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_IER, (1<<4));
+@@ -126,6 +128,8 @@
+ #define AT91SAM9G20_SRAM0_SIZE	SZ_16K		/* Internal SRAM 0 size (16Kb) */
+ #define AT91SAM9G20_SRAM1_BASE	0x00300000	/* Internal SRAM 1 base address */
+ #define AT91SAM9G20_SRAM1_SIZE	SZ_16K		/* Internal SRAM 1 size (16Kb) */
++#define AT91SAM9G20_SRAM_BASE	0x002FC000	/* Internal SRAM base address */
++#define AT91SAM9G20_SRAM_SIZE	SZ_32K		/* Internal SRAM size (32Kb) */
  
- 	setup_irq(AT91X40_ID_TC1, &at91x40_timer_irq);
+ #define AT91SAM9G20_UHP_BASE	0x00500000	/* USB Host controller */
  
--	at91_sys_write(AT91_TC + AT91_TC_CLK1BASE + AT91_TC_CCR, (AT91_TC_SWTRG | AT91_TC_CLKEN));
-+	at91_tc_write(AT91_TC_CLK1BASE + AT91_TC_CCR, (AT91_TC_SWTRG | AT91_TC_CLKEN));
- }
- 
- struct sys_timer at91x40_timer = {
-diff --git a/arch/arm/mach-at91/include/mach/at91x40.h b/arch/arm/mach-at91/include/mach/at91x40.h
-index a57829f..9068021 100644
---- a/arch/arm/mach-at91/include/mach/at91x40.h
-+++ b/arch/arm/mach-at91/include/mach/at91x40.h
-@@ -28,18 +28,18 @@
- #define AT91X40_ID_IRQ2		18	/* External IRQ 2 */
- 
- /*
-- * System Peripherals (offset from AT91_BASE_SYS)
-+ * System Peripherals
-  */
- #define AT91_BASE_SYS	0xffc00000
- 
--#define AT91_EBI	(0xffe00000 - AT91_BASE_SYS)	/* External Bus Interface */
--#define AT91_SF		(0xfff00000 - AT91_BASE_SYS)	/* Special Function */
--#define AT91_USART1	(0xfffcc000 - AT91_BASE_SYS)	/* USART 1 */
--#define AT91_USART0	(0xfffd0000 - AT91_BASE_SYS)	/* USART 0 */
--#define AT91_TC		(0xfffe0000 - AT91_BASE_SYS)	/* Timer Counter */
--#define AT91_PIOA	(0xffff0000 - AT91_BASE_SYS)	/* PIO Controller A */
--#define AT91_PS		(0xffff4000 - AT91_BASE_SYS)	/* Power Save */
--#define AT91_WD		(0xffff8000 - AT91_BASE_SYS)	/* Watchdog Timer */
-+#define AT91_EBI	0xffe00000	/* External Bus Interface */
-+#define AT91_SF		0xfff00000	/* Special Function */
-+#define AT91_USART1	0xfffcc000	/* USART 1 */
-+#define AT91_USART0	0xfffd0000	/* USART 0 */
-+#define AT91_TC		0xfffe0000	/* Timer Counter */
-+#define AT91_PIOA	0xffff0000	/* PIO Controller A */
-+#define AT91_PS		0xffff4000	/* Power Save */
-+#define AT91_WD		0xffff8000	/* Watchdog Timer */
- 
- /*
-  * The AT91x40 series doesn't have a debug unit like the other AT91 parts.
 -- 
 1.7.9
 
