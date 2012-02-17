@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab2BQDdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:33:00 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34481 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752976Ab2BQDc7 (ORCPT
+	id S1753919Ab2BQDfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:35:32 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56715 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab2BQDfb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:32:59 -0500
-X-Sasl-enc: 5ox4Yuj708I2VSocXyeB6Bxt2UG+4DbJi5T5YKOVH9ne 1329449578
-Date: Thu, 16 Feb 2012 19:32:52 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Windsor <dwindsor@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, pageexec@freemail.hu,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        spender@grsecurity.net, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [ubuntu-hardened] Add overflow protection to kref
-Message-ID: <20120217033252.GB22823@kroah.com>
-References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
- <20120216204515.GH20420@outflux.net>
- <20120217002405.GB7746@kroah.com>
- <20120217010624.GA6541@outflux.net>
- <20120217014008.GA18763@kroah.com>
- <20120217021109.GC6541@outflux.net>
- <CAEXv5_iRj6zHcKWtV0mgA4i_2u=TB1iQQMYFJAK4r6Ca=pimDA@mail.gmail.com>
+	Thu, 16 Feb 2012 22:35:31 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Don Zickus <dzickus@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        kexec@lists.infradead.org, vgoyal@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<m1ipjc3fsk.fsf@fess.ebiederm.org>
+	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+	<m1zkcmyjyd.fsf@fess.ebiederm.org>
+	<CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
+	<CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+	<20120216172735.GX9751@redhat.com>
+	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
+	<20120216215603.GH9751@redhat.com>
+Date: Thu, 16 Feb 2012 19:38:21 -0800
+In-Reply-To: <20120216215603.GH9751@redhat.com> (Don Zickus's message of "Thu,
+	16 Feb 2012 16:56:03 -0500")
+Message-ID: <m1y5s2ku36.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEXv5_iRj6zHcKWtV0mgA4i_2u=TB1iQQMYFJAK4r6Ca=pimDA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+KPfx86BPEsB2HsW0Yid6BWoyeVH4Om2A=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 09:48:38PM -0500, David Windsor wrote:
-> <snip>
-> 
-> >>
-> >> I have yet to see a patch, so why are we arguing about this? �:)
-> >>
-> >> Again, I don't know of any kref overflows that have ever happened, so
-> >> trying to "protect" this type of thing, seems odd to me.
-> >
-> > Well, I think the issue was to protect counting things (which seems to
-> > be what PaX was after originally), and that kref seemed like the place
-> > to put it. I'll let David take it further.
-> >
-> 
-> Patches are forthcoming that will first introduce overflow protection
-> to kref.  Once that's in place, I'll move a few refcount users from
-> atomic_t to kref as a reference for other subsystems;
+Don Zickus <dzickus@redhat.com> writes:
 
-I'd like to see some more users first, as I don't see how the current
-users could ever overflow an atomic_t, so any changes to prevent this
-will be kind of pointless, right?
+> On Thu, Feb 16, 2012 at 01:53:29PM -0800, Yinghai Lu wrote:
+>> On Thu, Feb 16, 2012 at 9:27 AM, Don Zickus <dzickus@redhat.com> wrote:
+>> 
+>> > So I think I figured it out.  I went through and commented out code in
+>> > disable_local_APIC until I narrowed it down to the piece of code that
+>> > needs to be disabled for it to work.
+>> >
+>> > Surprise, surprise... its LVTPC or perf! :-)  Actually it is the
+>> > nmi_watchdog which uses perf.  My theory is NMIs are not disabled and one
+>> > is generated by the local apic during decompression (just bad timing) and
+>> > *splat*.
+>> >
+>> > Yinghai, you can probably prove this by
+>> >
+>> > echo 0 > /proc/sys/kernel/nmi_watchdog
+>> >
+>> > then do your kdump crash test.
+>> 
+>> yes.  that will make kdump crash working.
+>
+> Cool.  Thanks.
+>
+> Eric,
+>
+> Just let me know how you want to handle disabling NMIs in the kexec in
+> panic shutdown case.
 
-So feel free to send all of these changes together.
+Interesting.  Apparently we have been avoiding this problem by accident.
 
-thanks,
+Thanks for hunting this down.
 
-greg k-h
+The options I can see are:
+- Ensure we can handle and ignore exceptions like this.
+- Always shutoff the lapic and ioapic entries that can generate this.
+
+The good news is that both solutions should be lock free.
+
+The current kernel boot code relies on the assumption that all
+interrupts can be disabled.  In this case with nmi's that is clearly not
+the case.
+
+The most robust solution and what we want to do long term is to
+install an idt that will simply ignore all interrupts until the
+idt is replaced.  Since really all we need to deal with is the NMI
+vector, which is vector #2, we can have a very small interrupt
+descriptor table.
+
+Unfortunately we go through some cpu mode switches in /sbin/kexec,
+allowing us to enter the kernels 32bit entry point before we
+run the decompresser, so at first glance both /sbin/kexec and the
+kernel need to be fixed in a coordinated fashion.
+
+There are two was I can see of removing the need for an exactly
+coordinated release.
+- Document that an old /sbin/kexec userspace requires you not to
+  use the nmi watchdog with modern kernels.
+- For a short while simply retain code that stomps the nmi watchdog.
+  (But still leaves us open to other kinds of nmi's).
+
+Grr.  Looking a little more closely, all throughout the linux kernel's
+boot there is the assumption that any interrupt during boot is a failure
+of some kind, and except for an errant nmi watchdog that is a true
+assumption.
+
+Don I guess I really have to recommend disabling the nmi watchdog in the
+kexec on panic path if we can do so at all reasonably. 
+
+I like the idea of ignoring nmis during boot but that seems to be a
+slightly larger project and with little practical improvement in kexec
+on panic quality.  Other than getting what should be one or two
+i/o writes out of the kexec on panic path.
+
+Eric
+
