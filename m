@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2BQBCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:02:21 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34980 "EHLO
+	id S1757004Ab2BQBA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:00:29 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:41049 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757010Ab2BQBAb (ORCPT
+	by vger.kernel.org with ESMTP id S1756838Ab2BQBA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:31 -0500
-X-Sasl-enc: x/tSInxiycd7hN7Q+lmcf62MVb6VMmAwjHdU5xpkVhZO 1329440429
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:37 2012
-Message-Id: <20120217005537.010035539@linuxfoundation.org>
+	Thu, 16 Feb 2012 20:00:26 -0500
+X-Sasl-enc: +89dpUm+KyvgcFWn85mHDdbFyTVTwCZvQCn16jj82jVv 1329440425
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:35 2012
+Message-Id: <20120217005535.410388687@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:56 -0800
+Date: Thu, 16 Feb 2012 16:55:44 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jens Axboe <axboe@kernel.dk>,
-        Chanho Min <chanho.min@lge.com>, Namjae Jeon <linkinjeon@gmail.com>,
-        Rabin Vincent <rabin@rab.in>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: [22/28] backing-dev: fix wakeup timer races with bdi_unregister()
+        alan@lxorguk.ukuu.org.uk, Nikolaus Schulz <mail@microschulz.de>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [10/28] hwmon: (f75375s) Fix bit shifting in f75375_write16
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,92 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin@rab.in>
+From: Nikolaus Schulz <schulz@macnetix.de>
 
-commit 2673b4cf5d59c3ee5e0c12f6d734d38770324dc4 upstream.
+commit eb2f255b2d360df3f500042a2258dcf2fcbe89a2 upstream.
 
-While 7a401a972df8e18 ("backing-dev: ensure wakeup_timer is deleted")
-addressed the problem of the bdi being freed with a queued wakeup
-timer, there are other races that could happen if the wakeup timer
-expires after/during bdi_unregister(), before bdi_destroy() is called.
+In order to extract the high byte of the 16-bit word, shift the word to
+the right, not to the left.
 
-wakeup_timer_fn() could attempt to wakeup a task which has already has
-been freed, or could access a NULL bdi->dev via the wake_forker_thread
-tracepoint.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Reported-by: Chanho Min <chanho.min@lge.com>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Nikolaus Schulz <mail@microschulz.de>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/backing-dev.c |   25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
+ drivers/hwmon/f75375s.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned lon
- 	if (bdi->wb.task) {
- 		trace_writeback_wake_thread(bdi);
- 		wake_up_process(bdi->wb.task);
--	} else {
-+	} else if (bdi->dev) {
- 		/*
- 		 * When bdi tasks are inactive for long time, they are killed.
- 		 * In this case we have to wake-up the forker thread which
-@@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
-  */
- static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -159,7 +159,7 @@ static inline void f75375_write8(struct
+ static inline void f75375_write16(struct i2c_client *client, u8 reg,
+ 		u16 value)
  {
-+	struct task_struct *task;
-+
- 	if (!bdi_cap_writeback_dirty(bdi))
+-	int err = i2c_smbus_write_byte_data(client, reg, (value << 8));
++	int err = i2c_smbus_write_byte_data(client, reg, (value >> 8));
+ 	if (err)
  		return;
- 
-@@ -604,9 +606,14 @@ static void bdi_wb_shutdown(struct backi
- 	 * unfreeze of the thread before calling kthread_stop(), otherwise
- 	 * it would never exet if it is currently stuck in the refrigerator.
- 	 */
--	if (bdi->wb.task) {
--		thaw_process(bdi->wb.task);
--		kthread_stop(bdi->wb.task);
-+	spin_lock_bh(&bdi->wb_lock);
-+	task = bdi->wb.task;
-+	bdi->wb.task = NULL;
-+	spin_unlock_bh(&bdi->wb_lock);
-+
-+	if (task) {
-+		thaw_process(task);
-+		kthread_stop(task);
- 	}
- }
- 
-@@ -627,7 +634,9 @@ static void bdi_prune_sb(struct backing_
- 
- void bdi_unregister(struct backing_dev_info *bdi)
- {
--	if (bdi->dev) {
-+	struct device *dev = bdi->dev;
-+
-+	if (dev) {
- 		bdi_set_min_ratio(bdi, 0);
- 		trace_writeback_bdi_unregister(bdi);
- 		bdi_prune_sb(bdi);
-@@ -636,8 +645,12 @@ void bdi_unregister(struct backing_dev_i
- 		if (!bdi_cap_flush_forker(bdi))
- 			bdi_wb_shutdown(bdi);
- 		bdi_debug_unregister(bdi);
--		device_unregister(bdi->dev);
-+
-+		spin_lock_bh(&bdi->wb_lock);
- 		bdi->dev = NULL;
-+		spin_unlock_bh(&bdi->wb_lock);
-+
-+		device_unregister(dev);
- 	}
- }
- EXPORT_SYMBOL(bdi_unregister);
+ 	i2c_smbus_write_byte_data(client, reg + 1, (value & 0xFF));
 
 
