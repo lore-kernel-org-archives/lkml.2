@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2BQRxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:53:54 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:37109 "EHLO
+	id S1752687Ab2BQRyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:54:13 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:54074 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2BQRua (ORCPT
+	with ESMTP id S1752119Ab2BQRu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:50:30 -0500
+	Fri, 17 Feb 2012 12:50:29 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 12/18] ARM: at91:rtc/rtc-at91sam9: ioremap register bank
-Date: Fri, 17 Feb 2012 18:50:04 +0100
-Message-Id: <840d899dfcd707cb9fc282d6f04c6645fd3b84fe.1329500622.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 09/18] ARM: at91/pm_slowclock: add runtime detection of memory contoller
+Date: Fri, 17 Feb 2012 18:50:01 +0100
+Message-Id: <c5d5b80f4be2ad0facabfc11940015e2aacca748.1329500622.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
@@ -24,60 +24,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Instead of computing virtual address with AT91_VA_BASE_SYS, use the
-appropriate ioremap() call on the driver "memory" resource.
+This will allow to have all SoC in one kernel image.
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/rtc/rtc-at91sam9.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ arch/arm/mach-at91/include/mach/at91_ramc.h |    9 ++--
+ arch/arm/mach-at91/pm.c                     |   15 +++++-
+ arch/arm/mach-at91/pm_slowclock.S           |   66 +++++++++++++++++++++------
+ 3 files changed, 68 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 65896a3..08b69fd 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -307,8 +307,12 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
- 		device_init_wakeup(&pdev->dev, 1);
+diff --git a/arch/arm/mach-at91/include/mach/at91_ramc.h b/arch/arm/mach-at91/include/mach/at91_ramc.h
+index 3155499..d8aeb27 100644
+--- a/arch/arm/mach-at91/include/mach/at91_ramc.h
++++ b/arch/arm/mach-at91/include/mach/at91_ramc.h
+@@ -21,11 +21,12 @@ extern void __iomem *at91_ramc_base[];
+ .extern at91_ramc_base
+ #endif
  
- 	platform_set_drvdata(pdev, rtc);
--	rtc->rtt = (void __force __iomem *) (AT91_VA_BASE_SYS - AT91_BASE_SYS);
--	rtc->rtt += r->start;
-+	rtc->rtt = ioremap(r->start, resource_size(r));
-+	if (!rtc->rtt) {
-+		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
-+		ret = -ENOMEM;
-+		goto fail;
-+	}
+-#ifdef CONFIG_ARCH_AT91RM9200
+-#include <mach/at91rm9200_mc.h>
+-#else
++#define AT91_MEMCTRL_MC		0
++#define AT91_MEMCTRL_SDRAMC	1
++#define AT91_MEMCTRL_DDRSDR	2
++
++#include <mach/at91rm9200_sdramc.h>
+ #include <mach/at91sam9_ddrsdr.h>
+ #include <mach/at91sam9_sdramc.h>
+-#endif
  
- 	mr = rtt_readl(rtc, MR);
+ #endif /* __AT91_RAMC_H__ */
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 6a02ea2..83a0051 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -188,10 +188,12 @@ int at91_suspend_entering_slow_clock(void)
+ EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
  
-@@ -326,7 +330,7 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
- 				&at91_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc->rtcdev)) {
- 		ret = PTR_ERR(rtc->rtcdev);
--		goto fail;
-+		goto fail_register;
- 	}
  
- 	/* register irq handler after we know what name we'll use */
-@@ -351,6 +355,8 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
+-static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
++static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
++			  void __iomem *ramc1, int memctrl);
  
- 	return 0;
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+-extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
++extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
++			    void __iomem *ramc1, int memctrl);
+ extern u32 at91_slow_clock_sz;
+ #endif
  
-+fail_register:
-+	iounmap(rtc->rtt);
- fail:
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(rtc);
-@@ -371,6 +377,7 @@ static int __devexit at91_rtc_remove(struct platform_device *pdev)
+@@ -241,11 +243,18 @@ static int at91_pm_enter(suspend_state_t state)
+ 			 * turning off the main oscillator; reverse on wakeup.
+ 			 */
+ 			if (slow_clock) {
++				int memctrl = AT91_MEMCTRL_SDRAMC;
++
++				if (cpu_is_at91rm9200())
++					memctrl = AT91_MEMCTRL_MC;
++				else if (cpu_is_at91sam9g45())
++					memctrl = AT91_MEMCTRL_DDRSDR;
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+ 				/* copy slow_clock handler to SRAM, and call it */
+ 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+ #endif
+-				slow_clock(at91_pmc_base, at91_ramc_base[0], at91_ramc_base[1]);
++				slow_clock(at91_pmc_base, at91_ramc_base[0],
++					   at91_ramc_base[1], memctrl);
+ 				break;
+ 			} else {
+ 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 9c3117c..17f4d72 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -42,8 +42,9 @@
+ #define pmc	r0
+ #define sdramc	r1
+ #define ramc1	r2
+-#define tmp1	r3
+-#define tmp2	r4
++#define memctrl	r3
++#define tmp1	r4
++#define tmp2	r5
  
- 	rtc_device_unregister(rtc->rtcdev);
+ /*
+  * Wait until master clock is ready (after switching master clock source)
+@@ -103,29 +104,44 @@
  
-+	iounmap(rtc->rtt);
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(rtc);
- 	return 0;
+ 	.text
+ 
+-/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
++/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
++ *			void __iomem *ramc1, int memctrl)
++ */
+ ENTRY(at91_slow_clock)
+ 	/* Save registers on stack */
+-	stmfd	sp!, {r3 - r12, lr}
++	stmfd	sp!, {r4 - r12, lr}
+ 
+ 	/*
+ 	 * Register usage:
+ 	 *  R0 = Base address of AT91_PMC
+ 	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
+ 	 *  R2 = Base address of second RAM Controller or 0 if not present
+-	 *  R3 = temporary register
++	 *  R3 = Memory controller
+ 	 *  R4 = temporary register
++	 *  R5 = temporary register
+ 	 */
+ 
+ 	/* Drain write buffer */
+ 	mov	tmp1, #0
+ 	mcr	p15, 0, tmp1, c7, c10, 4
+ 
+-#ifdef CONFIG_ARCH_AT91RM9200
++	cmp	memctrl, #AT91_MEMCTRL_MC
++	bne	ddr_sr_enable
++
++	/*
++	 * at91rm9200 Memory controller
++	 */
+ 	/* Put SDRAM in self-refresh mode */
+ 	mov	tmp1, #1
+ 	str	tmp1, [sdramc, #AT91RM9200_SDRAMC_SRR]
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
++	b	sdr_sr_done
++
++	/*
++	 * DDRSDR Memory controller
++	 */
++ddr_sr_enable:
++	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
++	bne	sdr_sr_enable
+ 
+ 	/* prepare for DDRAM self-refresh mode */
+ 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+@@ -143,7 +159,13 @@ ENTRY(at91_slow_clock)
+ 	/* Enable DDRAM self-refresh mode */
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+ 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+-#else
++
++	b	sdr_sr_done
++
++	/*
++	 * SDRAMC Memory controller
++	 */
++sdr_sr_enable:
+ 	/* Enable SDRAM self-refresh mode */
+ 	ldr	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+ 	str	tmp1, .saved_sam9_lpr
+@@ -151,8 +173,8 @@ ENTRY(at91_slow_clock)
+ 	bic	tmp1, #AT91_SDRAMC_LPCB
+ 	orr	tmp1, #AT91_SDRAMC_LPCB_SELF_REFRESH
+ 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+-#endif
+ 
++sdr_sr_done:
+ 	/* Save Master clock setting */
+ 	ldr	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 	str	tmp1, .saved_mckr
+@@ -255,9 +277,18 @@ ENTRY(at91_slow_clock)
+ 
+ 	wait_mckrdy
+ 
+-#ifdef CONFIG_ARCH_AT91RM9200
+-	/* Do nothing - self-refresh is automatically disabled. */
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
++	/*
++	 * at91rm9200 Memory controller
++	 * Do nothing - self-refresh is automatically disabled.
++	 */
++	cmp	memctrl, #AT91_MEMCTRL_MC
++	beq	ram_restored
++
++	/*
++	 * DDRSDR Memory controller
++	 */
++	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
++	bne	sdr_en_restore
+ 	/* Restore LPR on AT91 with DDRAM */
+ 	ldr	tmp1, .saved_sam9_lpr
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+@@ -267,14 +298,19 @@ ENTRY(at91_slow_clock)
+ 	ldrne	tmp2, .saved_sam9_lpr1
+ 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ 
+-#else
++	b	ram_restored
++
++	/*
++	 * SDRAMC Memory controller
++	 */
++sdr_en_restore:
+ 	/* Restore LPR on AT91 with SDRAM */
+ 	ldr	tmp1, .saved_sam9_lpr
+ 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+-#endif
+ 
++ram_restored:
+ 	/* Restore registers, and return */
+-	ldmfd	sp!, {r3 - r12, pc}
++	ldmfd	sp!, {r4 - r12, pc}
+ 
+ 
+ .saved_mckr:
 -- 
 1.7.9
 
