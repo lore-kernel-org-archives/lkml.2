@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2BQOnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:43:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab2BQOny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:43:54 -0500
-Date: Fri, 17 Feb 2012 15:37:06 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: apw@canonical.com, arjan@linux.intel.com, fhrbata@redhat.com,
-        john.johansen@canonical.com, penguin-kernel@I-love.SAKURA.ne.jp,
-        rientjes@google.com, rusty@rustcorp.com.au, tj@kernel.org,
+	id S1751919Ab2BQOqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:46:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57338 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab2BQOqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 09:46:39 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: tony@atomide.com
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] introduce complete_vfork_done()
-Message-ID: <20120217143706.GA22440@redhat.com>
-References: <20120214164709.GA21178@redhat.com> <20120214164914.GF21185@redhat.com> <20120215123049.6e938eed.akpm@linux-foundation.org> <20120216150429.GB11953@redhat.com> <20120216172626.GA30393@redhat.com> <20120216172647.GB30393@redhat.com> <20120216163544.4e41e5a5.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216163544.4e41e5a5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: [PATCH] ARM: OMAP2+: GPMC: Export gpmc_enable_hwecc and gpmc_calculate_ecc
+Date: Fri, 17 Feb 2012 15:44:19 +0100
+Message-Id: <1329489859-23929-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.9.1
+X-Provags-ID: V02:K0:QbSNsNqXL08h1cV3FpV2vmOW9A/SMK93APAPvwZA6li
+ xolY9K0y2RxEsSxy1QoXQAZQwexPknivX185Ey0nBand80Oehb
+ WiSAXwLNf03d6SIin0lII66tgPkTUWl4XVc4JF8BwgujXpbg0g
+ 4wenI8LhVtbq2n+M0jT2s9NydARO/oZ4EnkkebAyFvz6Bar+v7
+ E9eUsLdUba/RmNyn28aE8JaW6pq+gwMH9h6epSFsiySDC3ej7J
+ l1jRmks8gbhYet5dEusXWf3OR/fUbjQUoImEV911OaieMOslYU
+ FrbDvN0XTVT3Ym9BPN8iOjIAmJqBElXX8LF+QqLN3CERAI1J06
+ M1M2AdArWwrMivY5an09nN8j4xno0RbZgvLWGbYN4AYnPr07Qh
+ p9sJuj7iBwQMg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16, Andrew Morton wrote:
->
-> On Thu, 16 Feb 2012 18:26:47 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > ...
-> > +void complete_vfork_done(struct task_struct *tsk)
-> > +{
-> > +	struct completion *vfork_done = tsk->vfork_done;
-> > +
-> > +	tsk->vfork_done = NULL;
-> > +	complete(vfork_done);
-> > +}
-> > +
-> >  /* Please note the differences between mmput and mm_release.
-> >   * mmput is called whenever we stop holding onto a mm_struct,
-> >   * error success whatever.
-> > @@ -682,8 +690,6 @@ struct mm_struct *mm_access(struct task_struct *task, unsigned int mode)
-> >   */
-> >  void mm_release(struct task_struct *tsk, struct mm_struct *mm)
-> >  {
-> > -	struct completion *vfork_done = tsk->vfork_done;
-> > -
-> >  	/* Get rid of any futexes when releasing the mm */
-> >  #ifdef CONFIG_FUTEX
-> >  	if (unlikely(tsk->robust_list)) {
-> > @@ -703,11 +709,8 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
-> >  	/* Get rid of any cached register state */
-> >  	deactivate_mm(tsk, mm);
-> >
-> > -	/* notify parent sleeping on vfork() */
-> > -	if (vfork_done) {
-> > -		tsk->vfork_done = NULL;
-> > -		complete(vfork_done);
-> > -	}
-> > +	if (tsk->vfork_done)
-> > +		complete_vfork_done(tsk);
->
-> This all looks somewhat smelly.
+To be able to compile kernel/drivers/mtd/nand/omap2.ko as module, that
+two symbols need to be exported. Otherwise, I get following error
+message
 
-First of all, let me repeat that this patch changes nothing, justs
-move this code into the new helper.
+    ERROR: "gpmc_calculate_ecc" [drivers/mtd/nand/omap2.ko] undefined!
+    ERROR: "gpmc_enable_hwecc" [drivers/mtd/nand/omap2.ko] undefined!
 
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ arch/arm/mach-omap2/gpmc.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> - Why do we zero tsk->vfork_done in this manner?  It *looks* like
->   it's done to prevent the kernel from running complete() twice against
->   a single task
-
-Yes,
-
-> in a race situation.
-
-No. More precisely, not before/after this patch.
-
-"if (vfork_done) complete_vfork_done()" is called twice very often.
-A vforked child does exec and notifies its parent. It should clear
-->vfork_done, otherwise it will do complete_vfork_done() again on
-exit when ->vfork_done points to nowhere.
-
-The caller can never race with another user of ->vfork_done. It
-is the parent sleeping in do_fork(CLONE_VFORK). (I am ignoring
-the kernel threads created by kthread_create).
-
->   We'd need external locking to firm that up
->   and I'm not seeing it.
-
-After the next patch, parent/child can race with each other, that
-is why the next patch moves complete() under task_lock(). I'll write
-another email in reply to 2/4.
-
-> - Moving the test for non-null tsk->vfork_done into
->   complete_vfork_done() would simplify things a bit?
-
-Yes, perhaps this makes sense. After 3/4 mm_release() becomes the
-only caller and this microoptimization buys nothing, this helper
-will be static.
-
-I like the explicit test a bit more, just because it looks more
-clear to me. But this is subjective, I can redo.
-
-> - The complete_vfork_done() interface isn't wonderful.  What prevents
->   tsk from getting freed?  Presumably the caller must have pinned it in
->   some fashion?  Or must hold some lock?  Or it's always run against
->   `current',
-
-Yes, it is always current,
-
-> in which case it would be clearer to not pass the
->   task_struct arg at all?
-
-Well, may be... But mm_release() already has the 'tsk' argument which
-is always current. It would be strange to not use it.
-
-Oleg.
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index dfffbbf..00d5108 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -888,6 +888,7 @@ int gpmc_enable_hwecc(int cs, int mode, int dev_width, int ecc_size)
+ 	gpmc_write_reg(GPMC_ECC_CONFIG, val);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(gpmc_enable_hwecc);
+ 
+ /**
+  * gpmc_calculate_ecc - generate non-inverted ecc bytes
+@@ -918,3 +919,4 @@ int gpmc_calculate_ecc(int cs, const u_char *dat, u_char *ecc_code)
+ 	gpmc_ecc_used = -EINVAL;
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(gpmc_calculate_ecc);
+-- 
+1.7.9.1
 
