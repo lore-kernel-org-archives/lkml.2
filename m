@@ -1,174 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab2BPX4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 18:56:01 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42348 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab2BPXz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 18:55:59 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 17 Feb 2012 08:54:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock
- splitting
-Message-Id: <20120217085431.80daa020.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4F3CE243.9050203@openvz.org>
-References: <20120215224221.22050.80605.stgit@zurg>
-	<20120216110408.f35c3448.kamezawa.hiroyu@jp.fujitsu.com>
-	<4F3C9798.7050800@openvz.org>
-	<20120216172409.5fa18608.kamezawa.hiroyu@jp.fujitsu.com>
-	<4F3CE243.9050203@openvz.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756034Ab2BQAJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:09:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62811 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab2BQAI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 19:08:59 -0500
+Date: Thu, 16 Feb 2012 19:08:57 -0500
+From: Dave Jones <davej@redhat.com>
+To: Josh Boyer <jboyer@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: hugetlbfs lockdep spew revisited.
+Message-ID: <20120217000856.GA13112@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Josh Boyer <jboyer@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 15:02:27 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+Remember this ? https://lkml.org/lkml/2011/4/15/272
+Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
+but it seems to still be there.
 
-> KAMEZAWA Hiroyuki wrote:
-> > On Thu, 16 Feb 2012 09:43:52 +0400
-> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
-> >
-> >> KAMEZAWA Hiroyuki wrote:
-> >>> On Thu, 16 Feb 2012 02:57:04 +0400
-> >>> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
-> >
-> >>>> * optimize page to book translations, move it upper in the call stack,
-> >>>>     replace some struct zone arguments with struct book pointer.
-> >>>>
-> >>>
-> >>> a page->book transrater from patch 2/15
-> >>>
-> >>> +struct book *page_book(struct page *page)
-> >>> +{
-> >>> +	struct mem_cgroup_per_zone *mz;
-> >>> +	struct page_cgroup *pc;
-> >>> +
-> >>> +	if (mem_cgroup_disabled())
-> >>> +		return&page_zone(page)->book;
-> >>> +
-> >>> +	pc = lookup_page_cgroup(page);
-> >>> +	if (!PageCgroupUsed(pc))
-> >>> +		return&page_zone(page)->book;
-> >>> +	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> >>> +	smp_rmb();
-> >>> +	mz = mem_cgroup_zoneinfo(pc->mem_cgroup,
-> >>> +			page_to_nid(page), page_zonenum(page));
-> >>> +	return&mz->book;
-> >>> +}
-> >>>
-> >>> What happens when pc->mem_cgroup is rewritten by move_account() ?
-> >>> Where is the guard for lockless access of this ?
-> >>
-> >> Initially this suppose to be protected with lru_lock, in final patch they are protected with rcu.
-> >
-> > Hmm, VM_BUG_ON(!PageLRU(page)) ?
-> 
-> Where?
-> 
-
-You said this is guarded by lru_lock. So, page should be on LRU.
+	Dave
 
 
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.3.0-rc3+ #2 Not tainted
+-------------------------------------------------------
+trinity/30663 is trying to acquire lock:
+ (&sb->s_type->i_mutex_key#18){+.+...}, at: [<ffffffff81298169>] hugetlbfs_file_mmap+0x89/0x140
 
-> >
-> > move_account() overwrites pc->mem_cgroup with isolating page from LRU.
-> > but it doesn't take lru_lock.
-> 
-> There three kinds of lock_page_book() users:
-> 1) caller want to catch page in LRU, it will lock either old or new book and
->     recheck PageLRU() after locking, if page not it in LRU it don't touch anything.
->     some of these functions has stable reference to page, some of them not.
->   [ There actually exist small race, I knew about it, just forget to pick this chunk from old code. See below. ]
-> 2) page is isolated by caller, it want to put it back. book link is stable. no problems.
-> 3) page-release functions. page-counter is zero. no references -- no problems.
-> 
-> race for 1)
-> 
-> catcher					switcher
-> 
-> 					# isolate
-> 					old_book = lock_page_book(page)
-> 					ClearPageLRU(page)
-> 					unlock_book(old_book)				
-> 					# charge
-> old_book = lock_page_book(page)		
-> 					# switch
-> 					page->book = new_book
-> 					# putback
-> 					lock_book(new_book)
-> 					SetPageLRU(page)
-> 					unlock_book(new_book)
-> if (PageLRU(page))
-> 	oops, page actually in new_book
-> unlock_book(old_book)
-> 
-> 
-> I'll protect "switch" phase with old_book lru-lock:
-> 
-In linex-next, pc->mem_cgroup is modified only when Page is on LRU.
+but task is already holding lock:
+ (&mm->mmap_sem){++++++}, at: [<ffffffff81182d97>] sys_mmap_pgoff+0x1d7/0x230
 
-When we need to touch "book", if !PageLRU() ?
+which lock already depends on the new lock.
 
 
-> lock_book(old_book)
-> page->book = new_book
-> unlock_book(old_book)
-> 
-> The other option is recheck in "catcher" page book after PageLRU()
-> maybe there exists some other variants.
-> 
-> > BTW, what amount of perfomance benefit ?
-> 
-> It depends, but usually lru_lock is very-very hot.
-> This lock splitting can be used without cgroups and containers,
-> now huge zones can be easily sliced into arbitrary pieces, for example one book per 256Mb.
-> 
-I personally think reducing lock by pagevec works enough well.
-So, want to see perforamance on real machine with real apps.
+the existing dependency chain (in reverse order) is:
 
+-> #1 (&mm->mmap_sem){++++++}:
+       [<ffffffff810d073d>] lock_acquire+0x9d/0x220
+       [<ffffffff811789c0>] might_fault+0x80/0xb0
+       [<ffffffff811d2997>] filldir+0x77/0xe0
+       [<ffffffff811e61ae>] dcache_readdir+0x5e/0x220
+       [<ffffffff811d2c68>] vfs_readdir+0xb8/0xf0
+       [<ffffffff811d2d99>] sys_getdents+0x89/0x100
+       [<ffffffff816a5b69>] system_call_fastpath+0x16/0x1b
 
-> 
-> According to my experience, one of complicated thing there is how to postpone "book" destroying
-> if some its pages are isolated. For example lumpy reclaim and memory compaction isolates pages
-> from several books. And they wants to put them back. Currently this can be broken, if someone removes
-> cgroup in wrong moment. There appears funny races with three players: catcher, switcher and destroyer.
+-> #0 (&sb->s_type->i_mutex_key#18){+.+...}:
+       [<ffffffff810d0008>] __lock_acquire+0x1bf8/0x1c20
+       [<ffffffff810d073d>] lock_acquire+0x9d/0x220
+       [<ffffffff8169a5b9>] __mutex_lock_common+0x59/0x500
+       [<ffffffff8169ab94>] mutex_lock_nested+0x44/0x50
+       [<ffffffff81298169>] hugetlbfs_file_mmap+0x89/0x140
+       [<ffffffff811826a9>] mmap_region+0x369/0x4f0
+       [<ffffffff81182b9f>] do_mmap_pgoff+0x36f/0x390
+       [<ffffffff81182db7>] sys_mmap_pgoff+0x1f7/0x230
+       [<ffffffff8101eda2>] sys_mmap+0x22/0x30
+       [<ffffffff816a5b69>] system_call_fastpath+0x16/0x1b
 
-Thank you for pointing out. Hmm... it can happen ? Currently, at cgroup destroying,
-force_empty() works 
+other info that might help us debug this:
 
-  1. find a page from LRU
-  2. remove it from LRU
-  3. move it or reclaim it (you said "switcher")
-  4. if res.usage != 0 goto 1.
+ Possible unsafe locking scenario:
 
-I think "4" will finally keep cgroup from being destroyed.
+       CPU0                    CPU1
+       ----                    ----
+  lock(&mm->mmap_sem);
+                               lock(&sb->s_type->i_mutex_key#18);
+                               lock(&mm->mmap_sem);
+  lock(&sb->s_type->i_mutex_key#18);
 
+ *** DEADLOCK ***
 
-> This can be fixed with some extra reference-counting or some other sleepable synchronizing.
-> In my rhel6-based implementation I uses extra reference-counting, and it looks ugly. So I want to invent something better.
-> Other option is just never release books, reuse them after rcu grace period for rcu-list iterating.
-> 
+1 lock held by trinity/30663:
+ #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81182d97>] sys_mmap_pgoff+0x1d7/0x230
 
-Another reference counting is very very bad.
-
-
-
-Thanks,
--Kame
-
-
-
-
+stack backtrace:
+Pid: 30663, comm: trinity Not tainted 3.3.0-rc3+ #2
+Call Trace:
+ [<ffffffff816924d7>] print_circular_bug+0x1fb/0x20c
+ [<ffffffff810d0008>] __lock_acquire+0x1bf8/0x1c20
+ [<ffffffff816a1c2d>] ? sub_preempt_count+0x9d/0xd0
+ [<ffffffff811a40cc>] ? deactivate_slab+0x54c/0x5f0
+ [<ffffffff810d073d>] lock_acquire+0x9d/0x220
+ [<ffffffff81298169>] ? hugetlbfs_file_mmap+0x89/0x140
+ [<ffffffff810d12fd>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+ [<ffffffff8169a5b9>] __mutex_lock_common+0x59/0x500
+ [<ffffffff81298169>] ? hugetlbfs_file_mmap+0x89/0x140
+ [<ffffffff811825e5>] ? mmap_region+0x2a5/0x4f0
+ [<ffffffff81298169>] ? hugetlbfs_file_mmap+0x89/0x140
+ [<ffffffff8169ab94>] mutex_lock_nested+0x44/0x50
+ [<ffffffff81298169>] hugetlbfs_file_mmap+0x89/0x140
+ [<ffffffff811826a9>] mmap_region+0x369/0x4f0
+ [<ffffffff812c1e9a>] ? file_map_prot_check+0xaa/0xe0
+ [<ffffffff81182b9f>] do_mmap_pgoff+0x36f/0x390
+ [<ffffffff81182d97>] ? sys_mmap_pgoff+0x1d7/0x230
+ [<ffffffff81182db7>] sys_mmap_pgoff+0x1f7/0x230
+ [<ffffffff810d12fd>] ? trace_hardirqs_on_caller+0x10d/0x1a0
+ [<ffffffff8101eda2>] sys_mmap+0x22/0x30
+ [<ffffffff816a5b69>] system_call_fastpath+0x16/0x1b
 
