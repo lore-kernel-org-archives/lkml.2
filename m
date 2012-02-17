@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2BQNqu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 08:46:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40085 "EHLO
+	id S1752748Ab2BQNrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 08:47:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40096 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab2BQNqt (ORCPT
+	with ESMTP id S1751521Ab2BQNrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 08:46:49 -0500
-Date: Fri, 17 Feb 2012 05:46:05 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-ac483c446b67870444c9eeaf8325d3d2af9b91bc@git.kernel.org>
+	Fri, 17 Feb 2012 08:47:45 -0500
+Date: Fri, 17 Feb 2012 05:46:52 -0800
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-f069686e4bdc60a637d210ea3eea25fcdb82df88@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        jolsa@redhat.com
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1325495060-6402-2-git-send-email-jolsa@redhat.com>
-References: <1325495060-6402-2-git-send-email-jolsa@redhat.com>
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20120118120711.GB14863@elte.hu>
+References: <20120118120711.GB14863@elte.hu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] ftrace: Change filter/
- notrace set functions to return exit code
-Git-Commit-ID: ac483c446b67870444c9eeaf8325d3d2af9b91bc
+Subject: [tip:perf/core] tracing/softirq: Move __raise_softirq_irqoff()
+  out of header
+Git-Commit-ID: f069686e4bdc60a637d210ea3eea25fcdb82df88
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,108 +30,87 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 05:46:31 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 05:47:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ac483c446b67870444c9eeaf8325d3d2af9b91bc
-Gitweb:     http://git.kernel.org/tip/ac483c446b67870444c9eeaf8325d3d2af9b91bc
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 2 Jan 2012 10:04:14 +0100
+Commit-ID:  f069686e4bdc60a637d210ea3eea25fcdb82df88
+Gitweb:     http://git.kernel.org/tip/f069686e4bdc60a637d210ea3eea25fcdb82df88
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Wed, 25 Jan 2012 20:18:55 -0500
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 3 Feb 2012 09:48:18 -0500
+CommitDate: Fri, 3 Feb 2012 09:48:19 -0500
 
-ftrace: Change filter/notrace set functions to return exit code
+tracing/softirq: Move __raise_softirq_irqoff() out of header
 
-Currently the ftrace_set_filter and ftrace_set_notrace functions
-do not return any return code. So there's no way for ftrace_ops
-user to tell wether the filter was correctly applied.
+The __raise_softirq_irqoff() contains a tracepoint. As tracepoints in headers
+can cause issues, and not to mention, bloats the kernel when they are
+in a static inline, it is best to move the function that contains the
+tracepoint out of the header and into softirq.c.
 
-The set_ftrace_filter interface returns error in case the filter
-did not match:
+Link: http://lkml.kernel.org/r/20120118120711.GB14863@elte.hu
 
-  # echo krava > set_ftrace_filter
-  bash: echo: write error: Invalid argument
-
-Changing both ftrace_set_filter and ftrace_set_notrace functions
-to return zero if the filter was applied correctly or -E* values
-in case of error.
-
-Link: http://lkml.kernel.org/r/1325495060-6402-2-git-send-email-jolsa@redhat.com
-
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |    4 ++--
- kernel/trace/ftrace.c  |   15 +++++++++------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ include/linux/interrupt.h |    7 +------
+ kernel/irq/chip.c         |    2 ++
+ kernel/softirq.c          |    6 ++++++
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 028e26f..f33fb3b 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -178,9 +178,9 @@ struct dyn_ftrace {
- };
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a64b00e..3f830e0 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -20,7 +20,6 @@
+ #include <linux/atomic.h>
+ #include <asm/ptrace.h>
+ #include <asm/system.h>
+-#include <trace/events/irq.h>
  
- int ftrace_force_update(void);
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset);
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset);
- void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
- void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 683d559..e2e0597 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3146,8 +3146,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
- 	mutex_lock(&ftrace_regex_lock);
- 	if (reset)
- 		ftrace_filter_reset(hash);
--	if (buf)
--		ftrace_match_records(hash, buf, len);
-+	if (buf && !ftrace_match_records(hash, buf, len)) {
-+		ret = -EINVAL;
-+		goto out_regex_unlock;
-+	}
+ /*
+  * These correspond to the IORESOURCE_IRQ_* defines in
+@@ -456,11 +455,7 @@ asmlinkage void do_softirq(void);
+ asmlinkage void __do_softirq(void);
+ extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+ extern void softirq_init(void);
+-static inline void __raise_softirq_irqoff(unsigned int nr)
+-{
+-	trace_softirq_raise(nr);
+-	or_softirq_pending(1UL << nr);
+-}
++extern void __raise_softirq_irqoff(unsigned int nr);
  
- 	mutex_lock(&ftrace_lock);
- 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
-@@ -3157,6 +3159,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ extern void raise_softirq_irqoff(unsigned int nr);
+ extern void raise_softirq(unsigned int nr);
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index f7c543a..fc41824 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -16,6 +16,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel_stat.h>
  
- 	mutex_unlock(&ftrace_lock);
++#include <trace/events/irq.h>
++
+ #include "internals.h"
  
-+ out_regex_unlock:
- 	mutex_unlock(&ftrace_regex_lock);
- 
- 	free_ftrace_hash(hash);
-@@ -3173,10 +3176,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
-  * Filters denote which functions should be enabled when tracing is enabled.
-  * If @buf is NULL and reset is set, all functions will be enabled for tracing.
-  */
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset)
- {
--	ftrace_set_regex(ops, buf, len, reset, 1);
-+	return ftrace_set_regex(ops, buf, len, reset, 1);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_filter);
- 
-@@ -3191,10 +3194,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
-  * is enabled. If @buf is NULL and reset is set, all functions will be enabled
-  * for tracing.
-  */
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset)
- {
--	ftrace_set_regex(ops, buf, len, reset, 0);
-+	return ftrace_set_regex(ops, buf, len, reset, 0);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_notrace);
  /**
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 4eb3a0f..06d4099 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -385,6 +385,12 @@ void raise_softirq(unsigned int nr)
+ 	local_irq_restore(flags);
+ }
+ 
++void __raise_softirq_irqoff(unsigned int nr)
++{
++	trace_softirq_raise(nr);
++	or_softirq_pending(1UL << nr);
++}
++
+ void open_softirq(int nr, void (*action)(struct softirq_action *))
+ {
+ 	softirq_vec[nr].action = action;
