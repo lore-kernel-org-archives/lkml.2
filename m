@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab2BQVco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 16:32:44 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44343 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab2BQVcm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 16:32:42 -0500
+	id S1754368Ab2BQVdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 16:33:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18014 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752735Ab2BQVdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 16:33:19 -0500
+Date: Fri, 17 Feb 2012 16:33:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org, Kent Overstreet <koverstreet@google.com>
+Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
+Message-ID: <20120217213313.GG26620@redhat.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-8-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <4F3E9DC8.6090304@xenotime.net>
-References: <20120217165045.2394d944d6efc37104421d2e@canb.auug.org.au>
-	<4F3E9DC8.6090304@xenotime.net>
-Date: Fri, 17 Feb 2012 22:32:40 +0100
-X-Google-Sender-Auth: oI9WTegT-EVoVzLKxMH5wGgSvi0
-Message-ID: <CAMuHMdUKDFBuWbbCp5maBQHDz7F+=XSUvf=i2nGsgnixUQSSdA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Feb 17 (uml)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329431878-28300-8-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 19:34, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 02/16/2012 09:50 PM, Stephen Rothwell wrote:
->> Changes since 20120216:
->
-> uml on x86_64 (defconfig):
->
->  CC      arch/um/kernel/asm-offsets.s
-> In file included from linux-next-20120217/include/linux/slab.h:12:0,
->                 from linux-next-20120217/include/linux/crypto.h:23,
->                 from
-> linux-next-20120217/arch/x86/um/shared/sysdep/kernel-offsets.h:4,
->                 from linux-next-20120217/arch/um/kernel/asm-offsets.c:1:
-> linux-next-20120217/include/linux/gfp.h: In function 'gfp_zonelist':
-> linux-next-20120217/include/linux/gfp.h:267:1: error:
-> '__enabled_CONFIG_NUMA' undeclared (first use in this function)
-> linux-next-20120217/include/linux/gfp.h:267:1: note: each undeclared
-> identifier is reported only once for each function it appears in
-> linux-next-20120217/include/linux/gfp.h:267:1: error:
-> '__enabled_CONFIG_NUMA_MODULE' undeclared (first use in this function)
+On Thu, Feb 16, 2012 at 02:37:56PM -0800, Tejun Heo wrote:
 
-That's due to the lack of CONFIG_NUMA in various archs (also m68k).
+[..]
+> This patch implements bio_associate_current() which associates the
+> specified bio with %current.  The bio will record the associated ioc
+> and blkcg at that point and block layer will use the recorded ones
+> regardless of which task actually ends up issuing the bio.  bio
+> release puts the associated ioc and blkcg.
 
-Gr{oetje,eeting}s,
+How about storing blkcg information in io_context instead of bio. We will
+have less copies of bio pointers and I think logically it makes sense.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks
+Vivek
