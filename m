@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2BQRTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 12:19:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48894 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab2BQRTq (ORCPT
+	id S1753730Ab2BQRVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 12:21:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46840 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751801Ab2BQRV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 12:19:46 -0500
-Date: Fri, 17 Feb 2012 17:19:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Cc: Jon Medhurst <tixy@yxit.co.uk>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sumit Bhattacharya <sumitb@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Naveen Yadav <yad.naveen@gmail.com>
-Subject: Re: [PATCH 3/3] ARM: dma-mapping: fix array out of bound access
-Message-ID: <20120217171915.GO27825@n2100.arm.linux.org.uk>
-References: <1329494160-26942-1-git-send-email-ajeet.yadav.77@gmail.com>
+	Fri, 17 Feb 2012 12:21:29 -0500
+Date: Fri, 17 Feb 2012 09:21:24 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, lars@metafoo.de, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V1] regmap: Bypassing cache when initializing cache
+Message-ID: <20120217172124.GE10146@opensource.wolfsonmicro.com>
+References: <1329485246-14226-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
 Content-Disposition: inline
-In-Reply-To: <1329494160-26942-1-git-send-email-ajeet.yadav.77@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1329485246-14226-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 09:26:00PM +0530, Ajeet Yadav wrote:
-> In __dma_alloc_remap(*,size,*,*)/ __dma_free_remap(*,size) functions
-> if virtual address is in the last consistent mapping region
-> i.e idx == ((CONSISTENT_END - base) >> PMD_SHIFT) - 1
-> and off == PTRS_PER_PTE.
-> then we have array out of bound access condition.
 
-How?  Where?
+--XuV1QlJbYrcVoo+x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-At the first loop, off will _never_ be PTRS_PER_PTE.
+On Fri, Feb 17, 2012 at 06:57:26PM +0530, Laxman Dewangan wrote:
+> During regcache_init, if client has not passed the
+> default data of cached register then it is directly
+> read from the hw to initialize cache. This hw register
+> read happens before cache ops are initialized and hence
+> avoiding register read to check for the data available
+> on cache or not by enabling flag of cache_bypass.
 
-                u32 off = CONSISTENT_OFFSET(c->vm_start) & (PTRS_PER_PTE-1);
+Applied, thanks.  This only affects the code after the addition of cache
+integration for bulk I/O so I've added it to that branch.
 
-There is _absolutely_ _no_ _way_ that off could ever be PTRS_PER_PTE
-here.
+--XuV1QlJbYrcVoo+x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If 'base' is CONSISTENT_END, then we have far bigger problems, because
-it means that we have a zero sized region - it certainly can't be any
-larger than zero size because then we'd be overflowing the DMA region
-into something else.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Plus, we know that 'end of region' allocations work fine, because the
-code allocates from the top of the region downwards.
+iQIcBAEBAgAGBQJPPoyFAAoJEBus8iNuMP3dmnEP/1xVGG4CDbCMkjPgAvC3l317
+UJZTFtIIF7Bj+kQg4HT3vgDHvxLsEW8pxJfvcRvn5lXkdbp8ILJfD4K3U4ETiFYT
+J8ln59s1nJuruf9V4poEHpmbLwPBhkWruouQ97geMosLDMEzUOBB69XiCUMzCOdr
+TFlZ4daw4L9kKOfZAEeoemrij9+/guWyjO6W4Skg6Sr1FA3HsDIplOs2oRI7+C3p
+uKV2frihEhhhAhQ9LMM10cJmapOrKpOYqBQJkxGxts4kjEyY01J/WZCPFA682JIC
+lyKMovLVPPzVk3FTPk1XPWuYavcJtNvCRjvw3tMelZ4EWyY6MfGtQ8fpI0b14rn7
+UhHxhvw8F2S8I6MRiMhz1C497OCIx+B1LWg9qurk/eHbUmsX8W5uIyDvssxWkhtX
+O2Xq80N1UMyCWr8i3d7PzER5iYahpHMM3HcRhtpXMbBqh7vChlHswea9ugNeK0x7
+M0kZrZUuEplmX4J6HFLM0WfG+p+hGVVY1VQNlP5e4eZfcY0XBMx3b8pla19pSGnl
+SI/N6yOFL8W76rUEBHK7J59/LoFODynRZwuEjmo+6nlspGB6qLM4+X4odD94r4vA
+HgIH7IMIKcSp7/F7xWMo2D/azG4O4ataW48Igi/p2fA3FB2yHsDxKY1UdUKwtFL6
+eMZy/eCtyaAeTwgE+g7k
+=IDIm
+-----END PGP SIGNATURE-----
 
-So, I don't think there's a problem here.
+--XuV1QlJbYrcVoo+x--
