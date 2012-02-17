@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2BQPlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 10:41:47 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49432 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2BQPlq convert rfc822-to-8bit (ORCPT
+	id S1753410Ab2BQPnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 10:43:55 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:42617 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751648Ab2BQPnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 10:41:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <201201281445.49377.rjw@sisk.pl>
-References: <201201281445.49377.rjw@sisk.pl>
-Date: Fri, 17 Feb 2012 10:41:44 -0500
-Message-ID: <CA+5PVA6m4fM79hFujFXb1-w4UK7ki11yRjrbsFOYi1VeRM4CNw@mail.gmail.com>
-Subject: Re: [RFC][PATCH] PM / Sleep: Freeze filesystems during system suspend/hibernation
-From: Josh Boyer <jwboyer@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Nigel Cunningham <nigel@tuxonice.net>, Pavel Machek <pavel@ucw.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 17 Feb 2012 10:43:50 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Danny Kukawka <dkukawka@suse.de>, Alexey Dobriyan <adobriyan@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 08/10] ethoc: set addr_assign_type if random_ether_addr() used
+Date: Fri, 17 Feb 2012 16:43:29 +0100
+Message-Id: <1329493411-25750-9-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329493411-25750-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329493430;31b320fb;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 8:45 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Freeze all filesystems during system suspend and (kernel-driven)
-> hibernation by calling freeze_supers() for all superblocks and thaw
-> them during the subsequent resume with the help of thaw_supers().
->
-> This makes filesystems stay in a consistent state in case something
-> goes wrong between system suspend (or hibernation) and the subsequent
-> resume (e.g. journal replays won't be necessary in those cases).  In
-> particular, this should help to solve a long-standing issue that, in
-> some cases, during resume from hibernation the boot loader causes the
-> journal to be replied for the filesystem containing the kernel image
-> and/or initrd causing it to become inconsistent with the information
-> stored in the hibernation image.
->
-> The user-space-driven hibernation (s2disk) is not covered by this
-> change, because the freezing of filesystems prevents s2disk from
-> accessing device special files it needs to do its job.
->
-> This change is based on earlier work by Nigel Cunningham.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Set addr_assign_type correctly to NET_ADDR_RANDOM in case
+a random MAC address was generated and assigned to the netdevice.
 
-Do you happen to have a version of this patch that has been rebased to the
-latest 3.3 git tree?  I looked in the various archives and haven't found one
-yet.  I'd like to get this into Fedora rawhide to see if some of the hibernate
-issues we've been seeing clear up.
+Fixed ethoc_set_mac_address() to check if the given mac
+address is valid and set also dev_addr of the net_device.
+Check also the return value of ethoc_set_mac_address() in
+ethoc_probe().
 
-josh
+Reset the state to NET_ADDR_PERM as soon as the MAC get
+changed via .ndo_set_mac_address.
+
+v2: set net_device->dev_addr in ethoc_set_mac_address(),
+    check if given address is valid
+
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/ethernet/ethoc.c |   20 ++++++++++++++++++--
+ 1 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/ethoc.c b/drivers/net/ethernet/ethoc.c
+index 60f0e78..cfc0ce0 100644
+--- a/drivers/net/ethernet/ethoc.c
++++ b/drivers/net/ethernet/ethoc.c
+@@ -776,10 +776,16 @@ static int ethoc_set_mac_address(struct net_device *dev, void *addr)
+ 	struct ethoc *priv = netdev_priv(dev);
+ 	u8 *mac = (u8 *)addr;
+ 
++	if(!is_valid_ether_addr(mac))
++		return -EADDRNOTAVAIL;
++        
+ 	ethoc_write(priv, MAC_ADDR0, (mac[2] << 24) | (mac[3] << 16) |
+ 				     (mac[4] <<  8) | (mac[5] <<  0));
+ 	ethoc_write(priv, MAC_ADDR1, (mac[0] <<  8) | (mac[1] <<  0));
+ 
++	memcpy(dev->dev_addr, mac, ETH_ALEN);
++	dev->addr_assign_type &= ~NET_ADDR_RANDOM;
++
+ 	return 0;
+ }
+ 
+@@ -909,6 +915,7 @@ static int __devinit ethoc_probe(struct platform_device *pdev)
+ 	unsigned int phy;
+ 	int num_bd;
+ 	int ret = 0;
++	bool random_mac = false;
+ 
+ 	/* allocate networking device */
+ 	netdev = alloc_etherdev(sizeof(struct ethoc));
+@@ -1050,10 +1057,19 @@ static int __devinit ethoc_probe(struct platform_device *pdev)
+ 
+ 	/* Check the MAC again for validity, if it still isn't choose and
+ 	 * program a random one. */
+-	if (!is_valid_ether_addr(netdev->dev_addr))
++	if (!is_valid_ether_addr(netdev->dev_addr)) {
+ 		random_ether_addr(netdev->dev_addr);
++		random_mac = true;
++	}
+ 
+-	ethoc_set_mac_address(netdev, netdev->dev_addr);
++	ret = ethoc_set_mac_address(netdev, netdev->dev_addr);
++	if (ret) {
++		dev_err(&netdev->dev, "failed to set MAC address\n");
++		goto error;
++	}
++	
++	if (random_mac)
++		netdev->addr_assign_type |= NET_ADDR_RANDOM;
+ 
+ 	/* register MII bus */
+ 	priv->mdio = mdiobus_alloc();
+-- 
+1.7.8.3
+
