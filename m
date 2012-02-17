@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab2BQAvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:51:55 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35322 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753741Ab2BQAvw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:51:52 -0500
+	id S1755111Ab2BQA45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:56:57 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59646 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752224Ab2BQA44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 19:56:56 -0500
+X-Sasl-enc: B7Jdlo07K8npEoPd46KaVjpxC/F0DglAhg95Ow40ahAx 1329440214
+Date: Thu, 16 Feb 2012 16:56:09 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/28] 3.2.7-stable review
+Message-ID: <20120217005609.GA17081@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
- <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com>
- <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
- <4F3D7250.6040504@zytor.com> <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 16 Feb 2012 16:51:31 -0800
-X-Google-Sender-Auth: LN8Ppy3_CWyt__Jd6tb93NYIl5U
-Message-ID: <CAObL_7G7CvCVgjR-JYjNDi_Sy65UHXaqas4-sQCVej-4bX2PJA@mail.gmail.com>
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-To: Indan Zupancic <indan@nul.nu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, keescook@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 4:48 PM, Indan Zupancic <indan@nul.nu> wrote:
-> On Thu, February 16, 2012 22:17, H. Peter Anvin wrote:
->> On 02/16/2012 12:25 PM, Will Drewry wrote:
->>>
->>> I agree :)  BPF being a 32-bit creature introduced some edge cases.  I
->>> has started with a
->>>      union { u32 args32[6]; u64 args64[6]; }
->>>
->>> This was somewhat derailed by CONFIG_COMPAT behavior where
->>> syscall_get_arguments always writes to argument of register width --
->>> not bad, just irritating (since a copy isn't strictly necessary nor
->>> actually done in the patch).  Also, Indan pointed out that while BPF
->>> programs expect constants in the machine-local endian layout, any
->>> consumers would need to change how they accessed the arguments across
->>> big/little endian machines since a load of the low-order bits would
->>> vary.
->>>
->>> In a second pass, I attempted to resolve this like aio_abi.h:
->>>     union {
->>>       struct {
->>>          u32 ENDIAN_SWAP(lo32, hi32);
->>>        };
->>>        u64 arg64;
->>>      } args[6];
->>> It wasn't clear that this actually made matters better (though it did
->>> mean syscall_get_arguments() could write directly to arg64).  Usings
->>> offsetof() in the user program would be fine, but any offsets set
->>> another way would be invalid.  At that point, I moved to Indan's
->>> proposal to stabilize low order and high order offsets -- what is in
->>> the patch series.  Now a BPF program can reliably index into the low
->>> bits of an argument and into the high bits without endianness changing
->>> the filter program structure.
->>>
->>> I don't feel strongly about any given data layout, and this one seems
->>> to balance the 32-bit-ness of BPF and the impact that has on
->>> endianness.  I'm happy to hear alternatives that might be more
->>> aesthetically pleasing :)
->>>
->>
->> I would have to say I think native endian is probably the sane thing
->> still, out of several bad alternatives.  Certainly splitting the high
->> and low halves of arguments is insane.
->
-> Yes it is. But it can't be avoided because BPF programs are always 32-bit.
-> So they have to access the high and low halves separately, one way or the
-> other, even on 64-bit machines. With that in mind splitting up the halves
-> explicitly seems the best way.
->
-> I would go for something like:
->
-> struct seccomp_data {
->        int nr;
->        __u32 arg_low[6];
->        __u32 arg_high[6];
->        __u32 instruction_pointer_low;
->        __u32 instruction_pointer_high;
->        __u32 __reserved[3];
-> };
->
-> (Not sure what use the IP is because that doesn't tell anything about how
-> the system call instruction was reached.)
->
-> The only way to avoid splitting args is to add 64-bit support to BPF.
-> That is probably the best way forwards, but would require breaking the
-> BPF ABI by either adding a 64-bit version directly or adding extra
-> instructions.
->
-> This mismatch between 32-bit BPF programs and 64-bit machines is the main
-> reason why I'm not perfectly happy with BPF for syscall filtering. It gets
-> the job done, but it's not great.
->
->> The other thing that you really need in addition to system call number
->> is ABI identifier, since a syscall number may mean different things for
->> different entry points.  For example, on x86-64 system call number 4 is
->> write() if called via int $0x80 but stat() if called via syscall64.
->> This is a local property of the system call, not a global per process.
->
-> The problem of doing this is that you then force every filter to check for
-> the path and do something path specific. The filters that don't do this
-> check will be buggy. So the best way is really to install filters per mode
-> and call the right filter. If filters are installed but not for the current
-> path, the task should be killed.
->
-> prctl() should take one more argument which says for which mode the filter
-> will be installed for, with 0 for the current mode.
->
-> But pushing that info into the filters themselves is not a good idea.
+This is the start of the stable review cycle for the 3.2.7 release.
+There are 28 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-IMO the best solution is to have the One True Seccomp Filter Compiler
-(tm).  It would handle multiple namespaces, cross-arch differences,
-and such, and it would do it correctly.  It could live in the kernel
-tree.
+Responses should be made by Sun Feb 19 00:55:33 UTC 2012.
+Anything received after that time might be too late.
 
-Without something like that or an incredible amount of special care,
-actual portability is probably a pipe dream.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.7-rc1.gz
+and the diffstat can be found below.
 
---Andy
+thanks,
+
+greg k-h
+
+-------------
+ Makefile                                       |    4 +-
+ arch/x86/pci/xen.c                             |    2 +-
+ crypto/sha512_generic.c                        |   70 ++++++------
+ drivers/gpu/drm/i915/intel_dp.c                |   20 +---
+ drivers/gpu/drm/i915/intel_lvds.c              |    8 ++
+ drivers/hwmon/f75375s.c                        |    4 +-
+ drivers/mmc/host/atmel-mci.c                   |    3 +
+ drivers/mmc/host/dw_mmc.c                      |  144 ++++++++++++-----------
+ drivers/net/ethernet/intel/igb/igb_main.c      |    3 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c |    3 +-
+ drivers/net/ethernet/toshiba/Kconfig           |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.c            |    7 +-
+ drivers/net/wireless/ath/ath9k/init.c          |    9 +-
+ drivers/net/wireless/ath/ath9k/recv.c          |    8 ++
+ fs/cifs/connect.c                              |    7 +-
+ fs/cifs/dir.c                                  |    2 +-
+ fs/fs-writeback.c                              |   16 ++--
+ include/linux/mmc/dw_mmc.h                     |    6 +-
+ include/linux/proportions.h                    |    4 +
+ include/trace/events/writeback.h               |    7 +-
+ kernel/relay.c                                 |   10 ++-
+ mm/backing-dev.c                               |   25 +++-
+ net/mac80211/rx.c                              |    2 +-
+ sound/pci/hda/patch_realtek.c                  |   23 ++++
+ sound/pci/hda/patch_via.c                      |    3 +
+ sound/pci/intel8x0.c                           |    6 +
+ tools/perf/bench/mem-memcpy-x86-64-asm.S       |    6 +
+ tools/perf/util/evsel.c                        |    1 +
+ 28 files changed, 245 insertions(+), 160 deletions(-)
+
