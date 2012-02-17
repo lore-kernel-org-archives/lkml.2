@@ -1,153 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab2BQQnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 11:43:40 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:42925 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2BQQnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 11:43:39 -0500
-From: Thomas Weber <thomas@tweber.de>
-To: trivial@vger.kernel.org
-Cc: Thomas Weber <thomas@tweber.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH][trivial] Fix typo milivolt => millivolt
-Date: Fri, 17 Feb 2012 17:44:50 +0100
-Message-Id: <1329497090-6236-1-git-send-email-thomas@tweber.de>
-X-Mailer: git-send-email 1.7.9.1
+	id S1752963Ab2BQQrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 11:47:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab2BQQry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 11:47:54 -0500
+Date: Fri, 17 Feb 2012 11:47:49 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] blkcg: drop unnecessary RCU locking
+Message-ID: <20120217164749.GC26620@redhat.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329431878-28300-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Weber <thomas@tweber.de>
----
- Documentation/hwmon/wm831x             |    2 +-
- drivers/mfd/tps65911-comparator.c      |    2 +-
- drivers/power/bq27x00_battery.c        |    2 +-
- drivers/regulator/tps65910-regulator.c |   20 ++++++++++----------
- include/linux/mfd/wm831x/pdata.h       |    2 +-
- 5 files changed, 14 insertions(+), 14 deletions(-)
+On Thu, Feb 16, 2012 at 02:37:51PM -0800, Tejun Heo wrote:
 
-diff --git a/Documentation/hwmon/wm831x b/Documentation/hwmon/wm831x
-index 24f47d8..1144675 100644
---- a/Documentation/hwmon/wm831x
-+++ b/Documentation/hwmon/wm831x
-@@ -22,7 +22,7 @@ reporting of all the input values but does not provide any alarms.
- Voltage Monitoring
- ------------------
- 
--Voltages are sampled by a 12 bit ADC.  Voltages in milivolts are 1.465
-+Voltages are sampled by a 12 bit ADC.  Voltages in millivolts are 1.465
- times the ADC value.
- 
- Temperature Monitoring
-diff --git a/drivers/mfd/tps65911-comparator.c b/drivers/mfd/tps65911-comparator.c
-index e7ff783..5a62e6b 100644
---- a/drivers/mfd/tps65911-comparator.c
-+++ b/drivers/mfd/tps65911-comparator.c
-@@ -26,7 +26,7 @@
- #define COMP1					1
- #define COMP2					2
- 
--/* Comparator 1 voltage selection table in milivolts */
-+/* Comparator 1 voltage selection table in millivolts */
- static const u16 COMP_VSEL_TABLE[] = {
- 	0, 2500, 2500, 2500, 2500, 2550, 2600, 2650,
- 	2700, 2750, 2800, 2850, 2900, 2950, 3000, 3050,
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 1ed6ea0..37968a4 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -451,7 +451,7 @@ static int bq27x00_battery_capacity_level(struct bq27x00_device_info *di,
- }
- 
- /*
-- * Return the battery Voltage in milivolts
-+ * Return the battery Voltage in millivolts
-  * Or < 0 if something fails.
-  */
- static int bq27x00_battery_voltage(struct bq27x00_device_info *di,
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 5c15ba0..1711dbf 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -27,54 +27,54 @@
- 
- #define TPS65910_SUPPLY_STATE_ENABLED	0x1
- 
--/* supported VIO voltages in milivolts */
-+/* supported VIO voltages in millivolts */
- static const u16 VIO_VSEL_table[] = {
- 	1500, 1800, 2500, 3300,
- };
- 
- /* VSEL tables for TPS65910 specific LDOs and dcdc's */
- 
--/* supported VDD3 voltages in milivolts */
-+/* supported VDD3 voltages in millivolts */
- static const u16 VDD3_VSEL_table[] = {
- 	5000,
- };
- 
--/* supported VDIG1 voltages in milivolts */
-+/* supported VDIG1 voltages in millivolts */
- static const u16 VDIG1_VSEL_table[] = {
- 	1200, 1500, 1800, 2700,
- };
- 
--/* supported VDIG2 voltages in milivolts */
-+/* supported VDIG2 voltages in millivolts */
- static const u16 VDIG2_VSEL_table[] = {
- 	1000, 1100, 1200, 1800,
- };
- 
--/* supported VPLL voltages in milivolts */
-+/* supported VPLL voltages in millivolts */
- static const u16 VPLL_VSEL_table[] = {
- 	1000, 1100, 1800, 2500,
- };
- 
--/* supported VDAC voltages in milivolts */
-+/* supported VDAC voltages in millivolts */
- static const u16 VDAC_VSEL_table[] = {
- 	1800, 2600, 2800, 2850,
- };
- 
--/* supported VAUX1 voltages in milivolts */
-+/* supported VAUX1 voltages in millivolts */
- static const u16 VAUX1_VSEL_table[] = {
- 	1800, 2500, 2800, 2850,
- };
- 
--/* supported VAUX2 voltages in milivolts */
-+/* supported VAUX2 voltages in millivolts */
- static const u16 VAUX2_VSEL_table[] = {
- 	1800, 2800, 2900, 3300,
- };
- 
--/* supported VAUX33 voltages in milivolts */
-+/* supported VAUX33 voltages in millivolts */
- static const u16 VAUX33_VSEL_table[] = {
- 	1800, 2000, 2800, 3300,
- };
- 
--/* supported VMMC voltages in milivolts */
-+/* supported VMMC voltages in millivolts */
- static const u16 VMMC_VSEL_table[] = {
- 	1800, 2800, 3000, 3300,
- };
-diff --git a/include/linux/mfd/wm831x/pdata.h b/include/linux/mfd/wm831x/pdata.h
-index 1d7a3f7..dcc9631 100644
---- a/include/linux/mfd/wm831x/pdata.h
-+++ b/include/linux/mfd/wm831x/pdata.h
-@@ -26,7 +26,7 @@ struct wm831x_backlight_pdata {
- struct wm831x_backup_pdata {
- 	int charger_enable;
- 	int no_constant_voltage;  /** Disable constant voltage charging */
--	int vlim;   /** Voltage limit in milivolts */
-+	int vlim;   /** Voltage limit in millivolts */
- 	int ilim;   /** Current limit in microamps */
- };
- 
--- 
-1.7.9.1
+[..]
+> * queue_lock coverage extended to cover @blkg usage in
+>   blkio_policy_parse_and_set() and RCU dropped.  This means all config
+>   update callbacks are now called under queue_lock.
+> 
 
+[..]
+> @@ -1041,11 +1034,8 @@ static int blkio_policy_parse_and_set(char *buf, enum blkio_policy_id plid,
+>  	if (!disk || part)
+>  		goto out;
+>  
+> -	rcu_read_lock();
+> -
+>  	spin_lock_irq(disk->queue->queue_lock);
+>  	blkg = blkg_lookup_create(blkcg, disk->queue, plid, false);
+> -	spin_unlock_irq(disk->queue->queue_lock);
+>  
+
+So now in some cases we call blkg_lookup_create() with both queue and rcu
+read lock held (cfq_lookup_create_cfqg()) and in this case hold only queue
+lock. blkg_lookup_create() calls blkg_lookup() which expects a rcu_read_lock()
+to be held and we will be travesing that list without rcu_read_lock()
+held. Isn't that a problem? We might be examining a blkg belonging to
+a different queue and it might be being freed parallely.
+
+Or blkg destruction in this cgroup is serialized by cgroup_mutex() or
+by something else in this policy parse and set path?
+
+Thanks
+Vivek
