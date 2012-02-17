@@ -1,78 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab2BQXQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:16:00 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:48643 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab2BQXP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:15:58 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
-Date: Fri, 17 Feb 2012 18:15:57 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de> <CAMjpGUdAe66Nw16EyM1_dv4e8uHV02tcfqiuWL8ipeUrQ=HThg@mail.gmail.com> <201202171157.55585.danny.kukawka@bisect.de>
-In-Reply-To: <201202171157.55585.danny.kukawka@bisect.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2549883.sFHPnAKmL7";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1755247Ab2BQXYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:24:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50141 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab2BQXYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 18:24:34 -0500
+Date: Fri, 17 Feb 2012 15:24:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2012.2] fs: symlink restrictions on sticky directories
+Message-Id: <20120217152432.112fdace.akpm@linux-foundation.org>
+In-Reply-To: <20120107185548.GA30748@outflux.net>
+References: <20120107185548.GA30748@outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202171815.59846.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2549883.sFHPnAKmL7
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sat, 7 Jan 2012 10:55:48 -0800
+Kees Cook <keescook@chromium.org> wrote:
 
-On Friday 17 February 2012 05:57:54 Danny Kukawka wrote:
-> On Freitag, 17. Februar 2012, Mike Frysinger wrote:
-> > On Thu, Feb 16, 2012 at 12:09, Danny Kukawka wrote:
-> > > +                       netdev_warn(ndev, "Setting Ethernet MAC to a
-> > > random one\n"); +                       eth_hw_addr_random(ndev);
-> >=20
-> > would it make sense to have the core dump the warning ?
->=20
-> Maybe. Many drivers already print information about setting a random mac
-> address to a netdevice. Some with printk, some via
-> netdev_warn/netdev_info/netdev_dbg or netif_dbg and other with costum
-> methods. I could unify this, in a next step with a netdev_info in
-> eth_hw_addr_random(), if it's okay for David.
+> A long-standing class of security issues is the symlink-based
+> time-of-check-time-of-use race, most commonly seen in world-writable
+> directories like /tmp. The common method of exploitation of this flaw
+> is to cross privilege boundaries when following a given symlink (i.e. a
+> root process follows a symlink belonging to another user). For a likely
+> incomplete list of hundreds of examples across the years, please see:
+> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
+> 
+> The solution is to permit symlinks to only be followed when outside
+> a sticky world-writable directory, or when the uid of the symlink and
+> follower match, or when the directory owner matches the symlink's owner.
+> 
+> Some pointers to the history of earlier discussion that I could find:
+> 
+>  1996 Aug, Zygo Blaxell
+>   http://marc.info/?l=bugtraq&m=87602167419830&w=2
+>  1996 Oct, Andrew Tridgell
+>   http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
+>  1997 Dec, Albert D Cahalan
+>   http://lkml.org/lkml/1997/12/16/4
+>  2005 Feb, Lorenzo Hern__ndez Garc__a-Hierro
+>   http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+>  2010 May, Kees Cook
+>   https://lkml.org/lkml/2010/5/30/144
+> 
+> Past objections and rebuttals could be summarized as:
+> 
+>  - Violates POSIX.
+>    - POSIX didn't consider this situation and it's not useful to follow
+>      a broken specification at the cost of security.
+>  - Might break unknown applications that use this feature.
+>    - Applications that break because of the change are easy to spot and
+>      fix. Applications that are vulnerable to symlink ToCToU by not having
+>      the change aren't. Additionally, no applications have yet been found
+>      that rely on this behavior.
+>  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+>    - True, but applications are not perfect, and new software is written
+>      all the time that makes these mistakes; blocking this flaw at the
+>      kernel is a single solution to the entire class of vulnerability.
+>  - This should live in the core VFS.
+>    - This should live in an LSM. (https://lkml.org/lkml/2010/5/31/135)
+>  - This should live in an LSM.
+>    - This should live in the core VFS. (https://lkml.org/lkml/2010/8/2/188)
+> 
+> This patch is based on the patch in Openwall and grsecurity, along with
+> suggestions from Al Viro. I have added a sysctl to enable the protected
+> behavior, documentation, and an audit notification.
 
-i think unification in the core makes sense.  it enforces consistency and=20
-removes duplication.
-=2Dmike
+Looks reasonable to me.
 
---nextPart2549883.sFHPnAKmL7
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+It's a viropatch.  I shall merge it into 3.4-rc1 if nothing happens to
+prevent that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> ...
+>
+> +config PROTECTED_STICKY_SYMLINKS
+> +	bool "Evaluate vulnerable symlink conditions"
+> +	default y
+> +	help
+> +	  A long-standing class of security issues is the symlink-based
+> +	  time-of-check-time-of-use race, most commonly seen in
+> +	  world-writable directories like /tmp. The common method of
+> +	  exploitation of this flaw is to cross privilege boundaries
+> +	  when following a given symlink (i.e. a root process follows
+> +	  a malicious symlink belonging to another user).
+> +
+> +	  Enabling this adds the logic to examine these dangerous symlink
+> +	  conditions. Whether or not the dangerous symlink situations are
+> +	  allowed is controlled by PROTECTED_STICKY_SYMLINKS_ENABLED.
+> +
+> +config PROTECTED_STICKY_SYMLINKS_ENABLED
+> +	depends on PROTECTED_STICKY_SYMLINKS
+> +	bool "Disallow symlink following in sticky world-writable dirs"
+> +	default y
+> +	help
+> +	  Solve ToCToU symlink race vulnerablities by permitting symlinks
+> +	  to be followed only when outside a sticky world-writable directory,
+> +	  or when the uid of the symlink and follower match, or when the
+> +	  directory and symlink owners match.
+> +
+> +	  When PROC_SYSCTL is enabled, this setting can also be controlled
+> +	  via /proc/sys/kernel/protected_sticky_symlinks.
 
-iQIcBAABAgAGBQJPPt+vAAoJEEFjO5/oN/WBgwwP/jmWJOdg1PsoX7FN4lGGa/B4
-MBbfSHFhURJMg9YXIKzlF6rSgSYg1jm/9V5dxkwAgn6wawdirTAqOX8YpDvboz4D
-RYXaFKSSTyRmM4PxmlpqInwcwvggTA3N/U3lb1PN7fTB9Xn7NQ1iYx0Va3flX6m4
-yEQTx546rRif7LkMCJnlLUU8rpUXkwv0k6Ar5sUE0WDHo2AdtGqoTyWw2N6McrxG
-sZFhm2Baf4QaOj4kfrDo0zVfCZfMmZHxEFGLrWCMgcu21DNr2TThgffinl2rd58Z
-dXsQCpX6f63ziNFIXP30Nxs+HtmAWj8AiU5SvrWforV4GtibZfrxKBWNx+I7F5VT
-7HVOuujxAcwsb7UgmZ20BJ/z4n9GkqCwd7YtAPzAouj8CTQsfugj+cajkCz4P+gC
-1VPwASEPFrMsRbF1lcVpc3aLPo2qFEsGnV61FpUB0KjDMOIn2iHHceQy1ltExRAY
-n5K6HDI0omuQnVee8vmKDT2ZnCnz+DJ3l/+MBlk3Flgk5kZ0X0O+nqlYqwJMjjmq
-IlEHPkxNuAPk/AhgS9mtkprdLuJZqz8nKM3dHFIsOHI0fChV82iq33G5rVYQSj8Z
-9+0Xki58BH5aRaBZ1V14OmotEqiAHXGv8xnlbvfQXWWkKJjhgJYwFxD9fTZ0upk+
-OtscyVaTG5PA2QGBo+Z4
-=2I5O
------END PGP SIGNATURE-----
+I think I disagree with this.  If the person compiling the kernel
+includes the feature in his kernel via the time-honoured process of
+"wtf is that thing?  Yeah, whatev", it gets turned on by default.  This
+could easily result in weird failures which would take a *long* time
+for an unsuspecting person to debug.
 
---nextPart2549883.sFHPnAKmL7--
+Would it not be kinder to our users to start this out as
+turned-off-at-runtime unless the kernel configurer has deliberately
+gone in and enabled it?
+
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -109,6 +109,9 @@ extern int sysctl_nr_trim_pages;
+>  #ifdef CONFIG_BLOCK
+>  extern int blk_iopoll_enabled;
+>  #endif
+> +#ifdef CONFIG_PROTECTED_STICKY_SYMLINKS
+> +extern int sysctl_protected_sticky_symlinks;
+> +#endif
+>  
+
+Grumble.  Yes, it's a site of much badness.  Let's not worsen things.
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: fs-symlink-restrictions-on-sticky-directories-fix
+
+move sysctl_protected_sticky_symlinks declaration into .h
+
+Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+--- a/kernel/sysctl.c~fs-symlink-restrictions-on-sticky-directories-fix
++++ a/kernel/sysctl.c
+@@ -109,9 +109,6 @@ extern int sysctl_nr_trim_pages;
+ #ifdef CONFIG_BLOCK
+ extern int blk_iopoll_enabled;
+ #endif
+-#ifdef CONFIG_PROTECTED_STICKY_SYMLINKS
+-extern int sysctl_protected_sticky_symlinks;
+-#endif
+ 
+ /* Constants used for minimum and  maximum */
+ #ifdef CONFIG_LOCKUP_DETECTOR
+--- a/include/linux/fs.h~fs-symlink-restrictions-on-sticky-directories-fix
++++ a/include/linux/fs.h
+@@ -422,6 +422,7 @@ extern unsigned long get_max_files(void)
+ extern int sysctl_nr_open;
+ extern struct inodes_stat_t inodes_stat;
+ extern int leases_enable, lease_break_time;
++extern int sysctl_protected_sticky_symlinks;
+ 
+ struct buffer_head;
+ typedef int (get_block_t)(struct inode *inode, sector_t iblock,
+_
+
