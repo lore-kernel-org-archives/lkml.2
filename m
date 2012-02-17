@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab2BQGd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 01:33:28 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61545 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2BQGd1 (ORCPT
+	id S1751745Ab2BQGlv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 01:41:51 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:60112 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751491Ab2BQGlu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 01:33:27 -0500
-Date: Fri, 17 Feb 2012 09:33:19 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: David Windsor <dwindsor@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, Greg KH <gregkh@linuxfoundation.org>,
-        pageexec@freemail.hu,
-        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
-        spender@grsecurity.net, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [ubuntu-hardened] Add overflow protection to kref
-Message-ID: <20120217063318.GA3330@p183.telecom.by>
-References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
- <20120216204515.GH20420@outflux.net>
- <20120217002405.GB7746@kroah.com>
- <20120217010624.GA6541@outflux.net>
- <20120217014008.GA18763@kroah.com>
- <20120217021109.GC6541@outflux.net>
- <CAEXv5_iRj6zHcKWtV0mgA4i_2u=TB1iQQMYFJAK4r6Ca=pimDA@mail.gmail.com>
+	Fri, 17 Feb 2012 01:41:50 -0500
+X-WSS-ID: 0LZIYLL-0A-2HE-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 16 Feb 2012 22:41:32 -0800
+Subject: [PATCH 1/3] regulator: fix wrong header name in description
+Thread-Topic: [PATCH 1/3] regulator: fix wrong header name in
+ description
+Thread-Index: AcztPy+l6sfD5EkmQvahLvuY7ENoKA==
+Message-ID: <B567DBAB974C0544994013492B949F8E381301284C@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEXv5_iRj6zHcKWtV0mgA4i_2u=TB1iQQMYFJAK4r6Ca=pimDA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 6323292A1LS10440584-02-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 09:48:38PM -0500, David Windsor wrote:
-> <snip>
-> 
-> >>
-> >> I have yet to see a patch, so why are we arguing about this?  :)
-> >>
-> >> Again, I don't know of any kref overflows that have ever happened, so
-> >> trying to "protect" this type of thing, seems odd to me.
-> >
-> > Well, I think the issue was to protect counting things (which seems to
-> > be what PaX was after originally), and that kref seemed like the place
-> > to put it. I'll let David take it further.
-> >
-> 
-> Patches are forthcoming that will first introduce overflow protection
-> to kref.
+The 'mode' is defined in consumer.h.
 
-Patches have already been posted:
-http://marc.info/?l=linux-kernel&m=132337541830590&w=4
-They were dropped for various (uninteresting) reasons, though.
+* patch base version : linux-3.2.4
 
-> Once that's in place, I'll move a few refcount users from
-> atomic_t to kref as a reference for other subsystems;
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ include/linux/regulator/driver.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This sucks because dtor argument is mandatory.
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 52c89ae..df6e9ec 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -104,7 +104,7 @@ struct regulator_ops {
+ 	int (*disable) (struct regulator_dev *);
+ 	int (*is_enabled) (struct regulator_dev *);
+ 
+-	/* get/set regulator operating mode (defined in regulator.h) */
++	/* get/set regulator operating mode (defined in consumer.h) */
+ 	int (*set_mode) (struct regulator_dev *, unsigned int mode);
+ 	unsigned int (*get_mode) (struct regulator_dev *);
+ 
+@@ -135,7 +135,7 @@ struct regulator_ops {
+ 	int (*set_suspend_enable) (struct regulator_dev *);
+ 	int (*set_suspend_disable) (struct regulator_dev *);
+ 
+-	/* set regulator suspend operating mode (defined in regulator.h) */
++	/* set regulator suspend operating mode (defined in consumer.h) */
+ 	int (*set_suspend_mode) (struct regulator_dev *, unsigned int mode);
+ };
+ 
+-- 
+1.7.4.1
+
+
+Best Regards,
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
+
+
+
