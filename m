@@ -1,109 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2BQFbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 00:31:08 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48626 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab2BQFbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 00:31:07 -0500
-Date: Fri, 17 Feb 2012 16:30:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20120217163057.8af53b853b36365b7fff203c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__17_Feb_2012_16_30_57_+1100_dcNCxK3e+SxyxTon"
+	id S1751881Ab2BQFii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 00:38:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60862 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642Ab2BQFig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 00:38:36 -0500
+Message-ID: <4F3DE881.6090503@cn.fujitsu.com>
+Date: Fri, 17 Feb 2012 13:41:21 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 0/2] cgroup: Fix some races against css_set task
+ links
+References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-17 13:36:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-02-17 13:36:57,
+	Serialize complete at 2012-02-17 13:36:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__17_Feb_2012_16_30_57_+1100_dcNCxK3e+SxyxTon
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+sorry for the delayed reply. I had been off for quite a few days.
 
-Hi Andrew,
+Frederic Weisbecker wrote:
+> Hi,
+> 
+> This is trying to fix some races in the way to link all the tasks to
+> the css_set links. I hope some people can have a look at this, especially
+> as I'm definetly not an SMP ordering expert.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+me neither.
 
-In file included from include/linux/posix_types.h:47:0,
-                 from include/linux/types.h:17,
-                 from include/linux/page-flags.h:8,
-                 from kernel/bounds.c:9:
-arch/powerpc/include/asm/posix_types.h:15:14: error: conflicting types for =
-'__kernel_size_t'
-arch/powerpc/include/asm/posix_types.h:14:22: note: previous declaration of=
- '__kernel_size_t' was here
-In file included from include/linux/page-flags.h:8:0,
-                 from kernel/bounds.c:9:
-include/linux/types.h:68:1: error: unknown type name '__kernel_ssize_t'
+> 
+> To give you the big picture, as long as nobody never calls
+> cgroup_iter_start(), we don't link the tasks to their css_set (this 'link'
+> is a simple list_add()).
+> 
+> But once somebody calls cgroup_iter_start(), we call
+> cgroup_enable_task_cg_lists() that grossly does this:
+> 
+> cgroup_enable_task_cg_lists() {
+> 	use_task_set_css_links = 1;
+> 	do_each_thread(g, p) {
+> 		link p to css_set
+> 	} while_each_thread(g, p);
+> }
+> 
+> But this links only existing tasks, we also need to link all the tasks
+> that will be created later, this is what does cgroup_post_fork():
+> 
+> cgroup_post_fork() {
+> 	if (use_task_set_css_links)
+> 		link p to css_set
+> }
+> 
+> So we have some races here:
+> 
+> - cgroup_enable_task_cg_lists() iterates over the tasklist
+>   without protection. The comments are advertizing we are using RCU
+>   but we don't. And in fact RCU doesn't yet protect against
+>   while_each_thread().
+> 
+> - Moreover with RCU there is a risk that we iterate the tasklist but
+>   we don't immediately see all the last updates that happened. For
+>   example if a task forks and passes cgroup_post_fork() while
+>   use_task_set_css_links = 0 then another CPU calling
+>   cgroup_enable_task_cg_list() can miss the new child while walking the
+>   tasklist with RCU as it doesn't appear immediately.
+> 
+> - There is no ordering constraint on use_task_set_css_links read/write
+>   against the tasklist traversal and modification. cgroup_post_fork()
+>   may deal with a stale value.
+> 
+> The second patch of the series is a proposal to fix the three above
+> points. Tell me what you think.
+> 
 
-Caused by commit a9dbe86e5995 ("powerpc: use generic posix_types.h").
+The patch looks good to me.
 
-This think was pointed out a couple of days ago, so maybe Andrew needs a
-newer version of the patch.
+As cgroup_enable_task_cg_lists() is an one-off function, won't be
+called more than once, so there's little chance it can happen
+in reality, so should be ok to queue it for 3.4.
 
-I added this fix patch for today:
+> Thanks.
+> 
+> Frederic Weisbecker (2):
+>   cgroup: Remove wrong comment on cgroup_enable_task_cg_list()
+>   cgroup: Walk task list under tasklist_lock in
+>     cgroup_enable_task_cg_list
+> 
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 17 Feb 2012 16:25:48 +1100
-Subject: [PATCH] powerpc: use generic posix_types.h fix
+for both patches
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/powerpc/include/asm/posix_types.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
-diff --git a/arch/powerpc/include/asm/posix_types.h b/arch/powerpc/include/=
-asm/posix_types.h
-index 1fbe027f..f139325 100644
---- a/arch/powerpc/include/asm/posix_types.h
-+++ b/arch/powerpc/include/asm/posix_types.h
-@@ -12,7 +12,7 @@ typedef unsigned long	__kernel_old_dev_t;
- #define __kernel_old_dev_t __kernel_old_dev_t
- #else
- typedef unsigned int	__kernel_size_t;
--typedef int		__kernel_size_t;
-+typedef int		__kernel_ssize_t;
- typedef long		__kernel_ptrdiff_t;
- #define __kernel_size_t __kernel_size_t
-=20
---=20
-1.7.9
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__17_Feb_2012_16_30_57_+1100_dcNCxK3e+SxyxTon
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPPeYRAAoJEECxmPOUX5FEphcQAKWrh5laCcgFtW5AStztIa1s
-hH1d0dEC0cQHs8vC49AC0eF1tM8QzNbCU18yd6uSJ93WI47gQnvX4ohT4BBP8l4F
-oRfyp8fsjMQXodHfH2avb2l7UideeAfRpYxuismHm9HsQJ5YJTCHPOSYWBbsMCkV
-pdiIE1E9tBQEnVChnsYYdXCkjmGuU7pLLep64DjuoaGUPiKauczjea/cRHEynkTe
-bUC59DxUUtzwlOdf5qm6NL4plbAcefTZxIFvjoQUIHnfG5nC/apkqESbchqCNeRT
-O8pFf5vLBc8pUGjWBi1IxRus2gu6iM5wySM9A4R/nppPBRNsLUSIfmjh06y/badI
-Tt9NSzdv+hR6+8yBcgM1a2R6tN7hy/+jtUZcm8GWDf5JBnkXkA/3nsVsYH5qL6m1
-WU8xUv7DsnYI3FByKBbZjnmD847BCwfp4uS8RePzoE8bqDuLA/rFjl2DAE/VXFsw
-zv9l27IULJaDLxzf6vHOZAMfHnwL7XIus28tbcWWK02B4BuMM7kpEJDvTjJA9wE7
-9oMm/VCyGgjwchurOmizCdBdHtpnE9CQItwWfEXWIzIRW3JN3pGxkYcK7nao5O4r
-m7HCfdjsjIyYj0xxvuRpCGQGzukyywW/c8+0h1/HyRofiXzJRrpORc70iq1oZ6e8
-alGQAEOQkwvuuTghVA3x
-=Dz09
------END PGP SIGNATURE-----
-
---Signature=_Fri__17_Feb_2012_16_30_57_+1100_dcNCxK3e+SxyxTon--
+>  kernel/cgroup.c |   23 ++++++++++++++++++++---
+>  1 files changed, 20 insertions(+), 3 deletions(-)
+> 
