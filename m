@@ -1,162 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2BQKsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 05:48:46 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63354 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2BQKsh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 05:48:37 -0500
+	id S1752346Ab2BQKuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 05:50:32 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60980 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab2BQKub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 05:50:31 -0500
+Date: Fri, 17 Feb 2012 11:49:58 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jkenisto@us.ibm.com, a.p.zijlstra@chello.nl, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com
+Subject: Re: [tip:perf/uprobes] uprobes/core: Clean up, refactor and improve
+ the code
+Message-ID: <20120217104958.GA21998@elte.hu>
+References: <tip-ewbwhb8o6navvllsauu7k07p@git.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <87k43lde0r.fsf@linux.vnet.ibm.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com> <87k43lde0r.fsf@linux.vnet.ibm.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 17 Feb 2012 02:48:06 -0800
-Message-ID: <CAPM31RLWpF0mO2faCfY+HOeThz0iW6_7D+S++pGHtJi6hhiAVQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-ewbwhb8o6navvllsauu7k07p@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 1:07 AM, Nikunj A Dadhania
-<nikunj@linux.vnet.ibm.com> wrote:
-> On Wed, 01 Feb 2012 17:38:26 -0800, Paul Turner <pjt@google.com> wrote:
->> Hi all,
->>
->> The attached series is an RFC on implementing load tracking at the entity
->> instead of cfs_rq level. This results in a bottom-up load-computation in which
->> entities contribute to their parents load, as opposed to the current top-down
->> where the parent averages its children.  In particular this allows us to
->> correctly migrate load with their accompanying entities and provides the
->> necessary inputs for intelligent load-balancing and power-management.
->>
->> It was previously well tested and stable, but that was on v3.1-; there's been
->> some fairly extensive changes in the wake-up path since so apologies if anything
->> was broken in the rebase.Note also, since this is also an RFC on the approach I
->> have not yet de-linted the various CONFIG combinations for introduced compiler
->> errors.
->>
->
-> I gave a quick run to this series, and it seems the fairness across
-> taskgroups is broken with this.
->
-> Test setup:
-> Machine : IBM xSeries with Intel(R) Xeon(R) x5570 2.93GHz CPU with 8
-> core, 64GB RAM, 16 cpu.
->
-> Create 3 taskgroups: fair16, fair32 and fair48 having 16, 32 and 48
-> cpu-hog tasks respectively. They have equal shares(default 1024), so
-> they should consume roughly the same time.
->
-> 120secs run 1:
-> Time consumed by fair16 cgroup:  712912 Tasks: 16
-> Time consumed by fair32 cgroup:  650977 Tasks: 32
-> Time consumed by fair48 cgroup:  575681 Tasks: 48
->
-> 120secs run 2:
-> Time consumed by fair16 cgroup:  686295 Tasks: 16
-> Time consumed by fair32 cgroup:  643474 Tasks: 32
-> Time consumed by fair48 cgroup:  611415 Tasks: 48
->
-> 600secs run 1:
-> Time consumed by fair16 cgroup:  4109678 Tasks: 16
-> Time consumed by fair32 cgroup:  1743983 Tasks: 32
-> Time consumed by fair48 cgroup:  3759826 Tasks: 48
->
-> 600secs run 2:
-> Time consumed by fair16 cgroup:  3893365 Tasks: 16
-> Time consumed by fair32 cgroup:  3028280 Tasks: 32
-> Time consumed by fair48 cgroup:  2692001 Tasks: 48
->
 
+Srikar,
 
-This is almost certainly a result of me twiddling with the weight in
-calc_cfs_shares (using average instead of instantaneous weight) in
-this version -- see patch 11/14.  While this had some nice stability
-properties it was not hot for fairness so I've since reverted it
-(snippet attached below).
+* tip-bot for Ingo Molnar <mingo@elte.hu> wrote:
 
-While it's hard to guarantee it was exactly this since I'm carrying a
-few other minor edits in preparation for the next version, the current
-results for the next version of this series look like:
+> Commit-ID:  7b2d81d48a2d8e37efb6ce7b4d5ef58822b30d89
+> Gitweb:     http://git.kernel.org/tip/7b2d81d48a2d8e37efb6ce7b4d5ef58822b30d89
+> Author:     Ingo Molnar <mingo@elte.hu>
+> AuthorDate: Fri, 17 Feb 2012 09:27:41 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Fri, 17 Feb 2012 10:18:07 +0100
+> 
+> uprobes/core: Clean up, refactor and improve the code
+> 
+> Make the uprobes code readable to me:
+> 
+>  - improve the Kconfig text so that a mere mortal gets some idea
+>    what CONFIG_UPROBES=y is really about
+> 
+>  - do trivial renames to standardize around the uprobes_*() namespace
+> 
+>  - clean up and simplify various code flow details
+> 
+>  - separate basic blocks of functionality
+> 
+>  - line break artifact and white space related removal
+> 
+>  - use standard local varible definition blocks
+> 
+>  - use vertical spacing to make things more readable
+> 
+>  - remove unnecessary volatile
+> 
+>  - restructure comment blocks to make them more uniform and
+>    more readable in general
+> 
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Jim Keniston <jkenisto@us.ibm.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Anton Arapov <anton@redhat.com>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Link: http://lkml.kernel.org/n/tip-ewbwhb8o6navvllsauu7k07p@git.kernel.org
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/Kconfig                   |   14 ++-
+>  arch/x86/include/asm/uprobes.h |   17 ++--
+>  arch/x86/kernel/uprobes.c      |  129 ++++++++++++-----------
+>  include/linux/uprobes.h        |   28 +++---
+>  kernel/uprobes.c               |  219 +++++++++++++++++++++++-----------------
+>  mm/mmap.c                      |   12 +-
+>  6 files changed, 233 insertions(+), 186 deletions(-)
 
-8-core:
-Starting task group fair16...done
-Starting task group fair32...done
-Starting task group fair48...done
-Waiting for the task to run for 120 secs
-Interpreting the results. Please wait....
-Time consumed by fair16 cgroup:  316985 Tasks: 16
-Time consumed by fair32 cgroup:  320274 Tasks: 32
-Time consumed by fair48 cgroup:  320811 Tasks: 48
+FYI, I created a new -tip topic branch for uprobes commits 
+[tip:perf/uprobes], with two patches applied so far:
 
-24-core:
-Starting task group fair16...done
-Starting task group fair32...done
-Starting task group fair48...done
-Waiting for the task to run for 120 secs
-Interpreting the results. Please wait....
-Time consumed by fair16 cgroup:  12628615 Tasks: 96
-Time consumed by fair32 cgroup:  12562859 Tasks: 192
-Time consumed by fair48 cgroup:  12600364 Tasks: 288
+ - your v10 #1/9 patch
+ - the above clean-ups and restructurings above it
 
-These results are stable and consistent.
+( Please have a good look at the code flow clean-ups I have 
+  performed, I have only build-tested the result. )
 
-As soon as I finish working through Peter's comments I'll upload a
-pre-posting so you can re-test if you'd like.  Expect a formal
-(non-RFC) posting with other nits such as detangling tracking from
-FAIR_GROUP_SCHED so that we may use it more comprehensively following
-that within the next week or so.
+As you can see it from the diffstat, there were many small 
+details that hindered code cleanliness, and there's at least one 
+bigger item that still needs to be addressed, which I have not 
+done in the above patch:
+
+The arch methods and structures need to be better separated from 
+core uprobes code. Right now there's uprobes.h which exports 
+'struct uprobe' to the rest of the kernel, such as 
+arch/x86/kernel/uprobes.c.
+
+What we want instead is a clean separation of core code from 
+architecture code:
+
+ - 'struct arch_uprobe' which includes all fields that 
+   'struct uprobe_arch_info' contains today. In the first 
+   approximation this is a rename.
+
+ - please rename uprobe->arch_info to uprobe->arch - it's 
+   already clear that it's information.
+
+ - uprobe->insn[] needs to move from struct uprobe to
+   uprobe->arch.insn
+
+ - The uprobes_arch_*() method(s) should be passed a
+   'struct arch_uprobe *', not a 'struct uprobe *'.
+
+ - Once this is done, 'struct uprobe' can move to the head of 
+   kernel/uprobes.c, without any ugly #ifdefs and wrappery - 
+   that code only compiles if uprobes are enabled and if the 
+   architecture supports it.
+
+ - asm/uprobes.h defines 'struct arch_uprobe' and the arch 
+   method(s) - nothing else.
+
+ - unless uprobe_opcode_t is non-byte on any architecture this 
+   typedef should probably be go away and be char * or void *.
+
+ - write_opcode() and any similar functions should be renamed to 
+   the arch_uprobes_write_opcode() pattern
+
+These changes should be done on top of latest -tip, in a single 
+patch or a small series, it's mostly pretty straightforward.
+
+Please keep an eye on stylistic details for future patches - the 
+above patch gives a laundry list of what details were wrong in 
+the existing code.
+
+Once this is done can we add #2, #3, etc. patches in a clean 
+manner.
+
+I'd suggest you don't send a full series but send small, edible 
+steps on top of the minimal (and right now not yet functional) 
+uprobes core code I've already applied, in series of 1-3 
+patches.
+
+I'm sure there will be other small details we'll have to change 
+in these patches as we go forward, so not porting the full 
+series straight away would save you time and effort that the 
+inevitable conflicts create.
+
+As an additional benefit, if you do it in such a workflow then I 
+can apply your new patches to tip:perf/uprobes pretty much the 
+moment you send them out, reviewing and testing them quickly - 
+without the time-consuming review of a long and interdependent 
+patch series and the resulting churn on your side.
+
+I believe we could iterate this through in a couple of days and 
+arrive to a working 'perf probe' prototype.
 
 Thanks,
 
-- Paul
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -823,7 +823,7 @@ static inline long calc_tg_weight(struct
-task_group *tg, struct cfs_rq *cfs_rq)
-        */
-       tg_weight = atomic64_read(&tg->load_avg);
-       tg_weight -= cfs_rq->tg_load_contrib;
--       tg_weight += cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-+       tg_weight += cfs_rq->load.weight;
-
-
-       return tg_weight;
- }
-@@ -833,7 +833,7 @@ static long calc_cfs_shares(struct cfs_rq *cfs_rq,
-struct task_group *tg)
-       long tg_weight, load, shares;
-
-       tg_weight = calc_tg_weight(tg, cfs_rq);
--       load = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-+       load = cfs_rq->load.weight;
-
-> As you can see there is a lot of variance in the above results.
->
-> wo patches
-> 120secs run 1:
-> Time consumed by fair16 cgroup:  667644 Tasks: 16
-> Time consumed by fair32 cgroup:  653771 Tasks: 32
-> Time consumed by fair48 cgroup:  624915 Tasks: 48
->
-> 600secs run 1:
-> Time consumed by fair16 cgroup:  3278425 Tasks: 16
-> Time consumed by fair32 cgroup:  3140335 Tasks: 32
-> Time consumed by fair48 cgroup:  3198817 Tasks: 48
->
-> Regards
-> Nikunj
->
+	Ingo
