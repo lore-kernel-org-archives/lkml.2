@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab2BQGEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 01:04:34 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40925 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab2BQGEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 01:04:33 -0500
-Message-ID: <4F3DEDC3.4010004@linux.vnet.ibm.com>
-Date: Fri, 17 Feb 2012 14:03:47 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.26) Gecko/20120131 Thunderbird/3.1.18
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5] sched: Avoid unnecessary work in reweight_entity
-References: <4F2F9F6C.1090608@linux.vnet.ibm.com> <4F3089F9.6010609@linux.vnet.ibm.com> <4F308E25.7060101@linux.vnet.ibm.com> <4F31D9B2.5090501@linux.vnet.ibm.com> <4F3D0F41.1010205@linux.vnet.ibm.com> <1329402561.2293.225.camel@twins>
-In-Reply-To: <1329402561.2293.225.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751547Ab2BQGIB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 01:08:01 -0500
+Received: from gate.crashing.org ([63.228.1.57]:53143 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab2BQGIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 01:08:00 -0500
+Message-ID: <1329458860.2892.57.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Date: Fri, 17 Feb 2012 17:07:40 +1100
+In-Reply-To: <20120217163057.8af53b853b36365b7fff203c@canb.auug.org.au>
+References: <20120217163057.8af53b853b36365b7fff203c@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12021620-3568-0000-0000-00000139D969
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+On Fri, 2012-02-17 at 16:30 +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> In file included from include/linux/posix_types.h:47:0,
+>                  from include/linux/types.h:17,
+>                  from include/linux/page-flags.h:8,
+>                  from kernel/bounds.c:9:
+> arch/powerpc/include/asm/posix_types.h:15:14: error: conflicting types for '__kernel_size_t'
+> arch/powerpc/include/asm/posix_types.h:14:22: note: previous declaration of '__kernel_size_t' was here
+> In file included from include/linux/page-flags.h:8:0,
+>                  from kernel/bounds.c:9:
+> include/linux/types.h:68:1: error: unknown type name '__kernel_ssize_t'
+> 
+> Caused by commit a9dbe86e5995 ("powerpc: use generic posix_types.h").
+> 
+> This think was pointed out a couple of days ago, so maybe Andrew needs a
+> newer version of the patch.
 
-In original code, using account_entity_dequeue and account_entity_enqueue
-as a pair will do some work unnecessary, such like remove node from list
-and add it back again immediately.
+Yes, I pointed that out to Peter a while back, maybe it got lost ...
 
-And because there are no really enqueue and dequeue happen here, it is not
-suitable to use account_entity_dequeue and account_entity_enqueue here.
+Cheers,
+Ben.
 
-This patch combine the work of them in order to save time.
+> I added this fix patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 17 Feb 2012 16:25:48 +1100
+> Subject: [PATCH] powerpc: use generic posix_types.h fix
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/powerpc/include/asm/posix_types.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/posix_types.h b/arch/powerpc/include/asm/posix_types.h
+> index 1fbe027f..f139325 100644
+> --- a/arch/powerpc/include/asm/posix_types.h
+> +++ b/arch/powerpc/include/asm/posix_types.h
+> @@ -12,7 +12,7 @@ typedef unsigned long	__kernel_old_dev_t;
+>  #define __kernel_old_dev_t __kernel_old_dev_t
+>  #else
+>  typedef unsigned int	__kernel_size_t;
+> -typedef int		__kernel_size_t;
+> +typedef int		__kernel_ssize_t;
+>  typedef long		__kernel_ptrdiff_t;
+>  #define __kernel_size_t __kernel_size_t
+>  
+> -- 
+> 1.7.9
+> 
 
-since v1:
-	Add more description.
-	Mark add_cfs_task_weight as inline. 
-	correct useless and wrong code. 
-	Add check point for the case there is no change on weight.
-
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7c6414f..20aa355 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -777,7 +777,7 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
-  */
- 
- #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
--static void
-+static inline void
- add_cfs_task_weight(struct cfs_rq *cfs_rq, unsigned long weight)
- {
- 	cfs_rq->task_weight += weight;
-@@ -938,20 +938,24 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
- {
- }
- # endif /* CONFIG_SMP */
-+
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
- 			    unsigned long weight)
- {
-+	if (weight == se->load.weight)
-+		return;
-+
- 	if (se->on_rq) {
- 		/* commit outstanding execution time */
- 		if (cfs_rq->curr == se)
- 			update_curr(cfs_rq);
--		account_entity_dequeue(cfs_rq, se);
-+		update_load_add(&cfs_rq->load, weight - se->load.weight);
-+		if (!parent_entity(se))
-+			update_load_add(&rq_of(cfs_rq)->load, weight - se->load.weight);
-+		if (entity_is_task(se))
-+			add_cfs_task_weight(cfs_rq, weight - se->load.weight);
- 	}
--
- 	update_load_set(&se->load, weight);
--
--	if (se->on_rq)
--		account_entity_enqueue(cfs_rq, se);
- }
- 
- static void update_cfs_shares(struct cfs_rq *cfs_rq)
--- 
-1.7.4.1
 
