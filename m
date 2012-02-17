@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2BQD1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 22:27:52 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:42045 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab2BQD1t (ORCPT
+	id S1753640Ab2BQDao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 22:30:44 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:39790
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751395Ab2BQDam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 22:27:49 -0500
-Message-ID: <b33f697878e9b601d1d9bddfbf7a61cb.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4F3DB9E8.7040406@zytor.com>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
-    <1329422549-16407-3-git-send-email-wad@chromium.org>
-    <4F3D61CB.2000301@zytor.com>
-    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-    <4F3D7250.6040504@zytor.com>
-    <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-    <4F3DAE5D.3080000@zytor.com>
-    <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
-    <CAObL_7GUTbc=Ew9mQw7CoWfdAfRWSWUrY3w+UnrYrqWEiHxtcQ@mail.gmail.com>
-    <4F3DB9E8.7040406@zytor.com>
-Date: Fri, 17 Feb 2012 04:27:45 +0100
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-From: "Indan Zupancic" <indan@nul.nu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Thu, 16 Feb 2012 22:30:42 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zz9371I936eK542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h93fhbe9k)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Liu Qiang-B32616 <B32616@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+Thread-Topic: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+Thread-Index: AQHM66YJdm8vLXgwC0qeBDGVItKLnJZAprgA//+pphCAAIJUAP//ncEw
+Date: Fri, 17 Feb 2012 03:30:36 +0000
+Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB702C9DB@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1329284944-17943-1-git-send-email-qiang.liu@freescale.com>
+	 <1329439216.2892.36.camel@pasglop>
+	 <BCB48C05FCE8BC4D9E61E841ECBE6DB702B97D@039-SN2MPN1-013.039d.mgd.msft.net>
+ <1329448660.2892.42.camel@pasglop>
+In-Reply-To: <1329448660.2892.42.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.94]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 4b95630a2805109a2fafe329e7ec4fd6
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1H3UovK029190
 
-On Fri, February 17, 2012 03:22, H. Peter Anvin wrote:
-> On 02/16/2012 06:16 PM, Andrew Lutomirski wrote:
->>
->> Is there really no syscall that cares about endianness?
+> -----Original Message-----
+> From: Benjamin Herrenschmidt [mailto:benh@kernel.crashing.org]
+> Sent: Friday, February 17, 2012 11:18 AM
+> To: Liu Qiang-B32616
+> Cc: jgarzik@pobox.com; linux-ide@vger.kernel.org; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+> 
+> On Fri, 2012-02-17 at 01:54 +0000, Liu Qiang-B32616 wrote:
+> > The default will be set in a common interface
+> > fsl_sata_set_irq_coalescing when initialize the controller. This
+> > interface will check the range of intr count and ticks and make sure
+> the values are reasonably.
+> 
+> Allright, but the current defaults are basically no coalescing right ?
+> 
+> > It's hard to find a aggressive value to adapt all scenarios, so I use
+> > echo to adjust the value. I remember P5020 have some performance issue,
+> I will check it.
+> > BTW, which filesystem do you use? Ext2 is lower than ext4 because
+> > metadata is continuously wrote to disk. You can try ext4 or xfs.
+> 
+> ext3 at the moment, I plan to switch to ext4 when I finish that fsck pass
+> which is taking hours... I am not aware of the 5020 performance issues,
+> is this something documented and/or fixable ?
+> 
 
-Perhaps when 64-bit syscall args are passed via two 32-bit registers.
-But that is no argument to make all argument accesses endianness aware.
+My patch may not meet your requirement:(
+For your performance requirement, I suggest use ext4 filesystem and SSD.
 
->> Even if it ends up working, forcing syscall arguments to have a
->> particular endianness seems like a bad decision, especially if anyone
->> ever wants to make a 64-bit BPF implementation.  (Or if any
->> architecture adds 128-bit syscall arguments to a future syscall
->> namespace or whatever it's called.  x86-64 has 128-bit xmm
->> registers...)
->>
->
-> Not to mention that the reshuffling code will add totally unnecessary
-> cost to the normal operation.
+Thanks.
 
-There is no such extra cost.
+> Cheers,
+> Ben.
+> 
+> 
 
-> Either way, Indan has it backwards ... it
-> *is* one field, the fact that two operations is needed to access it is a
-> function of the underlying byte code, and even if the byte code can't
-> support it, a JIT could merge adjacent operations if 64-bit operations
-> are possible -- or we could (and arguably should) add 64-bit opcodes in
-> the future for efficiency.
-
-It is a virtual data structure with as sole purpose to provide syscall
-info to the byte code. The actual data structure as such never exists
-in memory. So giving something that is hard to digest is silly.
-
-A JIT won't be able to merge accesses because it also has to merge other
-instructions and recognize when 64-bit operations are done with 32-bit
-instructions. I think that will be too hard for a JIT.
-
-The only good reason to use 64 bit fields is if 64-bit support will be
-added to BPF in the future. If not, then it's just unnecessary pain for
-no good reason.
-
-An alternative to struct seccomp_data would be to add special instructions
-that load the desired info to 'A'. E.g. BPF_S_ANC_SYSCALL_ARG with 'k'
-selecting which arg. But that's probably harder to fit into the current
-filter code.
-
-Greetings,
-
-Indan
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
