@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2BQPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 10:53:56 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:56947 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab2BQPxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 10:53:55 -0500
-Date: Fri, 17 Feb 2012 07:53:48 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression in skge that started around acb42a3 (so past
- v3.3-rc1)
-Message-ID: <20120217075348.171e3476@nehalam.linuxnetplumber.net>
-In-Reply-To: <20120217074511.61efe78c@nehalam.linuxnetplumber.net>
-References: <20120130155816.GA1400@phenom.dumpdata.com>
-	<20120130083843.160ffe5e@nehalam.linuxnetplumber.net>
-	<20120130175738.GA4002@phenom.dumpdata.com>
-	<20120130.130259.1190745234966440677.davem@davemloft.net>
-	<20120130182230.GA4122@phenom.dumpdata.com>
-	<20120217141005.GA27808@phenom.dumpdata.com>
-	<20120217074511.61efe78c@nehalam.linuxnetplumber.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753366Ab2BQPzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 10:55:07 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33719 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab2BQPzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 10:55:05 -0500
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Jon Medhurst <tixy@yxit.co.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sumit Bhattacharya <sumitb@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Ajeet Yadav <ajeet.yadav.77@gmail.com>,
+        Naveen Yadav <yad.naveen@gmail.com>
+Subject: [PATCH 3/3] ARM: dma-mapping: fix array out of bound access
+Date: Fri, 17 Feb 2012 21:26:00 +0530
+Message-Id: <1329494160-26942-1-git-send-email-ajeet.yadav.77@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012 07:45:11 -0800
-Stephen Hemminger <shemminger@vyatta.com> wrote:
+In __dma_alloc_remap(*,size,*,*)/ __dma_free_remap(*,size) functions
+if virtual address is in the last consistent mapping region
+i.e idx == ((CONSISTENT_END - base) >> PMD_SHIFT) - 1
+and off == PTRS_PER_PTE.
+then we have array out of bound access condition.
 
-> On Fri, 17 Feb 2012 09:10:05 -0500
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> 
-> > On Mon, Jan 30, 2012 at 01:22:30PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > On Mon, Jan 30, 2012 at 01:02:59PM -0500, David Miller wrote:
-> > > > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > > Date: Mon, 30 Jan 2012 12:57:38 -0500
-> > > > 
-> > > > > Ah, so you are saying that the problem above is already fixed in 3.3-rc1.
-> > > > 
-> > > > No he's not saying that, he says somewhere we probably need a fix
-> > > > "like" the commit he mentioned.
-> > > > 
-> > > > He did not say that commit fixes this bug.
-> > > 
-> > > Ayee. Sounds you guys have an idea about this bug then. If you want me to run
-> > > a test-patch I can certainly do so. Thanks!
-> > 
+On entry to while loop we ensure that off is always < PTRS_PER_PTE
+via
+u32 off = CONSISTENT_OFFSET(c->vm_start) & (PTRS_PER_PTE-1);
 
-Actually, I was confused, that was another skge change.
-The checksum issue still exists and it is not a driver problem.
+therefore we can safely move that condition to begining of while
+loop, to ensure that we access consistent_pte[] only if
+while condition is true.
+
+Signed-off-by: Naveen Yadav <yad.naveen@gmail.com>
+Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+---
+ arch/arm/mm/dma-mapping.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 932d288..0e1a2a2 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -251,16 +251,16 @@ __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot)
+ 		c->vm_pages = page;
+ 
+ 		do {
++			if (off >= PTRS_PER_PTE) {
++				off = 0;
++				pte = consistent_pte[++idx];
++			}
+ 			BUG_ON(!pte_none(*pte));
+ 
+ 			set_pte_ext(pte, mk_pte(page, prot), 0);
+ 			page++;
+ 			pte++;
+ 			off++;
+-			if (off >= PTRS_PER_PTE) {
+-				off = 0;
+-				pte = consistent_pte[++idx];
+-			}
+ 		} while (size -= PAGE_SIZE);
+ 
+ 		dsb();
+@@ -275,6 +275,7 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
+ 	struct arm_vmregion *c;
+ 	unsigned long addr;
+ 	pte_t *ptep;
++	pte_t pte;
+ 	int idx;
+ 	u32 off;
+ 
+@@ -298,16 +299,14 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
+ 	ptep = consistent_pte[idx] + off;
+ 	addr = c->vm_start;
+ 	do {
+-		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
+-
+-		ptep++;
+-		addr += PAGE_SIZE;
+-		off++;
+ 		if (off >= PTRS_PER_PTE) {
+ 			off = 0;
+ 			ptep = consistent_pte[++idx];
+ 		}
+-
++		pte = ptep_get_and_clear(&init_mm, addr, ptep);
++		ptep++;
++		addr += PAGE_SIZE;
++		off++;
+ 		if (pte_none(pte) || !pte_present(pte))
+ 			printk(KERN_CRIT "%s: bad page in kernel page table\n",
+ 			       __func__);
+-- 
+1.7.8.4
+
