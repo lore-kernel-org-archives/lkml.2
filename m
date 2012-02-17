@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab2BQImK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 03:42:10 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:37036 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab2BQImH (ORCPT
+	id S1751854Ab2BQImq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 03:42:46 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53283 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab2BQImp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 03:42:07 -0500
-Message-ID: <1329468126.28848.135.camel@aeonflux>
-Subject: Re: [PATCH V2 3/3] bluetooth: Convert BT_DBG to pr_debug
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Joe Perches <joe@perches.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Fri, 17 Feb 2012 09:42:06 +0100
-In-Reply-To: <6e53178ca0d6ca35c4953e653571d03379759af5.1329461203.git.joe@perches.com>
-References: <cover.1329461202.git.joe@perches.com>
-	 <6e53178ca0d6ca35c4953e653571d03379759af5.1329461203.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Fri, 17 Feb 2012 03:42:45 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4F3E1319.6050304@jp.fujitsu.com>
+Date: Fri, 17 Feb 2012 17:43:05 +0900
+From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.26) Gecko/20120129 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: [PATCH] mm: mmap() sometimes succeeds even if the region to map is
+ invalid.
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+This patch fixes two bugs of mmap():
+ 1. mmap() succeeds even if "offset" argument is a negative value, although
+    it should return EINVAL in such case. Currently I have only checked
+    it on x86_64 because (a) x86 seems to OK to accept a negative offset
+    for mapping 2GB-4GB regions, and (b) I don't know about other
+    architectures at all (I'll make it if needed).
 
-> Add "\n" to uses, align arguments, coalesce formats.
-> Fix a typo and fix a bad format extended by a line continuation.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/bluetooth/ath3k.c       |   10 +-
->  drivers/bluetooth/bcm203x.c     |   10 +-
->  drivers/bluetooth/bfusb.c       |   35 +++---
->  drivers/bluetooth/bpa10x.c      |   30 ++--
->  drivers/bluetooth/btmrvl_main.c |   63 +++++-----
->  drivers/bluetooth/btmrvl_sdio.c |   27 ++--
->  drivers/bluetooth/btsdio.c      |   24 ++--
->  drivers/bluetooth/btusb.c       |   48 ++++----
->  drivers/bluetooth/btwilink.c    |   17 +--
->  drivers/bluetooth/hci_ath.c     |    8 +-
->  drivers/bluetooth/hci_bcsp.c    |   28 ++--
->  drivers/bluetooth/hci_h4.c      |   10 +-
->  drivers/bluetooth/hci_ldisc.c   |   23 ++--
->  drivers/bluetooth/hci_ll.c      |   50 ++++----
->  include/net/bluetooth/l2cap.h   |    2 +-
->  net/bluetooth/af_bluetooth.c    |   16 +-
->  net/bluetooth/bnep/core.c       |   26 ++--
->  net/bluetooth/bnep/netdev.c     |   12 +-
->  net/bluetooth/bnep/sock.c       |    6 +-
->  net/bluetooth/cmtp/capi.c       |   31 +++--
->  net/bluetooth/cmtp/core.c       |   23 ++--
->  net/bluetooth/cmtp/sock.c       |    6 +-
->  net/bluetooth/hci_conn.c        |   58 ++++----
->  net/bluetooth/hci_core.c        |  151 +++++++++++----------
->  net/bluetooth/hci_event.c       |  282 ++++++++++++++++++++-------------------
->  net/bluetooth/hci_sock.c        |   20 ++--
->  net/bluetooth/hci_sysfs.c       |    8 +-
->  net/bluetooth/hidp/core.c       |   44 ++++---
->  net/bluetooth/hidp/sock.c       |    6 +-
->  net/bluetooth/l2cap_core.c      |  189 ++++++++++++++-------------
->  net/bluetooth/l2cap_sock.c      |   34 +++---
->  net/bluetooth/mgmt.c            |   89 ++++++------
->  net/bluetooth/rfcomm/core.c     |  164 ++++++++++++-----------
->  net/bluetooth/rfcomm/sock.c     |   49 ++++----
->  net/bluetooth/rfcomm/tty.c      |   88 ++++++------
->  net/bluetooth/sco.c             |   69 +++++-----
->  net/bluetooth/smp.c             |   33 +++---
->  37 files changed, 915 insertions(+), 874 deletions(-)
+ 2. mmap() would succeed if "offset" + "length" get overflow, although
+    it should return EOVERFLOW.
 
-this one has to wait. You are disturbing multiple developers that are
-working on core features.
+The detail of these problems is as follows:
 
-Regards
+1. mmap() succeeds even if "offset" argument is a negative value, although
+   it should return EINVAL in such case.
 
-Marcel
+POSIX says the type of the argument "off" is "off_t", which
+is equivalent to "long" for all architecture, so it is allowed to
+give a negative "off" to mmap().
 
+In such case, it is actually regarded as big positive value
+because the type of "off" is "unsigned long" in the kernel. 
+For example, off=-4096 (-0x1000) is regarded as 
+off = 0xfffffffffffff000 (x86_64) and as off = 0xfffff000 (x86).
+It results in mapping too big offset region.
+
+2. mmap() would succeed if "offset" + "length" get overflow, although
+   it should return EOVERFLOW.
+
+The overflow check of mmap() almost doesn't work.
+
+In do_mmap_pgoff(file, addr, len, prot, flags, pgoff),
+the existing overflow check logic is as follows.
+
+------------------------------------------------------------------------
+do_mmap_pgoff(struct file *file, unsigned long addr,
+		unsigned long len, unsigned long prot,
+		unsigned long flags, unsigned long pgoff)
+{
+	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
+		return -EOVERFLOW;
+}
+------------------------------------------------------------------------
+
+However, for example on x86_64, if we give off=0x1000 and
+len=0xfffffffffffff000, but EOVERFLOW is not returned.
+It is because the checking is based on the page offset,
+not on the byte offset.
+
+To fix this bug, I convert this overflow check from page
+offset base to byte offset base. 
+
+Signed-off-by: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+---
+ arch/x86/kernel/sys_x86_64.c |    3 +++
+ mm/mmap.c                    |    3 ++-
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index 0514890..ddefd6c 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -90,6 +90,9 @@ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+        if (off & ~PAGE_MASK)
+                goto out;
+
++       if ((off_t) off < 0)
++               goto out;
++
+        error = sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
+ out:
+        return error;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3f758c7..2fa99cd 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -948,6 +948,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+        vm_flags_t vm_flags;
+        int error;
+        unsigned long reqprot = prot;
++       unsigned long off = pgoff << PAGE_SHIFT;
+
+        /*
+         * Does the application expect PROT_READ to imply PROT_EXEC?
+@@ -971,7 +972,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+                return -ENOMEM;
+
+        /* offset overflow? */
+-       if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
++       if ((off + len) < off)
+                return -EOVERFLOW;
+
+        /* Too many mappings? */
+--
+1.7.7.4
+
+Best Regards,
+Naotaka Hamaguchi
 
