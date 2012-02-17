@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2BQBGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:06:49 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:38854 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753629Ab2BQBGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:06:47 -0500
-Date: Thu, 16 Feb 2012 17:06:24 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        pageexec@freemail.hu, spender@grsecurity.net
-Subject: Re: Add overflow protection to kref
-Message-ID: <20120217010624.GA6541@outflux.net>
-References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
- <20120216204515.GH20420@outflux.net>
- <20120217002405.GB7746@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217002405.GB7746@kroah.com>
-Organization: Chromium
-X-HELO: www.outflux.net
+	id S1755163Ab2BQBHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:07:10 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:36162 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756639Ab2BQA7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 19:59:45 -0500
+X-Sasl-enc: ik5a9YIoSYMFzuea5j76SuuUqlgfWVQHKu3r9fehsfsg 1329440384
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
+Message-Id: <20120217005511.269258043@linuxfoundation.org>
+User-Agent: quilt/0.51-15.1
+Date: Thu, 16 Feb 2012 16:55:19 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Nikolaus Schulz <mail@microschulz.de>
+Subject: [10/15] hwmon: (f75375s) Fix automatic pwm mode setting for F75373 & F75375
+In-Reply-To: <20120217005650.GA17119@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 04:24:05PM -0800, Greg Kroah-Hartman wrote:
-> On Thu, Feb 16, 2012 at 12:45:15PM -0800, Kees Cook wrote:
-> > Hi,
-> > 
-> > [This should probably be discussed on LKML for an even wider audience, so
-> > I've added a CC for it there.]
-> > 
-> > On Thu, Feb 16, 2012 at 09:02:13AM -0500, David Windsor wrote:
-> > > Hi,
-> > > 
-> > > We are attempting to add various grsecurity/PAX features to upstream
-> > > Ubuntu kernels.
-> > 
-> > This didn't parse quite right for me. I think you meant that the intent
-> > is to get these features into the upstream Linux kernel, with potential
-> > staging in Ubuntu kernels.
-> > 
-> > (Also s/PAX/PaX/g)
-> > 
-> > > The PAX folks added refcount overflow protection by inserting
-> > > architecture-specific code in the increment paths of atomic_t.  For
-> > > instance:
-> > > 
-> > > static inline void atomic_inc(atomic_t *v)
-> > >  {
-> > > 	asm volatile(LOCK_PREFIX "incl %0\n"
-> > > 
-> > > #ifdef CONFIG_PAX_REFCOUNT
-> > > 		     "jno 0f\n"
-> > > 		     LOCK_PREFIX "decl %0\n"
-> > > 		     "int $4\n0:\n"
-> > > 		     _ASM_EXTABLE(0b, 0b)
-> > > #endif
-> > > 
-> > > 		     : "+m" (v->counter));
-> > > }
-> > > 
-> > > There are two distinct classes of users we need to consider here:
-> > > those who use atomic_t for reference counters and those who use
-> > > atomic_t for keeping track of statistics, like performance counters,
-> > > etc.; it makes little sense to overflow a performance counter, so we
-> > > shouldn't subject those users to the same protections as imposed on
-> > > actual reference counters.  The solution implemented by PAX is to
-> > > create a family of *_unchecked() functions and to patch
-> > > statistics-based users of atomic_t to use this interface.
-> > > 
-> > > PAX refcount overflow protection was developed before kref was
-> > > created.  I'd like to move overflow protection out of atomic_t and
-> > > into kref and gradually migrate atomic_t users to kref, leaving
-> > > atomic_t for those users who don't need overflow protection (e.g.
-> > > statistics-based counters).
-> > 
-> > For people new to this, can you give an overview of what attacks are foiled
-> > by adding overflow protection?
-> > 
-> > > I realize that there are many users of atomic_t needing overflow
-> > > protection, but the move to kref seems like the right thing to do in
-> > > this case.
-> > > 
-> > > Leaving the semantics of overflow detection aside for the moment, what
-> > > are everyone's thoughts on adding overflow protection to kref rather
-> > > than to atomic_t?
-> > 
-> > Why was kref introduced? Or rather, how is kref currently different from
-> > atomic_t?
-> 
-> a kref is to handle reference counting for an object, so you don't have
-> to constantly "roll your own" all the time using an atomic_t or
-> whatever.  It's the basis for the struct kobject and other object
-> reference counting structures in the kernel for a very long time now.
-> 
-> And in all that time, I've never seen an instance where you can overflow
-> the reference count, so I'm hard pressed to see how changing kref in
-> this manner will help anything at all.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-A quick search gives me:
-CVE-2005-3359: https://bugzilla.redhat.com/show_bug.cgi?id=175769
-CVE-2006-3741: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=b8444d00762703e1b6146fce12ce2684885f8bf6
+------------------
 
-And actually an earlier discussion you were actually involved in:
-https://lkml.org/lkml/2008/7/16/300
+From: Nikolaus Schulz <schulz@macnetix.de>
 
-> So no, I don't recommend changing this logic at all in kref.
+commit 09e87e5c4f9af656af2a8a3afc03487c5d9287c3 upstream.
 
-If it's inexpensive and helps defend against problems, it seems sensible to
-add to me.
+In order to enable temperature mode aka automatic mode for the F75373 and
+F75375 chips, the two FANx_MODE bits in the fan configuration register
+need be set to 01, not 10.
 
-> Now if there are instances in the kernel where a "raw" atomic_t is being
-> used for object reference counting, moving that to use 'struct kref'
-> would be gladly appreciated, but that's kind of outside the scope of
-> what you are attempting to do here.
+Signed-off-by: Nikolaus Schulz <mail@microschulz.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--Kees
+---
+ drivers/hwmon/f75375s.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-Kees Cook
-ChromeOS Security
+--- a/drivers/hwmon/f75375s.c
++++ b/drivers/hwmon/f75375s.c
+@@ -311,7 +311,7 @@ static int set_pwm_enable_direct(struct
+ 		fanmode  |= (3 << FAN_CTRL_MODE(nr));
+ 		break;
+ 	case 2: /* AUTOMATIC*/
+-		fanmode  |= (2 << FAN_CTRL_MODE(nr));
++		fanmode  |= (1 << FAN_CTRL_MODE(nr));
+ 		break;
+ 	case 3: /* fan speed */
+ 		break;
+
+
