@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab2BQEdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 23:33:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37162 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab2BQEdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 23:33:01 -0500
-Message-ID: <4F3DD84B.30808@zytor.com>
-Date: Thu, 16 Feb 2012 20:32:11 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1752048Ab2BQEhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 23:37:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35973 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2BQEhq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 23:37:46 -0500
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: Eric Paris <eparis@redhat.com>, Markus Gutschke <markus@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, keescook@chromium.org
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-References: <1329422549-16407-1-git-send-email-wad@chromium.org> <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com> <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com> <4F3D7250.6040504@zytor.com> <CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com> <4F3D766E.7040205@zytor.com> <CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com> <4F3D7DD4.6070103@zytor.com> <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com> <1329439809.2337.32.camel@localhost> <CABqD9hY06gaA7T8f0Te9PFpip6ix7CcbRShWcXutxbivEZJ2og@mail.gmail.com> <4F3DD39C.9090905@zytor.com> <CABqD9haiko3xLUKFp_MZcd8G7Hsyif75ABk1HOVKNJ7=NZRRsA@mail.gmail.com>
-In-Reply-To: <CABqD9haiko3xLUKFp_MZcd8G7Hsyif75ABk1HOVKNJ7=NZRRsA@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <1329412171-20704-3-git-send-email-danny.kukawka@bisect.de>
+References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de> <1329412171-20704-3-git-send-email-danny.kukawka@bisect.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 16 Feb 2012 23:37:25 -0500
+X-Google-Sender-Auth: dDoo8o7KRWvEXRE6CuBtPBXuyDc
+Message-ID: <CAMjpGUdAe66Nw16EyM1_dv4e8uHV02tcfqiuWL8ipeUrQ=HThg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: "David S. Miller" <davem@davemloft.net>, Danny Kukawka <dkukawka@suse.de>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2012 08:26 PM, Will Drewry wrote:
->>
->> For x32 you have the option of introducing a new value or relying on bit
->> 30 in eax (and AUDIT_ARCH_X86_64).  The latter is more natural, probably.
-> 
-> Will that bit be visible as the syscall number or will it be stripped
-> out before passing the number around?  If it's visible, then it
-> doesn't seem like there'd need to be a new AUDIT_ARCH, but I suspect
-> someone like Eric will have an actually useful opinion.
-> 
+On Thu, Feb 16, 2012 at 12:09, Danny Kukawka wrote:
+> +                       netdev_warn(ndev, "Setting Ethernet MAC to a random one\n");
+> +                       eth_hw_addr_random(ndev);
 
-Bit 30 is visible in orig_eax; whether you export it as part of "the
-syscall number" is presumably TBD, but I think it's more natural to do so.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+would it make sense to have the core dump the warning ?
+-mike
