@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2BQQft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 11:35:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59758 "EHLO
+	id S1753245Ab2BQQhI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 11:37:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52841 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752221Ab2BQQfs (ORCPT
+	by vger.kernel.org with ESMTP id S1751670Ab2BQQhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 11:35:48 -0500
-Date: Fri, 17 Feb 2012 08:35:44 -0800
+	Fri, 17 Feb 2012 11:37:05 -0500
+Date: Fri, 17 Feb 2012 08:37:01 -0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] regulator: tps65910: Correct VIO voltage configuration
-Message-ID: <20120217163543.GC10146@opensource.wolfsonmicro.com>
-References: <1329485171-14189-1-git-send-email-ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2 2/3] gpio: gpiolib: Support for open drain/collector
+ gpios
+Message-ID: <20120217163659.GD10146@opensource.wolfsonmicro.com>
+References: <1329490582-22107-1-git-send-email-ldewangan@nvidia.com>
+ <1329490582-22107-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JgQwtEuHJzHdouWu"
+	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
 Content-Disposition: inline
-In-Reply-To: <1329485171-14189-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1329490582-22107-4-git-send-email-ldewangan@nvidia.com>
 X-Cookie: You have a truly strong individuality.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,38 +30,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---JgQwtEuHJzHdouWu
+--IDYEmSnFhs3mNXr+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Feb 17, 2012 at 06:56:11PM +0530, Laxman Dewangan wrote:
-> The VIO regulator register specify the voltage configuration
-> on bit3:2 of its register. And hence only these bits should
-> be modified when setting voltage and used when reading voltage
-> from register setting.
+On Fri, Feb 17, 2012 at 08:26:21PM +0530, Laxman Dewangan wrote:
+> Adding support for the open drain gpio on which client
+> can specify the open drain property through GPIO flag
+> GPIOF_OPEN_DRAIN at the time of gpio request.
+> The open drain pins are normally pulled high and it
+> cannot be driven to output with value of 1 and so
+> when client request for setting the pin to HIGH, the
+> gpio will be set to input direction to make pin in tristate
+> and hence PULL-UP on pins will make the state to HIGH.
+> The open drain pin can be driven to LOW by setting output
+> with value of 0.
 
-Applied, thanks.
+Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
---JgQwtEuHJzHdouWu
+--IDYEmSnFhs3mNXr+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPPoHYAAoJEBus8iNuMP3dirMP/0s4t66LUD4k+cQcNK2dZ6kq
-8lMSjiMBrXrcC8B4EXlbdJuypzA6oYsoyAUVjz1fSOD7abPeKDl52kiUPcEIXLFN
-deP/TSzoNlTB2IXnjgzKxyA36jV6Bg9leGuw0XDvl6klNA/yBcoUWtIsgMcGb9hM
-zqq3UT7r+m99r3k8LruEB4S5x2Rz0o4Fced+3mnZNJLcGxSzqrMuBbOhLRmA/EW1
-Te+L0v1PCgpdLdt5zgBJJotxS1oK11vXbbcQe5ot2gKZuHX12svhvXuRLK6gm0i8
-0Qt+jBwxWswRKgk9Li+7KDyegRpYOrwJ8is5imJZCrx6I5gOgfzrodYwasmn9yF2
-kyjd1r+a+zcoWFImmsK546PgjhBKF8G5p7fJEWDrbfOfCUV2urGTGO+J3M4a7GZV
-TjGOcWScBt5qm0cr6O9OvcKb4uwQMKflEhStup3oSksM4CR4aK7TCsm/WqP1AFEH
-esO4lMVZ4YFjqNXf+Sb/R76yr5WEebtk9dwrTVycmA5/B6O1+C/YP9zjzfodnWjK
-y4hotIo/V5zVGJU4xwqEZnwT4axwFpwD3DMYVeCTECcKRzhqHhPztiRT4q0uRxcu
-Aic3o08ooYIA/7tXsrbRoZi+oCyYqSB4x4dJzkS0YmLyHSOE1/15UcHlI7Sw4IQM
-MNskhzzc3EKB2eXrOm1v
-=Vxrh
+iQIcBAEBAgAGBQJPPoIkAAoJEBus8iNuMP3dVMsP/15Newz7Jvsq8s58AGgzMEFo
+Gj1kgrfJoh/icSNsf64g3GqCHzQmoT7eePXAJQK18z4YsM6Pd1VxdGVT75FAWaRN
+O/0Kine5DQmwDPrmpTIJesvYppSP0cIrXPAZJzlj/REnBBXl8X5h9eB8tn19QOzZ
+1q7bXngaDwZUIdNDp3QL0oKlk4RCo+yAwBVp7R9nFZf9CH07YMEbu72yc3UD25Bl
+1n0akGGAMMmCwJdTQAWtrO3aowrVXOD9LD2XhHpEPS3q23JoQ/BBcRX9H1VfxvG8
+MCk8Y+09fDj5WO/O5RqN0/xY8aFfe3GmHy5SLMmnU785z7z0pDljgQWk0mBXXiaR
+FXEkeYwHHCsY5ZE28h9pPB4SaJVOJNli0qKM+xSUMRCf8d7mbxBycnvgaNtEMbHs
+y5YhPmK/W/A837xQFv6Tl4VAc5m5HKvkDKNw58UAd6unx8eECxO+mFJ0th7Bmw1e
+YPF+12HFLIG0XoK/5j3HqzukwXafrSMSUwagi6kb0AJEHYRwmuoPSHOl5h2h8jT/
+1+6wWkrnQUAgwQxpxQUUaNLirlREEcB6QDTlrot3H5yDabs6b3p/ZQaNPLUeE9W4
+6RJmp0oa/EKO98pRZ+Ei4NSfumtl0i9R6hg6A+IAWsU6qhgGB4Av1w7BiHM5IT36
+68+3GsdrAIoukigUqc3r
+=/UZE
 -----END PGP SIGNATURE-----
 
---JgQwtEuHJzHdouWu--
+--IDYEmSnFhs3mNXr+--
