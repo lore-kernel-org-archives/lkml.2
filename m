@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab2BQBAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 20:00:31 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48016 "EHLO
+	id S1757185Ab2BQBCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:02:21 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:34980 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756964Ab2BQBAY (ORCPT
+	by vger.kernel.org with ESMTP id S1757010Ab2BQBAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 20:00:24 -0500
-X-Sasl-enc: ICcy07W4F4L0OtFKu5WK/tQg2zJq8zV9o7TQA00OfGzQ 1329440423
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:35 2012
-Message-Id: <20120217005535.257381512@linuxfoundation.org>
+	Thu, 16 Feb 2012 20:00:31 -0500
+X-Sasl-enc: x/tSInxiycd7hN7Q+lmcf62MVb6VMmAwjHdU5xpkVhZO 1329440429
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:37 2012
+Message-Id: <20120217005537.010035539@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:43 -0800
+Date: Thu, 16 Feb 2012 16:55:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [09/28] ath9k_hw: fix a RTS/CTS timeout regression
+        alan@lxorguk.ukuu.org.uk, Jens Axboe <axboe@kernel.dk>,
+        Chanho Min <chanho.min@lge.com>, Namjae Jeon <linkinjeon@gmail.com>,
+        Rabin Vincent <rabin@rab.in>, Wu Fengguang <fengguang.wu@intel.com>
+Subject: [22/28] backing-dev: fix wakeup timer races with bdi_unregister()
 In-Reply-To: <20120217005609.GA17081@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,50 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Rabin Vincent <rabin@rab.in>
 
-commit 55a2bb4a6d5e8c7b324d003e130fd9aaf33be4e6 upstream.
+commit 2673b4cf5d59c3ee5e0c12f6d734d38770324dc4 upstream.
 
-commit adb5066 "ath9k_hw: do not apply the 2.4 ghz ack timeout
-workaround to cts" reduced the hardware CTS timeout to the normal
-values specified by the standard, but it turns out while it doesn't
-need the same extra time that it needs for the ACK timeout, it
-does need more than the value specified in the standard, but only
-for 2.4 GHz.
+While 7a401a972df8e18 ("backing-dev: ensure wakeup_timer is deleted")
+addressed the problem of the bdi being freed with a queued wakeup
+timer, there are other races that could happen if the wakeup timer
+expires after/during bdi_unregister(), before bdi_destroy() is called.
 
-This patch brings the CTS timeout value in sync with the initialization
-values, while still allowing adjustment for bigger distances.
+wakeup_timer_fn() could attempt to wakeup a task which has already has
+been freed, or could access a NULL bdi->dev via the wake_forker_thread
+tracepoint.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Reported-by: Seth Forshee <seth.forshee@canonical.com>
-Reported-by: Marek Lindner <lindner_marek@yahoo.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Reported-by: Chanho Min <chanho.min@lge.com>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ mm/backing-dev.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1034,13 +1034,16 @@ void ath9k_hw_init_global_settings(struc
- 
- 	/*
- 	 * Workaround for early ACK timeouts, add an offset to match the
--	 * initval's 64us ack timeout value.
-+	 * initval's 64us ack timeout value. Use 48us for the CTS timeout.
- 	 * This was initially only meant to work around an issue with delayed
- 	 * BA frames in some implementations, but it has been found to fix ACK
- 	 * timeout issues in other cases as well.
- 	 */
--	if (conf->channel && conf->channel->band == IEEE80211_BAND_2GHZ)
-+	if (conf->channel && conf->channel->band == IEEE80211_BAND_2GHZ) {
- 		acktimeout += 64 - sifstime - ah->slottime;
-+		ctstimeout += 48 - sifstime - ah->slottime;
-+	}
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -318,7 +318,7 @@ static void wakeup_timer_fn(unsigned lon
+ 	if (bdi->wb.task) {
+ 		trace_writeback_wake_thread(bdi);
+ 		wake_up_process(bdi->wb.task);
+-	} else {
++	} else if (bdi->dev) {
+ 		/*
+ 		 * When bdi tasks are inactive for long time, they are killed.
+ 		 * In this case we have to wake-up the forker thread which
+@@ -584,6 +584,8 @@ EXPORT_SYMBOL(bdi_register_dev);
+  */
+ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ {
++	struct task_struct *task;
 +
+ 	if (!bdi_cap_writeback_dirty(bdi))
+ 		return;
  
- 	ath9k_hw_set_sifs_time(ah, sifstime);
- 	ath9k_hw_setslottime(ah, slottime);
+@@ -604,9 +606,14 @@ static void bdi_wb_shutdown(struct backi
+ 	 * unfreeze of the thread before calling kthread_stop(), otherwise
+ 	 * it would never exet if it is currently stuck in the refrigerator.
+ 	 */
+-	if (bdi->wb.task) {
+-		thaw_process(bdi->wb.task);
+-		kthread_stop(bdi->wb.task);
++	spin_lock_bh(&bdi->wb_lock);
++	task = bdi->wb.task;
++	bdi->wb.task = NULL;
++	spin_unlock_bh(&bdi->wb_lock);
++
++	if (task) {
++		thaw_process(task);
++		kthread_stop(task);
+ 	}
+ }
+ 
+@@ -627,7 +634,9 @@ static void bdi_prune_sb(struct backing_
+ 
+ void bdi_unregister(struct backing_dev_info *bdi)
+ {
+-	if (bdi->dev) {
++	struct device *dev = bdi->dev;
++
++	if (dev) {
+ 		bdi_set_min_ratio(bdi, 0);
+ 		trace_writeback_bdi_unregister(bdi);
+ 		bdi_prune_sb(bdi);
+@@ -636,8 +645,12 @@ void bdi_unregister(struct backing_dev_i
+ 		if (!bdi_cap_flush_forker(bdi))
+ 			bdi_wb_shutdown(bdi);
+ 		bdi_debug_unregister(bdi);
+-		device_unregister(bdi->dev);
++
++		spin_lock_bh(&bdi->wb_lock);
+ 		bdi->dev = NULL;
++		spin_unlock_bh(&bdi->wb_lock);
++
++		device_unregister(dev);
+ 	}
+ }
+ EXPORT_SYMBOL(bdi_unregister);
 
 
