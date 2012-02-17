@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab2BQAtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:49:25 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49918 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab2BQAtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:49:23 -0500
-Date: Fri, 17 Feb 2012 00:49:22 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: hugetlbfs lockdep spew revisited.
-Message-ID: <20120217004922.GN23916@ZenIV.linux.org.uk>
-References: <20120217000856.GA13112@redhat.com>
- <20120217001634.GH23550@zod.bos.redhat.com>
- <20120217003848.GB20071@boyd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217003848.GB20071@boyd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755297Ab2BQAvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:51:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54479 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601Ab2BQAvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 19:51:01 -0500
+Message-ID: <1329439809.2337.32.camel@localhost>
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: Eric Paris <eparis@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Markus Gutschke <markus@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, keescook@chromium.org
+Date: Thu, 16 Feb 2012 19:50:09 -0500
+In-Reply-To: <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+	 <1329422549-16407-3-git-send-email-wad@chromium.org>
+	 <4F3D61CB.2000301@zytor.com>
+	 <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+	 <4F3D7250.6040504@zytor.com>
+	 <CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
+	 <4F3D766E.7040205@zytor.com>
+	 <CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
+	 <4F3D7DD4.6070103@zytor.com>
+	 <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 06:38:49PM -0600, Tyler Hicks wrote:
-> On 2012-02-16 19:16:34, Josh Boyer wrote:
-> > On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
-> > > Remember this ? https://lkml.org/lkml/2011/4/15/272
-> > > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
-> > > but it seems to still be there.
-> > 
-> > I think Tyler Hicks actually noticed this a while ago, but his patch has
-> > been waiting on comment from Al and Christoph:
-> > 
-> > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
-> > 
-> > I've been hesitant to comment because I obviously screwed up once
-> > already.  We could try this patch in Fedora for a while if Al and
-> > company don't speak up soon.
+On Thu, 2012-02-16 at 17:00 -0600, Will Drewry wrote:
+> On Thu, Feb 16, 2012 at 4:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 02/16/2012 01:51 PM, Will Drewry wrote:
+
+> Then syscall_namespace(current, regs) returns
+> * 0 - SYSCALL_NS_32 (for existing 32 and config_compat)
+> * 1 - SYSCALL_NS_64 (for existing 64 bit)
+> * 2 - SYSCALL_NS_X32 (everything after 2 is arch specific)
+> * ..
 > 
-> I'm pretty confident that my patch that Josh linked to would "fix" the
-> lockdep warning below. According to the backtrace, it is barking about a
-> directory inode and a regular inode having a circular locking
-> dependency, so deadlock is not possible in this case.
+> This patch series is pegged to x86 right now, so it's not a big deal
+> to add a simple syscall_namespace to asm/syscall.h.  Of course, the
+> code is always the easy part.  Even easier would be to only assign 0
+> and 1 in the seccomp_data for 32-bit or 64-bit, then leave the rest of
+> the u32 untouched until x32 stabilizes and the TS_COMPAT interactions
+> are sorted.
 
-Sigh...  That patch is correct, but it has nothing to do with the locking
-order violation that really *is* there.  The only benefit would be to
-get rid of the "deadlock is not possible" nonsense, since you would see
-read/write vs. mmap instead of readdir vs. mmap in the traces.  Locking
-order is the *same* for directories and nondirectories; both can have
-pagefaults under ->i_mutex on their respective inodes.  And while mmap
-cannot happen for directories, it certainly can happen for regular files,
-so taking ->i_mutex in ->mmap() is a plain and simple bug.  Should never
-be done; in particular, hugetlbfs has ->i_mutex held in read() around
-pagefaults, which gives you an obvious deadlock with its ->mmap().
+I don't know if anyone cares, but include/linux/audit.h tries to expose
+this type of information so audit userspace can later piece things back
+together.  (we get this info from the syscall entry exit code so we know
+which arch it is).
 
-Folks, this is not a false positive and it has nothing to do with misannotation
-for directories.  Deadlock is real; I have no idea WTF do we what ->i_mutex
-held over that area in hugetlbfs ->mmap(), but doing that is really, really
-wrong, whatever the reason.
+Not sure how x32 is hoping to expose its syscall info, but others are
+going to have the same/similar problem.
+
+-Eric
+
