@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab2BQA5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:57:01 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:48312 "EHLO
+	id S1756150Ab2BQA7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:59:19 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37268 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752902Ab2BQA46 (ORCPT
+	by vger.kernel.org with ESMTP id S1753934Ab2BQA7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:56:58 -0500
-X-Sasl-enc: bm6VlSB0BMFVXS4Kg7Nvm7JVNXmn6OJoyV1M4DeCwo4j 1329440217
-Date: Thu, 16 Feb 2012 16:56:50 -0800
+	Thu, 16 Feb 2012 19:59:18 -0500
+X-Sasl-enc: sSQU4jNRLUF953WNhLr63Hld5tut6vnxGb794Hs05wIf 1329440357
+X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
+Message-Id: <20120217005511.390624452@linuxfoundation.org>
+User-Agent: quilt/0.51-15.1
+Date: Thu, 16 Feb 2012 16:55:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/15] 3.0.22-stable review
-Message-ID: <20120217005650.GA17119@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [11/15] crypto: sha512 - Use binary and instead of modulus
+In-Reply-To: <20120217005650.GA17119@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.22 release.
-There are 15 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Feb 19 00:55:09 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.22-rc1.gz
-and the diffstat can be found below.
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-thanks,
+commit 58d7d18b5268febb8b1391c6dffc8e2aaa751fcd upstream.
 
-greg k-h
+The previous patch used the modulus operator over a power of 2
+unnecessarily which may produce suboptimal binary code.  This
+patch changes changes them to binary ands instead.
 
--------------
- Makefile                                 |    4 +-
- arch/x86/pci/xen.c                       |    2 +-
- crypto/sha512_generic.c                  |   70 ++++++++++++++----------------
- drivers/gpio/pca953x.c                   |    6 +-
- drivers/gpu/drm/i915/intel_lvds.c        |    8 +++
- drivers/hwmon/f75375s.c                  |    4 +-
- include/linux/proportions.h              |    4 ++
- include/trace/events/writeback.h         |    5 ++-
- kernel/relay.c                           |   10 +++-
- mm/slub.c                                |    6 +++
- net/mac80211/rx.c                        |    2 +-
- sound/pci/intel8x0.c                     |    6 +++
- tools/perf/bench/mem-memcpy-x86-64-asm.S |    6 +++
- tools/perf/util/evsel.c                  |    1 +
- 14 files changed, 85 insertions(+), 49 deletions(-)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ crypto/sha512_generic.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
+ 
+ static inline void BLEND_OP(int I, u64 *W)
+ {
+-	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
++	W[I & 15] += s1(W[(I-2) & 15]) + W[(I-7) & 15] + s0(W[(I-15) & 15]);
+ }
+ 
+ static void
+@@ -105,7 +105,7 @@ sha512_transform(u64 *state, const u8 *i
+ 
+ #define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
+ 	BLEND_OP(i, W);						\
+-	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
++	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
+ 	t2 = e0(a) + Maj(a, b, c);				\
+ 	d += t1;						\
+ 	h = t1 + t2
+
 
