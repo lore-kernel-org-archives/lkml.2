@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab2BQU1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 15:27:54 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:48391 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752101Ab2BQU1x convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 15:27:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOMZO5CarXUJ1XVJMWCEt1AXvnE5Gvunou_8nydjLmPVkZERMA@mail.gmail.com>
-References: <CAOMZO5CarXUJ1XVJMWCEt1AXvnE5Gvunou_8nydjLmPVkZERMA@mail.gmail.com>
-Date: Fri, 17 Feb 2012 21:27:53 +0100
-Message-ID: <CAFLxGvwSVq1GhSVnHyt9jKTy4cvZ4a0hQUau6Kh36fQuw9bdjQ@mail.gmail.com>
-Subject: Re: ARM: __enabled_CONFIG_NUMA undeclared
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: khlebnikov@openvz.org, akpm@linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754076Ab2BQUak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 15:30:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48883 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab2BQUaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 15:30:39 -0500
+Date: Fri, 17 Feb 2012 12:30:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
+Message-Id: <20120217123037.ecfc5dd9.akpm@linux-foundation.org>
+In-Reply-To: <20120217120815.25909.15632.stgit@zurg>
+References: <4F3E42E0.4030108@openvz.org>
+	<20120217120815.25909.15632.stgit@zurg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 9:12 PM, Fabio Estevam <festevam@gmail.com> wrote:
-> Hi,
->
-> Building today's linux-next for ARM:
->
->  CC      arch/arm/kernel/asm-offsets.s
-> In file included from include/linux/mm.h:8:0,
->                 from arch/arm/kernel/asm-offsets.c:14:
-> include/linux/gfp.h: In function 'gfp_zonelist':
-> include/linux/gfp.h:267:1: error: '__enabled_CONFIG_NUMA' undeclared
-> (first use in this function)
-> include/linux/gfp.h:267:1: note: each undeclared identifier is
-> reported only once for each function it appears in
-> include/linux/gfp.h:267:1: error: '__enabled_CONFIG_NUMA_MODULE'
-> undeclared (first use in this function)
-> make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
->
-> , which is caused by commit 053361e1a (mm: replace NUMA_BUILD with
-> IS_ENABLED(CONFIG_NUMA)
+On Fri, 17 Feb 2012 16:08:15 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-UML is affected too.
+> Config NUMA must be defined for all architectures,
+> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
+> Some arch-specific Kconfig already has this stub.
+> This patch adds it to all remaining.
 
--- 
-Thanks,
-//richard
+It would be better to teach IS_ENABLED() to handle this situation.  I
+don't think there's a way of doing this with cpp :(
+
+This limitation makes IS_ENABLED pretty dangerous, doesn't it?  It
+makes it very easy to introduce build breakage with unexpected Kconfig
+combinations.
+
+
