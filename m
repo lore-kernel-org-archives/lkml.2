@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2BQT3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 14:29:37 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60913 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab2BQT3f (ORCPT
+	id S1754262Ab2BQTcN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 14:32:13 -0500
+Received: from stargate.chelsio.com ([67.207.112.58]:15194 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab2BQTcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 14:29:35 -0500
-Date: Fri, 17 Feb 2012 20:29:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com
-Subject: Re: [PATCH 4/7] PM / Domains: Rework system suspend callback
- routines
-Message-ID: <20120217192928.GI2707@elf.ucw.cz>
-References: <201111070101.33960.rjw@sisk.pl>
- <201111070108.11727.rjw@sisk.pl>
+	Fri, 17 Feb 2012 14:32:12 -0500
+Message-ID: <4F3EAAE3.5070705@chelsio.com>
+Date: Fri, 17 Feb 2012 11:30:43 -0800
+From: Divy Le Ray <divy@chelsio.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111070108.11727.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: pull request: linux-firmware: update cxgb* firmwares
+References: <4F35DB79.6070104@chelsio.com>  <20120211140701.GA5194@neilslaptop.think-freely.org>  <4F38A526.70900@chelsio.com> <4F3CADB7.1030802@chelsio.com> <1329450094.3258.34.camel@deadeye>
+In-Reply-To: <1329450094.3258.34.camel@deadeye>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-11-07 01:08:11, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> The current generic PM domains code attempts to use the generic
-> system suspend operations along with the domains' device stop/start
-> routines, which requires device drivers to assume that their
-> system suspend/resume (and hibernation/restore) callbacks will always
-> be used with generic PM domains.  However, in theory, the same
-> hardware may be used in devices that don't belong to any PM domain,
-> in which case it would be necessary to add "fake" PM domains to
-> satisfy the above assumption.  Also, the domain the hardware belongs
-> to may not be handled with the help of the generic code.
-> 
-> To allow device drivers that may be used along with the generic PM
-> domains code of more flexibility, add new device callbacks, .freeze(),
-> .freeze_late(), .thaw_early() and .thaw(), that can be supplied by
-> the drivers in addition to their "standard" system suspend and
-> hibernation callbacks.  These new callbacks, if defined, will be used
-> by the generic PM domains code for the handling of system suspend and
-> hibernation instead of the "standard" ones.  This will allow drivers
-> to be designed to work with generic PM domains as well as without
-> them.
+On 2/16/2012 7:41 PM, Ben Hutchings wrote:
+> On Wed, 2012-02-15 at 23:18 -0800, Divy Le Ray wrote:
+> [...]
+>> The following changes since commit 38118a598df73d5a9fd72bf04910e8298db82a46:
+>>
+>>     linux-firmware: brcm: add firmware for bcm43236 usb device
+>> (2012-02-11 19:20:10 +0000)
+>>
+>> are available in the git repository at:
+>>     git://git.chelsio.net/pub/git/linux-firmware for-upstream
+>>
+>> Divy Le Ray (3):
+>>         linux-firmware: rename t4fw.bin
+>>         linux-firmware: add t4fw-1.4.16.0.bin firmware for cxgb4 driver.
+>>         linux-firmware: update cxgb3 driver firmware to revision 7.12.0
+>>
+>>    WHENCE                  |    4 +++-
+>>    cxgb3/t3fw-7.12.0.bin   |  Bin 0 ->  31812 bytes
+>>    cxgb4/t4fw-1.3.10.0.bin |  Bin 0 ->  241664 bytes
+>>    cxgb4/t4fw-1.4.16.0.bin |  Bin 0 ->  298496 bytes
+>>    cxgb4/t4fw.bin          |  Bin 241664 ->  17 bytes
+>>    5 files changed, 3 insertions(+), 1 deletions(-)
+>>    create mode 100755 cxgb3/t3fw-7.12.0.bin
+>>    create mode 100644 cxgb4/t4fw-1.3.10.0.bin
+>>    create mode 100644 cxgb4/t4fw-1.4.16.0.bin
+>>    mode change 100644 =>  120000 cxgb4/t4fw.bin
+> Are there any versions of the cxgb4 driver that will specifically
+> request cxgb4/t4fw-1.3.10.0.bin?  If not, what's the point of keeping it
+> around after changing the cxgb4/t4fw.bin symlink?
 
-Should this go to Documentation/ somewhere? May concern is that we
-have way too many callbacks these days. Why is fake PM domain such a
-bad thing?
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Hi Ben,
+
+I originally removed cxgb4/t4fw-1.3.10.0.bin when I posted the request 
+against David's tree.
+Subsequent review from Neil requested to keep it around at least for a 
+while (https://lkml.org/lkml/2012/2/11/61).
+Either way is fine to me.
+
+Cheers,
+Divy
+
