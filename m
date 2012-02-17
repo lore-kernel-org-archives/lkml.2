@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab2BQXGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:06:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41592 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab2BQXGs (ORCPT
+	id S1755199Ab2BQXO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 18:14:59 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57241 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab2BQXO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:06:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.195.99 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Fri, 17 Feb 2012 15:06:43 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
-Message-ID: <20120217230643.GQ29414@google.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-8-git-send-email-tj@kernel.org>
- <20120217011907.GA15073@google.com>
- <20120217221406.GJ29414@google.com>
- <20120217223420.GJ26620@redhat.com>
- <20120217224103.GN29414@google.com>
- <20120217225615.GL26620@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217225615.GL26620@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 17 Feb 2012 18:14:58 -0500
+Date: Sat, 18 Feb 2012 10:14:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for Feb 17 (kernel/kcmp.c)
+Message-Id: <20120218101446.64a7ea590b66f337762bfb57@canb.auug.org.au>
+In-Reply-To: <4F3E95B7.3010700@xenotime.net>
+References: <20120217165045.2394d944d6efc37104421d2e@canb.auug.org.au>
+	<4F3E95B7.3010700@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__18_Feb_2012_10_14_46_+1100_yje1+57JNYgadVaO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 05:56:15PM -0500, Vivek Goyal wrote:
-> BTW, blk-throttle mangling the context, is a real problem you are facing
-> or it is just one of things which is nice to fix.
+--Signature=_Sat__18_Feb_2012_10_14_46_+1100_yje1+57JNYgadVaO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, it is a real problem which makes blk-throttle useless if cfq
-propio is in use.
+Hi all,
 
-> If a cgroup is being throttled do people really care about the
-> iopriority of original task that much. (Given the fact that
-> iopriority helps only so much and kills performance on fast
-> storage).
+On Fri, 17 Feb 2012 10:00:23 -0800 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> on i386:
+>=20
+> kernel/kcmp.c:153:10: error: 'EOPNOTSUP' undeclared (first use in this=20
+> function)
 
-Yeap, apparently, people wanna apply hard limits on top of propio.
-Besides, it's just bad to mangle cgroup *randomly* as the current code
-does.
+Caused by commit 0e8a8193207d ("syscalls, x86: add __NR_kcmp syscall")
+from the akpm tree.  Missing include of linux/errno.h ...
 
-Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-tejun
+--Signature=_Sat__18_Feb_2012_10_14_46_+1100_yje1+57JNYgadVaO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPPt9mAAoJEECxmPOUX5FEBDoP/Ai/8LiMdIpV1MLgSLjYfYHL
+bRaIPf2Sbmv+1yTmnaHHdpB0LGjT3cpmYJk3h0ridXTMKa4TYlgeWWzrAqxY8ydT
+GbMF5DxYGsEonyULoS1ge897ib5Nmo5q0sP2S50qrDcElqoNcQyZBXqj0BIZEjpE
+Rh+uOkN+u94NznPwlXTWthetPsLZbLYxMrlDqBXQM2Iw+v7Jwr+OFLamJLUbvILF
+DLrznDa1HmhL+va8SszFmn6L1CDJMV7CojYP0vGyGoqbchQrfQzNmkTRCty3d8R0
+1FCmgDlN8wuUILdhR7jIaIx+pef0TS8kZwBSQ6KZ9JnnPrmVAQ0Y7idGMkZrTGkU
+fc0mCUMEmF2sGGkrm3T7r1vZsdHB/0gkVq6uBEsHcpzKQ8VPeqRQwPmj1YZiO1mu
+UgxbLwxWsshOoEswQpX7DxD+nnlq78pgVWtpT8U9YwG6iF4gwXxfH3IRJJ06/DbN
+HED9c3MIhtjAHY4Vk7sguyhEP8Ks5VhHRKe1Cq+KeFJmWp68OIAkRtnqamjDyMRI
+5U0u0SSsAGrS9RWM10ldBtd2znPb9LC08GUxyBv5DHKTqNDCiZRbjMw4d8z7EXtn
+jV7i/Dn07nPgL5uOMSdOxtf8t9/uPDgDqVDOhBGL+ebrgUkTfR4wZ5XsNF/JPMtG
+vZOVKo+CB5TN0SE8lRD0
+=iySb
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__18_Feb_2012_10_14_46_+1100_yje1+57JNYgadVaO--
