@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab2BQCR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 21:17:28 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:52546 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755537Ab2BQCR0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 21:17:26 -0500
-X-Sasl-enc: UF6Ji4dsW4CD9Li1dH8fZRhk3gIahIWu+QdW1/uuEk3J 1329445045
-Date: Thu, 16 Feb 2012 18:17:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, herbert@gondor.hengli.com.au
-Subject: Re: [21/28] crypto: sha512 - Avoid stack bloat on i386
-Message-ID: <20120217021718.GA21573@kroah.com>
-References: <20120217005609.GA17081@kroah.com>
- <20120217005536.880797019@linuxfoundation.org>
- <20120216.205231.945122823725765709.davem@davemloft.net>
+	id S1756311Ab2BQCWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 21:22:33 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52715 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753305Ab2BQCWa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 21:22:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120216.205231.945122823725765709.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1329443688.15226.16.camel@joe2Laptop>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+	<1329443688.15226.16.camel@joe2Laptop>
+Date: Thu, 16 Feb 2012 20:22:28 -0600
+Message-ID: <CABqD9harZap1LUmcYH8w5gpFktVunYjV9UbKNTbBjqsUf+ThgQ@mail.gmail.com>
+Subject: Re: [PATCH v8 1/8] sk_run_filter: add support for custom load_pointer
+From: Will Drewry <wad@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.org,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 16, 2012 at 08:52:31PM -0500, David Miller wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
-> Date: Thu, 16 Feb 2012 16:55:55 -0800
-> 
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> 
-> This causes a stack usage regression on sparc that Herbert
-> is in the middle of merging a fix for into Linus's tree.
+On Thu, Feb 16, 2012 at 7:54 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2012-02-16 at 14:02 -0600, Will Drewry wrote:
+>> This change allows CONFIG_SECCOMP to make use of BPF programs for
+>> user-controlled system call filtering (as shown in this patch series).
+> []
+>> diff --git a/net/core/filter.c b/net/core/filter.c
+> []
+>> @@ -542,9 +602,35 @@ int sk_chk_filter(struct sock_filter *filter, unsigned int flen)
+> []
+>>               case BPF_S_LD_W_ABS:
+>> +                     MAYBE_USE_LOAD_FN(LD_W_ABS);
+>>               case BPF_S_LD_H_ABS:
+>> +                     MAYBE_USE_LOAD_FN(LD_H_ABS);
+>>               case BPF_S_LD_B_ABS:
+>> +                     MAYBE_USE_LOAD_FN(LD_B_ABS);
+>
+> Would be nice to note fallthrough or add break if necessary.
 
-Ick.  Any idea when that will hit Linus's tree?  If it's before next
-Monday, we are good, and I can queue it up here, if not, then I'll drop
-this and have to add it back later.
+Cool - I'll note it.  They are meant to fall through, but I can just
+go back to using goto handle_skb_load or some such so it is more
+readable.
 
-thanks,
-
-greg k-h
+Thanks!
