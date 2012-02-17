@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab2BQJvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 04:51:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38689 "EHLO
+	id S1752728Ab2BQJv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 04:51:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38700 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab2BQJvW (ORCPT
+	with ESMTP id S1752484Ab2BQJvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 04:51:22 -0500
-Date: Fri, 17 Feb 2012 01:50:22 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-e334c726ca774d346cb7c4db487e80953a202b58@git.kernel.org>
+	Fri, 17 Feb 2012 04:51:55 -0500
+Date: Fri, 17 Feb 2012 01:51:10 -0800
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-2837609fefbfe8f1248bfce09d9f0b44d5eb713d@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de,
+        jolsa@redhat.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com,
+        jolsa@redhat.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
         mingo@elte.hu
-In-Reply-To: <1328836217-9118-3-git-send-email-namhyung.kim@lge.com>
-References: <1328836217-9118-3-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1327674868-10486-3-git-send-email-jolsa@redhat.com>
+References: <1327674868-10486-3-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Get rid of ctype.h in symbol.c
-Git-Commit-ID: e334c726ca774d346cb7c4db487e80953a202b58
+Subject: [tip:perf/core] perf tools:
+  Remove unused functions from debugfs object
+Git-Commit-ID: 2837609fefbfe8f1248bfce09d9f0b44d5eb713d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,48 +32,223 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 01:50:59 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 17 Feb 2012 01:51:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e334c726ca774d346cb7c4db487e80953a202b58
-Gitweb:     http://git.kernel.org/tip/e334c726ca774d346cb7c4db487e80953a202b58
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 10 Feb 2012 10:10:17 +0900
+Commit-ID:  2837609fefbfe8f1248bfce09d9f0b44d5eb713d
+Gitweb:     http://git.kernel.org/tip/2837609fefbfe8f1248bfce09d9f0b44d5eb713d
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 27 Jan 2012 15:34:21 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Feb 2012 23:22:50 -0200
+CommitDate: Mon, 13 Feb 2012 23:25:38 -0200
 
-perf tools: Get rid of ctype.h in symbol.c
+perf tools: Remove unused functions from debugfs object
 
-The ctype.h in symbol.c was needed because of isupper(). However we now
-have it in util.h, it can be changed to use our implementation.
+Following debugfs object functions are not referenced
+within the code:
 
+  int debugfs_valid_entry(const char *path);
+  int debugfs_umount(void);
+  int debugfs_write(const char *entry, const char *value);
+  int debugfs_read(const char *entry, char *buffer, size_t size);
+  void debugfs_force_cleanup(void);
+  int debugfs_make_path(const char *element, char *buffer, int size);
+
+Removing them.
+
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1328836217-9118-3-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Link: http://lkml.kernel.org/r/1327674868-10486-3-git-send-email-jolsa@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/debugfs.c |  141 ---------------------------------------------
+ tools/perf/util/debugfs.h |    6 --
+ 2 files changed, 0 insertions(+), 147 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index fc6e12f..5dd83c3 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1,4 +1,3 @@
--#include <ctype.h>
- #include <dirent.h>
- #include <errno.h>
- #include <libgen.h>
-@@ -12,6 +11,7 @@
- #include <unistd.h>
- #include <inttypes.h>
- #include "build-id.h"
-+#include "util.h"
- #include "debug.h"
- #include "symbol.h"
- #include "strlist.h"
+diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
+index ffc35e7..dd8b193 100644
+--- a/tools/perf/util/debugfs.c
++++ b/tools/perf/util/debugfs.c
+@@ -15,32 +15,6 @@ static const char *debugfs_known_mountpoints[] = {
+ 	0,
+ };
+ 
+-/* use this to force a umount */
+-void debugfs_force_cleanup(void)
+-{
+-	debugfs_find_mountpoint();
+-	debugfs_premounted = 0;
+-	debugfs_umount();
+-}
+-
+-/* construct a full path to a debugfs element */
+-int debugfs_make_path(const char *element, char *buffer, int size)
+-{
+-	int len;
+-
+-	if (strlen(debugfs_mountpoint) == 0) {
+-		buffer[0] = '\0';
+-		return -1;
+-	}
+-
+-	len = strlen(debugfs_mountpoint) + strlen(element) + 1;
+-	if (len >= size)
+-		return len+1;
+-
+-	snprintf(buffer, size-1, "%s/%s", debugfs_mountpoint, element);
+-	return 0;
+-}
+-
+ static int debugfs_found;
+ 
+ /* find the path to the mounted debugfs */
+@@ -97,17 +71,6 @@ int debugfs_valid_mountpoint(const char *debugfs)
+ 	return 0;
+ }
+ 
+-
+-int debugfs_valid_entry(const char *path)
+-{
+-	struct stat st;
+-
+-	if (stat(path, &st))
+-		return -errno;
+-
+-	return 0;
+-}
+-
+ static void debugfs_set_tracing_events_path(const char *mountpoint)
+ {
+ 	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
+@@ -149,107 +112,3 @@ void debugfs_set_path(const char *mountpoint)
+ 	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
+ 	debugfs_set_tracing_events_path(mountpoint);
+ }
+-
+-/* umount the debugfs */
+-
+-int debugfs_umount(void)
+-{
+-	char umountcmd[128];
+-	int ret;
+-
+-	/* if it was already mounted, leave it */
+-	if (debugfs_premounted)
+-		return 0;
+-
+-	/* make sure it's a valid mount point */
+-	ret = debugfs_valid_mountpoint(debugfs_mountpoint);
+-	if (ret)
+-		return ret;
+-
+-	snprintf(umountcmd, sizeof(umountcmd),
+-		 "/bin/umount %s", debugfs_mountpoint);
+-	return system(umountcmd);
+-}
+-
+-int debugfs_write(const char *entry, const char *value)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret, count;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* get how many chars we're going to write */
+-	count = strlen(value);
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDWR);
+-	if (fd < 0)
+-		return -errno;
+-
+-	while (count > 0) {
+-		/* write it */
+-		ret = write(fd, value, count);
+-		if (ret <= 0) {
+-			if (ret == EAGAIN)
+-				continue;
+-			close(fd);
+-			return -errno;
+-		}
+-		count -= ret;
+-	}
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* return success */
+-	return 0;
+-}
+-
+-/*
+- * read a debugfs entry
+- * returns the number of chars read or a negative errno
+- */
+-int debugfs_read(const char *entry, char *buffer, size_t size)
+-{
+-	char path[PATH_MAX + 1];
+-	int ret;
+-	int fd;
+-
+-	/* construct the path */
+-	snprintf(path, sizeof(path), "%s/%s", debugfs_mountpoint, entry);
+-
+-	/* verify that it exists */
+-	ret = debugfs_valid_entry(path);
+-	if (ret)
+-		return ret;
+-
+-	/* open the debugfs entry */
+-	fd = open(path, O_RDONLY);
+-	if (fd < 0)
+-		return -errno;
+-
+-	do {
+-		/* read it */
+-		ret = read(fd, buffer, size);
+-		if (ret == 0) {
+-			close(fd);
+-			return EOF;
+-		}
+-	} while (ret < 0 && errno == EAGAIN);
+-
+-	/* close it */
+-	close(fd);
+-
+-	/* make *sure* there's a null character at the end */
+-	buffer[ret] = '\0';
+-
+-	/* return the number of chars read */
+-	return ret;
+-}
+diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
+index 4a878f7..68f3e87 100644
+--- a/tools/perf/util/debugfs.h
++++ b/tools/perf/util/debugfs.h
+@@ -3,14 +3,8 @@
+ 
+ const char *debugfs_find_mountpoint(void);
+ int debugfs_valid_mountpoint(const char *debugfs);
+-int debugfs_valid_entry(const char *path);
+ char *debugfs_mount(const char *mountpoint);
+-int debugfs_umount(void);
+ void debugfs_set_path(const char *mountpoint);
+-int debugfs_write(const char *entry, const char *value);
+-int debugfs_read(const char *entry, char *buffer, size_t size);
+-void debugfs_force_cleanup(void);
+-int debugfs_make_path(const char *element, char *buffer, int size);
+ 
+ extern char debugfs_mountpoint[];
+ extern char tracing_events_path[];
