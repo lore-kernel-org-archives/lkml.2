@@ -1,99 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2BQMea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 07:34:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53575 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab2BQMe3 convert rfc822-to-8bit (ORCPT
+	id S1752198Ab2BQMiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 07:38:11 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:38412 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab2BQMiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 07:34:29 -0500
-Message-ID: <1329482054.2293.273.camel@twins>
-Subject: Re: [RFC PATCH 08/14] sched: normalize tg load contributions
- against runnable time
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Fri, 17 Feb 2012 13:34:14 +0100
-In-Reply-To: <1329348972.2293.189.camel@twins>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	 <20120202013826.20844.39042.stgit@kitami.mtv.corp.google.com>
-	 <1329348972.2293.189.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 17 Feb 2012 07:38:08 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Don Zickus <dzickus@redhat.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        kexec@lists.infradead.org, vgoyal@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
+References: <tip-d9bc9be89629445758670220787683e37c93f6c1@git.kernel.org>
+	<CAE9FiQWRjvu_uNcx_bJXYHeg4D4k6YzHHmSudsq7EyubLi7+nw@mail.gmail.com>
+	<m1ipjc3fsk.fsf@fess.ebiederm.org>
+	<CAE9FiQVLnyRB+pAqi22C5mCbHOOVKxsBhQKaB6P0p9f2LBL8bA@mail.gmail.com>
+	<m1zkcmyjyd.fsf@fess.ebiederm.org>
+	<CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
+	<CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+	<20120216172735.GX9751@redhat.com>
+	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
+	<20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org>
+Date: Fri, 17 Feb 2012 04:41:01 -0800
+In-Reply-To: <m1y5s2ku36.fsf@fess.ebiederm.org> (Eric W. Biederman's message
+	of "Thu, 16 Feb 2012 19:38:21 -0800")
+Message-ID: <m1fwe9bpk2.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+qDGzVpPkYn9TlUA7xNBLfeDhF2nX9qPI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-16 at 00:36 +0100, Peter Zijlstra wrote:
-> On Wed, 2012-02-01 at 17:38 -0800, Paul Turner wrote:
-> > Entities of equal weight should receive equitable distribution of cpu time.
-> > This is challenging in the case of a task_group's shares as execution may be
-> > occurring on multiple cpus simultaneously.
-> > 
-> > To handle this we divide up the shares into weights proportionate with the load
-> > on each cfs_rq.  This does not however, account for the fact that the sum of
-> > the parts may be less than one cpu and so we need to normalize:
-> >   load(tg) = min(runnable_avg(tg), 1) * tg->shares
-> > Where runnable_avg is the aggregate time in which the task_group had runnable
-> > children.
-> 
-> 
-> >  static inline void __update_group_entity_contrib(struct sched_entity *se)
-> >  {
-> >         struct cfs_rq *cfs_rq = group_cfs_rq(se);
-> >         struct task_group *tg = cfs_rq->tg;
-> > +       int runnable_avg;
-> >  
-> >         se->avg.load_avg_contrib = (cfs_rq->tg_load_contrib * tg->shares);
-> >         se->avg.load_avg_contrib /= atomic64_read(&tg->load_avg) + 1;
-> > +
-> > +       /*
-> > +        * Unlike a task-entity, a group entity may be using >=1 cpu globally.
-> > +        * However, in the case that it's using <1 cpu we need to form a
-> > +        * correction term so that we contribute the same load as a task of
-> > +        * equal weight. (Global runnable time is taken as a fraction over 2^12.)
-> > +        */
-> > +       runnable_avg = atomic_read(&tg->runnable_avg);
-> > +       if (runnable_avg < (1<<12)) {
-> > +               se->avg.load_avg_contrib *= runnable_avg;
-> > +               se->avg.load_avg_contrib /= (1<<12);
-> > +       }
-> >  } 
-> 
-> This seems weird, and the comments don't explain anything.
-> 
-> Ah,.. you can count runnable multiple times (on each cpu), this also
-> means that the number you're using (when below 1) can still be utter
-> crap.
-> 
-> Neither the comment nor the changelog mention this, it should, it should
-> also mention why it doesn't matter (does it?).
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
-Since we don't know when we were runnable in the window, we can take our
-runnable fraction as a flat probability distribution over the entire
-window.
+> Don Zickus <dzickus@redhat.com> writes:
+>
+>> On Thu, Feb 16, 2012 at 01:53:29PM -0800, Yinghai Lu wrote:
+>>> On Thu, Feb 16, 2012 at 9:27 AM, Don Zickus <dzickus@redhat.com> wrote:
+>>> 
+>>> > So I think I figured it out.  I went through and commented out code in
+>>> > disable_local_APIC until I narrowed it down to the piece of code that
+>>> > needs to be disabled for it to work.
+>>> >
+>>> > Surprise, surprise... its LVTPC or perf! :-)  Actually it is the
+>>> > nmi_watchdog which uses perf.  My theory is NMIs are not disabled and one
+>>> > is generated by the local apic during decompression (just bad timing) and
+>>> > *splat*.
+>>> >
+>>> > Yinghai, you can probably prove this by
+>>> >
+>>> > echo 0 > /proc/sys/kernel/nmi_watchdog
+>>> >
+>>> > then do your kdump crash test.
+>>> 
+>>> yes.  that will make kdump crash working.
+>>
+>> Cool.  Thanks.
+>>
+>> Eric,
+>>
+>> Just let me know how you want to handle disabling NMIs in the kexec in
+>> panic shutdown case.
+>
+> Interesting.  Apparently we have been avoiding this problem by accident.
+>
+> Thanks for hunting this down.
+>
+> The options I can see are:
+> - Ensure we can handle and ignore exceptions like this.
+> - Always shutoff the lapic and ioapic entries that can generate this.
+>
+> The good news is that both solutions should be lock free.
+>
+> The current kernel boot code relies on the assumption that all
+> interrupts can be disabled.  In this case with nmi's that is clearly not
+> the case.
+>
+> The most robust solution and what we want to do long term is to
+> install an idt that will simply ignore all interrupts until the
+> idt is replaced.  Since really all we need to deal with is the NMI
+> vector, which is vector #2, we can have a very small interrupt
+> descriptor table.
+>
+> Unfortunately we go through some cpu mode switches in /sbin/kexec,
+> allowing us to enter the kernels 32bit entry point before we
+> run the decompresser, so at first glance both /sbin/kexec and the
+> kernel need to be fixed in a coordinated fashion.
+>
+> There are two was I can see of removing the need for an exactly
+> coordinated release.
+> - Document that an old /sbin/kexec userspace requires you not to
+>   use the nmi watchdog with modern kernels.
+> - For a short while simply retain code that stomps the nmi watchdog.
+>   (But still leaves us open to other kinds of nmi's).
+>
+> Grr.  Looking a little more closely, all throughout the linux kernel's
+> boot there is the assumption that any interrupt during boot is a failure
+> of some kind, and except for an errant nmi watchdog that is a true
+> assumption.
+>
+> Don I guess I really have to recommend disabling the nmi watchdog in the
+> kexec on panic path if we can do so at all reasonably. 
+>
+> I like the idea of ignoring nmis during boot but that seems to be a
+> slightly larger project and with little practical improvement in kexec
+> on panic quality.  Other than getting what should be one or two
+> i/o writes out of the kexec on panic path.
 
-The combined answer we're looking for is what fraction of time was any
-of our cpus running.
+Hmm.
 
-Take p_i to be the runnable probability of cpu i, then the probability
-that both cpu0 and cpu1 were runnable is pc_0,1 = p_0 * p_1, so the
-probability that either was running is p_01 = p_0 + p_1 - pc_0,1.
+Thinking about it a little more.  The kernel's boot path is inconsistent
+with the rest of the kernel's nmi handling.  For anything exception
+except an nmi stopping and giving up is fine.  For an nmi it is very
+rare for an NMI to signal a truly nasty failure (usually it just means
+someone saw a bitflip somewhere), and we can almost always continue
+without problem.
 
-The 3 cpu case becomes when was either cpu01 or cpu2 running, yielding
-the iteration: p_012 = p_01 + p_2 - pc_01,2.
+I think in practice we really should make our boot path consistent with
+the rest of the kernel and ignore/log/report nmis but not fail on them.
+Triple faulting (trigger a cpu reset) as we do today just seems like a
+recipe for deep and confusing mystery, and not being helpful to the
+user.
 
-p_012 = p_0 + p_1 + p_2 - (p_0 * p_1 + (p_0 + p_1 - p_0 * p_1) * p_2)
+My preferred fix would be to fix the boot path and /sbin/kexec to ignore
+and report nmis as we boot, as that is really what we want long term and
+it gives us the most robust solution.
 
-Now for small values of p our combined/corrective term is small, since
-its a product of small, which is smaller, however it becomes more
-dominant the nearer we get to 1.
+The fix with a guarantee of no more scope creep is to just disable the
+nmi watchdog on the kexec on panic path.
 
-Since its more likely to get near to 1 the more CPUs we have, I'm not
-entirely convinced we can ignore it.
+Don if you have time please figure out is needed to ignore nmi's and
+possible record and/or report them while we boot, otherwise please cook
+up a patch that just disables the nmi watchdog wherever we are sending
+it from (the local apic or the ioapic).
+
+Eric
