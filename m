@@ -1,123 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2BQEqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 23:46:03 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41686 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751581Ab2BQEqB (ORCPT
+	id S1752599Ab2BQEvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 23:51:41 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:39516 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab2BQEvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 23:46:01 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAHPaPU95LI9Y/2dsb2JhbABCsHeBCIFyAQEEATocIwULCAMYLhQlAyETh3+2FQQTi1UBBgYBCgYIBgIHCxAIAgICDAGDUQMoFAIDgy4ElTaJOIlF
-Date: Fri, 17 Feb 2012 15:45:57 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] [RFC] fadvise: Add _VOLATILE,_ISVOLATILE, and
- _NONVOLATILE flags
-Message-ID: <20120217044557.GI14132@dastard>
-References: <1328832993-23228-1-git-send-email-john.stultz@linaro.org>
- <1328832993-23228-2-git-send-email-john.stultz@linaro.org>
- <20120214051659.GH14132@dastard>
- <1329198932.2753.62.camel@work-vm>
- <20120214235106.GL7479@dastard>
- <1329265750.2340.17.camel@work-vm>
- <20120215123750.3333141f@notabene.brown>
+	Thu, 16 Feb 2012 23:51:38 -0500
+Message-ID: <efba7d7928509faf2233737d12e48a38.squirrel@webmail.greenhost.nl>
+In-Reply-To: <4F3DD30A.6030008@zytor.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+    <1329422549-16407-3-git-send-email-wad@chromium.org>
+    <4F3D61CB.2000301@zytor.com>
+    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+    <4F3D7250.6040504@zytor.com>
+    <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
+    <4F3DAE5D.3080000@zytor.com>
+    <f2d1a14c965cea740d688c574c6006bb.squirrel@webmail.greenhost.nl>
+    <CAObL_7GUTbc=Ew9mQw7CoWfdAfRWSWUrY3w+UnrYrqWEiHxtcQ@mail.gmail.com>
+    <4F3DB9E8.7040406@zytor.com>
+    <b33f697878e9b601d1d9bddfbf7a61cb.squirrel@webmail.greenhost.nl>
+    <4F3DD30A.6030008@zytor.com>
+Date: Fri, 17 Feb 2012 05:51:25 +0100
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Andrew Lutomirski" <luto@mit.edu>, "Will Drewry" <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120215123750.3333141f@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 51a43cd7ff6838d9e9bce89dbcde6c26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 12:37:50PM +1100, NeilBrown wrote:
-> On Tue, 14 Feb 2012 16:29:10 -0800 John Stultz <john.stultz@linaro.org> wrote:
-> 
-> > But I'm open to other ideas and arguments.
-> 
-> I didn't notice the original patch, but found it at
-> https://lwn.net/Articles/468837/
-> and had a look.
-> 
-> My first comment is -ENODOC.  A bit background always helps, so let me try to
-> construct that:
-> 
->  The goal is to allow applications to interact with the kernel's cache
->  management infrastructure.  In particular an application can say "this
->  memory contains data that might be useful in the future, but can be
->  reconstructed if necessary, and it is cheaper to reconstruct it than to read
->  it back from disk, so don't bother writing it out".
-> 
->  The proposed mechanism - at a high level - is for user-space to be able to
->  say "This memory is volatile" and then later "this memory is no longer
->  volatile".  If the content of the memory is still available the second
->  request succeeds.  If not, it fails.. Well, actually it succeeds but reports
->  that some content has been lost. (not sure what happens then - can the app do
->  a binary search to find which pages it still has or something).
-> 
->  (technically we should probably include the cost to reconstruct the page,
->  which the kernel measures as 'seeks' but maybe that isn't necessary).
-> 
->  This is implemented by using files in a 'tmpfs' filesystem.  These file
->  support three new flags to fadvise:
-> 
->  POSIX_FADV_VOLATILE - this marks a range of pages as 'volatile'.  They may be
->         removed from the page cache as needed, even if they are not 'clean'.
->  POSIX_FADV_NONVOLATILE - this marks a range of pages as non-volatile.
->         If any pages in the range were previously volatile but have since been
->         removed, then a status is returned reporting this.
->  POSIX_FADV_ISVOLATILE - this does not actually give any advice to the kernel
->         but rather asks a question: Are any of these pages volatile?
+On Fri, February 17, 2012 05:09, H. Peter Anvin wrote:
+> On 02/16/2012 07:27 PM, Indan Zupancic wrote:
+>>
+>> A JIT won't be able to merge accesses because it also has to merge other
+>> instructions and recognize when 64-bit operations are done with 32-bit
+>> instructions. I think that will be too hard for a JIT.
+>>
+>
+> Please Google "peephole optimizer".
 
-What about for files that aren't on tmpfs? the fadvise() interface
-is not tmpfs specific, and given that everyone is talking about
-volatility of page cache pages, I fail to see what is tmpfs specific
-about this proposal.
+I have written one for uni. Like I said, I think it will be too hard
+for a BPF JIT because the pattern is too complex. Keep in mind that
+there is no 64-bit register where you can load the data to, everything
+is done on 32-bit values. So you have to recognize 32-bit code emulating
+64-bit ops. I don't think anyone will add all the different patterns of
+doing that to the JIT, there are too many.
 
-So what are the semantics that are supposed to apply to a file that
-is on a filesystem with stable storage that is cached in the page
-cache?
+The current JIT is networking-only and is very simplistic. It is a very
+long way to a sophisticated enough JIT that does such complex peephole
+optimisations. I'm not saying it's impossible in general, just that the
+kernel BPF JIT won't be able to do it. It's a lot easier to just add
+64-bit support to BPF instead.
 
-If this is tmpfs specific behaviour that is required, then IMO
-fadvise is not the correct interface to use here because fadvise is
-supposed to be a generic interface to controlling the page cache
-behaviour on any given file....
+Greetings,
 
-> As a counter-point,  this is my first thought of an implementation approach
-> (-ENOPATCH, sorry)
-> 
-> - new mount option for tmpfs e.g. 'volatile'.  Any file in a filesystem
->   mounted with that option and which is not currently open by any process can
->   have blocks removed at any time.  The file name must remain, and the file
->   size must not change.
-> - lseek can be used to determine if anything has been purged with 'SEEK_DATA'
->   and 'SEEK_HOLE'.
-> 
-> So you can only mark volatility on a whole-file granularity (hence the
-> question above).
->  'open' says "NONVOLATILE".
->  'close' says "VOLATILE".
->  'lseek' is used to check if anything was discarded.
-> 
-> This approach would allow multiple processes to share a cache (might this be
-> valuable?) as it doesn't become truly volatile until all processes close
-> their handles.
-
-If this functionality is only useful for tmpfs, then I'd much prefer
-a tmpfs specific approach like this....
-
-Cheers,
-
-Dave.
+Indan
 
 
--- 
-Dave Chinner
-david@fromorbit.com
