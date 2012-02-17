@@ -1,136 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab2BQA7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:59:22 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:57051 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756294Ab2BQA7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:59:20 -0500
-X-Sasl-enc: AdEThhvfz25HcX14k2hrrtbZXoXvJlak0FgH83goKV+/ 1329440359
-X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
-Message-Id: <20120217005511.514858721@linuxfoundation.org>
-User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:21 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [12/15] crypto: sha512 - Avoid stack bloat on i386
-In-Reply-To: <20120217005650.GA17119@kroah.com>
+	id S1755190Ab2BQBLU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 20:11:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36053 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752306Ab2BQBLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 20:11:18 -0500
+Message-ID: <4F3DA901.8030609@zytor.com>
+Date: Thu, 16 Feb 2012 17:10:25 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Indan Zupancic <indan@nul.nu>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, keescook@chromium.org
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+References: <1329422549-16407-1-git-send-email-wad@chromium.org> <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com> <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com> <4F3D7250.6040504@zytor.com> <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl> <CAObL_7G7CvCVgjR-JYjNDi_Sy65UHXaqas4-sQCVej-4bX2PJA@mail.gmail.com>
+In-Reply-To: <CAObL_7G7CvCVgjR-JYjNDi_Sy65UHXaqas4-sQCVej-4bX2PJA@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 02/16/2012 04:51 PM, Andrew Lutomirski wrote:
+> 
+> IMO the best solution is to have the One True Seccomp Filter Compiler
+> (tm).  It would handle multiple namespaces, cross-arch differences,
+> and such, and it would do it correctly.  It could live in the kernel
+> tree.
+> 
+> Without something like that or an incredible amount of special care,
+> actual portability is probably a pipe dream.
+> 
+> --Andy
+> 
 
-------------------
+Seconded!
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+	-hpa
 
-commit 3a92d687c8015860a19213e3c102cad6b722f83c upstream.
-
-Unfortunately in reducing W from 80 to 16 we ended up unrolling
-the loop twice.  As gcc has issues dealing with 64-bit ops on
-i386 this means that we end up using even more stack space (>1K).
-
-This patch solves the W reduction by moving LOAD_OP/BLEND_OP
-into the loop itself, thus avoiding the need to duplicate it.
-
-While the stack space still isn't great (>0.5K) it is at least
-in the same ball park as the amount of stack used for our C sha1
-implementation.
-
-Note that this patch basically reverts to the original code so
-the diff looks bigger than it really is.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/sha512_generic.c |   68 ++++++++++++++++++++++--------------------------
- 1 file changed, 32 insertions(+), 36 deletions(-)
-
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -89,46 +89,42 @@ sha512_transform(u64 *state, const u8 *i
- 	int i;
- 	u64 W[16];
- 
--	/* load the input */
--        for (i = 0; i < 16; i++)
--                LOAD_OP(i, W, input);
--
- 	/* load the state into our registers */
- 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
- 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
- 
--#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
--	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--	for (i = 0; i < 16; i += 8) {
--		SHA512_0_15(i, a, b, c, d, e, f, g, h);
--		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
--	}
--	for (i = 16; i < 80; i += 8) {
--		SHA512_16_79(i, a, b, c, d, e, f, g, h);
--		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
-+	/* now iterate */
-+	for (i=0; i<80; i+=8) {
-+		if (!(i & 8)) {
-+			int j;
-+
-+			if (i < 16) {
-+				/* load the input */
-+				for (j = 0; j < 16; j++)
-+					LOAD_OP(i + j, W, input);
-+			} else {
-+				for (j = 0; j < 16; j++) {
-+					BLEND_OP(i + j, W);
-+				}
-+			}
-+		}
-+
-+		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
-+		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
-+		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
-+		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
-+		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
-+		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
-+		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
-+		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
-+		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
- 	}
- 
- 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
