@@ -1,134 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2BQAsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:48:23 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:53496 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2BQAsV (ORCPT
+	id S1754903Ab2BQAtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:49:25 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49918 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab2BQAtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:48:21 -0500
-Message-ID: <501858544d264abc6526f2b25a224f2b.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4F3D7250.6040504@zytor.com>
-References: <1329422549-16407-1-git-send-email-wad@chromium.org>
-    <1329422549-16407-3-git-send-email-wad@chromium.org>
-    <4F3D61CB.2000301@zytor.com>
-    <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
-    <4F3D7250.6040504@zytor.com>
-Date: Fri, 17 Feb 2012 01:48:08 +0100
-Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
-From: "Indan Zupancic" <indan@nul.nu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
-        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
-        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Thu, 16 Feb 2012 19:49:23 -0500
+Date: Fri, 17 Feb 2012 00:49:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: hugetlbfs lockdep spew revisited.
+Message-ID: <20120217004922.GN23916@ZenIV.linux.org.uk>
+References: <20120217000856.GA13112@redhat.com>
+ <20120217001634.GH23550@zod.bos.redhat.com>
+ <20120217003848.GB20071@boyd>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: ee739817b6cd2655ac6326818c89325b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120217003848.GB20071@boyd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, February 16, 2012 22:17, H. Peter Anvin wrote:
-> On 02/16/2012 12:25 PM, Will Drewry wrote:
->>
->> I agree :)  BPF being a 32-bit creature introduced some edge cases.  I
->> has started with a
->>      union { u32 args32[6]; u64 args64[6]; }
->>
->> This was somewhat derailed by CONFIG_COMPAT behavior where
->> syscall_get_arguments always writes to argument of register width --
->> not bad, just irritating (since a copy isn't strictly necessary nor
->> actually done in the patch).  Also, Indan pointed out that while BPF
->> programs expect constants in the machine-local endian layout, any
->> consumers would need to change how they accessed the arguments across
->> big/little endian machines since a load of the low-order bits would
->> vary.
->>
->> In a second pass, I attempted to resolve this like aio_abi.h:
->>     union {
->>       struct {
->>          u32 ENDIAN_SWAP(lo32, hi32);
->>        };
->>        u64 arg64;
->>      } args[6];
->> It wasn't clear that this actually made matters better (though it did
->> mean syscall_get_arguments() could write directly to arg64).  Usings
->> offsetof() in the user program would be fine, but any offsets set
->> another way would be invalid.  At that point, I moved to Indan's
->> proposal to stabilize low order and high order offsets -- what is in
->> the patch series.  Now a BPF program can reliably index into the low
->> bits of an argument and into the high bits without endianness changing
->> the filter program structure.
->>
->> I don't feel strongly about any given data layout, and this one seems
->> to balance the 32-bit-ness of BPF and the impact that has on
->> endianness.  I'm happy to hear alternatives that might be more
->> aesthetically pleasing :)
->>
->
-> I would have to say I think native endian is probably the sane thing
-> still, out of several bad alternatives.  Certainly splitting the high
-> and low halves of arguments is insane.
+On Thu, Feb 16, 2012 at 06:38:49PM -0600, Tyler Hicks wrote:
+> On 2012-02-16 19:16:34, Josh Boyer wrote:
+> > On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
+> > > Remember this ? https://lkml.org/lkml/2011/4/15/272
+> > > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
+> > > but it seems to still be there.
+> > 
+> > I think Tyler Hicks actually noticed this a while ago, but his patch has
+> > been waiting on comment from Al and Christoph:
+> > 
+> > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
+> > 
+> > I've been hesitant to comment because I obviously screwed up once
+> > already.  We could try this patch in Fedora for a while if Al and
+> > company don't speak up soon.
+> 
+> I'm pretty confident that my patch that Josh linked to would "fix" the
+> lockdep warning below. According to the backtrace, it is barking about a
+> directory inode and a regular inode having a circular locking
+> dependency, so deadlock is not possible in this case.
 
-Yes it is. But it can't be avoided because BPF programs are always 32-bit.
-So they have to access the high and low halves separately, one way or the
-other, even on 64-bit machines. With that in mind splitting up the halves
-explicitly seems the best way.
+Sigh...  That patch is correct, but it has nothing to do with the locking
+order violation that really *is* there.  The only benefit would be to
+get rid of the "deadlock is not possible" nonsense, since you would see
+read/write vs. mmap instead of readdir vs. mmap in the traces.  Locking
+order is the *same* for directories and nondirectories; both can have
+pagefaults under ->i_mutex on their respective inodes.  And while mmap
+cannot happen for directories, it certainly can happen for regular files,
+so taking ->i_mutex in ->mmap() is a plain and simple bug.  Should never
+be done; in particular, hugetlbfs has ->i_mutex held in read() around
+pagefaults, which gives you an obvious deadlock with its ->mmap().
 
-I would go for something like:
-
-struct seccomp_data {
-	int nr;
-	__u32 arg_low[6];
-	__u32 arg_high[6];
-	__u32 instruction_pointer_low;
-	__u32 instruction_pointer_high;
-	__u32 __reserved[3];
-};
-
-(Not sure what use the IP is because that doesn't tell anything about how
-the system call instruction was reached.)
-
-The only way to avoid splitting args is to add 64-bit support to BPF.
-That is probably the best way forwards, but would require breaking the
-BPF ABI by either adding a 64-bit version directly or adding extra
-instructions.
-
-This mismatch between 32-bit BPF programs and 64-bit machines is the main
-reason why I'm not perfectly happy with BPF for syscall filtering. It gets
-the job done, but it's not great.
-
-> The other thing that you really need in addition to system call number
-> is ABI identifier, since a syscall number may mean different things for
-> different entry points.  For example, on x86-64 system call number 4 is
-> write() if called via int $0x80 but stat() if called via syscall64.
-> This is a local property of the system call, not a global per process.
-
-The problem of doing this is that you then force every filter to check for
-the path and do something path specific. The filters that don't do this
-check will be buggy. So the best way is really to install filters per mode
-and call the right filter. If filters are installed but not for the current
-path, the task should be killed.
-
-prctl() should take one more argument which says for which mode the filter
-will be installed for, with 0 for the current mode.
-
-But pushing that info into the filters themselves is not a good idea.
-
-Greetings,
-
-Indan
-
-
+Folks, this is not a false positive and it has nothing to do with misannotation
+for directories.  Deadlock is real; I have no idea WTF do we what ->i_mutex
+held over that area in hugetlbfs ->mmap(), but doing that is really, really
+wrong, whatever the reason.
