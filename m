@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2BQATj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:19:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55626 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755087Ab2BQATh convert rfc822-to-8bit (ORCPT
+	id S1756159Ab2BQAVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:21:46 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47847 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755576Ab2BQAVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:19:37 -0500
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <4F3D5B35.4000606@redhat.com>
-Date: Fri, 17 Feb 2012 01:19:35 +0100
-Cc: Anthony Liguori <anthony@codemonkey.ws>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <8A20A1D8-9CB7-4256-A9BD-03D972C5292A@suse.de>
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de> <4F3BB33C.1000908@redhat.com> <1FE08D00-49E8-4371-9F23-C5D2EE568FA8@suse.de> <4F3BB9DC.6040102@redhat.com> <3DC824A5-5D5A-4BCC-A0FB-1B459B7E362D@suse.de> <4F3D57E3.7020503@redhat.com> <810F6879-64A9-4FCF-9C22-00BCC945D6B0@suse.de> <4F3D5B35.4000606@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-X-Mailer: Apple Mail (2.1257)
+	Thu, 16 Feb 2012 19:21:44 -0500
+X-Sasl-enc: HyqCvYTHoeGLfrn4KdVPtCA84jCzVrakG9q0LvTOl1cs 1329438102
+Date: Thu, 16 Feb 2012 16:17:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20120217001728.GA7746@kroah.com>
+References: <20120216152316.821ac82e04a5ee30327b81c3@canb.auug.org.au>
+ <20120216051552.GA5676@kroah.com>
+ <c6634d7c-b264-4a87-bab1-74408341dab0@default>
+ <20120217082559.6a094265da2d5c203bfc445f@canb.auug.org.au>
+ <be7afe58-43f1-4f69-b0ae-89dd7607355b@default>
+ <20120217103917.36721f3e8f75c35092c2dce2@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120217103917.36721f3e8f75c35092c2dce2@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 16.02.2012, at 20:38, Avi Kivity wrote:
-
-> On 02/16/2012 09:34 PM, Alexander Graf wrote:
->> On 16.02.2012, at 20:24, Avi Kivity wrote:
->> 
->>> On 02/15/2012 04:08 PM, Alexander Graf wrote:
->>>>> 
->>>>> Well, the scatter/gather registers I proposed will give you just one
->>>>> register or all of them.
->>>> 
->>>> One register is hardly any use. We either need all ways of a respective address to do a full fledged lookup or all of them. 
->>> 
->>> I should have said, just one register, or all of them, or anything in
->>> between.
->>> 
->>>> By sharing the same data structures between qemu and kvm, we actually managed to reuse all of the tcg code for lookups, just like you do for x86.
->>> 
->>> Sharing the data structures is not need.  Simply synchronize them before
->>> lookup, like we do for ordinary registers.
->> 
->> Ordinary registers are a few bytes. We're talking of dozens of kbytes here.
+On Fri, Feb 17, 2012 at 10:39:17AM +1100, Stephen Rothwell wrote:
+> Hi Dan,
 > 
-> A TLB way is a few dozen bytes, no?
+> On Thu, 16 Feb 2012 13:49:53 -0800 (PST) Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> >
+> > Huh?  Do you do allyesconfig/allmodconfig build testing after you pull
+> > each individual tree or only after all trees are pulled?  (Apparently
+> > the former, as otherwise the ordering shouldn't matter, right?)
 > 
->>> 
->>>> On x86 you also have shared memory for page tables, it's just guest visible, hence in guest memory. The concept is the same.
->>> 
->>> But cr3 isn't, and if we put it in shared memory, we'd have to VMREAD it
->>> on every exit.  And you're risking the same thing if your hardware gets
->>> cleverer.
->> 
->> Yes, we do. When that day comes, we forget the CAP and do it another way. Which way we will find out by the time that day of more clever hardware comes :).
+> From my daily release note:
 > 
-> Or we try to be less clever unless we have a really compelling reason. 
-> qemu monitor and gdb support aren't compelling reasons to optimize.
-
-The goal here was simplicity with a grain of performance concerns.
-
-So what would you be envisioning? Should we make all of the MMU walker code in target-ppc KVM aware so it fetches that single way it actually cares about on demand from the kernel? That is pretty intrusive and goes against the general nicely fitting in principle of how KVM integrates today.
-
-Also, we need to store the guest TLB somewhere. With this model, we can just store it in user space memory, so we keep only a single copy around, reducing memory footprint. If we had to copy it, we would need more than a single copy.
-
+> "Between each merge, the tree was built with
+> a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+> final fixups (if any), it is also built with powerpc allnoconfig (32 and
+> 64 bit), ppc44x_defconfig and allyesconfig (minus
+> CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+> and sparc64 defconfig. These builds also have
+> CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+> CONFIG_DEBUG_INFO disabled when necessary."
 > 
->>> 
->>> It's too magical, fitting a random version of a random userspace
->>> component.  Now you can't change this tcg code (and still keep the magic).
->>> 
->>> Some complexity is part of keeping software as separate components.
->> 
->> Why? If another user space wants to use this, they can
->> 
->> a) do the slow copy path
->> or
->> b) simply use our struct definitions
->> 
->> The whole copy thing really only makes sense when you have existing code in user space that you don't want to touch, but easily add on KVM to it. If KVM is part of your whole design, then integrating things makes a lot more sense.
+> So yes, I build between each merge.  It allows me to isolate where
+> problems are occurring so that they can be easily fixed in isolation.
 > 
-> Yeah, I guess.
+> > If you are doing the after-every-individual-tree build testing,
+> > yes, if you could pull konrad's tmem tree first, that would
+> > solve this problem I believe.**
 > 
->> 
->>> 
->>>> There are essentially no if(kvm_enabled)'s in our MMU walking code, because the tables are just there. Makes everything a lot easier (without dragging down performance).
->>> 
->>> We have the same issue with registers.  There we call
->>> cpu_synchronize_state() before every access.  No magic, but we get to
->>> reuse the code just the same.
->> 
->> Yes, and for those few bytes it's ok to do so - most of the time. On s390, even those get shared by now. And it makes sense to do so - if we synchronize it every time anyways, why not do so implicitly?
->> 
+> Yes, I can do that (and will for today).  However, it does mean that the
+> staging tree now cannot be merged into Linus' tree until after the tmem
+> tree has been merged.   And if Linus decides not to take it, then Greg
+> will have to remove these commits from his tree (or revert them) before
+> he can get all the rest of the staging tree into Linus' tree.
 > 
-> At least on x86, we synchronize only rarely.
+> > I suspect unit testing doesn't make much as much sense in staging
+> > as it does in the core kernel.  I did testing of ramster in my
+> 
+> Of course it makes sense - at least at the "make sure it builds" level.
+> 
+> > public git tree (which includes the tmem patchset coming to you via
+> > konrad) but, since it is a staging driver, the bits have to go
+> > through Greg.
+> 
+> Maybe you should seek a dispensation from Greg to allow your ramster tree
+> to exist independently in linux-next and be merged independently by
+> Linus'.  Greg may want to keep watch in your tree, but that should not be
+> much more effort than reviewing and applying your patches to the staging
+> tree.
 
-Yeah, on s390 we only know which registers actually contain the information we need for traps / hypercalls when in user space, since that's where the decoding happens. So we better have all GPRs available to read from and write to.
+Ick, no, I'll just mark this as CONFIG_BROKEN for now, and things can be
+fixed up later, during the 3.4 window as it should all settle down then.
 
+thanks,
 
-Alex
-
+greg k-h
