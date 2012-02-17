@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2BQWnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 17:43:09 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57476 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab2BQWnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 17:43:04 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.134.198 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Fri, 17 Feb 2012 14:42:31 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Holger Macht <holger@homac.de>
-cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: dock_link_device is oopsy
-In-Reply-To: <20120217222922.GA2741@homac.suse.de>
-Message-ID: <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
-References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils> <20120217222922.GA2741@homac.suse.de>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1754968Ab2BQWse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 17:48:34 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58765 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753027Ab2BQWsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 Feb 2012 17:48:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] PM/Hibernate: Enable usermodehelpers in hibernate() error path
+Date: Fri, 17 Feb 2012 23:52:28 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20120216122243.14749.34988.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120216122243.14749.34988.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202172352.28478.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012, Holger Macht wrote:
-> On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
-> > Matthew,
-> > 
-> > A linux-next oops at bootup in dock_link_device() tells me that you
-> > were not feeling well when you wrote that and dock_unlink_device():
-> > I hope you're feeling better now and can rewrite them soon.
+On Thursday, February 16, 2012, Srivatsa S. Bhat wrote:
+> If create_basic_memory_bitmaps() fails, usermodehelpers are not re-enabled
+> before returning. Fix this. And while at it, reword the goto labels so that
+> they look more meaningful.
 > 
-> Andrew Morton experienced a similar problem. What system are you using?
-> I didn't encounter this problem with the systems I tested with.
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-The two systems I got that on were both 4-year-old Core2 Duo systems,
-one an HP quad desktop, one a Fujitsu-Siemens laptop.
+Applied, thanks for catching this!
 
+Rafael
+
+
+> ---
 > 
-> Do you actually have a /sys/devices/platform/dock.?/ directory with a
-> file 'type' that contains 'dock_station'?
+>  kernel/power/hibernate.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 72baaf0..0a186cf 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -618,7 +618,7 @@ int hibernate(void)
+>  	/* Allocate memory management structures */
+>  	error = create_basic_memory_bitmaps();
+>  	if (error)
+> -		goto Exit;
+> +		goto Enable_umh;
+>  
+>  	printk(KERN_INFO "PM: Syncing filesystems ... ");
+>  	sys_sync();
+> @@ -626,7 +626,7 @@ int hibernate(void)
+>  
+>  	error = freeze_processes();
+>  	if (error)
+> -		goto Finish;
+> +		goto Free_bitmaps;
+>  
+>  	error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+>  	if (error || freezer_test_done)
+> @@ -659,8 +659,9 @@ int hibernate(void)
+>  	/* Don't bother checking whether freezer_test_done is true */
+>  	freezer_test_done = false;
+>  
+> - Finish:
+> + Free_bitmaps:
+>  	free_basic_memory_bitmaps();
+> + Enable_umh:
+>  	usermodehelper_enable();
+>   Exit:
+>  	pm_notifier_call_chain(PM_POST_HIBERNATION);
+> 
+> 
+> 
 
-I'll have to report back on that this evening, I'm away from them now.
-
-Hugh
