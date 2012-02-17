@@ -1,492 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2BQAXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:23:54 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42700 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab2BQAXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:23:49 -0500
-Date: Thu, 16 Feb 2012 16:23:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] MAINTAINERS: Update git urls for 2.6 deletions
-Message-ID: <20120217002304.GM2976@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1329163515.4760.4.camel@joe2Laptop>
+	id S1756254Ab2BQAYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:24:19 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39708 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753470Ab2BQAYO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 Feb 2012 19:24:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329163515.4760.4.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12021700-2398-0000-0000-0000044E3A81
+In-Reply-To: <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org>
+ <1329422549-16407-3-git-send-email-wad@chromium.org> <4F3D61CB.2000301@zytor.com>
+ <CABqD9hb3WxKxLZ2GuUrbDM--koW+a3ser5TU8y6+e0sAhOT9dw@mail.gmail.com>
+ <4F3D7250.6040504@zytor.com> <CAE6n16kweRehdozft0tKOB1P5LtGFJDCLQP=2EXfm8P0enyH=A@mail.gmail.com>
+ <4F3D766E.7040205@zytor.com> <CABqD9haWxRLac1w3m9rSmyDvcg8jxYcxdmAAsgB7pEEBMHr=2g@mail.gmail.com>
+ <4F3D7DD4.6070103@zytor.com> <CABqD9hZd41AWZub+wxGWwxJtGWfk+pVWQhn7DM_0q0tS9r_wDA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 16 Feb 2012 16:23:53 -0800
+X-Google-Sender-Auth: rSdR-UYHmyMlY6x5P1l9nO7sH5Q
+Message-ID: <CAObL_7GJ2TdKpdvJRpiLh1c9KPGcTsELdhw7v4Vj39a0P0JxZg@mail.gmail.com>
+Subject: Re: [PATCH v8 3/8] seccomp: add system call filtering using BPF
+To: Will Drewry <wad@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Markus Gutschke <markus@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 13, 2012 at 12:05:15PM -0800, Joe Perches wrote:
-> Update the various git urls for name changes from 2.6.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Thu, Feb 16, 2012 at 3:00 PM, Will Drewry <wad@chromium.org> wrote:
+> On Thu, Feb 16, 2012 at 4:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 02/16/2012 01:51 PM, Will Drewry wrote:
+>>>>
+>>>> Put the bloody bit in there and let the pattern program make that decision.
+>>>
+>>> Easy enough to add a bit for the mode: 32-bit or 64-bit.  It seemed
+>>> like a waste of cycles for every 32-bit program or every 64-bit
+>>> program to check to see that its calling convention hadn't changed,
+>>> but it does take away a valid decision the pattern program should be
+>>> making.
+>>>
+>>> I'll add a flag for 32bit/64bit while cleaning up seccomp_data. I
+>>> think that will properly encapsulate the is_compat_task() behavior in
+>>> a way that is stable for compat and non-compat tasks to use.  If
+>>> there's a more obvious way, I'm all ears.
+>>>
+>>
+>> is_compat_task() is not going to be the right thing for x86 going
+>> forward, as we're introducing the x32 ABI (which uses the normal x86-64
+>> entry point, but with different eax numbers, and bit 30 set.)
+>>
+>> The actual state is the TS_COMPAT flag in the thread_info structure,
+>> which currently matches is_compat_task(), but perhaps we should add a
+>> new helper function syscall_namespace() or something like that...
+>
+> Without the addition of x32, it is still the intersection of
+> is_compat_task()/TS_COMPAT and CONFIG_64BIT for all arches to
+> determine if the call is 32-bit or 64-bit, but this will add another
+> wrinkle.  Would it make sense to assume that system call namespaces
+> may be ever expanding and offer up an unsigned integer value?
+>
+> struct seccomp_data {
+>  int nr;
+>  u32 namespace;
+>  u64 instruction_pointer;
+>  u64 args[6];
+> }
+>
+> Then syscall_namespace(current, regs) returns
+> * 0 - SYSCALL_NS_32 (for existing 32 and config_compat)
+> * 1 - SYSCALL_NS_64 (for existing 64 bit)
+> * 2 - SYSCALL_NS_X32 (everything after 2 is arch specific)
+> * ..
+>
+> This patch series is pegged to x86 right now, so it's not a big deal
+> to add a simple syscall_namespace to asm/syscall.h.  Of course, the
+> code is always the easy part.  Even easier would be to only assign 0
+> and 1 in the seccomp_data for 32-bit or 64-bit, then leave the rest of
+> the u32 untouched until x32 stabilizes and the TS_COMPAT interactions
+> are sorted.
+>
+> The other option, of course, is to hide it from the users and peg to
+> is_compat_task and later to however x32 is exposed, but that might
+> just be me trying to avoid adding more dependencies to this patch
+> series :)
+>
+>> Either that or we can just use another bit in the syscall number field...
+>
+> That would simplify the case here. The seccomp_data bit would say the
+> call is 64-bit and then the syscall number with the extra bit would
+> say that it is x32 and wouldn't collide with the existing 64-bit
+> numbering, and the filter program author wouldn't make a filter
+> program that allows a call that it shouldn't.
 
-For the RCU changes:
+Presumably this works for x32 (since bit 30 might as well be part of
+the syscall number), but the namespace or whatever it's called would
+be nice to distinguish between the three 32-bit entry points.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+For 32-bit code, I can easily see two different entry points getting
+used in the same program -- some library could issue int80 directly,
+but other code (in the vdso, for example, if it ever starts being
+useful) could hit the other entry.  And if 64-bit code ever gets a new
+entry point, the same problem would happen.
 
-> ---
->  MAINTAINERS |  106 +++++++++++++++++++++++++++++-----------------------------
->  1 files changed, 53 insertions(+), 53 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ed88c80..8d6f8c5 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -163,7 +163,7 @@ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->  L:	linux-serial@vger.kernel.org
->  W:	http://serial.sourceforge.net
->  S:	Maintained
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
->  F:	drivers/tty/serial/8250*
->  F:	include/linux/serial_8250.h
-> 
-> @@ -504,7 +504,7 @@ F:	arch/x86/include/asm/geode.h
->  AMD IOMMU (AMD-VI)
->  M:	Joerg Roedel <joerg.roedel@amd.com>
->  L:	iommu@lists.linux-foundation.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-iommu.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git
->  S:	Supported
->  F:	drivers/iommu/amd_iommu*.[ch]
->  F:	include/linux/amd-iommu.h
-> @@ -1503,7 +1503,7 @@ F:	drivers/i2c/busses/i2c-bfin-twi.c
-> 
->  BLOCK LAYER
->  M:	Jens Axboe <axboe@kernel.dk>
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-2.6-block.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git
->  S:	Maintained
->  F:	block/
-> 
-> @@ -1518,7 +1518,7 @@ M:	Marcel Holtmann <marcel@holtmann.org>
->  M:	"Gustavo F. Padovan" <padovan@profusion.mobi>
->  L:	linux-bluetooth@vger.kernel.org
->  W:	http://www.bluez.org/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth.git
->  S:	Maintained
->  F:	drivers/bluetooth/
-> 
-> @@ -1527,7 +1527,7 @@ M:	Marcel Holtmann <marcel@holtmann.org>
->  M:	"Gustavo F. Padovan" <padovan@profusion.mobi>
->  L:	linux-bluetooth@vger.kernel.org
->  W:	http://www.bluez.org/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth.git
->  S:	Maintained
->  F:	net/bluetooth/
->  F:	include/net/bluetooth/
-> @@ -1638,7 +1638,7 @@ BTTV VIDEO4LINUX DRIVER
->  M:	Mauro Carvalho Chehab <mchehab@infradead.org>
->  L:	linux-media@vger.kernel.org
->  W:	http://linuxtv.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	Documentation/video4linux/bttv/
->  F:	drivers/media/video/bt8xx/bttv*
-> @@ -1668,7 +1668,7 @@ F:	fs/cachefiles/
->  CAFE CMOS INTEGRATED CAMERA CONTROLLER DRIVER
->  M:	Jonathan Corbet <corbet@lwn.net>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	Documentation/video4linux/cafe_ccic
->  F:	drivers/media/video/marvell-ccic/
-> @@ -2019,7 +2019,7 @@ CX18 VIDEO4LINUX DRIVER
->  M:	Andy Walls <awalls@md.metrocast.net>
->  L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://linuxtv.org
->  W:	http://www.ivtvdriver.org/index.php/Cx18
->  S:	Maintained
-> @@ -2317,7 +2317,7 @@ F:	Documentation/blockdev/drbd/
-> 
->  DRIVER CORE, KOBJECTS, DEBUGFS AND SYSFS
->  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
->  S:	Supported
->  F:	Documentation/kobject.txt
->  F:	drivers/base/
-> @@ -2339,7 +2339,7 @@ INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)
->  M:	Keith Packard <keithp@keithp.com>
->  L:	intel-gfx@lists.freedesktop.org (subscribers-only)
->  L:	dri-devel@lists.freedesktop.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux.git
->  S:	Supported
->  F:	drivers/gpu/drm/i915
->  F:	include/drm/i915*
-> @@ -2912,8 +2912,8 @@ GFS2 FILE SYSTEM
->  M:	Steven Whitehouse <swhiteho@redhat.com>
->  L:	cluster-devel@redhat.com
->  W:	http://sources.redhat.com/cluster/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-nmw.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git
->  S:	Supported
->  F:	Documentation/filesystems/gfs2*.txt
->  F:	fs/gfs2/
-> @@ -2954,42 +2954,42 @@ F:	drivers/net/ethernet/aeroflex/
->  GSPCA FINEPIX SUBDRIVER
->  M:	Frank Zago <frank@zago.net>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/finepix.c
-> 
->  GSPCA GL860 SUBDRIVER
->  M:	Olivier Lorin <o.lorin@laposte.net>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/gl860/
-> 
->  GSPCA M5602 SUBDRIVER
->  M:	Erik Andren <erik.andren@gmail.com>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/m5602/
-> 
->  GSPCA PAC207 SONIXB SUBDRIVER
->  M:	Hans de Goede <hdegoede@redhat.com>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/pac207.c
-> 
->  GSPCA SN9C20X SUBDRIVER
->  M:	Brian Johnson <brijohn@gmail.com>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/sn9c20x.c
-> 
->  GSPCA T613 SUBDRIVER
->  M:	Leandro Costantino <lcostantino@gmail.com>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/t613.c
-> 
-> @@ -2997,7 +2997,7 @@ GSPCA USB WEBCAM DRIVER
->  M:	Jean-Francois Moine <moinejf@free.fr>
->  W:	http://moinejf.free.fr
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/gspca/
-> 
-> @@ -3284,7 +3284,7 @@ IDE SUBSYSTEM
->  M:	"David S. Miller" <davem@davemloft.net>
->  L:	linux-ide@vger.kernel.org
->  Q:	http://patchwork.ozlabs.org/project/linux-ide/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/ide-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/ide.git
->  S:	Maintained
->  F:	Documentation/ide/
->  F:	drivers/ide/
-> @@ -3396,7 +3396,7 @@ F:	firmware/isci/
->  INTEL IDLE DRIVER
->  M:	Len Brown <lenb@kernel.org>
->  L:	linux-pm@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git
->  S:	Supported
->  F:	drivers/idle/intel_idle.c
-> 
-> @@ -3703,7 +3703,7 @@ IVTV VIDEO4LINUX DRIVER
->  M:	Andy Walls <awalls@md.metrocast.net>
->  L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.ivtvdriver.org
->  S:	Maintained
->  F:	Documentation/video4linux/*.ivtv
-> @@ -3799,8 +3799,8 @@ F:	fs/autofs4/
-> 
->  KERNEL BUILD + files below scripts/ (unless maintained elsewhere)
->  M:	Michal Marek <mmarek@suse.cz>
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git for-next
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git for-next
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
->  L:	linux-kbuild@vger.kernel.org
->  S:	Maintained
->  F:	Documentation/kbuild/
-> @@ -4223,7 +4223,7 @@ MAC80211
->  M:	Johannes Berg <johannes@sipsolutions.net>
->  L:	linux-wireless@vger.kernel.org
->  W:	http://linuxwireless.org/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git
->  S:	Maintained
->  F:	Documentation/networking/mac80211-injection.txt
->  F:	include/net/mac80211.h
-> @@ -4234,7 +4234,7 @@ M:	Stefano Brivio <stefano.brivio@polimi.it>
->  M:	Mattias Nissler <mattias.nissler@gmx.de>
->  L:	linux-wireless@vger.kernel.org
->  W:	http://linuxwireless.org/en/developers/Documentation/mac80211/RateControl/PID
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git
->  S:	Maintained
->  F:	net/mac80211/rc80211_pid*
-> 
-> @@ -4306,7 +4306,7 @@ P:	LinuxTV.org Project
->  L:	linux-media@vger.kernel.org
->  W:	http://linuxtv.org
->  Q:	http://patchwork.kernel.org/project/linux-media/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	Documentation/dvb/
->  F:	Documentation/video4linux/
-> @@ -4607,7 +4607,7 @@ M:	James Morris <jmorris@namei.org>
->  M:	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
->  M:	Patrick McHardy <kaber@trash.net>
->  L:	netdev@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git
->  S:	Maintained
->  F:	net/ipv4/
->  F:	net/ipv6/
-> @@ -4623,7 +4623,7 @@ NETWORKING [WIRELESS]
->  M:	"John W. Linville" <linville@tuxdriver.com>
->  L:	linux-wireless@vger.kernel.org
->  Q:	http://patchwork.kernel.org/project/linux-wireless/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git
->  S:	Maintained
->  F:	net/mac80211/
->  F:	net/rfkill/
-> @@ -4636,8 +4636,8 @@ F:	drivers/net/wireless/
->  NETWORKING DRIVERS
->  L:	netdev@vger.kernel.org
->  W:	http://www.linuxfoundation.org/en/Net
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6.git
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
->  S:	Odd Fixes
->  F:	drivers/net/
->  F:	include/linux/if_*
-> @@ -4712,7 +4712,7 @@ NTFS FILESYSTEM
->  M:	Anton Altaparmakov <anton@tuxera.com>
->  L:	linux-ntfs-dev@lists.sourceforge.net
->  W:	http://www.tuxera.com/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/aia21/ntfs.git
->  S:	Supported
->  F:	Documentation/filesystems/ntfs.txt
->  F:	fs/ntfs/
-> @@ -4853,7 +4853,7 @@ F:	drivers/char/pcmcia/cm4040_cs.*
->  OMNIVISION OV7670 SENSOR DRIVER
->  M:	Jonathan Corbet <corbet@lwn.net>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	drivers/media/video/ov7670.c
-> 
-> @@ -5029,7 +5029,7 @@ M:	"James E.J. Bottomley" <jejb@parisc-linux.org>
->  L:	linux-parisc@vger.kernel.org
->  W:	http://www.parisc-linux.org/
->  Q:	http://patchwork.kernel.org/project/linux-parisc/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kyle/parisc-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git
->  S:	Maintained
->  F:	arch/parisc/
->  F:	drivers/parisc/
-> @@ -5085,7 +5085,7 @@ PCI SUBSYSTEM
->  M:	Jesse Barnes <jbarnes@virtuousgeek.org>
->  L:	linux-pci@vger.kernel.org
->  Q:	http://patchwork.kernel.org/project/linux-pci/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci.git
->  S:	Supported
->  F:	Documentation/PCI/
->  F:	drivers/pci/
-> @@ -5359,7 +5359,7 @@ M:	Mike Isely <isely@pobox.com>
->  L:	pvrusb2@isely.net	(subscribers-only)
->  L:	linux-media@vger.kernel.org
->  W:	http://www.isely.net/pvrusb2/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	Documentation/video4linux/README.pvrusb2
->  F:	drivers/media/video/pvrusb2/
-> @@ -5525,7 +5525,7 @@ RCUTORTURE MODULE
->  M:	Josh Triplett <josh@freedesktop.org>
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->  S:	Supported
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->  F:	Documentation/RCU/torture.txt
->  F:	kernel/rcutorture.c
-> 
-> @@ -5550,7 +5550,7 @@ M:	Dipankar Sarma <dipankar@in.ibm.com>
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->  W:	http://www.rdrop.com/users/paulmck/rclock/
->  S:	Supported
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->  F:	Documentation/RCU/
->  F:	include/linux/rcu*
->  F:	include/linux/srcu*
-> @@ -5711,7 +5711,7 @@ F:	drivers/mmc/host/s3cmci.*
->  SAA7146 VIDEO4LINUX-2 DRIVER
->  M:	Michael Hunold <michael@mihu.de>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.mihu.de/linux/saa7146
->  S:	Maintained
->  F:	drivers/media/common/saa7146*
-> @@ -6133,7 +6133,7 @@ F:	arch/ia64/sn/
->  SOC-CAMERA V4L2 SUBSYSTEM
->  M:	Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  S:	Maintained
->  F:	include/media/v4l2*
->  F:	drivers/media/video/v4l2*
-> @@ -6205,8 +6205,8 @@ SPARC + UltraSPARC (sparc/sparc64)
->  M:	"David S. Miller" <davem@davemloft.net>
->  L:	sparclinux@vger.kernel.org
->  Q:	http://patchwork.ozlabs.org/project/sparclinux/list/
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-2.6.git
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next.git
->  S:	Maintained
->  F:	arch/sparc/
->  F:	drivers/sbus/
-> @@ -6214,8 +6214,8 @@ F:	drivers/sbus/
->  SPARC SERIAL DRIVERS
->  M:	"David S. Miller" <davem@davemloft.net>
->  L:	sparclinux@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-2.6.git
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next.git
->  S:	Maintained
->  F:	drivers/tty/serial/suncore.c
->  F:	drivers/tty/serial/suncore.h
-> @@ -6510,7 +6510,7 @@ L:	linux-scsi@vger.kernel.org
->  L:	target-devel@vger.kernel.org
->  L:	http://groups.google.com/group/linux-iscsi-target-dev
->  W:	http://www.linux-iscsi.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core-2.6.git master
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-core.git master
->  S:	Supported
->  F:	drivers/target/
->  F:	include/target/
-> @@ -6701,7 +6701,7 @@ K:	^Subject:.*(?i)trivial
->  TTY LAYER
->  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->  S:	Supported
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
->  F:	drivers/tty/
->  F:	drivers/tty/serial/serial_core.c
->  F:	include/linux/serial_core.h
-> @@ -6869,7 +6869,7 @@ USB ET61X[12]51 DRIVER
->  M:	Luca Risolia <luca.risolia@studio.unibo.it>
->  L:	linux-usb@vger.kernel.org
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.linux-projects.org
->  S:	Maintained
->  F:	drivers/media/video/et61x251/
-> @@ -7025,7 +7025,7 @@ USB SN9C1xx DRIVER
->  M:	Luca Risolia <luca.risolia@studio.unibo.it>
->  L:	linux-usb@vger.kernel.org
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.linux-projects.org
->  S:	Maintained
->  F:	Documentation/video4linux/sn9c102.txt
-> @@ -7035,7 +7035,7 @@ USB SUBSYSTEM
->  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->  L:	linux-usb@vger.kernel.org
->  W:	http://www.linux-usb.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
->  S:	Supported
->  F:	Documentation/usb/
->  F:	drivers/net/usb/
-> @@ -7061,7 +7061,7 @@ USB VIDEO CLASS
->  M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->  L:	linux-uvc-devel@lists.berlios.de (subscribers-only)
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.ideasonboard.org/uvc/
->  S:	Maintained
->  F:	drivers/media/video/uvc/
-> @@ -7070,7 +7070,7 @@ USB W996[87]CF DRIVER
->  M:	Luca Risolia <luca.risolia@studio.unibo.it>
->  L:	linux-usb@vger.kernel.org
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://www.linux-projects.org
->  S:	Maintained
->  F:	Documentation/video4linux/w9968cf.txt
-> @@ -7099,7 +7099,7 @@ USB ZR364XX DRIVER
->  M:	Antoine Jacquet <royale@zerezo.com>
->  L:	linux-usb@vger.kernel.org
->  L:	linux-media@vger.kernel.org
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
->  W:	http://royale.zerezo.com/zr364xx/
->  S:	Maintained
->  F:	Documentation/video4linux/zr364xx.txt
-> @@ -7249,7 +7249,7 @@ M:	Liam Girdwood <lrg@ti.com>
->  M:	Mark Brown <broonie@opensource.wolfsonmicro.com>
->  W:	http://opensource.wolfsonmicro.com/node/15
->  W:	http://www.slimlogic.co.uk/?p=48
-> -T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lrg/regulator.git
->  S:	Supported
->  F:	drivers/regulator/
->  F:	include/linux/regulator/
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Of course, if the args are magically fixed up in the 32-bit case, then
+maybe the multiple entries are a nonissue.  (Sorry, I haven't kept
+track of that part of this patch set.)
 
+--Andy
