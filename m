@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2BQA7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 Feb 2012 19:59:19 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37268 "EHLO
+	id S1756462Ab2BQA7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 Feb 2012 19:59:24 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:47309 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753934Ab2BQA7S (ORCPT
+	by vger.kernel.org with ESMTP id S1756294Ab2BQA7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 Feb 2012 19:59:18 -0500
-X-Sasl-enc: sSQU4jNRLUF953WNhLr63Hld5tut6vnxGb794Hs05wIf 1329440357
+	Thu, 16 Feb 2012 19:59:22 -0500
+X-Sasl-enc: 8qDgNSJJbsX/4hq6302KpwnYO6JdNoCpDszyobcKV6PC 1329440361
 X-Mailbox-Line: From gregkh@linuxfoundation.org Thu Feb 16 16:55:11 2012
-Message-Id: <20120217005511.390624452@linuxfoundation.org>
+Message-Id: <20120217005511.633584830@linuxfoundation.org>
 User-Agent: quilt/0.51-15.1
-Date: Thu, 16 Feb 2012 16:55:20 -0800
+Date: Thu, 16 Feb 2012 16:55:22 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [11/15] crypto: sha512 - Use binary and instead of modulus
+        alan@lxorguk.ukuu.org.uk, Daniel T Chen <crimsun@ubuntu.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [13/15] ALSA: intel8x0: Fix default inaudible sound on Gateway M520
 In-Reply-To: <20120217005650.GA17119@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 58d7d18b5268febb8b1391c6dffc8e2aaa751fcd upstream.
+commit 27c3afe6e1cf129faac90405121203962da08ff4 upstream.
 
-The previous patch used the modulus operator over a power of 2
-unnecessarily which may produce suboptimal binary code.  This
-patch changes changes them to binary ands instead.
+BugLink: https://bugs.launchpad.net/bugs/930842
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+The reporter states that audio is inaudible by default without muting
+'External Amplifier'. Add a quirk to handle his SSID so that changing
+the control is not necessary.
+
+Reported-and-tested-by: Benjamin Carlson <elderbubba0810@gmail.com>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/sha512_generic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/intel8x0.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -78,7 +78,7 @@ static inline void LOAD_OP(int I, u64 *W
- 
- static inline void BLEND_OP(int I, u64 *W)
- {
--	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
-+	W[I & 15] += s1(W[(I-2) & 15]) + W[(I-7) & 15] + s0(W[(I-15) & 15]);
- }
- 
- static void
-@@ -105,7 +105,7 @@ sha512_transform(u64 *state, const u8 *i
- 
- #define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
- 	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
-+	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)&15];	\
- 	t2 = e0(a) + Maj(a, b, c);				\
- 	d += t1;						\
- 	h = t1 + t2
+--- a/sound/pci/intel8x0.c
++++ b/sound/pci/intel8x0.c
+@@ -2076,6 +2076,12 @@ static struct ac97_quirk ac97_quirks[] _
+ 	},
+ 	{
+ 		.subvendor = 0x161f,
++		.subdevice = 0x202f,
++		.name = "Gateway M520",
++		.type = AC97_TUNE_INV_EAPD
++	},
++	{
++		.subvendor = 0x161f,
+ 		.subdevice = 0x203a,
+ 		.name = "Gateway 4525GZ",		/* AD1981B */
+ 		.type = AC97_TUNE_INV_EAPD
 
 
