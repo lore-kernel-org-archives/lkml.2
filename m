@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2BQOqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 09:46:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:57338 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab2BQOqj (ORCPT
+	id S1752591Ab2BQOuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 09:50:32 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:13209 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2BQOua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 09:46:39 -0500
-From: Bernhard Walle <walle@corscience.de>
-To: tony@atomide.com
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: OMAP2+: GPMC: Export gpmc_enable_hwecc and gpmc_calculate_ecc
-Date: Fri, 17 Feb 2012 15:44:19 +0100
-Message-Id: <1329489859-23929-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.9.1
-X-Provags-ID: V02:K0:QbSNsNqXL08h1cV3FpV2vmOW9A/SMK93APAPvwZA6li
- xolY9K0y2RxEsSxy1QoXQAZQwexPknivX185Ey0nBand80Oehb
- WiSAXwLNf03d6SIin0lII66tgPkTUWl4XVc4JF8BwgujXpbg0g
- 4wenI8LhVtbq2n+M0jT2s9NydARO/oZ4EnkkebAyFvz6Bar+v7
- E9eUsLdUba/RmNyn28aE8JaW6pq+gwMH9h6epSFsiySDC3ej7J
- l1jRmks8gbhYet5dEusXWf3OR/fUbjQUoImEV911OaieMOslYU
- FrbDvN0XTVT3Ym9BPN8iOjIAmJqBElXX8LF+QqLN3CERAI1J06
- M1M2AdArWwrMivY5an09nN8j4xno0RbZgvLWGbYN4AYnPr07Qh
- p9sJuj7iBwQMg==
+	Fri, 17 Feb 2012 09:50:30 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org, ludovic.desroches@atmel.com
+Cc: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] MAINTAINERS: hand over atmel-mci (sd/mmc interface)
+Date: Fri, 17 Feb 2012 15:49:59 +0100
+Message-Id: <1329490199-18362-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <e3d27dde7a46fcd0e440e17e4a66469f6b22697f.1328801500.git.ludovic.desroches@atmel.com>
+References: <e3d27dde7a46fcd0e440e17e4a66469f6b22697f.1328801500.git.ludovic.desroches@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be able to compile kernel/drivers/mtd/nand/omap2.ko as module, that
-two symbols need to be exported. Otherwise, I get following error
-message
+Modify MAINTAINERS entry for Atmel SD/MMC drivers.
+I hand the atmel-mci and at91_mci drivers over to Ludovic.
 
-    ERROR: "gpmc_calculate_ecc" [drivers/mtd/nand/omap2.ko] undefined!
-    ERROR: "gpmc_enable_hwecc" [drivers/mtd/nand/omap2.ko] undefined!
-
-Signed-off-by: Bernhard Walle <walle@corscience.de>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 ---
- arch/arm/mach-omap2/gpmc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index dfffbbf..00d5108 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -888,6 +888,7 @@ int gpmc_enable_hwecc(int cs, int mode, int dev_width, int ecc_size)
- 	gpmc_write_reg(GPMC_ECC_CONFIG, val);
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(gpmc_enable_hwecc);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 55ca0be..16c1b08 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1311,7 +1311,7 @@ F:	drivers/atm/
+ F:	include/linux/atm*
  
- /**
-  * gpmc_calculate_ecc - generate non-inverted ecc bytes
-@@ -918,3 +919,4 @@ int gpmc_calculate_ecc(int cs, const u_char *dat, u_char *ecc_code)
- 	gpmc_ecc_used = -EINVAL;
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(gpmc_calculate_ecc);
+ ATMEL AT91 MCI DRIVER
+-M:	Nicolas Ferre <nicolas.ferre@atmel.com>
++M:	Ludovic Desroches <ludovic.desroches@atmel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.atmel.com/products/AT91/
+ W:	http://www.at91.com/
+@@ -1319,7 +1319,7 @@ S:	Maintained
+ F:	drivers/mmc/host/at91_mci.c
+ 
+ ATMEL AT91 / AT32 MCI DRIVER
+-M:	Nicolas Ferre <nicolas.ferre@atmel.com>
++M:	Ludovic Desroches <ludovic.desroches@atmel.com>
+ S:	Maintained
+ F:	drivers/mmc/host/atmel-mci.c
+ F:	drivers/mmc/host/atmel-mci-regs.h
 -- 
-1.7.9.1
+1.7.9
 
