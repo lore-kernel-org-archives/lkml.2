@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2BRU4m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 15:56:42 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41831 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab2BRU4h (ORCPT
+	id S1753529Ab2BRU6l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 15:58:41 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52733 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab2BRU6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 15:56:37 -0500
-Date: Sat, 18 Feb 2012 21:56:26 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        linux-doc@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH] fs: hardlink creation restrictions
-Message-ID: <20120218205626.GA26880@joi.lan>
-References: <20120218193857.GA30985@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120218193857.GA30985@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 18 Feb 2012 15:58:40 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 18 Feb 2012 21:58:24 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] firewire, some more logging related patches
+Message-ID: <20120218215824.5b2359bf@stein>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 18, 2012 at 11:38:57AM -0800, Kees Cook wrote:
-> @@ -3052,6 +3119,9 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
->  	error = mnt_want_write(new_path.mnt);
->  	if (error)
->  		goto out_dput;
-> +	error = may_linkat(&old_path);
-> +	if (error)
-> +		goto out_dput;
->  	error = security_path_link(old_path.dentry, &new_path, new_dentry);
->  	if (error)
->  		goto out_drop_write;
+Forthcoming:
+  * firewire: sbp2: identify to driver core as "firewire_sbp2", not "sbp2"
+  * firewire: net: identify to driver core as "firewire_net", not "net"
+  * firewire: net: prefix all log messages with interface name
+  * firewire: core: prefix log messages with card name
 
-You should give up write access after check failure (i.e. goto out_drop_write).
-
-Marcin
+ drivers/firewire/core-card.c        |   28 ++++++++++---
+ drivers/firewire/core-cdev.c        |   10 ++--
+ drivers/firewire/core-device.c      |   60 +++++++++++++---------------
+ drivers/firewire/core-topology.c    |   18 ++++----
+ drivers/firewire/core-transaction.c |    4 -
+ drivers/firewire/core.h             |    6 ++
+ drivers/firewire/net.c              |   45 ++++++++++++---------
+ drivers/firewire/sbp2.c             |    6 --
+ include/linux/firewire.h            |    3 -
+ 9 files changed, 100 insertions(+), 80 deletions(-)
+-- 
+Stefan Richter
+-=====-===-- --=- =--=-
+http://arcgraph.de/sr/
