@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2BROx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 09:53:27 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39337 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab2BROxZ (ORCPT
+	id S1752712Ab2BRO7h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 09:59:37 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:50780 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab2BRO7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 09:53:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.219.99 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
-Message-ID: <1329576795.2399.1.camel@phoenix>
-Subject: [PATCH] regulator: Remove obsolete consumer_dev related comment
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Date: Sat, 18 Feb 2012 22:53:15 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Sat, 18 Feb 2012 09:59:35 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 18 Feb 2012 15:59:10 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Chris Boot <bootc@bootc.net>
+Cc: linux1394-devel@lists.sourceforge.net, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agrover@redhat.com, clemens@ladisch.de,
+        nab@linux-iscsi.org
+Subject: Re: [PATCH v2 09/11] firewire-sbp-target: Add
+ sbp_target_agent.{c,h}
+Message-ID: <20120218155910.72ab30ca@stein>
+In-Reply-To: <4F3CE791.2090908@bootc.net>
+References: <1328989452-20921-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-1-git-send-email-bootc@bootc.net>
+	<1329317248-94128-10-git-send-email-bootc@bootc.net>
+	<20120215222741.6b7388dc@stein>
+	<4F3CE791.2090908@bootc.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-consumer_dev is remove by commit 737f36
-"regulator: Remove support for supplies specified by struct device".
-Thus remove the obsolete comment.
+On Feb 16 Chris Boot wrote:
+> On 15/02/2012 21:27, Stefan Richter wrote:
+> > On Feb 15 Chris Boot wrote:
+> >> --- /dev/null
+> >> +++ b/drivers/target/sbp/sbp_target_agent.c
+> > [...]
+> >> +static int tgt_agent_rw_orb_pointer(struct fw_card *card,
+> >> +	int tcode, int generation, void *data,
+> >> +	struct sbp_target_agent *agent)
+> >> +{
+> >> +	struct sbp2_pointer *ptr = data;
+> >> +	int ret;
+> >> +
+> >> +	switch (tcode) {
+> >> +	case TCODE_WRITE_BLOCK_REQUEST:
+> >> +		smp_wmb();
+> >> +		atomic_cmpxchg(&agent->state,
+> >> +				AGENT_STATE_RESET, AGENT_STATE_SUSPENDED);
+> >> +		smp_wmb();
+> >> +		if (atomic_cmpxchg(&agent->state,
+> >> +					AGENT_STATE_SUSPENDED,
+> >> +					AGENT_STATE_ACTIVE)
+> >> +				!= AGENT_STATE_SUSPENDED)
+> >> +			return RCODE_CONFLICT_ERROR;
+> >> +		smp_wmb();
+> >
+> > Why the double state change?
+> 
+> Because the SBP spec differentiates between the RESET state, which 
+> happens after the agent initialises or is sent an explicit reset 
+> request, and when it's suspended between requests...
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+OK, right, there are the state transitions Reset-->Active and
+Suspended-->Active.  Though you implement the former as a swift
+Reset-->Suspended-->Active.  Which does indeed work, provided that there
+is no other concurrent context which could transition from Suspended to
+Anything-but-Active.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 73204e8..fecda41 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1006,8 +1006,6 @@ static int set_supply(struct regulator_dev *rdev,
-  * sources to symbolic names for supplies for use by devices.  Devices
-  * should use these symbolic names to request regulators, avoiding the
-  * need to provide board-specific regulator names as platform data.
-- *
-- * Only one of consumer_dev and consumer_dev_name may be specified.
-  */
- static int set_consumer_device_supply(struct regulator_dev *rdev,
- 				      const char *consumer_dev_name,
+> > And as asked at the patch, which writes are the barriers meant to order,
+> > and how does the corresponding read side look like?  Or are these barriers
+> > not actually needed after all?
+> 
+> ...of course this is another time when my use of atomics and memory 
+> barriers is entirely wrong. I should most likely be using locking here.
+> 
+> > [...]
+> >> +void sbp_target_agent_unregister(struct sbp_target_agent *agent)
+> >> +{
+> >> +	if (atomic_read(&agent->state) == AGENT_STATE_ACTIVE)
+> >> +		flush_work_sync(&agent->work);
+> >> +
+> >> +	fw_core_remove_address_handler(&agent->handler);
+> >> +	kfree(agent);
+> >> +}
+> >
+> > So, asking once more without having read the code in full yet:  Are you
+> > sure that agent->state is not going to change anymore after you tested it
+> > here?
+> 
+> Nope. At least in this case I can unregister the address handler before 
+> I check if I need to flush the work item.
+
+Yep, first unregister the handler, then wait for the work to finish, then
+free the data.
+
+And as discussed off-list today, firewire-core should be improved to
+guarantee you that the handler isn't still running anywhere when
+fw_core_remove_address_handler() returns.
 -- 
-1.7.5.4
-
-
-
+Stefan Richter
+-=====-===-- --=- =--=-
+http://arcgraph.de/sr/
