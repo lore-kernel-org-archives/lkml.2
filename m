@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921Ab2BRGXr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 01:23:47 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40324 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab2BRGXq (ORCPT
+	id S1752081Ab2BRG2j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 01:28:39 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:16899 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751669Ab2BRG2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 01:23:46 -0500
-Date: Sat, 18 Feb 2012 09:25:35 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jorgyano Vieira <jorgyano@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
-        jarod@wilsonet.com, nsankar@broadcom.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] Staging: crystalhd: Replace the BCMLOG_ERR macro
- with pr_err
-Message-ID: <20120218062534.GB2855@mwanda>
-References: <1329521976-1326-1-git-send-email-jorgyano@gmail.com>
+	Sat, 18 Feb 2012 01:28:37 -0500
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dI9371I1432N98dK4015Lzz1202hzz8275chz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LZKSNH-01-5MY-02
+X-M-MSG: 
+Message-ID: <4F3F4509.4070003@amd.com>
+Date: Sat, 18 Feb 2012 14:28:25 +0800
+From: Andiry Xu <andiry.xu@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4bRzO86E/ozDv8r1"
-Content-Disposition: inline
-In-Reply-To: <1329521976-1326-1-git-send-email-jorgyano@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4F3F43EC.006E,ss=1,re=0.000,fgs=0
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: "Alex,Shi" <alex.shi@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        <stern@rowland.harvard.edu>, Greg KH <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Oliver Neukum <oneukum@suse.de>, Takashi Iwai <tiwai@suse.de>,
+        <trenn@suse.de>, <linux-pci@vger.kernel.org>,
+        Michal Marek <MMarek@suse.com>
+Subject: Re: [PATCH] usb: enable pci MSI/MSIX in usb core
+References: <1328531341-22705-1-git-send-email-alex.shi@intel.com>  <4F311233.9070404@intel.com> <20120207144204.GA7214@kroah.com>  <20120207172743.GA4780@xanatos> <20120207221317.GA6103@xanatos>  <1328664392.12669.233.camel@debian> <1328682430.12669.443.camel@debian>  <1328692300.12669.593.camel@debian>  <20120214002030.GA10364@xanatos>  <1329359801.12669.2872.camel@debian> <1329461087.12669.2911.camel@debian>  <4F3E0C3D.4030307@ladisch.de> <1329468418.12669.2988.camel@debian> <4F3E28D1.1030509@ladisch.de>
+In-Reply-To: <4F3E28D1.1030509@ladisch.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Feb 2012 06:28:25.0415 (UTC) FILETIME=[84EB9D70:01CCEE06]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/17/2012 06:15 PM, Clemens Ladisch wrote:
+> Alex,Shi wrote:
+>>> The controller driver will need to know which of the multiple MSI-X
+>>> interrupts has been raised:
+>>>
+>>> irqreturn_t (*msix_irq)(struct usb_hcd *hcd, unsigned int nr_or_index);
+>>
+>> Actually, hcd has 2 object for msix, msix_count and msix_entries.
+>>
+>> Do you mean msix_count maybe smaller than we decide in hcd_setup_msix()?
+> 
+> No.  But when msic_count > 1, we have multiple interrupts.
+> 
+>> Which situation will make this?
+> 
+> Assume that an XHCI controller has two rings, and that each one gets its
+> own MSI-X interrupt.  How should the driver decide which of the rings
+> needs to be handled?
+> 
+> irqreturn_t xhci_msix_irq(struct usb_hcd *hcd)
+> {
+> 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+> 
+> 	if (...)
+> 		handle(xhci->ring[0]);
+> 	else
+> 		handle(xhci->ring[1]);
+> }
+> 
+> I.e., what should go into the if()?
+> 
+> 
 
---4bRzO86E/ozDv8r1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Currently xHCI driver only support one ERST event ring. If we need to
+support multiple event rings in the future, it's simple: in
+usb_hcd_request_msi_msix_irqs, change the last parameter of
+request_irq() to xhci->erst[i], and we can get the corresponding erst[i]
+in xhci_msi_irq() like this:
 
-On Fri, Feb 17, 2012 at 09:39:36PM -0200, Jorgyano Vieira wrote:
-> Replace the usage of BCMLOG_ERR with pr_err and remove the macro definiti=
-on.
->
+irqreturn_t xhci_msi_irq(int irq, void *dev_id)
+{
+	struct xhci_erst *erst = dev_id;
+	...
+	/* Handle corresponding event ring pointed by erst */
+}
 
-This needs a pr_fmt line so we can tell where the errors are coming
-=66rom.
+See Matthew Wilcox's patchset below for reference:
 
-#define pr_fmt(fmt)     KBUILD_MODNAME ": %s:%d: " fmt, __func__, __LINE__
+www.spinics.net/lists/linux-usb/msg47353.html
 
-regards,
-dan carpenter
+Thanks,
+Andiry
+Andiry
 
 
---4bRzO86E/ozDv8r1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPP0ReAAoJEOnZkXI/YHqRlbYP/0n2wRP/h15bYa9df/r8drGM
-HG00r2X2a7tAvmxXCTmlQG+nCuj1MgLZ9C4toN8Z3lNI/skUqXYwPHVLpJkkW7Zj
-9I+p0BSx1tNjf2UyZmi4WhdCujcKJUCBwj5b/7L7UrPlmgsexwVoMq18EGgyfkxR
-z3kXAu2F1j1oA7BWzA+I8fvX2M0LXT2nUuc2NFZ9akHzugmrGrH+jcOB6I38A70n
-luaWLabFaC6RWibuu0scF29nakDO6eMvVnHgW/TQWEnv61gH4+qfW2NQoJBIFB3+
-P4dckc5mhxaNhn1nRpyymwWtwdNioGrZ0FJcFJ9QJ7ho70GpiPs8TDlhoFyG/2y/
-iw24pAPsbmfBbUBSfpMIdjet8wFzNbyNAmU3Ku15uYSi8OQVhaS4YNrcXTJIzOdn
-3AfegcapENvoMOY4+pc3lNp1OPU5fMvl/nCb5Flf+AbkL9PTivFHVEUcRqNl9NMJ
-GfWxwSj/K3Rmg0kHaHSB4pRjUw/g1F8jVhPCRCf4rUhA59uHxVJgWncCJtKNQyK5
-DBve59XQ8LmG5SP9YW04ogaOlxdZeH7R5sLi8oCBZbzKVOaZsdeQT61wtTbAPgBh
-TQAifh4efUxN3Nc1ZZ1SS52pBA7oWEoKteB1IxKgNN7Bdj5Cw2pjYNHLy6ajcPsy
-RjZzPGjmMANeccO7JoFs
-=Tfkf
------END PGP SIGNATURE-----
 
---4bRzO86E/ozDv8r1--
