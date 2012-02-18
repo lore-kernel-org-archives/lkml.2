@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab2BRW3n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 17:29:43 -0500
-Received: from nctlincom02.orcon.net.nz ([60.234.4.75]:42956 "EHLO
-	nctlincom02.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab2BRW3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 17:29:37 -0500
-Message-ID: <4F40264E.6050602@orcon.net.nz>
-Date: Sun, 19 Feb 2012 11:29:34 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
-MIME-Version: 1.0
-To: Jim Faulkner <jfaulkne@ccs.neu.edu>
-CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, gregkh@linuxfoundation.org, rth@twiddle.net,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        torvalds@linux-foundation.org, jay.estabrook@gmail.com
-Subject: Re: [PATCH] fix modpost when CONFIG_ALPHA_TSUNAMI=y
-References: <20120109003504.GA19756@alumni-linux.ccs.neu.edu> <20120218212431.GA25058@alumni-linux.ccs.neu.edu>
-In-Reply-To: <20120218212431.GA25058@alumni-linux.ccs.neu.edu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754013Ab2BRWb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 17:31:56 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58661 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753575Ab2BRWbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 17:31:52 -0500
+Message-ID: <1329604310.1753.30.camel@joe2Laptop>
+Subject: Re: [PATCH 3/3 v2] Staging: crystalhd: Replace the BCMLOG_ERR macro
+ with pr_err
+From: Joe Perches <joe@perches.com>
+To: Jorgyano Vieira <jorgyano@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, nsankar@broadcom.com, jarod@wilsonet.com
+Date: Sat, 18 Feb 2012 14:31:50 -0800
+In-Reply-To: <1329603020-5302-1-git-send-email-jorgyano@gmail.com>
+References: <1329603020-5302-1-git-send-email-jorgyano@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx7.orcon.net.nz on Sun, 19 Feb 2012 11:29:34 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Feb 19 11:29:35 2012
-X-DSPAM-Confidence: 0.6183
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: 0.00 () [Hold at 5.00] 
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 05GzytKan - 198aecb3594a - 20120219
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/12 10:24, Jim Faulkner wrote:
-> Linux 3.2.6 fails to modpost on my alpha machine when
-> CONFIG_ALPHA_TSUNAMI=y.  Linux 3.3-rc3 does not appear to have a fix for
-> this bug, so is likely also affected.  I've attached a patch which fixes
-> this issue.  I have tested this patch on Linux 3.2.6 successfully, and
-> the patch also applies cleanly to Linux 3.3-rc3.
+On Sat, 2012-02-18 at 20:10 -0200, Jorgyano Vieira wrote:
+> Replace the usage of BCMLOG_ERR with pr_err and remove the macro definition.
+> Also added pr_fmt to identify the driver error messages.
 
-> diff -uNr linux-3.3-rc3/arch/alpha/kernel/core_tsunami.c linux-3.3-rc3.patched/arch/alpha/kernel/core_tsunami.c
-> --- linux-3.3-rc3/arch/alpha/kernel/core_tsunami.c	2012-02-08 22:21:53.000000000 -0500
-> +++ linux-3.3-rc3.patched/arch/alpha/kernel/core_tsunami.c	2012-02-18 16:07:12.859977887 -0500
-> @@ -11,6 +11,7 @@
->  #include <asm/core_tsunami.h>
->  #undef __EXTERN_INLINE
+Hi Jorgyano.
+
+Couple of generic comments.
+
+o Please look for and fix spelling errors at the same time.
+o Coalesce formats, don't worry about 80 columns for that.
+o pr_fmt needs to be #defined before any #include that might
+  directly or indirectly #include kernel.h/printk.h
+  use 'strings <path>/built-in.o | grep "^<.>"' to verify. 
+o [kv][kzm]alloc failures don't need specific OOM messages
+  as the generic function does a dump_stack
+o argument alignment could be after the open parenthesis.
+
+for example...
+
+>  	for (i = 0; i < BC_LINK_MAX_OPENS; i++) {
+>  		if (ctx->user[i].mode == DTS_DIAG_MODE ||
+>  		    ctx->user[i].mode == DTS_PLAYBACK_MODE) {
+> -			BCMLOG_ERR("multiple playback sessions are not "
+> +			pr_err("multiple playback sessions are not "
+[]
+> @@ -766,7 +767,7 @@ static enum BC_STATUS crystalhd_hw_fill_desc(struct crystalhd_dio_req *ioreq,
+>  	crystalhd_hw_dump_desc(desc, last_desc_ix, 1);
 >  
-> +#include <linux/module.h>
+>  	if (count != xfr_sz) {
+> -		BCMLOG_ERR("interal error sz curr:%x exp:%x\n", count, xfr_sz);
+> +		pr_err("interal error sz curr:%x exp:%x\n", count, xfr_sz);
+>  		return BC_STS_ERROR;
+>  	}
+[]
+> @@ -1950,7 +1951,7 @@ enum BC_STATUS crystalhd_hw_setup_dma_rings(struct crystalhd_hw *hw)
+>  	for (i = 0; i < BC_RX_LIST_CNT; i++) {
+>  		rpkt = kzalloc(sizeof(*rpkt), GFP_KERNEL);
+>  		if (!rpkt) {
+> -			BCMLOG_ERR("Insufficient Memory For RX\n");
+> +			pr_err("Insufficient Memory For RX\n");
+>  			crystalhd_hw_free_dma_rings(hw);
+>  			return BC_STS_INSUFF_RES;
+>  		}
+> @@ -1959,7 +1960,7 @@ enum BC_STATUS crystalhd_hw_setup_dma_rings(struct crystalhd_hw *hw)
+>  		if (mem) {
+>  			memset(mem, 0, mem_len);
+>  		} else {
+> -			BCMLOG_ERR("Insufficient Memory For RX\n");
+> +			pr_err("Insufficient Memory For RX\n");
+>  			crystalhd_hw_free_dma_rings(hw);
+>  			kfree(rpkt);
+>  			return BC_STS_INSUFF_RES;
+[]
+> @@ -177,7 +177,7 @@ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+>  		rc = crystalhd_user_data(ua_off, io->add_cdata,
+>  					io->add_cdata_sz, 1);
+>  		if (rc) {
+> -			BCMLOG_ERR("failed to push add_cdata sz:%x ua_off:%x\n",
+> +			pr_err("failed to push add_cdata sz:%x ua_off:%x\n",
+>  				   io->add_cdata_sz, (unsigned int)ua_off);
+>  			return -ENODATA;
+>  		}
+[]
+> @@ -383,7 +383,7 @@ void *bc_kern_dma_alloc(struct crystalhd_adp *adp, uint32_t sz,
+>  	void *temp = NULL;
+>  
+>  	if (!adp || !sz || !phy_addr) {
+> -		BCMLOG_ERR("Invalide Arg..\n");
+> +		pr_err("%s: Invalide Arg..\n", __func__);
+>  		return temp;
+>  	}
+>  
 
-Wouldn't <linux/exports.h> be better?  I seem to recall that this was a
-problem with EXPORT_SYMBOL not being defined and I see my own personal
-fix (which I had completely forgotten to send upstream) was to include
-<linux/exports.h>
 
->  #include <linux/types.h>
->  #include <linux/pci.h>
->  #include <linux/sched.h>
-
-Cheers
-Michael.
