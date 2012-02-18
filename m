@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2BRGvP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 01:51:15 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:57466 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab2BRGvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 01:51:14 -0500
-Date: Sat, 18 Feb 2012 01:50:59 -0500 (EST)
-Message-Id: <20120218.015059.195369430178043130.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: benve@cisco.com, dkukawka@suse.de, roprabhu@cisco.com, dwang2@cisco.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] cisco/enic: use eth_hw_addr_random() instead of
- random_ether_addr()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1329516810-26175-1-git-send-email-danny.kukawka@bisect.de>
-References: <1329516810-26175-1-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752051Ab2BRG4F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 01:56:05 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33791 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751820Ab2BRG4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 01:56:03 -0500
+Message-ID: <1329548162.1753.13.camel@joe2Laptop>
+Subject: Re: [PATCH 3/3] Staging: crystalhd: Replace the BCMLOG_ERR macro
+ with pr_err
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jorgyano Vieira <jorgyano@gmail.com>, gregkh@linuxfoundation.org,
+        devel@linuxdriverproject.org, jarod@wilsonet.com, nsankar@broadcom.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 17 Feb 2012 22:56:02 -0800
+In-Reply-To: <20120218064039.GD2912@mwanda>
+References: <1329521976-1326-1-git-send-email-jorgyano@gmail.com>
+	 <20120218062534.GB2855@mwanda> <1329546625.1753.7.camel@joe2Laptop>
+	 <20120218064039.GD2912@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 17 Feb 2012 22:51:02 -0800 (PST)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Fri, 17 Feb 2012 23:13:30 +0100
+On Sat, 2012-02-18 at 09:40 +0300, Dan Carpenter wrote:
+> On Fri, Feb 17, 2012 at 10:30:25PM -0800, Joe Perches wrote:
+> > On Sat, 2012-02-18 at 09:25 +0300, Dan Carpenter wrote:
+> > > On Fri, Feb 17, 2012 at 09:39:36PM -0200, Jorgyano Vieira wrote:
+> > > > Replace the usage of BCMLOG_ERR with pr_err and remove the macro definition.
+> > > This needs a pr_fmt line so we can tell where the errors are coming
+> > > from.
+> > > #define pr_fmt(fmt)     KBUILD_MODNAME ": %s:%d: " fmt, __func__, __LINE__
+> > True.
+> > __func__ and __LINE__ are not generally useful though.
+> If you don't know the function and line number, then how do you
+> tell all the "Invalid args" printks apart?
 
-> Use dev_hw_addr_random() instead of calling random_ether_addr()
-> to set addr_assign_type correctly to NET_ADDR_RANDOM.
-> 
-> Reset the state to NET_ADDR_PERM as soon as the MAC get
-> changed via .ndo_set_mac_address.
-> 
-> v3: adapt to net-next
-> v2: use bitops, adapt to eth_hw_addr_random(), add a comment
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+It's possible to add "%s...", __func__ to
+the necessary uses.  Adding it to the generic
+is likely overkill.
 
-Applied, thanks.
+But is it really necessary anyway?
+
+Aren't those called via some specific notifier
+such that the output would make sense given
+some specific invalid input?
+
+
