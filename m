@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab2BRHmD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 02:42:03 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44170 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab2BRHmB (ORCPT
+	id S1752146Ab2BRHwp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 02:52:45 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33608 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab2BRHwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 02:42:01 -0500
-Date: Sat, 18 Feb 2012 13:11:27 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@elte.hu, pjt@google.com, efault@gmx.de, venki@google.com,
-        suresh.b.siddha@intel.com, linux-kernel@vger.kernel.org,
-        " Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Subject: Re: sched: Performance of Trade workload running inside VM
-Message-ID: <20120218074127.GA9077@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20120214112827.GA22653@linux.vnet.ibm.com>
- <1329307161.2293.66.camel@twins>
- <20120215171032.GB9918@linux.vnet.ibm.com>
- <1329326651.2293.151.camel@twins>
- <20120215173817.GD9918@linux.vnet.ibm.com>
- <1329327902.2293.168.camel@twins>
+	Sat, 18 Feb 2012 02:52:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.73.97 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Fri, 17 Feb 2012 23:52:15 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Holger Macht <holger@homac.de>
+cc: Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: dock_link_device is oopsy
+In-Reply-To: <20120217230107.GA12929@homac.suse.de>
+Message-ID: <alpine.LSU.2.00.1202172341540.14838@eggly.anvils>
+References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils> <20120217222922.GA2741@homac.suse.de> <alpine.LSU.2.00.1202171436490.10222@eggly.anvils> <20120217230107.GA12929@homac.suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1329327902.2293.168.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12021807-4790-0000-0000-00000162498D
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-02-15 18:45:02]:
-
-> I'm still waiting for a problem description that isn't a book.
+On Sat, 18 Feb 2012, Holger Macht wrote:
+> On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
+> > On Fri, 17 Feb 2012, Holger Macht wrote:
+> > > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
+> > > > Matthew,
+> > > > 
+> > > > A linux-next oops at bootup in dock_link_device() tells me that you
+> > > > were not feeling well when you wrote that and dock_unlink_device():
+> > > > I hope you're feeling better now and can rewrite them soon.
+> > > 
+> > > Andrew Morton experienced a similar problem. What system are you using?
+> > > I didn't encounter this problem with the systems I tested with.
+> > 
+> > The two systems I got that on were both 4-year-old Core2 Duo systems,
+> > one an HP quad desktop, one a Fujitsu-Siemens laptop.
 > 
-> What does the load-balancer do,
+> Thanks for the information I think this is really independent from the
+> fact if a laptop, or more precicely if a system with dock station/bay is
+> used.
+> 
+> > 
+> > > 
+> > > Do you actually have a /sys/devices/platform/dock.?/ directory with a
+> > > file 'type' that contains 'dock_station'?
+> > 
+> > I'll have to report back on that this evening, I'm away from them now.
+> 
+> I actually guess that those systems don't have a
+> /sys/devices/platform/dock.? directory at all, which is fine.
 
-select_idle_sibling() tries finding a core (sched group) which is fully idle
-failing which will let task wakeup on prev_cpu.
+You are correct, no /sys/devices/platform/dock.? directory on those.
 
-> why is it wrong,
+> 
+> I also think this will fix it, would be great if you could confirm this:
+> 
+> acpi: Bail out when linking devices and there are no dock stations
+> 
+> If dock_station_count is zero, we allocate zero memory and don't check
+> this at future references. So bail out if there are actually no dock
+> stations.
+> 
+> Signed-off-by: Holger Macht <holger@homac.de>
+> ---
+>  drivers/acpi/dock.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index b5e4142..8641912 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -286,6 +286,9 @@ struct device **dock_link_device(acpi_handle handle)
+>  	int ret, dock = 0;
+>  	struct device **devices;
+>  
+> +	if (!dock_station_count)
+> +		return -ENODEV;
 
-Take this scenario. wakeup source for task is cpu0 while its prev_cpu is
-cpu7 (which is in another cache domain).
+If I change your -ENODEV to NULL (here and in unlink, though I didn't
+check if that gets called), yes, that "fixes" the crash at boot.
 
-		cache_dom0		cache_dom1
-		(0, 1) (2, 3)		(4, 5) (6, 7)
-nr_running->	 1  1   1  1     	 0, 1   1, 2
+But note that in each case you already did an acpi_get_physical_device:
+if the existing code was correct in this regard, then you ought to be
+doing a put_device(dev) before returning.
 
-In this case we let task wakeup on cpu7, resulting in it incurring some
-wait time before being scheduled. A better choice would have been cpu4 (whose
-core is partially idle) or in general any other less-loaded cpu which is in same
-cache domain?
+Or better reorder it all.
 
-> why does your patch sort it etc.
+Hugh
 
-The patch does result in a hunt for "least" busy cpu when the target cpu
-returned by select_idle_sibling() is not idle - thus resulting in better
-scheduling latencies for the task (and in turn better benchmark scores).
-
-Another variant of the patch could be to have select_idle_sibling() look
-for any idle cpu that is in same cache domain (rather than looking for a
-whole group of cpus to be idle)?
-
-- vatsa
-
+> +
+>  	devices = kmalloc(dock_station_count * sizeof(struct device *),
+>  			  GFP_KERNEL);
+>  
+> @@ -323,9 +326,13 @@ struct device **dock_unlink_device(acpi_handle handle)
+>  	struct device *dev = acpi_get_physical_device(handle);
+>  	struct dock_station *dock_station;
+>  	int dock = 0;
+> -	struct device **devices =
+> -		kmalloc(dock_station_count * sizeof(struct device *),
+> -			GFP_KERNEL);
+> +	struct device **devices;
+> +
+> +	if (!dock_station_count)
+> +		return -ENODEV;
+> +
+> +	devices = kmalloc(dock_station_count * sizeof(struct device *),
+> +			  GFP_KERNEL);
+>  
+>  	if (!dev)
+>  		return NULL;
+> -- 
+> 1.7.7
