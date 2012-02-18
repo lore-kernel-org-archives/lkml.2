@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab2BRSTk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 13:19:40 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:43132 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab2BRSTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 13:19:38 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/video/pxa168fb.c: use devm_ functions
-Date: Sat, 18 Feb 2012 19:19:29 +0100
-Message-Id: <1329589169-18235-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1753324Ab2BRSYm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 13:24:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55680 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab2BRSYl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 13:24:41 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.153.15 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Sat, 18 Feb 2012 22:24:36 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: =?utf-8?Q?Przemys=C5=82aw_Pawe=C5=82czyk?= 
+	<przemyslaw@pawelczyk.it>,
+        lkml <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] task->nsproxy was unexpectedly NULL (caught in exit_shm)
+Message-ID: <20120218182436.GB1905@moon>
+References: <CAN8=baycwqAkTJxNpNzaO9G=TbEXeiEYCvWxiwvS+NpLRZi3xw@mail.gmail.com>
+ <20120218173950.GA12595@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120218173950.GA12595@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Sat, Feb 18, 2012 at 09:39:50PM +0400, Vasiliy Kulikov wrote:
+...
+> > 
+> > So task->nsproxy was unexpectedly NULL atm.
+> > The bug happened only once so far.
+> 
+> I'm confused.  How ->nsproxy can be NULL in do_exit()?  AFAIU, it is not a
+> special process (i.e. init or udev), but a common chrome process.
+> 
+> Could it be missing get_nsproxy() somewhere?  And as a result, freed
+> current->nsproxy while still having active users.
+> 
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+Probably it would worth to repeat this issue without proprientary
+drivers loaded. Also I wonder why don't we use rcu_assign_pointer
+for nsproxy in copy_namespaces.
 
-By using devm_ioremap, it also removes a potential memory leak, because
-there was no call to iounmap in the probe function.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/video/pxa168fb.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/video/pxa168fb.c b/drivers/video/pxa168fb.c
-index 8384b94..f146089 100644
---- a/drivers/video/pxa168fb.c
-+++ b/drivers/video/pxa168fb.c
-@@ -21,6 +21,7 @@
- #include <linux/fb.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-+#include <linux/io.h>
- #include <linux/ioport.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
-@@ -670,7 +671,8 @@ static int __devinit pxa168fb_probe(struct platform_device *pdev)
- 	/*
- 	 * Map LCD controller registers.
- 	 */
--	fbi->reg_base = ioremap_nocache(res->start, resource_size(res));
-+	fbi->reg_base = devm_ioremap_nocache(&pdev->dev, res->start,
-+					     resource_size(res));
- 	if (fbi->reg_base == NULL) {
- 		ret = -ENOMEM;
- 		goto failed_free_info;
-@@ -739,8 +741,8 @@ static int __devinit pxa168fb_probe(struct platform_device *pdev)
- 	/*
- 	 * Register irq handler.
- 	 */
--	ret = request_irq(irq, pxa168fb_handle_irq, IRQF_SHARED,
--					info->fix.id, fbi);
-+	ret = devm_request_irq(&pdev->dev, irq, pxa168fb_handle_irq,
-+			       IRQF_SHARED, info->fix.id, fbi);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "unable to request IRQ\n");
- 		ret = -ENXIO;
-@@ -759,14 +761,12 @@ static int __devinit pxa168fb_probe(struct platform_device *pdev)
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Failed to register pxa168-fb: %d\n", ret);
- 		ret = -ENXIO;
--		goto failed_free_irq;
-+		goto failed_free_cmap;
- 	}
- 
- 	platform_set_drvdata(pdev, fbi);
- 	return 0;
- 
--failed_free_irq:
--	free_irq(irq, fbi);
- failed_free_cmap:
- 	fb_dealloc_cmap(&info->cmap);
- failed_free_clk:
-@@ -808,13 +808,10 @@ static int __devexit pxa168fb_remove(struct platform_device *pdev)
- 		fb_dealloc_cmap(&info->cmap);
- 
- 	irq = platform_get_irq(pdev, 0);
--	free_irq(irq, fbi);
- 
- 	dma_free_writecombine(fbi->dev, PAGE_ALIGN(info->fix.smem_len),
- 				info->screen_base, info->fix.smem_start);
- 
--	iounmap(fbi->reg_base);
--
- 	clk_disable(fbi->clk);
- 	clk_put(fbi->clk);
- 
-
+	Cyrill
