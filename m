@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2BQX7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 18:59:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50305 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab2BQX7X (ORCPT
+	id S1753516Ab2BRACh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 19:02:37 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45394 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751521Ab2BRACg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 18:59:23 -0500
-Date: Fri, 17 Feb 2012 15:59:22 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 01/60] highmem: mark k[un]map_atomic() with two
- arguments as deprecated
-Message-Id: <20120217155922.0826ca48.akpm@linux-foundation.org>
-In-Reply-To: <1328852421-19678-2-git-send-email-amwang@redhat.com>
-References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
-	<1328852421-19678-2-git-send-email-amwang@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 17 Feb 2012 19:02:36 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Implement support for 32 bit registers and values
+Date: Fri, 17 Feb 2012 16:01:25 -0800
+Message-Id: <1329523285-1285-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Feb 2012 13:39:22 +0800
-Cong Wang <amwang@redhat.com> wrote:
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regcache.c |   11 +++++++++++
+ drivers/base/regmap/regmap.c   |   24 ++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 0 deletions(-)
 
-> --- a/include/linux/highmem.h
-> +++ b/include/linux/highmem.h
-> @@ -109,20 +109,60 @@ static inline void kmap_atomic_idx_pop(void)
->  #endif
->  
->  /*
-> - * Make both: kmap_atomic(page, idx) and kmap_atomic(page) work.
-> + * NOTE:
-> + * kmap_atomic() and kunmap_atomic() with two arguments are deprecated.
-> + * We only keep them for backward compatibility, any usage of them
-> + * are now warned.
->   */
-> -#define kmap_atomic(page, args...) __kmap_atomic(page)
-> +
-> +#define PASTE(a, b) a ## b
-> +#define PASTE2(a, b) PASTE(a, b)
-> +
-> +#define NARG_(_2, _1, n, ...) n
-> +#define NARG(...) NARG_(__VA_ARGS__, 2, 1, :)
-> +
-> +static inline void *kmap_atomic(struct page *page)
-> +{
-> +	return __kmap_atomic(page);
-> +}
-> +
-> +static inline void __deprecated *kmap_atomic_deprecated(struct page *page,
-> +							enum km_type km)
-> +{
-> +	return __kmap_atomic(page);
-> +}
-> +
-> +#define kmap_atomic1(...) kmap_atomic(__VA_ARGS__)
-> +#define kmap_atomic2(...) kmap_atomic_deprecated(__VA_ARGS__)
-> +#define kmap_atomic(...) PASTE2(kmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
-> +
-> +static inline void __deprecated __kunmap_atomic_deprecated(void *addr,
-> +							enum km_type km)
-> +{
-> +	__kunmap_atomic(addr);
-> +}
-
-Boggle.
-
-
-
-I can't merge these patches because they're already in linux-next.
-
-This is silly.  Please send Linus the pull request for 3.4 and be sure to cc
-myself on it.
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index a10e81c..0cadb11 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -386,6 +386,13 @@ bool regcache_set_val(void *base, unsigned int idx,
+ 		cache[idx] = val;
+ 		break;
+ 	}
++	case 4: {
++		u32 *cache = base;
++		if (cache[idx] == val)
++			return true;
++		cache[idx] = val;
++		break;
++	}
+ 	default:
+ 		BUG();
+ 	}
+@@ -407,6 +414,10 @@ unsigned int regcache_get_val(const void *base, unsigned int idx,
+ 		const u16 *cache = base;
+ 		return cache[idx];
+ 	}
++	case 4: {
++		const u32 *cache = base;
++		return cache[idx];
++	}
+ 	default:
+ 		BUG();
+ 	}
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index a871f14..d1db130 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -125,6 +125,13 @@ static void regmap_format_16(void *buf, unsigned int val)
+ 	b[0] = cpu_to_be16(val);
+ }
+ 
++static void regmap_format_32(void *buf, unsigned int val)
++{
++	__be32 *b = buf;
++
++	b[0] = cpu_to_be32(val);
++}
++
+ static unsigned int regmap_parse_8(void *buf)
+ {
+ 	u8 *b = buf;
+@@ -141,6 +148,15 @@ static unsigned int regmap_parse_16(void *buf)
+ 	return b[0];
+ }
+ 
++static unsigned int regmap_parse_32(void *buf)
++{
++	__be32 *b = buf;
++
++	b[0] = be32_to_cpu(b[0]);
++
++	return b[0];
++}
++
+ /**
+  * regmap_init(): Initialise register map
+  *
+@@ -239,6 +255,10 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->format.format_reg = regmap_format_16;
+ 		break;
+ 
++	case 32:
++		map->format.format_reg = regmap_format_32;
++		break;
++
+ 	default:
+ 		goto err_map;
+ 	}
+@@ -252,6 +272,10 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->format.format_val = regmap_format_16;
+ 		map->format.parse_val = regmap_parse_16;
+ 		break;
++	case 32:
++		map->format.format_val = regmap_format_32;
++		map->format.parse_val = regmap_parse_32;
++		break;
+ 	}
+ 
+ 	if (!map->format.format_write &&
+-- 
+1.7.9
 
