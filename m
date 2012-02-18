@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab2BRN0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 08:26:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33383 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752466Ab2BRN0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 08:26:14 -0500
-Date: Sat, 18 Feb 2012 14:26:10 +0100
-From: Holger Macht <holger@homac.de>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Matthew Garrett <mjg@redhat.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: dock_link_device is oopsy
-Message-ID: <20120218132610.GA15265@homac.suse.de>
-References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils>
- <20120217222922.GA2741@homac.suse.de>
- <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
- <20120217230107.GA12929@homac.suse.de>
- <alpine.LSU.2.00.1202171541040.3155@eggly.anvils>
- <20120218111419.GA2488@homac.suse.de>
- <CAJd=RBDRZSizawvRYqr7=U75Su5TLvMfgdagRA49wzJr40DqSg@mail.gmail.com>
+	id S1752690Ab2BRN3N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 08:29:13 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:35952 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751989Ab2BRN3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 08:29:11 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
+Date: Sat, 18 Feb 2012 14:28:06 +0100
+User-Agent: KMail/1.9.10
+Cc: Mike Frysinger <vapier@gentoo.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de> <201202171815.59846.vapier@gentoo.org> <1329521263.584.50.camel@joe2Laptop>
+In-Reply-To: <1329521263.584.50.camel@joe2Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBDRZSizawvRYqr7=U75Su5TLvMfgdagRA49wzJr40DqSg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201202181428.07491.danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329571751;d41ead8d;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa 18. Feb - 21:05:18, Hillf Danton wrote:
-> On Sat, Feb 18, 2012 at 7:14 PM, Holger Macht <holger@homac.de> wrote:
-> > So how about that?
+On Samstag, 18. Februar 2012, Joe Perches wrote:
+> On Fri, 2012-02-17 at 18:15 -0500, Mike Frysinger wrote:
+> > On Friday 17 February 2012 05:57:54 Danny Kukawka wrote:
+> > > Maybe. Many drivers already print information about setting a random
+> > > mac address to a netdevice. Some with printk, some via
+> > > netdev_warn/netdev_info/netdev_dbg or netif_dbg and other with costum
+> > > methods. I could unify this, in a next step with a netdev_info in
+> > > eth_hw_addr_random(), if it's okay for David.
 > >
-> > acpi: Bail out when linking devices and there are no dock stations
-> >
-> > If dock_station_count is zero, we allocate zero memory and don't check
-> > this at future references. So bail out if there are actually no dock
-> > stations.
-> >
-> > Signed-off-by: Holger Macht <holger@homac.de>
-> > ---
-> >  drivers/acpi/dock.c |   19 ++++++++++++++-----
-> >  1 files changed, 14 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> > index b5e4142..0b3072c 100644
-> > --- a/drivers/acpi/dock.c
-> > +++ b/drivers/acpi/dock.c
-> > @@ -281,11 +281,15 @@ EXPORT_SYMBOL_GPL(is_dock_device);
-> >  */
-> >  struct device **dock_link_device(acpi_handle handle)
-> >  {
-> > -       struct device *dev = acpi_get_physical_device(handle);
-> > +       struct device *dev;
-> >        struct dock_station *dock_station;
-> >        int ret, dock = 0;
-> >        struct device **devices;
-> >
-> > +       if (!dock_station_count)
-> > +               return NULL;
-> > +
-> > +       dev = acpi_get_physical_device(handle);
-> >        devices = kmalloc(dock_station_count * sizeof(struct device *),
-> >                          GFP_KERNEL);
-> >
-> > @@ -320,12 +324,17 @@ EXPORT_SYMBOL_GPL(dock_link_device);
-> >  */
-> >  struct device **dock_unlink_device(acpi_handle handle)
-> >  {
-> > -       struct device *dev = acpi_get_physical_device(handle);
-> > +       struct device *dev;
-> >        struct dock_station *dock_station;
-> >        int dock = 0;
-> > -       struct device **devices =
-> > -               kmalloc(dock_station_count * sizeof(struct device *),
-> > -                       GFP_KERNEL);
-> > +       struct device **devices;
-> > +
-> > +       if (!dock_station_count)
-> > +               return NULL;
-> > +
-> > +       dev = acpi_get_physical_device(handle);
-> > +       devices = kmalloc(dock_station_count * sizeof(struct device *),
-> > +                         GFP_KERNEL);
-> >
-> 
-> If bail out in this way, another patch looks needed to fix up
-> mem leakage :-(
+> > i think unification in the core makes sense.  it enforces consistency and
+> > removes duplication.
+>
+> It's a good idea.
 
-Sorry if I'm a little slow...but where is the leakage? The function
-doesn't allocate anything before bailing out in the dock_station_count
-check. And the rerun value should be freed by the caller. Please point
-me in the right direction.
+Okay ... I'll send a patch to print a message via netdev_info from 
+eth_hw_addr_random() and to cleanup the drivers.
 
-Thanks,
- Holger
+Danny
+
