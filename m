@@ -1,122 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2BRUoe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 15:44:34 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:56004 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753257Ab2BRUoJ (ORCPT
+	id S1753409Ab2BRUvl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 15:51:41 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25747 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab2BRUvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 15:44:09 -0500
-Date: Sat, 18 Feb 2012 15:44:08 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: Huang Ying <ying.huang@intel.com>, <ming.m.lin@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [RFC 0/5] scsi, sd, pm, request based runtime PM for scsi disk
-In-Reply-To: <201202122100.05349.oliver@neukum.org>
-Message-ID: <Pine.LNX.4.44L0.1202121855090.23796-100000@netrider.rowland.org>
+	Sat, 18 Feb 2012 15:51:40 -0500
+Date: Sat, 18 Feb 2012 23:51:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: neilb@suse.de
+Cc: linux-kernel@vger.kernel.org
+Subject: re: w1: Fix w1_bq27000
+Message-ID: <20120218205125.GA26827@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090201.4F400F55.0041,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Feb 2012, Oliver Neukum wrote:
+Hello NeilBrown,
 
-> Am Sonntag, 12. Februar 2012, 19:05:51 schrieb Alan Stern:
-> > On Sat, 11 Feb 2012, Oliver Neukum wrote:
-> > 
-> > > > Your whole approach is at the wrong level.  Runtime PM between I/O 
-> > > > requests for block devices should be implemented in the block layer, 
-> > > > not in the SCSI layer.
-> > > 
-> > > I must disagree. The block layer has no more information than the SCSI
-> > > layer and lacks everything the lower layers know.
-> > 
-> > But the block layer handles all block devices, not just SCSI ones.  You 
-> > would end up duplicating code unnecessarily.
-> > 
-> > What pertinent information is known by the SCSI and lower layers but
-> > not the block layer?
-> 
-> It doesn't know what consequences suspending a host controller
-> has for the devices attached to it. It simply cannot know because
-> that depends on the hardware.
-> 
-> A very good example is the media change problem of the media readers.
-> For example an iSCSI virtual host controller can suspend while a command
-> is in flight if the network controller used can do remote wakeup well enough.
+This is a semi-automatic email about new static checker warnings.
 
-I don't see how this is relevant.  We're talking about suspending the
-drive, not suspending the host adapter.  Runtime PM for an iSCSI host
-adapter can be implemented to suspend in the middle of commands if it
-wants; that has no bearing on this discussion and patch set.
+The patch 9f3519d2ed26: "w1: Fix w1_bq27000" from Feb 15, 2012, leads 
+to the following Smatch complaint:
 
-> > Then what's wrong with handling runtime suspend in the higher layers?
-> 
-> They know some reasons to not suspend, but not all reasons.
+drivers/w1/slaves/w1_bq27000.c:48 w1_bq27000_read()
+	 warn: variable dereferenced before check 'dev' (see line 46)
 
-So the lower layers can do their own autopm_get when necessary.
+drivers/w1/slaves/w1_bq27000.c
+    45		u8 val;
+    46		struct w1_slave *sl = container_of(dev->parent, struct w1_slave, dev);
+                                                   ^^^^^^^^^^^
+New dereference.
 
-> > > The problem of needing to do IO for suspension goes away if we
-> > > treat the disk as always suspendable and use an active command
-> > > as a condition for not suspending the storage device as opposed to the disk
-> > > the problem goes away.
-> > 
-> > I don't entirely understand.  What's the difference between "the
-> > storage device" and "the disk"?
-> 
-> The storage device == a USB device that implements the storage class
-> the disk == a SCSI disk drive
+    47	
+    48		if (!dev)
+                     ^^^
+Old check.
 
-And in the case of some other sort of SCSI transport, I suppose "the 
-storage device" includes the host adapter or equivalent.
+    49			return 0;
+    50	
 
-> > However, using an active command as the condition is not the right 
-> > thing to do.  It would use extra energy and slow everything down to 
-> > suspend and resume the device between every pair of commands that were 
-> > separated by a slight time delay.  There needs to be a timeout.
-> 
-> Yes, we can use the same heuristics as everywhere.
-> command queued -> autopm_get
-> command finished -> autopm_put
-> 
-> but for the USB host adapter, not the sr device
-
-Didn't we discuss this a long time ago and decide it was a bad 
-approach?
-
-> > Furthermore, if you use active commands as the condition for 
-> > suspending, what do you do when the act of suspending causes a command 
-> > to be sent?  It is necessary to distinguish between ordinary commands 
-> > and those that are PM-related.
-> 
-> No. This problem goes away if you correctly make the distinction between
-> host controller/storage device and the disk drive.
-> You use the "active command standard" for the host controller.
-> Then you need not care about the commands needed to suspend a disk drive.
-> You cannot suspend the host controller while the disk drive is being suspended
-> anyway, as the tree constraint prevents it.
-
-Heh, you're talking about ignoring the tree constraint anyway if you're 
-going to suspend the USB device while the children beneath it remain 
-unchanged.
-
-> 
-> For the disk drive you just declare them busy restarting the timeout as a command
-> goes down to the hardware. There is an interesting case about what you do if
-> the generic layer wants to autosuspend an sr device which has a command queued.
-> I propose we catch that case in sr_suspend() and return -EBUSY in
-> the autosuspend with command in flight case.
-> 
-> And I admit we will need to special case the stupid card readers.
-> 
-> 	Regards
-> 		Oliver
-> 
-
-
+regards,
+dan carpenter
 
