@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2BRCHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 21:07:25 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51459 "EHLO
+	id S1755348Ab2BRCHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 21:07:45 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51457 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755197Ab2BRCHX (ORCPT
+	by vger.kernel.org with ESMTP id S1753606Ab2BRCHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 Feb 2012 21:07:23 -0500
 From: Andrei Warkentin <andreiw@vmware.com>
 To: kgdb-bugreport@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
         andreiw@vmware.com
-Subject: [PATCH 2/2] KDB: Overide LINES for custom commands.
-Date: Fri, 17 Feb 2012 21:07:16 -0500
-Message-Id: <1329530836-23958-3-git-send-email-andreiw@vmware.com>
+Subject: [PATCH 1/2] KDB: Make LINES an internal variable.
+Date: Fri, 17 Feb 2012 21:07:15 -0500
+Message-Id: <1329530836-23958-2-git-send-email-andreiw@vmware.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1329530836-23958-1-git-send-email-andreiw@vmware.com>
 References: <1329530836-23958-1-git-send-email-andreiw@vmware.com>
@@ -21,197 +21,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commands like dumpall define some maximum
-LINES, which as a default might make sense,
-when run over serial connection.
+1) If you run 'dumpall', LINES will remain set to
+   10000, and you might wonder why dmesg now doesn't
+   page.
+2) If you run any command that sets LINES, you will
+   eventually exhaust the heap.
 
-However, for vga/kbd use, you want to
-have the ability to override any custom
-command's attempt to set LINES, otherwise
-you'll never see most of the output.
-
-This adds a '-b' option to all commands
-defined with defcmd, which forces the current
-LINES to be used and all attempts to override
-it inside the custom command be ignored.
-
-While at it, make kdb_defcmd more robust. It
-was not checking the result of strdup.
+To address (1), you can save and restore across
+calls to "defcmd" commands, which might contain
+"set LINES". This becomes awkward with keeping
+LINES in env, but there is no real reason why
+LINES cannot be treated as an internal variable.
+Additionally, you get rid of the (small) kdb heap
+usage for LINES.
 
 Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
 ---
- kernel/debug/kdb/kdb_main.c    |   42 ++++++++++++++++++++++++++++++++++++---
- kernel/debug/kdb/kdb_private.h |    3 ++
- kernel/debug/kdb/kdb_support.c |   25 +++++++++++++++++++----
- 3 files changed, 61 insertions(+), 9 deletions(-)
+ kernel/debug/kdb/kdb_io.c      |    4 ++--
+ kernel/debug/kdb/kdb_main.c    |   29 ++++++++++++++++++++++++++---
+ kernel/debug/kdb/kdb_private.h |    1 +
+ 3 files changed, 29 insertions(+), 5 deletions(-)
 
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index 4802eb5..5eb7e23 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -580,8 +580,8 @@ int vkdb_printf(const char *fmt, va_list ap)
+ 		__acquire(kdb_printf_lock);
+ 	}
+ 
+-	diag = kdbgetintenv("LINES", &linecount);
+-	if (diag || linecount <= 1)
++	linecount = kdb_lines;
++	if (linecount <= 1)
+ 		linecount = 24;
+ 
+ 	diag = kdbgetintenv("LOGGING", &logging);
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 37f9d45..da26843 100644
+index 63786e7..37f9d45 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -391,6 +391,13 @@ int kdb_set(int argc, const char **argv)
- 		int lines;
- 		char *cp;
+@@ -60,6 +60,7 @@ atomic_t kdb_event;
+ int kdb_initial_cpu = -1;	/* cpu number that owns kdb */
+ int kdb_nextline = 1;
+ int kdb_state;			/* General KDB state */
++int kdb_lines = 0;		/* Lines displayed at once */
  
-+		/*
-+                 * We are running a custom command,
-+		 * and want to use current limit on
-+		 * lines displayed.
-+		 */
-+		if (KDB_STATE(RO_LINES))
+ struct task_struct *kdb_current_task;
+ EXPORT_SYMBOL(kdb_current_task);
+@@ -386,6 +387,18 @@ int kdb_set(int argc, const char **argv)
+ 			| (debugflags << KDB_DEBUG_FLAG_SHIFT);
+ 
+ 		return 0;
++	} else if (strcmp(argv[1], "LINES") == 0) {
++		int lines;
++		char *cp;
++
++		lines = simple_strtol(argv[2], &cp, 0);
++		if (cp == argv[2]) {
++			kdb_printf("kdb: illegal LINES value '%s'\n",
++				   argv[2]);
 +			return 0;
- 		lines = simple_strtol(argv[2], &cp, 0);
- 		if (cp == argv[2]) {
- 			kdb_printf("kdb: illegal LINES value '%s'\n",
-@@ -674,6 +681,7 @@ static int kdb_defcmd2(const char *cmdstr, const char *argv0)
++		}
++		kdb_lines = lines;
++		return 0;
+ 	}
  
- static int kdb_defcmd(int argc, const char **argv)
+ 	/*
+@@ -721,8 +734,11 @@ static int kdb_defcmd(int argc, const char **argv)
+  */
+ static int kdb_exec_defcmd(int argc, const char **argv)
  {
-+	static char usage[] = " [-b]";
- 	struct defcmd_set *save_defcmd_set = defcmd_set, *s;
- 	if (defcmd_in_progress) {
- 		kdb_printf("kdb: nested defcmd detected, assuming missing "
-@@ -703,13 +711,24 @@ static int kdb_defcmd(int argc, const char **argv)
- 	}
- 	memcpy(defcmd_set, save_defcmd_set,
- 	       defcmd_set_count * sizeof(*defcmd_set));
--	kfree(save_defcmd_set);
- 	s = defcmd_set + defcmd_set_count;
- 	memset(s, 0, sizeof(*s));
- 	s->usable = 1;
- 	s->name = kdb_strdup(argv[1], GFP_KDB);
--	s->usage = kdb_strdup(argv[2], GFP_KDB);
-+	s->usage = kdb_strdup_extra(argv[2],
-+				    sizeof(usage) - 1,
-+				    GFP_KDB);
- 	s->help = kdb_strdup(argv[3], GFP_KDB);
-+	if (!s->name ||
-+	    !s->usage ||
-+	    !s->help) {
-+		kdb_printf("Could not allocate defcmd entry members for %s\n",
-+			   argv[1]);
-+		kfree(defcmd_set);
-+		defcmd_set = save_defcmd_set;
-+		return KDB_NOTIMP;
-+	}
-+	kfree(save_defcmd_set);
- 	if (s->usage[0] == '"') {
- 		strcpy(s->usage, s->usage+1);
- 		s->usage[strlen(s->usage)-1] = '\0';
-@@ -718,6 +737,15 @@ static int kdb_defcmd(int argc, const char **argv)
- 		strcpy(s->help, s->help+1);
- 		s->help[strlen(s->help)-1] = '\0';
- 	}
-+
-+	/*
-+	 * Don't print leading space before [-b]
-+	 * if usage was empty.
-+	 */
-+	if (s->usage[0] == '\0')
-+		strcat(s->usage, usage + 1);
-+	else
-+		strcat(s->usage, usage);
- 	++defcmd_set_count;
- 	defcmd_in_progress = 1;
- 	return 0;
-@@ -739,8 +767,9 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+-	int i, ret;
++	int i;
++	int oldlines;
  	struct defcmd_set *s;
- 	int ret = 0;
- 
--	if (argc != 0)
-+	if (argc > 1)
++	int ret = 0;
++
+ 	if (argc != 0)
  		return KDB_ARGCOUNT;
-+
  	for (s = defcmd_set, i = 0; i < defcmd_set_count; ++i, ++s) {
- 		if (strcmp(s->name, argv[0]) == 0)
- 			break;
-@@ -751,8 +780,10 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+@@ -734,6 +750,9 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+ 			   argv[0]);
  		return KDB_NOTIMP;
- 	}
- 
--	/* command might have overridden LINES */
-+	if (!strcmp(argv[1], "-b"))
-+		KDB_STATE_SET(RO_LINES);
- 	oldlines = kdb_lines;
-+
- 	for (i = 0; i < s->count; ++i) {
- 		/* Recursive use of kdb_parse, do not use argv after
- 		 * this point */
-@@ -762,7 +793,10 @@ static int kdb_exec_defcmd(int argc, const char **argv)
- 		if (ret)
- 			break;
  	}
 +
 +	/* command might have overridden LINES */
- 	kdb_lines = oldlines;
-+	KDB_STATE_CLEAR(RO_LINES);
- 	return ret;
++	oldlines = kdb_lines;
+ 	for (i = 0; i < s->count; ++i) {
+ 		/* Recursive use of kdb_parse, do not use argv after
+ 		 * this point */
+@@ -741,9 +760,10 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+ 		kdb_printf("[%s]kdb> %s\n", s->name, s->command[i]);
+ 		ret = kdb_parse(s->command[i]);
+ 		if (ret)
+-			return ret;
++			break;
+ 	}
+-	return 0;
++	kdb_lines = oldlines;
++	return ret;
+ }
+ 
+ /* Command history */
+@@ -2026,6 +2046,9 @@ static int kdb_env(int argc, const char **argv)
+ 	if (KDB_DEBUG(MASK))
+ 		kdb_printf("KDBFLAGS=0x%x\n", kdb_flags);
+ 
++	if (kdb_lines)
++		kdb_printf("LINES=%d\n", kdb_lines);
++
+ 	return 0;
  }
  
 diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
-index 41a221f..99ed959 100644
+index e381d10..41a221f 100644
 --- a/kernel/debug/kdb/kdb_private.h
 +++ b/kernel/debug/kdb/kdb_private.h
-@@ -112,6 +112,7 @@ extern int kdbgetsymval(const char *, kdb_symtab_t *);
- extern int kdbnearsym(unsigned long, kdb_symtab_t *);
- extern void kdbnearsym_cleanup(void);
- extern char *kdb_strdup(const char *str, gfp_t type);
-+extern char *kdb_strdup_extra(const char *str, unsigned extra, gfp_t type);
- extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
+@@ -154,6 +154,7 @@ extern int kdb_state;
+ #define KDB_STATE_CLEAR(flag) ((void)(kdb_state &= ~KDB_STATE_##flag))
  
- /* Routine for debugging the debugger state. */
-@@ -146,6 +147,8 @@ extern int kdb_state;
- #define KDB_STATE_KEXEC		0x00040000	/* kexec issued */
- #define KDB_STATE_DOING_KGDB	0x00080000	/* kgdb enter now issued */
- #define KDB_STATE_KGDB_TRANS	0x00200000	/* Transition to kgdb */
-+#define KDB_STATE_RO_LINES	0x00400000	/* If LINES is allowed to be set
-+                                                 * within a defcmd command */
- #define KDB_STATE_ARCH		0xff000000	/* Reserved for arch
- 						 * specific use */
+ extern int kdb_nextline; /* Current number of lines displayed */
++extern int kdb_lines;    /* Limit on number of lines displayed at once. */
  
-diff --git a/kernel/debug/kdb/kdb_support.c b/kernel/debug/kdb/kdb_support.c
-index 7d6fb40..8562932 100644
---- a/kernel/debug/kdb/kdb_support.c
-+++ b/kernel/debug/kdb/kdb_support.c
-@@ -294,6 +294,25 @@ void kdb_symbol_print(unsigned long addr, const kdb_symtab_t *symtab_p,
- }
- 
- /*
-+ * kdb_strdup_extra - kdb strdup-like routine, that simplifies
-+ *                    strdup+strcat-like usage.
-+ * Inputs:
-+ *	str	The string to duplicate.
-+ *	extra	Extra length to allocate for.
-+ *	type	Flags to kmalloc for the new string.
-+ * Returns:
-+ *	Address of the new string, NULL if storage could not be allocated.
-+ */
-+char *kdb_strdup_extra(const char *str, unsigned extra, gfp_t type)
-+{
-+	int n = strlen(str) + extra + 1;
-+	char *s = kmalloc(n, type);
-+	if (!s)
-+		return NULL;
-+	return strcpy(s, str);
-+}
-+
-+/*
-  * kdb_strdup - kdb equivalent of strdup, for disasm code.
-  * Inputs:
-  *	str	The string to duplicate.
-@@ -306,11 +325,7 @@ void kdb_symbol_print(unsigned long addr, const kdb_symtab_t *symtab_p,
-  */
- char *kdb_strdup(const char *str, gfp_t type)
- {
--	int n = strlen(str)+1;
--	char *s = kmalloc(n, type);
--	if (!s)
--		return NULL;
--	return strcpy(s, str);
-+	return kdb_strdup_extra(str, 0, type);
- }
- 
- /*
+ typedef struct _kdb_bp {
+ 	unsigned long	bp_addr;	/* Address breakpoint is present at */
 -- 
 1.7.4.1
 
