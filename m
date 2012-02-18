@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab2BRWwf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 17:52:35 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:49917 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab2BRWwe (ORCPT
+	id S1754120Ab2BRXIe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 18:08:34 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62299 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab2BRXIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 17:52:34 -0500
-References: <20120218185419.79376027@xenia.leun.net> (sfid-20120218_193621_030111_7D470738)
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120218185419.79376027@xenia.leun.net> (sfid-20120218_193621_030111_7D470738)
+	Sat, 18 Feb 2012 18:08:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jorgyano@gmail.com designates 10.52.68.98 as permitted sender) smtp.mail=jorgyano@gmail.com; dkim=pass header.i=jorgyano@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: Cannot put ath9k interface to different namespace?
-From: Johannes Berg <johannes@sipsolutions.net>
-Date: Sat, 18 Feb 2012 23:52:52 +0100
-To: Michael Leun <lkml20120218@newton.leun.net>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-CC: mcgrof@qca.qualcomm.com, jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
-        senthilb@qca.qualcomm.com, linux-kernel@vger.kernel.org
-Message-ID: <e7ff035b-562a-4222-80c4-eb501a3fcd6b@email.android.com>
+In-Reply-To: <1329604310.1753.30.camel@joe2Laptop>
+References: <1329603020-5302-1-git-send-email-jorgyano@gmail.com>
+	<1329604310.1753.30.camel@joe2Laptop>
+Date: Sat, 18 Feb 2012 21:08:30 -0200
+Message-ID: <CABRD5hKU0a-z8qd+xQEcHzH3y3eFy+sxUUtg1NXi+fqmbw4h4A@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v2] Staging: crystalhd: Replace the BCMLOG_ERR macro
+ with pr_err
+From: Jorgyano vieira <jorgyano@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@linuxfoundation.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, nsankar@broadcom.com, jarod@wilsonet.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have to put the entire wiphy into the netns with iw, not just one virtual interface. 
+On Sat, Feb 18, 2012 at 8:31 PM, Joe Perches <joe@perches.com> wrote:
+> On Sat, 2012-02-18 at 20:10 -0200, Jorgyano Vieira wrote:
+>> Replace the usage of BCMLOG_ERR with pr_err and remove the macro definition.
+>> Also added pr_fmt to identify the driver error messages.
+>
+> Hi Jorgyano.
+Hi Joe,
+>
+> Couple of generic comments.
+>
+> o Please look for and fix spelling errors at the same time.
+People are blamed for doing more-then-one-thing-per-patch,
+so I prefer send only one big patch fixing all spelling errors and
+coding style on further work.
 
-Michael Leun <lkml20120218@newton.leun.net> wrote:
+> o Coalesce formats, don't worry about 80 columns for that.
+> o pr_fmt needs to be #defined before any #include that might
+>  directly or indirectly #include kernel.h/printk.h
+>  use 'strings <path>/built-in.o | grep "^<.>"' to verify.
+yes, I take care of this:--- a/drivers/staging/crystalhd/crystalhd_misc.h
++++ b/drivers/staging/crystalhd/crystalhd_misc.h
+@@ -28,6 +28,8 @@
+ #ifndef _CRYSTALHD_MISC_H_
+ #define _CRYSTALHD_MISC_H_
 
->Hi,
->
->tried to put ath9k_htc interface to namespace, does not work:
->
->jill:/home/ml # ip link set netns 4001 dev wlan3
->RTNETLINK answers: Invalid argument
->
->Also does not work with ath9k, but does work with other wlan devices
->(tried zd1201, r8712u, thats what I've here at the moment).
->
->When trying, device was down.
->
->Is there some trick to do it or is there some support from driver for
->that missing?
->
->Any plans to fix that? Would that be big effort?
->
->Thanks.
->
->-- 
->MfG,
->
->Michael Leun
->
->--
->To unsubscribe from this list: send the line "unsubscribe
->linux-wireless" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
++#define pr_fmt(fmt)    KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
 
--- 
-Sent from my tablet. Please excuse my brevity.
+> o [kv][kzm]alloc failures don't need specific OOM messages
+>  as the generic function does a dump_stack
+You are right, this code really have some unnecessary messages,
+perhaps it could be done on further patch, all at once.
+The main idea on this patch is just replace convert the old macro to pr_err.
+
+> o argument alignment could be after the open parenthesis.
+yes, it could be done together with the coding style issues.
+
+there is a lot of work to do on this driver.
+
+Many thanks for your comments.
+
+regards,
+Jorgyano Vieira
