@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab2BRJSB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 04:18:01 -0500
-Received: from cassarossa.samfundet.no ([129.241.93.19]:38774 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab2BRJR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 04:17:59 -0500
-Date: Sat, 18 Feb 2012 10:17:49 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@avr32linux.org
-Subject: Re: [PATCH 16/18] Atmel: move console default platform_device to
- serial driver
-Message-ID: <20120218091749.GA22669@samfundet.no>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
- <81ce940f5ac09c5d50bfa712ab10a785f28df4ea.1329500622.git.nicolas.ferre@atmel.com>
+	id S1752435Ab2BRJtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 04:49:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537Ab2BRJtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 04:49:41 -0500
+Message-ID: <4F3F7427.6020705@redhat.com>
+Date: Sat, 18 Feb 2012 11:49:27 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <81ce940f5ac09c5d50bfa712ab10a785f28df4ea.1329500622.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Scott Wood <scottwood@freescale.com>
+CC: Alexander Graf <agraf@suse.de>, Anthony Liguori <anthony@codemonkey.ws>,
+        KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>, kvm-ppc <kvm-ppc@vger.kernel.org>
+Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
+References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws> <51470503-DEE0-478D-8D01-020834AF6E8C@suse.de> <4F3117E5.6000105@redhat.com> <EF2405C8-CBF4-4CED-B7DC-D048EA002E48@suse.de> <4F31241C.70404@redhat.com> <BE675ED2-9384-4B91-9A30-098C2915A227@suse.de> <4F313354.4080401@redhat.com> <4B03190C-1B6B-48EC-92C7-C27F6982018A@suse.de> <4F3B9497.4020700@redhat.com> <C2015C96-C4B7-4768-8C01-E41F4D8ED9FB@suse.de> <4F3BB33C.1000908@redhat.com> <1FE08D00-49E8-4371-9F23-C5D2EE568FA8@suse.de> <4F3BB9DC.6040102@redhat.com> <3DC824A5-5D5A-4BCC-A0FB-1B459B7E362D@suse.de> <4F3D57E3.7020503@redhat.com> <810F6879-64A9-4FCF-9C22-00BCC945D6B0@suse.de> <4F3D5B35.4000606@redhat.com> <4F3D6A0E.4080705@freescale.com>
+In-Reply-To: <4F3D6A0E.4080705@freescale.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Fri 17 Feb 2012 18:50:08 +0100 or thereabout, Nicolas Ferre wrote:
-> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> 
-> This variable spread on every SoC that is using the atmel_serial.c
-> driver can be included directly into the latter.
-> 
-> This will allow to compile multiple soc in the same kernel.
+On 02/16/2012 10:41 PM, Scott Wood wrote:
+> >>> Sharing the data structures is not need.  Simply synchronize them before
+> >>> lookup, like we do for ordinary registers.
+> >>
+> >> Ordinary registers are a few bytes. We're talking of dozens of kbytes here.
+> > 
+> > A TLB way is a few dozen bytes, no?
+>
+> I think you mean a TLB set... 
 
-Sounds like a good idea, but...
+Yes, thanks.
 
-<snipp AT91 changes>
+> but the TLB (or part of it) may be fully
+> associative.
 
-> diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> index 402a7bb..889c544 100644
-> --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> @@ -1055,8 +1055,6 @@ struct platform_device *__init at32_add_device_usart(unsigned int id)
->  	return at32_usarts[id];
->  }
->  
-> -struct platform_device *atmel_default_console_device;
-> -
->  void __init at32_setup_serial_console(unsigned int usart_id)
->  {
->  	atmel_default_console_device = at32_usarts[usart_id];
+A fully associative TLB has to be very small.
 
-I doubt this assignment will work if you remove the struct above. I did not
-look at how AT91 does this, will it be similar affected?
+> On e500mc, it's 24 bytes for one TLB entry, and you'd need 4 entries for
+> a set of TLB0, and all 64 entries in TLB1.  So 1632 bytes total.
 
-> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-> index 10605ec..f9a6be7 100644
-> --- a/drivers/tty/serial/atmel_serial.c
-> +++ b/drivers/tty/serial/atmel_serial.c
-> @@ -1526,6 +1526,8 @@ void __init atmel_register_uart_fns(struct atmel_port_fns *fns)
->  	atmel_pops.set_wake	= fns->set_wake;
->  }
->  
-> +struct platform_device *atmel_default_console_device;	/* the serial console device */
-> +
->  #ifdef CONFIG_SERIAL_ATMEL_CONSOLE
->  static void atmel_console_putchar(struct uart_port *port, int ch)
->  {
+Syncing this every time you need a translation (for gdb or the monitor)
+is trivial in terms of performance.
+
+> Then we'd need to deal with tracking whether we synchronized one or more
+> specific sets, or everything (for migration or debug TLB dump).  The
+> request to synchronize would have to come from within the QEMU MMU code,
+> since that's the point where we know what to ask for (unless we
+> duplicate the logic elsewhere).  I'm not sure that reusing the standard
+> QEMU MMU code for individual debug address translation is really
+> simplifying things...
+>
+> And yes, we do have fancier hardware coming fairly soon for which this
+> breaks (TLB0 entries can be loaded without host involvement, as long as
+> there's a translation from guest physical to physical in a separate
+> hardware table).  It'd be reasonable to ignore TLB0 for migration (treat
+> it as invalidated), but not for debug since that may be where the
+> translation we're interested in resides.
+>
+
+So with this new hardware, the always-sync API breaks.
+
 -- 
-mvh
-Hans-Christian Egtvedt
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
