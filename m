@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2BRG6w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 01:58:52 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36448 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab2BRG6v (ORCPT
+	id S1752097Ab2BRHMY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 02:12:24 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46326 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab2BRHMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 01:58:51 -0500
-Date: Sat, 18 Feb 2012 10:58:46 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for Feb 17 (kernel/kcmp.c)
-Message-ID: <20120218065846.GA1905@moon>
-References: <20120217165045.2394d944d6efc37104421d2e@canb.auug.org.au>
- <4F3E95B7.3010700@xenotime.net>
- <20120218101446.64a7ea590b66f337762bfb57@canb.auug.org.au>
+	Sat, 18 Feb 2012 02:12:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.28.167 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120218101446.64a7ea590b66f337762bfb57@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOGqxeWjtr=SOY83ZFEdwJXXatqLLEN6SHre9-0DfeJfcyBhKQ@mail.gmail.com>
+References: <CAOGqxeWjtr=SOY83ZFEdwJXXatqLLEN6SHre9-0DfeJfcyBhKQ@mail.gmail.com>
+Date: Sat, 18 Feb 2012 15:12:22 +0800
+Message-ID: <CAJd=RBAmVcJBS_WdUwBYVDAOz+rBvxNER=Q1r7Q0cyuWiQ1gcQ@mail.gmail.com>
+Subject: Re: Stack unwind across signal frame
+From: Hillf Danton <dhillf@gmail.com>
+To: Alan Cooper <alcooperx@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 18, 2012 at 10:14:46AM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> On Fri, 17 Feb 2012 10:00:23 -0800 Randy Dunlap <rdunlap@xenotime.net> wrote:
-> >
-> > on i386:
-> > 
-> > kernel/kcmp.c:153:10: error: 'EOPNOTSUP' undeclared (first use in this 
-> > function)
-> 
-> Caused by commit 0e8a8193207d ("syscalls, x86: add __NR_kcmp syscall")
-> from the akpm tree.  Missing include of linux/errno.h ...
-> 
-
-Ouch. Thanks Stephen for catching this and Andrew for fixing. Sorry.
-
-	Cyrill
+On Sat, Feb 18, 2012 at 5:13 AM, Alan Cooper <alcooperx@gmail.com> wrote:
+> This problem ends up breaking pthread cleanup for C++ programs because
+> the cleanup is done using a class with the expectation that the
+> destructor will be called when the thread gets canceled by a cancel
+> signal. This seems like a big problem for all current MIPS kernels so
+> I was wondering if I'm missing something?
+>
+> If this is correct, then it seems like the best solution would be to
+> add the VDSO eh_frame info to MIPS.
+>
+Feel free to send a patch after testing;)
