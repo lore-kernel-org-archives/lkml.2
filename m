@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab2BRHc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 02:32:57 -0500
-Received: from 124-248-200-49.sunnyvision.com ([124.248.200.49]:51823 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab2BRHcz (ORCPT
+	id S1752237Ab2BRHmD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 02:42:03 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44170 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab2BRHmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 02:32:55 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 82447DFDEB
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com F40B64FB1F
-Message-ID: <3VNOAwjg2@yahoo.com>
-From: otto@dedicatedserver.com.hk
-To: otto@europeconcern.com
-Subject: Web Design Service
-X-Mailer: wHw0Qa7SebfK2Yhj6IUffl
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Sat, 18 Feb 2012 14:39:58 +0800 (HKT)
+	Sat, 18 Feb 2012 02:42:01 -0500
+Date: Sat, 18 Feb 2012 13:11:27 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@elte.hu, pjt@google.com, efault@gmx.de, venki@google.com,
+        suresh.b.siddha@intel.com, linux-kernel@vger.kernel.org,
+        " Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Subject: Re: sched: Performance of Trade workload running inside VM
+Message-ID: <20120218074127.GA9077@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20120214112827.GA22653@linux.vnet.ibm.com>
+ <1329307161.2293.66.camel@twins>
+ <20120215171032.GB9918@linux.vnet.ibm.com>
+ <1329326651.2293.151.camel@twins>
+ <20120215173817.GD9918@linux.vnet.ibm.com>
+ <1329327902.2293.168.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1329327902.2293.168.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12021807-4790-0000-0000-00000162498D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1I7X92V003859
 
-Dear Sir / Madam, 
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-02-15 18:45:02]:
 
-Good morning, this is Otto from DS Hong Kong. 
+> I'm still waiting for a problem description that isn't a book.
+> 
+> What does the load-balancer do,
 
-We are a web design house and programming service provider. As 14 years experience, we are professional to develop a website for your business. 
+select_idle_sibling() tries finding a core (sched group) which is fully idle
+failing which will let task wakeup on prev_cpu.
 
-In the Chinese New Year Festival, we have the following offer for your corporate. Please check. 
+> why is it wrong,
 
-Service	Package
+Take this scenario. wakeup source for task is cpu0 while its prev_cpu is
+cpu7 (which is in another cache domain).
 
-Web Development and Programing Service
-*********************************************************
-1)	Website Design Service 			($13,000)
+		cache_dom0		cache_dom1
+		(0, 1) (2, 3)		(4, 5) (6, 7)
+nr_running->	 1  1   1  1     	 0, 1   1, 2
 
-	Maximum 10 Web Pages Development                                                 
-	(Site Map will be confirmed later)
-	All the tailor-made webpage design is included:
--	Theme / Visual Concept Development;
--	Design Study and Analysis / Art Direction;
--	Original Artwork & Layout Design;
--	Steady Web page development;
--	HTML Development for Search Engine Applicable;
+In this case we let task wakeup on cpu7, resulting in it incurring some
+wait time before being scheduled. A better choice would have been cpu4 (whose
+core is partially idle) or in general any other less-loaded cpu which is in same
+cache domain?
 
-2)	Web Programing Service 			($15,000)
+> why does your patch sort it etc.
 
-Content Management System (For 5 web pages)                                 
--	Standard CMS function for add / edit fields 
--	Max. 10 fields per each CMS section
--	CMS fields only for Text fields and photos upload fields
--	Photos upload only support (.jpg / .png / .bmp) 
--	Each field for one photos
--	20 pages / section for CMS function
--	Database support with un-limit data create;
--	Admin Panel with Login function (1 login account)
+The patch does result in a hunt for "least" busy cpu when the target cpu
+returned by select_idle_sibling() is not idle - thus resulting in better
+scheduling latencies for the task (and in turn better benchmark scores).
 
+Another variant of the patch could be to have select_idle_sibling() look
+for any idle cpu that is in same cache domain (rather than looking for a
+whole group of cpus to be idle)?
 
-*********************************************************
-
-Promotion Price: 	HKD $28,000.00
-Lead Time: 		32 working days
-
-If you have more special requirement, please let us know and we will provide more detail to you. 
-
-Please feel free to contact me.The following is my contact information. 
-
-Contact No: (852) 5108 9664
-
-Skype: yschiu2001 (yschiu2001@yahoo.com.hk)
-
-MSN: yschiu2001@yahoo.com.hk
-
-Email: otto@dedicatedserver.com.hk
-
-If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or remove your email from the list. 
-
-Best Regards
-Otto Chiu
-Dedicated Server Hong Kong
-
+- vatsa
 
