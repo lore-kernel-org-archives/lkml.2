@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2BRUAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 15:00:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55160 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752540Ab2BRUAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 15:00:43 -0500
-Date: Sat, 18 Feb 2012 12:00:39 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Remove obsolete consumer_dev related comment
-Message-ID: <20120218200038.GA3198@opensource.wolfsonmicro.com>
-References: <1329576795.2399.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <1329576795.2399.1.camel@phoenix>
-X-Cookie: Chess tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753110Ab2BRUNt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 15:13:49 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:37140 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798Ab2BRUNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 15:13:46 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/mmc/host/sdhci-s3c.c: use devm_ functions
+Date: Sat, 18 Feb 2012 21:13:39 +0100
+Message-Id: <1329596019-19822-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The various devm_ functions allocate memory that is released when a driver
+detaches.  This patch uses these functions for data that is allocated in
+the probe function of a platform device and is only freed in the remove
+function.
 
-On Sat, Feb 18, 2012 at 10:53:15PM +0800, Axel Lin wrote:
-> consumer_dev is remove by commit 737f36
-> "regulator: Remove support for supplies specified by struct device".
-> Thus remove the obsolete comment.
+By using devm_ioremap, it also removes a potential memory leak, because
+there was no call to iounmap in the probe function.
 
-Applied, thanks.
+The call to platform_get_resource was moved just to make it closer to the
+place where its result it used.
 
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+---
+ drivers/mmc/host/sdhci-s3c.c |   26 +++-----------------------
+ 1 file changed, 3 insertions(+), 23 deletions(-)
 
-iQIcBAEBAgAGBQJPQANgAAoJEBus8iNuMP3d9x0QAIoWlvhJzzl3STGxF9qthvBo
-rUxZgvEuaM7YNlhLJdQpukg/42hw31gOs6ilgoAoSrswKSKF1r5K361OOTJ1J2Aq
-tCSadlGBXnZD3JVjbOZ23DpzvxRMog8cMK4NzxVPTLUzfiRd+JEjdEj1x30hvD6W
-hTtjyHafFBKdsO2GiMcrUQfggGV7FHanGDaAyYkKvFCcPzx4dQ6yx7OHTj6U6OEV
-GNQtSykfZHTabx8hE21k4N9mO34OYLxgGEke/4A6ckaOPDJ/SOBuvGr27aFUJToM
-SCIHN8q0A5uIgU2EyWkj16+0UZZzLvz/V7YGnZu4UTsTTAoWgzWg3f8tb021tRi1
-RG6oO+WmXhO8ceUFJet+gMp/Dk0umJAuihSqdoZYos+zb+H3udU73/QfnKEse/Dc
-TiNQtnhBSTbkazCPXBMj6Pd+goYoURWh7fKKeTovQiORH78vkJb6UOPrOnrcjlCA
-Yd2PfUs4gPFRTASSQfKP7G00cijmmq71xYgOR/Amu71nSM6i+dWga+pNcc+JHXGY
-79kCAlzTKmw1gPmnWXPbGZWpyRTGz4EdFf3S1bmfQugI0+RFWSOBRGzTsO39/E7C
-wO6PjyPDQ71CNOP9Hg8uw0gwCF0rqtZyeSGdZ3bSVehaduCFvmlQkEWVqqoJNXUg
-Nb+/X9lRpM+2sxKpMp5p
-=QtDf
------END PGP SIGNATURE-----
+diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
+index b19e7d4..10ec7c6 100644
+--- a/drivers/mmc/host/sdhci-s3c.c
++++ b/drivers/mmc/host/sdhci-s3c.c
+@@ -402,12 +402,6 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
+ 		return irq;
+ 	}
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "no memory specified\n");
+-		return -ENOENT;
+-	}
+-
+ 	host = sdhci_alloc_host(dev, sizeof(struct sdhci_s3c));
+ 	if (IS_ERR(host)) {
+ 		dev_err(dev, "sdhci_alloc_host() failed\n");
+@@ -464,15 +458,9 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
+ 		goto err_no_busclks;
+ 	}
+ 
+-	sc->ioarea = request_mem_region(res->start, resource_size(res),
+-					mmc_hostname(host->mmc));
+-	if (!sc->ioarea) {
+-		dev_err(dev, "failed to reserve register area\n");
+-		ret = -ENXIO;
+-		goto err_req_regs;
+-	}
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
+-	host->ioaddr = ioremap_nocache(res->start, resource_size(res));
++	host->ioaddr = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!host->ioaddr) {
+ 		dev_err(dev, "failed to map registers\n");
+ 		ret = -ENXIO;
+@@ -547,7 +535,7 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
+ 	ret = sdhci_add_host(host);
+ 	if (ret) {
+ 		dev_err(dev, "sdhci_add_host() failed\n");
+-		goto err_add_host;
++		goto err_req_regs;
+ 	}
+ 
+ 	/* The following two methods of card detection might call
+@@ -561,10 +549,6 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+- err_add_host:
+-	release_resource(sc->ioarea);
+-	kfree(sc->ioarea);
+-
+  err_req_regs:
+ 	for (ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
+ 		if (sc->clk_bus[ptr]) {
+@@ -610,10 +594,6 @@ static int __devexit sdhci_s3c_remove(struct platform_device *pdev)
+ 	clk_disable(sc->clk_io);
+ 	clk_put(sc->clk_io);
+ 
+-	iounmap(host->ioaddr);
+-	release_resource(sc->ioarea);
+-	kfree(sc->ioarea);
+-
+ 	sdhci_free_host(host);
+ 	platform_set_drvdata(pdev, NULL);
+ 
 
---HlL+5n6rz5pIUxbD--
