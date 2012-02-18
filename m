@@ -1,82 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2BRMyx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 07:54:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56360 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab2BRMyu convert rfc822-to-8bit (ORCPT
+	id S1752438Ab2BRNFV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 08:05:21 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43565 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab2BRNFT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 07:54:50 -0500
+	Sat, 18 Feb 2012 08:05:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.26.65 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <201202180054.49284.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
-	<201202142339.59423.rjw@sisk.pl>
-	<1329378119.28581.34.camel@rui.sh.intel.com>
-	<201202180054.49284.rjw@sisk.pl>
-Date: Sat, 18 Feb 2012 20:54:49 +0800
-Message-ID: <CAC=cRTOCpH8haMGDEDDG8k0k2DpaVM7DoU5AayrcscR1rZKXgQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Zhang Rui <rui.zhang@intel.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Lin Ming <ming.m.lin@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org
+In-Reply-To: <20120218111419.GA2488@homac.suse.de>
+References: <alpine.LSU.2.00.1202171320590.5994@eggly.anvils>
+	<20120217222922.GA2741@homac.suse.de>
+	<alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
+	<20120217230107.GA12929@homac.suse.de>
+	<alpine.LSU.2.00.1202171541040.3155@eggly.anvils>
+	<20120218111419.GA2488@homac.suse.de>
+Date: Sat, 18 Feb 2012 21:05:18 +0800
+Message-ID: <CAJd=RBDRZSizawvRYqr7=U75Su5TLvMfgdagRA49wzJr40DqSg@mail.gmail.com>
+Subject: Re: linux-next: dock_link_device is oopsy
+From: Hillf Danton <dhillf@gmail.com>
+To: Holger Macht <holger@homac.de>
+Cc: Hugh Dickins <hughd@google.com>, Matthew Garrett <mjg@redhat.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 18, 2012 at 7:54 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, February 16, 2012, Zhang Rui wrote:
->> On 二, 2012-02-14 at 23:39 +0100, Rafael J. Wysocki wrote:
->> > On Tuesday, February 14, 2012, Zhang Rui wrote:
->> > > On 一, 2012-02-13 at 20:38 +0100, Rafael J. Wysocki wrote:
->> > > > On Monday, February 13, 2012, Alan Stern wrote:
->> > > > > On Mon, 13 Feb 2012, Lin Ming wrote:
-[snip]
->> Yeah, I have thought about this for quite a while before, there ARE
->> several ways to do this, but these need a lot of changes in bus code, at
->> least for the buses that support device runtime D3 (off) by ACPI.
+On Sat, Feb 18, 2012 at 7:14 PM, Holger Macht <holger@homac.de> wrote:
+> On Fr 17. Feb - 15:49:02, Hugh Dickins wrote:
+>> On Sat, 18 Feb 2012, Holger Macht wrote:
+>> > On Fr 17. Feb - 14:42:31, Hugh Dickins wrote:
+>> > > On Fri, 17 Feb 2012, Holger Macht wrote:
+>> > > > On Fr 17. Feb - 13:46:04, Hugh Dickins wrote:
+>> > > > > Matthew,
+>> > > > >
+>> > > > > A linux-next oops at bootup in dock_link_device() tells me that you
+>> > > > > were not feeling well when you wrote that and dock_unlink_device():
+>> > > > > I hope you're feeling better now and can rewrite them soon.
+>> > > >
+>> > > > Andrew Morton experienced a similar problem. What system are you using?
+>> > > > I didn't encounter this problem with the systems I tested with.
+>> > >
+>> > > The two systems I got that on were both 4-year-old Core2 Duo systems,
+>> > > one an HP quad desktop, one a Fujitsu-Siemens laptop.
+>> >
+>> > Thanks for the information I think this is really independent from the
+>> > fact if a laptop, or more precicely if a system with dock station/bay is
+>> > used.
+>> >
+>> > >
+>> > > >
+>> > > > Do you actually have a /sys/devices/platform/dock.?/ directory with a
+>> > > > file 'type' that contains 'dock_station'?
+>> > >
+>> > > I'll have to report back on that this evening, I'm away from them now.
+>> >
+>> > I actually guess that those systems don't have a
+>> > /sys/devices/platform/dock.? directory at all, which is fine.
+>> >
+>> > I also think this will fix it, would be great if you could confirm this:
+>> >
+>> > acpi: Bail out when linking devices and there are no dock stations
+>> >
+>> > If dock_station_count is zero, we allocate zero memory and don't check
+>> > this at future references. So bail out if there are actually no dock
+>> > stations.
+>> >
+>> > Signed-off-by: Holger Macht <holger@homac.de>
 >>
->> Lets also take SATA port and ZPODD for example,
->> proposal one,
->> 1) introduce scsi_can_power_off and ata_can_power_off.
->> 2) sr driver set scsi_can_power_off bit and scsi layer is aware of this,
->> thus the scsi host can set this bit as well.
->> 3) in the .runtime_suspend callback of ata port, it knows that its scsi
->> host interface can be powered off, thus it invokes ata_can_power_off to
->> tell the ata layer.
+>> Certainly won't fix it as is (well, it shifts the crash over into kfree).
+>> This function is expected to return a pointer, not an error or success
+>> code.
 >
-> Hmm.  I'm not sure why you want to introduce this special "power off"
-> condition.  In fact, it's nothing special, it only means that the device
-> in question shouldn't be accessed by software, which pretty much is equivalent
-> to the "suspended" condition (as defined in the runtime PM docs).
+> Oh well, too late for me yesterday...
+>
+>>
+>> I've little doubt that returning NULL rather than -ENODEV there would fix
+>> the boot crash; and if you're in a hurry to fix up booting (understandable)
+>> then I suppose that would do for the moment.
+>
+> I really think this will basically do the trick. dock_(un)link_device()
+> is called by ata_acpi_(un)bind_dock(), which in turn is called by
+> ata_scsi_scan_host() unconditionally, thus not depending on the presence
+> of a dock device. And dock_(un)link_device() simply misses the check if
+> there is a dock/bay device.
+>
+> So how about that?
+>
+> acpi: Bail out when linking devices and there are no dock stations
+>
+> If dock_station_count is zero, we allocate zero memory and don't check
+> this at future references. So bail out if there are actually no dock
+> stations.
+>
+> Signed-off-by: Holger Macht <holger@homac.de>
+> ---
+>  drivers/acpi/dock.c |   19 ++++++++++++++-----
+>  1 files changed, 14 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index b5e4142..0b3072c 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -281,11 +281,15 @@ EXPORT_SYMBOL_GPL(is_dock_device);
+>  */
+>  struct device **dock_link_device(acpi_handle handle)
+>  {
+> -       struct device *dev = acpi_get_physical_device(handle);
+> +       struct device *dev;
+>        struct dock_station *dock_station;
+>        int ret, dock = 0;
+>        struct device **devices;
+>
+> +       if (!dock_station_count)
+> +               return NULL;
+> +
+> +       dev = acpi_get_physical_device(handle);
+>        devices = kmalloc(dock_station_count * sizeof(struct device *),
+>                          GFP_KERNEL);
+>
+> @@ -320,12 +324,17 @@ EXPORT_SYMBOL_GPL(dock_link_device);
+>  */
+>  struct device **dock_unlink_device(acpi_handle handle)
+>  {
+> -       struct device *dev = acpi_get_physical_device(handle);
+> +       struct device *dev;
+>        struct dock_station *dock_station;
+>        int dock = 0;
+> -       struct device **devices =
+> -               kmalloc(dock_station_count * sizeof(struct device *),
+> -                       GFP_KERNEL);
+> +       struct device **devices;
+> +
+> +       if (!dock_station_count)
+> +               return NULL;
+> +
+> +       dev = acpi_get_physical_device(handle);
+> +       devices = kmalloc(dock_station_count * sizeof(struct device *),
+> +                         GFP_KERNEL);
+>
 
-I think some reasons to introduce can_poweroff can be:
+If bail out in this way, another patch looks needed to fix up
+mem leakage :-(
 
-1) To indicate the implementation of .runtime_suspend/.runtime_resume
-is compatible with power off.  That is, .runtime_suspend will save all
-needed information and .runtime_resume can work on the uninitialized
-device.
-
-If this is already the requirement of
-.runtime_suspend/.runtime_resume.  Then this is not needed.   Maybe we
-can make that explicitly for these callbacks via some kind of
-documentation.
-
-2) To support something like pm-qos.  power off device may have more
-exit.latency than normal low power state (such as D3Hot).  Some device
-may disable can_power_off based on that.
-
-3) Whether to go to power off should be determined by leaf device
-(such as SATA disk), but that may be done by its parent device (such
-as SATA port).  It's a way for leaf device to tell its parent device
-whether it want to go to power off.
-
-[snip]
-
-Best Regards,
-Huang Ying
+>        if (!dev)
+>                return NULL;
+> --
+> 1.7.7
