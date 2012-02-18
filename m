@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2BRQUx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 11:20:53 -0500
-Received: from ehost3.rotherham.gov.uk ([195.188.200.150]:10736 "EHLO
-	ehost3.rotherham.gov.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab2BRQUv convert rfc822-to-8bit (ORCPT
+	id S1752840Ab2BRQYv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 11:24:51 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:39821 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752635Ab2BRQYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 11:20:51 -0500
-X-Greylist: delayed 3387 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 Feb 2012 11:20:51 EST
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Sat, 18 Feb 2012 11:24:48 -0500
+X-Sasl-enc: mgbHi8qHnx2as//kmug/yuXek2pULxW5F5NKOCSPdBLw 1329582285
+Date: Sat, 18 Feb 2012 08:18:49 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Ubuntu security discussion <ubuntu-hardened@lists.ubuntu.com>,
+        linux-kernel@vger.kernel.org, David Windsor <dwindsor@gmail.com>,
+        pageexec@freemail.hu, spender@grsecurity.net
+Subject: Re: [kernel-hardening] Re: Add overflow protection to kref
+Message-ID: <20120218161849.GA4176@kroah.com>
+References: <CAEXv5_gkTsPHDFh+wQqD3P3D-Z+uCN-_1bVyHfHV=u7bS-tgeA@mail.gmail.com>
+ <20120216204515.GH20420@outflux.net>
+ <20120217002405.GB7746@kroah.com>
+ <20120217075945.GA2831@albatros>
+ <20120217175445.GC29902@kroah.com>
+ <20120217193719.GA4187@albatros>
+ <20120217233908.GA24047@dztty>
+ <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: Good News!!!
-Date: Sat, 18 Feb 2012 15:23:55 -0000
-Message-ID: <32F68AC935494F46BFFD82DF6ACF88E306DAEF0B@xbk4.rotherham.gov.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Good News!!!
-Thread-Index: AczuUVHNcEBEBJwzRTqbtxAn6yIHjQ==
-From: "Lambert, John" <John.Lambert@rotherham.gov.uk>
-X-OriginalArrivalTime: 18 Feb 2012 15:23:57.0727 (UTC) FILETIME=[554552F0:01CCEE51]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1RGDWM0C26YR+GGbguRQd0R3HoPJ5QVyEFkLGFfPqs6wb5Mg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good News!!!
-Dear Sir/Ma,
-Your Email has won the sum of EUR1.000.000.00(One Million Euros) in the 2012 Online International Email Sweepstake Lottery Program held on the 16th of February 2012 in Madrid Spain. Do Contact Mr.Peter Gil of the Euromillions/Ventural Lottery International with the 
-Tel:0034-632-683-921 
-Contact Email Box( gllobv04@aol.com ) for further Clarification and Claim with the Batch Number 99687-ESP/Reference Number 46451-ESP and Winning Number 77708-ESP.kindly forward your Full name,address,Tel,Fax,Occupation,Age,Sex to your agent.
-Congratulations!!!
-Mr.Chris Edward.
-Reply to the Email address for Claim: gllobv04@aol.com
-#####################################################################################
+On Fri, Feb 17, 2012 at 05:44:57PM -0800, Roland Dreier wrote:
+> On Fri, Feb 17, 2012 at 3:39 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >> 2) what to do with architectures-loosers?
+> > There is lib/atomic64.c but with a static hashed array of raw_spinlocks.
+> 
+> Even leaving aside performance impact of atomic64_t (and probably
+> in most cases the performance of kref is not important at all), it is
+> unfortunate to bloat the size from 4 bytes to 8 bytes.
+> 
+> It seems much better to have some out-of-line code for overflow
+> checking rather than increasing the size of every data structure
+> that embeds a kref.
 
-The information in this e-mail is confidential and intended solely for the use of the
-individual to whom it was addressed. If you are not the intended recipient, be
-advised that you have received this e-mail in error and that any use, dissemination,
-forwarding, printing or copying of this e-mail is strictly prohibited. If you have
-received this e-mail in error, please advise the sender by using the reply facility
-in your e-mail software, and then delete it from your system. Rotherham MBC may 
-monitor the content of the e-mails sent and received via its network for the purposes
-of ensuring compliance with the law and with RMBC policies.  Any views or opinions
-presented are only those of the author and not those of Rotherham MBC.
+Please realize that kref is an in-line structure now.
 
-#####################################################################################
+> Greg, I'm not sure why you're opposed to adding this checking...
+> it's pretty clear that buggy error paths that forget to do a put are
+> pretty common and will continue to be common in new code, and
+> making them harder to exploit seems pretty sane to me.
+> 
+> What's the downside?
+
+The downside is that there has not even been a patch sent for any of
+this.  Combine that with a lack of understanding about reference
+counting and atomic_t usages in the kernel, and the whole thing is ripe
+for misunderstanding and confusion.
+
+greg k-h
