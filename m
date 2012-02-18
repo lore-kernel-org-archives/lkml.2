@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2BRHOb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 02:14:31 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58664 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2BRHOa (ORCPT
+	id S1752212Ab2BRHc5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 02:32:57 -0500
+Received: from 124-248-200-49.sunnyvision.com ([124.248.200.49]:51823 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab2BRHcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 02:14:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.130.39 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Fri, 17 Feb 2012 23:14:01 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock
- splitting
-In-Reply-To: <4F3F46B7.40100@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202172312030.14811@eggly.anvils>
-References: <20120215224221.22050.80605.stgit@zurg> <alpine.LSU.2.00.1202151815180.19722@eggly.anvils> <4F3C8B67.6090500@openvz.org> <alpine.LSU.2.00.1202161235430.2269@eggly.anvils> <alpine.LSU.2.00.1202171803380.25191@eggly.anvils>
- <4F3F46B7.40100@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 18 Feb 2012 02:32:55 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 82447DFDEB
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com F40B64FB1F
+Message-ID: <3VNOAwjg2@yahoo.com>
+From: otto@dedicatedserver.com.hk
+To: otto@europeconcern.com
+Subject: Web Design Service
+X-Mailer: wHw0Qa7SebfK2Yhj6IUffl
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Sat, 18 Feb 2012 14:39:58 +0800 (HKT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1I7X92V003859
 
-On Sat, 18 Feb 2012, Konstantin Khlebnikov wrote:
-> Hugh Dickins wrote:
-> > On Thu, 16 Feb 2012, Hugh Dickins wrote:
-> > > 
-> > > Yours are not the only patches I was testing in that tree, I tried to
-> > > gather several other series which I should be reviewing if I ever have
-> > > time: Kamezawa-san's page cgroup diet 6, Xiao Guangrong's 4 prio_tree
-> > > cleanups, your 3 radix_tree changes, your 6 shmem changes, your 4 memcg
-> > > miscellaneous, and then your 15 books.
-> > > 
-> > > The tree before your final 15 did well under pressure, until I tried to
-> > > rmdir one of the cgroups afterwards: then it crashed nastily, I'll have
-> > > to bisect into that, probably either Kamezawa's or your memcg changes.
-> > 
-> > So far I haven't succeeded in reproducing that at all: it was real,
-> > but obviously harder to get than I assumed - indeed, no good reason
-> > to associate it with any of those patches, might even be in 3.3-rc.
-> > 
-> > It did involve a NULL pointer dereference in mem_cgroup_page_lruvec(),
-> > somewhere below compact_zone() - but repercussions were causing the
-> > stacktrace to scroll offscreen, so I didn't get good details.
-> 
-> There some stupid bugs in my v1 patchset, it shouldn't works at all.
-> I did not expect that someone will try to use it. I sent it just to discuss.
+Dear Sir / Madam, 
 
-Yes, but as I said, that bug appeared before I put your patchset (the 15) on.
+Good morning, this is Otto from DS Hong Kong. 
 
-Hugh
+We are a web design house and programming service provider. As 14 years experience, we are professional to develop a website for your business. 
+
+In the Chinese New Year Festival, we have the following offer for your corporate. Please check. 
+
+Service	Package
+
+Web Development and Programing Service
+*********************************************************
+1)	Website Design Service 			($13,000)
+
+	Maximum 10 Web Pages Development                                                 
+	(Site Map will be confirmed later)
+	All the tailor-made webpage design is included:
+-	Theme / Visual Concept Development;
+-	Design Study and Analysis / Art Direction;
+-	Original Artwork & Layout Design;
+-	Steady Web page development;
+-	HTML Development for Search Engine Applicable;
+
+2)	Web Programing Service 			($15,000)
+
+Content Management System (For 5 web pages)                                 
+-	Standard CMS function for add / edit fields 
+-	Max. 10 fields per each CMS section
+-	CMS fields only for Text fields and photos upload fields
+-	Photos upload only support (.jpg / .png / .bmp) 
+-	Each field for one photos
+-	20 pages / section for CMS function
+-	Database support with un-limit data create;
+-	Admin Panel with Login function (1 login account)
+
+
+*********************************************************
+
+Promotion Price: 	HKD $28,000.00
+Lead Time: 		32 working days
+
+If you have more special requirement, please let us know and we will provide more detail to you. 
+
+Please feel free to contact me.The following is my contact information. 
+
+Contact No: (852) 5108 9664
+
+Skype: yschiu2001 (yschiu2001@yahoo.com.hk)
+
+MSN: yschiu2001@yahoo.com.hk
+
+Email: otto@dedicatedserver.com.hk
+
+If you do not wish to further receive this event message, email "subscriber@dedicatedserver.com.hk" to unsubscribe this message or remove your email from the list. 
+
+Best Regards
+Otto Chiu
+Dedicated Server Hong Kong
+
+
