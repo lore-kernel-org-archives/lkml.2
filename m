@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2BRN3N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 08:29:13 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:35952 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751989Ab2BRN3L (ORCPT
+	id S1752657Ab2BRNgR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 08:36:17 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50411 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2BRNgP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 08:29:11 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes in arch/blackfin
-Date: Sat, 18 Feb 2012 14:28:06 +0100
-User-Agent: KMail/1.9.10
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Bob Liu <bob.liu@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de> <201202171815.59846.vapier@gentoo.org> <1329521263.584.50.camel@joe2Laptop>
-In-Reply-To: <1329521263.584.50.camel@joe2Laptop>
+	Sat, 18 Feb 2012 08:36:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jorgyano@gmail.com designates 10.52.99.42 as permitted sender) smtp.mail=jorgyano@gmail.com; dkim=pass header.i=jorgyano@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201202181428.07491.danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329571751;d41ead8d;
+In-Reply-To: <1329548162.1753.13.camel@joe2Laptop>
+References: <1329521976-1326-1-git-send-email-jorgyano@gmail.com>
+	<20120218062534.GB2855@mwanda>
+	<1329546625.1753.7.camel@joe2Laptop>
+	<20120218064039.GD2912@mwanda>
+	<1329548162.1753.13.camel@joe2Laptop>
+Date: Sat, 18 Feb 2012 11:36:15 -0200
+Message-ID: <CABRD5h+B-CzNQ+0+ahEBet7-N3O7Hh2BLQVwJzW7As_0UNs69w@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Staging: crystalhd: Replace the BCMLOG_ERR macro with pr_err
+From: Jorgyano vieira <jorgyano@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, gregkh@linuxfoundation.org,
+        devel@linuxdriverproject.org, jarod@wilsonet.com, nsankar@broadcom.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Samstag, 18. Februar 2012, Joe Perches wrote:
-> On Fri, 2012-02-17 at 18:15 -0500, Mike Frysinger wrote:
-> > On Friday 17 February 2012 05:57:54 Danny Kukawka wrote:
-> > > Maybe. Many drivers already print information about setting a random
-> > > mac address to a netdevice. Some with printk, some via
-> > > netdev_warn/netdev_info/netdev_dbg or netif_dbg and other with costum
-> > > methods. I could unify this, in a next step with a netdev_info in
-> > > eth_hw_addr_random(), if it's okay for David.
-> >
-> > i think unification in the core makes sense.  it enforces consistency and
-> > removes duplication.
+> It's possible to add "%s...", __func__ to
+> the necessary uses.  Adding it to the generic
+> is likely overkill.
+I agree with that.
+
+> But is it really necessary anyway?
 >
-> It's a good idea.
+> Aren't those called via some specific notifier
+> such that the output would make sense given
+> some specific invalid input?
+Some messages like "Invalid Arg" and "Invalid len" really don't make
+sense as it is.
 
-Okay ... I'll send a patch to print a message via netdev_info from 
-eth_hw_addr_random() and to cleanup the drivers.
-
-Danny
-
+But I think that just adding __func__ to the necessary uses is enough.
+I will resend this patch.
