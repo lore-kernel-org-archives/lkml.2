@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab2BRT5e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 14:57:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49401 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab2BRT5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 14:57:33 -0500
-Date: Sat, 18 Feb 2012 20:57:23 +0100
-From: Holger Macht <holger@homac.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Hillf Danton <dhillf@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: dock_link_device is oopsy
-Message-ID: <20120218195722.GA2590@homac.suse.de>
-References: <20120217222922.GA2741@homac.suse.de>
- <alpine.LSU.2.00.1202171436490.10222@eggly.anvils>
- <20120217230107.GA12929@homac.suse.de>
- <alpine.LSU.2.00.1202171541040.3155@eggly.anvils>
- <20120218111419.GA2488@homac.suse.de>
- <CAJd=RBDRZSizawvRYqr7=U75Su5TLvMfgdagRA49wzJr40DqSg@mail.gmail.com>
- <20120218132610.GA15265@homac.suse.de>
- <CAJd=RBAhnsuP4+pRS=MLyOaqx8O1gOR30bcoZC0Owabh1-1nzA@mail.gmail.com>
- <20120218140449.GA2558@homac.suse.de>
- <alpine.LSU.2.00.1202181034380.3512@eggly.anvils>
+	id S1752871Ab2BRUAo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 15:00:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55160 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752540Ab2BRUAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 15:00:43 -0500
+Date: Sat, 18 Feb 2012 12:00:39 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: Remove obsolete consumer_dev related comment
+Message-ID: <20120218200038.GA3198@opensource.wolfsonmicro.com>
+References: <1329576795.2399.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1202181034380.3512@eggly.anvils>
+In-Reply-To: <1329576795.2399.1.camel@phoenix>
+X-Cookie: Chess tonight.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa 18. Feb - 10:46:04, Hugh Dickins wrote:
-> On Sat, 18 Feb 2012, Holger Macht wrote:
-> > How about that one?
-> 
-> It's more broken than that.  Here's my attempt.  It boots on the
-> systems with dock_station_count 0, and it boots on my laptop with
-> dock_station_count 2; but I don't actually have any docking station,
-> so it still doesn't test very much (dock is 0 after the loop).
 
-Well, there doesn't have to actually exist a physical dock station (or
-bay device) for dock_station_count to be > 0. It just tells that the
-ACPI objects are present and thus the system is capable of it.
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So does this function actually also break on your laptop and you're
-getting the oops there, too?
+On Sat, Feb 18, 2012 at 10:53:15PM +0800, Axel Lin wrote:
+> consumer_dev is remove by commit 737f36
+> "regulator: Remove support for supplies specified by struct device".
+> Thus remove the obsolete comment.
 
-> I have no idea if what goes on in the loop is correct, but it looks
-> to me as if (as predicted) there's further breakage, that it would
-> have been writing beyond the end of what it allocated if I did have
-> a docking station.
-> 
-> Hugh
-> 
-> [PATCH] dock: fix bootup oops and other dock_link breakage
-> 
-> dock_link_device() and dock_unlink_device() should bail out early
-> to avoid oops on zero-length kmalloc() when dock_station_count is 0.
-> 
-> But isn't there an off-by-one in that kmalloc() length anyway?
-> An extra NULL appended at the end suggests so.
-> 
-> Rework the ordering with gotos on failure to fix several issues.
-> 
-> And presumably dock_unlink_device() should be presenting the same
-> interface as dock_link_device(), with NULL returned when none found.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+Applied, thanks.
 
-Fine with me.
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
- Holger
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPQANgAAoJEBus8iNuMP3d9x0QAIoWlvhJzzl3STGxF9qthvBo
+rUxZgvEuaM7YNlhLJdQpukg/42hw31gOs6ilgoAoSrswKSKF1r5K361OOTJ1J2Aq
+tCSadlGBXnZD3JVjbOZ23DpzvxRMog8cMK4NzxVPTLUzfiRd+JEjdEj1x30hvD6W
+hTtjyHafFBKdsO2GiMcrUQfggGV7FHanGDaAyYkKvFCcPzx4dQ6yx7OHTj6U6OEV
+GNQtSykfZHTabx8hE21k4N9mO34OYLxgGEke/4A6ckaOPDJ/SOBuvGr27aFUJToM
+SCIHN8q0A5uIgU2EyWkj16+0UZZzLvz/V7YGnZu4UTsTTAoWgzWg3f8tb021tRi1
+RG6oO+WmXhO8ceUFJet+gMp/Dk0umJAuihSqdoZYos+zb+H3udU73/QfnKEse/Dc
+TiNQtnhBSTbkazCPXBMj6Pd+goYoURWh7fKKeTovQiORH78vkJb6UOPrOnrcjlCA
+Yd2PfUs4gPFRTASSQfKP7G00cijmmq71xYgOR/Amu71nSM6i+dWga+pNcc+JHXGY
+79kCAlzTKmw1gPmnWXPbGZWpyRTGz4EdFf3S1bmfQugI0+RFWSOBRGzTsO39/E7C
+wO6PjyPDQ71CNOP9Hg8uw0gwCF0rqtZyeSGdZ3bSVehaduCFvmlQkEWVqqoJNXUg
+Nb+/X9lRpM+2sxKpMp5p
+=QtDf
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
