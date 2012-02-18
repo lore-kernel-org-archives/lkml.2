@@ -1,106 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2BRUNt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 15:13:49 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:37140 "EHLO mgw2.diku.dk"
+	id S1753094Ab2BRU0o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 15:26:44 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34837 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab2BRUNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 15:13:46 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: kernel-janitors@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/mmc/host/sdhci-s3c.c: use devm_ functions
-Date: Sat, 18 Feb 2012 21:13:39 +0100
-Message-Id: <1329596019-19822-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752744Ab2BRU0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 15:26:40 -0500
+Date: Sat, 18 Feb 2012 12:29:16 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net
+Cc: anton@samba.org, sukadev@us.ibm.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] perf: Ignore tui when built with NO_NEWT
+Message-ID: <20120218202916.GA17239@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12021820-1976-0000-0000-00000AB22166
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Date: Fri, 17 Feb 2012 17:20:05 -0800
+Subject: [PATCH 1/1] perf: Ignore tui when built with NO_NEWT
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+If perf tools were built without tui support (eg if newt-devel package was
+not installed), they __silently__ exit if tui was selected on command line
+or in .perfconfig.
 
-By using devm_ioremap, it also removes a potential memory leak, because
-there was no call to iounmap in the probe function.
+If the binary has no tui support, report error when --tui is specified. If
+selected from .perfconfig, warn and fall back to stdio.
 
-The call to platform_get_resource was moved just to make it closer to the
-place where its result it used.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- drivers/mmc/host/sdhci-s3c.c |   26 +++-----------------------
- 1 file changed, 3 insertions(+), 23 deletions(-)
+ tools/perf/builtin-annotate.c |   22 ++++++++++++++++++++++
+ tools/perf/builtin-report.c   |   15 +++++++++++++++
+ tools/perf/builtin-top.c      |   22 ++++++++++++++++++++++
+ tools/perf/util/hist.h        |   10 ++++++++++
+ 4 files changed, 69 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index b19e7d4..10ec7c6 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -402,12 +402,6 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
- 		return irq;
- 	}
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 806e0a2..5ee699b 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -287,6 +287,28 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __used)
  
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "no memory specified\n");
--		return -ENOENT;
--	}
--
- 	host = sdhci_alloc_host(dev, sizeof(struct sdhci_s3c));
- 	if (IS_ERR(host)) {
- 		dev_err(dev, "sdhci_alloc_host() failed\n");
-@@ -464,15 +458,9 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
- 		goto err_no_busclks;
- 	}
+ 	argc = parse_options(argc, argv, options, annotate_usage, 0);
  
--	sc->ioarea = request_mem_region(res->start, resource_size(res),
--					mmc_hostname(host->mmc));
--	if (!sc->ioarea) {
--		dev_err(dev, "failed to reserve register area\n");
--		ret = -ENXIO;
--		goto err_req_regs;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	/*
++	 * If binary was built without the newt library, fall back to stdio.
++	 * But if --tui was explicitly requested, report error and exit.
++	 */
++	if (!tui_enabled()) {
++		if (annotate.use_tui) {
++			fprintf(stderr, "TUI not supported, use --stdio.\n");
++			return -1;
++		} else if (!annotate.use_stdio && use_browser > 0) {
++			/*
++			 * sleep(1) is hackish, but before we clear the screen,
++			 * they need know that we can't provide what their
++			 * .perfconfig asked for.
++			 */
++			fprintf(stderr, "TUI not supported, using stdio.\n");
++			sleep(1);
++		}
++
++		annotate.use_tui = 0;
++		annotate.use_stdio = 1;
++	}
++
+ 	if (annotate.use_stdio)
+ 		use_browser = 0;
+ 	else if (annotate.use_tui)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 25d34d4..70175d6 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -522,6 +522,21 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
  
--	host->ioaddr = ioremap_nocache(res->start, resource_size(res));
-+	host->ioaddr = devm_request_and_ioremap(&pdev->dev, res);
- 	if (!host->ioaddr) {
- 		dev_err(dev, "failed to map registers\n");
- 		ret = -ENXIO;
-@@ -547,7 +535,7 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
- 	ret = sdhci_add_host(host);
- 	if (ret) {
- 		dev_err(dev, "sdhci_add_host() failed\n");
--		goto err_add_host;
-+		goto err_req_regs;
- 	}
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
  
- 	/* The following two methods of card detection might call
-@@ -561,10 +549,6 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
++	/*
++	 * If binary was built without the newt library, fall back to stdio.
++	 * But if --tui was explicitly requested, report error and exit.
++	 */
++	if (!tui_enabled()) {
++		if (report.use_tui) {
++			fprintf(stderr, "TUI not supported, use --stdio.\n");
++			return -1;
++		} else if (!report.use_stdio && use_browser > 0)
++			fprintf(stderr, "TUI not supported, using stdio.\n");
++
++		report.use_tui = 0;
++		report.use_stdio = 1;
++	}
++
+ 	if (report.use_stdio)
+ 		use_browser = 0;
+ 	else if (report.use_tui)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index dd162aa..2aa2bdf 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1187,6 +1187,28 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
  
- 	return 0;
+ 	setup_sorting(top_usage, options);
  
-- err_add_host:
--	release_resource(sc->ioarea);
--	kfree(sc->ioarea);
--
-  err_req_regs:
- 	for (ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
- 		if (sc->clk_bus[ptr]) {
-@@ -610,10 +594,6 @@ static int __devexit sdhci_s3c_remove(struct platform_device *pdev)
- 	clk_disable(sc->clk_io);
- 	clk_put(sc->clk_io);
++	/*
++	 * If binary was built without the newt library, fall back to stdio.
++	 * But if --tui was explicitly requested, report error and exit.
++	 */
++	if (!tui_enabled()) {
++		if (top.use_tui) {
++			fprintf(stderr, "TUI not supported, use --stdio.\n");
++			return -1;
++		} else if (!top.use_stdio && use_browser > 0) {
++			/*
++			 * sleep(1) is hackish, but before we clear the screen,
++			 * they need know that we can't provide what their
++			 * .perfconfig asked for.
++			 */
++			fprintf(stderr, "TUI not supported, using stdio.\n");
++			sleep(1);
++		}
++
++		top.use_tui = 0;
++		top.use_stdio = 1;
++	}
++
+ 	if (top.use_stdio)
+ 		use_browser = 0;
+ 	else if (top.use_tui)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f55f0a8..2a3a3db 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -103,6 +103,11 @@ struct perf_evlist;
  
--	iounmap(host->ioaddr);
--	release_resource(sc->ioarea);
--	kfree(sc->ioarea);
--
- 	sdhci_free_host(host);
- 	platform_set_drvdata(pdev, NULL);
+ #ifdef NO_NEWT_SUPPORT
+ static inline
++int tui_enabled(void)
++{
++	return 0;
++}
++static inline
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __used,
+ 				  const char *help __used,
+ 				  void(*timer)(void *arg) __used,
+@@ -130,6 +135,11 @@ int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  void(*timer)(void *arg), void *arg,
+ 				  int refresh);
++static inline
++int tui_enabled(void)
++{
++	return 1;
++}
+ #endif
  
+ unsigned int hists__sort_list_width(struct hists *self);
+-- 
+1.7.0.4
 
