@@ -1,31 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2BRCHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 Feb 2012 21:07:23 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51455 "EHLO
+	id S1755297Ab2BRCHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 Feb 2012 21:07:25 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51459 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753295Ab2BRCHW (ORCPT
+	by vger.kernel.org with ESMTP id S1755197Ab2BRCHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 Feb 2012 21:07:22 -0500
+	Fri, 17 Feb 2012 21:07:23 -0500
 From: Andrei Warkentin <andreiw@vmware.com>
 To: kgdb-bugreport@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
         andreiw@vmware.com
-Subject: Usability non-serial console sessions.
-Date: Fri, 17 Feb 2012 21:07:14 -0500
-Message-Id: <1329530836-23958-1-git-send-email-andreiw@vmware.com>
+Subject: [PATCH 2/2] KDB: Overide LINES for custom commands.
+Date: Fri, 17 Feb 2012 21:07:16 -0500
+Message-Id: <1329530836-23958-3-git-send-email-andreiw@vmware.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1329530836-23958-1-git-send-email-andreiw@vmware.com>
+References: <1329530836-23958-1-git-send-email-andreiw@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches address a couple of issues I found
-when trying to use kdb from a vga+kbd session. Both
-are related to custom-defined commands and the LINES
-environment variable.
+Commands like dumpall define some maximum
+LINES, which as a default might make sense,
+when run over serial connection.
 
-[PATCH 1/2] KDB: Make LINES an internal variable.
-[PATCH 2/2] KDB: Overide LINES for custom commands.
+However, for vga/kbd use, you want to
+have the ability to override any custom
+command's attempt to set LINES, otherwise
+you'll never see most of the output.
 
-Thank you for your feedback,
-A
+This adds a '-b' option to all commands
+defined with defcmd, which forces the current
+LINES to be used and all attempts to override
+it inside the custom command be ignored.
+
+While at it, make kdb_defcmd more robust. It
+was not checking the result of strdup.
+
+Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+---
+ kernel/debug/kdb/kdb_main.c    |   42 ++++++++++++++++++++++++++++++++++++---
+ kernel/debug/kdb/kdb_private.h |    3 ++
+ kernel/debug/kdb/kdb_support.c |   25 +++++++++++++++++++----
+ 3 files changed, 61 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 37f9d45..da26843 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -391,6 +391,13 @@ int kdb_set(int argc, const char **argv)
+ 		int lines;
+ 		char *cp;
+ 
++		/*
++                 * We are running a custom command,
++		 * and want to use current limit on
++		 * lines displayed.
++		 */
++		if (KDB_STATE(RO_LINES))
++			return 0;
+ 		lines = simple_strtol(argv[2], &cp, 0);
+ 		if (cp == argv[2]) {
+ 			kdb_printf("kdb: illegal LINES value '%s'\n",
+@@ -674,6 +681,7 @@ static int kdb_defcmd2(const char *cmdstr, const char *argv0)
+ 
+ static int kdb_defcmd(int argc, const char **argv)
+ {
++	static char usage[] = " [-b]";
+ 	struct defcmd_set *save_defcmd_set = defcmd_set, *s;
+ 	if (defcmd_in_progress) {
+ 		kdb_printf("kdb: nested defcmd detected, assuming missing "
+@@ -703,13 +711,24 @@ static int kdb_defcmd(int argc, const char **argv)
+ 	}
+ 	memcpy(defcmd_set, save_defcmd_set,
+ 	       defcmd_set_count * sizeof(*defcmd_set));
+-	kfree(save_defcmd_set);
+ 	s = defcmd_set + defcmd_set_count;
+ 	memset(s, 0, sizeof(*s));
+ 	s->usable = 1;
+ 	s->name = kdb_strdup(argv[1], GFP_KDB);
+-	s->usage = kdb_strdup(argv[2], GFP_KDB);
++	s->usage = kdb_strdup_extra(argv[2],
++				    sizeof(usage) - 1,
++				    GFP_KDB);
+ 	s->help = kdb_strdup(argv[3], GFP_KDB);
++	if (!s->name ||
++	    !s->usage ||
++	    !s->help) {
++		kdb_printf("Could not allocate defcmd entry members for %s\n",
++			   argv[1]);
++		kfree(defcmd_set);
++		defcmd_set = save_defcmd_set;
++		return KDB_NOTIMP;
++	}
++	kfree(save_defcmd_set);
+ 	if (s->usage[0] == '"') {
+ 		strcpy(s->usage, s->usage+1);
+ 		s->usage[strlen(s->usage)-1] = '\0';
+@@ -718,6 +737,15 @@ static int kdb_defcmd(int argc, const char **argv)
+ 		strcpy(s->help, s->help+1);
+ 		s->help[strlen(s->help)-1] = '\0';
+ 	}
++
++	/*
++	 * Don't print leading space before [-b]
++	 * if usage was empty.
++	 */
++	if (s->usage[0] == '\0')
++		strcat(s->usage, usage + 1);
++	else
++		strcat(s->usage, usage);
+ 	++defcmd_set_count;
+ 	defcmd_in_progress = 1;
+ 	return 0;
+@@ -739,8 +767,9 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+ 	struct defcmd_set *s;
+ 	int ret = 0;
+ 
+-	if (argc != 0)
++	if (argc > 1)
+ 		return KDB_ARGCOUNT;
++
+ 	for (s = defcmd_set, i = 0; i < defcmd_set_count; ++i, ++s) {
+ 		if (strcmp(s->name, argv[0]) == 0)
+ 			break;
+@@ -751,8 +780,10 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+ 		return KDB_NOTIMP;
+ 	}
+ 
+-	/* command might have overridden LINES */
++	if (!strcmp(argv[1], "-b"))
++		KDB_STATE_SET(RO_LINES);
+ 	oldlines = kdb_lines;
++
+ 	for (i = 0; i < s->count; ++i) {
+ 		/* Recursive use of kdb_parse, do not use argv after
+ 		 * this point */
+@@ -762,7 +793,10 @@ static int kdb_exec_defcmd(int argc, const char **argv)
+ 		if (ret)
+ 			break;
+ 	}
++
++	/* command might have overridden LINES */
+ 	kdb_lines = oldlines;
++	KDB_STATE_CLEAR(RO_LINES);
+ 	return ret;
+ }
+ 
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index 41a221f..99ed959 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -112,6 +112,7 @@ extern int kdbgetsymval(const char *, kdb_symtab_t *);
+ extern int kdbnearsym(unsigned long, kdb_symtab_t *);
+ extern void kdbnearsym_cleanup(void);
+ extern char *kdb_strdup(const char *str, gfp_t type);
++extern char *kdb_strdup_extra(const char *str, unsigned extra, gfp_t type);
+ extern void kdb_symbol_print(unsigned long, const kdb_symtab_t *, unsigned int);
+ 
+ /* Routine for debugging the debugger state. */
+@@ -146,6 +147,8 @@ extern int kdb_state;
+ #define KDB_STATE_KEXEC		0x00040000	/* kexec issued */
+ #define KDB_STATE_DOING_KGDB	0x00080000	/* kgdb enter now issued */
+ #define KDB_STATE_KGDB_TRANS	0x00200000	/* Transition to kgdb */
++#define KDB_STATE_RO_LINES	0x00400000	/* If LINES is allowed to be set
++                                                 * within a defcmd command */
+ #define KDB_STATE_ARCH		0xff000000	/* Reserved for arch
+ 						 * specific use */
+ 
+diff --git a/kernel/debug/kdb/kdb_support.c b/kernel/debug/kdb/kdb_support.c
+index 7d6fb40..8562932 100644
+--- a/kernel/debug/kdb/kdb_support.c
++++ b/kernel/debug/kdb/kdb_support.c
+@@ -294,6 +294,25 @@ void kdb_symbol_print(unsigned long addr, const kdb_symtab_t *symtab_p,
+ }
+ 
+ /*
++ * kdb_strdup_extra - kdb strdup-like routine, that simplifies
++ *                    strdup+strcat-like usage.
++ * Inputs:
++ *	str	The string to duplicate.
++ *	extra	Extra length to allocate for.
++ *	type	Flags to kmalloc for the new string.
++ * Returns:
++ *	Address of the new string, NULL if storage could not be allocated.
++ */
++char *kdb_strdup_extra(const char *str, unsigned extra, gfp_t type)
++{
++	int n = strlen(str) + extra + 1;
++	char *s = kmalloc(n, type);
++	if (!s)
++		return NULL;
++	return strcpy(s, str);
++}
++
++/*
+  * kdb_strdup - kdb equivalent of strdup, for disasm code.
+  * Inputs:
+  *	str	The string to duplicate.
+@@ -306,11 +325,7 @@ void kdb_symbol_print(unsigned long addr, const kdb_symtab_t *symtab_p,
+  */
+ char *kdb_strdup(const char *str, gfp_t type)
+ {
+-	int n = strlen(str)+1;
+-	char *s = kmalloc(n, type);
+-	if (!s)
+-		return NULL;
+-	return strcpy(s, str);
++	return kdb_strdup_extra(str, 0, type);
+ }
+ 
+ /*
+-- 
+1.7.4.1
+
