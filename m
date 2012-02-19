@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2BSVly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:41:54 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65326 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab2BSVlx (ORCPT
+	id S1755362Ab2BSVmb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:42:31 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51171 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab2BSVma convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:41:53 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.14.98.133 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
-Message-ID: <4F416C9D.3030302@gmail.com>
-Date: Sun, 19 Feb 2012 22:41:49 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	Sun, 19 Feb 2012 16:42:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of egmont@gmail.com designates 10.180.97.196 as permitted sender) smtp.mail=egmont@gmail.com; dkim=pass header.i=egmont@gmail.com
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH 1/1] TTY: fix PTY hangup vs close race
-References: <1329683796.10124.21.camel@lappy> <1329686346-16752-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1329686346-16752-1-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120219221412.1b6912ba@neptune.home>
+References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
+ <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+ <20120215233002.GB20816@kroah.com> <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
+ <20120216005437.GA22858@kroah.com> <20120217192825.GE2707@elf.ucw.cz>
+ <20120217225708.0f31f2ac@neptune.home> <CAGWcZk+_NpBZ2Gquv_ynXKdAivd3FhkHDDxu488y9Y9OrG2yfw@mail.gmail.com>
+ <20120219221412.1b6912ba@neptune.home>
+From: Egmont Koblinger <egmont@gmail.com>
+Date: Sun, 19 Feb 2012 22:41:49 +0100
+Message-ID: <CAGWcZkJDi+AAG1KmvzAymBPt64JxKNizH-vCtsE7Lb=utFXG-g@mail.gmail.com>
+Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
+To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2012 10:19 PM, Jiri Slaby wrote:
-> Commit d3bda5298 (TTY: get rid of BTM around devpts_*) moved
-> devpts_pty_kill out of BTM, but the BTM was not protecting only
-> devpts_pty_kill, but also tty->link. Hence move the function back at
-> this late stage until this gets resolved properly some time later.
-> 
-> I was confused by tty_vhangup(tty->link) outside BTM. But inside of
-> tty_vhangup, there is a check for tty == NULL. But we cannot add such
-> a check here. We have to have the tty and free the devpts node...
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
-> 
-> Gee, I messed up Greg's address again...
-> 
->  drivers/tty/pty.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index fa1bd2e..95037aa 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -54,8 +54,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
->  	wake_up_interruptible(&tty->link->write_wait);
->  	if (tty->driver->subtype == PTY_TYPE_MASTER) {
->  		set_bit(TTY_OTHER_CLOSED, &tty->flags);
-> -		tty_unlock();
-> +		/* BTM protects tty->link here */
->  		devpts_pty_kill(tty->link);
-> +		tty_unlock();
+Hi Bruno,
 
-I'm afraid this won't help. As this is based on an assumption that
-tty->link is NULL [*] and that is not just true.
+On Sun, Feb 19, 2012 at 22:14, Bruno Prémont <bonbons@linux-vserver.org> wrote:
+> Hi Egmont,
+>
+> On Sun, 19 February 2012 Egmont Koblinger <egmont@gmail.com> wrote:
+>> Unfortunately the lost tail is a different thing: the terminal is in
+>> cooked mode by default, so the kernel intentionally keeps the data in
+>> its buffer until it sees a complete line.  A quick-and-dirty way of
+>> changing to byte-based transmission (I'm lazy to look up the actual
+>> system calls, apologies for the terribly ugly way of doing this) is:
+>>                  pty = open(ptsdname, O_RDWR):
+>>                  if (pty == -1) { ... }
+>> +                char cmd[100];
+>> +                sprintf(cmd, "stty raw <>%s", ptsdname);
+>> +                system(cmd);
+>>                  ptmx_slave_test(pty, line, rsz);
+>>
+>> Anyway, thanks very much for your test program, I'll try to modify it
+>> to trigger the data corruption bug.
+>
+> Well, not sure but the closing of ptmx on sender side should force kernel
+> to flush whatever is remaining independently on end-of-line (I was
+> thinking I should push an EOF over the ptmx instead of closing it before
+> waiting for child process though I have not yet looked-up how to do so!).
 
-Greg, please revert commit d3bda5298 completely.
+As Alan also pointed out, the way to close stuff is not handled very
+nicely in the example.  However, I didn't face a problem with that -
+I'm not particularly interested in whether the application receives
+all the data if I kill the underlying terminal.  My problem is data
+corruption way before the end of the stream, and actually incorrect
+bytes received by the application (not just an early eof due to a
+closed terminal).  I'm trying hard to reproduce that with a single
+example, but I haven't succeeded so far.
 
-[*] Your dump reveals that the code fetches tty->driver_data (mov
-0x428(%rdi),%rbx) and traps at a fetch of inode->i_sbm because inode is
-NULL (mov    0x28(%rbx),%rax).
+Note that I've triggered the bug with 4 apps so far: emacs (which is
+always in char-based input mode), and three readline apps (which keep
+switching back and forth between the two modes).  I have no clue yet
+whether the bug itself is related to raw char-based mode or not, but I
+guess switching to this mode might not hurt.
 
-Anyway I'm still interested in the tool you triggered this, because we
-will need to get rid of BTM eventually.
 
-thanks,
--- 
-js
+egmont
+
+>
+> The amount of missing tail for my few runs of the test program were of
+> varying length, but in all cases way more than a single line, thus I would
+> hope it's not line-buffering by the kernel which causes the missing data!
+>
+> Bruno
+>
+>
+>> egmont
+>>
+>> On Fri, Feb 17, 2012 at 22:57, Bruno Prémont <bonbons@linux-vserver.org> wrote:
+>> > Hi,
+>> >
+>> > On Fri, 17 February 2012 Pavel Machek <pavel@ucw.cz> wrote:
+>> >> > > Sorry, I didn't emphasize the point that makes me suspect it's a kernel issue:
+>> >> > >
+>> >> > > - strace reveals that the terminal emulator writes the correct data
+>> >> > > into /dev/ptmx, and the kernel reports no short writes(!), all the
+>> >> > > write(..., ..., 68) calls actually return 68 (the length of the
+>> >> > > example file's lines incl. newline; I'm naively assuming I can trust
+>> >> > > strace here.)
+>> >> > > - strace reveals that the receiving application (bash) doesn't receive
+>> >> > > all the data from /dev/pts/N.
+>> >> > > - so: the data gets lost after writing to /dev/ptmx, but before
+>> >> > > reading it out from /dev/pts/N.
+>> >> >
+>> >> > Which it will, if the reader doesn't read fast enough, right?  Is the
+>> >> > data somewhere guaranteed to never "overrun" the buffer?  If so, how do
+>> >> > we handle not just running out of memory?
+>> >>
+>> >> Start blocking the writer?
+>> >
+>> > I did quickly write a small test program (attached). It forks a reader child
+>> > and sends data over to it, at the end both write down their copy of the buffer
+>> > to a /tmp/ptmx_{in,out}.txt file for manual comparing results (in addition
+>> > to basic output of mismatch start line)
+>> >
+>> > From the time it took the writer to write larger buffers (as seen using strace)
+>> > it seems there *is* some kind of blocking, but it's not blocking long enough
+>> > or unblocking too early if the reader does not keep up.
+>> >
+>> >
+>> > For quick and dirty testing of effects of buffer sizes, tune "rsz", "wsz"
+>> > and "line" in main() as well as total size with BUFF_SZ define.
+>> >
+>> >
+>> > The effects for me are that writer writes all data but reader never sees tail
+>> > of written data (how much is being seen seems variable, probably matter of
+>> > scheduling, frequency scaling and similar racing factors).
+>> >
+>> > My test system is single-core uniprocessor centrino laptop (32bit x86) with
+>> > 3.2.5 kernel.
+>> >
+>> > Bruno
