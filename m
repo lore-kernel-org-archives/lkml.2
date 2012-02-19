@@ -1,141 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab2BSVUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:20:16 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:64374 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab2BSVUP convert rfc822-to-8bit (ORCPT
+	id S1755418Ab2BSVVf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:21:35 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52259 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab2BSVVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:20:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rob.clark@linaro.org designates 10.229.105.141 as permitted sender) smtp.mail=rob.clark@linaro.org
+	Sun, 19 Feb 2012 16:21:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.241.70 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Sun, 19 Feb 2012 13:21:02 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+In-Reply-To: <1328716302-16871-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.00.1202191316320.1466@eggly.anvils>
+References: <1328716302-16871-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1328716302-16871-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
-References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
-	<1326845297-6233-1-git-send-email-rmorell@nvidia.com>
-	<1326845297-6233-2-git-send-email-rmorell@nvidia.com>
-Date: Sun, 19 Feb 2012 15:20:14 -0600
-Message-ID: <CAN_cFWPv1X+tb998ejstf9svENhZweG9zWwtFbaCNrFi482qEQ@mail.gmail.com>
-Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
-From: Rob Clark <rob.clark@linaro.org>
-To: Robert Morell <rmorell@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 17, 2012 at 6:08 PM, Robert Morell <rmorell@nvidia.com> wrote:
-> EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
-> issue, and not really an interface".  The dma-buf infrastructure is
-> explicitly intended as an interface between modules/drivers, so it
-> should use EXPORT_SYMBOL instead.
+On Wed, 8 Feb 2012, Naoya Horiguchi wrote:
+> Currently when we check if we can handle thp as it is or we need to
+> split it into regular sized pages, we hold page table lock prior to
+> check whether a given pmd is mapping thp or not. Because of this,
+> when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> To remove it, this patch introduces a optimized check function and
+> replace several similar logics with it.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: David Rientjes <rientjes@google.com>
+> 
+> Changes since v4:
+>   - Rethink returned value of __pmd_trans_huge_lock()
 
+[snip]
 
-We discussed this topic at the kernel-gfx mini-summit at ELC.
-Following the discussion, I agree that dma-buf infrastructure is
-intended as an interface between driver subsystems.  And because (for
-now) all the other arm SoC gl(es) stacks unfortunately involve a
-closed src userspace, and since I consider userspace and kernel as
-tightly coupled in the realm of graphics stacks, I don't think we can
-really claim the moral high-ground here.  So I can't object to use of
-EXPORT_SYMBOL() instead of EXPORT_SYMBOL_GPL().
+> --- 3.3-rc2.orig/mm/mremap.c
+> +++ 3.3-rc2/mm/mremap.c
+> @@ -155,8 +155,6 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+>  			if (err > 0) {
+>  				need_flush = true;
+>  				continue;
+> -			} else if (!err) {
+> -				split_huge_page_pmd(vma->vm_mm, old_pmd);
+>  			}
+>  			VM_BUG_ON(pmd_trans_huge(*old_pmd));
+>  		}
 
-That said, I expect the dma-buf infrastructure to still be evolving
-and it is the responsibility for out-of-tree users of the API (GPL or
-otherwise) to adapt as the dma-buf API changes.  And there isn't much
-the in-tree drivers can do when it comes to debugging of buffer
-sharing issues with out-of-tree drivers (binary or otherwise), leaving
-the debugging responsibility to the owners of different out-of-tree
-drivers.
+Is that what you intended to do there?
+I just hit that VM_BUG_ON on rc3-next-20120217.
 
-BR,
--R
-
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
-> ---
->  drivers/base/dma-buf.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index e38ad24..4ed5a5d 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
-> @@ -101,7 +101,7 @@ struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
->
->        return dmabuf;
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_export);
-> +EXPORT_SYMBOL(dma_buf_export);
->
->
->  /**
-> @@ -126,7 +126,7 @@ int dma_buf_fd(struct dma_buf *dmabuf)
->
->        return fd;
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_fd);
-> +EXPORT_SYMBOL(dma_buf_fd);
->
->  /**
->  * dma_buf_get - returns the dma_buf structure related to an fd
-> @@ -152,7 +152,7 @@ struct dma_buf *dma_buf_get(int fd)
->
->        return file->private_data;
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_get);
-> +EXPORT_SYMBOL(dma_buf_get);
->
->  /**
->  * dma_buf_put - decreases refcount of the buffer
-> @@ -167,7 +167,7 @@ void dma_buf_put(struct dma_buf *dmabuf)
->
->        fput(dmabuf->file);
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_put);
-> +EXPORT_SYMBOL(dma_buf_put);
->
->  /**
->  * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
-> @@ -213,7 +213,7 @@ err_attach:
->        mutex_unlock(&dmabuf->lock);
->        return ERR_PTR(ret);
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_attach);
-> +EXPORT_SYMBOL(dma_buf_attach);
->
->  /**
->  * dma_buf_detach - Remove the given attachment from dmabuf's attachments list;
-> @@ -235,7 +235,7 @@ void dma_buf_detach(struct dma_buf *dmabuf, struct dma_buf_attachment *attach)
->        mutex_unlock(&dmabuf->lock);
->        kfree(attach);
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_detach);
-> +EXPORT_SYMBOL(dma_buf_detach);
->
->  /**
->  * dma_buf_map_attachment - Returns the scatterlist table of the attachment;
-> @@ -265,7 +265,7 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
->
->        return sg_table;
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_map_attachment);
-> +EXPORT_SYMBOL(dma_buf_map_attachment);
->
->  /**
->  * dma_buf_unmap_attachment - unmaps and decreases usecount of the buffer;might
-> @@ -288,4 +288,4 @@ void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
->        mutex_unlock(&attach->dmabuf->lock);
->
->  }
-> -EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);
-> +EXPORT_SYMBOL(dma_buf_unmap_attachment);
-> --
-> 1.7.3.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hugh
