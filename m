@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab2BSPX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 10:23:27 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40022 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753907Ab2BSPX0 (ORCPT
+	id S1754559Ab2BSPuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 10:50:00 -0500
+Received: from eq4.michisoft.net ([178.63.1.138]:45886 "EHLO
+	mail.michisoft.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754232Ab2BSPt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 10:23:26 -0500
-X-Sasl-enc: Ztz9jA9KnoqRSOEMgLARqc0SoBk3Q3+gH12bcmA/GAwe 1329665005
-Date: Sun, 19 Feb 2012 07:21:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Grant Coady <gcoady.lk@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compile warnings,
- linux-3.2.6a/arch/x86/include/asm/uaccess_32.h, was Re: Linux 3.2.6
-Message-ID: <20120219152108.GB15136@kroah.com>
-References: <20120213192545.GA28291@kroah.com>
- <h561k71mg76rebd4m46l25791ilkcr8n0r@4ax.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <h561k71mg76rebd4m46l25791ilkcr8n0r@4ax.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Feb 2012 10:49:58 -0500
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 10:49:58 EST
+From: Michael Thalmeier <michael@thalmeier.at>
+To: Peter Feuerer <peter@piie.net>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michael Thalmeier <michael@thalmeier.at>
+Subject: [PATCH] acerhdf: add support for Acer Aspire 1810T BIOS v1.3314
+Date: Sun, 19 Feb 2012 16:43:04 +0100
+Message-Id: <1329666184-7336-1-git-send-email-michael@thalmeier.at>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 05:50:45PM +1100, Grant Coady wrote:
-> On Mon, 13 Feb 2012 11:25:45 -0800, you wrote:
-> 
-> >I'm announcing the release of the 3.2.6 kernel.
-> >
-> >All users of the 3.2 kernel series must upgrade.
-> 
-> I'm getting:
-> ...
->   CC      drivers/net/Space.o
+As mentioned in commit
 
-<snip>
+b06862b: acerhdf: add support for Aspire 1810TZ BIOS v1.3314
 
-Does this also happen in 3.2.5?  Can you narrow it down to a specific
-patch?
+Acer Aspire 1810T also supports Bios v1.3314.
 
-thanks,
+Signed-off-by: Michael Thalmeier <michael@thalmeier.at>
+---
+ drivers/platform/x86/acerhdf.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 760c6d7..e8df42f 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -183,6 +183,7 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Acer 531 */
+ 	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00} },
+ 	/* Gateway */
+-- 
+1.7.9
+
