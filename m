@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab2BSO5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 09:57:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753770Ab2BSO5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 09:57:31 -0500
-Message-ID: <1329663435.24041.3.camel@cr0>
-Subject: Re: [PATCH 01/60] highmem: mark k[un]map_atomic() with two
- arguments as deprecated
-From: Cong Wang <amwang@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Warren <swarren@nvidia.com>
-Date: Sun, 19 Feb 2012 22:57:15 +0800
-In-Reply-To: <20120217155922.0826ca48.akpm@linux-foundation.org>
-References: <1328852421-19678-1-git-send-email-amwang@redhat.com>
-	 <1328852421-19678-2-git-send-email-amwang@redhat.com>
-	 <20120217155922.0826ca48.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1754267Ab2BSPIr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 10:08:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:37478 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab2BSPIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 10:08:46 -0500
+Message-ID: <4F411076.9020105@linutronix.de>
+Date: Sun, 19 Feb 2012 16:08:38 +0100
+From: Richard Weinberger <rw@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 7/7] MTD: UBI: wire up checkpointing
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de> <1329250006-22944-8-git-send-email-rw@linutronix.de> <20120219155741.4c2f0a02@pixies.home.jungo.com> <4F41026C.6060203@linutronix.de> <20120219164002.00e76895@pixies.home.jungo.com>
+In-Reply-To: <20120219164002.00e76895@pixies.home.jungo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 15:59 -0800, Andrew Morton wrote:
-> 
-> I can't merge these patches because they're already in linux-next.
-> 
+Am 19.02.2012 15:40, schrieb Shmulik Ladkani:
+> On Sun, 19 Feb 2012 15:08:44 +0100 Richard Weinberger<rw@linutronix.de>  wrote:
+>> Am 19.02.2012 14:57, schrieb Shmulik Ladkani:
+>>> On Tue, 14 Feb 2012 21:06:46 +0100 Richard Weinberger<rw@linutronix.de>   wrote:
+>>>> +#ifdef CONFIG_MTD_UBI_CHECKPOINT
+>>>> +static int attach_by_checkpointing(struct ubi_device *ubi)
+>>>> +{
+>>>> +	int cp_start, err;
+>>>> +	struct ubi_scan_info *si;
+>>>> +
+>>>> +	cp_start = ubi_find_checkpoint(ubi);
+>>>> +	if (cp_start<   0)
+>>>> +		return -ENOENT;
+>>>> +
+>>>> +	si = ubi_read_checkpoint(ubi, cp_start);
+>>>> +	if (IS_ERR(si))
+>>>> +		return PTR_ERR(si);
+>>>> +
+>>>> +	ubi->bad_peb_count = 0;
+>>>> +	ubi->good_peb_count = ubi->peb_count;
+>>>
+>>> Zero reported bad PEBs when checkpointing.
+>>> Seems that checkpointing does not remember number/location of bad PEBs.
+>>
+>> Currently checkpointing cares only about used and free PEBs.
+>> Bad PEBs are no longer visible to UBI after recovering from a checkpoint.
+>
+> Ok.
+> However it is still reported to the log in 'ubi_attach_mtd_dev'
+> and as a sysfs attribute.
+> BTW, the counter is still incremented by WL subsystem, though.
+> Hence, reported value will be bad PEBs encountered since last attach
+> (where formerly, it was absolute total bad PEBs in the ubi device).
+> Maybe remove 'bad_peb_count' altogether.
+>
+> Also, "ubi->good_peb_count = ubi->peb_count" results in different
+> 'beb_rsvd_level' caculation, see 'ubi_calculate_reserved'.
 
-Confused, we can drop it from linux-next as soon as you take them. :-/
+I can add these counters into the checkpoint.
 
-> This is silly.  Please send Linus the pull request for 3.4 and be sure to cc
-> myself on it.
-> 
+>>> Are we fine with that?
+>>
+>> This patch is a RFC. :-)
+>
+> So I noticed :-)
+> Just trying to point out things which cause ubi system to behave
+> differently.
+>
 
-Okay.
-
-Thanks.
-
+Thanks a lot for reviewing this feature!
+//richard
