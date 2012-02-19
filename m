@@ -1,60 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab2BSVTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:19:14 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:56370 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab2BSVTO (ORCPT
+	id S1755406Ab2BSVUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:20:16 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:64374 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754927Ab2BSVUP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:19:14 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
-        jirislaby@gmail.com
-Subject: [PATCH 1/1] TTY: fix PTY hangup vs close race
-Date: Sun, 19 Feb 2012 22:19:06 +0100
-Message-Id: <1329686346-16752-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329683796.10124.21.camel@lappy>
-References: <1329683796.10124.21.camel@lappy>
+	Sun, 19 Feb 2012 16:20:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rob.clark@linaro.org designates 10.229.105.141 as permitted sender) smtp.mail=rob.clark@linaro.org
+MIME-Version: 1.0
+In-Reply-To: <1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+References: <alpine.DEB.2.00.1201061458020.18430@skynet.skynet.ie>
+	<1326845297-6233-1-git-send-email-rmorell@nvidia.com>
+	<1326845297-6233-2-git-send-email-rmorell@nvidia.com>
+Date: Sun, 19 Feb 2012 15:20:14 -0600
+Message-ID: <CAN_cFWPv1X+tb998ejstf9svENhZweG9zWwtFbaCNrFi482qEQ@mail.gmail.com>
+Subject: Re: [PATCH] dma-buf: Use EXPORT_SYMBOL
+From: Rob Clark <rob.clark@linaro.org>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, sumit.semwal@linaro.org, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d3bda5298 (TTY: get rid of BTM around devpts_*) moved
-devpts_pty_kill out of BTM, but the BTM was not protecting only
-devpts_pty_kill, but also tty->link. Hence move the function back at
-this late stage until this gets resolved properly some time later.
-
-I was confused by tty_vhangup(tty->link) outside BTM. But inside of
-tty_vhangup, there is a check for tty == NULL. But we cannot add such
-a check here. We have to have the tty and free the devpts node...
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
----
-
-Gee, I messed up Greg's address again...
-
- drivers/tty/pty.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index fa1bd2e..95037aa 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -54,8 +54,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
- 	wake_up_interruptible(&tty->link->write_wait);
- 	if (tty->driver->subtype == PTY_TYPE_MASTER) {
- 		set_bit(TTY_OTHER_CLOSED, &tty->flags);
--		tty_unlock();
-+		/* BTM protects tty->link here */
- 		devpts_pty_kill(tty->link);
-+		tty_unlock();
- 		tty_vhangup(tty->link);
- 		tty_lock();
- 	}
--- 
-1.7.9
+On Tue, Jan 17, 2012 at 6:08 PM, Robert Morell <rmorell@nvidia.com> wrote:
+> EXPORT_SYMBOL_GPL is intended to be used for "an internal implementation
+> issue, and not really an interface".  The dma-buf infrastructure is
+> explicitly intended as an interface between modules/drivers, so it
+> should use EXPORT_SYMBOL instead.
 
 
+We discussed this topic at the kernel-gfx mini-summit at ELC.
+Following the discussion, I agree that dma-buf infrastructure is
+intended as an interface between driver subsystems.  And because (for
+now) all the other arm SoC gl(es) stacks unfortunately involve a
+closed src userspace, and since I consider userspace and kernel as
+tightly coupled in the realm of graphics stacks, I don't think we can
+really claim the moral high-ground here.  So I can't object to use of
+EXPORT_SYMBOL() instead of EXPORT_SYMBOL_GPL().
+
+That said, I expect the dma-buf infrastructure to still be evolving
+and it is the responsibility for out-of-tree users of the API (GPL or
+otherwise) to adapt as the dma-buf API changes.  And there isn't much
+the in-tree drivers can do when it comes to debugging of buffer
+sharing issues with out-of-tree drivers (binary or otherwise), leaving
+the debugging responsibility to the owners of different out-of-tree
+drivers.
+
+BR,
+-R
+
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> ---
+>  drivers/base/dma-buf.c |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+> index e38ad24..4ed5a5d 100644
+> --- a/drivers/base/dma-buf.c
+> +++ b/drivers/base/dma-buf.c
+> @@ -101,7 +101,7 @@ struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
+>
+>        return dmabuf;
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_export);
+> +EXPORT_SYMBOL(dma_buf_export);
+>
+>
+>  /**
+> @@ -126,7 +126,7 @@ int dma_buf_fd(struct dma_buf *dmabuf)
+>
+>        return fd;
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_fd);
+> +EXPORT_SYMBOL(dma_buf_fd);
+>
+>  /**
+>  * dma_buf_get - returns the dma_buf structure related to an fd
+> @@ -152,7 +152,7 @@ struct dma_buf *dma_buf_get(int fd)
+>
+>        return file->private_data;
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_get);
+> +EXPORT_SYMBOL(dma_buf_get);
+>
+>  /**
+>  * dma_buf_put - decreases refcount of the buffer
+> @@ -167,7 +167,7 @@ void dma_buf_put(struct dma_buf *dmabuf)
+>
+>        fput(dmabuf->file);
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_put);
+> +EXPORT_SYMBOL(dma_buf_put);
+>
+>  /**
+>  * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
+> @@ -213,7 +213,7 @@ err_attach:
+>        mutex_unlock(&dmabuf->lock);
+>        return ERR_PTR(ret);
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_attach);
+> +EXPORT_SYMBOL(dma_buf_attach);
+>
+>  /**
+>  * dma_buf_detach - Remove the given attachment from dmabuf's attachments list;
+> @@ -235,7 +235,7 @@ void dma_buf_detach(struct dma_buf *dmabuf, struct dma_buf_attachment *attach)
+>        mutex_unlock(&dmabuf->lock);
+>        kfree(attach);
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_detach);
+> +EXPORT_SYMBOL(dma_buf_detach);
+>
+>  /**
+>  * dma_buf_map_attachment - Returns the scatterlist table of the attachment;
+> @@ -265,7 +265,7 @@ struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *attach,
+>
+>        return sg_table;
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_map_attachment);
+> +EXPORT_SYMBOL(dma_buf_map_attachment);
+>
+>  /**
+>  * dma_buf_unmap_attachment - unmaps and decreases usecount of the buffer;might
+> @@ -288,4 +288,4 @@ void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
+>        mutex_unlock(&attach->dmabuf->lock);
+>
+>  }
+> -EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);
+> +EXPORT_SYMBOL(dma_buf_unmap_attachment);
+> --
+> 1.7.3.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
