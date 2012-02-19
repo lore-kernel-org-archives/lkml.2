@@ -1,87 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab2BSTzw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 14:55:52 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:18858 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab2BSTzv (ORCPT
+	id S1755021Ab2BST4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 14:56:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42288 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab2BST4I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 14:55:51 -0500
-Date: Sun, 19 Feb 2012 22:57:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Cc: mfm@muteddisk.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Staging: driver usbip: Code cleanup
-Message-ID: <20120219195751.GE2855@mwanda>
-References: <CAOD=uF4st80fB0+uwXNNbHtN4YpoFWwu4EUhwmVi+v=0euu=sQ@mail.gmail.com>
+	Sun, 19 Feb 2012 14:56:08 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ep0oHQY+/Gbo/zt0"
-Content-Disposition: inline
-In-Reply-To: <CAOD=uF4st80fB0+uwXNNbHtN4YpoFWwu4EUhwmVi+v=0euu=sQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F4153C1.006A,ss=1,re=0.000,fgs=0
+In-Reply-To: <CAHR064jyOYaRUjZp370ewLGQSKAhhB7gZ4PS7Feb_AzBLGi1tA@mail.gmail.com>
+References: <1326784098-3244-1-git-send-email-corentincj@iksaif.net>
+	<CAHR064jyOYaRUjZp370ewLGQSKAhhB7gZ4PS7Feb_AzBLGi1tA@mail.gmail.com>
+Date: Sun, 19 Feb 2012 20:56:05 +0100
+Message-ID: <CAHR064iXr5Z1WNdD=rjn_ACDEX8EaRgrCg0hj1U=c=Lz9rN__A@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+        Andrzej Prochyra <andrzej@prochyra.name>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        =?UTF-8?Q?Richard_Sch=C3=BCtz?= <r.schtz@t-online.de>,
+        Seth Forshee <seth.forshee@canonical.com>, linux-acpi@vger.kernel.org,
+        Corentin Chary <corentincj@iksaif.net>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 30, 2012 at 9:26 AM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+> On Tue, Jan 17, 2012 at 8:08 AM, Corentin Chary <corentincj@iksaif.net> wrote:
+>> On these laptops, the ACPI video is not functional, and very unlikely
+>> to be fixed by the vendor. Note that intel_backlight works for some
+>> of these laptops, and the backlight from samsung-laptop always work.
+>>
+>> The good news is that newer laptops have functional ACPI video device
+>> and won't end up growing this list.
+>>
+>> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+>> ---
+>>  drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 49 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+>> index 45d8097..66be45e 100644
+>> --- a/drivers/acpi/video_detect.c
+>> +++ b/drivers/acpi/video_detect.c
+>> @@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
+>>        return AE_OK;
+>>  }
+>>
+>> +/* Force to use vendor driver when the ACPI device is known to be
+>> + * buggy */
+>> +static int video_detect_force_vendor(const struct dmi_system_id *d)
+>> +{
+>> +       acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+>> +       return 0;
+>> +}
+>> +
+>> +static struct dmi_system_id video_detect_dmi_table[] = {
+>> +       {
+>> +        .callback = video_detect_force_vendor,
+>> +        .ident = "N150P",
+>> +        .matches = {
+>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
+>> +               DMI_MATCH(DMI_BOARD_NAME, "N150P"),
+>> +               },
+>> +       },
+>> +       {
+>> +        .callback = video_detect_force_vendor,
+>> +        .ident = "N145P/N250P/N260P",
+>> +        .matches = {
+>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+>> +               DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+>> +               },
+>> +       },
+>> +       {
+>> +        .callback = video_detect_force_vendor,
+>> +        .ident = "N150/N210/N220",
+>> +        .matches = {
+>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+>> +               DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+>> +               },
+>> +       },
+>> +       {
+>> +        .callback = video_detect_force_vendor,
+>> +        .ident = "NF110/NF210/NF310",
+>> +        .matches = {
+>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+>> +               DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+>> +               DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+>> +               },
+>> +       },
+>> +};
+>> +
+>>  /*
+>>  * Returns the video capabilities of a specific ACPI graphics device
+>>  *
+>> @@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
+>>                 *              ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+>>                 *}
+>>                 */
+>> +
+>> +               dmi_check_system(video_detect_dmi_table);
+>>        } else {
+>>                status = acpi_bus_get_device(graphics_handle, &tmp_dev);
+>>                if (ACPI_FAILURE(status)) {
+>> --
+>> 1.7.5.4
+>>
+>
+> Hi Len,
+>
+> Maybe this patch should go through your tree and not platform-drivers-x86 ?
 
---ep0oHQY+/Gbo/zt0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ping ?
 
-On Sun, Feb 19, 2012 at 05:48:39PM +0530, santosh prasad nayak wrote:
->  Code cleanup: removed commented code of old style lock initilization
->=20
-
-1) The patch is line wrapped so it doesn't apply.  To test, save
-your email as raw text.  `cat raw_email.txt | git am`
-Read Documentation/email-clients.txt.
-
-2) The subject could be improved.  Do a:
-git log --pretty=3Doneline drivers/staging/usbip/stub_dev.c | head
-to see the correct prefix to use.
-
-3) Instead of "Code cleanup" choose a more descriptive name like
-"Delete commented code."
-
-4) Use your full name for the Signed-off-by line.
-
-Please fix these and resend.
-
-If you want, you can leave linux-usb@vger.kernel.org and
-linux-kernel@vger.kernel.org off the CC list, because no one on
-those lists care about trivial patches to the Staging tree.
-
-regards,
-dan carpenter
-
-
---ep0oHQY+/Gbo/zt0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQVQ+AAoJEOnZkXI/YHqRWhQP/1OomrMtIB0A03yYsOfRo10F
-ImqWJbXrM+iE7Bw/8VFmb7z+rbad/WbFFMyT7lWJf283XwS+UwumT9UO2CB0h3Ho
-HAU+WYv/3Le25YxtuOnf4tSGssQFQ+Ko3CzYQYtskEYlOl0Oke7/IUH1STic25ni
-EF9Am/fJzm8v5I36Rkk3sr6c5+W+/xrhknd1UX5vSQ1xxKGQlix/oNmTQESl0yY4
-Od/bJCuQZvlZXhrrhxVdeENvaRYGm7TG+orisyzfYJp/W/+B5BLxkLxVu5+DrHSb
-jeHIdYC7W/jWtd6uZljbj6iMtgxPEbC69tfN8hazLASKSD3FJcDyJ9iF91kz5BCN
-Fa2Xe7tyDQ9dK1ZPGu9qAfD29YPuJY8g9oCpae5MTzoChsKi3HINrRgBZb//sZxd
-8pCO3LTjKu8S0/M8E2AObv3DUAEdlFRNcWPhu/JR2yJXPGC2nXxkorAqZezGK4/J
-/BLj5JqKZerHn7x+BiP5J+ysPmk0ridyolalxIF87LtXHPuQuloJe9/THfuKozWt
-2x3nVF+jnLGN3ULX3l0WdwfYfPmBXVkICYA09eflOAWcNFIIz3GtUgnMZV+VVv8L
-0bDWcYLQEFCTEhlBQzUGtBbdMPtuKhzfJsdDXdgNzeILi6NDCSR7xTEFRhnCJ6c4
-wUBJZM3iOrkFDMWtSPQI
-=vJIr
------END PGP SIGNATURE-----
-
---ep0oHQY+/Gbo/zt0--
+-- 
+Corentin Chary
+http://xf.iksaif.net
