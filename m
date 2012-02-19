@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab2BSWoc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 17:44:32 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:52024 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755301Ab2BSWob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 17:44:31 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/zA3VsBZ7z+7O3MpgLwmjlyvyNJSe/7lbrOs1aXN
-	G/vok3zZ71stFb
-Message-ID: <4F417B3F.2050307@gmx.de>
-Date: Sun, 19 Feb 2012 22:44:15 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	id S1755479Ab2BSWo4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 17:44:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56676 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755301Ab2BSWoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 17:44:55 -0500
+Message-ID: <4F417B4F.3040406@zytor.com>
+Date: Sun, 19 Feb 2012 14:44:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH 5/5] fbdev: s/#if CONFIG/#ifdef CONFIG/
-References: <1329664319-3128-1-git-send-email-geert@linux-m68k.org> <1329664319-3128-5-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1329664319-3128-5-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] i387: support lazy restore of FPU state
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202191423270.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202191426460.3898@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.02.1202191426460.3898@i5.linux-foundation.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2012 03:11 PM, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-
-Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-(I assume you want that to go mainline via Jiri's tree)
-
-
-Best regards,
-
-Florian Tobias Schandinat
-
-> Cc: linux-fbdev@vger.kernel.org
-> ---
->  drivers/video/au1100fb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On 02/19/2012 02:37 PM, Linus Torvalds wrote:
 > 
-> diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
-> index de9da67..4da1895 100644
-> --- a/drivers/video/au1100fb.c
-> +++ b/drivers/video/au1100fb.c
-> @@ -532,7 +532,7 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
->  	for (page = (unsigned long)fbdev->fb_mem;
->  	     page < PAGE_ALIGN((unsigned long)fbdev->fb_mem + fbdev->fb_len);
->  	     page += PAGE_SIZE) {
-> -#if CONFIG_DMA_NONCOHERENT
-> +#ifdef CONFIG_DMA_NONCOHERENT
->  		SetPageReserved(virt_to_page(CAC_ADDR((void *)page)));
->  #else
->  		SetPageReserved(virt_to_page(page));
+>  - on *every* task switch from task A, we write A->thread.fpu.last_cpu, 
+>    whether we owned the FPU or not. And we only write a real CPU number in 
+>    the case where we owned it, and the FPU save left the state untouched 
+>    in the FPU.
+> 
+>  - so when we switch into task A next time, comparing the current CPU 
+>    number with that 'last_cpu' field inarguably says "when I last switched 
+>    out, I really saved it on this CPU"
+> 
+>    That, together with verifying that the per-cpu "fpu_owner_task" matches 
+>    "task A", guarantees that the state is really valid. Because we will 
+>    clear (or set to another task) fpu_owner_task if it ever gets 
+>    switched to anything else.
+> 
+> But somebody should really validate this. Think through all the 
+> kernel_fpu_begin() etc cases. I think it looks pretty obvious, and it 
+> really does seem to work and improve task switching, but...
+> 
+
+I think your logic is correct but suboptimal.
+
+What would make more sense to me is that we write last_cpu when we
+*load* the state.  After all, if you didn't load the state you couldn't
+have modified it.  In kernel_fpu_begin, *if* we end up flushing the
+state, we should set last_cpu to -1 indicating that *no* CPU currently
+owns the state -- after all, even on this CPU we would now have to
+reload the state from memory.
+
+Does that make sense?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
