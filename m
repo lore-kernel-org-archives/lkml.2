@@ -1,308 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2BSMPB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 07:15:01 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8846 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab2BSMO5 convert rfc822-to-8bit (ORCPT
+	id S1753822Ab2BSMSm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 07:18:42 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61726 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753370Ab2BSMSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 07:14:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127141417"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Thread-Index: AQHM7YOPqETlTTaR00eoPTQ1GukvM5ZEIKVQ
-Date: Sun, 19 Feb 2012 12:14:51 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
- <20120217142909.GA29110@phenom.dumpdata.com>
- <20120217144742.GA29454@phenom.dumpdata.com>
-In-Reply-To: <20120217144742.GA29454@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Feb 2012 07:18:40 -0500
 MIME-Version: 1.0
+Date: Sun, 19 Feb 2012 17:48:39 +0530
+Message-ID: <CAOD=uF4st80fB0+uwXNNbHtN4YpoFWwu4EUhwmVi+v=0euu=sQ@mail.gmail.com>
+Subject: [PATCH] Staging: driver usbip: Code cleanup
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: mfm@muteddisk.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Fri, Feb 17, 2012 at 09:29:09AM -0500, Konrad Rzeszutek Wilk wrote:
->> On Fri, Feb 17, 2012 at 08:56:43AM +0000, Liu, Jinsong wrote:
->>>> From f66a2df1392bbe69426387657a220177be50d58a Mon Sep 17 00:00:00
->>>> 2001 
->>> From: Liu, Jinsong <jinsong.liu@intel.com>
->>> Date: Fri, 10 Feb 2012 20:32:50 +0800
->>> Subject: [PATCH 1/3] PAD helper for native and paravirt platform
->>> 
->>> This patch is PAD (Processor Aggregator Device) helper.
->>> It provides a native interface for natvie platform, and a template
->>> for paravirt platform, so that os can implicitly hook to proper ops
->>> accordingly. 
->>> The paravirt template will further redirect to Xen pv ops in later
->>>  patch for Xen core parking.
->> 
->> You need to CC the ACPI maintainer and the acpi mailing on this
->> patch. I did that for you in the CC. 
->> 
->> 
->>> 
->>> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com> ---
->>>  arch/x86/include/asm/paravirt.h       |   10 +++++
->>>  arch/x86/include/asm/paravirt_types.h |    7 ++++
->>>  arch/x86/kernel/paravirt.c            |    9 +++++
->>>  drivers/acpi/acpi_pad.c               |   15 +++-----
->>>  include/acpi/acpi_pad.h               |   61
->>>  +++++++++++++++++++++++++++++++++ 5 files changed, 93
->>>  insertions(+), 9 deletions(-) create mode 100644
->>> include/acpi/acpi_pad.h 
->>> 
->>> diff --git a/arch/x86/include/asm/paravirt.h
->>> b/arch/x86/include/asm/paravirt.h 
->>> index a7d2db9..02e6df0 100644
->>> --- a/arch/x86/include/asm/paravirt.h
->>> +++ b/arch/x86/include/asm/paravirt.h
->>> @@ -54,6 +54,16 @@ static inline unsigned long read_cr0(void)
->>>  	return PVOP_CALL0(unsigned long, pv_cpu_ops.read_cr0);  }
->>> 
->>> +static inline int __acpi_pad_init(void)
->>> +{
->>> +	return PVOP_CALL0(int, pv_pad_ops.acpi_pad_init); +}
->>> +
->>> +static inline void __acpi_pad_exit(void)
->>> +{
->>> +	PVOP_VCALL0(pv_pad_ops.acpi_pad_exit);
->>> +}
->>> +
->>>  static inline void write_cr0(unsigned long x)
->>>  {
->>>  	PVOP_VCALL1(pv_cpu_ops.write_cr0, x);
->>> diff --git a/arch/x86/include/asm/paravirt_types.h
->>> b/arch/x86/include/asm/paravirt_types.h index 8e8b9a4..61e20de
->>> 100644 --- a/arch/x86/include/asm/paravirt_types.h +++
->>> b/arch/x86/include/asm/paravirt_types.h @@ -336,6 +336,11 @@ struct
->>>  	pv_lock_ops { void (*spin_unlock)(struct arch_spinlock *lock);
->>>  };
->>> 
->>> +struct pv_pad_ops {
->>> +	int (*acpi_pad_init)(void);
->>> +	void (*acpi_pad_exit)(void);
->>> +};
->>> +
-> 
-> Looking at this a bit closer I am not sure why you choose the paravirt
-> interface for this? There is another one - the x86 that could have
-> been 
-> choosen. Or introduce a new one that is specific to ACPI.
-> 
-> I am curious - what was the reason for using the paravirt interface?
-> I understand it does get the job done, but it seems a bit overkill
-> when something simple could have been used?
-> 
+ Code cleanup: removed commented code of old style lock initilization
 
-It uses paravirt interface to avoid some code like 'xen_...' in native code path (acpi_pad.c).
-I'm not quite sure what does 'x86' here mean? Adding 2 fields (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops? seems it's much simpler.
+Signed-off-by: Santosh <santoshprasadnayak@gmail.com>
+---
+ drivers/staging/usbip/stub_dev.c |    2 --
+ drivers/staging/usbip/vhci_hcd.c |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-Thanks,
-Jinsong
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index 03420e2..fa870e3 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -297,7 +297,6 @@ static struct stub_device
+*stub_device_alloc(struct usb_device *udev,
+        sdev->devid             = (busnum << 16) | devnum;
+        sdev->ud.side           = USBIP_STUB;
+        sdev->ud.status         = SDEV_ST_AVAILABLE;
+-       /* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
+        spin_lock_init(&sdev->ud.lock);
+        sdev->ud.tcp_socket     = NULL;
 
->>>  /* This contains all the paravirt structures: we get a convenient
->>>   * number for each function using the offset which we use to
->>> indicate 
->>>   * what to patch. */
->>> @@ -347,6 +352,7 @@ struct paravirt_patch_template {
->>>  	struct pv_apic_ops pv_apic_ops;
->>>  	struct pv_mmu_ops pv_mmu_ops;
->>>  	struct pv_lock_ops pv_lock_ops;
->>> +	struct pv_pad_ops pv_pad_ops;
->>>  };
->>> 
->>>  extern struct pv_info pv_info;
->>> @@ -357,6 +363,7 @@ extern struct pv_irq_ops pv_irq_ops;
->>>  extern struct pv_apic_ops pv_apic_ops;
->>>  extern struct pv_mmu_ops pv_mmu_ops;
->>>  extern struct pv_lock_ops pv_lock_ops;
->>> +extern struct pv_pad_ops pv_pad_ops;
->>> 
->>>  #define PARAVIRT_PATCH(x)					\
->>>  	(offsetof(struct paravirt_patch_template, x) / sizeof(void *))
->>> diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
->>> index d90272e..ec778f6 100644
->>> --- a/arch/x86/kernel/paravirt.c
->>> +++ b/arch/x86/kernel/paravirt.c
->>> @@ -38,6 +38,8 @@
->>>  #include <asm/tlbflush.h>
->>>  #include <asm/timer.h>
->>> 
->>> +#include <acpi/acpi_pad.h>
->>> +
->>>  /* nop stub */
->>>  void _paravirt_nop(void)
->>>  {
->>> @@ -132,6 +134,7 @@ static void *get_call_destination(u8 type)
->>>  #ifdef CONFIG_PARAVIRT_SPINLOCKS
->>>  		.pv_lock_ops = pv_lock_ops,
->>>  #endif
->>> +		.pv_pad_ops = pv_pad_ops,
->>>  	};
->>>  	return *((void **)&tmpl + type);
->>>  }
->>> @@ -480,9 +483,15 @@ struct pv_mmu_ops pv_mmu_ops = {
->>>  	.set_fixmap = native_set_fixmap,
->>>  };
->>> 
->>> +struct pv_pad_ops pv_pad_ops = {
->>> +	.acpi_pad_init = native_acpi_pad_init,
->>> +	.acpi_pad_exit = native_acpi_pad_exit,
->>> +};
->>> +
->>>  EXPORT_SYMBOL_GPL(pv_time_ops);
->>>  EXPORT_SYMBOL    (pv_cpu_ops);
->>>  EXPORT_SYMBOL    (pv_mmu_ops);
->>>  EXPORT_SYMBOL_GPL(pv_apic_ops);
->>>  EXPORT_SYMBOL_GPL(pv_info);
->>>  EXPORT_SYMBOL    (pv_irq_ops);
->>> +EXPORT_SYMBOL_GPL(pv_pad_ops);
->>> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
->>> index a43fa1a..3f0fd27 100644
->>> --- a/drivers/acpi/acpi_pad.c
->>> +++ b/drivers/acpi/acpi_pad.c
->>> @@ -30,6 +30,7 @@
->>>  #include <linux/slab.h>
->>>  #include <acpi/acpi_bus.h>
->>>  #include <acpi/acpi_drivers.h>
->>> +#include <acpi/acpi_pad.h>
->>>  #include <asm/mwait.h>
->>> 
->>>  #define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad" @@ -37,14
->>>  +38,14 @@ #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
->>>  static DEFINE_MUTEX(isolated_cpus_lock);
->>> 
->>> -static unsigned long power_saving_mwait_eax;
->>> +unsigned long power_saving_mwait_eax;
->>> 
->>>  static unsigned char tsc_detected_unstable;
->>>  static unsigned char tsc_marked_unstable;
->>>  static unsigned char lapic_detected_unstable;
->>>  static unsigned char lapic_marked_unstable;
->>> 
->>> -static void power_saving_mwait_init(void)
->>> +void power_saving_mwait_init(void)
->>>  {
->>>  	unsigned int eax, ebx, ecx, edx;
->>>  	unsigned int highest_cstate = 0;
->>> @@ -500,7 +501,7 @@ static const struct acpi_device_id
->>>  pad_device_ids[] = {  }; MODULE_DEVICE_TABLE(acpi, pad_device_ids);
->>> 
->>> -static struct acpi_driver acpi_pad_driver = {
->>> +struct acpi_driver acpi_pad_driver = {
->>>  	.name = "processor_aggregator",
->>>  	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
->>>  	.ids = pad_device_ids,
->>> @@ -512,16 +513,12 @@ static struct acpi_driver acpi_pad_driver = {
->>> 
->>>  static int __init acpi_pad_init(void)
->>>  {
->>> -	power_saving_mwait_init();
->>> -	if (power_saving_mwait_eax == 0)
->>> -		return -EINVAL;
->>> -
->>> -	return acpi_bus_register_driver(&acpi_pad_driver); +	return
->>>  __acpi_pad_init(); }
->>> 
->>>  static void __exit acpi_pad_exit(void)
->>>  {
->>> -	acpi_bus_unregister_driver(&acpi_pad_driver);
->>> +	__acpi_pad_exit();
->>>  }
->>> 
->>>  module_init(acpi_pad_init);
->>> diff --git a/include/acpi/acpi_pad.h b/include/acpi/acpi_pad.h
->>> new file mode 100644
->>> index 0000000..1a1471d
->>> --- /dev/null
->>> +++ b/include/acpi/acpi_pad.h
->>> @@ -0,0 +1,61 @@
->>> +/*
->>> + *  acpi_pad.h - pad device helper for native and paravirt
->>> platform + * + *  Copyright (C) 2012, Intel Corporation.
->>> + *     Author: Liu, Jinsong <jinsong.liu@intel.com> + *
->>> + *  This program is free software; you can redistribute it and/or
->>> modify + *  it under the terms of the GNU General Public License as
->>> published by + *  the Free Software Foundation; either version 2 of
->>> the License, or (at + *  your option) any later version.
->>> + *
->>> + *  This program is distributed in the hope that it will be
->>> useful, but + *  WITHOUT ANY WARRANTY; without even the implied
->>> warranty of + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR
->>> PURPOSE.  See the GNU + *  General Public License for more details.
->>> + */
->>> +
->>> +#ifndef __ACPI_PAD_H__
->>> +#define __ACPI_PAD_H__
->>> +
->>> +#include <acpi/acpi_bus.h>
->>> +
->>> +extern unsigned long power_saving_mwait_eax;
->>> +extern struct acpi_driver acpi_pad_driver;
->>> +extern void power_saving_mwait_init(void);
->>> +
->>> +static inline int native_acpi_pad_init(void)
->>> +{
->>> +#ifdef CONFIG_ACPI_PROCESSOR_AGGREGATOR
->>> +	power_saving_mwait_init();
->>> +	if (power_saving_mwait_eax == 0)
->>> +		return -EINVAL;
->>> +
->>> +	return acpi_bus_register_driver(&acpi_pad_driver); +#else
->>> +	return 0;
->>> +#endif
->>> +}
->>> +
->>> +static inline void native_acpi_pad_exit(void)
->>> +{
->>> +#ifdef CONFIG_ACPI_PROCESSOR_AGGREGATOR
->>> +	acpi_bus_unregister_driver(&acpi_pad_driver);
->>> +#endif
->>> +}
->>> +
->>> +#ifdef CONFIG_PARAVIRT
->>> +#include <asm/paravirt.h>
->>> +#else
->>> +static inline int __acpi_pad_init(void)
->>> +{
->>> +	return native_acpi_pad_init();
->>> +}
->>> +
->>> +static inline void __acpi_pad_exit(void)
->>> +{
->>> +	native_acpi_pad_exit();
->>> +}
->>> +#endif
->>> +
->>> +#endif /* __ACPI_PAD_H__ */
->>> --
->>> 1.7.1
->> 
->> 
->> 
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
+@@ -306,7 +305,6 @@ static struct stub_device
+*stub_device_alloc(struct usb_device *udev,
+        INIT_LIST_HEAD(&sdev->priv_free);
+        INIT_LIST_HEAD(&sdev->unlink_free);
+        INIT_LIST_HEAD(&sdev->unlink_tx);
+-       /* sdev->priv_lock = SPIN_LOCK_UNLOCKED; */
+        spin_lock_init(&sdev->priv_lock);
 
+        init_waitqueue_head(&sdev->tx_waitq);
+diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+index 8d96ab0..dca9bf1 100644
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -895,14 +895,12 @@ static void vhci_device_init(struct vhci_device *vdev)
+
+        vdev->ud.side   = USBIP_VHCI;
+        vdev->ud.status = VDEV_ST_NULL;
+-       /* vdev->ud.lock   = SPIN_LOCK_UNLOCKED; */
+        spin_lock_init(&vdev->ud.lock);
