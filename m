@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab2BSXIV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 18:08:21 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35212 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab2BSXIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 18:08:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.14.28.194 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
-Message-ID: <1329692938.10124.25.camel@lappy>
-Subject: Re: TTY: NULL dereference when closing a pty file
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Dave Jones <davej@redhat.com>
-Date: Mon, 20 Feb 2012 01:08:58 +0200
-In-Reply-To: <4F41653A.3090307@gmail.com>
-References: <1329683796.10124.21.camel@lappy> <4F41653A.3090307@gmail.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751514Ab2BSXJh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 18:09:37 -0500
+Received: from ozlabs.org ([203.10.76.45]:40274 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab2BSXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 18:09:36 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/12] arch/powerpc: remove references to cpu_*_map.
+In-Reply-To: <1329362944.3772.45.camel@pasglop>
+References: <1329281884.20466.rusty@rustcorp.com.au> <4F3B790F.1040907@linux.vnet.ibm.com> <1329362944.3772.45.camel@pasglop>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 20 Feb 2012 09:15:03 +1030
+Message-ID: <87pqda8mts.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-19 at 22:10 +0100, Jiri Slaby wrote:
-> On 02/19/2012 09:36 PM, Sasha Levin wrote:
-> > I got the following BUG() when running trinity on the KVM tool:
+On Thu, 16 Feb 2012 14:29:04 +1100, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> On Wed, 2012-02-15 at 14:51 +0530, Srivatsa S. Bhat wrote:
+> > On 02/15/2012 10:28 AM, Rusty Russell wrote:
+> > 
+> > > From: Rusty Russell <rusty@rustcorp.com.au>
+> > > 
+> > > This has been obsolescent for a while; time for the final push.
+> > > 
 > 
-> Hi, I've sent a patch as a reply to your message. Could you test it?
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> Want me to stick that in -powerpc ? If yes, now or -next ?
 
-Sure. I'll re-run and report back tomorrow.
+Please, in -next.
 
-> And where can one obtain the tool?
-
-The KVM tool is developed at https://github.com/penberg/linux-kvm
-
-Trinity is developed at http://codemonkey.org.uk/projects/trinity/trinity.git
-
-If you have any questions about how to use them both feel free to message me privately.
-
-> thanks,
-
-
+Cheers,
+Rusty.
