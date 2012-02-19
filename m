@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab2BSN6A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 08:58:00 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39289 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab2BSN56 (ORCPT
+	id S1754196Ab2BSN5k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 08:57:40 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:41731
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2BSN5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 08:57:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of shmulik.ladkani@gmail.com designates 10.180.109.228 as permitted sender) smtp.mail=shmulik.ladkani@gmail.com; dkim=pass header.i=shmulik.ladkani@gmail.com
-Date: Sun, 19 Feb 2012 15:57:41 +0200
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Richard Weinberger <rw@linutronix.de>
-Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
-        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
-Subject: Re: [RFC][PATCH 7/7] MTD: UBI: wire up checkpointing
-Message-ID: <20120219155741.4c2f0a02@pixies.home.jungo.com>
-In-Reply-To: <1329250006-22944-8-git-send-email-rw@linutronix.de>
-References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
-	<1329250006-22944-8-git-send-email-rw@linutronix.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Feb 2012 08:57:10 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: standby24x7@gmail.com, trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] [trivial] Documentation: Fix typo in dwc3.txt
+Date: Sun, 19 Feb 2012 22:56:22 +0900
+Message-Id: <1329659784-1781-2-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1329659784-1781-1-git-send-email-standby24x7@gmail.com>
+References: <1329659784-1781-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Feb 2012 21:06:46 +0100 Richard Weinberger <rw@linutronix.de> wrote:
-> +#ifdef CONFIG_MTD_UBI_CHECKPOINT
-> +static int attach_by_checkpointing(struct ubi_device *ubi)
-> +{
-> +	int cp_start, err;
-> +	struct ubi_scan_info *si;
-> +
-> +	cp_start = ubi_find_checkpoint(ubi);
-> +	if (cp_start < 0)
-> +		return -ENOENT;
-> +
-> +	si = ubi_read_checkpoint(ubi, cp_start);
-> +	if (IS_ERR(si))
-> +		return PTR_ERR(si);
-> +
-> +	ubi->bad_peb_count = 0;
-> +	ubi->good_peb_count = ubi->peb_count;
+Correct spelling "requries" to "requires" in
+Documentation/usb/dwc3.txt
 
-Zero reported bad PEBs when checkpointing.
-Seems that checkpointing does not remember number/location of bad PEBs.
-Are we fine with that?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/usb/dwc3.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +#ifdef CONFIG_MTD_UBI_CHECKPOINT
-> +	err = attach_by_checkpointing(ubi);
-> +
-> +	if (err) {
-> +		if (err != -ENOENT)
-> +			ubi_msg("falling back to attach by scanning mode!\n");
-> +
-> +		err = attach_by_scanning(ubi);
-> +	}
+diff --git a/Documentation/usb/dwc3.txt b/Documentation/usb/dwc3.txt
+index 7b590ed..1d02c01 100644
+--- a/Documentation/usb/dwc3.txt
++++ b/Documentation/usb/dwc3.txt
+@@ -28,7 +28,7 @@ Please pick something while reading :)
+       none
+ 
+     - primary handler of the EP-interrupt
+-      reads the event and tries to process it. Everything that requries
++      reads the event and tries to process it. Everything that requires
+       sleeping is handed over to the Thread. The event is saved in an
+       per-endpoint data-structure.
+       We probably have to pay attention not to process events once we
+-- 
+1.7.9.1.197.g5f90b
 
-Code does not fit error message.
-Message states "falling back to scanning" only if "err != -ENOENT".
-However code calls 'attach_by_scanning' regardless 'err'.
-Was it your intention?
-
-Regards,
-Shmulik
