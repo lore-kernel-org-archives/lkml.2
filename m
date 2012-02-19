@@ -1,264 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab2BSLsx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 06:48:53 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57194 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab2BSLsv (ORCPT
+	id S1753771Ab2BSL5s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 06:57:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13407 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753441Ab2BSL5p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 06:48:51 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 19 Feb 2012 12:48:36 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Joe Perches <joe@perches.com>, linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] firewire: net: prefix all log messages with
- interface name
-Message-ID: <20120219124836.0fd5ead8@stein>
-In-Reply-To: <1329600742.1753.20.camel@joe2Laptop>
-References: <20120218215824.5b2359bf@stein>
-	<20120218220233.5d67b31a@stein>
-	<1329600742.1753.20.camel@joe2Laptop>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Feb 2012 06:57:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127138576"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Jan Beulich <JBeulich@suse.com>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: RE: [PATCH 3/3] Xen pad logic and notification
+Thread-Topic: [PATCH 3/3] Xen pad logic and notification
+Thread-Index: AQHM7YGr1HfHeb7nTGSKH/iUASruopZEERig
+Date: Sun, 19 Feb 2012 11:57:39 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350A0869@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D87E@SHSMSX101.ccr.corp.intel.com>
+ <20120217143727.GC29110@phenom.dumpdata.com>
+In-Reply-To: <20120217143727.GC29110@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 18 Joe Perches wrote:
-> On Sat, 2012-02-18 at 22:02 +0100, Stefan Richter wrote:
-> > Change the log line prefix from "firewire_net: " to
-> > "firewire_net firewire0: " etc. for the case that several RFC 2734
-> > interfaces are being used in the same machine.
+Konrad Rzeszutek Wilk wrote:
+> On Fri, Feb 17, 2012 at 08:58:38AM +0000, Liu, Jinsong wrote:
+>>> From fee39804d2634dfba7b369dc82dac19b57400f84 Mon Sep 17 00:00:00
+>>> 2001 
+>> From: Liu, Jinsong <jinsong.liu@intel.com>
+>> Date: Sat, 18 Feb 2012 00:46:29 +0800
+>> Subject: [PATCH 3/3] Xen pad logic and notification
+>> 
+>> This patch implement Xen pad logic, and when getting pad device
+>> notification, it hypercalls to Xen hypervisor for core parking.
 > 
-> Why not just "firewireX: " ?
-
-The double prefix is strangely verbose and pedantic, but it does make
-immediately obvious which driver emitted the message (as opposed to one of
-the lower-level firewire drivers, or one of the upper-level networking
-drivers).
-
-For somebody who is familiar with the drivers --- or after full text search
-through the source --- the firewire_net part is of course superfluous.
-
-> []
-> > +#define fwnet_notice(net, fmt, args...) \
-> > +	printk(KERN_NOTICE "%s %s: " fmt, KBUILD_MODNAME, (net)->name, ## args)
-> > +#define fwnet_err(net, fmt, args...) \
-> > +	printk(KERN_ERR "%s %s: " fmt, KBUILD_MODNAME, (net)->name, ## args)
+> CC-ing linux-acpi@vger.kernel.org and Len Brown.
 > 
-> Adding code for the "%s:...", KBUILD_MODNAME rarely saves
-> overall space.  Did you try embedding KBUILD_MODNAME
-> without the "%s: " and comparing the size?
+>> 
+>> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com> ---
+>>  drivers/xen/xen_acpi_pad.c       |  189
+>>  ++++++++++++++++++++++++++++++++++++++
+>>  include/xen/interface/platform.h |   14 +++ 2 files changed, 203
+>> insertions(+), 0 deletions(-) 
+>> 
+>> diff --git a/drivers/xen/xen_acpi_pad.c b/drivers/xen/xen_acpi_pad.c
+>> index 63ab2fb..ba66d51 100644
+>> --- a/drivers/xen/xen_acpi_pad.c
+>> +++ b/drivers/xen/xen_acpi_pad.c
+>> @@ -1,8 +1,197 @@
+>> +/*
+>> + * xen_acpi_pad.c - Xen pad interface
+>> + *
+>> + * Copyright (c) 2012, Intel Corporation.
+>> + *    Author: Liu, Jinsong <jinsong.liu@intel.com> + *
+>> + * This program is free software; you can redistribute it and/or
+>> modify it + * under the terms and conditions of the GNU General
+>> Public License, + * version 2, as published by the Free Software
+>> Foundation. + * + * This program is distributed in the hope it will
+>> be useful, but WITHOUT + * ANY WARRANTY; without even the implied
+>> warranty of MERCHANTABILITY or + * FITNESS FOR A PARTICULAR PURPOSE.
+>> See the GNU General Public License for + * more details. + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/types.h>
+>> +#include <acpi/acpi_bus.h>
+>> +#include <acpi/acpi_drivers.h>
+>> +
+>> +#include <asm/xen/hypercall.h>
+>> +
+>> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS "xen_acpi_pad"
+>> +#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Xen Processor
+>> Aggregator" +#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+>> +static DEFINE_MUTEX(xen_cpu_lock);
+>> +
+>> +static int xen_acpi_pad_idle_cpus(int *num_cpus)
+>> +{
+>> +	int ret;
+>> +
+>> +	struct xen_platform_op op = {
+>> +		.cmd = XENPF_core_parking,
+>> +		.interface_version = XENPF_INTERFACE_VERSION,
+>> +	};
+>> +
+>> +	/* set cpu nums expected to be idled */
+>> +	op.u.core_parking.type = XEN_CORE_PARKING_SET;
+>> +	op.u.core_parking.idle_nums = (uint32_t)*num_cpus;
+>> +	ret = HYPERVISOR_dom0_op(&op);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	/*
+>> +	 * get cpu nums actually be idled
+>> +	 * cannot get it by using hypercall once (shared with _SET)
+>> +	 * because of the characteristic of Xen continue_hypercall_on_cpu
+>> +	 */ +	op.u.core_parking.type = XEN_CORE_PARKING_GET;
+>> +	ret = HYPERVISOR_dom0_op(&op);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	*num_cpus = op.u.core_parking.idle_nums;
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * Query firmware how many CPUs should be idle
+>> + * return -1 on failure
+>> + */
+>> +static int xen_acpi_pad_pur(acpi_handle handle)
+>> +{
+>> +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL}; +	union
+>> acpi_object *package; +	int num = -1;
+>> +
+>> +	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL,
+>> &buffer))) +		return num; +
+>> +	if (!buffer.length || !buffer.pointer)
+>> +		return num;
+>> +
+>> +	package = buffer.pointer;
+>> +
+>> +	if (package->type == ACPI_TYPE_PACKAGE &&
+>> +		package->package.count == 2 &&
+>> +		package->package.elements[0].integer.value == 1) /* rev 1 */ +
+>> +		num = package->package.elements[1].integer.value; +
+>> +	kfree(buffer.pointer);
+>> +	return num;
+>> +}
+>> +
+>> +/* Notify firmware how many CPUs are idle */
+>> +static void xen_acpi_pad_ost(acpi_handle handle, int stat,
+>> +	uint32_t idle_cpus) +{
+>> +	union acpi_object params[3] = {
+>> +		{.type = ACPI_TYPE_INTEGER,},
+>> +		{.type = ACPI_TYPE_INTEGER,},
+>> +		{.type = ACPI_TYPE_BUFFER,},
+>> +	};
+>> +	struct acpi_object_list arg_list = {3, params};
+>> +
+>> +	params[0].integer.value = ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
+>> +	params[1].integer.value =  stat;
+>> +	params[2].buffer.length = 4;
+>> +	params[2].buffer.pointer = (void *)&idle_cpus;
+>> +	acpi_evaluate_object(handle, "_OST", &arg_list, NULL); +}
+>> +
+>> +static void xen_acpi_pad_handle_notify(acpi_handle handle) +{
+>> +	int ret, num_cpus;
+>> +
+>> +	mutex_lock(&xen_cpu_lock);
+>> +	num_cpus = xen_acpi_pad_pur(handle);
+>> +	if (num_cpus < 0) {
+>> +		mutex_unlock(&xen_cpu_lock);
+>> +		return;
+>> +	}
+>> +
+>> +	ret = xen_acpi_pad_idle_cpus(&num_cpus);
+>> +	if (ret) {
+>> +		mutex_unlock(&xen_cpu_lock);
+>> +		return;
+>> +	}
+>> +
+>> +	xen_acpi_pad_ost(handle, 0, num_cpus);
+>> +	mutex_unlock(&xen_cpu_lock);
+>> +}
+>> +
+>> +static void xen_acpi_pad_notify(acpi_handle handle, u32 event,
+>> +	void *data) +{
+>> +	switch (event) {
+>> +	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
+>> +		xen_acpi_pad_handle_notify(handle);
+>> +		break;
+>> +	default:
+>> +		printk(KERN_WARNING "Unsupported event [0x%x]\n", event);
+>> +		break; +	}
+>> +}
+>> +
+>> +static int xen_acpi_pad_add(struct acpi_device *device) +{
+>> +	acpi_status status;
+>> +
+>> +	strcpy(acpi_device_name(device),
+>> ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
+>> +	strcpy(acpi_device_class(device),
+>> ACPI_PROCESSOR_AGGREGATOR_CLASS); + +	status =
+>> acpi_install_notify_handler(device->handle, +		 ACPI_DEVICE_NOTIFY,
+>> xen_acpi_pad_notify, device); +	if (ACPI_FAILURE(status)) +		return
+>> -ENODEV; + +	return 0;
+>> +}
+>> +
+>> +static int xen_acpi_pad_remove(struct acpi_device *device, +	int
+>> type) +{
+>> +	int num_cpus = 0;
+>> +
+>> +	mutex_lock(&xen_cpu_lock);
+>> +	xen_acpi_pad_idle_cpus(&num_cpus);
+>> +	mutex_unlock(&xen_cpu_lock);
+>> +
+>> +	acpi_remove_notify_handler(device->handle,
+>> +		ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify);
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct acpi_device_id xen_pad_device_ids[] = {
+>> +	{"ACPI000C", 0}, +	{"", 0},
+>> +};
+>> +
+>> +static struct acpi_driver xen_acpi_pad_driver = {
+>> +	.name = "xen_processor_aggregator",
+>> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
+>> +	.ids = xen_pad_device_ids,
+>> +	.ops = {
+>> +		.add = xen_acpi_pad_add,
+>> +		.remove = xen_acpi_pad_remove,
+>> +	},
+>> +};
+>> +
+>>  int xen_acpi_pad_init(void)
+>>  {
+>> +#ifdef CONFIG_ACPI_PROCESSOR_AGGREGATOR
 > 
-> Perhaps just add pr_fmt and pr_<level>?
+> How does that work when the the driver is booted under baremetal?
+> Won't it kick out the native ACPI_PROCESSOR_AGGREGATOR_CLASS
+> (acpi_pad.c) ? 
 > 
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt 	/* (if really necessary) */
+> What about if the other ACPI_PROCESSOR_AGGREGATOR_CLASS gets called
+> first? Won't this fail?
 > 
-> and
+> Or is the acpi_bus_register_driver smart enough to process more than
+> one ACPI bus device?
+
+When driver booted under baremetal, xen_acpi_pad.c would be disabled and native acpi_pad.c logic would work.
+
+Thanks,
+Jinsong
+
 > 
-> #define fwnet_notice(net, fmt, ...)		\
-> 	pr_notice("%s: " fmt, (net)->name, ##__VA_ARGS__)
-> #define fwnet_err(net, fmt, ...)		\
-> 	pr_err("%s: " fmt, (net)->name, ##__VA_ARGS__)
+>> +	return acpi_bus_register_driver(&xen_acpi_pad_driver); +#else
+>>  	return 0;
+>> +#endif
+>>  }
+>> 
+>>  void xen_acpi_pad_exit(void)
+>>  {
+>> +#ifdef CONFIG_ACPI_PROCESSOR_AGGREGATOR
+>> +	acpi_bus_unregister_driver(&xen_acpi_pad_driver); +#endif
+>>  }
+>> diff --git a/include/xen/interface/platform.h
+>> b/include/xen/interface/platform.h index c168468..56ec72a 100644 ---
+>> a/include/xen/interface/platform.h +++
+>> b/include/xen/interface/platform.h @@ -297,6 +297,19 @@ struct
+>>  xenpf_set_processor_pminfo {  };
+>> DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo); 
+>> 
+>> +#define XENPF_core_parking      60
+>> +
+>> +#define XEN_CORE_PARKING_SET    1
+>> +#define XEN_CORE_PARKING_GET    2
+>> +struct xenpf_core_parking {
+>> +	/* IN variables */
+>> +	uint32_t type;
+>> +	/* IN variables:  set cpu nums expected to be idled */
+>> +	/* OUT variables: get cpu nums actually be idled */ +	uint32_t
+>> idle_nums; +};
+>> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
+>> +
+>>  struct xen_platform_op {
+>>  	uint32_t cmd;
+>>  	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+>> @@ -312,6 +325,7 @@ struct xen_platform_op {
+>>  		struct xenpf_change_freq       change_freq;
+>>  		struct xenpf_getidletime       getidletime;
+>>  		struct xenpf_set_processor_pminfo set_pminfo;
+>> +		struct xenpf_core_parking      core_parking;
+>>  		uint8_t                        pad[128];
+>>  	} u;
+>>  };
+>> --
+>> 1.7.1
 
-I think I tried it when I wrote the patch, hence the "module size is a
-little bit decreased because KBUILD_MODNAME is now moved from the format
-strings into a %s argument" in the changelog.  But I wrote this quite a
-while ago, so I better try again.
-
-This is on linux-3.2 elf64-x86-64 with a few debug options, gcc-4.5.3.
-Before yesterday's patch:
-$ size firewire-net.ko; du -b firewire-net.ko
-   text    data     bss     dec     hex filename
-   9499     744      24   10267    281b firewire-net.ko
-209777  firewire-net.ko
-
-With the patch that I posted yesterday:
-   text    data     bss     dec     hex filename
-   9613     744      24   10381    288d firewire-net.ko
-210056  firewire-net.ko
-
-Weird, I must have done something differently back then.  Wrongly, for
-example.
-
-With module name in the format strings:
-#define fwnet_notice(net, fmt, args...) \
-	printk(KERN_NOTICE KBUILD_MODNAME " %s: " fmt, (net)->name, ## args)
-#define fwnet_err(net, fmt, args...) \
-	printk(KERN_ERR KBUILD_MODNAME " %s: " fmt, (net)->name, ## args)
-
-   text    data     bss     dec     hex filename
-   9613     744      24   10381    288d firewire-net.ko
-209760  firewire-net.ko
-
-Without the module name, i.e.:
-#define fwnet_notice(net, fmt, args...) \
-	printk(KERN_NOTICE "%s: " fmt, (net)->name, ## args)
-#define fwnet_err(net, fmt, args...) \
-	printk(KERN_ERR "%s: " fmt, (net)->name, ## args)
-
-   text    data     bss     dec     hex filename
-   9483     744      24   10251    280b firewire-net.ko
-209632  firewire-net.ko
-
-So how about the following patch, for sake of countering kernel bloat?
-   text    data     bss     dec     hex filename
-   9430     744      24   10198    27d6 firewire-net.ko
-209659  firewire-net.ko
-
---------------------------------- 8< ---------------------------------
-
-Subject: [PATCH 3/4] firewire: net: use dev_printk API
-
-Change the log line prefix from "firewire_net: " to "net firewire0: "
-etc. for the case that several RFC 2734 interfaces are being used in the
-same machine.
-
-Note, the netdev_printk API is not very useful to firewire-net.
-netdev_notice(net, "abc\n") would result in irritating messages like
-"firewire_ohci 0000:0a:00.0: firewire0: abc".  Nor would a dev_printk on
-the fw_unit.device to which firewire-net is being bound be useful,
-because there are generally multiple ones of those per interface (from
-all RFC 2734 peers on the bus, the local node being only one of them).
-
-In the initialization message of each interface, log the PCI device
-name of the card which is parent of the netdevice instead of the GUID
-of the peer which was semi-randomly used to establish the netdevice.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/net.c |   41 +++++++++++++++++++++--------------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
-
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -256,8 +256,8 @@ static int fwnet_header_rebuild(struct s
- 	if (get_unaligned_be16(&h->h_proto) == ETH_P_IP)
- 		return arp_find((unsigned char *)&h->h_dest, skb);
- 
--	fw_notify("%s: unable to resolve type %04x addresses\n",
--		  skb->dev->name, be16_to_cpu(h->h_proto));
-+	dev_notice(&skb->dev->dev, "unable to resolve type %04x addresses\n",
-+		   be16_to_cpu(h->h_proto));
- 	return 0;
- }
- 
-@@ -369,7 +369,7 @@ static struct fwnet_fragment_info *fwnet
- 
- 	new = kmalloc(sizeof(*new), GFP_ATOMIC);
- 	if (!new) {
--		fw_error("out of memory\n");
-+		dev_err(&pd->skb->dev->dev, "out of memory\n");
- 		return NULL;
- 	}
- 
-@@ -414,7 +414,7 @@ fail_w_fi:
- fail_w_new:
- 	kfree(new);
- fail:
--	fw_error("out of memory\n");
-+	dev_err(&net->dev, "out of memory\n");
- 
- 	return NULL;
- }
-@@ -554,7 +554,7 @@ static int fwnet_finish_incoming_packet(
- 		sspd = arp1394->sspd;
- 		/* Sanity check.  OS X 10.3 PPC reportedly sends 131. */
- 		if (sspd > SCODE_3200) {
--			fw_notify("sspd %x out of range\n", sspd);
-+			dev_notice(&net->dev, "sspd %x out of range\n", sspd);
- 			sspd = SCODE_3200;
- 		}
- 		max_payload = fwnet_max_payload(arp1394->max_rec, sspd);
-@@ -574,8 +574,9 @@ static int fwnet_finish_incoming_packet(
- 		spin_unlock_irqrestore(&dev->lock, flags);
- 
- 		if (!peer) {
--			fw_notify("No peer for ARP packet from %016llx\n",
--				  (unsigned long long)peer_guid);
-+			dev_notice(&net->dev,
-+				   "no peer for ARP packet from %016llx\n",
-+				   (unsigned long long)peer_guid);
- 			goto no_peer;
- 		}
- 
-@@ -691,7 +692,7 @@ static int fwnet_incoming_packet(struct
- 
- 		skb = dev_alloc_skb(len + net->hard_header_len + 15);
- 		if (unlikely(!skb)) {
--			fw_error("out of memory\n");
-+			dev_err(&net->dev, "out of memory\n");
- 			net->stats.rx_dropped++;
- 
- 			return -ENOMEM;
-@@ -814,7 +815,7 @@ static void fwnet_receive_packet(struct
- 		rcode = RCODE_TYPE_ERROR;
- 	else if (fwnet_incoming_packet(dev, payload, length,
- 				       source, generation, false) != 0) {
--		fw_error("Incoming packet failure\n");
-+		dev_err(&dev->netdev->dev, "incoming packet failure\n");
- 		rcode = RCODE_CONFLICT_ERROR;
- 	} else
- 		rcode = RCODE_COMPLETE;
-@@ -881,7 +882,7 @@ static void fwnet_receive_broadcast(stru
- 	if (retval >= 0)
- 		fw_iso_context_queue_flush(dev->broadcast_rcv_context);
- 	else
--		fw_error("requeue failed\n");
-+		dev_err(&dev->netdev->dev, "requeue failed\n");
- }
- 
- static struct kmem_cache *fwnet_packet_task_cache;
-@@ -936,9 +937,10 @@ static void fwnet_transmit_packet_done(s
- 		case RFC2374_HDR_LASTFRAG:
- 		case RFC2374_HDR_UNFRAG:
- 		default:
--			fw_error("Outstanding packet %x lf %x, header %x,%x\n",
--				 ptask->outstanding_pkts, lf, ptask->hdr.w0,
--				 ptask->hdr.w1);
-+			dev_err(&dev->netdev->dev,
-+				"outstanding packet %x lf %x, header %x,%x\n",
-+				ptask->outstanding_pkts, lf, ptask->hdr.w0,
-+				ptask->hdr.w1);
- 			BUG();
- 
- 		case RFC2374_HDR_FIRSTFRAG:
-@@ -1010,8 +1012,9 @@ static void fwnet_write_complete(struct
- 		fwnet_transmit_packet_failed(ptask);
- 
- 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
--			fw_error("fwnet_write_complete: "
--				"failed: %x (skipped %d)\n", rcode, errors_skipped);
-+			dev_err(&ptask->dev->netdev->dev,
-+				"fwnet_write_complete failed: %x (skipped %d)\n",
-+				rcode, errors_skipped);
- 
- 			errors_skipped = 0;
- 			last_rcode = rcode;
-@@ -1539,14 +1542,12 @@ static int fwnet_probe(struct device *_d
- 	put_unaligned_be64(card->guid, net->dev_addr);
- 	put_unaligned_be64(~0ULL, net->broadcast);
- 	ret = register_netdev(net);
--	if (ret) {
--		fw_error("Cannot register the driver\n");
-+	if (ret)
- 		goto out;
--	}
- 
- 	list_add_tail(&dev->dev_link, &fwnet_device_list);
--	fw_notify("%s: IPv4 over FireWire on device %016llx\n",
--		  net->name, (unsigned long long)card->guid);
-+	dev_notice(&net->dev, "IPv4 over IEEE 1394 on card %s\n",
-+		   dev_name(card->device));
-  have_dev:
- 	ret = fwnet_add_peer(dev, unit, device);
- 	if (ret && allocated_netdev) {
-
-
--- 
-Stefan Richter
--=====-===-- --=- =--==
-http://arcgraph.de/sr/
