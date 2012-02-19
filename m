@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab2BSXJh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 18:09:37 -0500
-Received: from ozlabs.org ([203.10.76.45]:40274 "EHLO ozlabs.org"
+	id S1751649Ab2BSXJl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 18:09:41 -0500
+Received: from ozlabs.org ([203.10.76.45]:47221 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab2BSXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 18:09:36 -0500
+	id S1750951Ab2BSXJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 18:09:38 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 6/12] arch/powerpc: remove references to cpu_*_map.
-In-Reply-To: <1329362944.3772.45.camel@pasglop>
-References: <1329281884.20466.rusty@rustcorp.com.au> <4F3B790F.1040907@linux.vnet.ibm.com> <1329362944.3772.45.camel@pasglop>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mike Travis <travis@sgi.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>
+Subject: Re: [PATCH v2] arch/ia64: remove references to cpu_*_map.
+In-Reply-To: <20120215183204.7928884a.akpm@linux-foundation.org>
+References: <4F3B8EAE.4050809@linux.vnet.ibm.com> <20120215130240.7308f373.akpm@linux-foundation.org> <87k43nbsli.fsf@rustcorp.com.au> <20120215183204.7928884a.akpm@linux-foundation.org>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 20 Feb 2012 09:15:03 +1030
-Message-ID: <87pqda8mts.fsf@rustcorp.com.au>
+Date: Mon, 20 Feb 2012 09:14:47 +1030
+Message-ID: <87sji68mu8.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 Feb 2012 14:29:04 +1100, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> On Wed, 2012-02-15 at 14:51 +0530, Srivatsa S. Bhat wrote:
-> > On 02/15/2012 10:28 AM, Rusty Russell wrote:
-> > 
-> > > From: Rusty Russell <rusty@rustcorp.com.au>
-> > > 
-> > > This has been obsolescent for a while; time for the final push.
-> > > 
-> 
-> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> 
-> Want me to stick that in -powerpc ? If yes, now or -next ?
+On Wed, 15 Feb 2012 18:32:04 -0800, Andrew Morton <akpm@linux-foundation.org> wrote:
+> This stuff probably isn't all in linux-next yet.  I tried to get an
+> update going today but failed.  I'll try again tomorrow, but it depends
+> on how many additional oopses and build breakages our team of top-notch
+> engineers chooses to add overnight.
 
-Please, in -next.
+Ah.  OK, please apply as many as you can; except for the ia64 stuff,
+they're cleanup.  After next merge window I'll do another sweep to catch
+any dregs.
 
-Cheers,
+Thanks,
 Rusty.
