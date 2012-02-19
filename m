@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2BSRBg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 12:01:36 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65084 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2BSRBf convert rfc822-to-8bit (ORCPT
+	id S1754577Ab2BSRkJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 12:40:09 -0500
+Received: from smtprelay03.ispgateway.de ([80.67.31.41]:57265 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab2BSRkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 12:01:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120217123037.ecfc5dd9.akpm@linux-foundation.org>
-References: <4F3E42E0.4030108@openvz.org>
-	<20120217120815.25909.15632.stgit@zurg>
-	<20120217123037.ecfc5dd9.akpm@linux-foundation.org>
-Date: Sun, 19 Feb 2012 18:01:33 +0100
-X-Google-Sender-Auth: i4TQoZRWZYc2tXxGIo84IS4hDXM
-Message-ID: <CAMuHMdUYCGoZoUHWMtMCwAJ2ofweaeLF3U89P5EvrNGcn=6apw@mail.gmail.com>
-Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Feb 2012 12:40:07 -0500
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 12:40:07 EST
+From: Bernhard Walle <bernhard@bwalle.de>
+To: christoph.mair@gmail.com
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] misc: bmp085: Handle jiffies overflow correctly
+Date: Sun, 19 Feb 2012 18:28:01 +0100
+Message-Id: <1329672481-19583-1-git-send-email-bernhard@bwalle.de>
+X-Mailer: git-send-email 1.7.9.1
+X-Df-Sender: MTIyNzgwNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 21:30, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 17 Feb 2012 16:08:15 +0400
-> Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
->
->> Config NUMA must be defined for all architectures,
->> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
->> Some arch-specific Kconfig already has this stub.
->> This patch adds it to all remaining.
->
-> It would be better to teach IS_ENABLED() to handle this situation.  I
-> don't think there's a way of doing this with cpp :(
->
-> This limitation makes IS_ENABLED pretty dangerous, doesn't it?  It
-> makes it very easy to introduce build breakage with unexpected Kconfig
-> combinations.
+By using the time_is_before_jiffies() macro instead of normal
+arithmetic, the jiffies overflow is handled correctly.
 
-Indeed. Recently I discovered IS_ENABLED() and started recommending it
-to people for new code. But now I've seen the CONFIG_NUMA breakage,
-I no longer think this is a good recommendation.
+Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+---
+ drivers/misc/bmp085.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Gr{oetje,eeting}s,
+diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+index b29a2be..7cfc598 100644
+--- a/drivers/misc/bmp085.c
++++ b/drivers/misc/bmp085.c
+@@ -234,7 +234,8 @@ static s32 bmp085_get_pressure(struct bmp085_data *data, int *pressure)
+ 	int status;
+ 
+ 	/* alt least every second force an update of the ambient temperature */
+-	if (data->last_temp_measurement + 1*HZ < jiffies) {
++	if (data->last_temp_measurement == 0 ||
++			time_is_before_jiffies(data->last_temp_measurement + 1*HZ)) {
+ 		status = bmp085_get_temperature(data, NULL);
+ 		if (status != 0)
+ 			goto exit;
+-- 
+1.7.9.1
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
