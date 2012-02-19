@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab2BSWnK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 17:43:10 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40284 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab2BSWnI (ORCPT
+	id S1755461Ab2BSWoc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 17:44:32 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:52024 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755301Ab2BSWob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 17:43:08 -0500
-Date: Sun, 19 Feb 2012 17:41:00 -0500 (EST)
-Message-Id: <20120219.174100.25858072359685481.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: yuvalmin@broadcom.com, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eilong@broadcom.com,
-        eric.dumazet@gmail.com
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120217103011.b2223e28a89839d09a4a4053@canb.auug.org.au>
-References: <20120216123803.8efe3d23eee5c3a80aceef61@canb.auug.org.au>
-	<1329391450.16698.27.camel@lb-tlvb-eilong.il.broadcom.com>
-	<20120217103011.b2223e28a89839d09a4a4053@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 19 Feb 2012 17:44:31 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/zA3VsBZ7z+7O3MpgLwmjlyvyNJSe/7lbrOs1aXN
+	G/vok3zZ71stFb
+Message-ID: <4F417B3F.2050307@gmx.de>
+Date: Sun, 19 Feb 2012 22:44:15 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] fbdev: s/#if CONFIG/#ifdef CONFIG/
+References: <1329664319-3128-1-git-send-email-geert@linux-m68k.org> <1329664319-3128-5-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1329664319-3128-5-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 19 Feb 2012 14:41:02 -0800 (PST)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 17 Feb 2012 10:30:11 +1100
+On 02/19/2012 03:11 PM, Geert Uytterhoeven wrote:
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-> Hi,
-> 
-> On Thu, 16 Feb 2012 13:24:10 +0200 "Yuval Mintz" <yuvalmin@broadcom.com> wrote:
->>
->> I don't fully understand your merge - it seems to create a mash between
->> the "bnx2x: fix bnx2x_storm_stats_update() on big endian" patch in net,
->> and the "bnx2x: consistent statistics after internal driver reload"
->> patch in net-next.
-> 
-> That is exactly what the merge conflict resolution did.  i.e. the patch
-> you supplied below is not needed in linux-next because that is
-> effectively what I did.  It is the same as Dave will do when he merges
-> the net tree into the net-next tree as well, I assume.
+Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+(I assume you want that to go mainline via Jiri's tree)
 
-I've taken care of this.
+
+Best regards,
+
+Florian Tobias Schandinat
+
+> Cc: linux-fbdev@vger.kernel.org
+> ---
+>  drivers/video/au1100fb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/au1100fb.c b/drivers/video/au1100fb.c
+> index de9da67..4da1895 100644
+> --- a/drivers/video/au1100fb.c
+> +++ b/drivers/video/au1100fb.c
+> @@ -532,7 +532,7 @@ static int __devinit au1100fb_drv_probe(struct platform_device *dev)
+>  	for (page = (unsigned long)fbdev->fb_mem;
+>  	     page < PAGE_ALIGN((unsigned long)fbdev->fb_mem + fbdev->fb_len);
+>  	     page += PAGE_SIZE) {
+> -#if CONFIG_DMA_NONCOHERENT
+> +#ifdef CONFIG_DMA_NONCOHERENT
+>  		SetPageReserved(virt_to_page(CAC_ADDR((void *)page)));
+>  #else
+>  		SetPageReserved(virt_to_page(page));
+
