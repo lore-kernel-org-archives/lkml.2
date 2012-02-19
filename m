@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2BSMSm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 07:18:42 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61726 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753370Ab2BSMSk (ORCPT
+	id S1753912Ab2BSMUe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 07:20:34 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37066 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753188Ab2BSMUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 07:18:40 -0500
+	Sun, 19 Feb 2012 07:20:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jiangtao.jit@gmail.com designates 10.152.104.143 as permitted sender) smtp.mail=jiangtao.jit@gmail.com; dkim=pass header.i=jiangtao.jit@gmail.com
 MIME-Version: 1.0
-Date: Sun, 19 Feb 2012 17:48:39 +0530
-Message-ID: <CAOD=uF4st80fB0+uwXNNbHtN4YpoFWwu4EUhwmVi+v=0euu=sQ@mail.gmail.com>
-Subject: [PATCH] Staging: driver usbip: Code cleanup
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: mfm@muteddisk.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
+In-Reply-To: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
+References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
+Date: Sun, 19 Feb 2012 20:20:31 +0800
+Message-ID: <CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com>
+Subject: A problem with percpu variable cpu_number
+From: Tao Jiang <jiangtao.jit@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Code cleanup: removed commented code of old style lock initilization
+Hi:
 
-Signed-off-by: Santosh <santoshprasadnayak@gmail.com>
----
- drivers/staging/usbip/stub_dev.c |    2 --
- drivers/staging/usbip/vhci_hcd.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+I've asked the question on kernelnewbies, no replies.
+So forward it here.
+Thank you.
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 03420e2..fa870e3 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -297,7 +297,6 @@ static struct stub_device
-*stub_device_alloc(struct usb_device *udev,
-        sdev->devid             = (busnum << 16) | devnum;
-        sdev->ud.side           = USBIP_STUB;
-        sdev->ud.status         = SDEV_ST_AVAILABLE;
--       /* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
-        spin_lock_init(&sdev->ud.lock);
-        sdev->ud.tcp_socket     = NULL;
 
-@@ -306,7 +305,6 @@ static struct stub_device
-*stub_device_alloc(struct usb_device *udev,
-        INIT_LIST_HEAD(&sdev->priv_free);
-        INIT_LIST_HEAD(&sdev->unlink_free);
-        INIT_LIST_HEAD(&sdev->unlink_tx);
--       /* sdev->priv_lock = SPIN_LOCK_UNLOCKED; */
-        spin_lock_init(&sdev->priv_lock);
+---------- Forwarded message ----------
+From: tao jiang <jiangtao.jit@gmail.com>
+Date: 2012/2/16
+Subject: A problem with percpu variable cpu_number
+To: kernelnewbies <kernelnewbies@kernelnewbies.org>
 
-        init_waitqueue_head(&sdev->tx_waitq);
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 8d96ab0..dca9bf1 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -895,14 +895,12 @@ static void vhci_device_init(struct vhci_device *vdev)
 
-        vdev->ud.side   = USBIP_VHCI;
-        vdev->ud.status = VDEV_ST_NULL;
--       /* vdev->ud.lock   = SPIN_LOCK_UNLOCKED; */
-        spin_lock_init(&vdev->ud.lock);
+Hi :
+
+At the beginning of start_kernel() -- init/main.c
+boot_cpu_init() is called
+
+and in boot_cpu_init() will call smp_processor_id()
+it's a macro
+and it will be expanded as (percpu_read(cpu_number)) and so on
+
+but i noticed that it's before setup_per_cpu_areas() in start_kernel()
+is that mean the percpu areas hadn't be initialized yet
+but why smp_processor_id() could be called before setup_per_cpu_areas()
+
+
+Thank you.
+
+---------------
+jiangtao
