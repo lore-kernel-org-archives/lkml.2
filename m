@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab2BSHpG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 02:45:06 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4430 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2BSHpE (ORCPT
+	id S1752999Ab2BSHuV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 02:50:21 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62593 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab2BSHuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 02:45:04 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sat, 18 Feb 2012 23:44:59 -0800
-Message-ID: <4F40A7EE.8060805@nvidia.com>
-Date: Sun, 19 Feb 2012 13:12:38 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "jedu@slimlogic.co.uk" <jedu@slimlogic.co.uk>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2] mfd: tps65910: Add wakeup support
-References: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com> <20120126105452.GB8041@opensource.wolfsonmicro.com>
-In-Reply-To: <20120126105452.GB8041@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Sun, 19 Feb 2012 02:50:20 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.237.232 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1329637811.11495.1.camel@phoenix>
+Subject: [PATCH] mfd: tps65912: Initialize irq platform data properly
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Sun, 19 Feb 2012 15:50:11 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
-Can you please review this patch? This is require in order of enabling 
-the wakeup from sub devices of this pmic device like  rtc/onkey.
+irq_base of the tps65912 irq platform data should be
+initialized with the board provided irq_base data.
 
-Thanks,
-Laxman
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/tps65912-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Thursday 26 January 2012 04:24 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Jan 23, 2012 at 01:16:15PM +0530, Laxman Dewangan wrote:
->> Implementing irq_set_wake() so that device should able
->> to wakeup the system through different interrupt provided
->> by this device like gpios, onkey, rtc etc.
-> Reviewed-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
->
-> It will have the side effect of making all interrupts on the PMIC wake
-> if any of them does but I suspect this is actually going to be fine in
-> practice.
->
-> * Unknown Key
-> * 0x6E30FDDD
+diff --git a/drivers/mfd/tps65912-core.c b/drivers/mfd/tps65912-core.c
+index 5fec23a..74fd8cb 100644
+--- a/drivers/mfd/tps65912-core.c
++++ b/drivers/mfd/tps65912-core.c
+@@ -151,7 +151,7 @@ int tps65912_device_init(struct tps65912 *tps65912)
+ 		goto err;
+ 
+ 	init_data->irq = pmic_plat_data->irq;
+-	init_data->irq_base = pmic_plat_data->irq;
++	init_data->irq_base = pmic_plat_data->irq_base;
+ 	ret = tps65912_irq_init(tps65912, init_data->irq, init_data);
+ 	if (ret < 0)
+ 		goto err;
+-- 
+1.7.5.4
+
+
 
