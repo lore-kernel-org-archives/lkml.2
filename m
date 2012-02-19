@@ -1,109 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2BSVOk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:14:40 -0500
-Received: from smtprelay.restena.lu ([158.64.1.62]:60005 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab2BSVOj convert rfc822-to-8bit (ORCPT
+	id S1755351Ab2BSVO5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:14:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54652 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab2BSVOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:14:39 -0500
-Date: Sun, 19 Feb 2012 22:14:12 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Egmont Koblinger <egmont@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
-Message-ID: <20120219221412.1b6912ba@neptune.home>
-In-Reply-To: <CAGWcZk+_NpBZ2Gquv_ynXKdAivd3FhkHDDxu488y9Y9OrG2yfw@mail.gmail.com>
-References: <CAGWcZkJs2uQHM=7wmf1JOLmUeS3Mxo5L4arMuMQSez1mvJLKQA@mail.gmail.com>
-	<CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
-	<20120215233002.GB20816@kroah.com>
-	<CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
-	<20120216005437.GA22858@kroah.com>
-	<20120217192825.GE2707@elf.ucw.cz>
-	<20120217225708.0f31f2ac@neptune.home>
-	<CAGWcZk+_NpBZ2Gquv_ynXKdAivd3FhkHDDxu488y9Y9OrG2yfw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 19 Feb 2012 16:14:55 -0500
+Date: Sun, 19 Feb 2012 13:14:51 -0800
+From: mark gross <markgross@thegnar.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean Pihet <j-pihet@ti.com>, markgross <markgross@thegnar.org>,
+        kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Subject: Re: [RFC PATCH] PM / QoS: add pm_qos_update_request_timeout API
+Message-ID: <20120219211451.GA26578@envy17>
+Reply-To: markgross@thegnar.org
+References: <1329196614-6218-1-git-send-email-myungjoo.ham@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329196614-6218-1-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Egmont,
-
-On Sun, 19 February 2012 Egmont Koblinger <egmont@gmail.com> wrote:
-> Unfortunately the lost tail is a different thing: the terminal is in
-> cooked mode by default, so the kernel intentionally keeps the data in
-> its buffer until it sees a complete line.  A quick-and-dirty way of
-> changing to byte-based transmission (I'm lazy to look up the actual
-> system calls, apologies for the terribly ugly way of doing this) is:
->                  pty = open(ptsdname, O_RDWR):
->                  if (pty == -1) { ... }
-> +                char cmd[100];
-> +                sprintf(cmd, "stty raw <>%s", ptsdname);
-> +                system(cmd);
->                  ptmx_slave_test(pty, line, rsz);
+On Tue, Feb 14, 2012 at 02:16:54PM +0900, MyungJoo Ham wrote:
+> The new API, pm_qos_update_request_timeout() is to provide a timeout
+> with pm_qos_update_request.
 > 
-> Anyway, thanks very much for your test program, I'll try to modify it
-> to trigger the data corruption bug.
-
-Well, not sure but the closing of ptmx on sender side should force kernel
-to flush whatever is remaining independently on end-of-line (I was
-thinking I should push an EOF over the ptmx instead of closing it before
-waiting for child process though I have not yet looked-up how to do so!).
-
-The amount of missing tail for my few runs of the test program were of
-varying length, but in all cases way more than a single line, thus I would
-hope it's not line-buffering by the kernel which causes the missing data!
-
-Bruno
-
-
-> egmont
+> For example, pm_qos_update_request_timeout(req, 100, 1000), means that
+> QoS request on req with value 100 will be active for 1000 jiffies.
+> After 1000 jiffies, the QoS request thru req is rolled back to the
+> request status when pm_qos_update_request_timeout() was called. If there
+> were another pm_qos_update_request(req, x) during the 1000 jiffies, this
+> new request with value x will override as this is another request on the
+> same req handle. A new request on the same req handle will always
+> override the previous request whether it is the conventional request or
+> it is the new timeout request.
 > 
-> On Fri, Feb 17, 2012 at 22:57, Bruno Prémont <bonbons@linux-vserver.org> wrote:
-> > Hi,
-> >
-> > On Fri, 17 February 2012 Pavel Machek <pavel@ucw.cz> wrote:
-> >> > > Sorry, I didn't emphasize the point that makes me suspect it's a kernel issue:
-> >> > >
-> >> > > - strace reveals that the terminal emulator writes the correct data
-> >> > > into /dev/ptmx, and the kernel reports no short writes(!), all the
-> >> > > write(..., ..., 68) calls actually return 68 (the length of the
-> >> > > example file's lines incl. newline; I'm naively assuming I can trust
-> >> > > strace here.)
-> >> > > - strace reveals that the receiving application (bash) doesn't receive
-> >> > > all the data from /dev/pts/N.
-> >> > > - so: the data gets lost after writing to /dev/ptmx, but before
-> >> > > reading it out from /dev/pts/N.
-> >> >
-> >> > Which it will, if the reader doesn't read fast enough, right?  Is the
-> >> > data somewhere guaranteed to never "overrun" the buffer?  If so, how do
-> >> > we handle not just running out of memory?
-> >>
-> >> Start blocking the writer?
-> >
-> > I did quickly write a small test program (attached). It forks a reader child
-> > and sends data over to it, at the end both write down their copy of the buffer
-> > to a /tmp/ptmx_{in,out}.txt file for manual comparing results (in addition
-> > to basic output of mismatch start line)
-> >
-> > From the time it took the writer to write larger buffers (as seen using strace)
-> > it seems there *is* some kind of blocking, but it's not blocking long enough
-> > or unblocking too early if the reader does not keep up.
-> >
-> >
-> > For quick and dirty testing of effects of buffer sizes, tune "rsz", "wsz"
-> > and "line" in main() as well as total size with BUFF_SZ define.
-> >
-> >
-> > The effects for me are that writer writes all data but reader never sees tail
-> > of written data (how much is being seen seems variable, probably matter of
-> > scheduling, frequency scaling and similar racing factors).
-> >
-> > My test system is single-core uniprocessor centrino laptop (32bit x86) with
-> > 3.2.5 kernel.
-> >
-> > Bruno
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  include/linux/pm_qos.h |    5 ++++
+>  kernel/power/qos.c     |   54 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 58 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index f8ccb7b..1c29f52 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -8,6 +8,7 @@
+>  #include <linux/notifier.h>
+>  #include <linux/miscdevice.h>
+>  #include <linux/device.h>
+> +#include <linux/workqueue.h>
+>  
+>  #define PM_QOS_RESERVED 0
+>  #define PM_QOS_CPU_DMA_LATENCY 1
+> @@ -29,6 +30,8 @@
+>  struct pm_qos_request {
+>  	struct plist_node node;
+>  	int pm_qos_class;
+> +	s32 value; /* the back-up value for pm_qos_update_request_timeout */
+Why can't we just drop back to the qos_class default? or auto remove
+the time out request from the list? 
+
+> +	struct delayed_work work; /* for pm_qos_update_request_timeout */
+>  };
+>  
+>  struct dev_pm_qos_request {
+> @@ -74,6 +77,8 @@ void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
+>  			s32 value);
+>  void pm_qos_update_request(struct pm_qos_request *req,
+>  			   s32 new_value);
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req,
+> +				   s32 new_value, unsigned long timeout);
+Don't you need 2 values?  one for the request and one for the time out
+request target?
+
+I tend to not like time out api's.  They are race conditions waiting to
+happen.
+
+The caller could have its own timer that can simply go off and update the
+requested qos.
+
+I understand that you need to bump performance up for a short time to get good
+interactivity but I don't know if it should be generalized or if this is
+a good enough of a generalization.
+
+--mark
+
+>  void pm_qos_remove_request(struct pm_qos_request *req);
+>  
+>  int pm_qos_request(int pm_qos_class);
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index b15e0b7..acfa433 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -259,6 +259,21 @@ int pm_qos_request_active(struct pm_qos_request *req)
+>  EXPORT_SYMBOL_GPL(pm_qos_request_active);
+>  
+>  /**
+> + * pm_qos_timeout - the timeout handler of pm_qos_update_request_timeout
+> + * @work: work struct for the delayed work (timeout)
+> + *
+> + * This cancels the timeout request and rolls the request value back.
+> + */
+> +static void pm_qos_timeout(struct work_struct *work)
+> +{
+> +	struct pm_qos_request *req = container_of(to_delayed_work(work),
+> +						  struct pm_qos_request,
+> +						  work);
+> +
+> +	pm_qos_update_request(req, req->value);
+> +}
+> +
+> +/**
+>   * pm_qos_add_request - inserts new qos request into the list
+>   * @req: pointer to a preallocated handle
+>   * @pm_qos_class: identifies which list of qos request to use
+> @@ -282,6 +297,8 @@ void pm_qos_add_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  	req->pm_qos_class = pm_qos_class;
+> +	req->value = value;
+> +	INIT_DELAYED_WORK(&req->work, pm_qos_timeout);
+>  	pm_qos_update_target(pm_qos_array[pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_ADD_REQ, value);
+>  }
+> @@ -308,14 +325,46 @@ void pm_qos_update_request(struct pm_qos_request *req,
+>  		return;
+>  	}
+>  
+> -	if (new_value != req->node.prio)
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+> +	req->value = new_value;
+> +	if (new_value != req->node.prio) {
+>  		pm_qos_update_target(
+>  			pm_qos_array[req->pm_qos_class]->constraints,
+>  			&req->node, PM_QOS_UPDATE_REQ, new_value);
+> +	}
+>  }
+>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+>  
+>  /**
+> + * pm_qos_update_request_timeout - modifies an existing qos request temporarily.
+> + * @req : handle to list element holding a pm_qos request to use
+> + * @new_value: defines the temporal qos request
+> + * @timeout: the effective duration of this qos request in jiffies
+> + *
+> + * After timeout, this qos request is cancelled automatically.
+> + */
+> +void pm_qos_update_request_timeout(struct pm_qos_request *req, s32 new_value,
+> +				   unsigned long timeout)
+> +{
+> +	if (!req)
+> +		return;
+> +	if (WARN(!pm_qos_request_active(req),
+> +		 "pm_qos_update_request_timeout() called for unknown object."))
+> +		return;
+> +
+> +	if (new_value != req->node.prio) {
+> +		pm_qos_update_target(
+> +			pm_qos_array[req->pm_qos_class]->constraints,
+> +			&req->node, PM_QOS_UPDATE_REQ, new_value);
+> +		if (delayed_work_pending(&req->work))
+> +			cancel_delayed_work_sync(&req->work);
+> +		schedule_delayed_work(&req->work, timeout);
+> +	}
+> +}
+> +
+> +/**
+>   * pm_qos_remove_request - modifies an existing qos request
+>   * @req: handle to request list element
+>   *
+> @@ -334,6 +383,9 @@ void pm_qos_remove_request(struct pm_qos_request *req)
+>  		return;
+>  	}
+>  
+> +	if (delayed_work_pending(&req->work))
+> +		cancel_delayed_work_sync(&req->work);
+> +
+>  	pm_qos_update_target(pm_qos_array[req->pm_qos_class]->constraints,
+>  			     &req->node, PM_QOS_REMOVE_REQ,
+>  			     PM_QOS_DEFAULT_VALUE);
+> -- 
+> 1.7.4.1
+> 
