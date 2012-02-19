@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2BSUVE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 15:21:04 -0500
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:35258 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754794Ab2BSUVD (ORCPT
+	id S1755137Ab2BSUVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 15:21:25 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56153 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab2BSUVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 15:21:03 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
-	b=XMGpcPYozljnm5YgZW7OZXne4KYehMOJw4hxiclX/1xKL1hsytBdbq6I3BnM9QHd1qY+srYy7BwLLRgsvpIjIDiRaorw0Ur9s2EAG0z+ORO2AJgTmE5aECXPMBTpNW8W;
-From: Przemo Firszt <przemo@firszt.eu>
-To: aris@redhat.com, jkosina@suse.cz
-Cc: pinglinux@gmail.com, linuxwacom-devel@lists.sourceforge.net,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] HID: wacom: fix proximity tool release
-Date: Sun, 19 Feb 2012 20:20:29 +0000
-Message-Id: <1329682829-24347-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.6.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	Sun, 19 Feb 2012 15:21:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.154.28 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
+Date: Mon, 20 Feb 2012 00:19:14 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: =?utf-8?Q?Przemys=C5=82aw_Pawe=C5=82czyk?= 
+	<przemyslaw@pawelczyk.it>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, lkml <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] task->nsproxy was unexpectedly NULL (caught in exit_shm)
+Message-ID: <20120219201914.GB1895@moon>
+References: <CAN8=baycwqAkTJxNpNzaO9G=TbEXeiEYCvWxiwvS+NpLRZi3xw@mail.gmail.com>
+ <20120218173950.GA12595@albatros>
+ <20120218182436.GB1905@moon>
+ <CAN8=bawR0H6y-2qONGdG7CvfgphyeEt1v30YONPf5LaXRdgi+w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAN8=bawR0H6y-2qONGdG7CvfgphyeEt1v30YONPf5LaXRdgi+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't zero the current tool before reporting its release to the input
-subsystem.
+On Sun, Feb 19, 2012 at 08:40:42PM +0100, Przemysław Pawełczyk wrote:
+> A few minutes ago I was closing a tab in Chrome and I heard BEEP!
+> This time my mouse and keyboard stopped responding in X, have to ssh
+> from notebook to read log.
+> (I was using Synergy today, so maybe it is related.)
+> 
+> 
 
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-Tested-by: Przemo Firszt <przemo@firszt.eu>
----
- drivers/hid/hid-wacom.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi Przemysław, I'm not -mm expert, so I fear I can't help much in
+-mm related issues, but if I were you I would try to catch this problem
+with nvidia module unloaded and on vanilla kernel (this is debian one,
+right?).
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 0621047..696b907 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -322,10 +322,10 @@ static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
- 
- 	switch (data[1]) {
- 	case 0x80: /* Out of proximity report */
--		wdata->tool = 0;
- 		input_report_key(input, BTN_TOUCH, 0);
- 		input_report_abs(input, ABS_PRESSURE, 0);
- 		input_report_key(input, wdata->tool, 0);
-+		wdata->tool = 0;
- 		input_sync(input);
- 		break;
- 	case 0xC2: /* Tool report */
--- 
-1.7.6.4
-
+	Cyrill
