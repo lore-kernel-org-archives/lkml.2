@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab2BSVRW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:17:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60566 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755157Ab2BSVRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:17:19 -0500
-Date: Sun, 19 Feb 2012 22:17:09 +0100
-From: Holger Macht <holger@homac.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Slaby <jirislaby@gmail.com>,
-        Lin Ming <ming.m.lin@intel.com>
-Subject: Re: ahci: sata hotplug doesn't work after suspend
-Message-ID: <20120219211709.GA30809@homac.suse.de>
-References: <4F415775.7060003@suse.cz>
+	id S1755372Ab2BSVRp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:17:45 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40784 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab2BSVRo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 16:17:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F415775.7060003@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALyraeMK=bEVkBtbi8xAm5aWrCbjGMTkArHygG78tJ86TzzNOw@mail.gmail.com>
+References: <CALyraeMK=bEVkBtbi8xAm5aWrCbjGMTkArHygG78tJ86TzzNOw@mail.gmail.com>
+Date: Sun, 19 Feb 2012 16:17:43 -0500
+Message-ID: <CALyraePxucQS2YvPc=+D+W6kX0sbY-C1ZsYZ+K6Q2QhuHaZvLQ@mail.gmail.com>
+Subject: Re: Buildroot compilation error
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-newbie@vger.kernel.org
+Cc: dhylands@gmail.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On So 19. Feb - 21:11:33, Jiri Slaby wrote:
-> Hi,
-> 
-> ahci hotplug stopped working here. It always worked (-next-20111206 is
-> the last known working for sure). I'm using -next and after plugging a
-> sata disk in, nothing happens. I don't *think* (in the traffic, it's
-> hard to tell for sure) an interrupt is generated either. I also *think*
-> that it works before suspend/resume, but not after. (Or maybe uptime
-> matters?)
-> 
-> This happens before suspend on plug-in:
-> ata3: exception Emask 0x50 SAct 0x0 SErr 0x40d0800 action 0xe frozen
-> ata3: irq_stat 0x00000040, connection status changed
-> ata3: SError: { HostInt PHYRdyChg CommWake 10B8B DevExch }
-> ata3: hard resetting link
-> ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> ata3.00: ATA-8: ST31000528AS, CC38, max UDMA/133
-> ata3.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-> ata3.00: configured for UDMA/133
-> ata3: EH complete
-> scsi 2:0:0:0: Direct-Access     ATA      ST31000528AS     CC38 PQ: 0 ANSI: 5
-> sd 2:0:0:0: [sdc] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
-> sd 2:0:0:0: [sdc] Write Protect is off
-> sd 2:0:0:0: [sdc] Mode Sense: 00 3a 00 00
-> sd 2:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn't
-> support DPO or FUA
->  sdc: sdc1 sdc2
-> sd 2:0:0:0: [sdc] Attached SCSI disk
-> 
-> After suspend/resume and plug-in, nothing appears in dmesg. Storing "- -
-> -" to /sys/class/scsi_host/host*/scan doesn't help. It looks like the
-> line is completely dead, because only ata1 and ata2 say "hard resetting
-> link" after this (and another two disks are connected there).
-> 
-> I tried 'echo adapter >host_reset', but I get 'write error: Invalid
-> argument'.
-> 
-> 00:1f.2 SATA controller [0106]: Intel Corporation 82801IR/IO/IH
-> (ICH9R/DO/DH) 6 port SATA Controller [AHCI mode] [8086:2922] (rev 02)
-> (prog-if 01 [AHCI 1.0])
->         Subsystem: Intel Corporation 82801IR/IO/IH (ICH9R/DO/DH) 6 port
-> SATA Controller [AHCI mode] [8086:2922]
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> ParErr- Stepping- SERR- FastB2B- DisINTx+
->         Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0
->         Interrupt: pin B routed to IRQ 43
->         Region 0: I/O ports at cc00 [size=8]
->         Region 1: I/O ports at c880 [size=4]
->         Region 2: I/O ports at c800 [size=8]
->         Region 3: I/O ports at c480 [size=4]
->         Region 4: I/O ports at c400 [size=32]
->         Region 5: Memory at feb7c800 (32-bit, non-prefetchable) [size=2K]
->         Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
->                 Address: fee0100c  Data: 4171
->         Capabilities: [70] Power Management version 3
->                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
-> PME(D0-,D1-,D2-,D3hot+,D3cold-)
->                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
->         Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
->         Capabilities: [b0] Vendor Specific Information: Len=06 <?>
->         Kernel driver in use: ahci
-> 
-> Any ideas what that could be?
+found solution by doing this.
 
-I suspect this is caused by commit
-9ee4f3933930abf5cc34f8e9d69fe0e08c18f602. Maybe you could verify? I
-bisected this a couple of days ago but didn't have time to look into it
-further. Maybe Lin can help here if this is the problematic commit.
+I added following lines of code in
+libnl-3.0/lib/route/pktloc_grammer.h
 
+#ifndef YY_BUF_SIZE
+#define YY_BUF_SIZE 16384
+#endif
+
+#ifndef YY_STATE_BUF_SIZE
+#define YY_STATE_BUF_SIZE ((YY_BUF_SIZE + 2) * sizeof(yy_state_type))
+#endif
+
+Thanks,
+Sri
+
+On 2/19/12, Sri Ram Vemulpali <sri.ram.gmu06@gmail.com> wrote:
+> Hello All,
+>
+> I am using BuildRoot to compile my embedded linux and tool-chain.
+> After compiling most of the packages and tool-chain I am getting
+> following error. This occurs when compiling libnl-3.0
+>
+> make[3]: Entering directory
+> `/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+>   CC     route/pktloc.lo
+>
+> route/pktloc.c: In function ‘read_pktlocs’:
+> route/pktloc.c:127:34: error: ‘YY_BUF_SIZE’ undeclared (first use in
+> this function)
+> route/pktloc.c:127:34: note: each undeclared identifier is reported
+> only once for each function it appears in
+> make[3]: *** [route/pktloc.lo] Error 1
+> make[3]: Leaving directory
+> `/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+> make[2]: *** [all] Error 2
+> make[2]: Leaving directory
+> `/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+> make[1]: *** [all-recursive] Error 1
+> make[1]: Leaving directory
+> `/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0'
+> make: ***
+> [/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/.stamp_built]
+> Error 2
+>
+> Can anyone please help me what is going on in compilation. Do I need
+> to specify sysroot or path to lib.
+> Thanks in advance for the help.
+>
+>
+>
+> --
+> Regards,
+> Sri.
+>
+
+
+-- 
 Regards,
- Holger
+Sri.
