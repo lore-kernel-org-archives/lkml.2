@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2BSBg3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 20:36:29 -0500
-Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:57836
-	"EHLO l.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab2BSBg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 20:36:29 -0500
-Message-ID: <4F4051E6.6030603@chelsio.com>
-Date: Sat, 18 Feb 2012 17:35:34 -0800
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
+	id S1754307Ab2BSBgm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 20:36:42 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47710 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754237Ab2BSBgi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 20:36:38 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.60.21.134 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: pull request: linux-firmware: update cxgb* firmwares
-References: <4F35DB79.6070104@chelsio.com>  <20120211140701.GA5194@neilslaptop.think-freely.org>  <4F38A526.70900@chelsio.com> <4F3CADB7.1030802@chelsio.com>  <1329450094.3258.34.camel@deadeye> <4F3EAAE3.5070705@chelsio.com>  <1329613104.3258.44.camel@deadeye> <1329613455.3258.45.camel@deadeye>
-In-Reply-To: <1329613455.3258.45.camel@deadeye>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120218205626.GA26880@joi.lan>
+References: <20120218193857.GA30985@www.outflux.net>
+	<20120218205626.GA26880@joi.lan>
+Date: Sat, 18 Feb 2012 17:36:36 -0800
+X-Google-Sender-Auth: DdMW7DJAEjtmXdSOJFhmtrsJr6E
+Message-ID: <CAGXu5jJQVWS60m5W1-OvDCDixe=kVU2HxPP1C3zNCVgWcXzdDA@mail.gmail.com>
+Subject: Re: [PATCH] fs: hardlink creation restrictions
+From: Kees Cook <keescook@chromium.org>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        linux-doc@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/18/2012 5:04 PM, Ben Hutchings wrote:
-> On Sun, 2012-02-19 at 00:58 +0000, Ben Hutchings wrote:
->> On Fri, 2012-02-17 at 11:30 -0800, Divy Le Ray wrote:
->>> On 2/16/2012 7:41 PM, Ben Hutchings wrote:
-> [...]
->>>> Are there any versions of the cxgb4 driver that will specifically
->>>> request cxgb4/t4fw-1.3.10.0.bin?  If not, what's the point of keeping it
->>>> around after changing the cxgb4/t4fw.bin symlink?
->>> Hi Ben,
->>>
->>> I originally removed cxgb4/t4fw-1.3.10.0.bin when I posted the request
->>> against David's tree.
->>> Subsequent review from Neil requested to keep it around at least for a
->>> while (https://lkml.org/lkml/2012/2/11/61).
->>> Either way is fine to me.
->> No, Neil said you need to maintain cxgb4/t4fw.bin, but it's perfectly
->> fine for that to be a symlink.
-> So I've pulled your changes and then deleted the cxgb4/t4fw-1.3.10.0.bin
-> as a separate commit.
+On Sat, Feb 18, 2012 at 12:56 PM, Marcin Slusarz
+<marcin.slusarz@gmail.com> wrote:
+> On Sat, Feb 18, 2012 at 11:38:57AM -0800, Kees Cook wrote:
+>> @@ -3052,6 +3119,9 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+>>       error = mnt_want_write(new_path.mnt);
+>>       if (error)
+>>               goto out_dput;
+>> +     error = may_linkat(&old_path);
+>> +     if (error)
+>> +             goto out_dput;
+>>       error = security_path_link(old_path.dentry, &new_path, new_dentry);
+>>       if (error)
+>>               goto out_drop_write;
+>
+> You should give up write access after check failure (i.e. goto out_drop_write).
 
-Than you.
+Ah! Thanks, yes, good catch. I will move the check before mnt_want_write().
 
-Cheers,
-Divy
+-Kees
 
+-- 
+Kees Cook
+ChromeOS Security
