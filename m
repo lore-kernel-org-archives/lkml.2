@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab2BSVKY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:10:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39069 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924Ab2BSVKX (ORCPT
+	id S1755281Ab2BSVMp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 16:12:45 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49548 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755173Ab2BSVMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:10:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jirislaby@gmail.com designates 10.14.120.207 as permitted sender) smtp.mail=jirislaby@gmail.com; dkim=pass header.i=jirislaby@gmail.com
-Message-ID: <4F41653A.3090307@gmail.com>
-Date: Sun, 19 Feb 2012 22:10:18 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: TTY: NULL dereference when closing a pty file
-References: <1329683796.10124.21.camel@lappy>
-In-Reply-To: <1329683796.10124.21.camel@lappy>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Feb 2012 16:12:44 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18lbhBl/Lol6nUjAib+IaaAKOZYBddciex5eay1L+
+	7vSasLWySGltFO
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Subject: [PATCH] i740fb: fix compile error when CONFIG_MTRR is not selected
+Date: Sun, 19 Feb 2012 21:33:31 +0000
+Message-Id: <1329687211-6545-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <20120216162900.e2dd164732084f48e5b239f0@canb.auug.org.au>
+References: <20120216162900.e2dd164732084f48e5b239f0@canb.auug.org.au>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2012 09:36 PM, Sasha Levin wrote:
-> I got the following BUG() when running trinity on the KVM tool:
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+---
+ drivers/video/i740fb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Hi, I've sent a patch as a reply to your message. Could you test it?
-
-And where can one obtain the tool?
-
-thanks,
+diff --git a/drivers/video/i740fb.c b/drivers/video/i740fb.c
+index 8be0302..fe574d8 100644
+--- a/drivers/video/i740fb.c
++++ b/drivers/video/i740fb.c
+@@ -1179,9 +1179,9 @@ static void __devexit i740fb_remove(struct pci_dev *dev)
+ 	struct fb_info *info = pci_get_drvdata(dev);
+ 
+ 	if (info) {
+-#ifdef CONFIG_MTRR
+ 		struct i740fb_par *par = info->par;
+ 
++#ifdef CONFIG_MTRR
+ 		if (par->mtrr_reg >= 0) {
+ 			mtrr_del(par->mtrr_reg, 0, 0);
+ 			par->mtrr_reg = -1;
 -- 
-js
+1.7.2.5
+
