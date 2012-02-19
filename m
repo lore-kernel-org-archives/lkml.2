@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab2BSVng (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 16:43:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30173 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab2BSVnf (ORCPT
+	id S1755366Ab2BSWXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 17:23:24 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55734 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291Ab2BSWXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 16:43:35 -0500
-X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=mY7GROr8ulsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=YOlqmmHnu5ZfTsnnHxQA:9 a=fpzHbEHZ0ZuMxhRgE2IA:7 a=QEXdDO2ut3YA:10 a=HEdnscJc8mAA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: [PATCH v2][GIT PULL][v3.3] x86: Test saved %cs in NMI to determine
- nested NMI
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20120219125601.GD25900@elte.hu>
-References: <1329617173.1561.5.camel@acer.local.home>
-	 <20120219125601.GD25900@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 19 Feb 2012 16:43:37 -0500
-Message-ID: <1329687817.1561.27.camel@acer.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 19 Feb 2012 17:23:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.68.239.229 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+Date: Sun, 19 Feb 2012 14:23:05 -0800 (PST)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+X-X-Sender: torvalds@i5.linux-foundation.org
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+cc: x86@kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] More i387 state save/restore work
+Message-ID: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Ingo,
+Ok, this is a series of two patches that continue my i387 state 
+save/restore series, but aren't necessarily worth it for Linux-3.3.
 
-I rebased the same branch so you may need to wait a little for the
-kernel.org mirrors to update.
+That said, the first one is a bug-fix - but it's an old bug, and I'm not 
+sure it can actually be triggered. The failure path for the FP state 
+preload is bogus - and always was. But I'm not sure it really *can* fail.
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+The first one has another small bugfix in it too, and I think that one may 
+be new to the rewritten FP state preloading - it doesn't update the 
+fpu_counter, so once it starts preloading, it never stops.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
+I wrote a silly FPU task switch testing program, which basically starts 
+two processes pinned to the same CPU, and then uses sched_yield() in both 
+to switch back-and-forth between them. *One* of the processes uses the FPU 
+between every yield, the other does not. It runs for two seconds, and 
+counts how many loops it gets through.
 
-Head SHA1: 38f53faa02c0976ed0a6f0290771a4cbe6dc655b
+With that test, I get:
 
+ - Plain 3.3-rc4:
 
-Steven Rostedt (1):
-      x86: Test saved %cs in NMI to determine nested NMI
+   [torvalds@i5 ~]$ uname -r
+   3.3.0-rc4
+   [torvalds@i5 ~]$ ./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;
+   2216090 loops in 2 seconds
+   2216922 loops in 2 seconds
+   2217148 loops in 2 seconds
+   2232191 loops in 2 seconds
+   2186203 loops in 2 seconds
+   2231614 loops in 2 seconds
 
-----
- arch/x86/kernel/entry_64.S |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
----------------------------
-commit 38f53faa02c0976ed0a6f0290771a4cbe6dc655b
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Sat Feb 18 20:26:52 2012 -0500
+ - With the first patch that fixes the FPU preloading to eventually stop:
 
-    x86: Test saved %cs in NMI to determine nested NMI
-    
-    Currently, the NMI handler tests if it is nested by checking the
-    special variable saved on the stack (set during NMI handling) and
-    whether the saved stack is the NMI stack as well (to prevent the race
-    when the variable is set to zero). But userspace may set their %rsp
-    to any value as long as they do not derefence it, and it may make it
-    point to the NMI stack, which will prevent NMIs from triggering while
-    the userspace app is running. (I tested this, and it is indeed the case)
-    
-    Add another check to determine nested NMIs by looking at the saved
-    %cs (code segment register) and making sure that it is the kernel code segment.
-    
-    Cc: H. Peter Anvin <hpa@zytor.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+   [torvalds@i5 ~]$ uname -r
+   3.3.0-rc4-00001-g704ed737bd3c
+   [torvalds@i5 ~]$ ./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;
+   2306667 loops in 2 seconds
+   2295760 loops in 2 seconds
+   2295494 loops in 2 seconds
+   2296282 loops in 2 seconds
+   2282229 loops in 2 seconds
+   2301842 loops in 2 seconds
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 3fe8239..debd851 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1532,6 +1532,13 @@ ENTRY(nmi)
- 	pushq_cfi %rdx
- 
- 	/*
-+	 * If %cs was not the kernel segment, then the NMI triggered in user
-+	 * space, which means it is definitely not nested.
-+	 */
-+	cmp $__KERNEL_CS, 16(%rsp)
-+	jne first_nmi
-+
-+	/*
- 	 * Check the special variable on the stack to see if NMIs are
- 	 * executing.
- 	 */
+ - With the second patch that does the lazy preloading
 
+   [torvalds@i5 ~]$ uname -r
+   3.3.0-rc4-00002-g022899d937f9
+   [torvalds@i5 ~]$ ./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;./a.out ;
+   2466973 loops in 2 seconds
+   2456168 loops in 2 seconds
+   2449863 loops in 2 seconds
+   2461588 loops in 2 seconds
+   2478256 loops in 2 seconds
+   2476844 loops in 2 seconds
+
+so these things do make some difference. But it is also interesting to see 
+from profiles just how expensive setting CR0.TS is (the write to CR0 is 
+very expensive indeed), so even when you avoid the FP state restore 
+lazily, just setting TS in between task switches is still a big cost of 
+FPU save/restore.
+
+Linus Torvalds (2):
+  i387: use 'restore_fpu_checking()' directly in task switching code
+  i387: support lazy restore of FPU state
+
+ arch/x86/include/asm/i387.h      |   48 +++++++++++++++++++++++++++----------
+ arch/x86/include/asm/processor.h |    3 +-
+ arch/x86/kernel/cpu/common.c     |    2 +
+ arch/x86/kernel/process_32.c     |    2 +-
+ arch/x86/kernel/process_64.c     |    2 +-
+ arch/x86/kernel/traps.c          |   40 ++++++-------------------------
+ 6 files changed, 49 insertions(+), 48 deletions(-)
+
+Comments? I feel confident enough about these that I thin kthey might even 
+work in 3.3, especially the first one. But I want people to look at 
+them.
+
+                     Linus
+
+-- 
+1.7.9.188.g12766.dirty
 
