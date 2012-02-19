@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2BSNsq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 08:48:46 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51159 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab2BSNsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 08:48:45 -0500
-Date: Sun, 19 Feb 2012 14:48:39 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "hpanvin@gmail.com" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH][GIT PULL][v3.3] x86: Test saved %rip in NMI to determine
- nested NMI
-Message-ID: <20120219134839.GA30091@elte.hu>
-References: <1329617173.1561.5.camel@acer.local.home>
- <20120219125601.GD25900@elte.hu>
- <0e44abc3-f1a9-4c5b-88a8-baa563f57067@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0e44abc3-f1a9-4c5b-88a8-baa563f57067@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+	id S1754083Ab2BSN45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 08:56:57 -0500
+Received: from i118-21-156-233.s30.a048.ap.plala.or.jp ([118.21.156.233]:41726
+	"EHLO rinabert.homeip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab2BSN4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 08:56:55 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: rdunlap@xenotime.net, linux-doc@vger.kernel.org
+Cc: standby24x7@gmail.com, trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Fix typo in documentations 
+Date: Sun, 19 Feb 2012 22:56:21 +0900
+Message-Id: <1329659784-1781-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix typo in Documentations.
 
-* hpanvin@gmail.com <hpa@zytor.com> wrote:
+Masanari Iida (3):
+  [trivial] Documentation: Fix typo in dwc3.txt
+  [trivial] Documentation: Fix typo in wusb-cbaf
+  [trivial] Documentation: Fix typo in README.cpio2
 
-> Vsyscall page, not vdso...
+ Documentation/usb/dwc3.txt             |    2 +-
+ Documentation/usb/wusb-cbaf            |    2 +-
+ Documentation/video4linux/README.cpia2 |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-yes - same general purpose: user-space execution happens in the 
-kernel address range.
+-- 
+1.7.9.1.197.g5f90b
 
-Thanks,
-
-	Ingo
