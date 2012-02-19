@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2BSSpt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 13:45:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47344 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab2BSSpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 13:45:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.181.12.106 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	id S1754731Ab2BSTHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 14:07:55 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:57670 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753949Ab2BSTHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 14:07:54 -0500
+Message-ID: <4F414882.6080304@interlog.com>
+Date: Sun, 19 Feb 2012 14:07:46 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
- <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 19 Feb 2012 10:45:26 -0800
-X-Google-Sender-Auth: gdl82ug2x8yvYJ-ND_wiuthIuhw
-Message-ID: <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
-Subject: Re: Linux 3.3-rc4
-To: Thomas Meyer <thomas@m3y3r.de>, Ian Kent <raven@themaw.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=f46d043c7ec0f8291d04b9559553
+To: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Matt Taggart <taggart@debian.org>
+Subject: [ANNOUNCE] lsscsi-0.26 released
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d043c7ec0f8291d04b9559553
-Content-Type: text/plain; charset=ISO-8859-1
+lsscsi currently can provide some transport related
+identifiers when the --transport (-t) option is used. This
+will probably be a target port identifier rather than a LU
+name (a.k.a. the WWN). Fetching the LU name has proven
+elusive. The most direct way would be to issue an INQUIRY
+to get the device identification VPD page but that would
+require root permissions. A feature of lsscsi is that it
+does not need root permissions (or related tricks).
 
-On Sun, Feb 19, 2012 at 5:42 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
->
-> Theoretically yes, practically (at least with Fedora 15/16) no. I did hit these two bugs:
->
-> 1.) autofs4 interface is broken between x86 and x86_64. as systemd uses autofs, this bug hangs the boot process as e.g. binfmt is mounted via autofs. see also http://lists.freedesktop.org/archives/systemd-devel/2011-September/003396.html
+This version adds a --wwn (-w) option which searches the udev
+provided /dev/disk/by-id/wwn-* symlinks. This will find
+WWNs (LU names) for disks if udev can find them.
 
-Duh.
 
-That is just broken.
+There are two SATA disks in the example below: /dev/sda and
+/dev/sdd . /dev/sda is older and has no WWN plus it is
+directly connected to a SATA controller on the motherboard.
+/dev/sdd has a WNN and is connected via a SAS expander.
 
-The code even *talks* about how the packet layout is the same on
-32-bit and 64-bit architectures, and that's largely true.
+# lsscsi
+[1:0:0:0]    disk    ATA      ST3320620AS      3.AA  /dev/sda
+[6:0:0:0]    enclosu Intel    RES2SV240        0600  -
+[6:0:1:0]    disk    SEAGATE  ST33000650SS     0002  /dev/sdb
+[6:0:2:0]    disk    SEAGATE  ST32000444SS     0006  /dev/sdc
+[6:0:3:0]    disk    ATA      ST3500418AS      CC34  /dev/sdd
 
-However, while true, x86-64 has 8-byte alignment for 'long', and
-x86-32 has 4-byte alignment. Which means that even though the
-structure layout is exactly the same, on x86-64 the *alignment* issue
-will push it out to 304 bytes.
+# lsscsi -w
+[1:0:0:0]    disk                                    /dev/sda
+[6:0:0:0]    enclosu                                 -
+[6:0:1:0]    disk    0x5000c50033fe58db              /dev/sdb
+[6:0:2:0]    disk    0x5000c500215725bf              /dev/sdc
+[6:0:3:0]    disk    0x5000c500120bfe84              /dev/sdd
 
-That's just stupid. We've had that problem before. It's easy to
-overlook, but that packet is just mis-designed.
+# lsscsi -t
+[1:0:0:0]    disk    sata:                           /dev/sda
+[6:0:0:0]    enclosu sas:0x5001517e85c3effd          -
+[6:0:1:0]    disk    sas:0x5000c50033fe58d9          /dev/sdb
+[6:0:2:0]    disk    sas:0x5000c500215725bd          /dev/sdc
+[6:0:3:0]    disk    sas:0x5001517e85c3efe2          /dev/sdd
 
-The attached patch isn't pretty, but this is definitely a kernel bug.
-Binary compatibility is *important*, dammit.
 
-Does this fix it?
+Version 0.26 is available at:
+     http://sg.danny.cz/scsi/lsscsi.html
+More information can be found on that page including examples
+and a Download section for the tarball, Debian and Redhat
+packages.
 
-Sadly, the *right* fix would have been to just mark the structure
-packed, or select a maximum name length that padded things out to 8
-bytes on all architectures, but we can't change that any more, because
-changing the size on native 32-bit would break binaries there.
+ChangeLog:
 
-> 2.) while debugging above issue: I did find an minor bug in sys_poll() - nobody did take care of my proposed patch: https://lkml.org/lkml/2011/9/24/35
+Version 0.26 2012/01/31 [svn: r97]
+   - add 'fcoe' transport indicator
+   - add '--wwn' option, datamine /dev/disk/by-id/wwn*
+   - move lsscsi.c into src directory
 
-Looks correct, and searching my lkml archives shows that it was acked
-by Eric. But it never went any further.
+Version 0.25 2011/05/09 [svn: r92]
+...
 
-Mind re-sending that patch updated for the x86 system call
-re-organization? Sure, I could do it myself, but it would be much
-better if somebody who then actually *tests* the end result did it
-(hpa cc'd, just because he's the one that touched the x86 compat layer
-system call table thing. "Tag, you're it")
-
-Anyway, if that, together with the sizeof hack in the attached patch,
-makes everything work for you, I'll happily apply both of them.
-
-                          Linus
-
---f46d043c7ec0f8291d04b9559553
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gyufass10
-
-IGZzL2F1dG9mczQvd2FpdHEuYyB8ICAgMjEgKysrKysrKysrKysrKysrKysrKy0tCiAxIGZpbGVz
-IGNoYW5nZWQsIDE5IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEv
-ZnMvYXV0b2ZzNC93YWl0cS5jIGIvZnMvYXV0b2ZzNC93YWl0cS5jCmluZGV4IGRhODg3NmQzOGE3
-Yi4uZjZmY2NhNThlMGUzIDEwMDY0NAotLS0gYS9mcy9hdXRvZnM0L3dhaXRxLmMKKysrIGIvZnMv
-YXV0b2ZzNC93YWl0cS5jCkBAIC0xNSw2ICsxNSw3IEBACiAjaW5jbHVkZSA8bGludXgvdGltZS5o
-PgogI2luY2x1ZGUgPGxpbnV4L3NpZ25hbC5oPgogI2luY2x1ZGUgPGxpbnV4L2ZpbGUuaD4KKyNp
-bmNsdWRlIDxsaW51eC9jb21wYXQuaD4KICNpbmNsdWRlICJhdXRvZnNfaS5oIgogCiAvKiBXZSBt
-YWtlIHRoaXMgYSBzdGF0aWMgdmFyaWFibGUgcmF0aGVyIHRoYW4gYSBwYXJ0IG9mIHRoZSBzdXBl
-cmJsb2NrOyBpdApAQCAtOTEsNiArOTIsMjMgQEAgc3RhdGljIGludCBhdXRvZnM0X3dyaXRlKHN0
-cnVjdCBhdXRvZnNfc2JfaW5mbyAqc2JpLAogCiAJcmV0dXJuIChieXRlcyA+IDApOwogfQorCisv
-KgorICogVGhlIGF1dG9mc192NSBwYWNrZXQgd2FzIG1pc2Rlc2lnbmVkLgorICoKKyAqIFRoZSBw
-YWNrZXRzIGFyZSBpZGVudGljYWwgb24geDg2LTMyIGFuZCB4ODYtNjQsIGJ1dCBoYXZlIGRpZmZl
-cmVudAorICogYWxpZ25tZW50LiBXaGljaCBtZWFucyB0aGF0ICdzaXplb2YoKScgd2lsbCBnaXZl
-IGRpZmZlcmVudCByZXN1bHRzLgorICogRml4IGl0IHVwIGZvciB0aGUgY2FzZSBvZiBydW5uaW5n
-IDMyLWJpdCB1c2VyIG1vZGUgb24gYSA2NC1iaXQga2VybmVsLgorICovCitzdGF0aWMgbm9pbmxp
-bmUgc2l6ZV90IGF1dG9mc192NV9wYWNrZXRfc2l6ZSh2b2lkKQoreworCXNpemVfdCBwa3RzeiA9
-IHNpemVvZihzdHJ1Y3QgYXV0b2ZzX3Y1X3BhY2tldCk7CisjaWYgZGVmaW5lZChDT05GSUdfWDg2
-XzY0KSAmJiBkZWZpbmVkKENPTkZJR19DT01QQVQpCisJaWYgKGlzX2NvbXBhdF90YXNrKCkpCisJ
-CXBrdHN6IC09IDQ7CisjZW5kaWYKKwlyZXR1cm4gcGt0c3o7Cit9CiAJCiBzdGF0aWMgdm9pZCBh
-dXRvZnM0X25vdGlmeV9kYWVtb24oc3RydWN0IGF1dG9mc19zYl9pbmZvICpzYmksCiAJCQkJIHN0
-cnVjdCBhdXRvZnNfd2FpdF9xdWV1ZSAqd3EsCkBAIC0xNTUsOCArMTczLDcgQEAgc3RhdGljIHZv
-aWQgYXV0b2ZzNF9ub3RpZnlfZGFlbW9uKHN0cnVjdCBhdXRvZnNfc2JfaW5mbyAqc2JpLAogCXsK
-IAkJc3RydWN0IGF1dG9mc192NV9wYWNrZXQgKnBhY2tldCA9ICZwa3QudjVfcGt0LnY1X3BhY2tl
-dDsKIAotCQlwa3RzeiA9IHNpemVvZigqcGFja2V0KTsKLQorCQlwa3RzeiA9IGF1dG9mc192NV9w
-YWNrZXRfc2l6ZSgpOwogCQlwYWNrZXQtPndhaXRfcXVldWVfdG9rZW4gPSB3cS0+d2FpdF9xdWV1
-ZV90b2tlbjsKIAkJcGFja2V0LT5sZW4gPSB3cS0+bmFtZS5sZW47CiAJCW1lbWNweShwYWNrZXQt
-Pm5hbWUsIHdxLT5uYW1lLm5hbWUsIHdxLT5uYW1lLmxlbik7Cg==
---f46d043c7ec0f8291d04b9559553--
+Doug Gilbert
