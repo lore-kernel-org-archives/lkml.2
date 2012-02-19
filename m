@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2BSQie (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 11:38:34 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49812 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab2BSQic convert rfc822-to-8bit (ORCPT
+	id S1754560Ab2BSRBg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 12:01:36 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65084 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2BSRBf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 11:38:32 -0500
+	Sun, 19 Feb 2012 12:01:35 -0500
 MIME-Version: 1.0
-Date: Sun, 19 Feb 2012 11:38:32 -0500
-Message-ID: <CALyraeMK=bEVkBtbi8xAm5aWrCbjGMTkArHygG78tJ86TzzNOw@mail.gmail.com>
-Subject: Buildroot compilation error
-From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org
-Cc: dhylands@gmail.com
-Content-Type: text/plain; charset=windows-1252
+In-Reply-To: <20120217123037.ecfc5dd9.akpm@linux-foundation.org>
+References: <4F3E42E0.4030108@openvz.org>
+	<20120217120815.25909.15632.stgit@zurg>
+	<20120217123037.ecfc5dd9.akpm@linux-foundation.org>
+Date: Sun, 19 Feb 2012 18:01:33 +0100
+X-Google-Sender-Auth: i4TQoZRWZYc2tXxGIo84IS4hDXM
+Message-ID: <CAMuHMdUYCGoZoUHWMtMCwAJ2ofweaeLF3U89P5EvrNGcn=6apw@mail.gmail.com>
+Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+On Fri, Feb 17, 2012 at 21:30, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 17 Feb 2012 16:08:15 +0400
+> Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+>
+>> Config NUMA must be defined for all architectures,
+>> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
+>> Some arch-specific Kconfig already has this stub.
+>> This patch adds it to all remaining.
+>
+> It would be better to teach IS_ENABLED() to handle this situation.  I
+> don't think there's a way of doing this with cpp :(
+>
+> This limitation makes IS_ENABLED pretty dangerous, doesn't it?  It
+> makes it very easy to introduce build breakage with unexpected Kconfig
+> combinations.
 
-I am using BuildRoot to compile my embedded linux and tool-chain.
-After compiling most of the packages and tool-chain I am getting
-following error. This occurs when compiling libnl-3.0
+Indeed. Recently I discovered IS_ENABLED() and started recommending it
+to people for new code. But now I've seen the CONFIG_NUMA breakage,
+I no longer think this is a good recommendation.
 
-make[3]: Entering directory
-`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
-  CC     route/pktloc.lo
+Gr{oetje,eeting}s,
 
-route/pktloc.c: In function �read_pktlocs�:
-route/pktloc.c:127:34: error: �YY_BUF_SIZE� undeclared (first use in
-this function)
-route/pktloc.c:127:34: note: each undeclared identifier is reported
-only once for each function it appears in
-make[3]: *** [route/pktloc.lo] Error 1
-make[3]: Leaving directory
-`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
-make[2]: *** [all] Error 2
-make[2]: Leaving directory
-`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
-make[1]: *** [all-recursive] Error 1
-make[1]: Leaving directory
-`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0'
-make: *** [/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/.stamp_built]
-Error 2
+                        Geert
 
-Can anyone please help me what is going on in compilation. Do I need
-to specify sysroot or path to lib.
-Thanks in advance for the help.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-
--- 
-Regards,
-Sri.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
