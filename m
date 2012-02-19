@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab2BSSMd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 13:12:33 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:33826 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754541Ab2BSSMb (ORCPT
+	id S1754755Ab2BSSky (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 13:40:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53769 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab2BSSkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 13:12:31 -0500
-Message-ID: <4F413B8D.5080307@xenotime.net>
-Date: Sun, 19 Feb 2012 10:12:29 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 19 Feb 2012 13:40:51 -0500
+Message-ID: <4F414230.5040506@lwfinger.net>
+Date: Sun, 19 Feb 2012 12:40:48 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120129 Thunderbird/10.0
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] mm: add config NUMA stub to all architectures
-References: <4F3E42E0.4030108@openvz.org>	<20120217120815.25909.15632.stgit@zurg>	<20120217123037.ecfc5dd9.akpm@linux-foundation.org> <CAMuHMdUYCGoZoUHWMtMCwAJ2ofweaeLF3U89P5EvrNGcn=6apw@mail.gmail.com>
-In-Reply-To: <CAMuHMdUYCGoZoUHWMtMCwAJ2ofweaeLF3U89P5EvrNGcn=6apw@mail.gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org
+Subject: will these methods work with firmware loading?
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2012 09:01 AM, Geert Uytterhoeven wrote:
-> On Fri, Feb 17, 2012 at 21:30, Andrew Morton<akpm@linux-foundation.org>  wrote:
->> On Fri, 17 Feb 2012 16:08:15 +0400
->> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->>
->>> Config NUMA must be defined for all architectures,
->>> otherwise IS_ENABLED(CONFIG_NUMA) does not work.
->>> Some arch-specific Kconfig already has this stub.
->>> This patch adds it to all remaining.
->>
->> It would be better to teach IS_ENABLED() to handle this situation.  I
->> don't think there's a way of doing this with cpp :(
->>
->> This limitation makes IS_ENABLED pretty dangerous, doesn't it?  It
->> makes it very easy to introduce build breakage with unexpected Kconfig
->> combinations.
->
-> Indeed. Recently I discovered IS_ENABLED() and started recommending it
-> to people for new code. But now I've seen the CONFIG_NUMA breakage,
-> I no longer think this is a good recommendation.
+I sent a previous messages to most of these lists, but got no answer, thus a 
+second try.
 
+When a driver loads firmware synchronously in the module_init() path using 
+request_firmware(), then there is trouble with timeouts when booting.
 
-adding Michal & linux-kbuild to cc: list.
+I know that changing the request_firmware() call to request_firmware_nowait() 
+solves the problem; however, that gives some trouble for driver b43legacy as it 
+loads 3 or 4 firmware files depending on the hardware version. When I launch the 
+3 or 4 nowait requests, I get an error because the system is trying to start 
+several tasks with the same name.
 
--- 
-~Randy
+Would it be OK to load the first file with the nowait version, and issue a 
+request_firmware() for the others from the callback routine? I think that would 
+not cause any problems, but I would like to get confirmation from an expert.
+
+Similarly, if I were to create a work queue, init and schedule it from 
+module_init(), and then use synchronous loads to get the firmware from the work 
+queue callback, would that get around the boot problem? I know it works as I 
+have trial patches; however, my version of udev is not one affected. This method 
+is very easy to implement, but again I would like confirmation from an expert.
+
+Thanks,
+
+Larry
