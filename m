@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2BSOXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 09:23:08 -0500
-Received: from 7.mo5.mail-out.ovh.net ([178.32.124.100]:55590 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753911Ab2BSOXH (ORCPT
+	id S1754235Ab2BSOYe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 09:24:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49271 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab2BSOYd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 09:23:07 -0500
-X-Greylist: delayed 20999 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 09:23:06 EST
-Date: Sun, 19 Feb 2012 08:07:38 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@avr32linux.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 16/18] Atmel: move console default platform_device to
- serial driver
-Message-ID: <20120219070738.GA491@game.jcrosoft.org>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329500622.git.nicolas.ferre@atmel.com>
- <81ce940f5ac09c5d50bfa712ab10a785f28df4ea.1329500622.git.nicolas.ferre@atmel.com>
- <20120218091749.GA22669@samfundet.no>
+	Sun, 19 Feb 2012 09:24:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kartiksinghal@gmail.com designates 10.50.36.230 as permitted sender) smtp.mail=kartiksinghal@gmail.com; dkim=pass header.i=kartiksinghal@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120218091749.GA22669@samfundet.no>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 11632234888104618918
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+From: Kartik Singhal <kartiksinghal@gmail.com>
+Date: Sun, 19 Feb 2012 19:54:11 +0530
+Message-ID: <CAAY3Td5hFQUaJP_BTNo9JJpqYPQ2TbfSXOU94zrvzHOUSGjsOA@mail.gmail.com>
+Subject: make config errors while building kernel on Fedora 16 64-bit
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:17 Sat 18 Feb     , Hans-Christian Egtvedt wrote:
-> Around Fri 17 Feb 2012 18:50:08 +0100 or thereabout, Nicolas Ferre wrote:
-> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > 
-> > This variable spread on every SoC that is using the atmel_serial.c
-> > driver can be included directly into the latter.
-> > 
-> > This will allow to compile multiple soc in the same kernel.
-> 
-> Sounds like a good idea, but...
-> 
-> <snipp AT91 changes>
-> 
-> > diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> > index 402a7bb..889c544 100644
-> > --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> > +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> > @@ -1055,8 +1055,6 @@ struct platform_device *__init at32_add_device_usart(unsigned int id)
-> >  	return at32_usarts[id];
-> >  }
-> >  
-> > -struct platform_device *atmel_default_console_device;
-> > -
-> >  void __init at32_setup_serial_console(unsigned int usart_id)
-> >  {
-> >  	atmel_default_console_device = at32_usarts[usart_id];
-> 
-> I doubt this assignment will work if you remove the struct above. I did not
-> look at how AT91 does this, will it be similar affected?
-none the still exist in the kernel, its just moved
+Hi
 
-Best Regards,
-J.
+I tried to build both linux mainline and linux-next on my Fedora 16
+box. But in both cases I am running into errors in making the .config.
+I have tried with defconfig (make defconfig), xconfig, gconfig,
+config, etc. all give the same errors.
+
+I cloned from repo url's given at kernel.org using the following commands:
+
+nohup git clone -v
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git &>
+linux.log &
+
+and
+
+nohup git clone -v
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git &>
+linux-next.log &
+
+
+Here is a what is written (partial from top) to stdout:
+
+*** Default configuration is based on 'x86_64_defconfig'
+init/Kconfig:237:warning: multi-line strings not supported
+kernel/irq/Kconfig:75:warning: multi-line strings not supported
+init/Kconfig:667:warning: multi-line strings not supported
+init/Kconfig:1216:warning: multi-line strings not supported
+init/Kconfig:1307:warning: multi-line strings not supported
+init/Kconfig:1308:warning: multi-line strings not supported
+
+And the following (partial from bottom) to stderr:
+
+drivers/lguest/Kconfig:15: syntax error
+drivers/lguest/Kconfig:14: unknown option "If"
+lib/xz/Kconfig:59: syntax error
+lib/xz/Kconfig:58: unknown option "Unless"
+lib/xz/Kconfig:59: unknown option "and"
+lib/Kconfig:281: syntax error
+lib/Kconfig:280: unknown option "If"
+make[1]: *** [defconfig] Error 1
+make: *** [defconfig] Error 2
+
+I have verified that I have buildtools, kernel-devel and header
+packages. Google search and asking on kernelnewbies list didn't help
+either. Last month I had successfully built the kernel (mainline) for
+first time on Linux Mint. But here, probably, I am missing something
+completely. Please help.
+
+--
+Kartik
+http://k4rtik.wordpress.com/
