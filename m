@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab2BSIF0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 03:05:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51868 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab2BSIFZ convert rfc822-to-8bit (ORCPT
+	id S1753157Ab2BSINf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 03:13:35 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50696 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab2BSINe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 03:05:25 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dhillf@gmail.com designates 10.52.28.167 as permitted sender) smtp.mail=dhillf@gmail.com; dkim=pass header.i=dhillf@gmail.com
+	Sun, 19 Feb 2012 03:13:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gilad@benyossef.com designates 10.220.116.73 as permitted sender) smtp.mail=gilad@benyossef.com
 MIME-Version: 1.0
-In-Reply-To: <1329637811.11495.1.camel@phoenix>
-References: <1329637811.11495.1.camel@phoenix>
-Date: Sun, 19 Feb 2012 16:05:25 +0800
-Message-ID: <CAJd=RBDodt3cDcwxy8q+ntF1QimNZULFT_9NpAVYi23paYeYPg@mail.gmail.com>
-Subject: Re: [PATCH] mfd: tps65912: Initialize irq platform data properly
-From: Hillf Danton <dhillf@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Margarita Olaya Cabrera <magi@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [109.64.24.177]
+In-Reply-To: <20120217120146.GB25601@elte.hu>
+References: <1329298204-5026-1-git-send-email-gilad@benyossef.com>
+	<20120217120146.GB25601@elte.hu>
+Date: Sun, 19 Feb 2012 10:13:32 +0200
+Message-ID: <CAOtvUMer63pC8C_QMyk_J56v6g8uk14OGYE7sJG1K6nAW+MoGg@mail.gmail.com>
+Subject: Re: [PATCH] x86: drop false warning of empty cpumask in IPI
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Milton Miller <miltonm@bga.com>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 3:50 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> irq_base of the tps65912 irq platform data should be
-> initialized with the board provided irq_base data.
+On Fri, Feb 17, 2012 at 2:01 PM, Ingo Molnar <mingo@elte.hu> wrote:
 >
+> * Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+>
+>> With current generic SMP infrastructure, it is feasible
+>> for the target CPUs to begin processing an IPI work item
+>> even before we sent them the actual IPI in the case that
+>> an IPI from another CPU woke them first.
+>>
+>> This can lead to generating a false warning in a valid
+>> state of trying to send IPI with an empty cpumask when
+>> multiple concurrent IPIs are being sent.
+>>
+>> This patch was triggered by the following LKML discussion:
+>> https://lkml.org/lkml/2012/1/13/308
+>>
+>> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
+>> CC: Thomas Gleixner <tglx@linutronix.de>
+>> CC: Ingo Molnar <mingo@redhat.com>
+>> CC: "H. Peter Anvin" <hpa@zytor.com>
+>> CC: Milton Miller <miltonm@bga.com>
+>> CC: x86@kernel.org
+>> ---
+>>  arch/x86/kernel/apic/ipi.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
+>> index cce91bf..00b68a3 100644
+>> --- a/arch/x86/kernel/apic/ipi.c
+>> +++ b/arch/x86/kernel/apic/ipi.c
+>> @@ -106,7 +106,10 @@ void default_send_IPI_mask_logical(const struct cpumask *cpumask, int vector)
+>>       unsigned long mask = cpumask_bits(cpumask)[0];
+>>       unsigned long flags;
+>>
+>> -     if (WARN_ONCE(!mask, "empty IPI mask"))
+>> +     if (!mask)
+>> +             /* The target CPUs must have already processed the
+>> +              * work items due to a concurrent IPI
+>> +              */
+>>               return;
+>
+> This could potentially hide real bugs on other callsites.
+>
+> So why not do the checking at the call site? In almost every
+> other scenario it's invalid to send an empty mask.
 
-The description only tells what you did, but why?
+hmm... isn't that racy? Also, none of the other send_IPI_maks
+implementations do the check.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> Â drivers/mfd/tps65912-core.c | Â  Â 2 +-
-> Â 1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mfd/tps65912-core.c b/drivers/mfd/tps65912-core.c
-> index 5fec23a..74fd8cb 100644
-> --- a/drivers/mfd/tps65912-core.c
-> +++ b/drivers/mfd/tps65912-core.c
-> @@ -151,7 +151,7 @@ int tps65912_device_init(struct tps65912 *tps65912)
-> Â  Â  Â  Â  Â  Â  Â  Â goto err;
->
-> Â  Â  Â  Â init_data->irq = pmic_plat_data->irq;
-> - Â  Â  Â  init_data->irq_base = pmic_plat_data->irq;
-> + Â  Â  Â  init_data->irq_base = pmic_plat_data->irq_base;
-> Â  Â  Â  Â ret = tps65912_irq_init(tps65912, init_data->irq, init_data);
-> Â  Â  Â  Â if (ret < 0)
-> Â  Â  Â  Â  Â  Â  Â  Â goto err;
-> --
-> 1.7.5.4
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at Â http://www.tux.org/lkml/
->
->
+I can obviously add a warning at the "zero not OK" call sites, though.
+
+Actually, the code is racy right now as well. I think we're
+trying to program the APIC with a zero dest field from time to
+time. How bad is that? :-)
+
+Thanks,
+Gilad
+
+
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
