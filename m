@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2BSBsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 Feb 2012 20:48:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754232Ab2BSBsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 Feb 2012 20:48:40 -0500
-Date: Sun, 19 Feb 2012 12:48:20 +1100
-From: NeilBrown <neilb@suse.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: w1: Fix w1_bq27000
-Message-ID: <20120219124820.4a8989f0@notabene.brown>
-In-Reply-To: <20120218205125.GA26827@elgon.mountain>
-References: <20120218205125.GA26827@elgon.mountain>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1754290Ab2BSCGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 Feb 2012 21:06:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8860 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab2BSCGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 Feb 2012 21:06:21 -0500
+X-Authority-Analysis: v=2.0 cv=Vp2h8pKn c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=00ePz_UkAX8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=tHCE_lIPQn44v4elHTgA:9 a=kZwjN2JmyWDuylg57JEA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: [PATCH][GIT PULL][v3.3] x86: Test saved %rip in NMI to determine
+ nested NMI
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 18 Feb 2012 21:06:13 -0500
+Message-ID: <1329617173.1561.5.camel@acer.local.home>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Yje.pJ8sr0IwSAd0qyfGQfA"; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Yje.pJ8sr0IwSAd0qyfGQfA
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, 18 Feb 2012 23:51:25 +0300 Dan Carpenter <dan.carpenter@oracle.com>
-wrote:
+Ingo,
 
-> Hello NeilBrown,
->=20
-> This is a semi-automatic email about new static checker warnings.
->=20
-> The patch 9f3519d2ed26: "w1: Fix w1_bq27000" from Feb 15, 2012, leads=20
-> to the following Smatch complaint:
->=20
-> drivers/w1/slaves/w1_bq27000.c:48 w1_bq27000_read()
-> 	 warn: variable dereferenced before check 'dev' (see line 46)
->=20
-> drivers/w1/slaves/w1_bq27000.c
->     45		u8 val;
->     46		struct w1_slave *sl =3D container_of(dev->parent, struct w1_slave=
-, dev);
->                                                    ^^^^^^^^^^^
-> New dereference.
->=20
->     47=09
->     48		if (!dev)
->                      ^^^
-> Old check.
->=20
->     49			return 0;
->     50=09
->=20
-> regards,
-> dan carpenter
+I found that it is possible for userspace to prevent an NMI from
+triggering while it is running by setting its stack pointer to that of
+the NMI stack. This tricks the NMI nested algorithm in thinking that the
+NMI is nested. The easy solution to this is to test the %rip to make
+sure that the NMI happened in kernel mode before testing for nesting.
 
-Thanks..
-I suspect we should just remove the
-   if (!dev)
-       return
+I've tested a program that exhibits the missing NMIs and this patch
+corrects that behavior.
 
-I should probably get rid of w1_bq27000_write as it is totally unused, and I
-need to hold a lock in w1_bq27000_read or I can get really bad things
-happening if two threads try to rad the status at the same time.
+-- Steve
 
-Ho hum.
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-Thanks,
-NeilBrown
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/urgent
 
---Sig_/Yje.pJ8sr0IwSAd0qyfGQfA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Head SHA1: b80ddc7b1636474297815d47fbfed7552f9b8f2c
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBT0BU6znsnt1WYoG5AQIotw/6Ah7yGZ7i7ZADigaXCgADyZmP33Y/U2yW
-NQJdLHggf3549Kr5/Hbg2ifZomN5eopluWbR33GXLEPOapTc/u1aMIHzxaZcuOS4
-JTo4yOacIYLlG8PRz7scZEqULoPBXaHjY0/za3so0pWQT80HRPXrAYyi6oBQxgUf
-HyKf0IigX53klABVRpxxL8465e5CKN/BkKA/B8xZsnzZxjZ267uAKhJX2HVJm39G
-gc7JqLfZt0+Q4VwOF3kGuuNPc7kld5SvZnleZFgT1v+ZIfnwapdORmZ4npj74Tjw
-r/CqU0CtVkeHXQDDdSjh/9aEofJhOlMju9VfAo1kVTqulCjY+tdF4Fm+44rnZ0u/
-p5AvRkja3ggVC3xnTGO2aUh/4C1dqvPKh3UX58T3VNpC2lGDQ5/6+ihUISxg0zXM
-YHvgLAsbmi1hQJgtPlnWdevcOqRZa9Y9AVNHAQvOnSTE57X5UW3On+ubfad//WEo
-zZ2O6Sbxpg0cJ5YZo7XVgvmTI0DOvt1fmyn7pRO4NK1LdPEsEtAJXq6kuxdZ0HLh
-GD1c6yKaPxJQViNb4GizkwKU1bgDNNZG2gvWs9b+G4rurt2zTCzD7LAtj8UPWdME
-6sJdxFGHlgQ2jqbQYap25Y4QAj5yDrPE+Bk1eKbF3hTrnoWm0fyv0S+KY1iKBOj+
-PKz2eId+efs=
-=ocL2
------END PGP SIGNATURE-----
+Steven Rostedt (1):
+      x86: Test saved %rip in NMI to determine nested NMI
 
---Sig_/Yje.pJ8sr0IwSAd0qyfGQfA--
+----
+ arch/x86/kernel/entry_64.S |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+---------------------------
+commit b80ddc7b1636474297815d47fbfed7552f9b8f2c
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Sat Feb 18 20:26:52 2012 -0500
+
+    x86: Test saved %rip in NMI to determine nested NMI
+    
+    Currently, the NMI handler tests if it is nested by checking the
+    special variable saved no the stack (set during NMI handling) and
+    whether the saved stack is the NMI stack as well (to prevent the race
+    when the variable is set to zero). But userspace may set their %rsp
+    to any value as long as the do not derefence it, and it may make it
+    point to the NMI stack, which will prevent NMIs from triggering while
+    the userspace app is running. (I tested this, and it is indeed the case)
+    
+    Add another check to determine nested NMIs by looking at the saved
+    %rip and making sure that it is a kernel pointer (negative).
+    
+    Cc: H. Peter Anvin <hpa@zytor.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 3fe8239..7c35a7a 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1532,6 +1532,14 @@ ENTRY(nmi)
+ 	pushq_cfi %rdx
+ 
+ 	/*
++	 * If the RIP is not negative then we are in userspace where this is not
++	 * a nested NMI. 
++	 */
++	movq 8(%rsp), %rdx
++	testq %rdx, %rdx
++	jns first_nmi
++
++	/*
+ 	 * Check the special variable on the stack to see if NMIs are
+ 	 * executing.
+ 	 */
+
+
