@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab2BSWuh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 17:50:37 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:45148 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab2BSWuf (ORCPT
+	id S1751331Ab2BSXEx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 18:04:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37419 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2BSXEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 17:50:35 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: Fix device class print out
-Date: Sun, 19 Feb 2012 14:50:12 -0800
-Message-Id: <1329691812-23665-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020202.4F417CB9.002D,ss=1,re=0.000,fgs=0
+	Sun, 19 Feb 2012 18:04:52 -0500
+Date: Mon, 20 Feb 2012 10:04:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+Message-Id: <20120220100436.5fbbf5cc1b1df539ed8aca24@canb.auug.org.au>
+In-Reply-To: <20120217212037.0859c427418b73b2cb17428d@canb.auug.org.au>
+References: <20120217212037.0859c427418b73b2cb17428d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_Feb_2012_10_04_36_+1100_aRB96W==pfjIDOTg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found debug print out about class is shifted.
+--Signature=_Mon__20_Feb_2012_10_04_36_+1100_aRB96W==pfjIDOTg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-| pci 0000:f8:15.2: [8086:2b56] type 0 class 0x000600
+Hi Andrew,
 
-code is trying to print class with 6 digits, but use shifted class with 4 digits
-valid value as variable.
+On Fri, 17 Feb 2012 21:20:37 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Today's linux-next fails to build (s390 allnoconfig) like this:
+>=20
+> In file included from arch/s390/mm/maccess.c:15:
+> include/linux/gfp.h: In function 'gfp_zonelist':
+> include/linux/gfp.h:267: error: '__enabled_CONFIG_NUMA' undeclared (first=
+ use in this function)
+> include/linux/gfp.h:267: error: (Each undeclared identifier is reported o=
+nly once
+> include/linux/gfp.h:267: error: for each function it appears in.)
+> include/linux/gfp.h:267: error: '__enabled_CONFIG_NUMA_MODULE' undeclared=
+ (first use in this function)
+>=20
+> and many more.  This also happens in other architectures and configs but
+> (obviously) not all builds.
+>=20
+> Presumably caused by commit 053361e1a072 ("mm: replace NUMA_BUILD with
+> IS_ENABLED(CONFIG_NUMA)").
 
-Change to original dev->class directly.
+I have removed that patch from the akpm tree until a solution is worked out.
 
-also remove not needed calculating of local variable class, because it will be
-updated after pci_fixup_device(pci_fixup_early...)
+Everything seemed to rebase ok with out it and I can't see much actually
+depending on it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Also unify type print out when class and header is not matched.
+--Signature=_Mon__20_Feb_2012_10_04_36_+1100_aRB96W==pfjIDOTg
+Content-Type: application/pgp-signature
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
----
- drivers/pci/probe.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+iQIcBAEBCAAGBQJPQYAEAAoJEECxmPOUX5FENcAP/iaOmtpVjXtJD3iL0apA/sb1
+Tr53SqiuNsf9n+1cqhuScN5ZkF04KYV2zIWzKA8UugHI6V2ROCa+LfMrxPxd64Zq
+pOF0v1UB1lCkZe+xZGHQL2BaUwKZia3lBLv0WowVF1ggTF7wcUL/6oYkiEEfblnO
+dDhGwJzIZddofYV7QuYR52JZFBXGbTcj3c9fwQ/71ItLdUPXFoQsoabf3i0oqjdc
+EmUzcYpG3Ko1UZePWGu+r88wGoBJWKa3RY1WnTVdkmla4JODXpdw7stMRZsR5Jtu
+7Q9ICODJEa1NWnItCnmn8fbsJwOcez0aNQlpviKkwoiX3sK+bLmzee80HYuvyhPQ
+ZTio1H1+KH7EUbMV5f5ZUO8NVvY87XT1NH5wTtk00WSRLPdzsoiZryAZVDSqo6oN
+LNO3oNmf4DkBTHybCMdz9+adLJI6m8dHF/pZ/SmHoPH2qieIhZ6y9OQXDUGXW0Cx
+dImXhpDDyOijyTEh1EwsRUUVZzp2ncRQ9+k6bD9u+cZInOKnYrziU1kWQjrAypWI
+bomLbNy6wpdX6Vdj+OTrEGVr59Kl+7MFN8N/jpNv0Hd1RN6d2PNlP0FbmuFfdjKM
+vHWkPknTgNDFqhHT21m3rDGohj3g9JvHQw08MKdujdAA43A5XVOS4nYt5awPkzJt
+wlloE0f1XGGcDiThWmm9
+=MZhW
+-----END PGP SIGNATURE-----
 
-Index: linux-2.6/drivers/pci/probe.c
-===================================================================
---- linux-2.6.orig/drivers/pci/probe.c
-+++ linux-2.6/drivers/pci/probe.c
-@@ -1125,12 +1125,10 @@ int pci_setup_device(struct pci_dev *dev
- 
- 	pci_read_config_dword(dev, PCI_CLASS_REVISION, &class);
- 	dev->revision = class & 0xff;
--	class >>= 8;				    /* upper 3 bytes */
--	dev->class = class;
--	class >>= 8;
-+	dev->class = class >> 8;		    /* upper 3 bytes */
- 
--	dev_printk(KERN_DEBUG, &dev->dev, "[%04x:%04x] type %d class %#08x\n",
--		   dev->vendor, dev->device, dev->hdr_type, class);
-+	dev_printk(KERN_DEBUG, &dev->dev, "[%04x:%04x] type %02x class %#08x\n",
-+		   dev->vendor, dev->device, dev->hdr_type, dev->class);
- 
- 	/* need to have dev->class ready */
- 	dev->cfg_size = pci_cfg_space_size(dev);
-@@ -1212,8 +1210,8 @@ int pci_setup_device(struct pci_dev *dev
- 		return -EIO;
- 
- 	bad:
--		dev_err(&dev->dev, "ignoring class %02x (doesn't match header "
--			"type %02x)\n", class, dev->hdr_type);
-+		dev_err(&dev->dev, "ignoring class %#08x (doesn't match header "
-+			"type %02x)\n", dev->class, dev->hdr_type);
- 		dev->class = PCI_CLASS_NOT_DEFINED;
- 	}
- 
+--Signature=_Mon__20_Feb_2012_10_04_36_+1100_aRB96W==pfjIDOTg--
