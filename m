@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab2BSPuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 10:50:00 -0500
-Received: from eq4.michisoft.net ([178.63.1.138]:45886 "EHLO
-	mail.michisoft.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754232Ab2BSPt6 (ORCPT
+	id S1754591Ab2BSQie (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 11:38:34 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49812 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab2BSQic convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 10:49:58 -0500
-X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 10:49:58 EST
-From: Michael Thalmeier <michael@thalmeier.at>
-To: Peter Feuerer <peter@piie.net>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Thalmeier <michael@thalmeier.at>
-Subject: [PATCH] acerhdf: add support for Acer Aspire 1810T BIOS v1.3314
-Date: Sun, 19 Feb 2012 16:43:04 +0100
-Message-Id: <1329666184-7336-1-git-send-email-michael@thalmeier.at>
-X-Mailer: git-send-email 1.7.9
+	Sun, 19 Feb 2012 11:38:32 -0500
+MIME-Version: 1.0
+Date: Sun, 19 Feb 2012 11:38:32 -0500
+Message-ID: <CALyraeMK=bEVkBtbi8xAm5aWrCbjGMTkArHygG78tJ86TzzNOw@mail.gmail.com>
+Subject: Buildroot compilation error
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-newbie@vger.kernel.org
+Cc: dhylands@gmail.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mentioned in commit
+Hello All,
 
-b06862b: acerhdf: add support for Aspire 1810TZ BIOS v1.3314
+I am using BuildRoot to compile my embedded linux and tool-chain.
+After compiling most of the packages and tool-chain I am getting
+following error. This occurs when compiling libnl-3.0
 
-Acer Aspire 1810T also supports Bios v1.3314.
+make[3]: Entering directory
+`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+  CC     route/pktloc.lo
 
-Signed-off-by: Michael Thalmeier <michael@thalmeier.at>
----
- drivers/platform/x86/acerhdf.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+route/pktloc.c: In function ‘read_pktlocs’:
+route/pktloc.c:127:34: error: ‘YY_BUF_SIZE’ undeclared (first use in
+this function)
+route/pktloc.c:127:34: note: each undeclared identifier is reported
+only once for each function it appears in
+make[3]: *** [route/pktloc.lo] Error 1
+make[3]: Leaving directory
+`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+make[2]: *** [all] Error 2
+make[2]: Leaving directory
+`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/lib'
+make[1]: *** [all-recursive] Error 1
+make[1]: Leaving directory
+`/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0'
+make: *** [/home/sriram/buildroot/buildroot-2011.11/output/build/libnl-3.0/.stamp_built]
+Error 2
 
-diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index 760c6d7..e8df42f 100644
---- a/drivers/platform/x86/acerhdf.c
-+++ b/drivers/platform/x86/acerhdf.c
-@@ -183,6 +183,7 @@ static const struct bios_settings_t bios_tbl[] = {
- 	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
- 	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
- 	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
-+	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
- 	/* Acer 531 */
- 	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00} },
- 	/* Gateway */
+Can anyone please help me what is going on in compilation. Do I need
+to specify sysroot or path to lib.
+Thanks in advance for the help.
+
+
+
 -- 
-1.7.9
-
+Regards,
+Sri.
