@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2BSUVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 15:21:25 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56153 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094Ab2BSUVX (ORCPT
+	id S1755200Ab2BSUej (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 15:34:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19780 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab2BSUei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 15:21:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of gorcunov@gmail.com designates 10.204.154.28 as permitted sender) smtp.mail=gorcunov@gmail.com; dkim=pass header.i=gorcunov@gmail.com
-Date: Mon, 20 Feb 2012 00:19:14 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: =?utf-8?Q?Przemys=C5=82aw_Pawe=C5=82czyk?= 
-	<przemyslaw@pawelczyk.it>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, lkml <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [BUG] task->nsproxy was unexpectedly NULL (caught in exit_shm)
-Message-ID: <20120219201914.GB1895@moon>
-References: <CAN8=baycwqAkTJxNpNzaO9G=TbEXeiEYCvWxiwvS+NpLRZi3xw@mail.gmail.com>
- <20120218173950.GA12595@albatros>
- <20120218182436.GB1905@moon>
- <CAN8=bawR0H6y-2qONGdG7CvfgphyeEt1v30YONPf5LaXRdgi+w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN8=bawR0H6y-2qONGdG7CvfgphyeEt1v30YONPf5LaXRdgi+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Feb 2012 15:34:38 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=v34b3tIZfGoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=pGLkceISAAAA:8 a=9bAiR_rXrmpoHhnyc8gA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH][GIT PULL][v3.3] x86: Test saved %rip in NMI to
+ determine nested NMI
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "hpanvin@gmail.com" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <0e44abc3-f1a9-4c5b-88a8-baa563f57067@email.android.com>
+References: <1329617173.1561.5.camel@acer.local.home>
+	 <20120219125601.GD25900@elte.hu>
+	 <0e44abc3-f1a9-4c5b-88a8-baa563f57067@email.android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 19 Feb 2012 15:34:39 -0500
+Message-ID: <1329683679.1561.20.camel@acer.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 08:40:42PM +0100, Przemysław Pawełczyk wrote:
-> A few minutes ago I was closing a tab in Chrome and I heard BEEP!
-> This time my mouse and keyboard stopped responding in X, have to ssh
-> from notebook to read log.
-> (I was using Synergy today, so maybe it is related.)
-> 
+On Sun, 2012-02-19 at 05:46 -0800, hpanvin@gmail.com wrote:
+> Vsyscall page, not vdso...
 > 
 
-Hi Przemysław, I'm not -mm expert, so I fear I can't help much in
--mm related issues, but if I were you I would try to catch this problem
-with nvidia module unloaded and on vanilla kernel (this is debian one,
-right?).
+Peter,
 
-	Cyrill
+My original patch was to check the %cs register against __KERNEL_CS, but
+IIRC, you said that userspace can change that register to anything it
+wanted before doing a long jump or something. Is this true for x86_64 as
+well? I guess it would be because x86_64 can support 32bit apps.
+
+Anyway, I'll add a check that makes sure that the RIP is less than the
+FIXADDR sections as well.
+
+-- Steve
+
+
