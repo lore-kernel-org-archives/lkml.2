@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab2BTACw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:02:52 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40666 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab2BTACu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:02:50 -0500
-Date: Sun, 19 Feb 2012 18:58:32 -0500 (EST)
-Message-Id: <20120219.185832.570250355385915096.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: chas@cmf.nrl.navy.mil, kernel-janitors@vger.kernel.org,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/atm/solos-pci.c: exchange pci_iounmaps
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1329680612-28055-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1329680612-28055-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 19 Feb 2012 15:58:35 -0800 (PST)
+	id S1752146Ab2BTADb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:03:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:51333 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751994Ab2BTAD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 19:03:29 -0500
+Date: Mon, 20 Feb 2012 10:47:51 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Amerigo Wang <amwang@redhat.com>, Kexec-ml <kexec@lists.infradead.org>,
+        Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ananth Narayan <ananth@in.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [RFC PATCH v7 00/10] fadump: Firmware-assisted dump support for
+ Powerpc.
+Message-ID: <20120219234751.GA10186@bloggs.ozlabs.ibm.com>
+References: <20120216111050.4733.38034.stgit@mars>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120216111050.4733.38034.stgit@mars>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Sun, 19 Feb 2012 20:43:32 +0100
+On Thu, Feb 16, 2012 at 04:44:06PM +0530, Mahesh J Salgaonkar wrote:
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> The calls to pci_iounmap are in the wrong order, as compared to the
-> associated calls to pci_iomap.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Please find the version 7 of the patchset that implements firmware-assisted
+> dump mechanism to capture kernel crash dump for Powerpc architecture.
+> Firmware-assisted dump is a robust mechanism to get reliable kernel crash
+> dump with the assistance of firmware. This approach does not use kexec,
+> instead firmware assists in booting the kdump kernel while preserving memory
+> contents.
 
-Good catch, applied.
+For the series:
+
+Reviewed-by: Paul Mackerras <paulus@samba.org>
+
+I think it's pretty much good enough to go in now.  I have one relatively
+minor comment about a printk which could be addressed if you decide to
+do another version of the series.
+
+Paul.
