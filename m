@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2BTUKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:10:10 -0500
+	id S1753449Ab2BTUKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:10:21 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:33447 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab2BTUKG (ORCPT
+	with ESMTP id S1752512Ab2BTUKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:10:06 -0500
+	Mon, 20 Feb 2012 15:10:15 -0500
 From: Brian Norris <computersforpeace@gmail.com>
 To: Jeff Garzik <jgarzik@pobox.com>
 Cc: <linux-ide@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: <linux-ide@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
         "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Valdis Kletnieks <valdis.kletnieks@vt.edu>,
         "Rafael J . Wysocki" <rjw@sisk.pl>
-Subject: [PATCH 1/3] ahci: add AHCI_HFLAG_STRICT_SPEC host flag
-Date: Mon, 20 Feb 2012 12:09:21 -0800
-Message-Id: <1329768563-13715-2-git-send-email-computersforpeace@gmail.com>
+Subject: [PATCH 2/3] ahci: move AHCI_HFLAGS() macro to ahci.h
+Date: Mon, 20 Feb 2012 12:09:22 -0800
+Message-Id: <1329768563-13715-3-git-send-email-computersforpeace@gmail.com>
 X-Mailer: git-send-email 1.7.5.4.2.g519b1
 In-Reply-To: <1329768563-13715-1-git-send-email-computersforpeace@gmail.com>
 References: <1329768563-13715-1-git-send-email-computersforpeace@gmail.com>
@@ -26,60 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit was intended to fix problems with some specific AHCI
-platforms that would become bricks if the AHCI specification was not
-followed strictly:
-
-    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
-    ahci: start engine only during soft/hard resets
-
-However, some devices currently have issues with that fix, so we must
-implement a flag that enables the fix only for specific controllers.
-
-This commit simply introduces the flag, without enabling it in any driver.
-
-Note that even when AHCI_HFLAG_STRICT_SPEC is not set, this patch does not
-constitue a full revert to commit 7faa33da; there is still a change in
-behavior to the ahci_port_suspend() failure path.
+We will need this macro in both ahci.c and ahci_platform.c, so just move it
+to the header.
 
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 ---
- drivers/ata/ahci.h    |    1 +
- drivers/ata/libahci.c |    5 +++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/ata/ahci.c |    2 --
+ drivers/ata/ahci.h |    3 +++
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index d07bf03..ddeb845 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -103,8 +103,6 @@ static struct ata_port_operations ahci_p5wdh_ops = {
+ 	.hardreset		= ahci_p5wdh_hardreset,
+ };
+ 
+-#define AHCI_HFLAGS(flags)	.private_data	= (void *)(flags)
+-
+ static const struct ata_port_info ahci_port_info[] = {
+ 	/* by features */
+ 	[board_ahci] =
 diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index b175000..9c8aed0 100644
+index 9c8aed0..7522dd0 100644
 --- a/drivers/ata/ahci.h
 +++ b/drivers/ata/ahci.h
-@@ -210,6 +210,7 @@ enum {
- 	AHCI_HFLAG_NO_SNTF		= (1 << 12), /* no sntf */
- 	AHCI_HFLAG_NO_FPDMA_AA		= (1 << 13), /* no FPDMA AA */
- 	AHCI_HFLAG_YES_FBS		= (1 << 14), /* force FBS cap on */
-+	AHCI_HFLAG_STRICT_SPEC		= (1 << 15), /* strict AHCI spec */
+@@ -195,6 +195,9 @@ enum {
+ 	PORT_FBS_EN		= (1 << 0), /* Enable FBS */
  
- 	/* ap->flags bits */
- 
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index a72bfd0..f59abd0 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -737,6 +737,7 @@ static void ahci_power_down(struct ata_port *ap)
- 
- static void ahci_start_port(struct ata_port *ap)
- {
-+	struct ahci_host_priv *hpriv = ap->host->private_data;
- 	struct ahci_port_priv *pp = ap->private_data;
- 	struct ata_link *link;
- 	struct ahci_em_priv *emp;
-@@ -746,6 +747,10 @@ static void ahci_start_port(struct ata_port *ap)
- 	/* enable FIS reception */
- 	ahci_start_fis_rx(ap);
- 
-+	/* enable DMA */
-+	if (!(hpriv->flags & AHCI_HFLAG_STRICT_SPEC))
-+		ahci_start_engine(ap);
+ 	/* hpriv->flags bits */
 +
- 	/* turn on LEDs */
- 	if (ap->flags & ATA_FLAG_EM) {
- 		ata_for_each_link(link, ap, EDGE) {
++#define AHCI_HFLAGS(flags)		.private_data	= (void *)(flags)
++
+ 	AHCI_HFLAG_NO_NCQ		= (1 << 0),
+ 	AHCI_HFLAG_IGN_IRQ_IF_ERR	= (1 << 1), /* ignore IRQ_IF_ERR */
+ 	AHCI_HFLAG_IGN_SERR_INTERNAL	= (1 << 2), /* ignore SERR_INTERNAL */
