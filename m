@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab2BTVZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:25:48 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:41067 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753741Ab2BTVZr (ORCPT
+	id S1754469Ab2BTV1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:27:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38106 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753800Ab2BTV1O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:25:47 -0500
-Date: Mon, 20 Feb 2012 16:25:44 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        tiwg@multicore-association.org
-Subject: [RELEASE] LTTng 2.0 Release Candidates
-Message-ID: <20120220212544.GA11708@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:22:16 up 454 days,  2:25,  6 users,  load average: 0.12, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 20 Feb 2012 16:27:14 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20120220173844.GA2546@alea.gnuu.de>
+Date: Mon, 20 Feb 2012 22:27:12 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111122200414.GA28205@alea.gnuu.de> <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de> <20120220173844.GA2546@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1257)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
 
-The LTTng toolchain is now entering Release Candidate cycle, which
-means that we commit to stable APIs and ABIs (no breakage,
-extension-only) across the entire 2.x series, and feature-freeze (no
-extension) for the 2.0 series.
+On 20.02.2012, at 18:38, Jörg Sommer wrote:
 
-We plan to release LTTng 2.0 final on March 20, 2012.
+> Hello Alexander,
+> 
+> Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
+>> On 22.11.2011, at 21:04, Jörg Sommer wrote:
+>>> Jörg Sommer hat am Mon 07. Nov, 20:48 (+0100) geschrieben:
+>>>> I'm trying to build the kernel with the git commit-id
+>>>> 31555213f03bca37d2c02e10946296052f4ecfcd, but it fails
+>>>> 
+>>>> CHK     include/linux/version.h
+>>>> HOSTCC  scripts/mod/modpost.o
+>>>> CHK     include/generated/utsrelease.h
+>>>> UPD     include/generated/utsrelease.h
+>>>> HOSTLD  scripts/mod/modpost
+>>>> GEN     include/generated/bounds.h
+>>>> CC      arch/powerpc/kernel/asm-offsets.s
+>>>> In file included from arch/powerpc/kernel/asm-offsets.c:59:0:
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h: In function ‘compute_tlbie_rb’:
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: error: ‘HPTE_V_SECONDARY’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:393:10: note: each undeclared identifier is reported only once for each function it appears in
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:396:12: error: ‘HPTE_V_1TB_SEG’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:401:10: error: ‘HPTE_V_LARGE’ undeclared (first use in this function)
+>>>> /home/joerg/git/linux/arch/powerpc/include/asm/kvm_book3s.h:415:2: warning: right shift count >= width of type [enabled by default]
+>>>> make[3]: *** [arch/powerpc/kernel/asm-offsets.s] Fehler 1
+>>>> make[2]: *** [prepare0] Fehler 2
+>>>> make[1]: *** [deb-pkg] Fehler 2
+>>>> make: *** [deb-pkg] Fehler 2
+>>> 
+>>> I'm still having this problem. I can' build
+>>> 6fe4c6d466e95d31164f14b1ac4aefb51f0f4f82. Are there any patches to
+>>> make the kernel builds and do not oops [1] on PowerPC?
+>> 
+>> The failures above should be fixed by now.
+>> 
+>>> [1] »kernel BUG at include/linux/kvm_host.h:603!«
+>>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
+>> 
+>> This is unfortunately still there. It's because of preemption being
+>> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
+> 
+> This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getting
+> this Oops, when I start qemu.
 
-For the entire RC time-frame the latest packages under section "Download
-Toolchain Source Packages" from the following URL should be used:
+Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I fixed a bunch of things with preemption since then and it definitely worked for me. If it still fails in that tree, I can try again to reproduce it :).
 
-  http://lttng.org/lttng2.0
 
-As a side-note, the babeltrace project, used for viewing/parsing CTF
-traces, is entering its prerelease cycle, with version 1.0.0-pre1.
+Alex
 
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-(please refer to the README files for installation instructions and
-lttng-tools doc/quickstart.txt for usage information)
-
-Key Features:
-
-- Efficient synchronized User-space and Kernel tracing using the same
-  time-source provides view of correlated kernel and user-space events.
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches,
-- Tracepoints, detailed syscall tracing (fast strace replacement),
-  CPU Performance Monitoring Unit (PMU) counters, dynamic address/symbol
-  probing (kprobes) and function call/return tracing (kretprobes support),
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
-- Integrated interface for both kernel and userspace tracing,
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
