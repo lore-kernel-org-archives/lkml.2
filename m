@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2BTQuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 11:50:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58404 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab2BTQt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 11:49:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of festevam@gmail.com designates 10.100.84.20 as permitted sender) smtp.mail=festevam@gmail.com; dkim=pass header.i=festevam@gmail.com
-From: Fabio Estevam <festevam@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel@pengutronix.de, shawn.guo@freescale.com, vinod.koul@intel.com,
-        dan.j.williams@intel.com, Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] dma: imx-sdma: Add error check on sdma_get_firmware
-Date: Mon, 20 Feb 2012 14:49:50 -0200
-Message-Id: <1329756590-19993-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753915Ab2BTQub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 11:50:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:50878 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752988Ab2BTQu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 11:50:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127447798"
+Date: Mon, 20 Feb 2012 17:57:39 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, gg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH V2] mfd: tps65910: Add wakeup support
+Message-ID: <20120220165739.GD5387@sortiz-mobl>
+References: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1327304775-12202-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add error check on sdma_get_firmware for the pdata case.
+Hi Laxman,
 
-While at it, distinguish the error message between the pdata and dt cases.
+On Mon, Jan 23, 2012 at 01:16:15PM +0530, Laxman Dewangan wrote:
+> Implementing irq_set_wake() so that device should able
+> to wakeup the system through different interrupt provided
+> by this device like gpios, onkey, rtc etc.
+Thanks, patch applied. And thanks to Mark for the review.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/dma/imx-sdma.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index bf736ad..52a4e6a 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -1388,7 +1388,11 @@ static int __init sdma_probe(struct platform_device *pdev)
- 		sdma_add_scripts(sdma, pdata->script_addrs);
- 
- 	if (pdata) {
--		sdma_get_firmware(sdma, pdata->fw_name);
-+		ret = sdma_get_firmware(sdma, pdata->fw_name);
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to get firmware from pdata\n");
-+			goto err_init;
-+		}
- 	} else {
- 		/*
- 		 * Because that device tree does not encode ROM script address,
-@@ -1404,7 +1408,7 @@ static int __init sdma_probe(struct platform_device *pdev)
- 
- 		ret = sdma_get_firmware(sdma, fw_name);
- 		if (ret) {
--			dev_err(&pdev->dev, "failed to get firmware\n");
-+			dev_err(&pdev->dev, "failed to get firmware from DT\n");
- 			goto err_init;
- 		}
- 	}
 -- 
-1.7.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
