@@ -1,85 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab2BTHXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 02:23:44 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42408 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2BTHXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 02:23:43 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4F41F50C.1010508@jp.fujitsu.com>
-Date: Mon, 20 Feb 2012 16:23:56 +0900
-From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.26) Gecko/20120129 Thunderbird/3.1.18
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH] mm: mmap() sometimes succeeds even if the region to map
- is invalid.
-References: <4F3E1319.6050304@jp.fujitsu.com> <D958900912E20642BCBC71664EFECE3E6DD198A7AE@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD198A7AE@BGMAIL02.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751599Ab2BTH3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 02:29:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750720Ab2BTH3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 02:29:12 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+Date: Mon, 20 Feb 2012 02:28:47 -0500
+Message-Id: <1329722927-12108-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <alpine.LSU.2.00.1202191316320.1466@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Venu,
+On Sun, Feb 19, 2012 at 01:21:02PM -0800, Hugh Dickins wrote:
+> On Wed, 8 Feb 2012, Naoya Horiguchi wrote:
+> > Currently when we check if we can handle thp as it is or we need to
+> > split it into regular sized pages, we hold page table lock prior to
+> > check whether a given pmd is mapping thp or not. Because of this,
+> > when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
+> > To remove it, this patch introduces a optimized check function and
+> > replace several similar logics with it.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Cc: David Rientjes <rientjes@google.com>
+> > 
+> > Changes since v4:
+> >   - Rethink returned value of __pmd_trans_huge_lock()
+> 
+> [snip]
+> 
+> > --- 3.3-rc2.orig/mm/mremap.c
+> > +++ 3.3-rc2/mm/mremap.c
+> > @@ -155,8 +155,6 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+> >  			if (err > 0) {
+> >  				need_flush = true;
+> >  				continue;
+> > -			} else if (!err) {
+> > -				split_huge_page_pmd(vma->vm_mm, old_pmd);
+> >  			}
+> >  			VM_BUG_ON(pmd_trans_huge(*old_pmd));
+> >  		}
 
->> 1. mmap() succeeds even if "offset" argument is a negative value, although
->>     it should return EINVAL in such case.
->
->> In such case, it is actually regarded as big positive value
->> because the type of "off" is "unsigned long" in the kernel.
->> For example, off=-4096 (-0x1000) is regarded as
->> off = 0xfffffffffffff000 (x86_64) and as off = 0xfffff000 (x86).
->> It results in mapping too big offset region.
->
-> It is not true always.
->
-> Considering your example, say if page size is 4k, then PAGE_MASK = 0xFFF
-> hence (off&  ~PAGE_MASK) will be true and " -EINVAL" will be returned.
+Thanks for reporting, 
 
-Is PAGE_MASK 0xfffffffffffff000 (x86_64) and 0xfffff000 (x86), isn't it?
-Or am I missing something?
+> Is that what you intended to do there?
 
-arch/x86/include/asm/page_types.h
-=================================================
-...
-#define PAGE_SHIFT      12
-#define PAGE_SIZE       (_AC(1,UL) << PAGE_SHIFT)
-#define PAGE_MASK       (~(PAGE_SIZE-1))
-...
-=================================================
+No. This is a bug.
 
-Thanks,
-Naotaka Hamaguchi
+> I just hit that VM_BUG_ON on rc3-next-20120217.
 
-(2012/02/17 18:04), Venu Byravarasu wrote:
->> The detail of these problems is as follows:
->
->> 1. mmap() succeeds even if "offset" argument is a negative value, although
->>     it should return EINVAL in such case.
->
->> In such case, it is actually regarded as big positive value
->> because the type of "off" is "unsigned long" in the kernel.
->> For example, off=-4096 (-0x1000) is regarded as
->> off = 0xfffffffffffff000 (x86_64) and as off = 0xfffff000 (x86).
->> It results in mapping too big offset region.
->
-> It is not true always.
->
-> Considering your example, say if page size is 4k, then PAGE_MASK = 0xFFF
-> hence (off&  ~PAGE_MASK) will be true and " -EINVAL" will be returned.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+I found that when extend != HPAGE_PMD_SIZE, thp is not split so
+it hits the VM_BUG_ON.
+The following patch cancels the change in returned value in v4->v5
+and I confirmed this fixes the problem in my simple test.
+Andrew, could you add it on top of this optimization patch?
 
+Naoya
+----------------------------------------------------
+>From 3c49816cab7d8cb072d9dffb97242e40f5124230 Mon Sep 17 00:00:00 2001
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 20 Feb 2012 01:48:12 -0500
+Subject: [PATCH] fix mremap bug of failing to split thp
+
+The patch "thp: optimize away unnecessary page table locking" introduced
+a bug to move_page_tables(), where we fail to split thp when move_huge_pmd()
+is not called. To fix it, this patch reverts the return value changes and
+readd if (!err) block.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c |    6 +++---
+ mm/huge_memory.c   |   13 ++++++-------
+ mm/mremap.c        |    2 ++
+ 3 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 7810281..2d12325 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -394,7 +394,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 
+-	if (pmd_trans_huge_lock(pmd, vma)) {
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		smaps_pte_entry(pmd_to_pte_t(pmd), addr, HPAGE_PMD_SIZE, walk);
+ 		spin_unlock(&walk->mm->page_table_lock);
+ 		mss->anonymous_thp += HPAGE_PMD_SIZE;
+@@ -696,7 +696,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+ 
+-	if (pmd_trans_huge_lock(pmd, vma)) {
++	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		for (; addr != end; addr += PAGE_SIZE) {
+ 			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
+ 				>> PAGE_SHIFT;
+@@ -973,7 +973,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 
+ 	md = walk->private;
+ 
+-	if (pmd_trans_huge_lock(pmd, md->vma)) {
++	if (pmd_trans_huge_lock(pmd, md->vma) == 1) {
+ 		pte_t huge_pte = pmd_to_pte_t(pmd);
+ 		struct page *page;
+ 
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index bbf57b5..f342bb2 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1030,7 +1030,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ {
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma)) {
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		struct page *page;
+ 		pgtable_t pgtable;
+ 		pgtable = get_pmd_huge_pte(tlb->mm);
+@@ -1056,7 +1056,7 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ {
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma)) {
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		/*
+ 		 * All logical pages in the range are present
+ 		 * if backed by a huge page.
+@@ -1094,12 +1094,11 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
+ 		goto out;
+ 	}
+ 
+-	if (__pmd_trans_huge_lock(old_pmd, vma)) {
++	if ((ret = __pmd_trans_huge_lock(old_pmd, vma)) == 1) {
+ 		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
+ 		VM_BUG_ON(!pmd_none(*new_pmd));
+ 		set_pmd_at(mm, new_addr, new_pmd, pmd);
+ 		spin_unlock(&mm->page_table_lock);
+-		ret = 1;
+ 	}
+ out:
+ 	return ret;
+@@ -1111,7 +1110,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int ret = 0;
+ 
+-	if (__pmd_trans_huge_lock(pmd, vma)) {
++	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		pmd_t entry;
+ 		entry = pmdp_get_and_clear(mm, addr, pmd);
+ 		entry = pmd_modify(entry, newprot);
+@@ -1125,7 +1124,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 
+ /*
+  * Returns 1 if a given pmd maps a stable (not under splitting) thp.
+- * Returns 0 otherwise.
++ * Returns -1 if it maps a thp under splitting. Returns 0 otherwise.
+  *
+  * Note that if it returns 1, this routine returns without unlocking page
+  * table locks. So callers must unlock them.
+@@ -1137,7 +1136,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
+ 		if (unlikely(pmd_trans_splitting(*pmd))) {
+ 			spin_unlock(&vma->vm_mm->page_table_lock);
+ 			wait_split_huge_page(vma->anon_vma, pmd);
+-			return 0;
++			return -1;
+ 		} else {
+ 			/* Thp mapped by 'pmd' is stable, so we can
+ 			 * handle it as it is. */
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 22458b9..87bb839 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -155,6 +155,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+ 			if (err > 0) {
+ 				need_flush = true;
+ 				continue;
++			} else if (!err) {
++				split_huge_page_pmd(vma->vm_mm, old_pmd);
+ 			}
+ 			VM_BUG_ON(pmd_trans_huge(*old_pmd));
+ 		}
+-- 
+1.7.7.6
 
