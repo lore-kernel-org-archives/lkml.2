@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2BTIK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:10:56 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56690 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab2BTIKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:10:55 -0500
-Date: Mon, 20 Feb 2012 09:10:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH][GIT PULL][v3.3] x86: Test saved %rip in NMI to determine
- nested NMI
-Message-ID: <20120220081045.GD30810@elte.hu>
-References: <1329617173.1561.5.camel@acer.local.home>
- <20120219125601.GD25900@elte.hu>
- <1329663451.25686.21.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329663451.25686.21.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+	id S1752070Ab2BTIOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:14:23 -0500
+Received: from webbox1416.server-home.net ([77.236.96.61]:45243 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751184Ab2BTIOV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:14:21 -0500
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH v2] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce wait time
+Date: Mon, 20 Feb 2012 09:14:16 +0100
+Message-Id: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If you insert several i2c transfers, the driver might start the next one
+while the STOP bit of the previous transfer is still on the bus, marking
+the bus as busy.
+pch_i2c_wait_for_bus_idle does an msleep(20) delaying the next transfer
+by >=20ms. Reduce wait time by actively waiting 5 us once, then using
+usleep_range.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+Changes in v2:
+* Remove redundant code
 
-> On Sun, 2012-02-19 at 13:56 +0100, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > Ingo,
-> > > 
-> > > I found that it is possible for userspace to prevent an NMI 
-> > > from triggering while it is running by setting its stack 
-> > > pointer to that of the NMI stack. This tricks the NMI nested 
-> > > algorithm in thinking that the NMI is nested. The easy 
-> > > solution to this is to test the %rip to make sure that the NMI 
-> > > happened in kernel mode before testing for nesting.
-> > 
-> > Ouch...
-> 
-> Note, it does not seem to cause any destruction, but screw up 
-> profiling.
+ drivers/i2c/busses/i2c-eg20t.c |   42 ++++++++++++++++++++++-----------------
+ 1 files changed, 24 insertions(+), 18 deletions(-)
 
-Except if the source of the NMI was not profiling, right?
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index ca88776..1eb60ca 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -271,30 +271,36 @@ static inline bool ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
+ /**
+  * pch_i2c_wait_for_bus_idle() - check the status of bus.
+  * @adap:	Pointer to struct i2c_algo_pch_data.
+- * @timeout:	waiting time counter (us).
++ * @timeout:	waiting time counter (ms).
+  */
+ static s32 pch_i2c_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
+ 				     s32 timeout)
+ {
+ 	void __iomem *p = adap->pch_base_address;
+-	ktime_t ns_val;
++	int schedule = 0;
++	unsigned long end = jiffies + msecs_to_jiffies(timeout);
++
++	while (ioread32(p + PCH_I2CSR) & I2CMBB_BIT) {
++		if (time_after(jiffies, end)) {
++			pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
++			pch_err(adap, "%s: Timeout Error.return%d\n",
++					__func__, -ETIME);
++			pch_i2c_init(adap);
+ 
+-	if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+-		return 0;
++			return -ETIME;
++		}
+ 
+-	/* MAX timeout value is timeout*1000*1000nsec */
+-	ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
+-	do {
+-		msleep(20);
+-		if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+-			return 0;
+-	} while (ktime_lt(ktime_get(), ns_val));
++		if (!schedule)
++			/* Retry after some usecs */
++			udelay(5);
++		else
++			/* Wait a bit more without consuming CPU */
++			usleep_range(20, 1000);
+ 
+-	pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+-	pch_err(adap, "%s: Timeout Error.return%d\n", __func__, -ETIME);
+-	pch_i2c_init(adap);
++		schedule = 1;
++	}
+ 
+-	return -ETIME;
++	return 0;
+ }
+ 
+ /**
+-- 
+1.7.3.4
 
-Thanks,
-
-	Ingo
