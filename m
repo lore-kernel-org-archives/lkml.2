@@ -1,129 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2BTOzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 09:55:33 -0500
-Received: from imr-mb02.mx.aol.com ([64.12.207.163]:54705 "EHLO
-	imr-mb02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab2BTOzb (ORCPT
+	id S1753425Ab2BTO4t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 09:56:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57372 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab2BTO4s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 09:55:31 -0500
-Message-Id: <201202201455.q1KEt5iO009138@imr-mb02.mx.aol.com>
-Reply-To: <georgymihailov@globomail.com>
-From: "Georgy Mihailov" <mgli991065@aol.com>
-To: mgli991065@aol.com
-Subject: Partnership!!!
-Date: Mon, 20 Feb 2012 14:53:33 -0000
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0120_01C2A9A6.247CA352"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 120220-0, 20/02/2012), Outbound message
-X-Antivirus-Status: Clean
-X-AOL-VSS-INFO: 5400.1158/78651
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:274271936:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/78651
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:277425440:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33814f425ec742bf
+	Mon, 20 Feb 2012 09:56:48 -0500
+Message-ID: <1329749790.2293.354.camel@twins>
+Subject: Re: sched: Performance of Trade workload running inside VM
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, pjt@google.com, efault@gmx.de, venki@google.com,
+        suresh.b.siddha@intel.com, linux-kernel@vger.kernel.org,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Date: Mon, 20 Feb 2012 15:56:30 +0100
+In-Reply-To: <20120218074127.GA9077@linux.vnet.ibm.com>
+References: <20120214112827.GA22653@linux.vnet.ibm.com>
+	 <1329307161.2293.66.camel@twins> <20120215171032.GB9918@linux.vnet.ibm.com>
+	 <1329326651.2293.151.camel@twins>
+	 <20120215173817.GD9918@linux.vnet.ibm.com>
+	 <1329327902.2293.168.camel@twins>
+	 <20120218074127.GA9077@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Sat, 2012-02-18 at 13:11 +0530, Srivatsa Vaddagiri wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-02-15 18:45:02]:
 
-------=_NextPart_000_0120_01C2A9A6.247CA352
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+> > why does your patch sort it etc.
+> 
+> The patch does result in a hunt for "least" busy cpu when the target cpu
+> returned by select_idle_sibling() is not idle - thus resulting in better
+> scheduling latencies for the task (and in turn better benchmark scores).
+> 
+> Another variant of the patch could be to have select_idle_sibling() look
+> for any idle cpu that is in same cache domain (rather than looking for a
+> whole group of cpus to be idle)?
 
-I have a business proposal for you
+Right, so I looked over select_idle_sibling() again and it made my head
+hurt :/ I can't immediately tell if its actually doing the right thing
+or not (it _should_ try and avoid using SMT siblings if possible).
 
-Please view attached letter get back to me immediately. If you are interested.
+It would be very nice not to have both select_idle_sibling() and
+SD_BALANCE_WAKE iterate the domain tree. So merging them if at all
+possible would be goodness I think.
 
-Georgy
+We'd have WAKE_AFFINE to decide which cache domain etc to stuff the task
+on and then use select_idle_sibling() to find the most appropriate cpu
+within that cache domain.
 
-------=_NextPart_000_0120_01C2A9A6.247CA352
-Content-Type: application/octet-stream;
-	name="offer.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="offer.txt"
+There was talk of modifying select_idle_sibling() to also consider the
+C-state the cpu was in, preferring shallower over deeper C-states where
+there's choice, this is very similar to what you propose, taking the
+least loaded cpu when there isn't a proper idle one around.
 
-RGVhciBTaXIvIE1hZGFtLA0KIA0KQWx0aG91Z2ggdGhpcyBhcHByb2FjaCBh
-cHBlYXJzIHRvIGJlIHZlcnkgZGlmZmljdWx0IGJ1dCBJIHRoaW5rIGl0knMg
-dGhlIGJlc3QgYW5kIHNhZmUgbWVhbnMgaW4gcHJlc2VudGluZyBteSBwcm9w
-b3NhbCBmcm9tIHdoaWNoIHdlIGNvdWxkIGJvdGggYmVuZWZpdCBhbmQgdGhl
-IGZhY3QgdGhhdCB5b3UgYXJlIGEgZm9yZWlnbmVyIHdpbGwgaGVscCBhIGxv
-dCBpbiB0aGUgbGVnYWwgcHJvY2Vzcy4gSWYgeW91IGFyZSBub3QgaW50ZXJl
-c3RlZCBhdCB0aGlzIHBvaW50IHRoZW4gYm90aCBvdXIgaWRlbnRpdGllcyBj
-YW4gYmUgbGVmdCB1bmtub3duLg0KIA0KSSBhbSBHRU9SR1kgTUlIQUlMT1Yg
-YSBCcml0aXNoIGNpdGl6ZW4gYnkgYmlydGggYnV0IEkgaGF2ZSBsaXZlZCBh
-bGwgbXkgbGlmZSBpbiBSdXNzaWEgc2luY2UgSSB3YXMgMTAgeWVhcnMgb2xk
-LiBJIGFtIDUwIHllYXJzIG5vdy4gSSB3YXMgYSBmaW5hbmNpYWwgaW52ZXN0
-bWVudCBsZWdhbCBhdHRvcm5leSB0byBicm9rZXJhZ2UgZmlybSBoZXJlIGlu
-IHRoZSBVbml0ZWQgS2luZ2RvbSwgd2hpY2ggd2VudCBsaXF1aWRhdGVkIHRo
-aXMgeWVhciBkdWUgdG8gdGhlIHJlY2Vzc2lvbi93b3JsZCBjcmlzaXMgSSB3
-ZW50IG9uIHRvIG9wZW4gbXkgcHJpdmF0ZSBwcmFjdGljZSBhcyBhIGZpbmFu
-Y2lhbCBsYXd5ZXIgYmVmb3JlIG91ciBicm9rZXJhZ2UgZmlybSB3YXMgbGlx
-dWlkYXRlZCwgd2UgbWFkZSBzZXJpZXMgb2YgaW52ZXN0bWVudCBmb3IgZGlm
-ZmVyZW50IGNvbXBhbmllcyBpbiB0aGUgVW5pdGVkIEtpbmdkb20uDQogDQpJ
-biAyMDA0IHdlIG1hZGUgYSBsYXJnZSBpbnZlc3RtZW50IGZvciBhbiBJY2Vs
-YW5kaWMgaW52ZXN0bWVudCBjb21wYW55LCBJIHdvdWxkIG5vdCBkaXNjbG9z
-ZSB0aGUgbmFtZSBvZiB0aGlzIGNvbXBhbnkgYXQgdGhpcyBzdGFnZSwgb24g
-eW91ciBhY2NlcHRhbmNlIHRvIGJlIGEgcGFydG5lciB3aXRoIG1lIG9uIHRo
-aXMgSSB3aWxsIGdpdmUgeW91IGFsbCB0aGUgaW5mb3JtYXRpb24gYWJvdXQg
-dGhpcyBjb21wYW55LiBXZSBtYWRlIGFuIGludmVzdG1lbnQgd29ydGggKFNl
-dmVuIE1pbGxpb24gRml2ZSBodW5kcmVkIHRob3VzYW5kIFBvdW5kcykgb24g
-YSA1eWVhcnMgZml4ZWQgYm9uZCByYXRlLCB3aGljaCBoYXMgbWF0dXJlZCB0
-byAoRWlnaHQgTWlsbGlvbiBQb3VuZHMgb25seSkuDQogDQpJIHdhcyBjb250
-YWN0ZWQgYXQgdGhlIGZpcnN0IG9mIHRoaXMgbW9udGggYnkgdGhlIGZpbmFu
-Y2lhbCBJbnN0aXR1dGlvbiB3ZXJlIHRoZSBmdW5kcyBhcmUgY3VycmVudGx5
-IGxvY2F0ZWQgdGhhdCB0aGUgdG90YWwgc3VtIG9mIChFaWdodCBNaWxsaW9u
-IFBvdW5kcyBvbmx5KSBpcyByZWFkeSBvbiBtYXR1cml0eSBhbmQgaWYgdGhl
-IGZ1bmRzIGFyZSBub3QgY2xhaW1lZCBpdCB3aWxsIGJlIGNvbmZpc2NhdGVk
-IGFuZCBpdCB3aWxsIGdvIGludG8gdGhlIEJyaXRpc2ggR292ZXJubWVudCBy
-ZWNvdmVyeSByZWNlc3Npb24gcGxhbi4NCiANClNpbmNlIEZlYnJ1YXJ5IDIw
-MDkgSWNlbGFuZGljIGludmVzdG1lbnQgY29tcGFueSBoYXMgZ29uZSBpbnRv
-IGFkbWluaXN0cmF0aW9uIChCYW5rcnVwdGN5KSB0aGVyZSBpcyBubyB3YXkg
-dGhleSBjYW4gY2xhaW0gdGhpcyBmdW5kcyBhbmQgYXMgSSB3YXMgdGhlIGZp
-bmFuY2lhbCBpbnZlc3RtZW50IGxhd3llciB0byBvdXIgYnJva2VyYWdlIGZp
-cm0gYWxsIGluZm9ybWF0aW9uknMgd2VyZSBzZW50IHRvIG1lIG9ubHkuIFRo
-aXMgaXMgYW4gb3Bwb3J0dW5pdHksIHdoaWNoIEkgdGhpbmsgYm90aCBvZiB1
-cyBjYW4gYmVuZWZpdCBmcm9tLiBUaGUgYnJva2VyYWdlIGZpcm0gd2hpY2gg
-aSB3b3JrZWQgZm9yIGFuZCB0aGUgSWNlbGFuZGljIGludmVzdG1lbnQgY29t
-cGFueSBoYXMgZ29uZSBpbnRvIGFkbWluaXN0cmF0aW9uIChCYW5rcnVwdGN5
-KSBieSBVbml0ZWQgS2luZ2RvbSBMYXdzIGl0IHdpbGwgdGFrZSAxMCB5ZWFy
-cyBmb3IgdGhlIEljZWxhbmRpYyBpbnZlc3RtZW50IGNvbXBhbnkgdG8gZ2V0
-IHRoZWlyIGNvbXBhbnkgbmFtZSBvdXQgb2YgdGhlIGJhbmtydXB0Y3kgYmxh
-Y2tsaXN0IGFuZCBhYmxlIHRvIHRyYWRlIGluIHRoZSB1bml0ZWQga2luZ2Rv
-bSBidXQgSSBob25lc3RseSBjYW4ndCBzZWUgdGhlbSBjb21pbmcgYmFjayBi
-ZWNhdXNlIGFsbCB0aGUgYm9hcmQgb2YgZGlyZWN0b3JzIGhhdmUgYmVlbiBw
-cm9iZWQgZm9yIGV4dG9ydGlvbiBvZiB0aGUgY29tcGFueS4NCiANCllvdXIg
-Um9sZToNCg0KSSBzdGF0ZWQgaW4gbXkgcHJldmlvdXMgc2VudGVuY2UgYWJv
-dmUgVGhpcyBpcyBhbiBvcHBvcnR1bml0eSwgd2hpY2ggSSB0aGluayBib3Ro
-IG9mIHVzIGNhbiBiZW5lZml0IGZyb22SIHlvdSBhcyBhIGZvcmVpZ25lciwg
-YW5kIEkgYXMgdGhlIGxlZ2FsIFByYWN0aXRpb25lciB0byBhbGwgb2YgdGhl
-c2UgZnVuZHMgSSBjYW4gbWFrZSBhIGZpbGUgaW4gdGhlIGhpZ2ggQ291cnQg
-b2YgUHJvYmF0ZS4gc3RhdGluZyB0aGUgYWJvdmUgYW1vdW50IHNob3VsZCBi
-ZSBwYWlkIHRvIHlvdSBhcyBzdWItY29udHJhY3RvciB0byB0aGUgSWNlbGFu
-ZGljIGludmVzdG1lbnQgY29tcGFueSB3aGljaCB5b3Ugb2ZmZXJlZCBhIHNl
-cnZpY2UgYnV0IHdhcyB1bnBhaWQgSSB3aWxsIHN1cHBvcnQgdGhhdCBhbmQg
-YmFjayBpdCB1cCBzaW5jZSBpdCBzaG93cyB0aGUgSWNlbGFuZGljIGludmVz
-dG1lbnQgY29tcGFueSBtYWRlIGxvdHMgb2YgZm9yZWlnbiBidXNpbmVzcyBp
-bnRlcm5hdGlvbmFsbHkgbXkgcmVzcG9uc2liaWxpdHkgaXMgdG8gbWFrZSB0
-aGlzIHRyYW5zYWN0aW9uIDEwMCBwZXJjZW50IGxlZ2FsbHkgYW5kIHNhZmUg
-Zm9yIGJvdGggcGFydGllcyBpbnZvbHZlZCB3aGljaCBpbmNsdWRlcyB5b3Ug
-YW5kIEkuIFRoaW5rIGFib3V0IHRoaXMgYW5kIGxldCBtZSBrbm93IGlmIHlv
-dSBhcmUgaW50ZXJlc3RlZCBhbmQgSSB3aWxsIGZ1cm5pc2ggeW91IG1vcmUg
-b24gdGhlIHByb2Nlc3MgYW5kIHByb2NlZWRpbmdzIHRvIGdvIGFib3V0IHRo
-aXMgdmVudHVyZS4NCiANCkkgYXdhaXQgeW91ciByZXNwb25zZS4NCllvdXJz
-IHRydWx5LA0KDQpHRU9SR1k=
 
-------=_NextPart_000_0120_01C2A9A6.247CA352--
