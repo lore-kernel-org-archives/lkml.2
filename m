@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2BTUuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:50:40 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:45602 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab2BTUuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:50:39 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH] i740fb: fix compile error when CONFIG_MTRR is not selected
-Date: Mon, 20 Feb 2012 21:49:47 +0100
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-References: <20120216162900.e2dd164732084f48e5b239f0@canb.auug.org.au> <1329687211-6545-1-git-send-email-FlorianSchandinat@gmx.de>
-In-Reply-To: <1329687211-6545-1-git-send-email-FlorianSchandinat@gmx.de>
+	id S1753833Ab2BTUv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:51:26 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41002 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab2BTUvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 15:51:25 -0500
+Date: Mon, 20 Feb 2012 12:51:15 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kevin Cernekee <cernekee@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        Norbert Preining <preining@logic.at>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 1/3] ahci: add AHCI_HFLAG_STRICT_SPEC host flag
+Message-ID: <20120220205115.GA3538@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1329768563-13715-1-git-send-email-computersforpeace@gmail.com>
+ <1329768563-13715-2-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201202202149.52869.linux@rainbow-software.org>
+In-Reply-To: <1329768563-13715-2-git-send-email-computersforpeace@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 February 2012 22:33:31 Florian Tobias Schandinat wrote:
-> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> ---
->  drivers/video/i740fb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/i740fb.c b/drivers/video/i740fb.c
-> index 8be0302..fe574d8 100644
-> --- a/drivers/video/i740fb.c
-> +++ b/drivers/video/i740fb.c
-> @@ -1179,9 +1179,9 @@ static void __devexit i740fb_remove(struct pci_dev
-> *dev) struct fb_info *info = pci_get_drvdata(dev);
->
->  	if (info) {
-> -#ifdef CONFIG_MTRR
->  		struct i740fb_par *par = info->par;
->
-> +#ifdef CONFIG_MTRR
->  		if (par->mtrr_reg >= 0) {
->  			mtrr_del(par->mtrr_reg, 0, 0);
->  			par->mtrr_reg = -1;
+Hello,
 
-Thanks for fixing my stupid bug. I thought that I tested it without 
-CONFIG_MTRR. But obviously didn't.
+Overall the patchset looks good but
+
+On Mon, Feb 20, 2012 at 12:09:21PM -0800, Brian Norris wrote:
+> +	AHCI_HFLAG_STRICT_SPEC		= (1 << 15), /* strict AHCI spec */
+
+can you please use something more specific?  e.g. something like
+SKIP_ENGINE_ON_PORT_START and then explain what the flag is about in
+the comment?
+
+Thanks.
 
 -- 
-Ondrej Zary
+tejun
