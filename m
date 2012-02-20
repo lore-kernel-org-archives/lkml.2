@@ -1,301 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2BTOmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 09:42:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56703 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab2BTOmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 09:42:42 -0500
-Date: Mon, 20 Feb 2012 09:42:21 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: psusi@ubuntu.com, psusi@cfl.rr.com
-Cc: maxim.patlasov@gmail.com, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        dm-devel@redhat.com, kzak@redhat.com
-Subject: Re: [PATCH 1/2] block: add partition resize function to blkpg ioctl
-Message-ID: <20120220144221.GC10342@redhat.com>
-References: <1329251991-22468-1-git-send-email-vgoyal@redhat.com>
- <1329251991-22468-2-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329251991-22468-2-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753383Ab2BTOqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 09:46:17 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:56348 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab2BTOqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 09:46:16 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux@arm.linux.org.uk, rmallon@gmail.com, plagnioj@jcrosoft.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/rtc-at91sam9: rework resources assignment
+Date: Mon, 20 Feb 2012 15:45:42 +0100
+Message-Id: <1329749142-6965-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <20120220100437.GD22562@n2100.arm.linux.org.uk>
+References: <20120220100437.GD22562@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 03:39:50PM -0500, Vivek Goyal wrote:
-> Add a new operation code ( BLKPG_RESIZE_PARTITION ) to the
-> BLKPG ioctl that allows altering the size of an existing
-> partition, even if it is currently in use.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Russell, Ryan,
 
-Hi Phillip,
+As I do think that these changes need explanation, here is my rework of Jean's
+patch. I would like to know if the little comment and general rework of
+resources assignment sound ok...
 
-Are you ok with the change? 
+I plan to merge this patch with the one discussed previously:
+"[PATCH 13/18] ARM: at91/rtc-at91sam9: pass the GPBR to use via ressources"
 
-Thanks
-Vivek
+If you agree, I will repost the whole series afterwards.
 
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/genhd.c             |   20 ++++++++++++----
->  block/ioctl.c             |   57 ++++++++++++++++++++++++++++++++++++++++++--
->  block/partition-generic.c |    4 ++-
->  include/linux/blkpg.h     |    1 +
->  include/linux/genhd.h     |   57 +++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 130 insertions(+), 9 deletions(-)
-> 
-> diff --git a/block/genhd.c b/block/genhd.c
-> index 23b4f70..935e09b 100644
-> --- a/block/genhd.c
-> +++ b/block/genhd.c
-> @@ -153,7 +153,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
->  		part = rcu_dereference(ptbl->part[piter->idx]);
->  		if (!part)
->  			continue;
-> -		if (!part->nr_sects &&
-> +		if (!part_nr_sects_read(part) &&
->  		    !(piter->flags & DISK_PITER_INCL_EMPTY) &&
->  		    !(piter->flags & DISK_PITER_INCL_EMPTY_PART0 &&
->  		      piter->idx == 0))
-> @@ -190,7 +190,7 @@ EXPORT_SYMBOL_GPL(disk_part_iter_exit);
->  static inline int sector_in_part(struct hd_struct *part, sector_t sector)
->  {
->  	return part->start_sect <= sector &&
-> -		sector < part->start_sect + part->nr_sects;
-> +		sector < part->start_sect + part_nr_sects_read(part);
->  }
->  
->  /**
-> @@ -765,8 +765,8 @@ void __init printk_all_partitions(void)
->  
->  			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
->  			       bdevt_str(part_devt(part), devt_buf),
-> -			       (unsigned long long)part->nr_sects >> 1,
-> -			       disk_name(disk, part->partno, name_buf), uuid);
-> +			       (unsigned long long)part_nr_sects_read(part) >> 1
-> +			       , disk_name(disk, part->partno, name_buf), uuid);
->  			if (is_part0) {
->  				if (disk->driverfs_dev != NULL &&
->  				    disk->driverfs_dev->driver != NULL)
-> @@ -857,7 +857,7 @@ static int show_partition(struct seq_file *seqf, void *v)
->  	while ((part = disk_part_iter_next(&piter)))
->  		seq_printf(seqf, "%4d  %7d %10llu %s\n",
->  			   MAJOR(part_devt(part)), MINOR(part_devt(part)),
-> -			   (unsigned long long)part->nr_sects >> 1,
-> +			   (unsigned long long)part_nr_sects_read(part) >> 1,
->  			   disk_name(sgp, part->partno, buf));
->  	disk_part_iter_exit(&piter);
->  
-> @@ -1263,6 +1263,16 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
->  		}
->  		disk->part_tbl->part[0] = &disk->part0;
->  
-> +		/*
-> +		 * set_capacity() and get_capacity() currently don't use
-> +		 * seqcounter to read/update the part0->nr_sects. Still init
-> +		 * the counter as we can read the sectors in IO submission
-> +		 * patch using seqence counters.
-> +		 *
-> +		 * TODO: Ideally set_capacity() and get_capacity() should be
-> +		 * converted to make use of bd_mutex and sequence counters.
-> +		 */
-> +		seqcount_init(&disk->part0.nr_sects_seq);
->  		hd_ref_init(&disk->part0);
->  
->  		disk->minors = minors;
-> diff --git a/block/ioctl.c b/block/ioctl.c
-> index ba15b2d..ddbc649 100644
-> --- a/block/ioctl.c
-> +++ b/block/ioctl.c
-> @@ -13,7 +13,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
->  {
->  	struct block_device *bdevp;
->  	struct gendisk *disk;
-> -	struct hd_struct *part;
-> +	struct hd_struct *part, *lpart;
->  	struct blkpg_ioctl_arg a;
->  	struct blkpg_partition p;
->  	struct disk_part_iter piter;
-> @@ -36,8 +36,8 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
->  		case BLKPG_ADD_PARTITION:
->  			start = p.start >> 9;
->  			length = p.length >> 9;
-> -			/* check for fit in a hd_struct */ 
-> -			if (sizeof(sector_t) == sizeof(long) && 
-> +			/* check for fit in a hd_struct */
-> +			if (sizeof(sector_t) == sizeof(long) &&
->  			    sizeof(long long) > sizeof(long)) {
->  				long pstart = start, plength = length;
->  				if (pstart != start || plength != length
-> @@ -92,6 +92,57 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
->  			bdput(bdevp);
->  
->  			return 0;
-> +		case BLKPG_RESIZE_PARTITION:
-> +			start = p.start >> 9;
-> +			/* new length of partition in bytes */
-> +			length = p.length >> 9;
-> +			/* check for fit in a hd_struct */
-> +			if (sizeof(sector_t) == sizeof(long) &&
-> +			    sizeof(long long) > sizeof(long)) {
-> +				long pstart = start, plength = length;
-> +				if (pstart != start || plength != length
-> +				    || pstart < 0 || plength < 0)
-> +					return -EINVAL;
-> +			}
-> +			part = disk_get_part(disk, partno);
-> +			if (!part)
-> +				return -ENXIO;
-> +			bdevp = bdget(part_devt(part));
-> +			if (!bdevp) {
-> +				disk_put_part(part);
-> +				return -ENOMEM;
-> +			}
-> +			mutex_lock(&bdevp->bd_mutex);
-> +			mutex_lock_nested(&bdev->bd_mutex, 1);
-> +			if (start != part->start_sect) {
-> +				mutex_unlock(&bdevp->bd_mutex);
-> +				mutex_unlock(&bdev->bd_mutex);
-> +				disk_put_part(part);
-> +				return -EINVAL;
-> +			}
-> +			/* overlap? */
-> +			disk_part_iter_init(&piter, disk,
-> +					    DISK_PITER_INCL_EMPTY);
-> +			while ((lpart = disk_part_iter_next(&piter))) {
-> +				if (lpart->partno != partno &&
-> +				   !(start + length <= lpart->start_sect ||
-> +				   start >= lpart->start_sect + lpart->nr_sects)
-> +				   ) {
-> +					disk_part_iter_exit(&piter);
-> +					mutex_unlock(&bdevp->bd_mutex);
-> +					mutex_unlock(&bdev->bd_mutex);
-> +					disk_put_part(part);
-> +					return -EBUSY;
-> +				}
-> +			}
-> +			disk_part_iter_exit(&piter);
-> +			part_nr_sects_write(part, (sector_t)length);
-> +			i_size_write(bdevp->bd_inode, p.length);
-> +			mutex_unlock(&bdevp->bd_mutex);
-> +			mutex_unlock(&bdev->bd_mutex);
-> +			bdput(bdevp);
-> +			disk_put_part(part);
-> +			return 0;
->  		default:
->  			return -EINVAL;
->  	}
-> diff --git a/block/partition-generic.c b/block/partition-generic.c
-> index d06ec1c..363a6f6 100644
-> --- a/block/partition-generic.c
-> +++ b/block/partition-generic.c
-> @@ -84,7 +84,7 @@ ssize_t part_size_show(struct device *dev,
->  		       struct device_attribute *attr, char *buf)
->  {
->  	struct hd_struct *p = dev_to_part(dev);
-> -	return sprintf(buf, "%llu\n",(unsigned long long)p->nr_sects);
-> +	return sprintf(buf, "%llu\n",(unsigned long long)part_nr_sects_read(p));
->  }
->  
->  static ssize_t part_ro_show(struct device *dev,
-> @@ -294,6 +294,8 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
->  		err = -ENOMEM;
->  		goto out_free;
->  	}
-> +
-> +	seqcount_init(&p->nr_sects_seq);
->  	pdev = part_to_dev(p);
->  
->  	p->start_sect = start;
-> diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
-> index faf8a45..a851944 100644
-> --- a/include/linux/blkpg.h
-> +++ b/include/linux/blkpg.h
-> @@ -40,6 +40,7 @@ struct blkpg_ioctl_arg {
->  /* The subfunctions (for the op field) */
->  #define BLKPG_ADD_PARTITION	1
->  #define BLKPG_DEL_PARTITION	2
-> +#define BLKPG_RESIZE_PARTITION	3
->  
->  /* Sizes of name fields. Unused at present. */
->  #define BLKPG_DEVNAMELTH	64
-> diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-> index fe23ee7..0def3ef 100644
-> --- a/include/linux/genhd.h
-> +++ b/include/linux/genhd.h
-> @@ -98,7 +98,13 @@ struct partition_meta_info {
->  
->  struct hd_struct {
->  	sector_t start_sect;
-> +	/*
-> +	 * nr_sects is protected by sequence counter. One might extend a
-> +	 * partition while IO is happening to it and update of nr_sects
-> +	 * can be non-atomic on 32bit machines with 64bit sector_t.
-> +	 */
->  	sector_t nr_sects;
-> +	seqcount_t nr_sects_seq;
->  	sector_t alignment_offset;
->  	unsigned int discard_alignment;
->  	struct device __dev;
-> @@ -653,6 +659,57 @@ static inline void hd_struct_put(struct hd_struct *part)
->  		__delete_partition(part);
->  }
->  
-> +/*
-> + * Any access of part->nr_sects which is not protected by partition
-> + * bd_mutex or gendisk bdev bd_mutex, should be done using this
-> + * accessor function.
-> + *
-> + * Code written along the lines of i_size_read() and i_size_write().
-> + * CONFIG_PREEMPT case optimizes the case of UP kernel with preemption
-> + * on.
-> + */
-> +static inline sector_t part_nr_sects_read(struct hd_struct *part)
-> +{
-> +#if BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_SMP)
-> +	sector_t nr_sects;
-> +	unsigned seq;
-> +	do {
-> +		seq = read_seqcount_begin(&part->nr_sects_seq);
-> +		nr_sects = part->nr_sects;
-> +	} while (read_seqcount_retry(&part->nr_sects_seq, seq));
-> +	return nr_sects;
-> +#elif BITS_PER_LONG==32 && defined(CONFIG_PREEMPT)
-> +	sector_t nr_sects;
-> +
-> +	preempt_disable();
-> +	nr_sects = part->nr_sects;
-> +	preempt_enable();
-> +	return nr_sects;
-> +#else
-> +	return part->nr_sects;
-> +#endif
-> +}
-> +
-> +/*
-> + * Should be called with mutex lock held (typically bd_mutex) of partition
-> + * to provide mutual exlusion among writers otherwise seqcount might be
-> + * left in wrong state leaving the readers spinning infinitely.
-> + */
-> +static inline void part_nr_sects_write(struct hd_struct *part, sector_t size)
-> +{
-> +#if BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_SMP)
-> +	write_seqcount_begin(&part->nr_sects_seq);
-> +	part->nr_sects = size;
-> +	write_seqcount_end(&part->nr_sects_seq);
-> +#elif BITS_PER_LONG==32 && defined(CONFIG_LBDAF) && defined(CONFIG_PREEMPT)
-> +	preempt_disable();
-> +	part->nr_sects = size;
-> +	preempt_enable();
-> +#else
-> +	part->nr_sects = size;
-> +#endif
-> +}
-> +
->  #else /* CONFIG_BLOCK */
->  
->  static inline void printk_all_partitions(void) { }
-> -- 
-> 1.7.6.4
+
+ arch/arm/mach-at91/at91sam9260_devices.c |   13 ++++++++++---
+ arch/arm/mach-at91/at91sam9261_devices.c |   13 ++++++++++---
+ arch/arm/mach-at91/at91sam9263_devices.c |   22 ++++++++++++++++------
+ arch/arm/mach-at91/at91sam9g45_devices.c |   13 ++++++++++---
+ arch/arm/mach-at91/at91sam9rl_devices.c  |   13 ++++++++++---
+ 5 files changed, 56 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index f8a88fb..df487ce 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -727,7 +727,6 @@ static struct platform_device at91sam9260_rtt_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 0,
+ 	.resource	= rtt_resources,
+-	.num_resources	= 1,
+ };
+ 
+ 
+@@ -735,13 +734,21 @@ static struct platform_device at91sam9260_rtt_device = {
+ static void __init at91_add_device_rtt_rtc(void)
+ {
+ 	at91sam9260_rtt_device.name = "rtc-at91sam9";
+-	at91sam9260_rtt_device.num_resources++;
++	/*
++	 * The second resource is needed:
++	 * GPBR will serve as the storage for RTC time offset
++	 */
++	at91sam9260_rtt_device.num_resources = 2;
+ 	rtt_resources[1].start = AT91SAM9260_BASE_GPBR +
+ 				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+ 	rtt_resources[1].end = rtt_resources[1].start + 3;
+ }
+ #else
+-static void __init at91_add_device_rtt_rtc(void) {}
++static void __init at91_add_device_rtt_rtc(void)
++{
++	/* Only one resource is needed: RTT not used as RTC */
++	at91sam9260_rtt_device.num_resources = 1;
++}
+ #endif
+ 
+ static void __init at91_add_device_rtt(void)
+diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
+index 32a20ef..3bd10ce 100644
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -613,20 +613,27 @@ static struct platform_device at91sam9261_rtt_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 0,
+ 	.resource	= rtt_resources,
+-	.num_resources	= 1,
+ };
+ 
+ #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+ static void __init at91_add_device_rtt_rtc(void)
+ {
+ 	at91sam9261_rtt_device.name = "rtc-at91sam9";
+-	at91sam9261_rtt_device.num_resources++;
++	/*
++	 * The second resource is needed:
++	 * GPBR will serve as the storage for RTC time offset
++	 */
++	at91sam9261_rtt_device.num_resources = 2;
+ 	rtt_resources[1].start = AT91SAM9261_BASE_GPBR +
+ 				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+ 	rtt_resources[1].end = rtt_resources[1].start + 3;
+ }
+ #else
+-static void __init at91_add_device_rtt_rtc(void) {}
++static void __init at91_add_device_rtt_rtc(void)
++{
++	/* Only one resource is needed: RTT not used as RTC */
++	at91sam9261_rtt_device.num_resources = 1;
++}
+ #endif
+ 
+ static void __init at91_add_device_rtt(void)
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index 28cb074..7792de5 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -976,7 +976,6 @@ static struct platform_device at91sam9263_rtt0_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 0,
+ 	.resource	= rtt0_resources,
+-	.num_resources	= 1,
+ };
+ 
+ static struct resource rtt1_resources[] = {
+@@ -993,7 +992,6 @@ static struct platform_device at91sam9263_rtt1_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 1,
+ 	.resource	= rtt1_resources,
+-	.num_resources	= 1,
+ };
+ 
+ #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+@@ -1004,26 +1002,38 @@ static void __init at91_add_device_rtt_rtc(void)
+ 
+ 	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
+ 	case 0:
++		/*
++		 * The second resource is needed only for the chosen RTT:
++		 * GPBR will serve as the storage for RTC time offset
++		 */
++		at91sam9263_rtt0_device.num_resources = 2;
++		at91sam9263_rtt1_device.num_resources = 1;
+ 		pdev = &at91sam9263_rtt0_device;
+ 		r = rtt0_resources;
+ 		break;
+ 	case 1:
++		at91sam9263_rtt0_device.num_resources = 1;
++		at91sam9263_rtt1_device.num_resources = 2;
+ 		pdev = &at91sam9263_rtt1_device;
+ 		r = rtt1_resources;
+ 		break;
+ 	default:
+-		pr_err("at91sam9263: support only 2 RTT (%d)\n",
++		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
+ 		       CONFIG_RTC_DRV_AT91SAM9_RTT);
+ 		return;
+ 	}
+ 
++	pdev->name = "rtc-at91sam9";
+ 	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+ 	r[1].end = r[1].start + 3;
+-	pdev->name = "rtc-at91sam9";
+-	pdev->num_resources++;
+ }
+ #else
+-static void __init at91_add_device_rtt_rtc(void) {}
++static void __init at91_add_device_rtt_rtc(void)
++{
++	/* Only one resource is needed: RTT not used as RTC */
++	at91sam9263_rtt0_device.num_resources = 1;
++	at91sam9263_rtt1_device.num_resources = 1;
++}
+ #endif
+ 
+ static void __init at91_add_device_rtt(void)
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index bb7e2ce..4108295 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -1203,20 +1203,27 @@ static struct platform_device at91sam9g45_rtt_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 0,
+ 	.resource	= rtt_resources,
+-	.num_resources	= 1,
+ };
+ 
+ #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+ static void __init at91_add_device_rtt_rtc(void)
+ {
+ 	at91sam9g45_rtt_device.name = "rtc-at91sam9";
+-	at91sam9g45_rtt_device.num_resources++;
++	/*
++	 * The second resource is needed:
++	 * GPBR will serve as the storage for RTC time offset
++	 */
++	at91sam9g45_rtt_device.num_resources = 2;
+ 	rtt_resources[1].start = AT91SAM9G45_BASE_GPBR +
+ 				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+ 	rtt_resources[1].end = rtt_resources[1].start + 3;
+ }
+ #else
+-static void __init at91_add_device_rtt_rtc(void) {}
++static void __init at91_add_device_rtt_rtc(void)
++{
++	/* Only one resource is needed: RTT not used as RTC */
++	at91sam9g45_rtt_device.num_resources = 1;
++}
+ #endif
+ 
+ static void __init at91_add_device_rtt(void)
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index 16fd20b..eda72e8 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -692,20 +692,27 @@ static struct platform_device at91sam9rl_rtt_device = {
+ 	.name		= "at91_rtt",
+ 	.id		= 0,
+ 	.resource	= rtt_resources,
+-	.num_resources	= 1,
+ };
+ 
+ #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+ static void __init at91_add_device_rtt_rtc(void)
+ {
+ 	at91sam9rl_rtt_device.name = "rtc-at91sam9";
+-	at91sam9rl_rtt_device.num_resources++;
++	/*
++	 * The second resource is needed:
++	 * GPBR will serve as the storage for RTC time offset
++	 */
++	at91sam9rl_rtt_device.num_resources = 2;
+ 	rtt_resources[1].start = AT91SAM9RL_BASE_GPBR +
+ 				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+ 	rtt_resources[1].end = rtt_resources[1].start + 3;
+ }
+ #else
+-static void __init at91_add_device_rtt_rtc(void) {}
++static void __init at91_add_device_rtt_rtc(void)
++{
++	/* Only one resource is needed: RTT not used as RTC */
++	at91sam9rl_rtt_device.num_resources = 1;
++}
+ #endif
+ 
+ static void __init at91_add_device_rtt(void)
+-- 
+1.7.9
+
