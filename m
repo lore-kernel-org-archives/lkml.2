@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab2BTIUn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:20:43 -0500
-Received: from nctlincom01.orcon.net.nz ([60.234.4.74]:58368 "EHLO
-	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab2BTIUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:20:41 -0500
-Message-ID: <4F420256.2090600@orcon.net.nz>
-Date: Mon, 20 Feb 2012 21:20:38 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
+	id S1752151Ab2BTIVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:21:43 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:55241 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751368Ab2BTIVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:21:42 -0500
+X-WSS-ID: 0LZON81-0A-3G3-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Axel Lin" <axel.lin@gmail.com>
+cc: "Richard Purdie" <rpurdie@rpsys.net>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Feb 2012 00:21:30 -0800
+Subject: RE: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
+ initial value for max_brightness and brightness
+Thread-Topic: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
+ initial value for max_brightness and brightness
+Thread-Index: Aczu1UszludPwLRqTXa0ybEPaFJAAwA0hNxg
+Message-ID: <B567DBAB974C0544994013492B949F8E3813076468@EXMAIL03.scwf.nsc.com>
+References: <1329635302.4818.1.camel@phoenix>
+In-Reply-To: <1329635302.4818.1.camel@phoenix>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Turner <mattst88@gmail.com>
-Subject: alpha: futex regression bisected
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx4.orcon.net.nz on Mon, 20 Feb 2012 21:20:39 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Mon Feb 20 21:20:39 2012
-X-DSPAM-Confidence: 0.5675
-X-DSPAM-Probability: 0.0000
-X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
-X-Spam-Score: 0.00 () [Hold at 5.00] 
-X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
-X-CanItPRO-Stream: base:default
-X-Canit-Stats-ID: 06GA8kh9T - 5bd69d4b7d0d - 20120220
+X-WSS-ID: 635CDD041LS10489775-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1K8Ll75011640
 
-I have noticed some user space problems (pulseaudio crashes in pthread
-code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
-systems) that arise when using a 2.6.39 or later kernel on Alpha.
-Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
-criterion for good/bad kernel) eventually leads to:
+Thanks for this patch.
 
-8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
-commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
-Author: Michel Lespinasse <walken@google.com>
-Date:   Thu Mar 10 18:50:58 2011 -0800
+But it would be better if max_brightness of platform data is removed.
+Actually, there is no need to use max_brightness in the platform data.
+All LP855x devices have 8-bit brightness control register.
+Simply, value of max_brightness can be set to 255.
 
-    futex: Sanitize futex ops argument types
+I'll send the patch for this.
 
-    Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
-    prototypes to use u32 types for the futex as this is the data type the
-    futex core code uses all over the place.
+Thanks & BR
+Milo -
 
-Looking at the commit I see there is a change of the uaddr argument in
-the Alpha architecture specific code for futexes from int to u32, but I
-don't see why this should cause a problem.
+> -----Original Message-----
+> From: Axel Lin [mailto:axel.lin@gmail.com]
+> Sent: Sunday, February 19, 2012 4:08 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Richard Purdie; Kim, Milo; Andrew Morton
+> Subject: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
+> initial value for max_brightness and brightness
+> 
+> Current code does not always ensure
+> pdata->initial_brightness <= pdata->max_brightness <= MAX_BRIGHTNESS.
+> Fix it.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/video/backlight/lp855x_bl.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/lp855x_bl.c
+> b/drivers/video/backlight/lp855x_bl.c
+> index d32c097..29a3af2 100644
+> --- a/drivers/video/backlight/lp855x_bl.c
+> +++ b/drivers/video/backlight/lp855x_bl.c
+> @@ -24,6 +24,7 @@
+> 
+>  #define BUF_SIZE		(20)
+>  #define DEFAULT_BL_NAME		"lcd-backlight"
+> +#define MAX_BRIGHTNESS		255
+> 
+>  struct lp855x {
+>  	const char *chipid;
+> @@ -171,10 +172,14 @@ static int lp855x_backlight_register(struct
+> lp855x *lp)
+>  	char *name = pdata->name ? : DEFAULT_BL_NAME;
+> 
+>  	props.type = BACKLIGHT_PLATFORM;
+> +
+> +	if (pdata->max_brightness > MAX_BRIGHTNESS)
+> +		pdata->max_brightness = MAX_BRIGHTNESS;
+> +	props.max_brightness = pdata->max_brightness;
+> +
+> +	if (pdata->initial_brightness > pdata->max_brightness)
+> +		pdata->initial_brightness = pdata->max_brightness;
+>  	props.brightness = pdata->initial_brightness;
+> -	props.max_brightness =
+> -		(pdata->max_brightness < pdata->initial_brightness) ?
+> -		255 : pdata->max_brightness;
+> 
+>  	bl = backlight_device_register(name, lp->dev, lp,
+>  				       &lp855x_bl_ops, &props);
+> --
+> 1.7.5.4
+> 
+> 
 
-I am hoping someone better than I at Alpha assembly (Richard?, Ivan?)
-might be able to look at the commit and propose a fix!
-
-Cheers
-Michael.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
