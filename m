@@ -1,256 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab2BTGDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 01:03:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46093 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab2BTGDK (ORCPT
+	id S1752344Ab2BTGF2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 01:05:28 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:56036 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab2BTGF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 01:03:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dmitry.antipov@linaro.org designates 10.204.130.150 as permitted sender) smtp.mail=dmitry.antipov@linaro.org
-MIME-Version: 1.0
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Yong Zhang <yong.zhang0@gmail.com>, Venki Pallipadi <venki@google.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Dmitry Antipov <dmitry.antipov@linaro.org>
-Subject: [PATCH] sched: generalize CONFIG_IRQ_TIME_ACCOUNTING for X86 and ARM
-Date: Mon, 20 Feb 2012 10:04:19 +0400
-Message-Id: <1329717859-19378-1-git-send-email-dmitry.antipov@linaro.org>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 20 Feb 2012 01:05:27 -0500
+Message-ID: <1329717879.3448.30.camel@ThinkPad-T61>
+Subject: [PATCH 1/2 x86] fix page faults by nmi handler in nmi if kmemcheck
+ is enabled
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net
+Date: Mon, 20 Feb 2012 14:04:39 +0800
+In-Reply-To: <1329717665.3448.28.camel@ThinkPad-T61>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12022006-4790-0000-0000-00000166F26A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize CONFIG_IRQ_TIME_ACCOUNTING  between X86 and
-ARM, move "noirqtime=" option to common debugging code.
-For a bit of backward compatibility, X86-specific option
-"tsc=noirqtime" is preserved, but issues a warning.
+This patch tries to
+  change the nmi handler name from a pointer to an array. 
+  use __get_free_pages instead of kzalloc if CONFIG_KMEMCHECK is
+enabled.
 
-Suggested-by: Yong Zhang <yong.zhang0@gmail.com>
-Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Suggested-by: Ingo Molnar <mingo@elte.hu>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 ---
- Documentation/kernel-parameters.txt |    9 +++++----
- arch/arm/kernel/sched_clock.c       |    2 ++
- arch/x86/Kconfig                    |   11 -----------
- arch/x86/kernel/tsc.c               |   12 ++++++------
- include/linux/sched.h               |   17 ++++++++++-------
- kernel/sched/core.c                 |   21 ++++++++++++---------
- lib/Kconfig.debug                   |   12 ++++++++++++
- 7 files changed, 47 insertions(+), 37 deletions(-)
+ arch/x86/kernel/nmi.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 033d4e6..a5da255 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1790,6 +1790,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	noirqdebug	[X86-32] Disables the code which attempts to detect and
- 			disable unhandled interrupt sources.
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 47acaf3..84aa03a 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -36,7 +36,7 @@ struct nmiaction {
+ 	struct list_head list;
+ 	nmi_handler_t handler;
+ 	unsigned int flags;
+-	char *name;
++	char name[NMI_MAX_NAMELEN];
+ };
  
-+	noirqtime	[X86,ARM] Run time disables IRQ_TIME_ACCOUNTING and
-+			eliminates the timestamping on irq/softirq entry/exit.
-+
- 	no_timer_check	[X86,APIC] Disables the code which tests for
- 			broken timer IRQ sources.
+ struct nmi_desc {
+@@ -169,16 +169,18 @@ int register_nmi_handler(unsigned int type,
+nmi_handler_t handler,
+ 	if (!handler)
+ 		return -EINVAL;
  
-@@ -2636,10 +2639,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			as the stability checks done at bootup.	Used to enable
- 			high-resolution timer mode on older hardware, and in
- 			virtualized environment.
--			[x86] noirqtime: Do not use TSC to do irq accounting.
--			Used to run time disable IRQ_TIME_ACCOUNTING on any
--			platforms where RDTSC is slow and this accounting
--			can add overhead.
-+			[x86] noirqtime: obsoleted by "noirqtime" generic option,
-+			see it's documentation for details.
++#ifdef CONFIG_KMEMCHECK
++	action = (void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO,
++				get_order(sizeof(*action)));
++#else
+ 	action = kzalloc(sizeof(struct nmiaction), GFP_KERNEL);
++#endif
+ 	if (!action)
+ 		goto fail_action;
  
- 	turbografx.map[2|3]=	[HW,JOY]
- 			TurboGraFX parallel port interface
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 5416c7c..30b5f89 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -144,6 +144,8 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- 	 */
- 	cd.epoch_ns = 0;
- 
-+	enable_sched_clock_irqtime();
-+
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5bed94e..4759676 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -805,17 +805,6 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
--config IRQ_TIME_ACCOUNTING
--	bool "Fine granularity task level IRQ time accounting"
--	default n
--	---help---
--	  Select this option to enable fine granularity task irq time
--	  accounting. This is done by reading a timestamp on each
--	  transitions between softirq and hardirq state, so there can be a
--	  small performance impact.
+ 	action->handler = handler;
+ 	action->flags = nmiflags;
+-	action->name = kstrndup(devname, NMI_MAX_NAMELEN, GFP_KERNEL);
+-	if (!action->name)
+-		goto fail_action_name;
 -
--	  If in doubt, say N here.
--
- source "kernel/Kconfig.preempt"
++	strncpy(action->name, devname, sizeof(action->name));
+ 	retval = __setup_nmi(type, action);
  
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index a62c201..f1b2b63 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -103,14 +103,15 @@ int __init notsc_setup(char *str)
+ 	if (retval)
+@@ -187,9 +189,11 @@ int register_nmi_handler(unsigned int type,
+nmi_handler_t handler,
+ 	return retval;
  
- __setup("notsc", notsc_setup);
+ fail_setup_nmi:
+-	kfree(action->name);
+-fail_action_name:
++#ifdef CONFIG_KMEMCHECK
++	free_pages((unsigned long)action, get_order(sizeof(*action)));
++#else
+ 	kfree(action);
++#endif
+ fail_action:	
  
--static int no_sched_irq_time;
--
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
--	if (!strncmp(str, "noirqtime", 9))
--		no_sched_irq_time = 1;
-+	if (!strncmp(str, "noirqtime", 9)) {
-+		printk(KERN_WARNING "tsc: tsc=noirqtime is "
-+		       "obsolete, use noirqtime instead\n");
-+		disable_sched_clock_irqtime();
-+	}
- 	return 1;
- }
+ 	return retval;
+@@ -202,8 +206,11 @@ void unregister_nmi_handler(unsigned int type,
+const char *name)
  
-@@ -978,8 +979,7 @@ void __init tsc_init(void)
- 	/* now allow native_sched_clock() to use rdtsc */
- 	tsc_disabled = 0;
- 
--	if (!no_sched_irq_time)
--		enable_sched_clock_irqtime();
-+	enable_sched_clock_irqtime();
- 
- 	lpj = ((u64)tsc_khz * 1000);
- 	do_div(lpj, HZ);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..9b13f79 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1961,13 +1961,16 @@ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
- #endif
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
--/*
-- * An i/f to runtime opt-in for irq time accounting based off of sched_clock.
-- * The reason for this explicit opt-in is not to have perf penalty with
-- * slow sched_clocks.
-- */
--extern void enable_sched_clock_irqtime(void);
--extern void disable_sched_clock_irqtime(void);
-+extern int sched_clock_irqtime;
-+static inline void enable_sched_clock_irqtime(void)
-+{
-+	if (sched_clock_irqtime == -1)
-+		sched_clock_irqtime = 1;
-+}
-+static inline void disable_sched_clock_irqtime(void)
-+{
-+	sched_clock_irqtime = 0;
-+}
- #else
- static inline void enable_sched_clock_irqtime(void) {}
- static inline void disable_sched_clock_irqtime(void) {}
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..4e7a197 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -757,18 +757,21 @@ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
- 
- static DEFINE_PER_CPU(u64, irq_start_time);
--static int sched_clock_irqtime;
- 
--void enable_sched_clock_irqtime(void)
--{
--	sched_clock_irqtime = 1;
--}
-+/*
-+ * -1 if not initialized, 0 if disabled with "noirqtime" kernel option
-+ * or after unstable clock was detected, 1 if enabled and active.
-+ */
-+__read_mostly int sched_clock_irqtime = -1;
- 
--void disable_sched_clock_irqtime(void)
-+static int __init irqtime_setup(char *str)
- {
- 	sched_clock_irqtime = 0;
-+	return 1;
- }
- 
-+__setup("noirqtime", irqtime_setup);
-+
- #ifndef CONFIG_64BIT
- static DEFINE_PER_CPU(seqcount_t, irq_time_seq);
- 
-@@ -822,7 +825,7 @@ void account_system_vtime(struct task_struct *curr)
- 	s64 delta;
- 	int cpu;
- 
--	if (!sched_clock_irqtime)
-+	if (sched_clock_irqtime < 1)
- 		return;
- 
- 	local_irq_save(flags);
-@@ -2853,7 +2856,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
- 	struct rq *rq = this_rq();
- 
--	if (sched_clock_irqtime) {
-+	if (sched_clock_irqtime > 0) {
- 		irqtime_account_process_tick(p, user_tick, rq);
- 		return;
+ 	a = __free_nmi(type, name);
+ 	if (a) {
+-		kfree(a->name);
++#ifdef CONFIG_KMEMCHECK
++		free_pages((unsigned long)a, get_order(sizeof(*a)));
++#else
+ 		kfree(a);
++#endif
  	}
-@@ -2887,7 +2890,7 @@ void account_steal_ticks(unsigned long ticks)
- void account_idle_ticks(unsigned long ticks)
- {
+ }
  
--	if (sched_clock_irqtime) {
-+	if (sched_clock_irqtime > 0) {
- 		irqtime_account_idle_ticks(ticks);
- 		return;
- 	}
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 8745ac7..236e814 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -299,6 +299,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	depends on X86 || ARM
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
 -- 
-1.7.7.6
+1.7.5.4
 
