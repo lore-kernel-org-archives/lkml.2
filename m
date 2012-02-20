@@ -1,122 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab2BTIIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:08:34 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48010 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2BTIId (ORCPT
+	id S1752620Ab2BTIIy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:08:54 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57493 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab2BTIIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:08:33 -0500
-Message-ID: <4F41FF4E.7040000@gmail.com>
-Date: Mon, 20 Feb 2012 09:07:42 +0100
-From: Thomas Weber <thomas.weber.linux@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120213 Thunderbird/10.0.1
+	Mon, 20 Feb 2012 03:08:52 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <20120105091059.GA3249@elte.hu>
+References: <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com> <4F04898B.1080600@redhat.com> <1325712710.3084.10.camel@laptop> <4F04C789.40209@redhat.com> <20120105091059.GA3249@elte.hu>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 20 Feb 2012 13:38:28 +0530
+Message-ID: <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Ming Lei <tom.leiming@gmail.com>, balbi@ti.com,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        NeilBrown <neilb@suse.de>
-Subject: Re: Possible circular locking dependency (3.3-rc2)
-References: <20120208124147.GF16334@legolas.emea.dhcp.ti.com> <CACVXFVMfmabcH57da-prx=J950KEoFtfb-zsuBWn7VY3NaMUUQ@mail.gmail.com> <20120215200910.GE25779@ponder.secretlab.ca>
-In-Reply-To: <20120215200910.GE25779@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12021922-3568-0000-0000-0000013CA0F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 5 Jan 2012 10:10:59 +0100, Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> * Avi Kivity <avi@redhat.com> wrote:
+> 
+> > > So why wait for non-running vcpus at all? That is, why not 
+> > > paravirt the TLB flush such that the invalidate marks the 
+> > > non-running VCPU's state so that on resume it will first 
+> > > flush its TLBs. That way you don't have to wake it up and 
+> > > wait for it to invalidate its TLBs.
+> > 
+> > That's what Xen does, but it's tricky.  For example 
+> > get_user_pages_fast() depends on the IPI to hold off page 
+> > freeing, if we paravirt it we have to take that into 
+> > consideration.
+> > 
+> > > Or am I like totally missing the point (I am after all 
+> > > reading the thread backwards and I haven't yet fully paged 
+> > > the kernel stuff back into my brain).
+> > 
+> > You aren't, and I bet those kernel pages are unswappable 
+> > anyway.
+> > 
+> > > I guess tagging remote VCPU state like that might be 
+> > > somewhat tricky.. but it seems worth considering, the whole 
+> > > wake and wait for flush thing seems daft.
+> > 
+> > It's nasty, but then so is paravirt.  It's hard to get right, 
+> > and it has a tendency to cause performance regressions as 
+> > hardware improves.
+> 
+> Here it would massively improve performance - without regressing 
+> the scheduler code massively.
+> 
+I tried doing an experiment with the flush_tlb_others_ipi. This depends
+on Raghu's "kvm : Paravirt-spinlock support for KVM guests"
+(https://lkml.org/lkml/2012/1/14/66), which has new hypercall for
+kicking another vcpu out of halt.
 
-I applied the patch from Ming, but got also an error.
-I am ccing Neil, because I also applied some patches from him.
+  Here are the results from non-PLE hardware. Running ebizzy
+  workload inside the VMs. The table shows the ebizzy score -
+  Records/sec.
 
-Regards,
-Thomas
+  8CPU Intel Xeon, HT disabled, 64 bit VM(8vcpu, 1G RAM)
 
-> [    6.229370] ======================================================
-> [    6.235870] [ INFO: possible circular locking dependency detected ]
-> [    6.242431] 3.3.0-rc4-00020-ga02b31a #10 Not tainted
-> [    6.247650] -------------------------------------------------------
-> [    6.254241] udevadm/596 is trying to acquire lock:
-> [    6.259277]  (&dev->mutex#2){+.+.+.}, at: [<c0308af0>] w1_bq27000_read+0x1c/0x48
-> [    6.267120] 
-> [    6.267120] but task is already holding lock:
-> [    6.273254]  (s_active#11){++++.+}, at: [<c01463d4>] sysfs_write_file+0xdc/0x180
-> [    6.281097] 
-> [    6.281127] which lock already depends on the new lock.
-> [    6.281127] 
-> [    6.289703] 
-> [    6.289703] the existing dependency chain (in reverse order) is:
-> [    6.297576] 
-> [    6.297576] -> #1 (s_active#11){++++.+}:
-> [    6.303283]        [<c007b3c8>] lock_acquire+0xa0/0x128
-> [    6.308807]        [<c0147b50>] sysfs_addrm_finish+0xf4/0x148
-> [    6.314880]        [<c0146184>] sysfs_hash_and_remove+0x4c/0x88
-> [    6.321136]        [<c0146cec>] sysfs_remove_file+0x30/0x38
-> [    6.326995]        [<c0275bec>] device_del+0xf0/0x17c
-> [    6.332336]        [<c0275c84>] device_unregister+0xc/0x18
-> [    6.338104]        [<c0306b28>] w1_slave_detach+0xac/0xcc
-> [    6.343811]        [<c0306e5c>] w1_reconnect_slaves+0xc0/0x10c
-> [    6.349945]        [<c0307924>] w1_register_family+0x90/0xa0
-> [    6.355926]        [<c0008760>] do_one_initcall+0x34/0x174
-> [    6.361694]        [<c054980c>] kernel_init+0x94/0x11c
-> [    6.367126]        [<c00148b0>] kernel_thread_exit+0x0/0x8
-> [    6.372924] 
-> [    6.372924] -> #0 (&dev->mutex#2){+.+.+.}:
-> [    6.378845]        [<c007a980>] __lock_acquire+0x1678/0x1ad4
-> [    6.384826]        [<c007b3c8>] lock_acquire+0xa0/0x128
-> [    6.390319]        [<c03c7b24>] mutex_lock_nested+0x48/0x2bc
-> [    6.396301]        [<c0308af0>] w1_bq27000_read+0x1c/0x48
-> [    6.401977]        [<c03098d4>] bq27000_read_platform+0x2c/0x124
-> [    6.408325]        [<c030a004>] bq27x00_battery_get_property+0x1cc/0x3cc
-> [    6.415374]        [<c0309154>] power_supply_show_property+0x4c/0x224
-> [    6.422180]        [<c0309468>] power_supply_uevent+0xe4/0x224
-> [    6.428314]        [<c0276b60>] dev_uevent+0xb4/0x170
-> [    6.433654]        [<c01f4b84>] kobject_uevent_env+0x1d8/0x478
-> [    6.439819]        [<c027603c>] store_uevent+0x50/0x54
-> [    6.445220]        [<c0274f58>] dev_attr_store+0x18/0x24
-> [    6.450805]        [<c01463f8>] sysfs_write_file+0x100/0x180
-> [    6.456787]        [<c00e96a0>] vfs_write+0xa8/0x138
-> [    6.462036]        [<c00e9910>] sys_write+0x40/0x6c
-> [    6.467163]        [<c00138e0>] ret_fast_syscall+0x0/0x3c
-> [    6.472869] 
-> [    6.472869] other info that might help us debug this:
-> [    6.472900] 
-> [    6.481292]  Possible unsafe locking scenario:
-> [    6.481292] 
-> [    6.487518]        CPU0                    CPU1
-> [    6.492248]        ----                    ----
-> [    6.497009]   lock(s_active#11);
-> [    6.500427]                                lock(&dev->mutex#2);
-> [    6.506683]                                lock(s_active#11);
-> [    6.512756]   lock(&dev->mutex#2);
-> [    6.516357] 
-> [    6.516357]  *** DEADLOCK ***
-> [    6.516357] 
-> [    6.522583] 2 locks held by udevadm/596:
-> [    6.526702]  #0:  (&buffer->mutex){+.+.+.}, at: [<c0146320>] sysfs_write_file+0x28/0x180
-> [    6.535278]  #1:  (s_active#11){++++.+}, at: [<c01463d4>] sysfs_write_file+0xdc/0x180
-> [    6.543579] 
-> [    6.543579] 
-> [    6.543579] stack backtrace:
-> [    6.548217] [<c0019e9c>] (unwind_backtrace+0x0/0xf8) from [<c03c3544>] (print_circular_bug+0x2c8/0x2d4)
-> [    6.558105] [<c03c3544>] (print_circular_bug+0x2c8/0x2d4) from [<c007a980>] (__lock_acquire+0x1678/0x1ad4)
-> [    6.568267] [<c007a980>] (__lock_acquire+0x1678/0x1ad4) from [<c007b3c8>] (lock_acquire+0xa0/0x128)
-> [    6.577789] [<c007b3c8>] (lock_acquire+0xa0/0x128) from [<c03c7b24>] (mutex_lock_nested+0x48/0x2bc)
-> [    6.587310] [<c03c7b24>] (mutex_lock_nested+0x48/0x2bc) from [<c0308af0>] (w1_bq27000_read+0x1c/0x48)
-> [    6.597015] [<c0308af0>] (w1_bq27000_read+0x1c/0x48) from [<c03098d4>] (bq27000_read_platform+0x2c/0x124)
-> [    6.607086] [<c03098d4>] (bq27000_read_platform+0x2c/0x124) from [<c030a004>] (bq27x00_battery_get_property+0x1cc/0x3cc)
-> [    6.618499] [<c030a004>] (bq27x00_battery_get_property+0x1cc/0x3cc) from [<c0309154>] (power_supply_show_property+0x4c/0x224)
-> [    6.630401] [<c0309154>] (power_supply_show_property+0x4c/0x224) from [<c0309468>] (power_supply_uevent+0xe4/0x224)
-> [    6.641357] [<c0309468>] (power_supply_uevent+0xe4/0x224) from [<c0276b60>] (dev_uevent+0xb4/0x170)
-> [    6.650909] [<c0276b60>] (dev_uevent+0xb4/0x170) from [<c01f4b84>] (kobject_uevent_env+0x1d8/0x478)
-> [    6.660430] [<c01f4b84>] (kobject_uevent_env+0x1d8/0x478) from [<c027603c>] (store_uevent+0x50/0x54)
-> [    6.670013] [<c027603c>] (store_uevent+0x50/0x54) from [<c0274f58>] (dev_attr_store+0x18/0x24)
-> [    6.679107] [<c0274f58>] (dev_attr_store+0x18/0x24) from [<c01463f8>] (sysfs_write_file+0x100/0x180)
-> [    6.688720] [<c01463f8>] (sysfs_write_file+0x100/0x180) from [<c00e96a0>] (vfs_write+0xa8/0x138)
-> [    6.697967] [<c00e96a0>] (vfs_write+0xa8/0x138) from [<c00e9910>] (sys_write+0x40/0x6c)
-> [    6.706390] [<c00e9910>] (sys_write+0x40/0x6c) from [<c00138e0>] (ret_fast_syscall+0x0/0x3c)
+  +--------+------------+------------+-------------+
+  |        |  baseline  |   gang     |   pv_flush  |
+  +--------+------------+------------+-------------+
+  |   2VM  |   3979.50  |   8818.00  |   11002.50  |
+  |   4VM  |   1817.50  |   6236.50  |    6196.75  |
+  |   8VM  |    922.12  |   4043.00  |    4001.38  |
+  +--------+------------+------------+-------------+
+
+I will be posting the results for PLE hardware as well.
+
+Here is the patch, this still needs to be hooked with the pv_mmu_ops. So,
+
+Not-yet-Signed-off-by: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+
+Index: linux-tip-f4ab688-pv/arch/x86/mm/tlb.c
+===================================================================
+--- linux-tip-f4ab688-pv.orig/arch/x86/mm/tlb.c	2012-02-14 18:26:21.000000000 +0800
++++ linux-tip-f4ab688-pv/arch/x86/mm/tlb.c	2012-02-20 15:23:10.242576314 +0800
+@@ -43,6 +43,7 @@ union smp_flush_state {
+ 		struct mm_struct *flush_mm;
+ 		unsigned long flush_va;
+ 		raw_spinlock_t tlbstate_lock;
++		int sender_cpu;
+ 		DECLARE_BITMAP(flush_cpumask, NR_CPUS);
+ 	};
+ 	char pad[INTERNODE_CACHE_BYTES];
+@@ -116,6 +117,9 @@ EXPORT_SYMBOL_GPL(leave_mm);
+  *
+  * Interrupts are disabled.
+  */
++#ifdef CONFIG_PARAVIRT_FLUSH_TLB
++extern void kvm_kick_cpu(int cpu);
++#endif
+ 
+ /*
+  * FIXME: use of asmlinkage is not consistent.  On x86_64 it's noop
+@@ -166,6 +170,10 @@ out:
+ 	smp_mb__before_clear_bit();
+ 	cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+ 	smp_mb__after_clear_bit();
++#ifdef CONFIG_PARAVIRT_FLUSH_TLB
++	if (cpumask_empty(to_cpumask(f->flush_cpumask)))
++		kvm_kick_cpu(f->sender_cpu);
++#endif
+ 	inc_irq_stat(irq_tlb_count);
+ }
+ 
+@@ -184,7 +192,10 @@ static void flush_tlb_others_ipi(const s
+ 
+ 	f->flush_mm = mm;
+ 	f->flush_va = va;
++	f->sender_cpu = smp_processor_id();
+ 	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
++		int loop = 1024;
++
+ 		/*
+ 		 * We have to send the IPI only to
+ 		 * CPUs affected.
+@@ -192,8 +203,15 @@ static void flush_tlb_others_ipi(const s
+ 		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+ 			      INVALIDATE_TLB_VECTOR_START + sender);
+ 
++#ifdef CONFIG_PARAVIRT_FLUSH_TLB
++		while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
++			cpu_relax();
++		if (!loop && !cpumask_empty(to_cpumask(f->flush_cpumask)))
++			halt();
++#else
+ 		while (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+ 			cpu_relax();
++#endif
+ 	}
+ 
+ 	f->flush_mm = NULL;
+Index: linux-tip-f4ab688-pv/arch/x86/kernel/kvm.c
+===================================================================
+--- linux-tip-f4ab688-pv.orig/arch/x86/kernel/kvm.c	2012-02-14 18:26:55.000000000 +0800
++++ linux-tip-f4ab688-pv/arch/x86/kernel/kvm.c	2012-02-14 18:26:55.178450933 +0800
+@@ -653,16 +653,17 @@ out:
+ PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+ 
+ /* Kick a cpu by its apicid*/
+-static inline void kvm_kick_cpu(int apicid)
++void kvm_kick_cpu(int cpu)
+ {
++	int apicid = per_cpu(x86_cpu_to_apicid, cpu);
+ 	kvm_hypercall1(KVM_HC_KICK_CPU, apicid);
+ }
++EXPORT_SYMBOL_GPL(kvm_kick_cpu);
+ 
+ /* Kick vcpu waiting on @lock->head to reach value @ticket */
+ static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+ {
+ 	int cpu;
+-	int apicid;
+ 
+ 	add_stats(RELEASED_SLOW, 1);
+ 
+@@ -671,8 +672,7 @@ static void kvm_unlock_kick(struct arch_
+ 		if (ACCESS_ONCE(w->lock) == lock &&
+ 		    ACCESS_ONCE(w->want) == ticket) {
+ 			add_stats(RELEASED_SLOW_KICKED, 1);
+-			apicid = per_cpu(x86_cpu_to_apicid, cpu);
+-			kvm_kick_cpu(apicid);
++			kvm_kick_cpu(cpu);
+ 			break;
+ 		}
+ 	}
+
