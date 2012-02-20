@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2BTLGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:06:30 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51963 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2BTLGR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:06:17 -0500
+	id S1753050Ab2BTLH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:07:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23907 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab2BTLHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 06:07:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127360767"
+Date: Mon, 20 Feb 2012 12:15:05 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] mfd: Fix section mismatch warning for da9052-spi
+Message-ID: <20120220111505.GS5387@sortiz-mobl>
+References: <1326274036.8938.3.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <CAHR064iXr5Z1WNdD=rjn_ACDEX8EaRgrCg0hj1U=c=Lz9rN__A@mail.gmail.com>
-References: <1326784098-3244-1-git-send-email-corentincj@iksaif.net>
-	<CAHR064jyOYaRUjZp370ewLGQSKAhhB7gZ4PS7Feb_AzBLGi1tA@mail.gmail.com>
-	<CAHR064iXr5Z1WNdD=rjn_ACDEX8EaRgrCg0hj1U=c=Lz9rN__A@mail.gmail.com>
-Date: Mon, 20 Feb 2012 12:06:15 +0100
-Message-ID: <CANq1E4TQ0qUrOTNQOmC2K+3zC2_7Om3TcRH=w78VReHat=36+w@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
-        Seth Forshee <seth.forshee@canonical.com>, linux-acpi@vger.kernel.org,
-        Corentin Chary <corentincj@iksaif.net>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326274036.8938.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len
+Hi Axel,
 
-On Sun, Feb 19, 2012 at 8:56 PM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
-> On Mon, Jan 30, 2012 at 9:26 AM, Corentin Chary
-> <corentin.chary@gmail.com> wrote:
->> On Tue, Jan 17, 2012 at 8:08 AM, Corentin Chary <corentincj@iksaif.net> wrote:
->>> On these laptops, the ACPI video is not functional, and very unlikely
->>> to be fixed by the vendor. Note that intel_backlight works for some
->>> of these laptops, and the backlight from samsung-laptop always work.
->>>
->>> The good news is that newer laptops have functional ACPI video device
->>> and won't end up growing this list.
->>>
->>> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
->>> ---
->>>  drivers/acpi/video_detect.c |   49 +++++++++++++++++++++++++++++++++++++++++++
->>>  1 files changed, 49 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
->>> index 45d8097..66be45e 100644
->>> --- a/drivers/acpi/video_detect.c
->>> +++ b/drivers/acpi/video_detect.c
->>> @@ -132,6 +132,53 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
->>>        return AE_OK;
->>>  }
->>>
->>> +/* Force to use vendor driver when the ACPI device is known to be
->>> + * buggy */
->>> +static int video_detect_force_vendor(const struct dmi_system_id *d)
->>> +{
->>> +       acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
->>> +       return 0;
->>> +}
->>> +
->>> +static struct dmi_system_id video_detect_dmi_table[] = {
->>> +       {
->>> +        .callback = video_detect_force_vendor,
->>> +        .ident = "N150P",
->>> +        .matches = {
->>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
->>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
->>> +               DMI_MATCH(DMI_BOARD_NAME, "N150P"),
->>> +               },
->>> +       },
->>> +       {
->>> +        .callback = video_detect_force_vendor,
->>> +        .ident = "N145P/N250P/N260P",
->>> +        .matches = {
->>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
->>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
->>> +               DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
->>> +               },
->>> +       },
->>> +       {
->>> +        .callback = video_detect_force_vendor,
->>> +        .ident = "N150/N210/N220",
->>> +        .matches = {
->>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
->>> +               DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
->>> +               DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
->>> +               },
->>> +       },
->>> +       {
->>> +        .callback = video_detect_force_vendor,
->>> +        .ident = "NF110/NF210/NF310",
->>> +        .matches = {
->>> +               DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
->>> +               DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
->>> +               DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
->>> +               },
->>> +       },
->>> +};
->>> +
->>>  /*
->>>  * Returns the video capabilities of a specific ACPI graphics device
->>>  *
->>> @@ -164,6 +211,8 @@ long acpi_video_get_capabilities(acpi_handle graphics_handle)
->>>                 *              ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
->>>                 *}
->>>                 */
->>> +
->>> +               dmi_check_system(video_detect_dmi_table);
->>>        } else {
->>>                status = acpi_bus_get_device(graphics_handle, &tmp_dev);
->>>                if (ACPI_FAILURE(status)) {
->>> --
->>> 1.7.5.4
->>>
->>
->> Hi Len,
->>
->> Maybe this patch should go through your tree and not platform-drivers-x86 ?
->
-> Ping ?
+On Wed, Jan 11, 2012 at 05:27:16PM +0800, Axel Lin wrote:
+> Add __devinit annotation for da9052_spi_probe to fix below build warning:
+> 
+> WARNING: drivers/built-in.o(.text+0x349b4): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init()
+> The function da9052_spi_probe() references
+> the function __devinit da9052_device_init().
+> This is often because da9052_spi_probe lacks a __devinit
+> annotation or the annotation of da9052_device_init is wrong.
+> 
+> Also add __devexit annotation for da9052_spi_remove because we have
+> __devexit_p around it in the remove callback.
+Applied, thanks.
 
-This is actually a regression on Samsung notebooks as the backlight is
-no longer working with linux-3.2. It would be really nice to see this
-in the stable branch or at least in linux-3.3.
+Cheers,
+Samuel.
 
-The samsung driver disables its own backlight driver if ACPI core
-handles the backlight since linux-3.2. If you don't want to pickup
-this patch it would be nice to see the samsung driver fixing this
-issue.
-
-Regards
-David
-
-> --
-> Corentin Chary
-> http://xf.iksaif.net
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
