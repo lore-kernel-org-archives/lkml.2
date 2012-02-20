@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab2BTRI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:08:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35229 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2BTRIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:08:25 -0500
-References: <1329617173.1561.5.camel@acer.local.home> <20120219125601.GD25900@elte.hu> <1329663451.25686.21.camel@gandalf.stny.rr.com> <20120220081045.GD30810@elte.hu> <1329748907.25686.29.camel@gandalf.stny.rr.com> <20120220153452.GA4962@elte.hu>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120220153452.GA4962@elte.hu>
+	id S1751514Ab2BTRM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:12:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64675 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2BTRM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 12:12:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of abdul.karim42@supostz.net designates 10.180.86.105 as permitted sender) smtp.mail=abdul.karim42@supostz.net
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH][GIT PULL][v3.3] x86: Test saved %rip in NMI to determine nested NMI
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 20 Feb 2012 09:07:47 -0800
-To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <035b3b78-4af7-42e8-9694-d7f6c9f2e59e@email.android.com>
+X-Originating-IP: [41.203.230.33]
+Reply-To: abdul_karim700@voila.fr
+Date: Mon, 20 Feb 2012 17:12:47 +0000
+Message-ID: <CANr-KehSboXE-i22+Lp9YwZj2+GNV51WdNpZf=QYkGKpFGCNjA@mail.gmail.com>
+Subject: URGENT REPLY NEEDED
+From: Abdul Karim <abdul.karim42@supostz.net>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not even all that legacy.
+Dear Partner,
 
-Ingo Molnar <mingo@elte.hu> wrote:
+Please consider this mail serious despite the fact that you did not
+expect it. Hope you are doing well. I am Mr. Abdul Karim, the Manager
+of head operations department of our bank in Burkina Faso.
 
->
->* Steven Rostedt <rostedt@goodmis.org> wrote:
->
->> On Mon, 2012-02-20 at 09:10 +0100, Ingo Molnar wrote:
->> > > 
->> > > Note, it does not seem to cause any destruction, but screw up 
->> > > profiling.
->> > 
->> > Except if the source of the NMI was not profiling, right?
->> 
->> Well, what else are NMIs used for? [...]
->
->There's various (legacy) diagnostics NMIs on various x86 
->platforms, mostly signalling some sort of deep trouble
->with the hw.
->
->Thanks,
->
->	Ingo
+I discovered a risk-free deal of US$20.5 million from my department
+which was left unclaimed as a result of non existing body.Provided you
+will put trust forward, let us share the deal if you are interested.
 
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+Please send your full name and address your private Email Address and
+phone number for more details and follow-up documentation to start off
+the claim.
+
+I am seriously waiting for your urgent reply.
+
+Thanks,
+Mr. Abdul Karim.
