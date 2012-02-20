@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2BTIbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:31:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43667 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab2BTIbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:31:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOAMb1BoEJWjU9he=xr2irCyDVwDUPmhihQyPc_n3t8HbegLDw@mail.gmail.com>
-References: <CAOAMb1BoEJWjU9he=xr2irCyDVwDUPmhihQyPc_n3t8HbegLDw@mail.gmail.com>
-Date: Mon, 20 Feb 2012 09:31:21 +0100
-Message-ID: <CACRpkdZ4fJEBa4uDQ6P3UC50wyWarD-owC3tjC=FRMno-UOk5Q@mail.gmail.com>
-Subject: =?UTF-8?Q?Re=3A_=5BPATCH=5D_amba=2Dpl011=E2=80=8B=2Fdma=3A_Add_check_for_the_res?=
-	=?UTF-8?Q?idue_in_DMA_callback?=
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Per Forlin <per.friden@stericsson.com>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752362Ab2BTIcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:32:32 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:57236 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab2BTIc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:32:29 -0500
+From: Andrew Lunn <andrew@lunn.ch>
+To: gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH] USB-Serial: Add Abbot Diabetes Care cable
+Date: Mon, 20 Feb 2012 09:31:57 +0100
+Message-Id: <1329726717-15123-1-git-send-email-andrew@lunn.ch>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 2:24 AM, Chanho Min <chanho0207@gmail.com> wrote:
+This USB-serial cable with mini stereo jack enumerates as:
+Bus 001 Device 004: ID 1a61:3410 Abbott Diabetes Care
 
-> In DMA-operated uart, I found that rx data can be taken by the UART
-> interrupts during the DMA irq handler. pl011_int is occurred just
-> before it goes inside spin_lock_irq. When it returns to the callback,
-> DMA buffer already has been flushed. Then, pl011_dma_rx_chars gets
-> invalid data. So I add check for the residue as the patch bellow.
->
-> Signed-off-by: Chanho Min <chanho.min@lge.com>
+It is a TI3410 inside.
 
-Looks correct!
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+---
+ drivers/usb/serial/ti_usb_3410_5052.c |    6 ++++--
+ drivers/usb/serial/ti_usb_3410_5052.h |    4 ++++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-Thanks,
-Linus Walleij
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+index 8468eb7..75b838e 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -165,7 +165,7 @@ static unsigned int product_5052_count;
+ /* the array dimension is the number of default entries plus */
+ /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
+ /* null entry */
+-static struct usb_device_id ti_id_table_3410[13+TI_EXTRA_VID_PID_COUNT+1] = {
++static struct usb_device_id ti_id_table_3410[14+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
+ 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
+@@ -179,6 +179,7 @@ static struct usb_device_id ti_id_table_3410[13+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
+ };
+ 
+ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
+@@ -188,7 +189,7 @@ static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
+ };
+ 
+-static struct usb_device_id ti_id_table_combined[17+2*TI_EXTRA_VID_PID_COUNT+1] = {
++static struct usb_device_id ti_id_table_combined[18+2*TI_EXTRA_VID_PID_COUNT+1] = {
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
+ 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
+ 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
+@@ -206,6 +207,7 @@ static struct usb_device_id ti_id_table_combined[17+2*TI_EXTRA_VID_PID_COUNT+1]
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_4543_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
+ 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
++	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
+ 	{ }
+ };
+ 
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.h b/drivers/usb/serial/ti_usb_3410_5052.h
+index 2aac195..f140f1b 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.h
++++ b/drivers/usb/serial/ti_usb_3410_5052.h
+@@ -49,6 +49,10 @@
+ #define MTS_MT9234ZBA_PRODUCT_ID	0xF115
+ #define MTS_MT9234ZBAOLD_PRODUCT_ID	0x0319
+ 
++/* Abbott Diabetics vendor and product ids */
++#define ABBOTT_VENDOR_ID		0x1a61
++#define ABBOTT_PRODUCT_ID		0x3410
++
+ /* Commands */
+ #define TI_GET_VERSION			0x01
+ #define TI_GET_PORT_STATUS		0x02
+-- 
+1.7.2.5
+
