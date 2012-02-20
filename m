@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2BTKN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 05:13:59 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:42975 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab2BTKN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 05:13:57 -0500
-Message-ID: <4F421CE2.4010004@imgtec.com>
-Date: Mon, 20 Feb 2012 10:13:54 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] media: ir-sony-decoder: 15bit function decode fix
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Feb 2012 10:13:55.0005 (UTC) FILETIME=[5A02B6D0:01CCEFB8]
-X-SEF-Processed: 7_3_0_01181__2012_02_20_10_13_55
+	id S1752536Ab2BTKQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 05:16:54 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:64560 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2BTKQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 05:16:53 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-5e-4f421d940573
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] backlight: convert platform_lcd to dev_pm_ops
+Date: Mon, 20 Feb 2012 19:16:51 +0900
+Message-id: <017001ccefb8$c37e5880$4a7b0980$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczvuMM5kV+oeoJjST6nvn8WwDKHBQ==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The raw Sony IR decoder decodes 15bit messages slightly incorrectly.
-To decode the function number, it shifts the bits right by 7 so that the
-function is in bits 7:1, masks with 0xFD (0b11111101), and does an 8 bit
-reverse so it ends up in bits 6:0. The mask should be 0xFE to correspond
-with bits 7:1 (0b11111110).
+Instead of using legacy suspend/resume methods, using newer dev_pm_ops
+structure allows better control over power management.
 
-The old mask had the effect of dropping the MSB of the function number
-from bit 6, and leaving the LSB of the device number in bit 7.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
+ drivers/video/backlight/platform_lcd.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-(note, i don't have a 15bit sony remote to test this with, but i'm
-pretty confident of it's correctness based on this:
-http://picprojects.org.uk/projects/sirc/sonysirc.pdf )
-
- drivers/media/rc/ir-sony-decoder.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/rc/ir-sony-decoder.c b/drivers/media/rc/ir-sony-decoder.c
-index d5e2b50..dab98b3 100644
---- a/drivers/media/rc/ir-sony-decoder.c
-+++ b/drivers/media/rc/ir-sony-decoder.c
-@@ -130,7 +130,7 @@ static int ir_sony_decode(struct rc_dev *dev, struct ir_raw_event ev)
- 		case 15:
- 			device    = bitrev8((data->bits >>  0) & 0xFF);
- 			subdevice = 0;
--			function  = bitrev8((data->bits >>  7) & 0xFD);
-+			function  = bitrev8((data->bits >>  7) & 0xFE);
- 			break;
- 		case 20:
- 			device    = bitrev8((data->bits >>  5) & 0xF8);
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index f0bf491..b667234 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -121,9 +121,9 @@ static int __devexit platform_lcd_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int platform_lcd_suspend(struct platform_device *pdev, pm_message_t st)
++static int platform_lcd_suspend(struct device *dev)
+ {
+-	struct platform_lcd *plcd = platform_get_drvdata(pdev);
++	struct platform_lcd *plcd = dev_get_drvdata(dev);
+ 
+ 	plcd->suspended = 1;
+ 	platform_lcd_set_power(plcd->lcd, plcd->power);
+@@ -131,29 +131,30 @@ static int platform_lcd_suspend(struct platform_device *pdev, pm_message_t st)
+ 	return 0;
+ }
+ 
+-static int platform_lcd_resume(struct platform_device *pdev)
++static int platform_lcd_resume(struct device *dev)
+ {
+-	struct platform_lcd *plcd = platform_get_drvdata(pdev);
++	struct platform_lcd *plcd = dev_get_drvdata(dev);
+ 
+ 	plcd->suspended = 0;
+ 	platform_lcd_set_power(plcd->lcd, plcd->power);
+ 
+ 	return 0;
+ }
+-#else
+-#define platform_lcd_suspend NULL
+-#define platform_lcd_resume NULL
++
++static SIMPLE_DEV_PM_OPS(platform_lcd_pm_ops, platform_lcd_suspend,
++			platform_lcd_resume);
+ #endif
+ 
+ static struct platform_driver platform_lcd_driver = {
+ 	.driver		= {
+ 		.name	= "platform-lcd",
+ 		.owner	= THIS_MODULE,
++#ifdef CONFIG_PM
++		.pm	= &platform_lcd_pm_ops,
++#endif
+ 	},
+ 	.probe		= platform_lcd_probe,
+ 	.remove		= __devexit_p(platform_lcd_remove),
+-	.suspend        = platform_lcd_suspend,
+-	.resume         = platform_lcd_resume,
+ };
+ 
+ module_platform_driver(platform_lcd_driver);
 -- 
-1.7.2.3
+1.7.1
 
 
