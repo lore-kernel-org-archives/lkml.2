@@ -1,125 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab2BTAKM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:10:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57124 "EHLO
+	id S1752275Ab2BTAKg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:10:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57133 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab2BTAKJ (ORCPT
+	with ESMTP id S1751921Ab2BTAKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:10:09 -0500
+	Sun, 19 Feb 2012 19:10:34 -0500
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         hjl.tools@gmail.com
-Subject: [PATCH 03/30] sysinfo: Move struct sysinfo to a separate header file
-Date: Sun, 19 Feb 2012 16:07:41 -0800
-Message-Id: <1329696488-16970-4-git-send-email-hpa@zytor.com>
+Subject: [PATCH 04/30] posix_types: Introduce __kernel_[u]long_t
+Date: Sun, 19 Feb 2012 16:07:42 -0800
+Message-Id: <1329696488-16970-5-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
 References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 19 Feb 2012 16:10:04 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 19 Feb 2012 16:10:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-struct sysinfo is just about the only thing exported to userspace from
-<linux/kernel.h>, so move it into a separate header file with a
-residual #include in <linux/kernel.h>.
+Introduce __kernel_[u]long_t, which allows an ABI to override all
+defaults of type [unsigned] long.
 
-Originally-by: H. J. Lu <hjl.tools@gmail.com>
+This enables x32 and potentially other 32-bit userspace on 64-bit
+kernel ABIs.
+
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/n/tip-4pr1xnnksprt7t0h3w5fw4rv@git.kernel.org
 ---
- include/linux/Kbuild    |    1 +
- include/linux/kernel.h  |   21 ++-------------------
- include/linux/sysinfo.h |   22 ++++++++++++++++++++++
- 3 files changed, 25 insertions(+), 19 deletions(-)
- create mode 100644 include/linux/sysinfo.h
+ include/asm-generic/posix_types.h |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index c94e717..8446086 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -355,6 +355,7 @@ header-y += suspend_ioctls.h
- header-y += swab.h
- header-y += synclink.h
- header-y += sysctl.h
-+header-y += sysinfo.h
- header-y += taskstats.h
- header-y += tcp.h
- header-y += telephony.h
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e834342..dc6a50f 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -1,6 +1,8 @@
- #ifndef _LINUX_KERNEL_H
- #define _LINUX_KERNEL_H
- 
-+#include <linux/sysinfo.h>
-+
- /*
-  * 'kernel.h' contains some often-used function prototypes etc
+diff --git a/include/asm-generic/posix_types.h b/include/asm-generic/posix_types.h
+index e294fe6..91d44bd 100644
+--- a/include/asm-generic/posix_types.h
++++ b/include/asm-generic/posix_types.h
+@@ -10,8 +10,13 @@
+  * architectures, so that you can override them.
   */
-@@ -745,27 +747,8 @@ extern int __build_bug_on_failed;
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+ 
++#ifndef __kernel_long_t
++typedef long		__kernel_long_t;
++typedef unsigned long	__kernel_ulong_t;
++#endif
++
+ #ifndef __kernel_ino_t
+-typedef unsigned long	__kernel_ino_t;
++typedef __kernel_ulong_t __kernel_ino_t;
  #endif
  
--struct sysinfo;
- extern int do_sysinfo(struct sysinfo *info);
- 
- #endif /* __KERNEL__ */
- 
--#define SI_LOAD_SHIFT	16
--struct sysinfo {
--	long uptime;			/* Seconds since boot */
--	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
--	unsigned long totalram;		/* Total usable main memory size */
--	unsigned long freeram;		/* Available memory size */
--	unsigned long sharedram;	/* Amount of shared memory */
--	unsigned long bufferram;	/* Memory used by buffers */
--	unsigned long totalswap;	/* Total swap space size */
--	unsigned long freeswap;		/* swap space still available */
--	unsigned short procs;		/* Number of current processes */
--	unsigned short pad;		/* explicit padding for m68k */
--	unsigned long totalhigh;	/* Total high memory size */
--	unsigned long freehigh;		/* Available high memory size */
--	unsigned int mem_unit;		/* Memory unit size in bytes */
--	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
--};
--
+ #ifndef __kernel_mode_t
+@@ -19,7 +24,7 @@ typedef unsigned int	__kernel_mode_t;
  #endif
-diff --git a/include/linux/sysinfo.h b/include/linux/sysinfo.h
-new file mode 100644
-index 0000000..ec4fc22
---- /dev/null
-+++ b/include/linux/sysinfo.h
-@@ -0,0 +1,22 @@
-+#ifndef _LINUX_SYSINFO_H
-+#define _LINUX_SYSINFO_H
-+
-+#define SI_LOAD_SHIFT	16
-+struct sysinfo {
-+	long uptime;			/* Seconds since boot */
-+	unsigned long loads[3];		/* 1, 5, and 15 minute load averages */
-+	unsigned long totalram;		/* Total usable main memory size */
-+	unsigned long freeram;		/* Available memory size */
-+	unsigned long sharedram;	/* Amount of shared memory */
-+	unsigned long bufferram;	/* Memory used by buffers */
-+	unsigned long totalswap;	/* Total swap space size */
-+	unsigned long freeswap;		/* swap space still available */
-+	unsigned short procs;		/* Number of current processes */
-+	unsigned short pad;		/* explicit padding for m68k */
-+	unsigned long totalhigh;	/* Total high memory size */
-+	unsigned long freehigh;		/* Available high memory size */
-+	unsigned int mem_unit;		/* Memory unit size in bytes */
-+	char _f[20-2*sizeof(long)-sizeof(int)];	/* Padding: libc5 uses this.. */
-+};
-+
-+#endif /* _LINUX_SYSINFO_H */
+ 
+ #ifndef __kernel_nlink_t
+-typedef unsigned long	__kernel_nlink_t;
++typedef __kernel_ulong_t __kernel_nlink_t;
+ #endif
+ 
+ #ifndef __kernel_pid_t
+@@ -36,7 +41,7 @@ typedef unsigned int	__kernel_gid_t;
+ #endif
+ 
+ #ifndef __kernel_suseconds_t
+-typedef long		__kernel_suseconds_t;
++typedef __kernel_long_t		__kernel_suseconds_t;
+ #endif
+ 
+ #ifndef __kernel_daddr_t
+@@ -67,9 +72,9 @@ typedef unsigned int	__kernel_size_t;
+ typedef int		__kernel_ssize_t;
+ typedef int		__kernel_ptrdiff_t;
+ #else
+-typedef unsigned long	__kernel_size_t;
+-typedef long		__kernel_ssize_t;
+-typedef long		__kernel_ptrdiff_t;
++typedef __kernel_ulong_t __kernel_size_t;
++typedef __kernel_long_t	__kernel_ssize_t;
++typedef __kernel_long_t	__kernel_ptrdiff_t;
+ #endif
+ #endif
+ 
+@@ -82,10 +87,10 @@ typedef struct {
+ /*
+  * anything below here should be completely generic
+  */
+-typedef long		__kernel_off_t;
++typedef __kernel_long_t	__kernel_off_t;
+ typedef long long	__kernel_loff_t;
+-typedef long		__kernel_time_t;
+-typedef long		__kernel_clock_t;
++typedef __kernel_long_t	__kernel_time_t;
++typedef __kernel_long_t	__kernel_clock_t;
+ typedef int		__kernel_timer_t;
+ typedef int		__kernel_clockid_t;
+ typedef char *		__kernel_caddr_t;
 -- 
 1.7.6.5
 
