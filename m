@@ -1,238 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2BTLYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:24:01 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45726 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753253Ab2BTLWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753296Ab2BTLWV (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 Feb 2012 06:22:21 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49264 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab2BTLWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 06:22:18 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
         dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
         akpm@linux-foundation.org, hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V1 7/9] hugetlbfs: Add truncate region functions
-Date: Mon, 20 Feb 2012 16:51:40 +0530
-Message-Id: <1329736902-26870-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V1 2/9] hugetlbfs: Add usage and max usage files to hugetlb cgroup
+Date: Mon, 20 Feb 2012 16:51:35 +0530
+Message-Id: <1329736902-26870-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022001-5140-0000-0000-000000C591A4
+x-cbid: 12022001-0260-0000-0000-00000090FC70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-This will later be used by the task migration patches.
-
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/hugetlbfs/hugetlb_cgroup.c  |   84 ++++++++++++++++++++++++++++++++++++++++
- fs/hugetlbfs/region.c          |   58 +++++++++++++++++++++++++++
- include/linux/hugetlb_cgroup.h |   12 +++++-
- 3 files changed, 153 insertions(+), 1 deletions(-)
+ fs/hugetlbfs/hugetlb_cgroup.c  |   12 ++++++++++++
+ include/linux/hugetlb.h        |    2 ++
+ include/linux/hugetlb_cgroup.h |    1 +
+ mm/hugetlb.c                   |   21 +++++++++++++++++++++
+ 4 files changed, 36 insertions(+), 0 deletions(-)
 
 diff --git a/fs/hugetlbfs/hugetlb_cgroup.c b/fs/hugetlbfs/hugetlb_cgroup.c
-index a4c6786..b8b319b 100644
+index b5b3cb8..75dbdd8 100644
 --- a/fs/hugetlbfs/hugetlb_cgroup.c
 +++ b/fs/hugetlbfs/hugetlb_cgroup.c
-@@ -323,6 +323,90 @@ long hugetlb_truncate_cgroup(struct hstate *h,
- 	return chg;
+@@ -99,6 +99,18 @@ int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
+ 	return ret;
  }
  
-+long hugetlb_truncate_cgroup_range(struct hstate *h,
-+				   struct list_head *head, long from, long to)
++int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event)
 +{
-+	long chg = 0, csize;
-+	int idx = h - hstates;
-+	struct hugetlb_cgroup *h_cg;
-+	struct file_region *rg, *trg;
++	int name, idx;
++	struct hugetlb_cgroup *h_cgroup = cgroup_to_hugetlbcgroup(cgroup);
 +
-+	/* Locate the region we are either in or before. */
-+	list_for_each_entry(rg, head, link)
-+		if (from <= rg->to)
-+			break;
-+	if (&rg->link == head)
-+		return 0;
++	idx = MEMFILE_TYPE(event);
++	name = MEMFILE_ATTR(event);
 +
-+	/* If we are in the middle of a region then adjust it. */
-+	if (from > rg->from) {
-+		if (to < rg->to) {
-+			struct file_region *nrg;
-+			/* rg->from from to rg->to */
-+			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+			/*
-+			 * If we fail to allocate we return the
-+			 * with the 0 charge . Later a complete
-+			 * truncate will reclaim the left over space
-+			 */
-+			if (!nrg)
-+				return 0;
-+			nrg->from = to;
-+			nrg->to = rg->to;
-+			nrg->data = rg->data;
-+			INIT_LIST_HEAD(&nrg->link);
-+			list_add(&nrg->link, &rg->link);
-+
-+			/* Adjust the rg entry */
-+			rg->to = from;
-+			chg = to - from;
-+			h_cg = (struct hugetlb_cgroup *)rg->data;
-+			if (!hugetlb_cgroup_is_root(h_cg)) {
-+				csize = chg * huge_page_size(h);
-+				res_counter_uncharge(&h_cg->memhuge[idx],
-+						     csize);
-+			}
-+			return chg;
-+		}
-+		chg = rg->to - from;
-+		rg->to = from;
-+		h_cg = (struct hugetlb_cgroup *)rg->data;
-+		if (!hugetlb_cgroup_is_root(h_cg)) {
-+			csize = chg * huge_page_size(h);
-+			res_counter_uncharge(&h_cg->memhuge[idx], csize);
-+		}
-+		rg = list_entry(rg->link.next, typeof(*rg), link);
-+	}
-+	/* Drop any remaining regions till to */
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (rg->from >= to)
-+			break;
-+		if (&rg->link == head)
-+			break;
-+		if (rg->to > to) {
-+			/* rg->from to rg->to */
-+			chg += to - rg->from;
-+			rg->from = to;
-+			h_cg = (struct hugetlb_cgroup *)rg->data;
-+			if (!hugetlb_cgroup_is_root(h_cg)) {
-+				csize = (to - rg->from) * huge_page_size(h);
-+				res_counter_uncharge(&h_cg->memhuge[idx],
-+						     csize);
-+			}
-+			return chg;
-+		}
-+		chg += rg->to - rg->from;
-+		h_cg = (struct hugetlb_cgroup *)rg->data;
-+		if (!hugetlb_cgroup_is_root(h_cg)) {
-+			csize = (rg->to - rg->from) * huge_page_size(h);
-+			res_counter_uncharge(&h_cg->memhuge[idx], csize);
-+		}
-+		list_del(&rg->link);
-+		kfree(rg);
-+	}
-+	return chg;
++	res_counter_reset_max(&h_cgroup->memhuge[idx]);
++	return 0;
 +}
 +
- int hugetlb_priv_page_charge(struct resv_map *map, struct hstate *h, long chg)
- {
- 	long csize;
-diff --git a/fs/hugetlbfs/region.c b/fs/hugetlbfs/region.c
-index d2445fb..8ac63b0 100644
---- a/fs/hugetlbfs/region.c
-+++ b/fs/hugetlbfs/region.c
-@@ -200,3 +200,61 @@ long region_count(struct list_head *head, long f, long t)
+ static int hugetlbcgroup_can_attach(struct cgroup_subsys *ss,
+ 				    struct cgroup *new_cgrp,
+ 				    struct cgroup_taskset *set)
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 2b6b231..4392b6a 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -228,6 +228,8 @@ struct hstate {
+ 	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+ 	/* cgroup control files */
+ 	struct cftype cgroup_limit_file;
++	struct cftype cgroup_usage_file;
++	struct cftype cgroup_max_usage_file;
+ 	char name[HSTATE_NAME_LEN];
+ };
  
- 	return chg;
- }
-+
-+long region_truncate_range(struct list_head *head, long from, long to)
-+{
-+	long chg = 0;
-+	struct file_region *rg, *trg;
-+
-+	/* Locate the region we are either in or before. */
-+	list_for_each_entry(rg, head, link)
-+		if (from <= rg->to)
-+			break;
-+	if (&rg->link == head)
-+		return 0;
-+
-+	/* If we are in the middle of a region then adjust it. */
-+	if (from > rg->from) {
-+		if (to < rg->to) {
-+			struct file_region *nrg;
-+			/* rf->from f t rg->to */
-+			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+			/*
-+			 * If we fail to allocate we return the
-+			 * with the 0 charge . Later a complete
-+			 * truncate will reclaim the left over space
-+			 */
-+			if (!nrg)
-+				return 0;
-+			nrg->from = to;
-+			nrg->to = rg->to;
-+			nrg->data = rg->data;
-+			INIT_LIST_HEAD(&nrg->link);
-+			list_add(&nrg->link, &rg->link);
-+
-+			/* Adjust the rg entry */
-+			rg->to = from;
-+			chg = to - from;
-+			return chg;
-+		}
-+		chg = rg->to - from;
-+		rg->to = from;
-+		rg = list_entry(rg->link.next, typeof(*rg), link);
-+	}
-+	/* Drop any remaining regions till to */
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (rg->from >= to)
-+			break;
-+		if (&rg->link == head)
-+			break;
-+		if (rg->to > to) {
-+			chg += to - rg->from;
-+			rg->from = to;
-+			return chg;
-+		}
-+		chg += rg->to - rg->from;
-+		list_del(&rg->link);
-+		kfree(rg);
-+	}
-+	return chg;
-+}
 diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index eaad86b..68c1d61 100644
+index 2330dd0..11cd6c4 100644
 --- a/include/linux/hugetlb_cgroup.h
 +++ b/include/linux/hugetlb_cgroup.h
-@@ -27,7 +27,7 @@ extern void region_add(struct list_head *head, long f, long t,
- 		       unsigned long data);
- extern long region_truncate(struct list_head *head, long end);
- extern long region_count(struct list_head *head, long f, long t);
--
-+extern long region_truncate_range(struct list_head *head, long from, long end);
- #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+@@ -18,4 +18,5 @@
  extern u64 hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft);
  extern int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
-@@ -40,6 +40,9 @@ extern void hugetlb_page_uncharge(struct list_head *head,
- extern void hugetlb_commit_page_charge(struct list_head *head, long f, long t);
- extern long hugetlb_truncate_cgroup(struct hstate *h,
- 				    struct list_head *head, long from);
-+extern long  hugetlb_truncate_cgroup_range(struct hstate *h,
-+					   struct list_head *head,
-+					   long from, long end);
- extern int hugetlb_priv_page_charge(struct resv_map *map,
- 				    struct hstate *h, long chg);
- extern void hugetlb_priv_page_uncharge(struct resv_map *map,
-@@ -69,6 +72,13 @@ static inline long hugetlb_truncate_cgroup(struct hstate *h,
- 	return region_truncate(head, from);
- }
- 
-+static inline long  hugetlb_truncate_cgroup_range(struct hstate *h,
-+						  struct list_head *head,
-+						  long from, long end)
-+{
-+	return region_truncate_range(head, from, end);
-+}
+ 				const char *buffer);
++extern int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event);
+ #endif
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f643f72..865b41f 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1814,6 +1814,13 @@ int register_hugetlb_cgroup_files(struct cgroup_subsys *ss,
+ 		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
+ 		if (ret)
+ 			return ret;
++		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
++		if (ret)
++			return ret;
++		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
++		if (ret)
++			return ret;
 +
- static inline int hugetlb_priv_page_charge(struct resv_map *map,
- 					   struct hstate *h, long chg)
- {
+ 	}
+ 	return ret;
+ }
+@@ -1845,6 +1852,20 @@ static int hugetlb_cgroup_file_init(struct hstate *h, int idx)
+ 	cft->read_u64 = hugetlb_cgroup_read;
+ 	cft->write_string = hugetlb_cgroup_write;
+ 
++	/* Add the usage file */
++	cft = &h->cgroup_usage_file;
++	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
++	cft->private  = MEMFILE_PRIVATE(idx, RES_USAGE);
++	cft->read_u64 = hugetlb_cgroup_read;
++
++	/* Add the MAX usage file */
++	cft = &h->cgroup_max_usage_file;
++	snprintf(cft->name, MAX_CFTYPE_NAME,
++		 "%s.max_usage_in_bytes", buf);
++	cft->private  = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
++	cft->trigger  = hugetlb_cgroup_reset;
++	cft->read_u64 = hugetlb_cgroup_read;
++
+ 	return 0;
+ }
+ #else
 -- 
 1.7.9
 
