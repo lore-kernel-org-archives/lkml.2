@@ -1,47 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab2BTTIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 14:08:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53519 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2BTTH6 convert rfc822-to-8bit (ORCPT
+	id S1752819Ab2BTTIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 14:08:38 -0500
+Received: from smarthost03.mail.zen.net.uk ([212.23.3.142]:57555 "EHLO
+	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751395Ab2BTTIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 14:07:58 -0500
-Message-ID: <1329764866.2293.376.camel@twins>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Date: Mon, 20 Feb 2012 20:07:46 +0100
-In-Reply-To: <1329761661.6276.146.camel@marge.simpson.net>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1329748861.2293.345.camel@twins>
-	 <1329761661.6276.146.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Mon, 20 Feb 2012 14:08:37 -0500
+Message-ID: <1329764913.2368.1.camel@computer2.home>
+Subject: Re: [PATCH 2/2] ARM: dma-mapping: fix leak in consistent_init
+From: Tixy <tixy@yxit.co.uk>
+To: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sumit Bhattacharya <sumitb@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Date: Mon, 20 Feb 2012 19:08:33 +0000
+In-Reply-To: <CAB4K4y5CV_MuEegiQuYn=_JN7zwxF11b4_kPvQVFS-V6mBwQmg@mail.gmail.com>
+References: <1329484195-26361-1-git-send-email-ajeet.yadav.77@gmail.com>
+	 <1329580713.2448.17.camel@computer2.home>
+	 <CAB4K4y5CV_MuEegiQuYn=_JN7zwxF11b4_kPvQVFS-V6mBwQmg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-Originating-Smarthost03-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
-> Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
-> Maybe that has changed, but I doubt it.
+On Mon, 2012-02-20 at 21:42 +0530, Ajeet Yadav wrote:
+> Hi Tixy,
+> Thanks for review, so what do you suggest drop or improve the patch? 
+> 
+I would say drop the patch, unless the more experienced Linux hands here
+think otherwise.
 
-Right, I through I remembered some such, you could see it on wakeup
-heavy things like pipe-bench and that java msg passing thing, right?
+-- 
+Tixy
+
+> With Regards,
+> Ajeet Yadav
+> 
+> On Feb 18, 2012 9:28 PM, "Tixy" <tixy@yxit.co.uk> wrote:
+>         On Fri, 2012-02-17 at 18:39 +0530, Ajeet Yadav wrote:
+>         > Although the error in this case is unlikely, but logically
+>         > if error occurs then we leak memory.
+>         >
+>         > Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+>         
+>         If you want to fix all the memory leaks then the page tables
+>         allocated
+>         by pte_alloc_kernel() need freeing as well, (and the pud and
+>         pmd
+>         tables?).
+>         
+>         However, if we run out of memory this early in boot, then the
+>         system is
+>         unusable anyway and it doesn't seem worth adding the extra
+>         code
+>         complexity to avoid any of these memory leaks.
+>         
+>         --
+>         Tixy
+>         
+>         > ---
+>         >  arch/arm/mm/dma-mapping.c |   24 ++++++++++++------------
+>         >  1 files changed, 12 insertions(+), 12 deletions(-)
+>         >
+>         > diff --git a/arch/arm/mm/dma-mapping.c
+>         b/arch/arm/mm/dma-mapping.c
+>         > index 04bfa76..b8cf062 100644
+>         > --- a/arch/arm/mm/dma-mapping.c
+>         > +++ b/arch/arm/mm/dma-mapping.c
+>         > @@ -161,7 +161,6 @@ static struct arm_vmregion_head
+>         consistent_head = {
+>         >   */
+>         >  static int __init consistent_init(void)
+>         >  {
+>         > -     int ret = 0;
+>         >       pgd_t *pgd;
+>         >       pud_t *pud;
+>         >       pmd_t *pmd;
+>         > @@ -171,7 +170,7 @@ static int __init consistent_init(void)
+>         >       unsigned long num_ptes = (CONSISTENT_END - base) >>
+>         PMD_SHIFT;
+>         >
+>         >       consistent_pte = kmalloc(num_ptes * sizeof(pte_t *),
+>         GFP_KERNEL);
+>         > -     if (!consistent_pte) {
+>         > +     if (unlikely(!consistent_pte)) {
+>         >               pr_err("%s: no memory\n", __func__);
+>         >               return -ENOMEM;
+>         >       }
+>         > @@ -183,32 +182,33 @@ static int __init
+>         consistent_init(void)
+>         >               pgd = pgd_offset(&init_mm, base);
+>         >
+>         >               pud = pud_alloc(&init_mm, pgd, base);
+>         > -             if (!pud) {
+>         > +             if (unlikely(!pud)) {
+>         >                       printk(KERN_ERR "%s: no pud tables\n",
+>         __func__);
+>         > -                     ret = -ENOMEM;
+>         > -                     break;
+>         > +                     goto err;
+>         >               }
+>         >
+>         >               pmd = pmd_alloc(&init_mm, pud, base);
+>         > -             if (!pmd) {
+>         > +             if (unlikely(!pmd)) {
+>         >                       printk(KERN_ERR "%s: no pmd tables\n",
+>         __func__);
+>         > -                     ret = -ENOMEM;
+>         > -                     break;
+>         > +                     goto err;
+>         >               }
+>         >               WARN_ON(!pmd_none(*pmd));
+>         >
+>         >               pte = pte_alloc_kernel(pmd, base);
+>         > -             if (!pte) {
+>         > +             if (unlikely(!pte)) {
+>         >                       printk(KERN_ERR "%s: no pte tables\n",
+>         __func__);
+>         > -                     ret = -ENOMEM;
+>         > -                     break;
+>         > +                     goto err;
+>         >               }
+>         >
+>         >               consistent_pte[i++] = pte;
+>         >               base += PMD_SIZE;
+>         >       } while (base < CONSISTENT_END);
+>         >
+>         > -     return ret;
+>         > +     return 0;
+>         > +err:
+>         > +     kfree(consistent_pte);
+>         > +     consistent_pte = NULL;
+>         > +     return -ENOMEM;
+>         >  }
+>         >
+>         >  core_initcall(consistent_init);
+>         
+>         
+>         
+
 
 
