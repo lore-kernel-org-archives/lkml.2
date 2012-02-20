@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab2BTSZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 13:25:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:37191 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751331Ab2BTSZt (ORCPT
+	id S1752593Ab2BTS0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 13:26:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18414 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab2BTS0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 13:25:49 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/yZ2g4Rqryd0g4f8VJwhMYxW/1r4gqY6o/dqDlOt
-	YaIm6Gmw0nMg0l
-Message-ID: <1329762343.6276.156.camel@marge.simpson.net>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Mike Galbraith <efault@gmx.de>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Mon, 20 Feb 2012 19:25:43 +0100
-In-Reply-To: <20120220150348.GC2350@linux.vnet.ibm.com>
-References: <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1329748861.2293.345.camel@twins>
-	 <20120220150348.GC2350@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Mon, 20 Feb 2012 13:26:15 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=7-CSKSCuul8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=HAMjl_5tTQjLUTlTJMcA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329762372.25686.35.camel@gandalf.stny.rr.com>
+Subject: Re: [tip:x86/urgent] x86/nmi: Test saved %cs in NMI to determine
+ nested NMI case
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Date: Mon, 20 Feb 2012 13:26:12 -0500
+In-Reply-To: <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
+References: <1329687817.1561.27.camel@acer.local.home>
+	 <tip-45d5a1683c04be28abdf5c04c27b1417e0374486@git.kernel.org>
+	 <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 20:33 +0530, Srivatsa Vaddagiri wrote: 
-> * Peter Zijlstra <peterz@infradead.org> [2012-02-20 15:41:01]:
+On Mon, 2012-02-20 at 10:03 -0800, Linus Torvalds wrote:
+> On Mon, Feb 20, 2012 at 3:47 AM, tip-bot for Steven Rostedt
+> <rostedt@goodmis.org> wrote:
+> >        /*
+> > +        * If %cs was not the kernel segment, then the NMI triggered in user
+> > +        * space, which means it is definitely not nested.
+> > +        */
+> > +       cmp $__KERNEL_CS, 16(%rsp)
+> > +       jne first_nmi
 > 
-> > On Fri, 2011-11-18 at 16:14 +0100, Mike Galbraith wrote:
-> > 
-> > > ---
-> > >  kernel/sched_fair.c |   10 ++--------
-> > >  1 file changed, 2 insertions(+), 8 deletions(-)
-> > > 
-> > > Index: linux-3.0-tip/kernel/sched_fair.c
-> > > ===================================================================
-> > > --- linux-3.0-tip.orig/kernel/sched_fair.c
-> > > +++ linux-3.0-tip/kernel/sched_fair.c
-> > > @@ -2276,17 +2276,11 @@ static int select_idle_sibling(struct ta
-> > >  		for_each_cpu_and(i, sched_domain_span(sd), tsk_cpus_allowed(p)) {
-> > >  			if (idle_cpu(i)) {
-> > >  				target = i;
-> > > +				if (sd->flags & SD_SHARE_CPUPOWER)
-> > > +					continue;
-> > >  				break;
-> > >  			}
-> > >  		}
-> > > -
-> > > -		/*
-> > > -		 * Lets stop looking for an idle sibling when we reached
-> > > -		 * the domain that spans the current cpu and prev_cpu.
-> > > -		 */
-> > > -		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
-> > > -		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
-> > > -			break;
-> > >  	}
-> > >  	rcu_read_unlock();
-> > 
-> > Mike, Suresh, did we ever get this sorted? I was looking at
-> > select_idle_sibling() and it looks like we dropped this.
-> > 
-> > Also, did anybody ever get an answer from a HW guy on why sharing stuff
-> > over SMT threads is so much worse than sharing it over proper cores? Its
-> > not like this workload actually does anything concurrently.
-> > 
-> > I was looking at this code due to vatsa wanting to do SD_BALANCE_WAKE.
+> I don't like how you wrote 'cmp' without a size, especially with none
+> of the arguments then giving a size either. Usually there's a register
+> name or something that gives you the size, but not here.
 > 
-> From a quick scan of that code, it seems to prefer selecting an idle cpu
-> in the same cache domain (vs selecting prev_cpu in absence of a core
-> that is fully idle).
+> I guess there is some default size that gas will use, but at least
+> some versions of gas have traditionally errored out instead of
+> guessing on sizes. Maybe x86-64 doesn't use those gas versions any
+> more, but still..
 
-Yes, that was the sole purpose of select_idle_sibling() from square one.
-If you can mobilize a CPU without eating cache penalty, this is most
-excellent for load ramp-up.  The gain is huge over affine wakeup if
-there is any overlap to regain, ie it's not a 100% synchronous load.
+OK, I'll send an update fix to use cmpq.
 
-> I can give that a try for my benchmark and see how much it helps. My
-> suspicion is it will not fully solve the problem I have on hand.
+>From HPA's email:
 
-I doubt it will either.  Your problem is when it doesn't succeed, but
-you have an idle core available in another domain.  That's a whole
-different ball game.  Yeah, you can reap benefit by doing wakeup
-balancing, but you'd better look very closely at the cost.  I haven't
-been able to do that lately, so dunno what cost is in the here and now,
-but it used to be _way_ too expensive to consider, just as unrestricted
-idle balancing is, or high frequency load balancing in general is.
+"User space can change %cs, but it can never set it to __KERNEL_CS; 
+specifically user space can never set the bottom two bits in CS to
+zero."
 
--Mike
+
+I'm not sure it matters, but I'll change it anyway since we are
+comparing an 8 byte word on the stack.
+
+-- Steve
+
+
+
 
