@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab2BTU6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:58:04 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35467 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753329Ab2BTU6D (ORCPT
+	id S1753950Ab2BTU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:58:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36600 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914Ab2BTU6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:58:03 -0500
-Date: Mon, 20 Feb 2012 12:57:57 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix and simplify debugfs support
-Message-ID: <20120220205756.GA3052@opensource.wolfsonmicro.com>
-References: <1329636505-13651-1-git-send-email-sboyd@codeaurora.org>
- <20120220021157.GF3194@opensource.wolfsonmicro.com>
- <4F41FA60.7090503@codeaurora.org>
+	Mon, 20 Feb 2012 15:58:23 -0500
+Date: Mon, 20 Feb 2012 12:57:48 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-b4255ba3fb9275f06daffce9f458668c8bd6773e@git.kernel.org>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, tglx@linutronix.de
+In-Reply-To: <1328677745-20121-2-git-send-email-hpa@zytor.com>
+References: <1328677745-20121-2-git-send-email-hpa@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/types] posix_types: Make __kernel_[ug]
+ id32_t default to unsigned int
+Git-Commit-ID: b4255ba3fb9275f06daffce9f458668c8bd6773e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4F41FA60.7090503@codeaurora.org>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 20 Feb 2012 12:58:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  b4255ba3fb9275f06daffce9f458668c8bd6773e
+Gitweb:     http://git.kernel.org/tip/b4255ba3fb9275f06daffce9f458668c8bd6773e
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 7 Feb 2012 21:08:45 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 14 Feb 2012 12:01:27 -0800
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+posix_types: Make __kernel_[ug]id32_t default to unsigned int
 
-On Sun, Feb 19, 2012 at 11:46:40PM -0800, Stephen Boyd wrote:
-> On 2/19/2012 6:12 PM, Mark Brown wrote:
+All ports use unsigned int for __kernel_[ug]id32_t, but not all ports
+use unsigned int for __kernel_[ug]id_t.  Thus, change the default for
+the "32" types so ports don't need to override them.
 
-> >This was actually a deliberate decision to make the code more robust
-> >against change - the IS_ERR_OR_NULL doesn't make the code any bigger but
-> >it means it's less likely to break in the face of changes.
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1328677745-20121-2-git-send-email-hpa@zytor.com
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/posix_types.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> More robust? The debugfs code in the regulator core looks confused
-> on what the return value is. Sometimes it's IS_ERR, sometimes it's
-> NULL, sometimes it's both. Might as well clean it up to be
-> consistent and proper.
-
-Well, the intention when I originally wrote it was to always check for
-all possible error codes.  Looking at the code in mainline it's pretty
-consistent, the class wide check and the per rdev checks are both open
-coded IS_ERR_OR_NULL() and the per supply stuff uses the helper.  The
-only case where we do a plain IS_ERR() is when we warn about not being
-able to create supply_map and the consistent thing there would just be
-to ignore the error since it's what we do for all the other individual
-files.
-
-This thing with returning NULL instead of an actual ERR_PTR() is pretty
-unhelpful really, especially for something like debugfs where the caller
-shouldn't care much if it works or not.
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQrPJAAoJEBus8iNuMP3dOrIP/2K0cVItI3H5Vx0LoaG3H7Vb
-Z46zABaStXJsk5MY76k1bfjZRn3YooRx9uimvLAGDqcLnb5j4SLGh2RU8PSpr/XG
-yoQmwNeFsMceVclcvdRlWjkqppTA4hPnVbwGXpUfbZYrUC+ammOByOXrmQZXBUtr
-vOTD6Ps7e8DhYLOa1AYdP2KhCrBmGyik77mMnjtQqmMhclpVy7K0ptsV/f4y01B2
-5A444fN5bqAhJZY8dGF4EuR/DwOsROIcTZ7pLTqIXLmF8p185HJLPdcZt1DGDLgy
-B0Z8oiItof1tvwcc0hL+L7i0ItFlFr7xDOcr6BAfODN3xiVMIxzJXCxLOsHHMej9
-xijclpyW8Qibga2AtTnGICcIjMg37i/glrHd3xmvd87QpPuYKsWkxhJk9Esybuef
-CpY381+tF0+AX2jtwL5xunFxspRYF0dAKAG2Fz5+x7+9O368XWI+QTGQsz/McYez
-GT3tb78GXq9ycP7Efsf5BxEAJxEaiSvXXAfmRoTDRm1K0BC0gyEYntgFDU2Oal7c
-y5m3FUjGie2dSv05ycZXy72t6FsoS0LyU/7sx3gabEicuOXv1hLW0vUrQPPsv0wQ
-+JWulsmsiCoJm3SQqAZPmbjLEnhmMSPL8jCXMzD+NXKmYK38LDAHanhC9CrzOg+T
-nRQAulk0PCVdOjb785n2
-=kPTv
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+diff --git a/include/asm-generic/posix_types.h b/include/asm-generic/posix_types.h
+index 3dab008..ac83f6b 100644
+--- a/include/asm-generic/posix_types.h
++++ b/include/asm-generic/posix_types.h
+@@ -44,8 +44,8 @@ typedef int		__kernel_daddr_t;
+ #endif
+ 
+ #ifndef __kernel_uid32_t
+-typedef __kernel_uid_t	__kernel_uid32_t;
+-typedef __kernel_gid_t	__kernel_gid32_t;
++typedef unsigned int	__kernel_uid32_t;
++typedef unsigned int	__kernel_gid32_t;
+ #endif
+ 
+ #ifndef __kernel_old_uid_t
