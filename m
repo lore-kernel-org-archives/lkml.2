@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab2BTMMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 07:12:37 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62104 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab2BTMMg convert rfc822-to-8bit (ORCPT
+	id S1753551Ab2BTMOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 07:14:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52086 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab2BTMOw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 07:12:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329696488-16970-7-git-send-email-hpa@zytor.com>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-	<1329696488-16970-7-git-send-email-hpa@zytor.com>
-Date: Mon, 20 Feb 2012 13:12:34 +0100
-X-Google-Sender-Auth: 5Oho65wLGdNuqy55oXfaCSKAU-8
-Message-ID: <CAMuHMdV2-StqLjnMXk8EDbfMSUik7BWuQ1phNSoUq_D0i_1icQ@mail.gmail.com>
-Subject: Re: [PATCH 06/30] sysinfo: Use explicit types in <linux/sysinfo.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, hjl.tools@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 Feb 2012 07:14:52 -0500
+Message-ID: <1329740076.2293.330.camel@twins>
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, bharata@linux.vnet.ibm.com
+Date: Mon, 20 Feb 2012 13:14:36 +0100
+In-Reply-To: <20120220120159.GA2350@linux.vnet.ibm.com>
+References: <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
+	 <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com>
+	 <4F04898B.1080600@redhat.com> <1325712710.3084.10.camel@laptop>
+	 <4F04C789.40209@redhat.com> <20120105091059.GA3249@elte.hu>
+	 <87fwe6ork3.fsf@abhimanyu.in.ibm.com> <1329735073.2293.305.camel@twins>
+	 <877gzhpvpv.fsf@abhimanyu.in.ibm.com>
+	 <20120220120159.GA2350@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 01:07, H. Peter Anvin <hpa@zytor.com> wrote:
-> --- a/include/linux/sysinfo.h
-> +++ b/include/linux/sysinfo.h
-> @@ -1,22 +1,24 @@
->  #ifndef _LINUX_SYSINFO_H
->  #define _LINUX_SYSINFO_H
->
-> +#include <linux/types.h>
-> +
->  #define SI_LOAD_SHIFT  16
->  struct sysinfo {
-> -       long uptime;                    /* Seconds since boot */
-> -       unsigned long loads[3];         /* 1, 5, and 15 minute load averages */
-> -       unsigned long totalram;         /* Total usable main memory size */
-> -       unsigned long freeram;          /* Available memory size */
-> -       unsigned long sharedram;        /* Amount of shared memory */
-> -       unsigned long bufferram;        /* Memory used by buffers */
-> -       unsigned long totalswap;        /* Total swap space size */
-> -       unsigned long freeswap;         /* swap space still available */
-> -       unsigned short procs;           /* Number of current processes */
-> -       unsigned short pad;             /* explicit padding for m68k */
-> -       unsigned long totalhigh;        /* Total high memory size */
-> -       unsigned long freehigh;         /* Available high memory size */
-> -       unsigned int mem_unit;          /* Memory unit size in bytes */
-> -       char _f[20-2*sizeof(long)-sizeof(int)]; /* Padding: libc5 uses this.. */
-> +       __kernel_long_t uptime;         /* Seconds since boot */
-> +       __kernel_ulong_t loads[3];      /* 1, 5, and 15 minute load averages */
-> +       __kernel_ulong_t totalram;      /* Total usable main memory size */
-> +       __kernel_ulong_t freeram;       /* Available memory size */
-> +       __kernel_ulong_t sharedram;     /* Amount of shared memory */
-> +       __kernel_ulong_t bufferram;     /* Memory used by buffers */
-> +       __kernel_ulong_t totalswap;     /* Total swap space size */
-> +       __kernel_ulong_t freeswap;      /* swap space still available */
-> +       __u16 procs;                    /* Number of current processes */
-> +       __u16 pad;                      /* Explicit padding for m68k */
+On Mon, 2012-02-20 at 17:32 +0530, Srivatsa Vaddagiri wrote:
+> * Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> [2012-02-20 17:23:16]:
+> 
+> > On Mon, 20 Feb 2012 11:51:13 +0100, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Mon, 2012-02-20 at 13:38 +0530, Nikunj A Dadhania wrote:
+> > > > +#ifdef CONFIG_PARAVIRT_FLUSH_TLB
+> > > > +               while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
+> > > > +                       cpu_relax();
+> > > > +               if (!loop && !cpumask_empty(to_cpumask(f->flush_cpumask)))
+> > > > +                       halt();
+> > > 
+> > > 
+> > > That's just vile, you don't need to wait for it, all you need to make
+> > > sure is that when that vcpu wakes up it does the flush.
+> > >
+> > Yes, but we are not sure the vcpu will be sleeping or running. In the
+> > case where vcpus are running, it might be beneficial to wait a while.
+> 
+> I guess one possibility is for host scheduler to export run/preempt
+> information to guest OS, as was discussed in the context of this thread
+> as well:
+> 
+> http://lkml.org/lkml/2010/4/6/223
 
-Fueling the discussion about natural vs. 4-byte alignment?
+Doesn't need to be the host scheduler, KVM itself can do that just fine
+on guest entry/exit.
 
-> +       __kernel_ulong_t totalhigh;     /* Total high memory size */
-> +       __kernel_ulong_t freehigh;      /* Available high memory size */
-> +       __u32 mem_unit;                 /* Memory unit size in bytes */
-> +       char _f[20-2*sizeof(__kernel_ulong_t)-sizeof(__u32)];   /* Padding: libc5 uses this.. */
->  };
+> Essentially guest OS will know (using such exported information) which of its 
+> vcpus are currently running and thus do a busy-wait for them.
 
-Gr{oetje,eeting}s,
+Right, do something like:
 
-                        Geert
+again:
+  for_each_cpu_in_mask(cpu, flush_cpumask) {
+    if !vcpu-running {
+      set_flush-on-enter(cpu)
+      if !vcpu-running
+        cpumask_clear(flush_cpumask, cpu); // vm-enter will do  
+  }
+  wait-a-while-for-mask-to-clear
+  if (!cpumask_empty)
+    goto again;    
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+with the appropriate memory barriers and atomic instructions, that way
+you can skip waiting for vcpus that are not in guest mode and vm-enter
+will fixup.
