@@ -1,808 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2BTUSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:18:01 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:59044 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab2BTUR5 (ORCPT
+	id S1753426Ab2BTU3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:29:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62136 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab2BTU3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:17:57 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Subject: Build regressions/improvements in v3.3-rc4
-Date: Mon, 20 Feb 2012 21:17:53 +0100
-Message-Id: <1329769073-10331-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 20 Feb 2012 15:29:37 -0500
+Date: Mon, 20 Feb 2012 20:29:30 +0000
+From: James Hogan <james@albanarts.com>
+To: Ravi Kumar V <kumarrav@codeaurora.org>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Trilok soni <tsoni@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, bryanh@codeaurora.org,
+        Jarod Wilson <jarod@redhat.com>, Anssi Hannula <anssi.hannula@iki.fi>,
+        "Juan J. Garcia de Soria" <skandalfo@gmail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/1] rc: Add support for GPIO based IR Receiver driver.
+Message-ID: <20120220202930.GB32005@balrog>
+References: <1329731272-31476-1-git-send-email-kumarrav@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329731272-31476-1-git-send-email-kumarrav@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the list of build error/warning regressions/improvements in
-v3.3-rc4[1] compared to v3.2[2].
-Note that I deleted 970 lines about "__mcount_loc already exists", to avoid
-my email being rejected.
+On Mon, Feb 20, 2012 at 03:17:52PM +0530, Ravi Kumar V wrote:
+> Adds GPIO based IR Receiver driver. It decodes signals using decoders
+> available in rc framework.
+> 
+> Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+> ---
+>  drivers/media/rc/Kconfig        |    9 ++
+>  drivers/media/rc/Makefile       |    1 +
+>  drivers/media/rc/gpio-ir-recv.c |  189 +++++++++++++++++++++++++++++++++++++++
+>  include/media/gpio-ir-recv.h    |   23 +++++
+>  4 files changed, 222 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/media/rc/gpio-ir-recv.c
+>  create mode 100644 include/media/gpio-ir-recv.h
+> 
+> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> index aeb7f43..6f63ded 100644
+> --- a/drivers/media/rc/Kconfig
+> +++ b/drivers/media/rc/Kconfig
+> @@ -256,4 +256,13 @@ config RC_LOOPBACK
+>  	   To compile this driver as a module, choose M here: the module will
+>  	   be called rc_loopback.
+>  
+> +config IR_GPIO_CIR
+> +	tristate "GPIO IR remote control"
+> +	depends on RC_CORE
+> +	---help---
+> +	   Say Y if you want to use GPIO based IR Receiver.
+> +
+> +	   To compile this driver as a module, choose M here: the module will
+> +	   be called gpio-ir-recv.
+> +
+>  endif #RC_CORE
+> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+> index 2156e78..9b3568e 100644
+> --- a/drivers/media/rc/Makefile
+> +++ b/drivers/media/rc/Makefile
+> @@ -25,3 +25,4 @@ obj-$(CONFIG_IR_REDRAT3) += redrat3.o
+>  obj-$(CONFIG_IR_STREAMZAP) += streamzap.o
+>  obj-$(CONFIG_IR_WINBOND_CIR) += winbond-cir.o
+>  obj-$(CONFIG_RC_LOOPBACK) += rc-loopback.o
+> +obj-$(CONFIG_IR_GPIO_CIR) += gpio-ir-recv.o
+> diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
+> new file mode 100644
+> index 0000000..cf6e7f6
+> --- /dev/null
+> +++ b/drivers/media/rc/gpio-ir-recv.c
+> @@ -0,0 +1,189 @@
+> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/gpio.h>
+> +#include <linux/slab.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/irq.h>
+> +#include <media/rc-core.h>
+> +#include <media/gpio-ir-recv.h>
+> +
+> +#define GPIO_IR_DRIVER_NAME	"gpio-rc-recv"
+> +#define GPIO_IR_DEVICE_NAME	"gpio_ir_recv"
+> +
+> +struct gpio_rc_dev {
+> +	struct rc_dev *rcdev;
+> +	struct mutex lock;
 
-Summarized:
-  - build errors: +61/-49
-  - build warnings: +1253/-342
+I could be completely wrong here, but is this lock necessary since data
+is only read, and it's only used by a single interrupt handler?
 
-JFYI, when comparing v3.3-rc4 to v3.3-rc3[3], the summaries are:
-  - build errors: +0/-31
-  - build warnings: +116/-138
+> +	unsigned int gpio_nr;
+> +	bool active_low;
+> +	bool can_wakeup;
+> +};
+> +
+> +static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
+> +{
+> +	struct gpio_rc_dev *gpio_dev = dev_id;
+> +	unsigned int gval;
+> +	int rc = 0;
+> +	enum raw_event_type type = IR_SPACE;
+> +
+> +	mutex_lock(&gpio_dev->lock);
+> +	gval = gpio_get_value_cansleep(gpio_dev->gpio_nr);
+> +
+> +	if (gval < 0)
+> +		goto err_get_value;
+> +
+> +	if (gpio_dev->active_low)
+> +		gval = !gval;
+> +
+> +	if (gval == 1)
+> +		type = IR_PULSE;
+> +
+> +	rc = ir_raw_event_store_edge(gpio_dev->rcdev, type);
+> +	if (rc < 0)
+> +		goto err_get_value;
 
-Note that there may be false regressions, as some logs are incomplete.
-Still, they're build errors/warnings.
+Since ir_raw_event_store_edge just puts the event into a kfifo for the
+ir-raw thread to handle, does this really have to be a threaded IRQ? I'd
+have thought you'd get more accurate time measurements (especially on
+slower/embedded CPUs) if the IRQ is serviced as soon as possible.
 
-As master.kernel.org is down, there's no verbose summary yet at
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.3-rc4.summary.gz
+If it needs to be threaded so that the gpio read can sleep, perhaps it
+could make use of a hard irq if the gpio can be accessed atomically, and
+fall back to threaded if not.
 
-Happy fixing! ;-)
+> +
+> +	ir_raw_event_handle(gpio_dev->rcdev);
+> +
+> +err_get_value:
+> +	mutex_unlock(&gpio_dev->lock);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit gpio_ir_recv_probe(struct platform_device *pdev)
+> +{
+> +	struct gpio_rc_dev *gpio_dev;
+> +	struct rc_dev *rcdev;
+> +	const struct gpio_ir_recv_platform_data *pdata =
+> +					pdev->dev.platform_data;
+> +	int rc;
+> +
+> +	if (!pdata)
+> +		return -EINVAL;
+> +
+> +	if (pdata->gpio_nr < 0)
+> +		return -EINVAL;
+> +
+> +	gpio_dev = kzalloc(sizeof(struct gpio_rc_dev), GFP_KERNEL);
+> +	if (!gpio_dev)
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&gpio_dev->lock);
+> +
+> +	rcdev = rc_allocate_device();
+> +	if (!rcdev) {
+> +		rc = -ENOMEM;
+> +		goto err_allocate_device;
+> +	}
+> +
+> +	rcdev->driver_type = RC_DRIVER_IR_RAW;
+> +	rcdev->allowed_protos = RC_TYPE_NEC;
 
-Thanks to the linux-next team for providing the build service.
+Is this necessary, since the driver is protocol agnostic?
 
-[1] http://kisskb.ellerman.id.au/kisskb/head/4733/ (106 out of 107 configs)
-[2] http://kisskb.ellerman.id.au/kisskb/head/4572/ (all 107 configs)
-[3] http://kisskb.ellerman.id.au/kisskb/head/4693/ (106 out of 107 configs)
+> +	rcdev->input_name = GPIO_IR_DEVICE_NAME;
+> +	rcdev->input_id.bustype = BUS_HOST;
+> +	rcdev->driver_name = GPIO_IR_DRIVER_NAME;
+> +	rcdev->map_name = RC_MAP_EMPTY;
+> +
+> +	gpio_dev->rcdev = rcdev;
+> +	gpio_dev->gpio_nr = pdata->gpio_nr;
+> +	gpio_dev->active_low = pdata->active_low;
+> +	gpio_dev->can_wakeup = pdata->can_wakeup;
+> +
+> +
+> +	rc = gpio_request(pdata->gpio_nr, "gpio-ir-recv");
+> +	if (rc < 0)
+> +		goto err_gpio_request;
+> +	rc  = gpio_direction_input(pdata->gpio_nr);
+> +	if (rc < 0)
+> +		goto err_gpio_direction_input;
+> +
+> +	rc = rc_register_device(rcdev);
+> +	if (rc < 0) {
+> +		dev_err(&pdev->dev, "failed to register rc device\n");
+> +		goto err_register_rc_device;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, gpio_dev);
+> +
+> +	rc = request_threaded_irq(gpio_to_irq(pdata->gpio_nr),
+> +			NULL, gpio_ir_recv_irq,
+> +			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+> +			"gpio-ir-recv-irq", gpio_dev);
+> +	if (rc < 0)
+> +		goto err_request_irq;
+> +
+> +	if (pdata->can_wakeup == true) {
+> +		rc = enable_irq_wake(gpio_to_irq(pdata->gpio_nr));
+> +		if (rc < 0)
+> +			goto err_enable_irq_wake;
 
+would this be better done in a suspend/resume callback, along with
+device_may_wakeup and device_set_wakeup_capable/device_init_wakeup so
+that it can be enabled and disabled with sysfs?
 
-*** ERRORS ***
+Cheers
+James
 
-61 regressions:
-  + error: "st_register" [drivers/media/radio/wl128x/fm_drv.ko] undefined!:  => N/A
-  + error: "st_unregister" [drivers/media/radio/wl128x/fm_drv.ko] undefined!:  => N/A
-  + src/arch/mips/include/asm/page.h: error: this is the location of the previous definition:  => 43:1
-  + src/drivers/leds/leds-ot200.c: error: implicit declaration of function 'outb':  => 114
-  + src/drivers/media/video/uvc/uvc_queue.c: error: 'buf' undeclared (first use in this function):  => 263
-  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct uvc_video_queue' has no member named 'buffer':  => 255
-  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct uvc_video_queue' has no member named 'count':  => 254, 259
-  + src/drivers/media/video/uvc/uvc_queue.c: error: 'struct vb2_buffer' has no member named 'm':  => 256
-  + src/drivers/media/video/uvc/uvc_queue.c: error: (Each undeclared identifier is reported only once:  => 263
-  + src/drivers/media/video/uvc/uvc_queue.c: error: for each function it appears in.):  => 263
-  + src/drivers/net/can/cc770/cc770_isa.c: error: implicit declaration of function 'inb':  => 133
-  + src/drivers/net/can/cc770/cc770_isa.c: error: implicit declaration of function 'outb':  => 139
-  + src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'ioread8':  => 68
-  + src/drivers/net/can/cc770/cc770_platform.c: error: implicit declaration of function 'iowrite8':  => 74
-  + src/drivers/net/can/sja1000/sja1000_isa.c: error: implicit declaration of function 'inb':  => 93
-  + src/drivers/net/can/sja1000/sja1000_isa.c: error: implicit declaration of function 'outb':  => 99
-  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'inb':  => 381
-  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'inb_p':  => 1240
-  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'outb':  => 380
-  + src/drivers/tty/serial/8250/8250.c: error: implicit declaration of function 'outb_p':  => 1241
-  + src/drivers/tty/serial/8250/8250_early.c: error: implicit declaration of function 'inb':  => 59
-  + src/drivers/tty/serial/8250/8250_early.c: error: implicit declaration of function 'outb':  => 75
-  + src/drivers/tty/serial/8250/serial_cs.c: error: implicit declaration of function 'outb':  => 149
-  + src/drivers/video/console/fonts.c: error: #error No fonts configured.:  => 71:2
-  + src/fs/btrfs/volumes.c: error: insn does not satisfy its constraints::  => 2754
-  + src/include/linux/kernel.h: error: "BUILD_BUG" redefined:  => 717:1
-  + src/include/net/netfilter/nf_conntrack_acct.h: error: expected specifier-qualifier-list before 'atomic64_t':  => 18
-  + src/lib/mpi/generic_mpih-mul1.c: error: 'asm' operand has impossible constraints:  => 50
-  + src/lib/mpi/generic_mpih-mul1.c: error: can't find a register in class 'FP_REGS' while reloading 'asm':  => 50
-  + src/lib/mpi/generic_mpih-mul2.c: error: 'asm' operand has impossible constraints:  => 49
-  + src/lib/mpi/generic_mpih-mul2.c: error: can't find a register in class 'FP_REGS' while reloading 'asm':  => 49
-  + src/lib/mpi/generic_mpih-mul3.c: error: 'asm' operand has impossible constraints:  => 49
-  + src/lib/mpi/generic_mpih-mul3.c: error: can't find a register in class 'FP_REGS' while reloading 'asm':  => 49
-  + src/lib/mpi/mpih-div.c: error: 'asm' operand has impossible constraints:  => 461, 452, 489
-  + src/lib/mpi/mpih-div.c: error: can't find a register in class 'FP_REGS' while reloading 'asm':  => 461, 452, 489
-  + src/net/netfilter/nf_conntrack_acct.c: error: 'struct nf_conn_counter' has no member named 'bytes':  => 50
-  + src/net/netfilter/nf_conntrack_acct.c: error: 'struct nf_conn_counter' has no member named 'packets':  => 49
-  + src/net/netfilter/nf_conntrack_acct.c: error: implicit declaration of function 'atomic64_read':  => 49
-  + src/net/netfilter/nf_conntrack_core.c: error: 'struct nf_conn_counter' has no member named 'bytes':  => 1049, 1067
-  + src/net/netfilter/nf_conntrack_core.c: error: 'struct nf_conn_counter' has no member named 'packets':  => 1048, 1065
-  + src/net/netfilter/nf_conntrack_core.c: error: implicit declaration of function 'atomic64_add':  => 1049
-  + src/net/netfilter/nf_conntrack_core.c: error: implicit declaration of function 'atomic64_inc':  => 1048
-  + src/net/netfilter/nf_conntrack_netlink.c: error: 'struct nf_conn_counter' has no member named 'bytes':  => 243, 240
-  + src/net/netfilter/nf_conntrack_netlink.c: error: 'struct nf_conn_counter' has no member named 'packets':  => 239, 242
-  + src/net/netfilter/nf_conntrack_netlink.c: error: implicit declaration of function 'atomic64_read':  => 242
-  + src/net/netfilter/nf_conntrack_netlink.c: error: implicit declaration of function 'atomic64_xchg':  => 239
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'bytes':  => 119, 81, 116, 326, 68
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'head':  => 240, 147, 221, 182, 53, 295, 353, 352, 89, 247
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'name':  => 112, 296, 185, 248, 78, 54
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'pkts':  => 67, 85, 118, 325, 115
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'rcu_head':  => 356, 222
-  + src/net/netfilter/nfnetlink_acct.c: error: 'struct nf_acct' has no member named 'refcnt':  => 123, 302, 225, 88, 219, 318
-  + src/net/netfilter/nfnetlink_acct.c: error: expected specifier-qualifier-list before 'atomic64_t':  => 33
-  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_add':  => 326
-  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_inc':  => 325
-  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_read':  => 118
-  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_set':  => 67
-  + src/net/netfilter/nfnetlink_acct.c: error: implicit declaration of function 'atomic64_xchg':  => 115
-  + src/net/netfilter/xt_connbytes.c: error: 'const struct nf_conn_counter' has no member named 'bytes':  => 60, 63, 75, 71, 64, 57, 80, 79
-  + src/net/netfilter/xt_connbytes.c: error: 'const struct nf_conn_counter' has no member named 'packets':  => 81, 50, 72, 49, 46, 76, 43, 82
-  + src/net/netfilter/xt_connbytes.c: error: implicit declaration of function 'atomic64_read':  => 43
-
-49 improvements:
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__s16': 28:2, 29:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__u32': 27:2, 22:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__u8': 23:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__s16': 990:2, 1025:2, 991:2, 994:2, 971:2, 1018:2, 960:2, 1066:2, 972:2, 1019:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__s32': 70:2, 67:2, 65:2, 68:2, 69:2, 66:2, 25:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u16': 1038:2, 948:2, 987:2, 949:2, 40:2, 23:2, 1067:2, 1020:2, 993:2, 1017:2, 988:2, 950:2, 932:2, 92:2, 922:2, 931:2, 41:2, 1037:2, 39:2, 42:2, 951:2, 1016:2, 1065:2, 921:2, 24:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u32': 93:2, 1024:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u8': 91:2, 90:2, 94:2 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u16': 27:1, 28:1, 34:1 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u32': 35:1, 30:1, 29:1 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u64'  CC [M]  samples/kprobes/jprobe_example.o: 31:1 => 
-  - build/linus_sparc-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u64': 32:1 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__s16': 28:2, 29:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__u32': 27:2, 22:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: unknown type name '__u8': 23:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__s16': 990:2, 1025:2, 991:2, 994:2, 971:2, 1018:2, 960:2, 1066:2, 972:2, 1019:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__s32': 70:2, 67:2, 65:2, 68:2, 69:2, 66:2, 25:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u16': 1038:2, 948:2, 987:2, 949:2, 40:2, 23:2, 1067:2, 1020:2, 993:2, 1017:2, 988:2, 950:2, 932:2, 92:2, 922:2, 931:2, 41:2, 1037:2, 39:2, 42:2, 951:2, 1016:2, 1065:2, 921:2, 24:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u32': 93:2, 1024:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: unknown type name '__u8': 91:2, 90:2, 94:2 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u16': 27:1, 28:1, 34:1 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u32': 35:1, 30:1, 29:1 => 
-  - build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: unknown type name '__u64': 32:1, 31:1 => 
-  - src/arch/parisc/lib/iomap.c: error: redefinition of 'pci_iomap': 441 => 
-  - src/arch/powerpc/sysdev/mv64x60_dev.c: error: assignment makes pointer from integer without a cast: 253:11 => 
-  - src/arch/powerpc/sysdev/mv64x60_dev.c: error: implicit declaration of function 'of_get_mac_address': 253:2 => 
-  - src/arch/powerpc/sysdev/tsi108_dev.c: error: assignment makes pointer from integer without a cast: 108:12 => 
-  - src/arch/powerpc/sysdev/tsi108_dev.c: error: implicit declaration of function 'of_get_mac_address': 108:3 => 
-  - src/arch/sh/boards/board-magicpanelr2.c: error: implicit declaration of function 'parse_mtd_partitions': 354 => 
-  - src/arch/sh/boards/mach-rsk/setup.c: error: implicit declaration of function 'parse_mtd_partitions': 82 => 
-  - src/arch/xtensa/include/asm/irqflags.h: Error: invalid symbolic operand: 26 => 
-  - src/drivers/target/target_core_rd.c: error: this is the insn:: 543 => 
-  - src/drivers/target/target_core_rd.c: error: unable to find a register to spill in class 'R0_REGS': 543 => 
-  - src/drivers/tty/serial/8250.c: error: implicit declaration of function 'inb': 407 => 
-  - src/drivers/tty/serial/8250.c: error: implicit declaration of function 'inb_p': 1266 => 
-  - src/drivers/tty/serial/8250.c: error: implicit declaration of function 'outb': 406 => 
-  - src/drivers/tty/serial/8250.c: error: implicit declaration of function 'outb_p': 1267 => 
-  - src/drivers/tty/serial/8250_early.c: error: implicit declaration of function 'inb': 59 => 
-  - src/drivers/tty/serial/8250_early.c: error: implicit declaration of function 'outb': 75 => 
-  - src/drivers/tty/serial/serial_cs.c: error: implicit declaration of function 'outb': 149 => 
-  - src/drivers/virt/fsl_hypervisor.c: error: 'MSR_GS' undeclared (first use in this function): 799:80 => 
-  - src/fs/nilfs2/bmap.c: error: this is the insn:: 466 => 
-  - src/fs/nilfs2/bmap.c: error: unable to find a register to spill in class 'R0_REGS': 466 => 
-  - src/include/asm-generic/iomap.h: error: previous definition of 'pci_iomap' was here: 77 => 
-  - src/include/linux/prefetch.h: Error: couldn't find a valid instruction format: 62 => 
-  - src/include/linux/prefetch.h: Error: unknown opcode or format name 'static': 53 => 
-  - src/kernel/trace/trace_clock.c: error: implicit declaration of function 'atomic64_add_return': 126 => 
-  - src/kernel/trace/trace_clock.c: error: syntax error before 'trace_counter': 117 => 
-  - src/lib/radix-tree.c: error: insn does not satisfy its constraints:: 741 => 
-
-
-*** WARNINGS ***
-
-1253 regressions:
-  + /tmp/ccaMyw0f.s: Warning: source register same as write-back base:  => 104
-  + modpost: WARNING: modpost: Found 13 section mismatch(es).:  => N/A
-  + modpost: WARNING: modpost: Found 4 section mismatch(es).:  => N/A
-  + src/arch/mips/include/asm/page.h: warning: this is the location of the previous definition:  => 43:1
-  + src/arch/powerpc/platforms/iseries/htab.c: warning: division by zero:  => 249:42
-  + src/arch/sh/drivers/dma/dma-sysfs.c: warning: passing argument 2 of 'device_create_file' from incompatible pointer type:  => 57
-  + src/arch/sh/math-emu/math.c: warning: statement with no effect:  => 123, 130, 295, 336, 109, 116, 148, 325, 297
-  + src/arch/x86/kernel/apic/io_apic.c: warning: 'reg_02' may be used uninitialized in this function:  => 1587
-  + src/arch/x86/kernel/apic/io_apic.c: warning: 'reg_03' may be used uninitialized in this function:  => 1588
-  + src/drivers/ata/sata_mv.c: warning: 'mv_dump_pci_cfg' defined but not used: 1254 => 1254, 1253
-  + src/drivers/base/power/sysfs.c: warning: 'dev_attr_async' defined but not used: 436 => 436, 436:32
-  + src/drivers/block/nvme.c: warning: 'iod' may be used uninitialized in this function:  => 1155:19, 1155
-  + src/drivers/block/nvme.c: warning: passing argument 3 of 'dma_free_coherent' discards qualifiers from pointer target type:  => 878, 920, 967
-  + src/drivers/crypto/caam/ctrl.c: warning: unused variable 'd':  => 49:6
-  + src/drivers/gpio/gpio-mcp23s08.c: warning: 'mcp23s08_probe_one' defined but not used:  => 370:12
-  + src/drivers/gpu/drm/nouveau/nv50_pm.c: warning: 'id' may be used uninitialized in this function:  => 75
-  + src/drivers/hid/hid-wiimote-debug.c: warning: 'size' may be used uninitialized in this function:  => 40:8, 40
-  + src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_resume' defined but not used: 288 => 287:12, 288
-  + src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_suspend' defined but not used: 276 => 276, 275:12
-  + src/drivers/isdn/hardware/mISDN/hfcsusb.c: warning: 'hfcsusb_rev' defined but not used:  => 39:20, 39
-  + src/drivers/isdn/sc/init.c: warning: return from incompatible pointer type:  => 36, 37
-  + src/drivers/md/raid10.c: warning: 'rdev' may be used uninitialized in this function:  => 624:18, 624
-  + src/drivers/media/radio/si4713-i2c.c: warning: 'freq' may be used uninitialized in this function:  => 1935
-  + src/drivers/media/radio/si4713-i2c.c: warning: 'left' may be used uninitialized in this function:  => 865
-  + src/drivers/media/video/cx18/cx18-driver.c: warning: initialization from incompatible pointer type:  => 113:1, 113
-  + src/drivers/media/video/cx18/cx18-driver.c: warning: return from incompatible pointer type:  => 113:1, 113
-  + src/drivers/media/video/ivtv/ivtv-driver.c: warning: initialization from incompatible pointer type:  => 142, 142:1
-  + src/drivers/media/video/ivtv/ivtv-driver.c: warning: return from incompatible pointer type:  => 142, 142:1
-  + src/drivers/media/video/pwc/pwc-if.c: warning: label 'err_video_unreg' defined but not used:  => 1170
-  + src/drivers/media/video/uvc/uvc_video.c: warning: format '%06lu' expects type 'long unsigned int', but argument 9 has type '__kernel_suseconds_t':  => 666
-  + src/drivers/media/video/w9966.c: warning: return from incompatible pointer type:  => 136, 136:1
-  + src/drivers/misc/bh1780gli.c: warning: 'bh1780_resume' defined but not used: 223 => 222:12, 223
-  + src/drivers/misc/bh1780gli.c: warning: 'bh1780_suspend' defined but not used: 201 => 200:12, 201
-  + src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1136 bytes is larger than 1024 bytes:  => 422
-  + src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1380 bytes is larger than 1024 bytes:  => 987
-  + src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1676 bytes is larger than 1024 bytes:  => 660
-  + src/drivers/mtd/devices/docg3.c: warning: unused variable 'base':  => 2085
-  + src/drivers/mtd/ftl.c: warning: passing argument 4 of 'mtd_read' from incompatible pointer type:  => 527, 294, 228, 490
-  + src/drivers/mtd/ftl.c: warning: passing argument 4 of 'mtd_write' from incompatible pointer type:  => 535, 426, 566, 507, 442, 557
-  + src/drivers/mtd/mtdcore.c: warning: unused variable 'mtd':  => 110
-  + src/drivers/net/can/cc770/cc770_platform.c: warning: unused variable 'priv':  => 243
-  + src/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c: warning: comparison of distinct pointer types lacks a cast:  => 1529, 1529:441
-  + src/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c: warning: comparison of distinct pointer types lacks a cast:  => 2780, 2780:437
-  + src/drivers/net/ethernet/dec/ewrk3.c: warning: return from incompatible pointer type:  => 1912, 1912:71
-  + src/drivers/net/ethernet/intel/igb/igb_main.c: warning: 'igb_resume' defined but not used:  => 6734
-  + src/drivers/net/ethernet/intel/igb/igb_main.c: warning: 'igb_suspend' defined but not used:  => 6714
-  + src/drivers/net/ethernet/intel/igb/igb_main.c: warning: 'wake' may be used uninitialized in this function:  => 6832
-  + src/drivers/net/hamradio/baycom_epp.c: warning: return from incompatible pointer type:  => 1168
-  + src/drivers/net/hamradio/baycom_par.c: warning: return from incompatible pointer type:  => 483, 483:1
-  + src/drivers/net/wireless/ath/ath5k/base.c: warning: return from incompatible pointer type:  => 84, 85:1
-  + src/drivers/net/wireless/ath/ath6kl/init.c: warning: 'hw' may be used uninitialized in this function:  => 1377:26
-  + src/drivers/net/wireless/brcm80211/brcmsmac/aiutils.c: warning: 'in' is used uninitialized in this function:  => 915
-  + src/drivers/net/wireless/brcm80211/brcmsmac/aiutils.c: warning: 'in' may be used uninitialized in this function:  => 915
-  + src/drivers/net/wireless/brcm80211/brcmsmac/aiutils.c: warning: 'val' is used uninitialized in this function:  => 765, 1159
-  + src/drivers/net/wireless/brcm80211/brcmsmac/aiutils.c: warning: 'val' may be used uninitialized in this function:  => 765, 1159
-  + src/drivers/net/wireless/brcm80211/brcmsmac/aiutils.c: warning: 'w' is used uninitialized in this function:  => 1185
-  + src/drivers/net/wireless/brcm80211/brcmsmac/main.c: warning: comparison is always false due to limited range of data type:  => 5682, 5582
-  + src/drivers/net/wireless/brcm80211/brcmsmac/nicpci.c: warning: 'byte_val' is used uninitialized in this function:  => 280
-  + src/drivers/net/wireless/brcm80211/brcmsmac/nicpci.c: warning: 'reg_val' is used uninitialized in this function:  => 487
-  + src/drivers/net/wireless/ipw2x00/libipw_wx.c: warning: unused variable 'dev':  => 526
-  + src/drivers/net/wireless/orinoco/orinoco_usb.c: warning: 'version' defined but not used:  => 1759, 1759:13
-  + src/drivers/pci/hotplug/cpcihp_generic.c: warning: return from incompatible pointer type:  => 219
-  + src/drivers/pci/pcie/portdrv_core.c: warning: 'cap_mask' may be used uninitialized in this function: 240:6 => 240:6, 259:16
-  + src/drivers/power/charger-manager.c: warning: 'i' may be used uninitialized in this function:  => 405
-  + src/drivers/power/sbs-battery.c: warning: 'gpio_flags' is used uninitialized in this function:  => 661
-  + src/drivers/power/sbs-battery.c: warning: 'gpio_flags' may be used uninitialized in this function:  => 661
-  + src/drivers/scsi/aha152x.c: warning: cast from pointer to integer of different size: 2988:2, 2988 => 2988:59, 2988:2, 2988
-  + src/drivers/staging/android/binder.c: warning: 'buffer' may be used uninitialized in this function:  => 719:24, 719
-  + src/drivers/staging/android/binder.c: warning: 'buffer_size' may be used uninitialized in this function:  => 720, 720:9
-  + src/drivers/staging/android/binder.c: warning: cast from pointer to integer of different size:  => 2345, 2342, 2385
-  + src/drivers/staging/android/binder.c: warning: return from incompatible pointer type:  => 107:1, 107
-  + src/drivers/staging/android/lowmemorykiller.c: warning: return from incompatible pointer type:  => 214, 215:1
-  + src/drivers/staging/comedi/drivers/vmk80xx.c: warning: 'reg[0]' may be used uninitialized in this function:  => 588, 962
-  + src/drivers/staging/media/lirc/lirc_imon.c: warning: 'imon_exit' declared 'static' but never defined:  => 75, 75:20
-  + src/drivers/staging/media/lirc/lirc_imon.c: warning: 'imon_init' declared 'static' but never defined:  => 74:19, 74
-  + src/drivers/staging/media/lirc/lirc_sasem.c: warning: 'sasem_exit' declared 'static' but never defined:  => 85:20, 85
-  + src/drivers/staging/media/lirc/lirc_sasem.c: warning: 'sasem_init' declared 'static' but never defined:  => 84, 84:19
-  + src/drivers/staging/media/lirc/lirc_serial.c: warning: return from incompatible pointer type:  => 1296, 1296:1
-  + src/drivers/staging/vme/devices/vme_pio2_core.c: warning: return from incompatible pointer type:  => 516, 512, 512:1, 516:1
-  + src/drivers/staging/wlan-ng/cfg80211.c: warning: ignoring return value of 'cfg80211_inform_bss', declared with attribute warn_unused_result:  => 404:22, 404
-  + src/drivers/tty/n_gsm.c: warning: unused variable 'buf':  => 2256
-  + src/drivers/tty/serial/8250/8250.c: warning: 'i' may be used uninitialized in this function:  => 1703, 1703:19
-  + src/drivers/tty/serial/8250/8250.c: warning: statement with no effect:  => 2197
-  + src/drivers/tty/serial/8250/8250_hp300.c: warning: #warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?:  => 24:2
-  + src/drivers/usb/host/ohci-hub.c: warning: 'ohci_finish_controller_resume' defined but not used:  => 320:13
-  + src/drivers/usb/misc/sisusbvga/sisusb.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 982
-  + src/drivers/usb/misc/sisusbvga/sisusb.c: warning: passing argument 7 of 'sisusb_write_mem_bulk' from incompatible pointer type:  => 1336
-  + src/drivers/usb/misc/sisusbvga/sisusb_con.c: warning: passing argument 5 of 'sisusb_copy_memory' from incompatible pointer type:  => 996, 554, 418, 991, 505, 472, 664, 985, 383, 880
-  + src/drivers/usb/musb/musb_core.c: warning: unused variable 'ctrl_base':  => 2108
-  + src/drivers/usb/musb/musb_gadget.c: warning: 'double_buffer_not_ok' is deprecated (declared at /scratch/kisskb/src/drivers/usb/musb/musb_core.h:452):  => 1125:3, 1085, 1085:3, 1125
-  + src/drivers/usb/musb/musb_host.c: warning: 'double_buffer_not_ok' is deprecated (declared at /scratch/kisskb/src/drivers/usb/musb/musb_core.h:452):  => 599:2, 774, 774:4, 599
-  + src/drivers/usb/musb/musb_io.h: warning: statement with no effect:  => 49, 45, 47
-  + src/drivers/video/amifb.c: warning: 'amifb_setup' defined but not used:  => 2348
-  + src/drivers/xen/xenbus/xenbus_client.c: warning: 'addr' may be used uninitialized in this function:  => 655
-  + src/fs/btrfs/backref.c: warning: 'refs' may be used uninitialized in this function:  => 1151
-  + src/fs/btrfs/backref.c: warning: 'sgn' may be used uninitialized in this function:  => 299
-  + src/fs/btrfs/check-integrity.c: warning: 'next_bytenr' may be used uninitialized in this function:  => 864, 692, 2168
-  + src/fs/btrfs/check-integrity.c: warning: 'ret' may be used uninitialized in this function:  => 647:6, 647
-  + src/fs/btrfs/check-integrity.c: warning: 'tmp_disk_key.objectid' may be used uninitialized in this function:  => 2175, 868
-  + src/fs/btrfs/extent-tree.c: warning: cast from pointer to integer of different size:  => 3916, 3699, 4142, 4135, 4714, 3315, 3770, 3336, 4195
-  + src/fs/btrfs/inode-map.c: warning: cast from pointer to integer of different size:  => 503, 441
-  + src/fs/btrfs/transaction.c: warning: cast from pointer to integer of different size:  => 330
-  + src/fs/cifs/connect.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 2171, 2161, 2153, 2146
-  + src/fs/ecryptfs/miscdev.c: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'unsigned int':  => 433, 433:60
-  + src/fs/ecryptfs/miscdev.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 448, 488
-  + src/fs/ext4/mballoc.c: warning: 'e4b.bd_bitmap' may be used uninitialized in this function:  => 1050
-  + src/fs/freevxfs/vxfs_lookup.c: warning: 'pp' may be used uninitialized in this function:  => 178
-  + src/fs/fuse/file.c: warning: 'parent' may be used uninitialized in this function: 2029 => 1997, 1997:27
-  + src/fs/jfs/jfs_dmap.c: warning: 'leafidx' may be used uninitialized in this function:  => 1622
-  + src/fs/ncpfs/dir.c: warning: unused variable 'sb':  => 128
-  + src/fs/qnx4/namei.c: warning: 'ino' may be used uninitialized in this function:  => 103
-  + src/include/linux/kernel.h: warning: "BUILD_BUG" redefined:  => 717:1
-  + src/include/linux/netdevice.h: warning: "__enabled_CONFIG_FCOE" is not defined:  => 1289:1, 964:1
-  + src/include/linux/netdevice.h: warning: "__enabled_CONFIG_FCOE_MODULE" is not defined:  => 1289:1, 964:1
-  + src/include/linux/netdevice.h: warning: "__enabled_CONFIG_LIBFCOE" is not defined:  => 981:1
-  + src/include/linux/netdevice.h: warning: "__enabled_CONFIG_LIBFCOE_MODULE" is not defined:  => 981:1
-  + src/include/linux/netdevice.h: warning: /scratch/kisskb/src/include/linux/netdevice.h:1289:1: warning: "__enabled_CONFIG_FCOE" is not defined"__enabled_CONFIG_FCOE" is not defined:  => 964:1
-  + src/kernel/rcutiny.c: warning: unused variable 'idle':  => 122, 68
-  + src/kernel/sched/core.c: warning: control may reach end of non-void function 'pick_next_task' being inlined:  => 3201
-  + src/kernel/sched/core.c: warning: control reaches end of non-void function:  => 3145
-  + src/kernel/sched/core.c: warning: initialization from incompatible pointer type:  => 6263
-  + src/kernel/sched/core.c: warning: unsupported argument to '__builtin_return_address':  => 3015, 3013
-  + src/kernel/sched/fair.c: warning: 'account_cfs_rq_runtime' declared inline after being called:  => 419, 420
-  + src/kernel/sched/fair.c: warning: 'return_cfs_rq_runtime' declared inline after being called:  => 1178
-  + src/kernel/sched/fair.c: warning: previous declaration of 'account_cfs_rq_runtime' was here:  => 419, 420
-  + src/kernel/sched/fair.c: warning: previous declaration of 'return_cfs_rq_runtime' was here:  => 1178
-  + src/lib/mpi/longlong.h: warning: "COUNT_LEADING_ZEROS_0" redefined:  => 1483:1
-  + src/lib/mpi/longlong.h: warning: function declaration isn't a prototype:  => 355
-  + src/lib/mpi/longlong.h: warning: this is the location of the previous definition:  => 610:1
-  + src/mm/memcontrol.c: warning: 'mem_cgroup_is_root' declared inline after being called:  => 379
-  + src/mm/memcontrol.c: warning: previous declaration of 'mem_cgroup_is_root' was here:  => 379
-  + src/net/bluetooth/rfcomm/tty.c: warning: 'p' is used uninitialized in this function:  => 218
-  + src/net/bluetooth/rfcomm/tty.c: warning: 'p' may be used uninitialized in this function:  => 218
-  + src/net/core/dev.c: warning: unused variable 'null_features':  => 1892
-  + src/net/ipv4/tcp_memcontrol.c: warning: 'val' may be used uninitialized in this function:  => 204
-  + src/net/netfilter/nfnetlink_acct.c: warning: initialization from incompatible pointer type:  => 240, 147, 182, 53, 352, 295, 247
-  + src/net/netfilter/nfnetlink_acct.c: warning: initialization makes pointer from integer without a cast:  => 147, 295
-  + src/net/netfilter/nfnetlink_acct.c: warning: left-hand operand of comma expression has no effect:  => 352
-  + src/net/netfilter/nfnetlink_acct.c: warning: type defaults to 'int' in declaration of '__mptr':  => 240, 147, 182, 53, 352, 295, 247
-  + src/net/netfilter/nfnetlink_acct.c: warning: type defaults to 'int' in declaration of '__ptr':  => 147, 295
-  + src/net/netfilter/nfnetlink_acct.c: warning: type defaults to 'int' in declaration of 'type name':  => 147, 295
-  + src/sound/isa/opti9xx/opti92x-ad1848.c: warning: return from incompatible pointer type:  => 87
-  + src/sound/oss/msnd_pinnacle.c: warning: return from incompatible pointer type:  => 1727
-  + src/sound/soc/codecs/wm9090.c: warning: unused variable 'i':  => 496, 496:6
-  + src/sound/soc/codecs/wm9090.c: warning: unused variable 'reg_cache':  => 495:7, 495
-  + src/sound/soc/codecs/wm9090.c: warning: unused variable 'ret':  => 496:9, 496
-  + src/sound/soc/codecs/wm9090.c: warning: unused variable 'wm9090':  => 658:22, 658
-  + warning: (BRIDGE_NF_EBTABLES) selects NETFILTER_XTABLES which has unmet direct dependencies (NET && INET && NETFILTER):  => N/A
-  + warning: (IMA) selects TCG_TIS which has unmet direct dependencies (TCG_TPM && X86):  => N/A
-  + warning: (IWLWIFI && IWLEGACY && ATH5K && ATH9K && ATH9K_HTC && CARL9170_LEDS) selects MAC80211_LEDS which has unmet direct dependencies (NET && WIRELESS && MAC80211 && LEDS_CLASS):  => N/A
-  + warning: (MIPS_ALCHEMY && CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X && SOC_AR933X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT):  => N/A
-  + warning: (PPC_PS3 && PPC_CELLEB && USB_EHCI_HCD_PMC_MSP && XPS_USB_HCD_XILINX && USB_OCTEON_EHCI) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || PPC_MPC512x || CPU_CAVIUM_OCTEON || PMC_MSP || SPARC_LEON)):  => N/A
-  + warning: (PPC_PS3 && PPC_CELLEB) selects USB_OHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB_OHCI_HCD):  => N/A
-  + warning: (SCSI_SRP) selects SCSI_TGT which has unmet direct dependencies (SCSI && EXPERIMENTAL):  => N/A
-  + warning: __mcount_loc already exists: arch/sparc/kernel/pci_sabre.o:  => N/A
-
-    [ 970 lines about __mcount_loc deleted]
-
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3eed0): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3eef8): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3ef10): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3ef54): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3ef74): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3f24c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x3f250): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x405e0): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x40608): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x40620): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x40664): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x40684): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x4095c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x40960): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin():  => N/A
-  + warning: arch/powerpc/platforms/built-in.o(.text+0x15490): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/platforms/built-in.o(.text+0x154ac): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/platforms/built-in.o(.text+0x154d0): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/platforms/built-in.o(.text+0x154ec): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/platforms/powernv/built-in.o(.text+0x4444): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/platforms/powernv/built-in.o(.text+0x4460): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0x1011c): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0x7fe4): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0xea64): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x1664): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x282c): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: drivers/built-in.o(.devexit.text+0x39304): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/built-in.o(.devinit.text+0x21e940): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: drivers/built-in.o(.devinit.text+0x21ea90): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/built-in.o(.text+0x104239): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/built-in.o(.text+0x1096554): Section mismatch in reference from the function .doc_probe_device() to the function .init.text:.doc_set_driver_info():  => N/A
-  + warning: drivers/built-in.o(.text+0x307ae): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/built-in.o(.text+0x5ba78): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/built-in.o(.text+0x61ec8): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/built-in.o(.text+0x8d00b8): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: drivers/built-in.o(.text+0xf8c00): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x1c394): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x234b0): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x2f42): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x4440): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x4d68): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x57a1): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x73dc): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: drivers/mfd/built-in.o(.text+0x8258): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: drivers/mtd/built-in.o(.text+0x89f94): Section mismatch in reference from the function .doc_probe_device() to the function .init.text:.doc_set_driver_info():  => N/A
-  + warning: drivers/mtd/devices/built-in.o(.text+0x2665c): Section mismatch in reference from the function .doc_probe_device() to the function .init.text:.doc_set_driver_info():  => N/A
-  + warning: drivers/mtd/devices/docg3.o(.text+0x109ac): Section mismatch in reference from the function .doc_probe_device() to the function .init.text:.doc_set_driver_info():  => N/A
-  + warning: drivers/sbus/char/bbc.o(.devinit.text+0x8): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.408():  => N/A
-  + warning: drivers/staging/android/built-in.o(.text+0xd14): Section mismatch in reference from the function ram_console_driver_probe() to the function .init.text:init_log():  => N/A
-  + warning: drivers/staging/built-in.o(.devexit.text+0x71c): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/built-in.o(.devinit.text+0x431c): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: drivers/staging/built-in.o(.devinit.text+0x446c): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2ef9): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f03): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f0a): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f2a): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/vme/built-in.o(.devexit.text+0x1d4): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/built-in.o(.devinit.text+0xe9c): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: drivers/staging/vme/built-in.o(.devinit.text+0xfec): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/built-in.o(.devexit.text+0x1d4): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/built-in.o(.devinit.text+0xe9c): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: drivers/staging/vme/devices/built-in.o(.devinit.text+0xfec): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devexit.text+0x18): Section mismatch in reference from the function pio2_remove() to the function .exit.text:pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devexit.text+0x31): Section mismatch in reference from the function pio2_remove() to the function .exit.text:pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devexit.text+0x44): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x490): Section mismatch in reference from the function pio2_probe() to the function .init.text:pio2_gpio_init():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x548): Section mismatch in reference from the function pio2_probe() to the function .exit.text:pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x57e): Section mismatch in reference from the function pio2_probe() to the function .init.text:pio2_gpio_init():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x67d): Section mismatch in reference from the function pio2_probe() to the function .exit.text:pio2_gpio_exit():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x730): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: drivers/staging/vme/devices/vme_pio2.o(.devinit.text+0x880): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: drivers/usb/gadget/g_ffs.o(.text+0x4fea): Section mismatch in reference from the function eth_bind_config() to the function .init.text:geth_bind_config():  => N/A
-  + warning: drivers/usb/gadget/g_ffs.o(.text+0x6894): Section mismatch in reference from the function eth_bind_config() to the function .init.text:geth_bind_config():  => N/A
-  + warning: drivers/usb/gadget/g_ffs.o(.text+0xbe29): Section mismatch in reference from the function eth_bind_config() to the function .init.text:geth_bind_config():  => N/A
-  + warning: drivers/usb/gadget/g_ffs.o(.text+0xec10): Section mismatch in reference from the function .eth_bind_config() to the function .init.text:.geth_bind_config():  => N/A
-  + warning: drivers/usb/gadget/g_multi.o(.text+0x8058): Section mismatch in reference from the function cdc_config_register() to the function .init.text:cdc_do_config():  => N/A
-  + warning: drivers/usb/gadget/g_multi.o(.text+0x80c0): Section mismatch in reference from the function rndis_config_register() to the function .init.text:rndis_do_config():  => N/A
-  + warning: vmlinux.o(.devexit.text+0x39304): Section mismatch in reference from the function .pio2_remove() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: vmlinux.o(.devinit.text+0x227ca0): Section mismatch in reference from the function .pio2_probe() to the function .init.text:.pio2_gpio_init():  => N/A
-  + warning: vmlinux.o(.devinit.text+0x227df0): Section mismatch in reference from the function .pio2_probe() to the function .exit.text:.pio2_gpio_exit():  => N/A
-  + warning: vmlinux.o(.text+0x196c2f4): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: vmlinux.o(.text+0x1af9f2): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: vmlinux.o(.text+0x2132790): Section mismatch in reference from the function .doc_probe_device() to the function .init.text:.doc_set_driver_info():  => N/A
-  + warning: vmlinux.o(.text+0x3080c): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary():  => N/A
-  + warning: vmlinux.o(.text+0x3086c): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary():  => N/A
-  + warning: vmlinux.o(.text+0x32b068): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: vmlinux.o(.text+0x43324): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: vmlinux.o(.text+0x463fc): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info():  => N/A
-  + warning: vmlinux.o(.text+0x489e81): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init():  => N/A
-  + warning: vmlinux.o(.text+0x4a4b0): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: vmlinux.o(.text+0x4a4d8): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: vmlinux.o(.text+0x4a4f0): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4a534): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4a554): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4a82c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4a830): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin():  => N/A
-  + warning: vmlinux.o(.text+0x4bc20): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: vmlinux.o(.text+0x4bc48): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom():  => N/A
-  + warning: vmlinux.o(.text+0x4bc60): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4bca4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4bcc4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4bf9c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf():  => N/A
-  + warning: vmlinux.o(.text+0x4bfa0): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin():  => N/A
-  + warning: vmlinux.o(.text+0x4e920): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices():  => N/A
-  + warning: vmlinux.o(.text+0x4e96c): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge():  => N/A
-  + warning: vmlinux.o(.text+0x4e9b8): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus():  => N/A
-  + warning: vmlinux.o(.text+0x4fc12): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca:  => N/A
-  + warning: vmlinux.o(.text+0x52f24): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0x54694): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0x60469): Section mismatch in reference from the function mem_hole_size() to the function .init.text:absent_pages_in_range():  => N/A
-  + warning: vmlinux.o(.text+0x6db1c4): Section mismatch in reference from the function .da9052_spi_probe() to the function .devinit.text:.da9052_device_init():  => N/A
-  + warning: vmlinux.o(.text+0x83b0c): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: vmlinux.o(.text+0x86944): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: vmlinux.o(.text+0x99750): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: vmlinux.o(.text+0x9976c): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: vmlinux.o(.text+0x9c5d0): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: vmlinux.o(.text+0x9c5ec): Section mismatch in reference from the function .pnv_pci_ioda_msi_setup() to the function .devinit.text:.__pnv_ioda_get_one_pe():  => N/A
-  + warning: vmlinux.o(.text+0x9e898): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info():  => N/A
-  + warning: vmlinux.o(.text+0xa1718): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info():  => N/A
-  + warning: vmlinux.o(.text+0xa364c): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0xa64cc): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0xaaee4): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus():  => N/A
-  + warning: vmlinux.o(.text+0xaaf70): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices():  => N/A
-  + warning: vmlinux.o(.text+0xaafd4): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge():  => N/A
-  + warning: vmlinux.o(.text+0xae290): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus():  => N/A
-  + warning: vmlinux.o(.text+0xae31c): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices():  => N/A
-  + warning: vmlinux.o(.text+0xae380): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge():  => N/A
-  + warning: vmlinux.o(.text+0xb05fe): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca:  => N/A
-  + warning: vmlinux.o(.text+0xb6236): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca:  => N/A
-
-342 improvements:
-  - .config: warning: override: HIGHMEM4G changes choice state: 316 => 
-  - .config: warning: override: PCI_GOANY changes choice state: 424 => 
-  - .config: warning: override: SLOB changes choice state: 129 => 
-  - /tmp/ccjgBklk.s: Warning: source register same as write-back base: 104 => 
-  - <stdin>: warning: #warning syscall clock_adjtime not implemented: 1546:2 => 
-  - <stdin>: warning: #warning syscall dup3 not implemented: 1494:2 => 
-  - <stdin>: warning: #warning syscall epoll_create1 not implemented: 1490:2 => 
-  - <stdin>: warning: #warning syscall eventfd2 not implemented: 1486:2 => 
-  - <stdin>: warning: #warning syscall fallocate not implemented: 1470:2 => 
-  - <stdin>: warning: #warning syscall fanotify_init not implemented: 1526:2 => 
-  - <stdin>: warning: #warning syscall fanotify_mark not implemented: 1530:2 => 
-  - <stdin>: warning: #warning syscall inotify_init1 not implemented: 1502:2 => 
-  - <stdin>: warning: #warning syscall name_to_handle_at not implemented: 1538:2 => 
-  - <stdin>: warning: #warning syscall open_by_handle_at not implemented: 1542:2 => 
-  - <stdin>: warning: #warning syscall perf_event_open not implemented: 1518:2 => 
-  - <stdin>: warning: #warning syscall pipe2 not implemented: 1498:2 => 
-  - <stdin>: warning: #warning syscall pread64 not implemented: 906:2 => 
-  - <stdin>: warning: #warning syscall preadv not implemented: 1506:2 => 
-  - <stdin>: warning: #warning syscall prlimit64 not implemented: 1534:2 => 
-  - <stdin>: warning: #warning syscall process_vm_readv not implemented: 1562:2 => 
-  - <stdin>: warning: #warning syscall process_vm_writev not implemented: 1566:2 => 
-  - <stdin>: warning: #warning syscall pwrite64 not implemented: 910:2 => 
-  - <stdin>: warning: #warning syscall pwritev not implemented: 1510:2 => 
-  - <stdin>: warning: #warning syscall recvmmsg not implemented: 1522:2 => 
-  - <stdin>: warning: #warning syscall rt_tgsigqueueinfo not implemented: 1514:2 => 
-  - <stdin>: warning: #warning syscall sendmmsg not implemented: 1554:2 => 
-  - <stdin>: warning: #warning syscall signalfd4 not implemented: 1482:2 => 
-  - <stdin>: warning: #warning syscall sync_file_range not implemented: 1430:2 => 
-  - <stdin>: warning: #warning syscall syncfs not implemented: 1550:2 => 
-  - <stdin>: warning: #warning syscall timerfd_create not implemented: 1462:2 => 
-  - <stdin>: warning: #warning syscall timerfd_gettime not implemented: 1478:2 => 
-  - <stdin>: warning: #warning syscall timerfd_settime not implemented: 1474:2 => 
-  - <stdin>: warning: #warning syscall umount2 not implemented: 394:2 => 
-  - modpost: WARNING: modpost: Found 10 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 11 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 17 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 20 section mismatch(es).: N/A => 
-  - src/arch/ia64/sn/kernel/tiocx.c: warning: ignoring return value of 'bus_register', declared with attribute warn_unused_result: 493 => 
-  - src/arch/ia64/sn/kernel/tiocx.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 213 => 
-  - src/arch/x86/kernel/apm_32.c: warning: #warning deprecated CONFIG_APM_CPU_IDLE will be deleted in 2012: 362:2 => 
-  - src/arch/xtensa/include/asm/regs.h: warning: this is the location of the previous definition: 59:1 => 
-  - src/arch/xtensa/kernel/entry.S: Warning: value 0xffffffff30000000 truncated to 0x30000000: 1545 => 
-  - src/arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_mask' makes pointer from integer without a cast: 92 => 
-  - src/arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_unmask' makes pointer from integer without a cast: 87 => 
-  - src/arch/xtensa/kernel/process.c: warning: unused variable 'ti': 180 => 
-  - src/arch/xtensa/kernel/time.c: warning: initialization from incompatible pointer type: 42 => 
-  - src/arch/xtensa/mm/tlb.c: warning: comparison of distinct pointer types lacks a cast: 71, 68 => 
-  - src/drivers/bluetooth/btwilink.c: warning: overflow in implicit constant conversion: 179 => 
-  - src/drivers/char/mbcs.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 786 => 
-  - src/drivers/char/rtc.c: warning: 'rtc_freq' defined but not used: 193 => 
-  - src/drivers/idle/intel_idle.c: warning: cast to pointer from integer of different size: 518 => 
-  - src/drivers/md/dm-table.c: warning: statement with no effect: 1285, 1285:3 => 
-  - src/drivers/media/rc/redrat3.c: warning: assignment from incompatible pointer type: 1100:12, 1100 => 
-  - src/drivers/media/video/em28xx/em28xx-core.c: warning: 'packet_size' may be used uninitialized in this function: 1116 => 
-  - src/drivers/media/video/uvc/uvc_queue.c: warning: 'buffer' may be used uninitialized in this function: 504 => 
-  - src/drivers/media/video/uvc/uvc_queue.c: warning: unused variable 'page': 413 => 
-  - src/drivers/mfd/mc13xxx-core.c: warning: 'id' may be used uninitialized in this function: 703 => 
-  - src/drivers/misc/vmw_balloon.c: warning: 'hv_status' may be used uninitialized in this function: 413 => 
-  - src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1132 bytes is larger than 1024 bytes: 421 => 
-  - src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1376 bytes is larger than 1024 bytes: 984 => 
-  - src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1672 bytes is larger than 1024 bytes: 659 => 
-  - src/drivers/mtd/devices/docg3.c: warning: 'doc_get_erase_count' defined but not used: 752:12, 752, 753 => 
-  - src/drivers/mtd/devices/sst25l.c: warning: unused variable 'i': 381:11, 381 => 
-  - src/drivers/mtd/ftl.c: warning: passing argument 4 of 'part->mbd.mtd->read' from incompatible pointer type: 527, 294, 228, 490 => 
-  - src/drivers/mtd/ftl.c: warning: passing argument 4 of 'part->mbd.mtd->write' from incompatible pointer type: 564, 535, 426, 507, 442, 555 => 
-  - src/drivers/mtd/sm_ftl.c: warning: comparison of distinct pointer types lacks a cast: 216:95, 215, 215:100, 216 => 215, 216
-  - src/drivers/nfc/nfcwilink.c: warning: overflow in implicit constant conversion: 140 => 
-  - src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used: 521 => 
-  - src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used: 547 => 
-  - src/drivers/staging/gma500/mid_bios.c: warning: cast from pointer to integer of different size: 201, 192, 202 => 
-  - src/drivers/staging/gma500/power.c: warning: passing argument 1 of 'gma_resume_display' from incompatible pointer type: 269 => 
-  - src/drivers/staging/gma500/psb_drv.c: warning: cast to pointer from integer of different size: 712 => 
-  - src/drivers/staging/iio/accel/lis3l02dq_core.c: warning: initialization from incompatible pointer type: 660:2, 660 => 
-  - src/drivers/staging/iio/gyro/adis16080_core.c: warning: 'ut' may be used uninitialized in this function: 85:6, 85 => 85
-  - src/drivers/staging/media/dt3155v4l/dt3155v4l.c: warning: initialization from incompatible pointer type: 311:2, 307:2, 307, 311 => 
-  - src/drivers/staging/sm7xx/smtcfb.c: warning: 'sm712vga_setup' defined but not used: 831:122, 831:19, 832, 831 => 831:19, 832, 831
-  - src/drivers/staging/vme/bridges/vme_ca91cx42.c: warning: cast from pointer to integer of different size: 993, 939, 879, 933, 885 => 
-  - src/drivers/thermal/thermal_sys.c: warning: 'thermal_event_seqnum' defined but not used: 63:21, 63 => 63
-  - src/drivers/tty/serial/8250.c: warning: 'i' may be used uninitialized in this function: 1728, 1728:19 => 
-  - src/drivers/tty/serial/8250.c: warning: statement with no effect: 2225 => 
-  - src/drivers/tty/serial/8250_hp300.c: warning: #warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?: 24:2 => 
-  - src/drivers/usb/dwc3/gadget.c: warning: 'trb' is used uninitialized in this function: 1331 => 
-  - src/drivers/usb/host/ehci-xilinx-of.c: warning: initialization from incompatible pointer type: 293:2 => 
-  - src/drivers/usb/wusbcore/devconnect.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 807 => 
-  - src/drivers/usb/wusbcore/devconnect.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t': 821, 827 => 
-  - src/drivers/usb/wusbcore/wa-rpipe.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t': 92, 130 => 
-  - src/drivers/usb/wusbcore/wa-xfer.c: warning: format '%zu' expects type 'size_t', but argument 6 has type 'ssize_t': 269, 253 => 
-  - src/drivers/usb/wusbcore/wa-xfer.c: warning: format '%zu' expects type 'size_t', but argument 7 has type 'ssize_t': 262 => 
-  - src/drivers/uwb/i1480/dfu/dfu.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t': 123 => 
-  - src/drivers/uwb/i1480/dfu/dfu.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t': 142 => 
-  - src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 180 => 
-  - src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zd' expects type 'signed size_t', but argument 7 has type 'ssize_t': 243, 234 => 
-  - src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t': 488 => 
-  - src/drivers/uwb/i1480/dfu/usb.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t': 174 => 
-  - src/drivers/uwb/i1480/dfu/usb.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t': 181 => 
-  - src/drivers/uwb/ie.c: warning: format '%zu' expects type 'size_t', but argument 3 has type 'ssize_t': 140, 135 => 
-  - src/drivers/uwb/neh.c: warning: format '%zd' expects type 'signed size_t', but argument 6 has type 'ssize_t': 517 => 
-  - src/drivers/uwb/neh.c: warning: format '%zu' expects type 'size_t', but argument 3 has type 'ssize_t': 387 => 
-  - src/drivers/uwb/reset.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t': 240 => 
-  - src/drivers/video/gbefb.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 1094, 1093 => 
-  - src/drivers/watchdog/gef_wdt.c: warning: 'gef_wdt_remove' defined but not used: 287:125 => 
-  - src/fs/9p/xattr.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 35 => 
-  - src/fs/btrfs/backref.c: warning: 'ret' may be used uninitialized in this function: 419, 485 => 
-  - src/fs/nfs/nfs4filelayout.c: warning: comparison of distinct pointer types lacks a cast: 58 => 
-  - src/fs/sysfs/dir.c: warning: 'sysfs_pathname' defined but not used: 440, 441 => 441
-  - src/include/linux/jhash.h: warning: array subscript is above array bounds: 90, 95, 97, 94, 91, 92, 93, 96 => 
-  - src/include/math-emu/double.h: warning: "__LITTLE_ENDIAN" is not defined: 59:5 => 
-  - src/include/math-emu/single.h: warning: "__LITTLE_ENDIAN" is not defined: 50:5 => 
-  - src/kernel/irq/debug.h: warning: "PS" redefined: 8:1 => 
-  - src/kernel/sched.c: warning: control may reach end of non-void function 'pick_next_task' being inlined: 4446 => 
-  - src/kernel/sched.c: warning: control reaches end of non-void function: 4390 => 
-  - src/kernel/sched.c: warning: initialization from incompatible pointer type: 7533 => 
-  - src/kernel/sched.c: warning: unsupported argument to '__builtin_return_address': 4263, 4261 => 
-  - src/kernel/sched_fair.c: warning: 'account_cfs_rq_runtime' declared inline after being called: 310, 309 => 
-  - src/kernel/sched_fair.c: warning: 'return_cfs_rq_runtime' declared inline after being called: 1068 => 
-  - src/kernel/sched_fair.c: warning: previous declaration of 'account_cfs_rq_runtime' was here: 310, 309 => 
-  - src/kernel/sched_fair.c: warning: previous declaration of 'return_cfs_rq_runtime' was here: 1068 => 
-  - src/kernel/trace/trace_clock.c: warning: data definition has no type or storage class: 117 => 
-  - src/kernel/trace/trace_clock.c: warning: type defaults to 'int' in declaration of 'trace_counter': 117 => 
-  - src/kernel/watchdog.c: warning: 'watchdog_disable' defined but not used: 463:13, 463 => 
-  - src/lib/debugobjects.c: warning: 'obj_states' defined but not used: 73 => 
-  - src/lib/debugobjects.c: warning: unused variable 'hint': 256 => 
-  - src/lib/radix-tree.c: warning: 'radix_tree_range_tag_if_tagged' uses dynamic stack allocation: 741 => 
-  - src/net/core/net-sysfs.c: warning: comparison is always false due to limited range of data type: 672 => 
-  - src/net/ipv4/ipconfig.c: warning: 'ic_nameservers' defined but not used: 152 => 
-  - src/net/sched/cls_flow.c: warning: 'flow_classify' uses dynamic stack allocation: 408 => 
-  - src/net/sctp/protocol.c: warning: label 'free_next' defined but not used: 676 => 
-  - src/sound/soc/codecs/adav80x.c: warning: 'adav80x_bus_probe' defined but not used: 842 => 
-  - src/sound/soc/codecs/adav80x.c: warning: 'adav80x_bus_remove' defined but not used: 863 => 
-  - src/sound/soc/codecs/wm2000.c: warning: 'wm2000_i2c_resume' defined but not used: 848 => 
-  - src/sound/soc/codecs/wm2000.c: warning: 'wm2000_i2c_suspend' defined but not used: 840 => 
-  - src/sound/soc/codecs/wm8994.c: warning: unused variable 'wm8994': 58:22, 58 => 
-  - src/sound/soc/sh/fsi.c: warning: passing argument 1 of '__fsi_reg_mask_set' makes pointer from integer without a cast: 664, 920, 742, 898, 739 => 
-  - src/sound/soc/sh/fsi.c: warning: passing argument 1 of '__fsi_reg_read' makes pointer from integer without a cast: 453, 506, 443, 529, 444, 454 => 
-  - src/sound/soc/sh/fsi.c: warning: passing argument 1 of '__fsi_reg_write' makes pointer from integer without a cast: 741, 738, 468, 518, 911, 469, 915, 494, 914 => 
-  - warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES): N/A => 
-  - warning: (IMA) selects TCG_TPM which has unmet direct dependencies (HAS_IOMEM && EXPERIMENTAL): N/A => 
-  - warning: (ISDN_PPP) selects SLHC which has unmet direct dependencies (NETDEVICES): N/A => 
-  - warning: (IWLWIFI && IWLWIFI_LEGACY && ATH5K && ATH9K && ATH9K_HTC && CARL9170_LEDS) selects MAC80211_LEDS which has unmet direct dependencies (NET && WIRELESS && MAC80211 && LEDS_CLASS): N/A => 
-  - warning: (MIPS_ALCHEMY && CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT): N/A => 
-  - warning: (MMC_TIFM_SD && MEMSTICK_TIFM_MS) selects TIFM_CORE which has unmet direct dependencies (MISC_DEVICES && EXPERIMENTAL && PCI): N/A => 
-  - warning: (MTD_DOC2000 && MTD_DOC2001 && MTD_DOC2001PLUS) selects MTD_NAND_IDS which has unmet direct dependencies (MTD && MTD_NAND): N/A => 
-  - warning: (RADIO_WL128X) selects TI_ST which has unmet direct dependencies (MISC_DEVICES && NET && GPIOLIB): N/A => 
-  - warning: (SCHED_AUTOGROUP) selects CGROUP_SCHED which has unmet direct dependencies (CGROUPS && EXPERIMENTAL): N/A => 
-  - warning: (USB_WUSB) selects UWB which has unmet direct dependencies (EXPERIMENTAL && PCI): N/A => 
-  - warning: __mcount_loc already exists: crypto/serpent.o: N/A => 
-  - warning: __mcount_loc already exists: crypto/xts.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/base/regmap/regcache-indexed.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/gpio/gpio-it8761e.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/gpu/drm/drm_lock.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/hid/hid-quanta.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/hid/hid-wiimote.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/ath/ath6kl/htc_hif.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-3945-debugfs.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-3945-led.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-3945-rs.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-3945.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-debugfs.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-eeprom.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-led.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-lib.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-rs.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-rx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-sta.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-tx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965-ucode.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl-4965.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl3945-base.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlegacy/iwl4965-base.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlwifi/iwl-agn-ucode.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/iwlwifi/iwl-sv-open.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/net/wireless/wl12xx/sdio_test.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/of/pdt.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/power/bq20z75.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/config.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/crypto.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/dir.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/inode.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/mcache.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/path_entry.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/pohmelfs/trans.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/r8190P_rtl8256.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/r8192E_cmdpkt.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/r8192E_dev.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/r8192E_firmware.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/r8192E_phy.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl819x_TSProc.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_cam.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_core.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_debug.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_dm.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_ethtool.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_pci.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_pm.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_ps.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtl_wx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_crypt.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_module.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_rx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_softmac.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_softmac_wx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_tx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/rtl8192e/rtllib_wx.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/staging/xgifb/vb_ext.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/tty/serial/8250_dw.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/tty/serial/serial_cs.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/usb/dwc3/core.o: N/A => 
-  - warning: __mcount_loc already exists: drivers/usb/dwc3/dwc3-pci.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/acorn.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/atari.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/karma.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/msdos.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/osf.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/sgi.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/sun.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/sysv68.o: N/A => 
-  - warning: __mcount_loc already exists: fs/partitions/ultrix.o: N/A => 
-  - warning: __mcount_loc already exists: kernel/sched_cpupri.o: N/A => 
-  - warning: __mcount_loc already exists: net/dsa/dsa.o: N/A => 
-  - warning: __mcount_loc already exists: net/dsa/mv88e6060.o: N/A => 
-  - warning: __mcount_loc already exists: net/dsa/mv88e6123_61_65.o: N/A => 
-  - warning: __mcount_loc already exists: net/dsa/mv88e6131.o: N/A => 
-  - warning: __mcount_loc already exists: net/ipv4/fib_rules.o: N/A => 
-  - warning: __mcount_loc already exists: net/ipv4/fib_trie.o: N/A => 
-  - warning: __mcount_loc already exists: net/ipv4/netfilter/ipt_ecn.o: N/A => 
-  - warning: __mcount_loc already exists: net/unix/af_unix.o: N/A => 
-  - warning: __mcount_loc already exists: net/wireless/chan.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kdb/kdb_hello.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kfifo/bytestream-example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kfifo/inttype-example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kfifo/record-example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kobject/kobject-example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kobject/kset-example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kprobes/jprobe_example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kprobes/kprobe_example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/kprobes/kretprobe_example.o: N/A => 
-  - warning: __mcount_loc already exists: samples/trace_events/trace-events-sample.o: N/A => 
-  - warning: __mcount_loc already exists: samples/tracepoints/tracepoint-probe-sample.o: N/A => 
-  - warning: __mcount_loc already exists: samples/tracepoints/tracepoint-probe-sample2.o: N/A => 
-  - warning: __mcount_loc already exists: security/selinux/avc.o: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ebd4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ebfc): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ec14): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ec58): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ec78): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ef50): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x3ef54): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x402d0): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x402f8): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x40310): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x40354): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x40374): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x4064c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x40650): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0x9384): Section mismatch in reference from the function .of_get_lmb_size() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0x9540): Section mismatch in reference from the function .hot_add_drconf_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0x9bdc): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0x9bf8): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: arch/powerpc/platforms/built-in.o(.text+0x582dc): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_irq(): N/A => 
-  - warning: arch/powerpc/platforms/built-in.o(.text+0x5831c): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_debug_brk(): N/A => 
-  - warning: arch/powerpc/platforms/built-in.o(.text+0x77924): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_irq(): N/A => 
-  - warning: arch/powerpc/platforms/built-in.o(.text+0x77964): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_debug_brk(): N/A => 
-  - warning: arch/powerpc/platforms/ps3/built-in.o(.text+0xc440): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_irq(): N/A => 
-  - warning: arch/powerpc/platforms/ps3/built-in.o(.text+0xc480): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_debug_brk(): N/A => 
-  - warning: arch/powerpc/sysdev/built-in.o(.text+0xe230): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics(): N/A => 
-  - warning: arch/powerpc/sysdev/built-in.o(.text+0xf8e4): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics(): N/A => 
-  - warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x225c): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics(): N/A => 
-  - warning: drivers/macintosh/built-in.o(.data+0x220): Section mismatch in reference from the variable via_pmu_driver to the function .init.text:pmu_init(): N/A => 
-  - warning: drivers/mfd/cs5535-mfd.o(.data+0x20): Section mismatch in reference from the variable cs5535_mfd_drv to the function .devinit.text:cs5535_mfd_probe(): N/A => 
-  - warning: drivers/mfd/cs5535-mfd.o(.data+0x28): Section mismatch in reference from the variable cs5535_mfd_drv to the function .devexit.text:cs5535_mfd_remove(): N/A => 
-  - warning: drivers/sbus/char/bbc.o(.devinit.text+0x8): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.409(): N/A => 
-  - warning: drivers/spi/spi-topcliff-pch.o(.data+0x30): Section mismatch in reference from the variable pch_spi_pcidev to the function .devinit.text:pch_spi_probe(): N/A => 
-  - warning: drivers/spi/spi-topcliff-pch.o(.data+0x38): Section mismatch in reference from the variable pch_spi_pcidev to the function .devexit.text:pch_spi_remove(): N/A => 
-  - warning: drivers/staging/comedi/drivers/s626.o(.text+0x2efe): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table: N/A => 
-  - warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f08): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table: N/A => 
-  - warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f0f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table: N/A => 
-  - warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f2f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table: N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x5468): Section mismatch in reference from the function eth_bind_config() to the function .init.text:geth_bind_config(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xba64): Section mismatch in reference from the function eth_bind_config() to the function .init.text:geth_bind_config(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xee94): Section mismatch in reference from the function .eth_bind_config() to the function .init.text:.geth_bind_config(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x8580): Section mismatch in reference from the function cdc_config_register() to the function .init.text:cdc_do_config(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x85e8): Section mismatch in reference from the function rndis_config_register() to the function .init.text:rndis_do_config(): N/A => 
-  - warning: vmlinux.o(.devinit.text+0xa607): Section mismatch in reference from the function cnb20le_res() to the function .init.text:acpi_os_get_root_pointer(): N/A => 
-  - warning: vmlinux.o(.text+0x123590): Section mismatch in reference from the function .kvm_rma_init() to the function .init.text:.__alloc_bootmem(): N/A => 
-  - warning: vmlinux.o(.text+0x1235d0): Section mismatch in reference from the function .kvm_rma_init() to the function .init.text:.__alloc_bootmem(): N/A => 
-  - warning: vmlinux.o(.text+0x3056c): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary(): N/A => 
-  - warning: vmlinux.o(.text+0x305cc): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary(): N/A => 
-  - warning: vmlinux.o(.text+0x31bf38): Section mismatch in reference from the function kernel_tree_alloc() to the function .init.text:prom_early_alloc(): N/A => 
-  - warning: vmlinux.o(.text+0x4a1b4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: vmlinux.o(.text+0x4a1dc): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: vmlinux.o(.text+0x4a1f4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4a238): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4a258): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4a530): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4a534): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin(): N/A => 
-  - warning: vmlinux.o(.text+0x4b910): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: vmlinux.o(.text+0x4b938): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.call_prom(): N/A => 
-  - warning: vmlinux.o(.text+0x4b950): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4b994): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4b9b4): Section mismatch in reference from the function .prom_query_opal() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4bc8c): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_printf(): N/A => 
-  - warning: vmlinux.o(.text+0x4bc90): Section mismatch in reference from the function .prom_opal_takeover() to the function .init.text:.prom_close_stdin(): N/A => 
-  - warning: vmlinux.o(.text+0x531c0): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0x5491c): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0x6ba74): Section mismatch in reference from the function .of_get_lmb_size() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6bc30): Section mismatch in reference from the function .hot_add_drconf_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6be34): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .meminit.text:.early_pfn_to_nid(): N/A => 
-  - warning: vmlinux.o(.text+0x6be5c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.work_with_active_regions(): N/A => 
-  - warning: vmlinux.o(.text+0x6bf0c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.reserve_bootmem_node(): N/A => 
-  - warning: vmlinux.o(.text+0x6bf3c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .meminit.text:.early_pfn_to_nid(): N/A => 
-  - warning: vmlinux.o(.text+0x6bf64): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.work_with_active_regions(): N/A => 
-  - warning: vmlinux.o(.text+0x6c2cc): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6c2e8): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6d1d4): Section mismatch in reference from the function .of_get_lmb_size() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6d390): Section mismatch in reference from the function .hot_add_drconf_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6d594): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .meminit.text:.early_pfn_to_nid(): N/A => 
-  - warning: vmlinux.o(.text+0x6d5bc): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.work_with_active_regions(): N/A => 
-  - warning: vmlinux.o(.text+0x6d66c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.reserve_bootmem_node(): N/A => 
-  - warning: vmlinux.o(.text+0x6d69c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .meminit.text:.early_pfn_to_nid(): N/A => 
-  - warning: vmlinux.o(.text+0x6d6c4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.work_with_active_regions(): N/A => 
-  - warning: vmlinux.o(.text+0x6da2c): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x6da48): Section mismatch in reference from the function .hot_add_node_scn_to_nid() to the function .devinit.text:.read_n_cells(): N/A => 
-  - warning: vmlinux.o(.text+0x82914): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics(): N/A => 
-  - warning: vmlinux.o(.text+0x85748): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics(): N/A => 
-  - warning: vmlinux.o(.text+0x9bf1c): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info(): N/A => 
-  - warning: vmlinux.o(.text+0x9ed9c): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info(): N/A => 
-  - warning: vmlinux.o(.text+0xa0ecc): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0xa3d4c): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0xa86f8): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus(): N/A => 
-  - warning: vmlinux.o(.text+0xa8784): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices(): N/A => 
-  - warning: vmlinux.o(.text+0xa87e8): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge(): N/A => 
-  - warning: vmlinux.o(.text+0xabaa4): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus(): N/A => 
-  - warning: vmlinux.o(.text+0xabb30): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices(): N/A => 
-  - warning: vmlinux.o(.text+0xabb94): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge(): N/A => 
-  - warning: vmlinux.o(.text+0xad38e): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca: N/A => 
-  - warning: vmlinux.o(.text+0xb2fc2): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca: N/A => 
-  - warning: vmlinux.o(.text+0xdb39c): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_irq(): N/A => 
-  - warning: vmlinux.o(.text+0xdb3dc): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_debug_brk(): N/A => 
-  - warning: vmlinux.o(.text+0xecc64): Section mismatch in reference from the function .kvm_rma_init() to the function .init.text:.__alloc_bootmem(): N/A => 
-  - warning: vmlinux.o(.text+0xecca4): Section mismatch in reference from the function .kvm_rma_init() to the function .init.text:.__alloc_bootmem(): N/A => 
-  - warning: vmlinux.o(.text+0xfd824): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_irq(): N/A => 
-  - warning: vmlinux.o(.text+0xfd864): Section mismatch in reference from the function .ps3_smp_probe() to the function .init.text:.ps3_register_ipi_debug_brk(): N/A => 
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+> +	}
+> +
+> +	return 0;
+> +
+> +err_enable_irq_wake:
+> +	free_irq(gpio_to_irq(gpio_dev->gpio_nr), gpio_dev);
+> +err_request_irq:
+> +	platform_set_drvdata(pdev, NULL);
+> +	rc_unregister_device(rcdev);
+> +err_register_rc_device:
+> +err_gpio_direction_input:
+> +	gpio_free(pdata->gpio_nr);
+> +err_gpio_request:
+> +	rc_free_device(rcdev);
+> +	rcdev = NULL;
+> +err_allocate_device:
+> +	mutex_destroy(&gpio_dev->lock);
+> +	kfree(gpio_dev);
+> +	return rc;
+> +}
+> +
+> +static int __devexit gpio_ir_recv_remove(struct platform_device *pdev)
+> +{
+> +	struct gpio_rc_dev *gpio_dev = platform_get_drvdata(pdev);
+> +
+> +	disable_irq_wake(gpio_to_irq(gpio_dev->gpio_nr));
+> +	free_irq(gpio_to_irq(gpio_dev->gpio_nr), gpio_dev);
+> +	platform_set_drvdata(pdev, NULL);
+> +	rc_unregister_device(gpio_dev->rcdev);
+> +	gpio_free(gpio_dev->gpio_nr);
+> +	rc_free_device(gpio_dev->rcdev);
+> +	mutex_destroy(&gpio_dev->lock);
+> +	kfree(gpio_dev);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver gpio_ir_recv_driver = {
+> +	.probe  = gpio_ir_recv_probe,
+> +	.remove = __devexit_p(gpio_ir_recv_remove),
+> +	.driver = {
+> +		.name   = GPIO_IR_DRIVER_NAME,
+> +		.owner  = THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init gpio_ir_recv_init(void)
+> +{
+> +	return platform_driver_register(&gpio_ir_recv_driver);
+> +}
+> +module_init(gpio_ir_recv_init);
+> +
+> +static void __exit gpio_ir_recv_exit(void)
+> +{
+> +	platform_driver_unregister(&gpio_ir_recv_driver);
+> +}
+> +module_exit(gpio_ir_recv_exit);
+> +
+> +MODULE_DESCRIPTION("GPIO IR Receiver driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/media/gpio-ir-recv.h b/include/media/gpio-ir-recv.h
+> new file mode 100644
+> index 0000000..3eab611
+> --- /dev/null
+> +++ b/include/media/gpio-ir-recv.h
+> @@ -0,0 +1,23 @@
+> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef __GPIO_IR_RECV_H__
+> +#define __GPIO_IR_RECV_H__
+> +
+> +struct gpio_ir_recv_platform_data {
+> +	unsigned int gpio_nr;
+> +	bool active_low;
+> +	bool can_wakeup;
+> +};
+> +
+> +#endif /* __GPIO_IR_RECV_H__ */
+> +
+> -- 
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
