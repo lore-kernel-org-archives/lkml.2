@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab2BTCux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 21:50:53 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51357 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab2BTCuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 21:50:52 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 20 Feb 2012 11:49:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] rmap: anon_vma_prepare: Reduce code duplication by
- calling anon_vma_chain_link
-Message-Id: <20120220114928.8507095c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1329488908-7304-1-git-send-email-consul.kautuk@gmail.com>
-References: <1329488908-7304-1-git-send-email-consul.kautuk@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752245Ab2BTC7r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 21:59:47 -0500
+Received: from tundra.namei.org ([65.99.196.166]:45916 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630Ab2BTC7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 21:59:46 -0500
+Date: Mon, 20 Feb 2012 13:55:47 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Will Drewry <wad@chromium.org>
+cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.org,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        keescook@chromium.org
+Subject: Re: [PATCH v8 2/8] seccomp: kill the seccomp_t typedef
+In-Reply-To: <1329422549-16407-2-git-send-email-wad@chromium.org>
+Message-ID: <alpine.LRH.2.02.1202201355010.24795@tundra.namei.org>
+References: <1329422549-16407-1-git-send-email-wad@chromium.org> <1329422549-16407-2-git-send-email-wad@chromium.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012 09:28:28 -0500
-Kautuk Consul <consul.kautuk@gmail.com> wrote:
+On Thu, 16 Feb 2012, Will Drewry wrote:
 
-> Reduce code duplication by calling anon_vma_chain_link from
-> anon_vma_prepare.
+> Replaces the seccomp_t typedef with struct seccomp to match modern
+> kernel style.
 > 
-> Also move the anon_vmal_chain_link function to a more suitable location
-> in the file.
+> v7: struct seccomp_struct -> struct seccomp
+> v6: original inclusion in this series.
 > 
-> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> Signed-off-by: Will Drewry <wad@chromium.org>
 
-Reviewed-by: KAMEZWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: James Morris <jmorris@namei.org>
 
 
+-- 
+James Morris
+<jmorris@namei.org>
