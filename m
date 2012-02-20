@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab2BTHge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 02:36:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52780 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2BTHgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 02:36:33 -0500
-Date: Mon, 20 Feb 2012 07:36:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Ryan Mallon <rmallon@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 13/18] ARM: at91/rtc-at91sam9: pass the GPBR to use via
-	ressources
-Message-ID: <20120220073621.GB22562@n2100.arm.linux.org.uk>
-References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <8187feb330895bf9e077ede21e68cc81a72438cc.1329500622.git.nicolas.ferre@atmel.com> <4F419742.70200@gmail.com> <20120220012010.GA29599@game.jcrosoft.org>
+	id S1752220Ab2BTHi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 02:38:59 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43493 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751447Ab2BTHi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 02:38:58 -0500
+Date: Mon, 20 Feb 2012 08:38:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jkenisto@us.ibm.com, a.p.zijlstra@chello.nl, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        oleg@redhat.com, tglx@linutronix.de,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>,
+        Josh Stone <jistone@redhat.com>, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/uprobes] uprobes/core: Clean up,  refactor and improve
+ the code
+Message-ID: <20120220073823.GA30810@elte.hu>
+References: <tip-ewbwhb8o6navvllsauu7k07p@git.kernel.org>
+ <20120220060825.GA22680@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120220012010.GA29599@game.jcrosoft.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120220060825.GA22680@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 02:20:10AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 11:43 Mon 20 Feb     , Ryan Mallon wrote:
-> > On 18/02/12 04:50, Nicolas Ferre wrote:
-> > 
-> > > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > > 
-> > > The GPBR registers are used for storing RTC values. The GPBR registers
-> > > to use are now provided using standard resource entry. The array is
-> > > filled in SoC specific code.
-> > > rtc-at91sam9 RTT as RTC driver is modified to retrieve this information.
-> > > 
-> > > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > ---
-> > >  arch/arm/mach-at91/at91sam9260_devices.c      |   10 +++++++-
-> > >  arch/arm/mach-at91/at91sam9261_devices.c      |    8 ++++++-
-> > >  arch/arm/mach-at91/at91sam9263_devices.c      |   16 +++++++++++--
-> > >  arch/arm/mach-at91/at91sam9g45_devices.c      |    8 ++++++-
-> > >  arch/arm/mach-at91/at91sam9rl_devices.c       |    8 ++++++-
-> > >  arch/arm/mach-at91/include/mach/at91sam9260.h |    5 +--
-> > >  arch/arm/mach-at91/include/mach/at91sam9261.h |    5 +--
-> > >  arch/arm/mach-at91/include/mach/at91sam9263.h |    5 +--
-> > >  arch/arm/mach-at91/include/mach/at91sam9g45.h |    5 +--
-> > >  arch/arm/mach-at91/include/mach/at91sam9rl.h  |    2 +-
-> > >  drivers/rtc/rtc-at91sam9.c                    |   29 +++++++++++++++++++++---
-> > >  11 files changed, 76 insertions(+), 25 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-> > > index 2071017..ae2b648 100644
-> > > --- a/arch/arm/mach-at91/at91sam9260_devices.c
-> > > +++ b/arch/arm/mach-at91/at91sam9260_devices.c
-> > > @@ -718,14 +718,16 @@ static struct resource rtt_resources[] = {
-> > >  		.start	= AT91SAM9260_BASE_RTT,
-> > >  		.end	= AT91SAM9260_BASE_RTT + SZ_16 - 1,
-> > >  		.flags	= IORESOURCE_MEM,
-> > > -	}
-> > > +	}, {
-> > > +		.flags	= IORESOURCE_MEM,
-> > > +	},
-> > >  };
-> > >  
-> > >  static struct platform_device at91sam9260_rtt_device = {
-> > >  	.name		= "at91_rtt",
-> > >  	.id		= 0,
-> > >  	.resource	= rtt_resources,
-> > > -	.num_resources	= ARRAY_SIZE(rtt_resources),
-> > > +	.num_resources	= 1,
-> > 
-> > 
-> > Why this change? The device has two resources, and the rtc driver
-> > request both of them, so why are you saying there is only one resource
-> > here. It either needs to be changed back to use ARRAY_SIZE, or needs a
-> > comment explaining what magic is in use.
-> because the number of resources depends on the user of rtt
-> we must not hardcode the GPBR reg as this resource will be present only if the
-> rtc-at91sam9 is enabled
 
-Better would be to leave .num_resources uninitalized and set that
-appropriately elsewhere when you make the decision whether GPBR is
-present or not.  That may help to avoid people trying to "fix" this
-for you via static checking tools.
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-As Ryan mentions, a comment in the code would be a good idea too.
+> The volatiles were added to arch/x86/kernel/kprobes.c because 
+> of commit 7115e3fcf45 and 315eb8a2a1b. The volatiles are 
+> required because gcc 4.6 gave a warning about the asm operand 
+> for test_bit.  So the same were added to 
+> arch/x86/kernel/uprobes.c.
+
+Seems like a GCC bug - a bogus warning - or does it generate bad 
+code as well?
+
+In any case, kprobes.c did it correctly, it added the volatile 
+*and a comment*, pointing out that it's a GCC bug. No such 
+warning was added to uprobes.c, making the volatile look 
+entirely spurious.
+
+So feel free to re-add the volatile in a followup patch, just 
+make sure the GCC workaround nature is documented.
+
+Thanks,
+
+	Ingo
