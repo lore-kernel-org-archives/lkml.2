@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2BTAGP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:06:15 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40719 "EHLO
+	id S1752193Ab2BTAG0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:06:26 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40721 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2BTAGN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751760Ab2BTAGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:06:13 -0500
-Date: Sun, 19 Feb 2012 19:05:04 -0500 (EST)
-Message-Id: <20120219.190504.1559694496609520740.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: vapier@gentoo.org, sonic.zhang@analog.com, jeffrey.t.kirsher@intel.com,
-        bob.liu@analog.com, uclinux-dist-devel@blackfin.uclinux.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] adi: adapt to eth_hw_addr_random() and changes
- in arch/blackfin
+	Sun, 19 Feb 2012 19:06:23 -0500
+Date: Sun, 19 Feb 2012 19:05:19 -0500 (EST)
+Message-Id: <20120219.190519.2247992297753168519.davem@davemloft.net>
+To: vapier@gentoo.org
+Cc: danny.kukawka@bisect.de, linux-kernel@vger.kernel.org, dkukawka@suse.de,
+        uclinux-dist-devel@blackfin.uclinux.org, lliubbo@gmail.com,
+        sonic.zhang@analog.com, paul.gortmaker@windriver.com,
+        realmz6@gmail.com, lars@metafoo.de, scott.jiang@analog.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] arch/blackfin: don't generate random mac in
+ bfin_get_ether_addr()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201202171157.55585.danny.kukawka@bisect.de>
-References: <1329412171-20704-3-git-send-email-danny.kukawka@bisect.de>
-	<CAMjpGUdAe66Nw16EyM1_dv4e8uHV02tcfqiuWL8ipeUrQ=HThg@mail.gmail.com>
-	<201202171157.55585.danny.kukawka@bisect.de>
+In-Reply-To: <CAMjpGUdJjG3OExzHWd8+FwWsG-vCsL-NVe=ivS5VeeV6G0-_Tw@mail.gmail.com>
+References: <1329412171-20704-1-git-send-email-danny.kukawka@bisect.de>
+	<1329412171-20704-2-git-send-email-danny.kukawka@bisect.de>
+	<CAMjpGUdJjG3OExzHWd8+FwWsG-vCsL-NVe=ivS5VeeV6G0-_Tw@mail.gmail.com>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 19 Feb 2012 16:05:09 -0800 (PST)
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 19 Feb 2012 16:05:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Fri, 17 Feb 2012 11:57:54 +0100
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 16 Feb 2012 23:38:11 -0500
 
-> On Freitag, 17. Februar 2012, Mike Frysinger wrote:
->> On Thu, Feb 16, 2012 at 12:09, Danny Kukawka wrote:
->> > +                       netdev_warn(ndev, "Setting Ethernet MAC to a
->> > random one\n"); +                       eth_hw_addr_random(ndev);
+> On Thu, Feb 16, 2012 at 12:09, Danny Kukawka wrote:
+>> Changed bfin_get_ether_addr() to return a state and to
+>> set no random mac address if the board don't provide one.
 >>
->> would it make sense to have the core dump the warning ?
+>> Let the caller of bfin_get_ether_addr() set a random mac
+>> address if the return value is not 0.
 > 
-> Maybe. Many drivers already print information about setting a random mac 
-> address to a netdevice. Some with printk, some via 
-> netdev_warn/netdev_info/netdev_dbg or netif_dbg and other with costum 
-> methods. I could unify this, in a next step with a netdev_info in 
-> eth_hw_addr_random(), if it's okay for David. 
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
 
-All of these log messages are stupid and should be removed.
-
-If someone is seriously interested in it, we have the damn random
-address boolean state which can be inspected in the sysfs addr_assign_type
-node for the device.
-
-End of story.
+Applied.
