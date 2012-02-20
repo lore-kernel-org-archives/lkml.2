@@ -1,86 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2BTVLS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:11:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37149 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab2BTVLR (ORCPT
+	id S1754225Ab2BTVL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:11:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50772 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753902Ab2BTVLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:11:17 -0500
-Date: Mon, 20 Feb 2012 13:10:41 -0800
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-81620bb7acee40dda4dbfdd061cd22c373529372@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        lethal@linux-sh.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, lethal@linux-sh.org
-In-Reply-To: <1328677745-20121-18-git-send-email-hpa@zytor.com>
-References: <1328677745-20121-18-git-send-email-hpa@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/types] sh: Remove unnecessary posix_types.
- h type overrides
-Git-Commit-ID: 81620bb7acee40dda4dbfdd061cd22c373529372
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 20 Feb 2012 16:11:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of egmont@gmail.com designates 10.180.96.230 as permitted sender) smtp.mail=egmont@gmail.com; dkim=pass header.i=egmont@gmail.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 20 Feb 2012 13:11:08 -0800 (PST)
+In-Reply-To: <20120220173106.GA17124@elf.ucw.cz>
+References: <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
+ <20120215233002.GB20816@kroah.com> <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
+ <20120216005437.GA22858@kroah.com> <20120217192825.GE2707@elf.ucw.cz>
+ <20120217225708.0f31f2ac@neptune.home> <CAGWcZk+_NpBZ2Gquv_ynXKdAivd3FhkHDDxu488y9Y9OrG2yfw@mail.gmail.com>
+ <20120219221412.1b6912ba@neptune.home> <CAGWcZkJDi+AAG1KmvzAymBPt64JxKNizH-vCtsE7Lb=utFXG-g@mail.gmail.com>
+ <CAGWcZkJZZ5FYTi+_VkjwhsZkwMtvxit5p+m2q0MARjEdEkiD4A@mail.gmail.com> <20120220173106.GA17124@elf.ucw.cz>
+From: Egmont Koblinger <egmont@gmail.com>
+Date: Mon, 20 Feb 2012 22:11:14 +0100
+Message-ID: <CAGWcZkL_Uc3Stug7nspjBnrAJ-zMLm7AtYnrxPnqas23L+PN_A@mail.gmail.com>
+Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
+To: Pavel Machek <pavel@ucw.cz>
+Cc: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=f46d043749176dc0b304b96bbee4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  81620bb7acee40dda4dbfdd061cd22c373529372
-Gitweb:     http://git.kernel.org/tip/81620bb7acee40dda4dbfdd061cd22c373529372
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Tue, 7 Feb 2012 21:09:01 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 14 Feb 2012 12:01:29 -0800
+--f46d043749176dc0b304b96bbee4
+Content-Type: text/plain; charset=UTF-8
 
-sh: Remove unnecessary posix_types.h type overrides
+Hi,
 
-Remove type overrides in <asm/posix_types.h> for the sh architecture
-that are no longer necessary.
+I attach a simple self-contained test case that triggers the bug most
+of the time.  Moreover, it turns out that we're facing a data
+corruption plus a deadlock issue -- often the test triggers randomly
+one of them.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1328677745-20121-18-git-send-email-hpa@zytor.com
-Cc: Paul Mundt <lethal@linux-sh.org>
----
- arch/sh/include/asm/posix_types_32.h |    5 -----
- arch/sh/include/asm/posix_types_64.h |    4 ----
- 2 files changed, 0 insertions(+), 9 deletions(-)
+The test is a slight modification of Bruno's example (thanks!).  The
+most important change is: it emulates a readline app by setting the
+terminal to cooked mode and doing some "work" (1 millisecond of sleep)
+after every newline, then reverting it to raw mode.
 
-diff --git a/arch/sh/include/asm/posix_types_32.h b/arch/sh/include/asm/posix_types_32.h
-index 6a9ceaa..abda584 100644
---- a/arch/sh/include/asm/posix_types_32.h
-+++ b/arch/sh/include/asm/posix_types_32.h
-@@ -12,11 +12,6 @@ typedef unsigned short	__kernel_uid_t;
- typedef unsigned short	__kernel_gid_t;
- #define __kernel_gid_t __kernel_gid_t
- 
--typedef unsigned int	__kernel_uid32_t;
--#define __kernel_uid32_t __kernel_uid32_t
--typedef unsigned int	__kernel_gid32_t;
--#define __kernel_gid32_t __kernel_gid32_t
--
- typedef unsigned short	__kernel_old_uid_t;
- #define __kernel_old_uid_t __kernel_old_uid_t
- typedef unsigned short	__kernel_old_gid_t;
-diff --git a/arch/sh/include/asm/posix_types_64.h b/arch/sh/include/asm/posix_types_64.h
-index 8cd1148..fcda07b 100644
---- a/arch/sh/include/asm/posix_types_64.h
-+++ b/arch/sh/include/asm/posix_types_64.h
-@@ -17,10 +17,6 @@ typedef int		__kernel_ssize_t;
- #define __kernel_ssize_t __kernel_ssize_t
- typedef int		__kernel_ptrdiff_t;
- #define __kernel_ptrdiff_t __kernel_ptrdiff_t
--typedef unsigned int	__kernel_uid32_t;
--#define __kernel_uid32_t __kernel_uid32_t
--typedef unsigned int	__kernel_gid32_t;
--#define __kernel_gid32_t __kernel_gid32_t
- 
- typedef unsigned short	__kernel_old_uid_t;
- #define __kernel_old_uid_t __kernel_old_uid_t
+Minor changes also include: ignoring the last 100 bytes (potentially
+an incomplete line that stays in the kernel's buffer, the slave
+doesn't expect that to arrive), plus a long sleep on the master after
+writing its output (ugly hack, but definitely long enough to give the
+slave time to read everything).
+
+The behavior is:
+- Often: Corrupt data read (\r versus \n changes, as well as actual
+loss of data), as reported by the slave.
+- Often: Deadlock, the slave hangs in a read() reading from the
+terminal, while the master hangs on its write() at the same time.
+
+You can play with parameters like the buffer size, the write size
+(wsz), the blocking vs. nonblocking mode of write, TCSETS versus
+TCSETSW -- they don't make much of a difference.
+
+What does make a difference though, is the read size (rsz).  The bug
+is reproducible if and only if the read size is a divisor of the
+length of the line excluding the terminating newline (i.e. the length
+of the full line minus one); that is, a divisor of 62 in this example.
+ So a read size of 1 (which is used by readline) triggers the bug with
+all kinds of data; larger read sizes only with certain well-crafted
+buffers.
+
+Also, the bug is still only reproducible after writing at least 4kB.
+
+This gives me a guts feeling (without actually studying the kernel's
+source) that it might be some circular buffer overrun: whenever
+there's only 1 byte left in the buffer, the final newline of a line,
+the writer can incorrectly wrap around in a 4k buffer and override
+that -- does this make any sense?
+
+Interestingly, the test uses \n and \r reversed compare to real life
+(the buffer should contain \r instead of \n, and ICRNL should be used
+instead of INLCR) -- for some reason this test didn't trigger the bug
+for me after swapping the two, I don't know why.
+
+Anyway, I hope that this test case and my findings about the read size
+helps catch and fix the bug.
+
+Thanks a lot,
+egmont
+
+--f46d043749176dc0b304b96bbee4
+Content-Type: text/x-csrc; charset=US-ASCII; name="ptmx2.c"
+Content-Disposition: attachment; filename="ptmx2.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gyvzxsus0
+
+I2RlZmluZSBfWE9QRU5fU09VUkNFIDcwMAojaW5jbHVkZSA8c3RkaW8uaD4KI2luY2x1ZGUgPHN0
+ZGxpYi5oPgojaW5jbHVkZSA8ZXJybm8uaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSA8
+c3lzL3R5cGVzLmg+CiNpbmNsdWRlIDxzeXMvc3RhdC5oPgojaW5jbHVkZSA8ZmNudGwuaD4KI2lu
+Y2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8dGltZS5oPgojaW5jbHVkZSA8c3lzL3dhaXQuaD4K
+I2luY2x1ZGUgPHN5cy9zZWxlY3QuaD4KI2luY2x1ZGUgPHN5cy9pb2N0bC5oPgojaW5jbHVkZSA8
+dGVybWlvcy5oPgoKI2RlZmluZSBCVUZGX1NaICg0MDk2KjI1NikKLy8gRXhwZWN0IGZld2VyIGJ5
+dGVzIHRoYW4gdGhlIG1hc3RlciB3cml0ZXMsIGJlY2F1c2UgdGhlIGxhc3QgaW5jb21wbGV0ZSBs
+aW5lCi8vIGlzIG5vdCBzZW50IHRvIHRoZSBzbGF2ZSBpbiBjb29rZWQgbW9kZS4KI2RlZmluZSBS
+RUFEX0JVRkZfU1ogKEJVRkZfU1ogLSAxMDApCgp2b2lkIHJhdyhpbnQgcHR5KSB7CglzdHJ1Y3Qg
+dGVybWlvcyB0OwoJaW9jdGwocHR5LCBUQ0dFVFMsICZ0KTsKCXQuY19sZmxhZyAmPSB+SUNBTk9O
+OwoJdC5jX2lmbGFnICY9IH5JTkxDUjsKCWlvY3RsKHB0eSwgVENTRVRTVywgJnQpOwp9Cgp2b2lk
+IGNvb2tlZChpbnQgcHR5KSB7CglzdHJ1Y3QgdGVybWlvcyB0OwoJaW9jdGwocHR5LCBUQ0dFVFMs
+ICZ0KTsKCXQuY19sZmxhZyB8PSBJQ0FOT047Cgl0LmNfaWZsYWcgfD0gSU5MQ1I7Cglpb2N0bChw
+dHksIFRDU0VUU1csICZ0KTsKfQoKdm9pZCB3cml0ZV9idWZmZXIoY29uc3QgY2hhciAqYnVmZiwg
+c2l6ZV90IGJ1ZmZfc3osIGNvbnN0IGNoYXIgKmZuYW1lKSB7CglpbnQgZmQgPSBvcGVuKGZuYW1l
+LCBPX0NSRUFUIHwgT19XUk9OTFkgfCBPX1RSVU5DLCAwNjY0KTsKCXNpemVfdCBuID0gMDsKCXNz
+aXplX3QgcjsKCWlmICghZmQpIHsKCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBvcGVuKDMp
+ICVzOiAlc1xuIiwgZm5hbWUsIHN0cmVycm9yKGVycm5vKSk7CgkJcmV0dXJuOwoJfQoKCWRvIHsK
+CQlyID0gd3JpdGUoZmQsIGJ1ZmYgKyBuLCBidWZmX3N6IC0gbik7CgkJaWYgKHIgPT0gLTEpIHsK
+CQkJaWYgKGVycm5vID09IEVBR0FJTiB8fCBlcnJubyA9PSBFV09VTERCTE9DSyB8fCBlcnJubyA9
+PSBFSU5UUikKCQkJCWNvbnRpbnVlOwoJCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byB3cml0
+ZSgyKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJCXJldHVybjsKCQl9IGVsc2UgaWYgKHIg
+PT0gMCkgewoJCQlicmVhazsKCQl9IGVsc2UgewoJCQluICs9IHI7CgkJfQoJfSB3aGlsZSAobiA8
+IGJ1ZmZfc3opOwoJY2xvc2UoZmQpOwp9Cgp2b2lkIHB0bXhfc2xhdmVfdGVzdChpbnQgcHR5LCBj
+b25zdCBjaGFyICpsaW5lLCBzaXplX3QgcnN6KSB7CgljaGFyICpidWZmID0gbWFsbG9jKFJFQURf
+QlVGRl9TWik7CglzaXplX3QgbiA9IDAsIG5uOwoJc3NpemVfdCByOwoJaW50IGwsIGJhZDsKCXN0
+cnVjdCB0aW1lc3BlYyBzbGVuOwoKCWlmICghYnVmZikgewoJCWZwcmludGYoc3RkZXJyLCAiRmFp
+bGVkIHRvIG1hbGxvYygzKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJcmV0dXJuOwoJfQoJ
+bWVtc2V0KGJ1ZmYsIDAsIFJFQURfQlVGRl9TWik7CgoJcmF3KHB0eSk7IC8vIGVtdWxhdGUgdGhl
+IGluaXRpYWxpemF0aW9uIG9mIGEgcmVhZGxpbmUgYXBwCglkbyB7CgkJciA9IHJlYWQocHR5LCBi
+dWZmICsgbiwgcnN6ICsgbiA+IFJFQURfQlVGRl9TWiA/IFJFQURfQlVGRl9TWiAtIG4gOiByc3op
+OwoJCWlmIChyID09IC0xKSB7CgkJCWlmIChlcnJubyA9PSBFQUdBSU4gfHwgZXJybm8gPT0gRVdP
+VUxEQkxPQ0sgfHwgZXJybm8gPT0gRUlOVFIpCgkJCQljb250aW51ZTsKCQkJZnByaW50ZihzdGRl
+cnIsICJGYWlsZWQgdG8gcmVhZCgyKSBhZnRlciByZWFkaW5nICVkIGJ5dGVzOiAlc1xuIiwgbiwg
+c3RyZXJyb3IoZXJybm8pKTsKCQkJYnJlYWs7ICAvLyBEZXNwaXRlIHRoZSBlcnJvciwgY29tcGFy
+ZSB0aGUgYnVmZmVyIGFnYWluc3QgdGhlIHJlZmVyZW5jZS4KCQl9IGVsc2UgaWYgKHIgPT0gMCkg
+ewoJCQlpZiAobiA8IFJFQURfQlVGRl9TWikKCQkJCWZwcmludGYoc3RkZXJyLCAiUmVhZCAlenUg
+Ynl0ZXMsIGV4cGVjdGVkICV6dSFcbiIsIG4sIFJFQURfQlVGRl9TWik7CgkJCWJyZWFrOwoJCX0g
+ZWxzZSB7CgkJCWlmIChidWZmW25dID09ICdcbicpIHsKCQkJCS8vIGVtdWxhdGUgYSByZWFkbGlu
+ZSBhcHAgdGFraW5nIGFjdGlvbiBvbiB0aGUgaW5wdXQKCQkJCWNvb2tlZChwdHkpOwoJCQkJbWVt
+c2V0KCZzbGVuLCAwLCBzaXplb2Yoc2xlbikpOwoJCQkJc2xlbi50dl9uc2VjID0gMTAwMCAqIDEw
+MDA7CgkJCQluYW5vc2xlZXAoJnNsZW4sIE5VTEwpOwoJCQkJcmF3KHB0eSk7CgkJCX0KCQkJbiAr
+PSByOwoJCX0KCX0gd2hpbGUgKG4gPCBSRUFEX0JVRkZfU1opOwoJbm4gPSBuOwoKCS8qIGNoZWNr
+IGJ1ZmZlciBpZiBpdCBtYXRjaGVzIGV4cGVjdGVkIHZhbHVlLi4uICovCglyID0gc3RybGVuKGxp
+bmUpOwoJbCA9IDA7CgliYWQgPSAwOwoJZm9yIChuID0gMDsgbiA8IFJFQURfQlVGRl9TWjsgbiAr
+PSByKzEpIHsKCQlsKys7CgkJaWYgKG1lbWNtcChidWZmICsgbiwgbGluZSwgbiArIHIgPCBSRUFE
+X0JVRkZfU1ogPyByIDogUkVBRF9CVUZGX1NaIC0gbikgIT0gMCkgewoJCQkvLyBUT0RPOiBkZXRl
+cm1pbmUgcG9zaXRpb24gb2YgYnJlYWthZ2UhCgkJCWZwcmludGYoc3RkZXJyLCAiTGluZSBkYXRh
+IG1pc21hdGNoIGZvciBsaW5lICVkIVxuIiwgbCk7CgkJCWJhZCA9IDE7CgkJCWJyZWFrOwoJCX0K
+CQlpZiAobiArIHIgKyAxIDwgUkVBRF9CVUZGX1NaICYmIGJ1ZmZbbityXSAhPSAnXG4nKSB7CgkJ
+CWlmICghYmFkKQoJCQkJZnByaW50ZihzdGRlcnIsICJFeHBlY3RpbmcgJ1xcbicgYXQgZW5kIG9m
+IGxpbmUgJWQsIGJ1dCBmb3VuZCAweCVoaHhcbiIsIGwsIGJ1ZmZbbityXSk7CgkJCWJhZCA9IDE7
+CgkJCS8vIERvbid0IGJyZWFrLCBzZWUgaWYgdGhlcmUncyBhIG1vcmUgc2VyaW91cyBtaXN0YWtl
+IHRoYW4gYSBcciAtPiBcbi4KCQl9Cgl9CgovLwlmcHJpbnRmKHN0ZGVyciwgIkJ1ZmZlciBzZWVu
+IGJ5IHNsYXZlIGlzOlxuIik7Ci8vCWZ3cml0ZShidWZmLCBSRUFEX0JVRkZfU1osIDEsIHN0ZG91
+dCk7CglpZiAoYmFkKSB7CgkJd3JpdGVfYnVmZmVyKGJ1ZmYsIG5uLCAiL3RtcC9wdG14X291dC50
+eHQiKTsKCQlmcHJpbnRmKHN0ZGVyciwgIlNlZSBwYXlsb2FkIGluIC90bXAvcHRteF9vdXQudHh0
+XG4iKTsKCX0gZWxzZQoJCWZwcmludGYoc3RkZXJyLCAic2xhdmUgc2F5czogZXZlcnl0aGluZydz
+IG9rYXlcbiIpOwp9Cgp2b2lkIHB0bXhfbWFzdGVyX3Rlc3QoaW50IHB0eSwgY29uc3QgY2hhciAq
+bGluZSwgc2l6ZV90IHdzeikgewoJY2hhciAqYnVmZiA9IG1hbGxvYyhCVUZGX1NaKTsKCXNpemVf
+dCBuID0gMDsKCXNzaXplX3QgcjsKCglpZiAoIWJ1ZmYpIHsKCQlmcHJpbnRmKHN0ZGVyciwgIkZh
+aWxlZCB0byBtYWxsb2MoMyk6ICVzXG4iLCBzdHJlcnJvcihlcnJubykpOwoJCXJldHVybjsKCX0K
+CgkvKiBpbml0aWFsaXplIGJ1ZmZlciAqLwoJciA9IHN0cmxlbihsaW5lKTsKCWZvciAobiA9IDA7
+IG4gPCBCVUZGX1NaOyBuICs9IHIrMSkgewoJCW1lbWNweShidWZmICsgbiwgbGluZSwgbiArIHIg
+PCBCVUZGX1NaID8gciA6IEJVRkZfU1ogLSBuKTsKCQlpZiAobiArIHIgKyAxIDwgQlVGRl9TWikK
+CQkJYnVmZltuK3JdID0gJ1xuJzsKCX0KCgluID0gMDsKCWRvIHsKCQlmcHJpbnRmKHN0ZGVyciwg
+IndyaXRlICVkXG4iLCB3c3ogKyBuID4gQlVGRl9TWiA/IEJVRkZfU1ogLSBuIDogd3N6KTsKCQly
+ID0gd3JpdGUocHR5LCBidWZmICsgbiwgd3N6ICsgbiA+IEJVRkZfU1ogPyBCVUZGX1NaIC0gbiA6
+IHdzeik7CgkJZnByaW50ZihzdGRlcnIsICIgICAgICAgICAgICAgLT4gd3JvdGUgJWRcbiIsIHIp
+OwoJCWlmIChyID09IC0xKSB7CgkJCWlmIChlcnJubyA9PSBFQUdBSU4gfHwgZXJybm8gPT0gRVdP
+VUxEQkxPQ0sgfHwgZXJybm8gPT0gRUlOVFIpIHsKCQkJCWZkX3NldCB3cml0ZV9mZHM7CgkJCQlG
+RF9aRVJPKCZ3cml0ZV9mZHMpOwoJCQkJRkRfU0VUKHB0eSwgJndyaXRlX2Zkcyk7CgkJCQlzZWxl
+Y3QocHR5KzEsIE5VTEwsICZ3cml0ZV9mZHMsIE5VTEwsIE5VTEwpOwoJCQkJY29udGludWU7CgkJ
+CX0KCQkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gd3JpdGUoMik6ICVzXG4iLCBzdHJlcnJv
+cihlcnJubykpOwoJCQlyZXR1cm47CgkJfSBlbHNlIGlmIChyID09IDApIHsKCQkJYnJlYWs7CgkJ
+fSBlbHNlIHsKCQkJbiArPSByOwoJCX0KCX0gd2hpbGUgKG4gPCBCVUZGX1NaKTsKCWZwcmludGYo
+c3RkZXJyLCAibWFzdGVyIGlzIHNsZWVwaW5nIG5vdy4uLlxuIik7CglzbGVlcCgxMCk7CglmcHJp
+bnRmKHN0ZGVyciwgIm1hc3RlciBleGl0aW5nXG4iKTsKCWNsb3NlKHB0eSk7Cgl3cml0ZV9idWZm
+ZXIoYnVmZiwgQlVGRl9TWiwgIi90bXAvcHRteF9pbi50eHQiKTsKfQoKaW50IG1haW4oKSB7Cglj
+b25zdCBjaGFyICpsaW5lID0gIjAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ekFC
+Q0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaIjsKCWNvbnN0IGNoYXIgKnB0c2RuYW1lID0gTlVMTDsK
+CWludCBwdHksIHBpZDsKCXNpemVfdCByc3ogPSAzMSwgd3N6ID0gNDA5NiAqIDI1NjsKCQoJcHR5
+ID0gb3BlbigiL2Rldi9wdG14IiwgT19SRFdSIC8qIHwgT19OT05CTE9DSyAqLyk7CglpZiAocHR5
+ID09IC0xKSB7CgkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gb3BlbigzKSAvZGV2L3B0bXg6
+ICVzXG4iLCBzdHJlcnJvcihlcnJubykpOwoJCXJldHVybiAxOwoJfQoKCXB0c2RuYW1lID0gcHRz
+bmFtZShwdHkpOwoJZnByaW50ZihzdGRlcnIsICJwdHNuYW1lID0gJXNcbiIsIHB0c2RuYW1lKTsK
+CWlmICghcHRzZG5hbWUpIHsKCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBwdHNuYW1lKDMp
+OiAlc1xuIiwgc3RyZXJyb3IoZXJybm8pKTsKCQljbG9zZShwdHkpOwoJCXJldHVybiAxOwoJfQoK
+CWlmIChncmFudHB0KHB0eSkgPT0gLTEpIHsKCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBn
+cmFudHB0eSgzKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJY2xvc2UocHR5KTsKCQlyZXR1
+cm4gMTsKCX0KCglpZiAodW5sb2NrcHQocHR5KSA9PSAtMSkgewoJCWZwcmludGYoc3RkZXJyLCAi
+RmFpbGVkIHRvIHVubG9ja3B0KDMpOiAlc1xuIiwgc3RyZXJyb3IoZXJybm8pKTsKCQljbG9zZShw
+dHkpOwoJCXJldHVybiAxOwoJfQoKCXBpZCA9IGZvcmsoKTsKCWlmIChwaWQgPT0gLTEpIHsKCQlm
+cHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBmb3JrKDMpOiAlc1xuIiwgc3RyZXJyb3IoZXJybm8p
+KTsKCQljbG9zZShwdHkpOwoJCXJldHVybiAxOwoJfSBlbHNlIGlmIChwaWQgPT0gMCkgewoJCWNs
+b3NlKHB0eSk7CgoJCXB0eSA9IG9wZW4ocHRzZG5hbWUsIE9fUkRXUik7CgkJaWYgKHB0eSA9PSAt
+MSkgewoJCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBvcGVuKDMpICVzOiAlc1xuIiwgcHRz
+ZG5hbWUsIHN0cmVycm9yKGVycm5vKSk7CgkJCXJldHVybiAxOwoJCX0KCgkJcHRteF9zbGF2ZV90
+ZXN0KHB0eSwgbGluZSwgcnN6KTsKCQljbG9zZShwdHkpOwoJCXJldHVybiAwOwoJfSBlbHNlIHsK
+CQlpbnQgczsKCQlwdG14X21hc3Rlcl90ZXN0KHB0eSwgbGluZSwgd3N6KTsKCgkJaWYgKHdhaXRw
+aWQocGlkLCAmcywgMCkgPT0gLTEpIHsKCQkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gd2Fp
+dHBpZCgyKSBmb3IgJWQ6ICVzXG4iLCBwaWQsIHN0cmVycm9yKGVycm5vKSk7CgkJCXJldHVybiAx
+OwoJCX0KCQlpZiAoV0lGRVhJVEVEKHMpICYmIFdFWElUU1RBVFVTKHMpID09IDApCgkJCXJldHVy
+biAwOwoJCWlmIChXSUZFWElURUQocykpCgkJCWZwcmludGYoc3RkZXJyLCAiQ2hpbGQgZXhpdGVk
+IHdpdGggJWRcbiIsIFdFWElUU1RBVFVTKHMpKTsKCQllbHNlIGlmIChXSUZTSUdOQUxFRChzKSkK
+CQkJZnByaW50ZihzdGRlcnIsICJDaGlsZCBkaWVkIHdpdGggc2lnbmFsICVkXG4iLCBXVEVSTVNJ
+RyhzKSk7CgkJZWxzZQoJCQlmcHJpbnRmKHN0ZGVyciwgIkNoaWxkIHRlcm1pbmF0ZWQgaW4gYW4g
+dW5rbm93biB3YXkgd2l0aCBzdGF0dXMgJWRcbiIsIHMpOwoJCXJldHVybiAxOwoJfQp9Cg==
+--f46d043749176dc0b304b96bbee4--
