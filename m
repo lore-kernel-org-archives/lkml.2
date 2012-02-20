@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2BTIOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:14:23 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:45243 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751184Ab2BTIOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:14:21 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH v2] i2c-eg20t: Rework pch_i2c_wait_for_bus_idle to reduce wait time
+	id S1752084Ab2BTIOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:14:37 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38255 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab2BTIOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:14:36 -0500
 Date: Mon, 20 Feb 2012 09:14:16 +0100
-Message-Id: <1329725656-32715-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+From: Ingo Molnar <mingo@elte.hu>
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+Message-ID: <20120220081416.GE30810@elte.hu>
+References: <87pqf5mqg4.fsf@abhimanyu.in.ibm.com>
+ <4F017AD2.3090504@redhat.com>
+ <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
+ <4F046536.5080207@redhat.com>
+ <4F048295.1050907@redhat.com>
+ <4F04898B.1080600@redhat.com>
+ <1325712710.3084.10.camel@laptop>
+ <4F04C789.40209@redhat.com>
+ <20120105091059.GA3249@elte.hu>
+ <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you insert several i2c transfers, the driver might start the next one
-while the STOP bit of the previous transfer is still on the bus, marking
-the bus as busy.
-pch_i2c_wait_for_bus_idle does an msleep(20) delaying the next transfer
-by >=20ms. Reduce wait time by actively waiting 5 us once, then using
-usleep_range.
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-Changes in v2:
-* Remove redundant code
+* Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
 
- drivers/i2c/busses/i2c-eg20t.c |   42 ++++++++++++++++++++++-----------------
- 1 files changed, 24 insertions(+), 18 deletions(-)
+> > Here it would massively improve performance - without 
+> > regressing the scheduler code massively.
+> 
+> I tried doing an experiment with the flush_tlb_others_ipi. 
+> This depends on Raghu's "kvm : Paravirt-spinlock support for 
+> KVM guests" (https://lkml.org/lkml/2012/1/14/66), which has 
+> new hypercall for kicking another vcpu out of halt.
+> 
+>   Here are the results from non-PLE hardware. Running ebizzy 
+>   workload inside the VMs. The table shows the ebizzy score - 
+>   Records/sec.
+> 
+>   8CPU Intel Xeon, HT disabled, 64 bit VM(8vcpu, 1G RAM)
+> 
+>   +--------+------------+------------+-------------+
+>   |        |  baseline  |   gang     |   pv_flush  |
+>   +--------+------------+------------+-------------+
+>   |   2VM  |   3979.50  |   8818.00  |   11002.50  |
+>   |   4VM  |   1817.50  |   6236.50  |    6196.75  |
+>   |   8VM  |    922.12  |   4043.00  |    4001.38  |
+>   +--------+------------+------------+-------------+
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index ca88776..1eb60ca 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -271,30 +271,36 @@ static inline bool ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
- /**
-  * pch_i2c_wait_for_bus_idle() - check the status of bus.
-  * @adap:	Pointer to struct i2c_algo_pch_data.
-- * @timeout:	waiting time counter (us).
-+ * @timeout:	waiting time counter (ms).
-  */
- static s32 pch_i2c_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
- 				     s32 timeout)
- {
- 	void __iomem *p = adap->pch_base_address;
--	ktime_t ns_val;
-+	int schedule = 0;
-+	unsigned long end = jiffies + msecs_to_jiffies(timeout);
-+
-+	while (ioread32(p + PCH_I2CSR) & I2CMBB_BIT) {
-+		if (time_after(jiffies, end)) {
-+			pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
-+			pch_err(adap, "%s: Timeout Error.return%d\n",
-+					__func__, -ETIME);
-+			pch_i2c_init(adap);
- 
--	if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
--		return 0;
-+			return -ETIME;
-+		}
- 
--	/* MAX timeout value is timeout*1000*1000nsec */
--	ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
--	do {
--		msleep(20);
--		if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
--			return 0;
--	} while (ktime_lt(ktime_get(), ns_val));
-+		if (!schedule)
-+			/* Retry after some usecs */
-+			udelay(5);
-+		else
-+			/* Wait a bit more without consuming CPU */
-+			usleep_range(20, 1000);
- 
--	pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
--	pch_err(adap, "%s: Timeout Error.return%d\n", __func__, -ETIME);
--	pch_i2c_init(adap);
-+		schedule = 1;
-+	}
- 
--	return -ETIME;
-+	return 0;
- }
- 
- /**
--- 
-1.7.3.4
+Very nice results!
 
+Seems like the PV approach is massively faster on 2 VMs than 
+even the gang scheduling hack, because it attacks the problem
+at its root, not just the symptom.
+
+The patch is also an order of magnitude simpler. Gang 
+scheduling, R.I.P.
+
+Thanks,
+
+	Ingo
