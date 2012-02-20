@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab2BTEui (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 23:50:38 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36908 "EHLO
+	id S1751269Ab2BTFQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 00:16:00 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38689 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab2BTEug (ORCPT
+	with ESMTP id S1750707Ab2BTFP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 23:50:36 -0500
-Date: Mon, 20 Feb 2012 15:50:24 +1100
+	Mon, 20 Feb 2012 00:15:59 -0500
+Date: Mon, 20 Feb 2012 16:15:45 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the scsi-post-merge tree with Linus'
- tree
-Message-Id: <20120220155024.f627530239322e4ee92c9b9d@canb.auug.org.au>
+        Danny Kukawka <danny.kukawka@bisect.de>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20120220161545.0078a76d8050c56955427455@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u"
+ boundary="Signature=_Mon__20_Feb_2012_16_15_45_+1100_UnO0QyCOdsVeVmu5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u
+--Signature=_Mon__20_Feb_2012_16_15_45_+1100_UnO0QyCOdsVeVmu5
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi all,
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/kernel/process_32.c between commit 34ddc81a230b ("i387:
-re-introduce FPU state preloading at context switch time") from Linus'
-tree and commit "x86: use this_cpu_xxx to replace percpu_xxx funcs" from
-the akpm tree.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_set_mac_add=
+ress':
+drivers/net/ethernet/xilinx/ll_temac_main.c:332:3: error: 'dev' undeclared =
+(first use in this function)
+
+Caused by commit 5a5e7c364486 ("xilinx ll_temac: use eth_hw_addr_random()
+instead of random_ether_addr()").
+
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/x86/kernel/process_32.c
-index 80bfe1a,6acfb80..0000000
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@@ -358,9 -377,7 +358,9 @@@ __switch_to(struct task_struct *prev_p
-  	if (prev->gs | next->gs)
-  		lazy_load_gs(next->gs);
- =20
- +	switch_fpu_finish(next_p, fpu);
- +
-- 	percpu_write(current_task, next_p);
-+ 	__this_cpu_write(current_task, next_p);
- =20
-  	return prev_p;
-  }
-
---Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u
+--Signature=_Mon__20_Feb_2012_16_15_45_+1100_UnO0QyCOdsVeVmu5
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPQdEQAAoJEECxmPOUX5FE3mEP/jK9LY7QeQe0UZEIjsRabbED
-bemAFkwLZiN/iu73SWqwCIZBXJ82rBgo+Q0maTDn5A22PGLcoTXVJBy+UDNiTD2K
-0l1vunO0o6qW2zQw9ksNXGmPZF9PuVIZ7+hRGlaYXFVpL3eKFkf5eCb5KWPGzZ8L
-ocLTbjHcJ1QPhQYjOnUMyjSMjLy2rYazro7HDTcdpowC8mFsuSDV+K4nnWXgcI3/
-W2EI6Zxwv9ed6Ye/sI3VUW+XNVxwrxpihZkaT4RM+8UQMjX1fR1Foj6B3OzehdUr
-atF+CJuj/+yYvNMqGN/fS3DrwojkhaUf41Od4WqQcblHMsvp8ioh39Nelv1eZ9wv
-EAk/BuMkOQ2Z6Crvt8qGqvj5pBeJxhbCnMlNJc9Glz5iPUMvJhoJpP4s7vGUCQ5e
-VUNPnsvCfqQ3STItlsIyIOBMMocDzpDKZQKsKw2FkwcqfKMoj5xyWCHVby7FZce0
-tPsd4HsIFBntCPpHDdZmkv7kcEDa6ZFoRcW6WXFI/G7o2QwAB1frp7RRPZxBVf1s
-tddDfJygigjnmsyd8rL0supX0tViMBb6BqpwKBgNtE5JzAAGd7cse/YF3/J0iIUR
-CWCsSJcypGHLuZRRLdYOcTBy7WRI7JYiPh+QkQjKXohm1e4HNjXIpGdYk5QE130s
-e/CoAUtQ0+J90ZaxScgk
-=ufz9
+iQIcBAEBCAAGBQJPQdcBAAoJEECxmPOUX5FE7wQP/3zrbic5eLdwCYc6U4dWz4HW
+s6MPHgnFYR2TXGfxEh9iv/Bo5fbkIoRHx0b6IA0Xf+HEIH6KcrPAJ0cTtB8y5jyu
+/nCwpIL6B53bYYBS+jHj7VOaXdhIfC/aHJv8bjhWX9oWhwcRTDfEozv6QD20VlXn
+d5hx4Z4mseCouuirE4sqa5NYipl3bRFK79wqiut8JtTp7ibwsreh8mUwBAgSADem
+zif+LUZ+ffpCxhl0bg8LmXA9WfZ056TW0SoGAHtLXp7lIOfm8WimJQ5Vz/475fmh
+VJGUu3v/yC/xxaR92Fgc4kV4zSE+FOIhVx53mrBWE+mL19603AoZz4epT5OyePcw
+lnmtlHEiH2oHT+ap3o7rAZ8wIi7UHqhaZsbcJ9363vqQtU0Tzkx2ZYXioPSASJXM
+gbqCNQ6QGxagzCT45rAMxzsf6xHGD6G5ynDGWfgMObOcbrC8oRzDbSzeVhkTdMFn
+IfVTGU4IcMk1Mi9lcoHcuADvpOncerLU7iXMVST6rijOx3DQA88F5YFf1u0tzu4g
+7+A1AIa20gdZUd41+0cKLylYm3CAAj8IG8+yrSQVTjg/9snc7EDGhjGxUC9LuFdZ
+TAl4noGVJvIynCsEKonw335hbyCPchuihzGFImwwTfr0EeKzYaH8s4FSbcaHqysH
+Lrbxz2mUnn5AxJlVCSb8
+=oegM
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u--
+--Signature=_Mon__20_Feb_2012_16_15_45_+1100_UnO0QyCOdsVeVmu5--
