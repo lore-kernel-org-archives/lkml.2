@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2BTWoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 17:44:30 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61881 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab2BTWo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 17:44:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of masami256@gmail.com designates 10.68.125.233 as permitted sender) smtp.mail=masami256@gmail.com; dkim=pass header.i=masami256@gmail.com
-From: Masami Ichikawa <masami256@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Masami Ichikawa <masami256@gmail.com>
-Subject: [PATCH] Fix memory leak in sysfs_sd_setsecdata().
-Date: Tue, 21 Feb 2012 07:43:50 +0900
-Message-Id: <1329777830-2942-1-git-send-email-masami256@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1752976Ab2BTWsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 17:48:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38524 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab2BTWsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 17:48:24 -0500
+Message-ID: <4F42CD93.2030605@zytor.com>
+Date: Mon, 20 Feb 2012 14:47:47 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>
+CC: a.p.zijlstra@chello.nl, rostedt@goodmis.org,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu, davem@davemloft.net,
+        ddaney.cavm@gmail.com, pjt@google.com, rth@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4][RFC] jump label: introduce default true branch
+References: <cover.1324493360.git.jbaron@redhat.com>
+In-Reply-To: <cover.1324493360.git.jbaron@redhat.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixies follwing two memory leak patterns that reported by kmemleak.
-sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
-It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
-sysfs_init_inode_attrs() to allocate memory.
-That code is this.
+On 12/21/2011 11:09 AM, Jason Baron wrote:
+> Hi Peter,
+> 
+> I've introduced a new static_branch_def_true() construct, such that the straight
+> line path is the true branch, and we patch a jump to get to the false branch.
+> In order to make jump_label_inc()/dec() work as 'make true'/'make false' with
+> counting, I've had to update some of the core jump label code. This patchset also
+> introduces: JUMP_LABEL_INIT_TRUE/FALSE, so that keys should be initialized as:
+> 
+> struct jump_label_key true_key = JUMP_LABEL_INIT_TRUE;
+> 
+>            or
+> 
+> struct jump_label_key false_key = JUMP_LABEL_INIT_FALSE;
+> 
+> I think this patch series should address the issues that came up with sched_feat()
+> implementation.
+> 
 
-iattrs = sd->s_iattr;
-if (!iattrs)
-                iattrs = sysfs_init_inode_attrs(sd);
+Hi,
 
-The iattrs recieves sysfs_init_inode_attrs()'s result,  but sd->s_iattr
-doesn't know the address. so it needs to set correct address to
-sd->s_iattr to free memory in other function.
+Did this ever get addressed?
 
-unreferenced object 0xffff880250b73e60 (size 32):
-  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
-  hex dump (first 32 bytes):
-    73 79 73 74 65 6d 5f 75 3a 6f 62 6a 65 63 74 5f  system_u:object_
-    72 3a 73 79 73 66 73 5f 74 3a 73 30 00 00 00 00  r:sysfs_t:s0....
-  backtrace:
-    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
-    [<ffffffff811270ab>] __kmalloc+0x100/0x12c
-    [<ffffffff8120775a>] context_struct_to_string+0x106/0x210
-    [<ffffffff81207cc1>] security_sid_to_context_core+0x10b/0x129
-    [<ffffffff812090ef>] security_sid_to_context+0x10/0x12
-    [<ffffffff811fb0da>] selinux_inode_getsecurity+0x7d/0xa8
-    [<ffffffff811fb127>] selinux_inode_getsecctx+0x22/0x2e
-    [<ffffffff811f4d62>] security_inode_getsecctx+0x16/0x18
-    [<ffffffff81191dad>] sysfs_setxattr+0x96/0x117
-    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
-    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
-    [<ffffffff811544c6>] setxattr+0xcf/0x101
-    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
-    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
-    [<ffffffffffffffff>] 0xffffffffffffffff
-unreferenced object 0xffff88024163c5a0 (size 96):
-  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
-  hex dump (first 32 bytes):
-    00 00 00 00 ed 41 00 00 00 00 00 00 00 00 00 00  .....A..........
-    00 00 00 00 00 00 00 00 0c 64 42 4f 00 00 00 00  .........dBO....
-  backtrace:
-    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
-    [<ffffffff81127402>] kmem_cache_alloc_trace+0xc4/0xee
-    [<ffffffff81191cbe>] sysfs_init_inode_attrs+0x2a/0x83
-    [<ffffffff81191dd6>] sysfs_setxattr+0xbf/0x117
-    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
-    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
-    [<ffffffff811544c6>] setxattr+0xcf/0x101
-    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
-    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
-    [<ffffffffffffffff>] 0xffffffffffffffff
-`
+	-hpa
 
-Signed-off-by: Masami Ichikawa <masami256@gmail.com>
----
- fs/sysfs/inode.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index 85eb816..feb2d69 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -136,12 +136,13 @@ static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata, u32 *sec
- 	void *old_secdata;
- 	size_t old_secdata_len;
- 
--	iattrs = sd->s_iattr;
--	if (!iattrs)
--		iattrs = sysfs_init_inode_attrs(sd);
--	if (!iattrs)
--		return -ENOMEM;
-+	if (!sd->s_iattr) {
-+		sd->s_iattr = sysfs_init_inode_attrs(sd);
-+		if (!sd->s_iattr)
-+			return -ENOMEM;
-+	}
- 
-+	iattrs = sd->s_iattr;
- 	old_secdata = iattrs->ia_secdata;
- 	old_secdata_len = iattrs->ia_secdata_len;
- 
 -- 
-1.7.7.6
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
