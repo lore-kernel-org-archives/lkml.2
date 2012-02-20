@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab2BTOy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 09:54:59 -0500
-Received: from mga03.intel.com ([143.182.124.21]:28562 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab2BTOy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 09:54:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="68357107"
-Date: Mon, 20 Feb 2012 16:02:07 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 0/8] DB8500 PRCMU update
-Message-ID: <20120220150207.GU5387@sortiz-mobl>
-References: <1326467986-11648-1-git-send-email-linus.walleij@stericsson.com>
+	id S1753435Ab2BTOzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 09:55:33 -0500
+Received: from imr-mb02.mx.aol.com ([64.12.207.163]:54705 "EHLO
+	imr-mb02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab2BTOzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 09:55:31 -0500
+Message-Id: <201202201455.q1KEt5iO009138@imr-mb02.mx.aol.com>
+Reply-To: <georgymihailov@globomail.com>
+From: "Georgy Mihailov" <mgli991065@aol.com>
+To: mgli991065@aol.com
+Subject: Partnership!!!
+Date: Mon, 20 Feb 2012 14:53:33 -0000
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326467986-11648-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0120_01C2A9A6.247CA352"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 120220-0, 20/02/2012), Outbound message
+X-Antivirus-Status: Clean
+X-AOL-VSS-INFO: 5400.1158/78651
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:274271936:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: G
+X-AOL-VSS-INFO: 5400.1158/78651
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:277425440:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33814f425ec742bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This is a multi-part message in MIME format.
 
-On Fri, Jan 13, 2012 at 04:19:46PM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This is a set of updates to the DB8500 driver that mainly expand
-> clock handling and tries to get a more clean approach to the
-> various register access. This is targeted at next (v3.4) merge
-> window, but we'd like to see it mature in linux-next as soon as
-> possible so I'm sending it early.
-So much for being early, sorry for taking me so long to look at those patches.
-I applied the whole patchset now, thanks.
+------=_NextPart_000_0120_01C2A9A6.247CA352
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Cheers,
-Samuel.
+I have a business proposal for you
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Please view attached letter get back to me immediately. If you are interested.
+
+Georgy
+
+------=_NextPart_000_0120_01C2A9A6.247CA352
+Content-Type: application/octet-stream;
+	name="offer.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="offer.txt"
+
+RGVhciBTaXIvIE1hZGFtLA0KIA0KQWx0aG91Z2ggdGhpcyBhcHByb2FjaCBh
+cHBlYXJzIHRvIGJlIHZlcnkgZGlmZmljdWx0IGJ1dCBJIHRoaW5rIGl0knMg
+dGhlIGJlc3QgYW5kIHNhZmUgbWVhbnMgaW4gcHJlc2VudGluZyBteSBwcm9w
+b3NhbCBmcm9tIHdoaWNoIHdlIGNvdWxkIGJvdGggYmVuZWZpdCBhbmQgdGhl
+IGZhY3QgdGhhdCB5b3UgYXJlIGEgZm9yZWlnbmVyIHdpbGwgaGVscCBhIGxv
+dCBpbiB0aGUgbGVnYWwgcHJvY2Vzcy4gSWYgeW91IGFyZSBub3QgaW50ZXJl
+c3RlZCBhdCB0aGlzIHBvaW50IHRoZW4gYm90aCBvdXIgaWRlbnRpdGllcyBj
+YW4gYmUgbGVmdCB1bmtub3duLg0KIA0KSSBhbSBHRU9SR1kgTUlIQUlMT1Yg
+YSBCcml0aXNoIGNpdGl6ZW4gYnkgYmlydGggYnV0IEkgaGF2ZSBsaXZlZCBh
+bGwgbXkgbGlmZSBpbiBSdXNzaWEgc2luY2UgSSB3YXMgMTAgeWVhcnMgb2xk
+LiBJIGFtIDUwIHllYXJzIG5vdy4gSSB3YXMgYSBmaW5hbmNpYWwgaW52ZXN0
+bWVudCBsZWdhbCBhdHRvcm5leSB0byBicm9rZXJhZ2UgZmlybSBoZXJlIGlu
+IHRoZSBVbml0ZWQgS2luZ2RvbSwgd2hpY2ggd2VudCBsaXF1aWRhdGVkIHRo
+aXMgeWVhciBkdWUgdG8gdGhlIHJlY2Vzc2lvbi93b3JsZCBjcmlzaXMgSSB3
+ZW50IG9uIHRvIG9wZW4gbXkgcHJpdmF0ZSBwcmFjdGljZSBhcyBhIGZpbmFu
+Y2lhbCBsYXd5ZXIgYmVmb3JlIG91ciBicm9rZXJhZ2UgZmlybSB3YXMgbGlx
+dWlkYXRlZCwgd2UgbWFkZSBzZXJpZXMgb2YgaW52ZXN0bWVudCBmb3IgZGlm
+ZmVyZW50IGNvbXBhbmllcyBpbiB0aGUgVW5pdGVkIEtpbmdkb20uDQogDQpJ
+biAyMDA0IHdlIG1hZGUgYSBsYXJnZSBpbnZlc3RtZW50IGZvciBhbiBJY2Vs
+YW5kaWMgaW52ZXN0bWVudCBjb21wYW55LCBJIHdvdWxkIG5vdCBkaXNjbG9z
+ZSB0aGUgbmFtZSBvZiB0aGlzIGNvbXBhbnkgYXQgdGhpcyBzdGFnZSwgb24g
+eW91ciBhY2NlcHRhbmNlIHRvIGJlIGEgcGFydG5lciB3aXRoIG1lIG9uIHRo
+aXMgSSB3aWxsIGdpdmUgeW91IGFsbCB0aGUgaW5mb3JtYXRpb24gYWJvdXQg
+dGhpcyBjb21wYW55LiBXZSBtYWRlIGFuIGludmVzdG1lbnQgd29ydGggKFNl
+dmVuIE1pbGxpb24gRml2ZSBodW5kcmVkIHRob3VzYW5kIFBvdW5kcykgb24g
+YSA1eWVhcnMgZml4ZWQgYm9uZCByYXRlLCB3aGljaCBoYXMgbWF0dXJlZCB0
+byAoRWlnaHQgTWlsbGlvbiBQb3VuZHMgb25seSkuDQogDQpJIHdhcyBjb250
+YWN0ZWQgYXQgdGhlIGZpcnN0IG9mIHRoaXMgbW9udGggYnkgdGhlIGZpbmFu
+Y2lhbCBJbnN0aXR1dGlvbiB3ZXJlIHRoZSBmdW5kcyBhcmUgY3VycmVudGx5
+IGxvY2F0ZWQgdGhhdCB0aGUgdG90YWwgc3VtIG9mIChFaWdodCBNaWxsaW9u
+IFBvdW5kcyBvbmx5KSBpcyByZWFkeSBvbiBtYXR1cml0eSBhbmQgaWYgdGhl
+IGZ1bmRzIGFyZSBub3QgY2xhaW1lZCBpdCB3aWxsIGJlIGNvbmZpc2NhdGVk
+IGFuZCBpdCB3aWxsIGdvIGludG8gdGhlIEJyaXRpc2ggR292ZXJubWVudCBy
+ZWNvdmVyeSByZWNlc3Npb24gcGxhbi4NCiANClNpbmNlIEZlYnJ1YXJ5IDIw
+MDkgSWNlbGFuZGljIGludmVzdG1lbnQgY29tcGFueSBoYXMgZ29uZSBpbnRv
+IGFkbWluaXN0cmF0aW9uIChCYW5rcnVwdGN5KSB0aGVyZSBpcyBubyB3YXkg
+dGhleSBjYW4gY2xhaW0gdGhpcyBmdW5kcyBhbmQgYXMgSSB3YXMgdGhlIGZp
+bmFuY2lhbCBpbnZlc3RtZW50IGxhd3llciB0byBvdXIgYnJva2VyYWdlIGZp
+cm0gYWxsIGluZm9ybWF0aW9uknMgd2VyZSBzZW50IHRvIG1lIG9ubHkuIFRo
+aXMgaXMgYW4gb3Bwb3J0dW5pdHksIHdoaWNoIEkgdGhpbmsgYm90aCBvZiB1
+cyBjYW4gYmVuZWZpdCBmcm9tLiBUaGUgYnJva2VyYWdlIGZpcm0gd2hpY2gg
+aSB3b3JrZWQgZm9yIGFuZCB0aGUgSWNlbGFuZGljIGludmVzdG1lbnQgY29t
+cGFueSBoYXMgZ29uZSBpbnRvIGFkbWluaXN0cmF0aW9uIChCYW5rcnVwdGN5
+KSBieSBVbml0ZWQgS2luZ2RvbSBMYXdzIGl0IHdpbGwgdGFrZSAxMCB5ZWFy
+cyBmb3IgdGhlIEljZWxhbmRpYyBpbnZlc3RtZW50IGNvbXBhbnkgdG8gZ2V0
+IHRoZWlyIGNvbXBhbnkgbmFtZSBvdXQgb2YgdGhlIGJhbmtydXB0Y3kgYmxh
+Y2tsaXN0IGFuZCBhYmxlIHRvIHRyYWRlIGluIHRoZSB1bml0ZWQga2luZ2Rv
+bSBidXQgSSBob25lc3RseSBjYW4ndCBzZWUgdGhlbSBjb21pbmcgYmFjayBi
+ZWNhdXNlIGFsbCB0aGUgYm9hcmQgb2YgZGlyZWN0b3JzIGhhdmUgYmVlbiBw
+cm9iZWQgZm9yIGV4dG9ydGlvbiBvZiB0aGUgY29tcGFueS4NCiANCllvdXIg
+Um9sZToNCg0KSSBzdGF0ZWQgaW4gbXkgcHJldmlvdXMgc2VudGVuY2UgYWJv
+dmUgVGhpcyBpcyBhbiBvcHBvcnR1bml0eSwgd2hpY2ggSSB0aGluayBib3Ro
+IG9mIHVzIGNhbiBiZW5lZml0IGZyb22SIHlvdSBhcyBhIGZvcmVpZ25lciwg
+YW5kIEkgYXMgdGhlIGxlZ2FsIFByYWN0aXRpb25lciB0byBhbGwgb2YgdGhl
+c2UgZnVuZHMgSSBjYW4gbWFrZSBhIGZpbGUgaW4gdGhlIGhpZ2ggQ291cnQg
+b2YgUHJvYmF0ZS4gc3RhdGluZyB0aGUgYWJvdmUgYW1vdW50IHNob3VsZCBi
+ZSBwYWlkIHRvIHlvdSBhcyBzdWItY29udHJhY3RvciB0byB0aGUgSWNlbGFu
+ZGljIGludmVzdG1lbnQgY29tcGFueSB3aGljaCB5b3Ugb2ZmZXJlZCBhIHNl
+cnZpY2UgYnV0IHdhcyB1bnBhaWQgSSB3aWxsIHN1cHBvcnQgdGhhdCBhbmQg
+YmFjayBpdCB1cCBzaW5jZSBpdCBzaG93cyB0aGUgSWNlbGFuZGljIGludmVz
+dG1lbnQgY29tcGFueSBtYWRlIGxvdHMgb2YgZm9yZWlnbiBidXNpbmVzcyBp
+bnRlcm5hdGlvbmFsbHkgbXkgcmVzcG9uc2liaWxpdHkgaXMgdG8gbWFrZSB0
+aGlzIHRyYW5zYWN0aW9uIDEwMCBwZXJjZW50IGxlZ2FsbHkgYW5kIHNhZmUg
+Zm9yIGJvdGggcGFydGllcyBpbnZvbHZlZCB3aGljaCBpbmNsdWRlcyB5b3Ug
+YW5kIEkuIFRoaW5rIGFib3V0IHRoaXMgYW5kIGxldCBtZSBrbm93IGlmIHlv
+dSBhcmUgaW50ZXJlc3RlZCBhbmQgSSB3aWxsIGZ1cm5pc2ggeW91IG1vcmUg
+b24gdGhlIHByb2Nlc3MgYW5kIHByb2NlZWRpbmdzIHRvIGdvIGFib3V0IHRo
+aXMgdmVudHVyZS4NCiANCkkgYXdhaXQgeW91ciByZXNwb25zZS4NCllvdXJz
+IHRydWx5LA0KDQpHRU9SR1k=
+
+------=_NextPart_000_0120_01C2A9A6.247CA352--
