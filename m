@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab2BTMUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 07:20:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab2BTMU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 07:20:28 -0500
-Date: Mon, 20 Feb 2012 13:20:22 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
-Subject: MD and rotational attribute
-Message-ID: <20120220122022.GA7466@x2.net.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
+	id S1753587Ab2BTMtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 07:49:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55618 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab2BTMtX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 07:49:23 -0500
+Message-ID: <1329742145.2293.337.camel@twins>
+Subject: Re: [PATCH 0/4] CPU hotplug, cpusets: Fix CPU online handling
+ related to cpusets
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+        paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        paul@paulmenage.org, tj@kernel.org, frank.rowand@am.sony.com,
+        pjt@google.com, tglx@linutronix.de, lizf@cn.fujitsu.com,
+        prashanth@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Date: Mon, 20 Feb 2012 13:49:05 +0100
+In-Reply-To: <4F3E44DB.20201@linux.vnet.ibm.com>
+References: <Pine.LNX.4.44L0.1202101647440.1179-100000@iolanthe.rowland.org>
+	 <201202102339.02702.rjw@sisk.pl> <1328926042.2476.3.camel@laptop>
+	 <4F35EE11.5010202@linux.vnet.ibm.com> <4F394CA0.9020902@linux.vnet.ibm.com>
+	 <4F3E44DB.20201@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-02-17 at 17:45 +0530, Srivatsa S. Bhat wrote:
 
-Hi Neil,
+> > Trivially removing CPU_TASKS_FROZEN as shown below doesn't look right to me:
+> > 
+> > ---
+> > 
+> >  kernel/sched/core.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > 
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 5255c9d..43a166e 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -6729,7 +6729,7 @@ int __init sched_create_sysfs_power_savings_entries(struct device *dev)
+> >  static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+> >  			     void *hcpu)
+> >  {
+> > -	switch (action & ~CPU_TASKS_FROZEN) {
+> > +	switch (action) {
+> >  	case CPU_ONLINE:
+> >  	case CPU_DOWN_FAILED:
+> >  		cpuset_update_active_cpus();
+> > @@ -6742,7 +6742,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+> >  static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+> >  			       void *hcpu)
+> >  {
+> > -	switch (action & ~CPU_TASKS_FROZEN) {
+> > +	switch (action) {
+> >  	case CPU_DOWN_PREPARE:
+> >  		cpuset_update_active_cpus();
+> >  		return NOTIFY_OK;
+> > 
+> > 
+> > IMO, irrespective of whether we keep cpusets unaware of all CPU Hotplug or
+> > only unaware of the CPU hotplug in the suspend/resume path, I feel the
+> > scheduler should always know the true state of the system, ie., offline CPUs
+> > must not be part of any sched domain, at any point in time.
 
-I guess that something is wrong with MD. If you create a RAID on ssd
-(or scsi_debug in my example) than MD device is reported as rotational.
-Simple example:
+That's really not a problem as long as they're not in the active mask.
 
- modprobe scsi_debug dev_size_mb=500
- fdisk /dev/sdb
- ...
- mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb{1,2}
+> > At the moment, I am exploring several ways to achieve this (I can think of 2
+> > ways at the moment, will see which one is better). But in case this approach
+> > itself seems wrong for any reason, please let me know.
 
- # cat /sys/block/sdb/queue/rotational
- 0
- # cat /sys/block/md0/queue/rotational
- 1
 
-It seems like a bug.
+Have you actually tried the simple patch? 
 
-    Karel
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Calling partition_sched_domains() like you do doesn't seem right, it
+completely ignores cpusets, it will make certain cpuset configurations
+mis-behave.
