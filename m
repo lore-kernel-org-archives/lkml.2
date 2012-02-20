@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2BTRWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:22:48 -0500
+	id S1752356Ab2BTRW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:22:59 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:43752 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab2BTRWq (ORCPT
+	with ESMTP id S1752309Ab2BTRW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:22:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.120.10 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v2 02/22] memcg: fix page_referencies cgroup filter on global
- reclaim
+	Mon, 20 Feb 2012 12:22:57 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.124.142 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v2 05/22] mm: replace per-cpu lru-add page-vectors with
+ page-lists
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 20 Feb 2012 21:22:43 +0400
-Message-ID: <20120220172243.22196.57870.stgit@zurg>
+Date: Mon, 20 Feb 2012 21:22:54 +0400
+Message-ID: <20120220172254.22196.24192.stgit@zurg>
 In-Reply-To: <20120220171138.22196.65847.stgit@zurg>
 References: <20120220171138.22196.65847.stgit@zurg>
 User-Agent: StGit/0.15
@@ -27,84 +27,284 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Global memory reclaimer should't skip referencies for any pages,
-even if they are shared between different cgroups.
+This patch replaces page-vectors with page-lists in lru_cache_add*() functions.
+We can use page->lru for linking because page obviously not in lru.
 
-This patch adds scan_control->current_mem_cgroup, which points to currently
-shrinking sub-cgroup in hierarchy, at global reclaim it always NULL.
+Now per-cpu batch limited with its pages total size, not pages count,
+otherwise it can be extremely huge if there many huge-pages inside:
+PAGEVEC_SIZE * HPAGE_SIZE = 28Mb, per-cpu!
+These pages are hidden from memory reclaimer for a while.
+New limit: LRU_CACHE_ADD_BATCH = 64 (* PAGE_SIZE = 256Kb)
+
+So, huge-page adding now will always drain per-cpu list. Huge-page allocation
+and preparation is long procedure, thus nobody will notice this draining.
+
+Draining procedure disables preemption only for pages list isolation,
+thus batch size can be increased without negative effect for latency.
+
+Plus this patch introduces new function lru_cache_add_list() and use it in
+mpage_readpages() and read_pages(). There pages already collected in list.
+Unlike to single-page lru-add, list-add reuse page-referencies from caller,
+thus we save one page_get()/page_put() per page.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/vmscan.c |   18 ++++++++++++++----
- 1 files changed, 14 insertions(+), 4 deletions(-)
+ fs/mpage.c           |   21 ++++++----
+ include/linux/swap.h |    2 +
+ mm/readahead.c       |   15 ++++---
+ mm/swap.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 119 insertions(+), 23 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ee4d87a..4bb23ef 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -109,6 +109,12 @@ struct scan_control {
- 	struct mem_cgroup *target_mem_cgroup;
- 
- 	/*
-+	 * Currently reclaiming memory cgroup in hierarchy,
-+	 * NULL for global reclaim.
-+	 */
-+	struct mem_cgroup *current_mem_cgroup;
-+
-+	/*
- 	 * Nodemask of nodes allowed by the caller. If NULL, all nodes
- 	 * are scanned.
- 	 */
-@@ -701,13 +707,13 @@ enum page_references {
- };
- 
- static enum page_references page_check_references(struct page *page,
--						  struct mem_cgroup_zone *mz,
- 						  struct scan_control *sc)
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 643e9f5..6474f41 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -15,6 +15,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
++#include <linux/swap.h>
+ #include <linux/kdev_t.h>
+ #include <linux/gfp.h>
+ #include <linux/bio.h>
+@@ -367,29 +368,33 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
+ 				unsigned nr_pages, get_block_t get_block)
  {
- 	int referenced_ptes, referenced_page;
- 	unsigned long vm_flags;
+ 	struct bio *bio = NULL;
+-	unsigned page_idx;
+ 	sector_t last_block_in_bio = 0;
+ 	struct buffer_head map_bh;
+ 	unsigned long first_logical_block = 0;
++	struct page *page, *next;
++	int nr_added = 0;
  
--	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-+	referenced_ptes = page_referenced(page, 1,
-+			sc->current_mem_cgroup, &vm_flags);
- 	referenced_page = TestClearPageReferenced(page);
+ 	map_bh.b_state = 0;
+ 	map_bh.b_size = 0;
+-	for (page_idx = 0; page_idx < nr_pages; page_idx++) {
+-		struct page *page = list_entry(pages->prev, struct page, lru);
  
- 	/* Lumpy reclaim - ignore references */
-@@ -828,7 +834,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			}
++	list_for_each_entry_safe(page, next, pages, lru) {
+ 		prefetchw(&page->flags);
+-		list_del(&page->lru);
+-		if (!add_to_page_cache_lru(page, mapping,
++		if (!add_to_page_cache(page, mapping,
+ 					page->index, GFP_KERNEL)) {
+ 			bio = do_mpage_readpage(bio, page,
+-					nr_pages - page_idx,
++					nr_pages,
+ 					&last_block_in_bio, &map_bh,
+ 					&first_logical_block,
+ 					get_block);
++			nr_added++;
++		} else {
++			list_del(&page->lru);
++			page_cache_release(page);
  		}
+-		page_cache_release(page);
++		nr_pages--;
+ 	}
+-	BUG_ON(!list_empty(pages));
++	BUG_ON(nr_pages);
++	lru_cache_add_list(pages, nr_added, LRU_INACTIVE_FILE);
+ 	if (bio)
+ 		mpage_bio_submit(READ, bio);
+ 	return 0;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index ba2c8d7..7394100 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -226,6 +226,8 @@ extern void __lru_cache_add(struct page *, enum lru_list lru);
+ extern void lru_cache_add_lru(struct page *, enum lru_list lru);
+ extern void lru_add_page_tail(struct zone* zone,
+ 			      struct page *page, struct page *page_tail);
++extern void lru_cache_add_list(struct list_head *pages,
++			       int size, enum lru_list lru);
+ extern void activate_page(struct page *);
+ extern void mark_page_accessed(struct page *);
+ extern void lru_add_drain(void);
+diff --git a/mm/readahead.c b/mm/readahead.c
+index cbcbb02..2f6fe4b 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -11,6 +11,7 @@
+ #include <linux/fs.h>
+ #include <linux/gfp.h>
+ #include <linux/mm.h>
++#include <linux/swap.h>
+ #include <linux/export.h>
+ #include <linux/blkdev.h>
+ #include <linux/backing-dev.h>
+@@ -110,7 +111,7 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+ 		struct list_head *pages, unsigned nr_pages)
+ {
+ 	struct blk_plug plug;
+-	unsigned page_idx;
++	struct page *page, *next;
+ 	int ret;
  
--		references = page_check_references(page, mz, sc);
-+		references = page_check_references(page, sc);
- 		switch (references) {
- 		case PAGEREF_ACTIVATE:
- 			goto activate_locked;
-@@ -1735,7 +1741,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 			continue;
+ 	blk_start_plug(&plug);
+@@ -122,15 +123,17 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+ 		goto out;
+ 	}
+ 
+-	for (page_idx = 0; page_idx < nr_pages; page_idx++) {
+-		struct page *page = list_to_page(pages);
+-		list_del(&page->lru);
+-		if (!add_to_page_cache_lru(page, mapping,
++	list_for_each_entry_safe(page, next, pages, lru) {
++		if (!add_to_page_cache(page, mapping,
+ 					page->index, GFP_KERNEL)) {
+ 			mapping->a_ops->readpage(filp, page);
++		} else {
++			list_del(&page->lru);
++			page_cache_release(page);
++			nr_pages--;
  		}
+-		page_cache_release(page);
+ 	}
++	lru_cache_add_list(pages, nr_pages, LRU_INACTIVE_FILE);
+ 	ret = 0;
  
--		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
-+		if (page_referenced(page, 0, sc->current_mem_cgroup, &vm_flags)) {
- 			nr_rotated += hpage_nr_pages(page);
- 			/*
- 			 * Identify referenced, file-backed active pages and
-@@ -2159,6 +2165,9 @@ static void shrink_zone(int priority, struct zone *zone,
- 			.zone = zone,
- 		};
+ out:
+diff --git a/mm/swap.c b/mm/swap.c
+index 38b2686..303fbc3 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -36,7 +36,12 @@
+ /* How many pages do we try to swap or page in/out together? */
+ int page_cluster;
  
-+		if (!global_reclaim(sc))
-+			sc->current_mem_cgroup = memcg;
+-static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
++/* How many pages may be in per-cpu lru-add pending list */
++#define LRU_CACHE_ADD_BATCH	64
 +
- 		shrink_mem_cgroup_zone(priority, &mz, sc);
- 		/*
- 		 * Limit reclaim has historically picked one memcg and
-@@ -2478,6 +2487,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
- 		.may_swap = !noswap,
- 		.order = 0,
- 		.target_mem_cgroup = memcg,
-+		.current_mem_cgroup = memcg,
- 	};
- 	struct mem_cgroup_zone mz = {
- 		.mem_cgroup = memcg,
++static DEFINE_PER_CPU(struct list_head[NR_LRU_LISTS], lru_add_pages);
++static DEFINE_PER_CPU(int[NR_LRU_LISTS], lru_add_pending);
++
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
+@@ -371,14 +376,83 @@ void mark_page_accessed(struct page *page)
+ }
+ EXPORT_SYMBOL(mark_page_accessed);
+ 
++static void __lru_cache_add_list(struct list_head *pages, enum lru_list lru)
++{
++	int file = is_file_lru(lru);
++	int active = is_active_lru(lru);
++	struct page *page, *next;
++	struct zone *pagezone, *zone = NULL;
++	unsigned long uninitialized_var(flags);
++	LIST_HEAD(free_pages);
++
++	list_for_each_entry_safe(page, next, pages, lru) {
++		pagezone = page_zone(page);
++		if (pagezone != zone) {
++			if (zone)
++				spin_unlock_irqrestore(&zone->lru_lock, flags);
++			zone = pagezone;
++			spin_lock_irqsave(&zone->lru_lock, flags);
++		}
++		VM_BUG_ON(PageActive(page));
++		VM_BUG_ON(PageUnevictable(page));
++		VM_BUG_ON(PageLRU(page));
++		SetPageLRU(page);
++		if (active)
++			SetPageActive(page);
++		update_page_reclaim_stat(zone, page, file, active);
++		add_page_to_lru_list(zone, page, lru);
++		if (unlikely(put_page_testzero(page))) {
++			__ClearPageLRU(page);
++			__ClearPageActive(page);
++			del_page_from_lru_list(zone, page, lru);
++			if (unlikely(PageCompound(page))) {
++				spin_unlock_irqrestore(&zone->lru_lock, flags);
++				zone = NULL;
++				(*get_compound_page_dtor(page))(page);
++			} else
++				list_add_tail(&page->lru, &free_pages);
++		}
++	}
++	if (zone)
++		spin_unlock_irqrestore(&zone->lru_lock, flags);
++
++	free_hot_cold_page_list(&free_pages, 0);
++}
++
++/**
++ * lru_cache_add_list - add list of pages into lru, drop caller's page
++ *			references and reinitialize list.
++ * @pages	list of pages to adding
++ * @size	total size of pages in list
++ * @lru		the LRU list to which the page is added.
++ */
++void lru_cache_add_list(struct list_head *pages, int size, enum lru_list lru)
++{
++	struct list_head *list;
++
++	preempt_disable();
++	list = __this_cpu_ptr(lru_add_pages + lru);
++	list_splice_tail_init(pages, list);
++	if (likely(__this_cpu_add_return(lru_add_pending[lru], size) <=
++				LRU_CACHE_ADD_BATCH)) {
++		preempt_enable();
++		return;
++	}
++	list_replace_init(list, pages);
++	__this_cpu_write(lru_add_pending[lru], 0);
++	preempt_enable();
++	__lru_cache_add_list(pages, lru);
++	INIT_LIST_HEAD(pages);
++}
++EXPORT_SYMBOL(lru_cache_add_list);
++
+ void __lru_cache_add(struct page *page, enum lru_list lru)
+ {
+-	struct pagevec *pvec = &get_cpu_var(lru_add_pvecs)[lru];
++	struct list_head pages = LIST_HEAD_INIT(page->lru);
++	int size = hpage_nr_pages(page);
+ 
+ 	page_cache_get(page);
+-	if (!pagevec_add(pvec, page))
+-		__pagevec_lru_add(pvec, lru);
+-	put_cpu_var(lru_add_pvecs);
++	lru_cache_add_list(&pages, size, lru);
+ }
+ EXPORT_SYMBOL(__lru_cache_add);
+ 
+@@ -498,14 +572,16 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+  */
+ void lru_add_drain_cpu(int cpu)
+ {
+-	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
++	struct list_head *pages = per_cpu(lru_add_pages, cpu);
+ 	struct pagevec *pvec;
+ 	int lru;
+ 
+ 	for_each_lru(lru) {
+-		pvec = &pvecs[lru - LRU_BASE];
+-		if (pagevec_count(pvec))
+-			__pagevec_lru_add(pvec, lru);
++		if (!list_empty(pages + lru)) {
++			__lru_cache_add_list(pages + lru, lru);
++			INIT_LIST_HEAD(pages + lru);
++			per_cpu(lru_add_pending[lru], cpu) = 0;
++		}
+ 	}
+ 
+ 	pvec = &per_cpu(lru_rotate_pvecs, cpu);
+@@ -780,3 +856,13 @@ void __init swap_setup(void)
+ 	 * _really_ don't want to cluster much more
+ 	 */
+ }
++
++void __init lru_cache_add_init(void)
++{
++	int cpu, lru;
++
++	for_each_possible_cpu(cpu)
++		for_each_lru(lru)
++			INIT_LIST_HEAD(per_cpu(lru_add_pages, cpu) + lru);
++}
++core_initcall(lru_cache_add_init);
 
