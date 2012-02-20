@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2BTUMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:12:15 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36185 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab2BTUMO (ORCPT
+	id S1753443Ab2BTUMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:12:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61390 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab2BTUMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:12:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ohad@wizery.com designates 10.50.11.129 as permitted sender) smtp.mail=ohad@wizery.com
+	Mon, 20 Feb 2012 15:12:41 -0500
+Message-ID: <4F42A935.90603@lwfinger.net>
+Date: Mon, 20 Feb 2012 14:12:37 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-X-Originating-IP: [93.172.89.250]
-In-Reply-To: <4F425711.80102@monstr.eu>
-References: <4F1EE861.4030405@monstr.eu> <CAK=Wgba5kT8AwLtuHyosucYnWf-EA+xpE1kzmssfhSC7ZXQA=g@mail.gmail.com>
- <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com>
- <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
- <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com>
- <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
- <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu> <4F3CC899.4070302@monstr.eu>
- <CAK=WgbaRF-L7M3VMZQdqFLUFOJuwFVkBH1hUNuJ51kSrzkaVjA@mail.gmail.com>
- <4F3CFFAD.9030402@monstr.eu> <4F3D032B.6090700@monstr.eu> <CAK=WgbZ3oXc+NQscdShqmu2wkzv=M-qBDCH2-k=5qSRX9W=z3Q@mail.gmail.com>
- <CAHTX3dJ4PruKO-wJLJU8W0boHFL0f6eoF+QNaoNjm5hu26YEow@mail.gmail.com>
- <CAK=WgbZBJJbFcoeZ+hY=BgyW_4yvOJPVNMZ18_9o+zY7tEc_pQ@mail.gmail.com> <4F425711.80102@monstr.eu>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 20 Feb 2012 22:11:53 +0200
-Message-ID: <CAK=WgbbNJMpndKqgW4SJjE=H-BqT7yVsB+F-kEfJWmW+ikJM+A@mail.gmail.com>
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory location
-To: monstr@monstr.eu
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Arend van Spriel <arend@broadcom.com>, LKML <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        wireless <linux-wireless@vger.kernel.org>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>
+Subject: Re: will these methods work with firmware loading?
+References: <4F414230.5040506@lwfinger.net> <4F421A0E.8030805@broadcom.com> <CAPXgP10qa_g6R=pOWd8JuXpw0wPdJ4rP7B_4YHDU91mhC0N6Vg@mail.gmail.com>
+In-Reply-To: <CAPXgP10qa_g6R=pOWd8JuXpw0wPdJ4rP7B_4YHDU91mhC0N6Vg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+On 02/20/2012 04:19 AM, Kay Sievers wrote:
+> On Mon, Feb 20, 2012 at 11:01, Arend van Spriel<arend@broadcom.com>  wrote:
+>> On 02/19/2012 07:40 PM, Larry Finger wrote:
+>
+>>> Similarly, if I were to create a work queue, init and schedule it from
+>>> module_init(), and then use synchronous loads to get the firmware from the
+>>> work
+>>> queue callback, would that get around the boot problem? I know it works as
+>>> I
+>>> have trial patches; however, my version of udev is not one affected. This
+>>> method
+>>> is very easy to implement, but again I would like confirmation from an
+>>> expert.
+>
+> It sounds like it should work, because the modprobe event returns, not
+> waiting for the firmware request. Chaining one firmware request after
+> the other sounds not like a problem, as long as they are chained with
+> the return from the earlier request and not from inside the earlier
+> request, which would have duplicated device name issues in the kernel
+> too.
+>
+>> What boot problem are you referring to?
+>
+> The pci event calls modprobe, the module init for the pci driver
+> creates a child event of the pci device, this child event is queued in
+> udev to be started after the pci event has finished. The pci event
+> does not finish in time because the firmware request blocks itself.
+>
+> The current udev logic limits the timeout to 30 sec, while the
+> firmware request is 60 sec, so it usually works with a logged error,
+> and a 30 second delay.
+>
+>> The blocking modprobe?
+>
+> Yes, blocking in the module init path, will deadlock udev. Linking
+> code into the kernel must not depend on device init or firmware
+> loading.
+>
+>> For that
+>> problem I would say yes. Also here the problem of handling error flows
+>> exist. If the driver is kicked of during boot with a initramfs missing the
+>> firmware, should we retry until the real root is mounted?
+>
+> I don't think so. Drivers are not supposed to know about bootup or
+> initramfs issues. If they want, they can disable the timeout, and wait
+> for userspace to handle the request any time later, but they should
+> not try to be smart here.
+>
+> Currently, firmware requests are cancelled if the firmware isn't
+> found, but that's a userspace issue, and nothing the kernel should try
+> to work around.
 
-On Mon, Feb 20, 2012 at 4:22 PM, Michal Simek <monstr@monstr.eu> wrote:
-> IRC you mentioned somewhere that you maybe will have firmware which is
-> possible to
-> compiled by gcc and which doesn't required that TI tools. Am I correct or
-> that was
-> something totally different?
+Kay,
 
-You're correct - this is in the works, but I'm afraid I don't have any
-scheduling information about this, sorry.
+Thanks for your very helpful comments. I think I will keep my second method, 
+i.e. start a work queue entry from the probe routine, and then use synchronous 
+firmware loads from that queue's callback routine. In most cases, the firmware 
+loading is already done from a separate routine, thus the flow is not that 
+different from the current code.
 
-But we have folks from another vendor now who got rpmsg working, and
-are working out the legal issues so they can release the RTOS sources.
-Hopefully that'll be released soon.
+Larry
 
-Thanks,
-Ohad.
