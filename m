@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab2BTR0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:26:08 -0500
+	id S1752504Ab2BTR0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:26:44 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:43752 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab2BTRXV (ORCPT
+	with ESMTP id S1752290Ab2BTRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:23:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.154.140 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v2 11/22] mm: add lruvec->reclaim_stat
+	Mon, 20 Feb 2012 12:23:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.121.14 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v2 07/22] mm: rename lruvec->lists into lruvec->pages_lru
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 20 Feb 2012 21:23:18 +0400
-Message-ID: <20120220172317.22196.27952.stgit@zurg>
+Date: Mon, 20 Feb 2012 21:23:02 +0400
+Message-ID: <20120220172302.22196.91038.stgit@zurg>
 In-Reply-To: <20120220171138.22196.65847.stgit@zurg>
 References: <20120220171138.22196.65847.stgit@zurg>
 User-Agent: StGit/0.15
@@ -26,230 +26,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge memcg and non-memcg reclaim stat. We need to update only one.
-Move zone->reclaimer_stat and mem_cgroup_per_zone->reclaimer_stat to struct lruvec.
-
-struct lruvec will become operating unit for recalimer logic,
-thus this is perfect place for these counters.
+This is much more unique and grep-friendly name.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- include/linux/memcontrol.h |   17 --------------
- include/linux/mmzone.h     |    4 ++-
- mm/memcontrol.c            |   52 +++++---------------------------------------
- mm/page_alloc.c            |    6 ++---
- mm/swap.c                  |   12 ++--------
- mm/vmscan.c                |    5 +++-
- 6 files changed, 15 insertions(+), 81 deletions(-)
+ include/linux/mm_inline.h |    2 +-
+ include/linux/mmzone.h    |    2 +-
+ mm/memcontrol.c           |    6 +++---
+ mm/page_alloc.c           |    2 +-
+ mm/swap.c                 |    4 ++--
+ mm/vmscan.c               |    6 +++---
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index cc6061a..1d00222 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -111,10 +111,6 @@ unsigned int mem_cgroup_inactive_ratio(struct mem_cgroup *memcg);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 					int nid, int zid, unsigned int lrumask);
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone);
--struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat_from_page(struct page *page);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- 					struct task_struct *p);
- extern void mem_cgroup_replace_page_cache(struct page *oldpage,
-@@ -299,19 +295,6 @@ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
- 	return 0;
+diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
+index 227fd3e..8415596 100644
+--- a/include/linux/mm_inline.h
++++ b/include/linux/mm_inline.h
+@@ -27,7 +27,7 @@ add_page_to_lru_list(struct zone *zone, struct page *page, enum lru_list lru)
+ 	struct lruvec *lruvec;
+ 
+ 	lruvec = mem_cgroup_lru_add_list(zone, page, lru);
+-	list_add(&page->lru, &lruvec->lists[lru]);
++	list_add(&page->lru, &lruvec->pages_lru[lru]);
+ 	__mod_zone_page_state(zone, NR_LRU_BASE + lru, hpage_nr_pages(page));
  }
  
--
--static inline struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg, struct zone *zone)
--{
--	return NULL;
--}
--
--static inline struct zone_reclaim_stat*
--mem_cgroup_get_reclaim_stat_from_page(struct page *page)
--{
--	return NULL;
--}
--
- static inline void
- mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- {
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index bd2cae4..9fd82b1 100644
+index f10a54c..0d2e6b6 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -303,6 +303,8 @@ struct lruvec {
- #endif
- 	struct list_head	pages_lru[NR_LRU_LISTS];
- 	unsigned long		pages_count[NR_LRU_LISTS];
-+
-+	struct zone_reclaim_stat	reclaim_stat;
+@@ -160,7 +160,7 @@ static inline int is_unevictable_lru(enum lru_list lru)
+ }
+ 
+ struct lruvec {
+-	struct list_head lists[NR_LRU_LISTS];
++	struct list_head pages_lru[NR_LRU_LISTS];
  };
  
- struct zone {
-@@ -379,8 +381,6 @@ struct zone {
- 	spinlock_t		lru_lock;
- 	struct lruvec		lruvec;
- 
--	struct zone_reclaim_stat reclaim_stat;
--
- 	unsigned long		pages_scanned;	   /* since last reclaim */
- 	unsigned long		flags;		   /* zone flags, see below */
- 
+ /* Mask used at gathering information at once (see memcontrol.c) */
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e29420d..5c1414b 100644
+index fe0b8fb..b65c619 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -138,7 +138,6 @@ struct mem_cgroup_per_zone {
+@@ -1036,7 +1036,7 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
+  * the lruvec for the given @zone and the memcg @page is charged to.
+  *
+  * The callsite is then responsible for physically linking the page to
+- * the returned lruvec->lists[@lru].
++ * the returned lruvec->pages_lru[@lru].
+  */
+ struct lruvec *mem_cgroup_lru_add_list(struct zone *zone, struct page *page,
+ 				       enum lru_list lru)
+@@ -3611,7 +3611,7 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
  
- 	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
+ 	zone = &NODE_DATA(node)->node_zones[zid];
+ 	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+-	list = &mz->lruvec.lists[lru];
++	list = &mz->lruvec.pages_lru[lru];
  
--	struct zone_reclaim_stat reclaim_stat;
- 	struct rb_node		tree_node;	/* RB tree node */
- 	unsigned long long	usage_in_excess;/* Set to the value by which */
- 						/* the soft limit is exceeded*/
-@@ -447,15 +446,6 @@ struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg)
- 	return &memcg->css;
- }
- 
--static struct mem_cgroup_per_zone *
--page_cgroup_zoneinfo(struct mem_cgroup *memcg, struct page *page)
--{
--	int nid = page_to_nid(page);
--	int zid = page_zonenum(page);
--
--	return mem_cgroup_zoneinfo(memcg, nid, zid);
--}
--
- static struct mem_cgroup_tree_per_zone *
- soft_limit_tree_node_zone(int nid, int zid)
- {
-@@ -1097,34 +1087,6 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
- 	return ret;
- }
- 
--struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
--						      struct zone *zone)
--{
--	int nid = zone_to_nid(zone);
--	int zid = zone_idx(zone);
--	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
--
--	return &mz->reclaim_stat;
--}
--
--struct zone_reclaim_stat *
--mem_cgroup_get_reclaim_stat_from_page(struct page *page)
--{
--	struct page_cgroup *pc;
--	struct mem_cgroup_per_zone *mz;
--
--	if (mem_cgroup_disabled())
--		return NULL;
--
--	pc = lookup_page_cgroup(page);
--	if (!PageCgroupUsed(pc))
--		return NULL;
--	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
--	smp_rmb();
--	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
--	return &mz->reclaim_stat;
--}
--
- #define mem_cgroup_from_res_counter(counter, member)	\
- 	container_of(counter, struct mem_cgroup, member)
- 
-@@ -4094,21 +4056,19 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	{
- 		int nid, zid;
- 		struct mem_cgroup_per_zone *mz;
-+		struct zone_reclaim_stat *rs;
- 		unsigned long recent_rotated[2] = {0, 0};
- 		unsigned long recent_scanned[2] = {0, 0};
- 
- 		for_each_online_node(nid)
- 			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
- 				mz = mem_cgroup_zoneinfo(memcg, nid, zid);
-+				rs = &mz->lruvec.reclaim_stat;
- 
--				recent_rotated[0] +=
--					mz->reclaim_stat.recent_rotated[0];
--				recent_rotated[1] +=
--					mz->reclaim_stat.recent_rotated[1];
--				recent_scanned[0] +=
--					mz->reclaim_stat.recent_scanned[0];
--				recent_scanned[1] +=
--					mz->reclaim_stat.recent_scanned[1];
-+				recent_rotated[0] += rs->recent_rotated[0];
-+				recent_rotated[1] += rs->recent_rotated[1];
-+				recent_scanned[0] += rs->recent_scanned[0];
-+				recent_scanned[1] += rs->recent_scanned[1];
- 			}
- 		cb->fill(cb, "recent_rotated_anon", recent_rotated[0]);
- 		cb->fill(cb, "recent_rotated_file", recent_rotated[1]);
+ 	loop = mz->lru_size[lru];
+ 	/* give some margin against EBUSY etc...*/
+@@ -4737,7 +4737,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+ 		mz = &pn->zoneinfo[zone];
+ 		for_each_lru(lru)
+-			INIT_LIST_HEAD(&mz->lruvec.lists[lru]);
++			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
+ 		mz->usage_in_excess = 0;
+ 		mz->on_tree = false;
+ 		mz->memcg = memcg;
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c500084..72263e4 100644
+index 85517af..b75af1e 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -4370,10 +4370,8 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		zone->lruvec.node = pgdat;
- 		zone->lruvec.zone = zone;
- #endif
--		zone->reclaim_stat.recent_rotated[0] = 0;
--		zone->reclaim_stat.recent_rotated[1] = 0;
--		zone->reclaim_stat.recent_scanned[0] = 0;
--		zone->reclaim_stat.recent_scanned[1] = 0;
-+		memset(&zone->lruvec.reclaim_stat, 0,
-+				sizeof(struct zone_reclaim_stat));
- 		zap_zone_vm_stats(zone);
- 		zone->flags = 0;
- 		if (!size)
+@@ -4363,7 +4363,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 
+ 		zone_pcp_init(zone);
+ 		for_each_lru(lru)
+-			INIT_LIST_HEAD(&zone->lruvec.lists[lru]);
++			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
+ 		zone->reclaim_stat.recent_rotated[0] = 0;
+ 		zone->reclaim_stat.recent_rotated[1] = 0;
+ 		zone->reclaim_stat.recent_scanned[0] = 0;
 diff --git a/mm/swap.c b/mm/swap.c
-index 4363daf..f31bd45 100644
+index 0d8845c..f57604f 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -282,21 +282,13 @@ void rotate_reclaimable_page(struct page *page)
- static void update_page_reclaim_stat(struct zone *zone, struct page *page,
- 				     int file, int rotated)
- {
--	struct zone_reclaim_stat *reclaim_stat = &zone->reclaim_stat;
--	struct zone_reclaim_stat *memcg_reclaim_stat;
-+	struct zone_reclaim_stat *reclaim_stat;
+@@ -243,7 +243,7 @@ static void pagevec_move_tail_fn(struct page *page, void *arg)
  
--	memcg_reclaim_stat = mem_cgroup_get_reclaim_stat_from_page(page);
-+	reclaim_stat = &page_lruvec(page)->reclaim_stat;
- 
- 	reclaim_stat->recent_scanned[file]++;
- 	if (rotated)
- 		reclaim_stat->recent_rotated[file]++;
--
--	if (!memcg_reclaim_stat)
--		return;
--
--	memcg_reclaim_stat->recent_scanned[file]++;
--	if (rotated)
--		memcg_reclaim_stat->recent_rotated[file]++;
+ 		lruvec = mem_cgroup_lru_move_lists(page_zone(page),
+ 						   page, lru, lru);
+-		list_move_tail(&page->lru, &lruvec->lists[lru]);
++		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
+ 		(*pgmoved)++;
+ 	}
  }
+@@ -556,7 +556,7 @@ static void lru_deactivate_fn(struct page *page, void *arg)
+ 		 * We moves tha page into tail of inactive.
+ 		 */
+ 		lruvec = mem_cgroup_lru_move_lists(zone, page, lru, lru);
+-		list_move_tail(&page->lru, &lruvec->lists[lru]);
++		list_move_tail(&page->lru, &lruvec->pages_lru[lru]);
+ 		__count_vm_event(PGROTATED);
+ 	}
  
- static void __activate_page(struct page *page, void *arg)
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6889a39..f2eb9c4 100644
+index c54a75b..7083567 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -190,9 +190,10 @@ static bool scanning_global_lru(struct mem_cgroup_zone *mz)
- static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- {
- 	if (!scanning_global_lru(mz))
--		return mem_cgroup_get_reclaim_stat(mz->mem_cgroup, mz->zone);
-+		return &mem_cgroup_zone_lruvec(mz->zone,
-+				mz->mem_cgroup)->reclaim_stat;
+@@ -1170,7 +1170,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		lru += LRU_ACTIVE;
+ 	if (file)
+ 		lru += LRU_FILE;
+-	src = &lruvec->lists[lru];
++	src = &lruvec->pages_lru[lru];
  
--	return &mz->zone->reclaim_stat;
-+	return &mz->zone->lruvec.reclaim_stat;
- }
+ 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+ 		struct page *page;
+@@ -1669,7 +1669,7 @@ static void move_active_pages_to_lru(struct zone *zone,
+ 		SetPageLRU(page);
  
- static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
+ 		lruvec = mem_cgroup_lru_add_list(zone, page, lru);
+-		list_move(&page->lru, &lruvec->lists[lru]);
++		list_move(&page->lru, &lruvec->pages_lru[lru]);
+ 		pgmoved += hpage_nr_pages(page);
+ 
+ 		if (put_page_testzero(page)) {
+@@ -3583,7 +3583,7 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
+ 			__dec_zone_state(zone, NR_UNEVICTABLE);
+ 			lruvec = mem_cgroup_lru_move_lists(zone, page,
+ 						LRU_UNEVICTABLE, lru);
+-			list_move(&page->lru, &lruvec->lists[lru]);
++			list_move(&page->lru, &lruvec->pages_lru[lru]);
+ 			__inc_zone_state(zone, NR_INACTIVE_ANON + lru);
+ 			pgrescued++;
+ 		}
 
