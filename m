@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab2BTRbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:31:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60151 "EHLO mx1.redhat.com"
+	id S1752596Ab2BTRbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:31:49 -0500
+Received: from mga03.intel.com ([143.182.124.21]:5431 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab2BTRbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:31:33 -0500
-Date: Mon, 20 Feb 2012 18:31:29 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] genirq: No need to check IRQTF_DIED before stopping a
- thread handler
-Message-ID: <20120220173129.GC9313@dhcp-26-207.brq.redhat.com>
+	id S1751987Ab2BTRbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 12:31:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108683742"
+Date: Mon, 20 Feb 2012 18:38:58 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/3] mfd: wm8994: Convert to devm_regmap_init()
+Message-ID: <20120220173858.GJ5387@sortiz-mobl>
+References: <1327958986-16115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1327958986-16115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 63706172f332fd3f6e7458ebfb35fa6de9c21dc5 kthread_stop() is not
-afraid of dead kernel threads. So no need to check if a thread is
-alive before stopping it. These checks still were racy.
+Hi Mark,
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- kernel/irq/manage.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+On Mon, Jan 30, 2012 at 09:29:44PM +0000, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> 
+> OK to take this via regmap, it's another new feature?
+Yep, fine with me.
+If needed:
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0fa3ce9..3feab4a 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1106,8 +1106,7 @@ out_thread:
- 		struct task_struct *t = new->thread;
- 
- 		new->thread = NULL;
--		if (likely(!test_bit(IRQTF_DIED, &new->thread_flags)))
--			kthread_stop(t);
-+		kthread_stop(t);
- 		put_task_struct(t);
- 	}
- out_mput:
-@@ -1217,8 +1216,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- #endif
- 
- 	if (action->thread) {
--		if (!test_bit(IRQTF_DIED, &action->thread_flags))
--			kthread_stop(action->thread);
-+		kthread_stop(action->thread);
- 		put_task_struct(action->thread);
- 	}
- 
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+
+Cheers,
+Samuel.
+
 -- 
-1.7.7.6
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
