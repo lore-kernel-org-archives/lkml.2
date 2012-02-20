@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2BTPIf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 10:08:35 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21710 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab2BTPIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 10:08:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108649559"
-Date: Mon, 20 Feb 2012 16:15:43 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: jhbird.choi@samsung.com, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] mfd: variable dereferenced before check
-Message-ID: <20120220151543.GV5387@sortiz-mobl>
-References: <1326418852-19378-1-git-send-email-jhbird.choi@samsung.com>
- <20120115111553.GA3040@opensource.wolfsonmicro.com>
+	id S1753243Ab2BTPKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 10:10:14 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56958 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab2BTPKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 10:10:12 -0500
+Date: Mon, 20 Feb 2012 20:39:48 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@elte.hu, pjt@google.com, efault@gmx.de, venki@google.com,
+        suresh.b.siddha@intel.com, linux-kernel@vger.kernel.org,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Subject: Re: sched: Performance of Trade workload running inside VM
+Message-ID: <20120220150943.GD2350@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20120214112827.GA22653@linux.vnet.ibm.com>
+ <1329307161.2293.66.camel@twins>
+ <20120215171032.GB9918@linux.vnet.ibm.com>
+ <1329326651.2293.151.camel@twins>
+ <20120215173817.GD9918@linux.vnet.ibm.com>
+ <1329327902.2293.168.camel@twins>
+ <20120218074127.GA9077@linux.vnet.ibm.com>
+ <1329749790.2293.354.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120115111553.GA3040@opensource.wolfsonmicro.com>
+In-Reply-To: <1329749790.2293.354.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022004-5490-0000-0000-000000C5FFB2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-02-20 15:56:30]:
 
-On Sun, Jan 15, 2012 at 03:15:55AM -0800, Mark Brown wrote:
-> On Fri, Jan 13, 2012 at 10:40:52AM +0900, jhbird.choi@samsung.com wrote:
-> > From: Jonghwan Choi <jhbird.choi@samsung.com>
-> > 
-> > Remove "wm8350->irq_base = pdata->irq_base" to avoid
-> > null pointer exception and wm8350->irq_base got from
-> > irq_alloc_descs().
+> > Another variant of the patch could be to have select_idle_sibling() look
+> > for any idle cpu that is in same cache domain (rather than looking for a
+> > whole group of cpus to be idle)?
 > 
-> Always send patches to the relevant maintainers - for the MFD subsystem
-> the maintainer is Samuel Ortiz.
-Thanks for the notification. Patch applied now.
+> Right, so I looked over select_idle_sibling() again and it made my head
+> hurt :/
 
-Cheers,
-Samuel.
+I can vouch for it :-)
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> I can't immediately tell if its actually doing the right thing
+> or not (it _should_ try and avoid using SMT siblings if possible).
+
+Yes makes sense.
+
+> It would be very nice not to have both select_idle_sibling() and
+> SD_BALANCE_WAKE iterate the domain tree. So merging them if at all
+> possible would be goodness I think.
+
+Right. Let me see how that can be worked out in my next version.
+
+> We'd have WAKE_AFFINE to decide which cache domain etc to stuff the task
+> on and then use select_idle_sibling() to find the most appropriate cpu
+> within that cache domain.
+> 
+> There was talk of modifying select_idle_sibling() to also consider the
+> C-state the cpu was in, preferring shallower over deeper C-states where
+> there's choice,
+
+Ok ..interesting. /me goes and educates himself how this info can be dug
+out.
+
+> this is very similar to what you propose, taking the
+> least loaded cpu when there isn't a proper idle one around.
+
+Thanks for the feedback ..
+
+- vatsa
+
