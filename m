@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab2BTKUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 05:20:10 -0500
+	id S1752835Ab2BTKUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 05:20:34 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:33039 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2BTKUI (ORCPT
+	with ESMTP id S1752506Ab2BTKUd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 05:20:08 -0500
+	Mon, 20 Feb 2012 05:20:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.50.153.133 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <4F421A0E.8030805@broadcom.com>
-References: <4F414230.5040506@lwfinger.net> <4F421A0E.8030805@broadcom.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 20 Feb 2012 11:19:48 +0100
-Message-ID: <CAPXgP10qa_g6R=pOWd8JuXpw0wPdJ4rP7B_4YHDU91mhC0N6Vg@mail.gmail.com>
-Subject: Re: will these methods work with firmware loading?
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4F416C9D.3030302@gmail.com>
+References: <1329683796.10124.21.camel@lappy> <1329686346-16752-1-git-send-email-jslaby@suse.cz>
+ <4F416C9D.3030302@gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 20 Feb 2012 12:20:13 +0200
+Message-ID: <CA+1xoqfEUkVjRdE3BYnUVhvuPGCLhgbraZAEE9A9tfCKAXg9sQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] TTY: fix PTY hangup vs close race
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 11:01, Arend van Spriel <arend@broadcom.com> wrote:
-> On 02/19/2012 07:40 PM, Larry Finger wrote:
+On Sun, Feb 19, 2012 at 11:41 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 02/19/2012 10:19 PM, Jiri Slaby wrote:
+>> Commit d3bda5298 (TTY: get rid of BTM around devpts_*) moved
+>> devpts_pty_kill out of BTM, but the BTM was not protecting only
+>> devpts_pty_kill, but also tty->link. Hence move the function back at
+>> this late stage until this gets resolved properly some time later.
+>>
+>> I was confused by tty_vhangup(tty->link) outside BTM. But inside of
+>> tty_vhangup, there is a check for tty == NULL. But we cannot add such
+>> a check here. We have to have the tty and free the devpts node...
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+>> ---
+>>
+>> Gee, I messed up Greg's address again...
+>>
+>>  drivers/tty/pty.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+>> index fa1bd2e..95037aa 100644
+>> --- a/drivers/tty/pty.c
+>> +++ b/drivers/tty/pty.c
+>> @@ -54,8 +54,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+>>       wake_up_interruptible(&tty->link->write_wait);
+>>       if (tty->driver->subtype == PTY_TYPE_MASTER) {
+>>               set_bit(TTY_OTHER_CLOSED, &tty->flags);
+>> -             tty_unlock();
+>> +             /* BTM protects tty->link here */
+>>               devpts_pty_kill(tty->link);
+>> +             tty_unlock();
+>
+> I'm afraid this won't help. As this is based on an assumption that
+> tty->link is NULL [*] and that is not just true.
+>
+> Greg, please revert commit d3bda5298 completely.
+>
+> [*] Your dump reveals that the code fetches tty->driver_data (mov
+> 0x428(%rdi),%rbx) and traps at a fetch of inode->i_sbm because inode is
+> NULL (mov    0x28(%rbx),%rax).
 
->> Similarly, if I were to create a work queue, init and schedule it from
->> module_init(), and then use synchronous loads to get the firmware from the
->> work
->> queue callback, would that get around the boot problem? I know it works as
->> I
->> have trial patches; however, my version of udev is not one affected. This
->> method
->> is very easy to implement, but again I would like confirmation from an
->> expert.
+It actually looks even more complex than that. I reverted the patch
+above, but still got the error. A quick bisection pointed me to
+a50f724a432997321cabb6c9e665c28e34850f78.
 
-It sounds like it should work, because the modprobe event returns, not
-waiting for the firmware request. Chaining one firmware request after
-the other sounds not like a problem, as long as they are chained with
-the return from the earlier request and not from inside the earlier
-request, which would have duplicated device name issues in the kernel
-too.
-
-> What boot problem are you referring to?
-
-The pci event calls modprobe, the module init for the pci driver
-creates a child event of the pci device, this child event is queued in
-udev to be started after the pci event has finished. The pci event
-does not finish in time because the firmware request blocks itself.
-
-The current udev logic limits the timeout to 30 sec, while the
-firmware request is 60 sec, so it usually works with a logged error,
-and a 30 second delay.
-
-> The blocking modprobe?
-
-Yes, blocking in the module init path, will deadlock udev. Linking
-code into the kernel must not depend on device init or firmware
-loading.
-
-> For that
-> problem I would say yes. Also here the problem of handling error flows
-> exist. If the driver is kicked of during boot with a initramfs missing the
-> firmware, should we retry until the real root is mounted?
-
-I don't think so. Drivers are not supposed to know about bootup or
-initramfs issues. If they want, they can disable the timeout, and wait
-for userspace to handle the request any time later, but they should
-not try to be smart here.
-
-Currently, firmware requests are cancelled if the firmware isn't
-found, but that's a userspace issue, and nothing the kernel should try
-to work around.
-
-Kay
+Looks like reverting both actually solves the problem. Reverting just
+one of them doesn't.
