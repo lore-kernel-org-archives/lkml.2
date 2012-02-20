@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2BTVy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:54:29 -0500
-Received: from mxgmail2.tau.ac.il ([132.66.7.202]:25419 "EHLO
-	mxgmail2.tau.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab2BTVy2 (ORCPT
+	id S1754595Ab2BTV6x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:58:53 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35719 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab2BTV6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:54:28 -0500
-X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Feb 2012 16:54:27 EST
-Message-ID: <20120220234431.19431zbm6qmjajzz@webmail.tau.ac.il>
-Date: Mon, 20 Feb 2012 23:44:31 +0200
-From: yehonat7@post.tau.ac.il
-To: undisclosed-recipients:;
-Subject: Attn. Mail User!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+	Mon, 20 Feb 2012 16:58:51 -0500
+From: Haogang Chen <haogangchen@gmail.com>
+To: konishi.ryusuke@lab.ntt.co.jp
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        haogangchen@gmail.com
+Subject: [PATCH] FS: nilfs2: clamps ns_r_segments_percentage to [1, 99]
+Date: Mon, 20 Feb 2012 16:55:30 -0500
+Message-Id: <1329774930-17162-1-git-send-email-haogangchen@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn. Mail User!
+ns_r_segments_percentage is read from the disk. Bogus or malicious
+value could cause integer overflow and potential security holes.
+This patch reports error when mounting such bogus volumes.
 
-WEB-MAIL SUPPORT TEAM (WST) are currently upgrading e-mail accounts.   
-This will provide you the ability to store a greatly
+Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+---
+ fs/nilfs2/the_nilfs.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-increased amount of e-mail correspondence in your e-mail account. Your  
-account has been identified as one of the accounts
-
-which are to be upgraded.
-
-Kindly click the link below and follow the instructions:
-
-http://www.hotelmarocca.com/book/use/bokos/form1.html
-
-The new minimum quota level for e-mail accounts will be set to 1000mb.
-
-Please be informed that  we  will delete all mailbox account user that  
-do not adhere to this notice.
-
-Regards,
-@2012 Support Team.
-
+diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
+index d327140..e12b47b 100644
+--- a/fs/nilfs2/the_nilfs.c
++++ b/fs/nilfs2/the_nilfs.c
+@@ -409,6 +409,12 @@ static int nilfs_store_disk_layout(struct the_nilfs *nilfs,
+ 	nilfs->ns_first_data_block = le64_to_cpu(sbp->s_first_data_block);
+ 	nilfs->ns_r_segments_percentage =
+ 		le32_to_cpu(sbp->s_r_segments_percentage);
++	if (nilfs->ns_r_segments_percentage < 1 ||
++		nilfs->ns_r_segments_percentage > 99) {
++		printk(KERN_ERR "NILFS: invalid reserved segments percentage.\n");
++		return -EINVAL;
++	}
++
+ 	nilfs_set_nsegments(nilfs, le64_to_cpu(sbp->s_nsegments));
+ 	nilfs->ns_crc_seed = le32_to_cpu(sbp->s_crc_seed);
+ 	return 0;
+-- 
+1.7.5.4
 
