@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2BTRGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:06:10 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43074 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab2BTRGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:06:09 -0500
-Date: Mon, 20 Feb 2012 09:06:03 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>, sam@ravnborg.org
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-Message-ID: <20120220170603.GC7836@mtj.dyndns.org>
-References: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee>
- <20120213080618.GA11077@ponder.secretlab.ca>
- <alpine.SOC.1.00.1202131119040.1488@math.ut.ee>
- <20120213214623.GJ11077@ponder.secretlab.ca>
- <alpine.SOC.1.00.1202162151030.16208@math.ut.ee>
- <alpine.SOC.1.00.1202201109260.467@math.ut.ee>
+	id S1753157Ab2BTRHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:07:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62986 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751298Ab2BTRHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 12:07:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119403041"
+Date: Mon, 20 Feb 2012 18:14:53 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@st.com>,
+        Chris Blair <chris.blair@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/2 v2] gpio/stmpe: support no-irq mode
+Message-ID: <20120220171453.GH5387@sortiz-mobl>
+References: <1327612635-9171-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1202201109260.467@math.ut.ee>
+In-Reply-To: <1327612635-9171-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Meelis, Sam.
+Hi Linus,
 
-Sorry about the delay.  I've been pretty swamped lately.
-
-On Mon, Feb 20, 2012 at 11:11:05AM +0200, Meelis Roos wrote:
-> Finished bisecting on the other machine too (Sun Fire V100 where strlen 
-> crashes):
+On Thu, Jan 26, 2012 at 10:17:15PM +0100, Linus Walleij wrote:
+> From: Chris Blair <chris.blair@stericsson.com>
 > 
-> 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077 is the first bad commit
-> commit 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Thu Dec 8 10:22:09 2011 -0800
+> Adds support for boards which have an STMPE GPIO device without the
+> interrupt pin connected. This means that no interrupt can be received
+> but the GPIO pins can still be driven and read.
 > 
->     memblock: Reimplement memblock allocation using reverse free area iterator
->     
->     Now that all early memory information is in memblock when enabled, we
->     can implement reverse free area iterator and use it to implement NUMA
->     aware allocator which is then wrapped for simpler variants instead of
->     the confusing and inefficient mending of information in separate NUMA
->     aware allocator.
->     
->     Implement for_each_free_mem_range_reverse(), use it to reimplement
->     memblock_find_in_range_node() which in turn is used by all allocators.
->     
->     The visible allocator interface is inconsistent and can probably use
->     some cleanup too.
->     
->     Signed-off-by: Tejun Heo <tj@kernel.org>
->     Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->     Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Acked-by: Viresh Kumar <viresh.kumar@st.com>
+> Tested-by: Michel Jaouen <michel.jaouen@stericsson.com>
+> Signed-off-by: Chris Blair <chris.blair@stericsson.com>
+> ---
+> ChangeLog v1->v2:
+> - Removes the use of the new no_irq platform data member and
+>   instead uses the value obtained for the cell irq to know if irqs
+>   are supported or not. If irqs are not supported, the device
+>   will not have been given an irq resource and the irq value
+>   will be invalid.
+> 
+> This depends on the previous patch to the MFD
+> code so should better be merged into the MFD tree with the
+> previous patch.
+Ok, I'm taking this one. It would be nice to get Grant's ACK as well.
+Linus, you did not SOB this one. Did you simply forget ?
 
-Hmmm.... So, different bisection results from two machines?  That's a
-bit weird.  I *think* this bisection result makes more sense.  Can you
-please verify the bisection result on e2500 once more?
+Cheers,
+Samuel.
 
-Thanks.
-
---
-tejun
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
