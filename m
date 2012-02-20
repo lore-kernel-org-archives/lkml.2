@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab2BTC1p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 21:27:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42851 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751695Ab2BTC1n (ORCPT
+	id S1752092Ab2BTC2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 21:28:14 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20869 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab2BTC2M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 21:27:43 -0500
-Date: Sun, 19 Feb 2012 18:27:32 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v5 4/5] Extcon: support mutually exclusive relation
- between cables.
-Message-ID: <20120220022729.GJ3194@opensource.wolfsonmicro.com>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
- <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
- <1328856038-21912-5-git-send-email-myungjoo.ham@samsung.com>
+	Sun, 19 Feb 2012 21:28:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119206382"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Kay, Allen M" <allen.m.kay@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: [PATCH] Quirk for IVB graphics FLR errata
+Thread-Topic: [PATCH] Quirk for IVB graphics FLR errata
+Thread-Index: AcztVfc7u0UuN5eGRhGshMYuo098fw==
+Date: Mon, 20 Feb 2012 02:27:25 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FCD089A@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
-Content-Disposition: inline
-In-Reply-To: <1328856038-21912-5-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For IvyBridge Mobile platform, a system hang may occur if a FLR(Function Level Reset) is asserted to internal graphics.
 
---B8ONY/mu/bqBak9m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This quirk patch is workaround for the IVB FLR errata issue.
 
-On Fri, Feb 10, 2012 at 03:40:37PM +0900, MyungJoo Ham wrote:
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Kay, Allen M <allen.m.kay@intel.com>
+---
+ drivers/pci/quirks.c |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
 
-> +What:		/sys/class/extcon/.../mutually_exclusive
-> +Date:		December 2011
-> +Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
-> +Description:
-> +		Shows the relations of mutually exclusiveness. For example,
-> +		if the mutually_exclusive array of extcon_dev is
-> +		{0x3, 0x5, 0xC, 0x0}, the, the output is:
-> +		# cat mutually_exclusive
-> +		0x3
-> +		0x5
-> +		0xC
-> +		#
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 6476547..8bf5b88 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -29,6 +29,10 @@
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+ #include "pci.h"
+ 
++#include <asm/tsc.h>
++/* 10 seconds */
++#define IGD_OPERATION_TIMEOUT ((cycles_t) tsc_khz*10*1000)
++
+ /*
+  * This quirk function disables memory decoding and releases memory resources
+  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
+@@ -3069,11 +3073,53 @@ static int reset_intel_82599_sfp_virtfn(struct pci_dev *dev, int probe)
+ 	return 0;
+ }
+ 
++static int reset_ivb_igd(struct pci_dev *dev, int probe)
++{
++	u8 *mmio_base;
++	u32 val;
++
++	if (probe)
++		return 0;
++
++	mmio_base = ioremap_nocache(pci_resource_start(dev, 0),
++				 pci_resource_len(dev, 0));
++	if (!mmio_base)
++		return -ENOMEM;
++
++	/* work around */
++	*((u32 *)(mmio_base + 0x45010)) = 0x00000002;
++	*((u32 *)(mmio_base + 0xc2004)) = 0x00000005;
++	val = *((u32 *)(mmio_base + 0xc7204)) & 0xfffffffe;
++	*((u32 *)(mmio_base + 0xc7204)) = val;
++	do {
++		cycles_t start_time = get_cycles();
++		while (1) {
++			val = *((u32 *)(mmio_base + 0xc7200));
++			if (((val & 0x80000000) == 0)
++				&& ((val & 0x30000000) == 0))
++				break;
++			if (IGD_OPERATION_TIMEOUT < (get_cycles() - start_time))
++				break;
++			cpu_relax();
++		}
++	} while (0);
++	*((u32 *)(mmio_base + 0xd0100)) = 0x00000002;
++
++	iounmap(pci_resource_start(dev, 0));
++	return 0;
++}
++
+ #define PCI_DEVICE_ID_INTEL_82599_SFP_VF   0x10ed
++#define PCI_DEVICE_ID_INTEL_IVB_M_VGA      0x0156
++#define PCI_DEVICE_ID_INTEL_IVB_M2_VGA     0x0166
+ 
+ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+ 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82599_SFP_VF,
+ 		 reset_intel_82599_sfp_virtfn },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M_VGA,
++		reset_ivb_igd },
++	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IVB_M2_VGA,
++		reset_ivb_igd },
+ 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID,
+ 		reset_intel_generic_dev },
+ 	{ 0 }
+-- 
+1.6.0.rc1
 
-sysfs really isn't supposed to have more than one value per file so this
-should be something like a directory with one array element per file.
-It'd kind of be cheating but the values could be used as the filenames,
-though serial numbers would be more idiomatic.
-
---B8ONY/mu/bqBak9m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQa+KAAoJEBus8iNuMP3d/hsP/29/JTAPJe9PU9nGzo1axVE3
-dQ6Fq8StWmSh4Nk5i5/cIgqU9ACsYGs/XQI2s13g6koGRpkFDmc64zOTsViIfIUS
-usR8F1O4Udv86yRA2GiUXLa8zvjJbK7tE5sFVHRfEYan+0PURlrObkhH/5DSN4YF
-8KUBYKFqbc72Bk2HjdZlve10kxs7TqtU0osm2G4ypg0LMefhshYi4273/8XjwqgH
-oUj8X3ZSiI+uRNGYJwKZkhlmUazTcgEX04nnz+wpo4pteL49K/0DBW8HbgvFGauf
-Njyd5xgS6n/gx07Aj+Mc34Rg2+nFTVjccv0Vfb+r8bqxxQZGMHZ+aR6xCxDzh3kY
-SdAQe5BFzdZLVvsoBqG/cdaD+rhaZjF34P+vs3acYnkJ/F768PQfPIoPlUpCumsI
-Nrluf2IAx5Dg0z82WFb9lC0aN/1/Nue0zk5iqUBVIbIUJQ4Aa6Q0svVMm3cAJVaQ
-79xWm+oWoZi2mBMUE727GYfonkCbRJbDRA0vnZ6jFE3uDP3pHMopI7OyM994iZfm
-i90cE5E+rAm8b4pb2I8joSWcwicATqA4gd37E6W2Nfoou9uqKOLakAf8+eOSQw8p
-06mKGB+hRyKZDUF6GkMFIyIsCLFsZL/MG+TjHMkBhVzTOWn4Y1CQ+mf7pwwNk1Wb
-oXBxFDtlmeWli9mw54Xl
-=WgFS
------END PGP SIGNATURE-----
-
---B8ONY/mu/bqBak9m--
