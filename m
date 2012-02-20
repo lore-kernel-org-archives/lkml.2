@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2BTChu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 21:37:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55226 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2BTCht convert rfc822-to-8bit (ORCPT
+	id S1751954Ab2BTCj4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 21:39:56 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35460 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2BTCjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 21:37:49 -0500
-Date: Sun, 19 Feb 2012 20:37:40 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: booster@wolke7.net, hayeswang <hayeswang@realtek.com>,
-        "'Eric Dumazet'" <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        "'nic_swsd'" <nic_swsd@realtek.com>, linux-kernel@vger.kernel.org,
-        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>,
-        Lucas Stach <dev@lynxeye.de>
-Subject: Re: [PATCH 1/2] r8169: Rx FIFO overflow fixes.
-Message-ID: <20120220023740.GA4433@burratino>
-References: <20111127092808.GE21635@elie.hsd1.il.comcast.net>
- <4ED2A573.1020807@wolke7.net>
- <20111127231147.GA1784@electric-eye.fr.zoreil.com>
- <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw>
- <20111129105440.GA2410@electric-eye.fr.zoreil.com>
- <4ED538EC.4010509@wolke7.net>
- <20111201102000.GA14013@electric-eye.fr.zoreil.com>
- <4ED7E6AB.6050308@wolke7.net>
- <20111201222612.GA27998@electric-eye.fr.zoreil.com>
- <20111205063045.GA3103@electric-eye.fr.zoreil.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20111205063045.GA3103@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Feb 2012 21:39:55 -0500
+Date: Mon, 20 Feb 2012 13:39:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: build failure in Linus' tree with gcc 4.4.3
+Message-Id: <20120220133936.936bff0d5817ac609a5211e0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_Feb_2012_13_39_36_+1100_V6kEvBUMPcLdO1/F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi François, Gerd, et al,
+--Signature=_Mon__20_Feb_2012_13_39_36_+1100_V6kEvBUMPcLdO1/F
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Francois Romieu wrote:
+Hi all,
 
-> Realtek has specified that the post 8168c gigabit chips and the post
-> 8105e fast ethernet chips recover automatically from a Rx FIFO overflow.
-> The driver does not need to clear the RxFIFOOver bit of IntrStatus and
-> it should rather avoid messing it.
->
-> The implementation deserves some explanation:
+My x86_64 allmodconfig build fail like this:
 
-I would be interested in some subset of these fixes for 3.0.y and
-2.6.32.y.  In particular:
+  OBJCOPY arch/x86/boot/vmlinux.bin
+  AS      arch/x86/boot/header.o
+  LD      arch/x86/boot/setup.elf
+  OBJCOPY arch/x86/boot/setup.bin
+  BUILD   arch/x86/boot/bzImage
+Setup is 14768 bytes (padded to 14848 bytes).
+System is 4766 kB
+/bin/sh: line 1: 20126 Segmentation fault      arch/x86/boot/tools/build ar=
+ch/x86/boot/setup.bin arch/x86/boot/vmlinux.bin > arch/x86/boot/bzImage
 
-> 1. events outside of the intr_event bit mask are now ignored.
->    a no-processing policy for the events that either should not be there
->    or should be ignored.
+I have bisected it down to commit
+291f36325f9f252bd76ef5f603995f37e453fc60 ("x86, efi: EFI boot stub
+support").  This may well be a compiler bug that this commit just happens
+to poke.
 
-This seems like a valuable and unrisky change.
+The toolchain is PowerPC hosted cross tools:
+x86_64-linux-gcc (GCC) 4.4.3
+GNU ld (GNU Binutils) 2.20
 
-> 2. RxFIFOOver was already ignored in rtl_cfg_infos[RTL_CFG_1] for the
->    whole 8168 line of chips with two exceptions:
->    - RTL_GIGA_MAC_VER_22 since b5ba6d12bdac21bc0620a5089e0f24e362645efd
->      ("use RxFIFO overflow workaround for 8168c chipset.").
->      This one should now be correctly handled.
+I tried an allmodconfig build with my native compiler (gcc (Debian
+4.6.2-14) 4.6.2, GNU gold (GNU Binutils for Debian 2.22) 1.11) and it
+worked fine.
 
-This seems useful if we can test it.
+That is a large commit, so I am not sure where to go from here.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-[...]
-> 3. RxFIFOOver is masked for post 8105e 810x chips, namely the sole 8105e
->    (RTL_GIGA_MAC_VER_30) itself.
+--Signature=_Mon__20_Feb_2012_13_39_36_+1100_V6kEvBUMPcLdO1/F
+Content-Type: application/pgp-signature
 
-This also seems useful if we can test it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-What do you think?  Is there any way I can help?  (E.g., given rough
-guidelines about what approach is acceptable I'd be happy to work with
-Gerd to produce a tested patch that does (1) and (2) but not (3) for
-3.0.y.)
+iQIcBAEBCAAGBQJPQbJoAAoJEECxmPOUX5FEaqAP/Atcpvuo7cL02arfOzSpOZay
+UMCFxiNRTsfYnnG5IzVpcgzpQamuwnyd87ZCBs6kF5d/ipwk1zdepgZVNQFYY9HF
+OUbo6xFNYo9yUGQIwpD/Hf5QA0aUBA6G5B69P7Sp1mNslkG99DXqsJ52Mn9/1iPg
+DcBwXOGDW5BAa1mJP/0oenoVrvebxHZbvq3kDHfZ9ylBFlS0p87OjxB6Q8Uyx00W
+oJuP2jqHDAjTSe24i5ybEwcPmMhIrpACaZX0PibDFcXI19R4JRape8uREkyIwfc5
+gkmYwAq7zNidkgno+D3u/TDt4kczS2/DYe5jKtYFDak1/cMAMWJx4Xh5UrG502Qa
+ChAJnNOVv4XaZLKyyAB9jGJnuYRS/gQgyviFLeQXZzJBQXX7YHO3e9hoWbsgMJH7
+/PnDcMMU3LYxjNYtcWyT6CA9nimUuED2Pxi4roi7yR955YYowh93m4OUwLNQ4Ny2
+XrIc+STSZkkMuH7EEv6WAJbF/COoc0eBpOI6Ix6fvVlz/8Dp/pGhmUhJuGojPdNm
+R6j5dXLmmg6KTuPjnf/HnNFmhxHEoMJs2V9RMxH3aFteWDHdr9VPqoWjEvUeWhDl
+EISjaD0FHo3PRUVX+UiT2iGYgB9nlKWny8WXVtw2q9OQpsIBeW+vGp+gxo/DKcIu
++SSVSfCYFwrTHP9aqfyw
+=9EL6
+-----END PGP SIGNATURE-----
 
-Thanks for your hard work,
-Jonathan
+--Signature=_Mon__20_Feb_2012_13_39_36_+1100_V6kEvBUMPcLdO1/F--
