@@ -1,394 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab2BTRwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:52:18 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:38944 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab2BTRwQ (ORCPT
+	id S1751882Ab2BTR6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:58:44 -0500
+Received: from nm28-vm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.191]:38894
+	"HELO nm28-vm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751537Ab2BTR6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:52:16 -0500
-Message-ID: <4F428814.1060801@linux.vnet.ibm.com>
-Date: Mon, 20 Feb 2012 23:21:16 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	Mon, 20 Feb 2012 12:58:43 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 333350.1653.bm@omp1023.access.mail.sp2.yahoo.com
+X-YMail-OSG: b4dbvK8VM1lfRXr4s8HfVeIf5r577_awDluCNxS67bq1J3s
+ _dQ1uOyxVAI4P.AQSAJOA58Tj.wtS5MFdF4ydIaBPXC.XcBMQwHUz9upqJlN
+ NFMm7wVFA1nB6E48_VUL3L.WpelONV677OHZqDxEFzmBB59QqUbk5qP6A7d2
+ NsRdDlx5iYg2zrC4c33OM.MvABCpHxQfeBWo6lvx_ymDL3xo_u2JOQGopV84
+ stqBTsfdVSIEiXNVkvW9GjjHkpHv6XCvRPRtsJL6ZpczRnHUmz88_4Y9Qcot
+ SoB67KjhcRSVBH1rOO9GhPFKNzEAYCe35jT89JKjiZEh5gRtaeRbXMblmRNg
+ rcs1UblW5HNOa4xPVwcU4EqSaOsBT5AuzG1iZwPSAHyVCqZJ9KticezBhSwg
+ sEKuUloYIpJFimI9kmEIzbfMaJOXwoPQHuXzXHbDgRfUCKGjVvhfgvpw-
+X-RocketYMMF: webdeesab
+X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.116.338427
+Message-ID: <1329760722.73473.YahooMailClassic@web1115.biz.mail.sk1.yahoo.com>
+Date: Mon, 20 Feb 2012 09:58:42 -0800 (PST)
+From: stephen amase <stephenamase0220@gmail.com>
+Reply-To: stephenamase0660@gmail.com
+Subject: Gold/Cocoa Broker.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Raghavendra <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/1] linux headers: header file(s) changes to enable spinlock
- use jumplabel
-References: <ac7058ed-4080-4490-a45b-6b2d4de692ab@zmail17.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <ac7058ed-4080-4490-a45b-6b2d4de692ab@zmail17.collab.prod.int.phx2.redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------090702020702090609050600"
-x-cbid: 12022017-4790-0000-0000-000001693381
+Content-Type: multipart/mixed; boundary="0-68041930-1329760722=:73473"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090702020702090609050600
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+--0-68041930-1329760722=:73473
+Content-Type: text/plain; charset=us-ascii
 
-On 02/20/2012 08:30 PM, Andrew Jones wrote:
->
->
-> ----- Original Message -----
->> On Mon, Feb 20, 2012 at 11:44:25AM +0530, Raghavendra K T wrote:
->>> On 02/20/2012 10:46 AM, Jeremy Fitzhardinge wrote:
->>> [...]
 
-Hi Drew,
-Thanks for the reply
+--0-68041930-1329760722=:73473
+Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document; name="Attention.docx"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Attention.docx"
 
-> Hi Raghavendra,
+UEsDBBQABgAIAAAAIQDd/JU3ZgEAACAFAAATAAgCW0NvbnRlbnRfVHlwZXNd
+LnhtbCCiBAIooAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC0VMtuwjAQvFfqP0S+Vomh
+h6qqCBz6OLZIpR9g7A1Y9Uv28vr7bgJEVQtBKuUSKVnvzOzsxIPR2ppsCTFp
+70rWL3osAye90m5Wso/JS37PsoTCKWG8g5JtILHR8PpqMNkESBl1u1SyOWJ4
+4DzJOViRCh/AUaXy0Qqk1zjjQchPMQN+2+vdcekdgsMcaww2HDxBJRYGs+c1
+fd4qiWASyx63B2uukokQjJYCSSlfOvWDJd8xFNTZnElzHdINyWD8IENdOU6w
+63sja6JWkI1FxFdhSQZf+ai48nJhaYaiG+aATl9VWkLbX6OF6CWkRJ5bU7QV
+K7Tb6z+qI+HGQPp/FVvcLnrSOY4+JE57OZsf6s0rUDlZESCihnZ1x0cHRLLs
+EsPvkLvGb1KAlHfgzbN/tgcNzEnKin6JiZgaOJvvV/Ja6JMiVjB9v5j738C7
+hLT5kz7+wYz9dVF3H0gdb+634RcAAAD//wMAUEsDBBQABgAIAAAAIQAekRq3
+8wAAAE4CAAALAAgCX3JlbHMvLnJlbHMgogQCKKAAAgAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAjJLbSgNBDIbvBd9hyH032woi0tneSKF3IusDhJnsAXcOzKTavr2jILpQ
+217m9OfLT9abg5vUO6c8Bq9hWdWg2JtgR99reG23iwdQWchbmoJnDUfOsGlu
+b9YvPJGUoTyMMaui4rOGQSQ+ImYzsKNchci+VLqQHEkJU4+RzBv1jKu6vsf0
+VwOamabaWQ1pZ+9AtcdYNl/WDl03Gn4KZu/Yy4kVyAdhb9kuYipsScZyjWop
+9SwabDDPJZ2RYqwKNuBpotX1RP9fi46FLAmhCYnP83x1nANaXg902aJ5x687
+HyFZLBZ9e/tDg7MvaD4BAAD//wMAUEsDBBQABgAIAAAAIQDWZLNR+gAAADED
+AAAcAAgBd29yZC9fcmVscy9kb2N1bWVudC54bWwucmVscyCiBAEooAABAAAA
+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
+UEsFBgAAAAALAAsAwQIAAPsxAAAAAA==
 
-> sorry I didn't get around to starting this discussion myself when
-> I first touched the issue. I also bumped into it when attempting
-> to rebase pvticketlocks, so I pinged Gleb with the idea to split
-> the header. As he's said again now though, he wasn't sure if jump
-> labels were necessary in the pvticketlock implementation. In the
-> meantime I got busy with other stuff, and didn't get a chance to
-> continue/expand the discussion.
->
-> I actually think we could consider both of the issues separately
-> though.
-
-Right.
-
-  Should we split jump_label.h to make sure we can include
-> it where it could otherwise get the cyclic dependencies due to
-> workqueue.h? The only argument I can see against that is that
-> jumplabels may change again, and then we may hit another issue,
-> then again, etc., but handling them like this case by case isn't
-> very clean.
-
-Hmm..Handling the way it is handled by me sometime looks ugly to me.
-The patch I have posted is only important set of changes. But for
-complete yesconfig to work, it still would require change something like
-below I am attaching, which (needs 24 file changes) makes it more ugly.
-Only point is I can continue testing paravirt spinlock on tip.
-
-Perhaps we need jump_label.h to define a "minimal
-> jump label", and then we can create an "extended jump label",
-> which has rate limiting and other capabilities.
->
-
-I completely agree. seeing that, you have not started that, it seems
-it's good idea for me to take a look at that option, (but may be at
-slower pace considering some changes I require (TODO) for kvm paravirt
-spinlock).
-
-> Drew
->
->
---->8---
----
-
---------------090702020702090609050600
-Content-Type: text/x-patch;
- name="header_recursion_minor.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="header_recursion_minor.patch"
-
-diff --git a/crypto/crypto_wq.c b/crypto/crypto_wq.c
-index adad92a..e372359 100644
---- a/crypto/crypto_wq.c
-+++ b/crypto/crypto_wq.c
-@@ -11,6 +11,7 @@
-  *
-  */
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/module.h>
- #include <crypto/algapi.h>
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index e4982ac..64bf90b 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -22,8 +22,8 @@
- #define _LINUX_PM_H
- 
- #include <linux/list.h>
--#include <linux/workqueue.h>
- #include <linux/spinlock.h>
-+#include <linux/workqueue.h>
- #include <linux/wait.h>
- #include <linux/timer.h>
- #include <linux/completion.h>
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index ee547c1..5872748 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -5,6 +5,7 @@
- #define __NET_NET_NAMESPACE_H
- 
- #include <linux/atomic.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/list.h>
- #include <linux/sysctl.h>
-diff --git a/kernel/trace/power-traces.c b/kernel/trace/power-traces.c
-index f55fcf6..66b4cb2 100644
---- a/kernel/trace/power-traces.c
-+++ b/kernel/trace/power-traces.c
-@@ -6,6 +6,7 @@
- 
- #include <linux/string.h>
- #include <linux/types.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/sched.h>
- #include <linux/module.h>
-diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
-index 4b3b5ea..8fa92f4 100644
---- a/kernel/trace/rpm-traces.c
-+++ b/kernel/trace/rpm-traces.c
-@@ -6,6 +6,7 @@
- 
- #include <linux/string.h>
- #include <linux/types.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/sched.h>
- #include <linux/module.h>
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index c212a7f..b34d241 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -8,8 +8,8 @@
-  *
-  */
- 
--#include <linux/workqueue.h>
- #include <linux/spinlock.h>
-+#include <linux/workqueue.h>
- #include <linux/kthread.h>
- #include <linux/debugfs.h>
- #include <linux/uaccess.h>
-diff --git a/net/core/dst.c b/net/core/dst.c
-index 43d94ce..f3a3c24 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -9,6 +9,7 @@
- #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/mm.h>
- #include <linux/module.h>
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 0e950fd..bb284b5 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -1,3 +1,4 @@
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/rtnetlink.h>
- #include <linux/cache.h>
-diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index 5b228f9..a390277 100644
---- a/net/xfrm/xfrm_state.c
-+++ b/net/xfrm/xfrm_state.c
-@@ -13,6 +13,7 @@
-  *
-  */
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <net/xfrm.h>
- #include <linux/pfkeyv2.h>
-diff --git a/drivers/media/video/gspca/jl2005bcd.c b/drivers/media/video/gspca/jl2005bcd.c
-index 53f58ef..86ae21c 100644
---- a/drivers/media/video/gspca/jl2005bcd.c
-+++ b/drivers/media/video/gspca/jl2005bcd.c
-@@ -20,6 +20,7 @@
- 
- #define MODULE_NAME "jl2005bcd"
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include "gspca.h"
-diff --git a/drivers/media/video/gspca/sq905.c b/drivers/media/video/gspca/sq905.c
-index 2fe3c29..b3916d3 100644
---- a/drivers/media/video/gspca/sq905.c
-+++ b/drivers/media/video/gspca/sq905.c
-@@ -37,6 +37,7 @@
- 
- #define MODULE_NAME "sq905"
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include "gspca.h"
-diff --git a/drivers/media/video/gspca/sq905c.c b/drivers/media/video/gspca/sq905c.c
-index ae78363..b7026f8 100644
---- a/drivers/media/video/gspca/sq905c.c
-+++ b/drivers/media/video/gspca/sq905c.c
-@@ -31,6 +31,7 @@
- 
- #define MODULE_NAME "sq905c"
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include "gspca.h"
-diff --git a/drivers/media/video/gspca/vicam.c b/drivers/media/video/gspca/vicam.c
-index 911152e..fd5db41 100644
---- a/drivers/media/video/gspca/vicam.c
-+++ b/drivers/media/video/gspca/vicam.c
-@@ -31,6 +31,7 @@
- #define MODULE_NAME "vicam"
- #define HEADER_SIZE 64
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include <linux/firmware.h>
-diff --git a/drivers/net/ethernet/mellanox/mlx4/catas.c b/drivers/net/ethernet/mellanox/mlx4/catas.c
-index 915e947..83d03ef 100644
---- a/drivers/net/ethernet/mellanox/mlx4/catas.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/catas.c
-@@ -31,6 +31,7 @@
-  * SOFTWARE.
-  */
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/module.h>
- 
-diff --git a/drivers/net/wimax/i2400m/sdio-rx.c b/drivers/net/wimax/i2400m/sdio-rx.c
-index fb6396d..df520c0 100644
---- a/drivers/net/wimax/i2400m/sdio-rx.c
-+++ b/drivers/net/wimax/i2400m/sdio-rx.c
-@@ -60,6 +60,7 @@
-  *
-  * i2400ms_rx_release()
-  */
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/wait.h>
- #include <linux/skbuff.h>
-diff --git a/drivers/net/wimax/i2400m/usb-rx.c b/drivers/net/wimax/i2400m/usb-rx.c
-index e325768..3df7308 100644
---- a/drivers/net/wimax/i2400m/usb-rx.c
-+++ b/drivers/net/wimax/i2400m/usb-rx.c
-@@ -82,6 +82,7 @@
-  *
-  * i2400mu_rx_release()            called from i2400mu_bus_dev_stop()
-  */
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/slab.h>
- #include <linux/usb.h>
-diff --git a/drivers/usb/wusbcore/wa-nep.c b/drivers/usb/wusbcore/wa-nep.c
-index f67f7f1..9352e3f 100644
---- a/drivers/usb/wusbcore/wa-nep.c
-+++ b/drivers/usb/wusbcore/wa-nep.c
-@@ -49,6 +49,7 @@
-  *                                endpoint; when data is ready, this
-  *                                does the dispatching.
-  */
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/ctype.h>
- #include <linux/slab.h>
-diff --git a/drivers/uwb/umc-bus.c b/drivers/uwb/umc-bus.c
-index 82a84d5..287ed00 100644
---- a/drivers/uwb/umc-bus.c
-+++ b/drivers/uwb/umc-bus.c
-@@ -7,6 +7,7 @@
-  */
- #include <linux/kernel.h>
- #include <linux/sysfs.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/module.h>
- #include <linux/uwb/umc.h>
-diff --git a/fs/ocfs2/cluster/quorum.c b/fs/ocfs2/cluster/quorum.c
-index 8f9cea1..663eaa5 100644
---- a/fs/ocfs2/cluster/quorum.c
-+++ b/fs/ocfs2/cluster/quorum.c
-@@ -44,6 +44,7 @@
-  * and if they're the last, they fire off the decision.
-  */
- #include <linux/kernel.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/reboot.h>
- 
-diff --git a/include/drm/ttm/ttm_memory.h b/include/drm/ttm/ttm_memory.h
-index 26c1f78..253daaf 100644
---- a/include/drm/ttm/ttm_memory.h
-+++ b/include/drm/ttm/ttm_memory.h
-@@ -28,8 +28,8 @@
- #ifndef TTM_MEMORY_H
- #define TTM_MEMORY_H
- 
--#include <linux/workqueue.h>
- #include <linux/spinlock.h>
-+#include <linux/workqueue.h>
- #include <linux/wait.h>
- #include <linux/errno.h>
- #include <linux/kobject.h>
-diff --git a/include/linux/connector.h b/include/linux/connector.h
-index 3c9c54f..5140306 100644
---- a/include/linux/connector.h
-+++ b/include/linux/connector.h
-@@ -78,6 +78,7 @@ struct cn_msg {
- #include <linux/atomic.h>
- 
- #include <linux/list.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- 
- #include <net/sock.h>
-diff --git a/include/linux/memstick.h b/include/linux/memstick.h
-index 690c35a..df1fe98 100644
---- a/include/linux/memstick.h
-+++ b/include/linux/memstick.h
-@@ -12,6 +12,7 @@
- #ifndef _MEMSTICK_H
- #define _MEMSTICK_H
- 
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/scatterlist.h>
- #include <linux/device.h>
-diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 25bd863..d05e5ae 100644
---- a/include/linux/timer.h
-+++ b/include/linux/timer.h
-@@ -1,6 +1,7 @@
- #ifndef _LINUX_TIMER_H
- #define _LINUX_TIMER_H
- 
-+#include <linux/lockdep.h>
- #include <linux/list.h>
- #include <linux/stddef.h>
- #include <linux/stringify.h>
-diff --git a/net/nfc/nci/core.c b/net/nfc/nci/core.c
-index 7650139..e7fd391 100644
---- a/net/nfc/nci/core.c
-+++ b/net/nfc/nci/core.c
-@@ -28,6 +28,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
- 
- #include <linux/types.h>
-+#include <linux/spinlock.h>
- #include <linux/workqueue.h>
- #include <linux/completion.h>
- #include <linux/export.h>
-
---------------090702020702090609050600--
-
+--0-68041930-1329760722=:73473--
