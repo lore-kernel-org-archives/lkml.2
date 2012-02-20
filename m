@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2BTQaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 11:30:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53255 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab2BTQaM convert rfc822-to-8bit (ORCPT
+	id S1753266Ab2BTQb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 11:31:57 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54947 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab2BTQb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 11:30:12 -0500
-Message-ID: <1329755402.2293.365.camel@twins>
-Subject: Re: [RFC PATCH 14/14] sched: implement usage tracking
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Mon, 20 Feb 2012 17:30:02 +0100
-In-Reply-To: <CAPM31R+xLCnPE10SZRYnTMe=O=j5mZEoutH=e3npw5xKOS_s7w@mail.gmail.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	 <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com>
-	 <1329411510.2293.254.camel@twins>
-	 <CAPM31R+xLCnPE10SZRYnTMe=O=j5mZEoutH=e3npw5xKOS_s7w@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Mon, 20 Feb 2012 11:31:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of shmulik.ladkani@gmail.com designates 10.180.78.233 as permitted sender) smtp.mail=shmulik.ladkani@gmail.com; dkim=pass header.i=shmulik.ladkani@gmail.com
+Date: Mon, 20 Feb 2012 18:31:45 +0200
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Richard Weinberger <rw@linutronix.de>
+Cc: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 6/7] MTD: UBI: Implement checkpointing support
+Message-ID: <20120220183145.6ddbbec0@pixies.home.jungo.com>
+In-Reply-To: <1329250006-22944-7-git-send-email-rw@linutronix.de>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	<1329250006-22944-7-git-send-email-rw@linutronix.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 03:32 -0800, Paul Turner wrote:
+On Tue, 14 Feb 2012 21:06:45 +0100 Richard Weinberger <rw@linutronix.de> wrote:
+> Implements UBI checkpointing support.
+> It reduces the attaching time from O(N) to O(1).
+> Checkpoints are written on demand and upon changes of the volume layout.
+> If the recovery from a checkpoint fails we fall back to scanning mode.
 
-> Since we do not know where we slept relative to the tick, unless we
-> explicitly track where this occurred we don't know for a "n.y" jiffy
-> sleep whether the "0.y" fraction included an extra decay. 
+Partially reviewed the feature. Great work.
+There's some tiny styling/coding issues, will send references if you'd
+like.
 
-but isn't that the same problem you have in
-__update_entity_runnable_avg() where you use ->runnable_avg_period %
-1024 ?
+I'll comment on the feature itself later on.
 
-Also, shouldn't __synchronize_entity_decay() update
-->runnable_avg_period? Surely when you wake up your window fraction
-could be different than when you went to sleep?
+Meanwhile, there's a potential memleak/crash you might wanna fix.
 
->  It's
-> important to get this right to reduce instability, since when the
-> entity wakes back up we need to charge an equivalent decay against
-> it's contribution before we can remove it from the blocked_load_sum.
-> 
-> For the common case of a short sleep whether we charge an extra period
-> (if y included a jiffy edge) or not is significant to stability since
-> getting it wrong means we leave a little extra load in blocked_load.
+> +/* Reads the checkpoint data from it's PEBs */
+> +struct ubi_scan_info *ubi_read_checkpoint(struct ubi_device *ubi, int cb_sb_pnum)
+> +{
+> +	struct ubi_cp_sb *cpsb;
+> +	struct ubi_vid_hdr *vh;
+> +	int ret, i, nblocks;
+> +	char *cp_raw;
+> +	size_t cp_size;
+> +	__be32 data_crc;
+> +	unsigned long long sqnum = 0;
+> +	struct ubi_scan_info *si = NULL;
+> +
+> +	cpsb = kmalloc(sizeof(*cpsb), GFP_KERNEL);
+> +	if (!cpsb) {
+> +		si = ERR_PTR(-ENOMEM);
+> +		goto out;
+> +	}
+> +
+> +	ret = ubi_io_read(ubi, cpsb, cb_sb_pnum, ubi->leb_start, sizeof(*cpsb));
+> +	if (ret) {
+> +		ubi_err("Unable to read checkpoint super block");
+> +		si = ERR_PTR(ret);
+> +		goto out;
 
-Sure..
+s/goto out/goto free_sb/
+(otherwise 'cpsb' not freed)
 
-> Further complicating this we need to be able to do said
-> synchronization in the annoying cases of wake-up migration (where we
-> don't hold the lock on previous rq) and 32-bit machines (where
-> everything sucks).
+> +	/* cp_raw will contain the whole checkpoint */
+> +	cp_raw = vzalloc(cp_size);
 
-Ah, wouldn't task_waking_fair() be a better place though?
+  ...
 
-> >
-> > C) 'Migrate'
-> >    - uses contributes_blocked_load to check if we actually did migrate?
-> >
-> 
-> We actually use se->avg.decay_count to check whether we were migrated
-> (setting it appropriately at migration); contributes_blocked_load is
-> just a convenience variable to track whether we're a part of
-> cfs_rq->blocked_load_avg or not.
+> +
+> +	cpsb = (struct ubi_cp_sb *)cp_raw;
 
-If you use task_waking_fair() you can also use ENQUEUE_WAKING.
+'cpsb' is overwritten, but formerly kmalloced (at the beginning of
+ubi_read_checkpoint).
+Should free 'cpsb' prior assignment, or alternatively use different
+variable then 'cpsb'.
 
-> There's a one or two other paths (than ttwu) that this matters for,
-> using set_task_rq() gets them all.
+  ...
 
-What paths are those? Having a cfs hook in the generic code there isn't
-pretty an suggests funny things could happen when PI gets done.
+> +
+> +free_vhdr:
+> +	ubi_free_vid_hdr(ubi, vh);
+> +free_raw:
+> +	vfree(cp_raw);
+> +free_sb:
+> +	kfree(cpsb);
 
+Freeing 'cp_raw' and 'cpsb', but in the normal flow, they point to the
+same thing.
+
+Regards,
+Shmulik
