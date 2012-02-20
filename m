@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab2BTAcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:32:50 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34141 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab2BTAct (ORCPT
+	id S1752496Ab2BTAdl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:33:41 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35131 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab2BTAdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:32:49 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.216.225 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
-Message-ID: <4F4194AB.40403@gmail.com>
-Date: Mon, 20 Feb 2012 11:32:43 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/18] ARM: at91/rtc-at91sam9: each SoC can select the
- RTT device to use
-References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <9d1120bd8f1cf0615ff5044745b00fd3988397a7.1329500622.git.nicolas.ferre@atmel.com>
-In-Reply-To: <9d1120bd8f1cf0615ff5044745b00fd3988397a7.1329500622.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 19 Feb 2012 19:33:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Feb 2012 09:32:17 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Ying Han <yinghan@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 00/15] mm: memory book keeping and lru_lock
+ splitting
+Message-Id: <20120220093217.764e49f3.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1202172312030.14811@eggly.anvils>
+References: <20120215224221.22050.80605.stgit@zurg>
+	<alpine.LSU.2.00.1202151815180.19722@eggly.anvils>
+	<4F3C8B67.6090500@openvz.org>
+	<alpine.LSU.2.00.1202161235430.2269@eggly.anvils>
+	<alpine.LSU.2.00.1202171803380.25191@eggly.anvils>
+	<4F3F46B7.40100@openvz.org>
+	<alpine.LSU.2.00.1202172312030.14811@eggly.anvils>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/02/12 04:50, Nicolas Ferre wrote:
+On Fri, 17 Feb 2012 23:14:01 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> On Sat, 18 Feb 2012, Konstantin Khlebnikov wrote:
+> > Hugh Dickins wrote:
+> > > On Thu, 16 Feb 2012, Hugh Dickins wrote:
+> > > > 
+> > > > Yours are not the only patches I was testing in that tree, I tried to
+> > > > gather several other series which I should be reviewing if I ever have
+> > > > time: Kamezawa-san's page cgroup diet 6, Xiao Guangrong's 4 prio_tree
+> > > > cleanups, your 3 radix_tree changes, your 6 shmem changes, your 4 memcg
+> > > > miscellaneous, and then your 15 books.
+> > > > 
+> > > > The tree before your final 15 did well under pressure, until I tried to
+> > > > rmdir one of the cgroups afterwards: then it crashed nastily, I'll have
+> > > > to bisect into that, probably either Kamezawa's or your memcg changes.
+> > > 
+> > > So far I haven't succeeded in reproducing that at all: it was real,
+> > > but obviously harder to get than I assumed - indeed, no good reason
+> > > to associate it with any of those patches, might even be in 3.3-rc.
+> > > 
+> > > It did involve a NULL pointer dereference in mem_cgroup_page_lruvec(),
+> > > somewhere below compact_zone() - but repercussions were causing the
+> > > stacktrace to scroll offscreen, so I didn't get good details.
+> > 
+> > There some stupid bugs in my v1 patchset, it shouldn't works at all.
+> > I did not expect that someone will try to use it. I sent it just to discuss.
 > 
-> For the RTT as RTC driver rtc-at91sam9, the platform_device structure
-> is filled during SoC initialization. This will allow to convert this
-> RTC driver as a standard platform driver.
+> Yes, but as I said, that bug appeared before I put your patchset (the 15) on.
 > 
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/mach-at91/at91sam9260_devices.c |   11 +++++
->  arch/arm/mach-at91/at91sam9261_devices.c |   10 +++++
->  arch/arm/mach-at91/at91sam9263_devices.c |   25 ++++++++++++
->  arch/arm/mach-at91/at91sam9g45_devices.c |   10 +++++
->  arch/arm/mach-at91/at91sam9rl_devices.c  |   10 +++++
->  drivers/rtc/rtc-at91sam9.c               |   61 ++++-------------------------
->  6 files changed, 75 insertions(+), 52 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-> index b93a337..2071017 100644
-> --- a/arch/arm/mach-at91/at91sam9260_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9260_devices.c
-> @@ -728,8 +728,19 @@ static struct platform_device at91sam9260_rtt_device = {
->  	.num_resources	= ARRAY_SIZE(rtt_resources),
->  };
->  
-> +
-> +#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
-> +static void __init at91_add_device_rtt_rtc(void)
-> +{
-> +	at91sam9260_rtt_device.name = "rtc-at91sam9";
-> +}
 
+Hm, NULL pointer dereference in mem_cgroup_page_lruvec() via comaction tend to
+mean pc->mem_cgroup was NULL... 
 
-Nitpickish: This function doesn't _add_ anything. It would probably be
-better called at91_init_device_rtt_rtc. Same goes for the other "add"
-functions in this patch.
+IIUC,
 
-> +#else
-> +static void __init at91_add_device_rtt_rtc(void) {}
-> +#endif
-> +
->  static void __init at91_add_device_rtt(void)
->  {
-> +	at91_add_device_rtt_rtc();
->  	platform_device_register(&at91sam9260_rtt_device);
->  }
+- compaction get pages from LRU list and isolate/migrate them. So, When pages
+  on LRU were migrated by compact_zone(), pc->mem_cgroup never be NULL..
+- All newly allocated pages for migration will be reset by mem_cgroup_reset_owner().
 
+Hm, something unexpected happens..
 
-Does this work by setting the rtt device name iff
-CONFIG_RTC_DRV_AT91SAM9 is set? If so, it seems a bit ugly. Why bother
-doing the platform_device_register at all if you know it isn't going to
-do anything? Shouldn't the at91sam9260_rrt_device struct declaration and
-the platform_device_register all be conditional on CONFIG_RTC_DRV_AT91SAM9?
-
-~Ryan
-
+Regards,
+-Kame
+ 
 
