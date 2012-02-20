@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab2BTWdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 17:33:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41066 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754420Ab2BTWdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 17:33:15 -0500
-Date: Mon, 20 Feb 2012 23:33:13 +0100
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 01/11] perf: Push file_update_time() into
- perf_mmap_fault()
-Message-ID: <20120220223313.GD32708@quack.suse.cz>
-References: <1329399979-3647-1-git-send-email-jack@suse.cz>
- <1329399979-3647-2-git-send-email-jack@suse.cz>
- <1329400247.2293.219.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329400247.2293.219.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754656Ab2BTWgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 17:36:15 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36509 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab2BTWgO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 17:36:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mark.einon@gmail.com designates 10.180.95.1 as permitted sender) smtp.mail=mark.einon@gmail.com; dkim=pass header.i=mark.einon@gmail.com
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH] staging: et131x: use netif_rx_ni() for packet receive
+Date: Mon, 20 Feb 2012 22:33:24 +0000
+Message-Id: <1329777204-2077-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-02-12 14:50:47, Peter Zijlstra wrote:
-> On Thu, 2012-02-16 at 14:46 +0100, Jan Kara wrote:
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Paul Mackerras <paulus@samba.org>
-> > CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  kernel/events/core.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index ba36013..61a67f3 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -3316,8 +3316,10 @@ static int perf_mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  	int ret = VM_FAULT_SIGBUS;
-> >  
-> >  	if (vmf->flags & FAULT_FLAG_MKWRITE) {
-> > -		if (vmf->pgoff == 0)
-> > +		if (vmf->pgoff == 0) {
-> >  			ret = 0;
-> > +			file_update_time(vma->vm_file);
-> > +		}
-> >  		return ret;
-> >  	}
-> 
-> Its an anon filedesc, there's no actual file and while I guess one could
-> probably call fstat() on it, people really shouldn't care.
-> 
-> So feel free to introduce this patch to the bitbucket.
-  Thanks for letting me know. Patch removed.
+netif_rx is meant to be called from interrupts because it doesn't wake
+up ksoftirqd.  For calling from outside interrupts, netif_rx_ni exists.
 
-								Honza
+This stops the error "NOHZ: local_softirq_panding 08" that happens on
+some machines with NOHZ and plip --- it is caused by the fact that
+softirq is pending and ksoftirqd is sleeping.
+
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 2c4069f..b4167ad 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -3109,7 +3109,7 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
+ 		skb->protocol = eth_type_trans(skb, adapter->netdev);
+ 		skb->ip_summed = CHECKSUM_NONE;
+ 
+-		netif_rx(skb);
++		netif_rx_ni(skb);
+ 	} else {
+ 		rfd->len = 0;
+ 	}
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.7.6
+
