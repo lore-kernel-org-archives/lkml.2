@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2BTMLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 07:11:05 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab2BTMLD (ORCPT
+	id S1753508Ab2BTML6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 07:11:58 -0500
+Received: from mail.betterlinux.com ([199.58.199.50]:38059 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab2BTML5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 07:11:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bernhard Walle <bernhard@bwalle.de>
-Subject: Re: [PATCH] misc: bmp085: Handle jiffies overflow correctly
-Date: Mon, 20 Feb 2012 12:10:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: christoph.mair@gmail.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-References: <1329672481-19583-1-git-send-email-bernhard@bwalle.de>
-In-Reply-To: <1329672481-19583-1-git-send-email-bernhard@bwalle.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202201210.54472.arnd@arndb.de>
-X-Provags-ID: V02:K0:tN6I9Uy7wZwqJr6CquQhBiyZmsouzPpaZgYzE0tyqjj
- KVf8cF8Qh8GGxU5CRTBeGpVEAnwDh233kQUQKDq7/r+j5BUD9G
- S1kV7eabocLHH0ZztY6222FksHjD0z4F/cRU/2G2Fl1lMCPZMg
- 2Ac9L5THwkYeefOTqb+bI2zV9CeKRxH4UZXyXYrE1ryo1LNgGJ
- PrQd0FaortROUyT2BP8W/eLZUzb32vnCbBMUhl0mw3dxxM9iDW
- rAz/3dR086CrTBMrdoBSOBDeI/FICZ0vVSqN0Nhar/3sYIcj2y
- eoOCZXxL7SKUk55nQKpxWJnR9xfpOeJ9bI1yU5zzgvT2HTKp8S
- 0tvx1Zo6jWNl8zP9wOvM=
+	Mon, 20 Feb 2012 07:11:57 -0500
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 2EAF282A0D
+From: Andrea Righi <andrea@betterlinux.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] zcache: avoid AB-BA deadlock condition
+Date: Mon, 20 Feb 2012 13:11:49 +0100
+Message-Id: <1329739909-3174-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 February 2012, Bernhard Walle wrote:
-> By using the time_is_before_jiffies() macro instead of normal
-> arithmetic, the jiffies overflow is handled correctly.
-> 
-> Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
+Commit 9256a47 fixed a deadlock condition, being sure that the buddy
+list spinlock is always taken before the page spinlock.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+However in zbud_free_and_delist() locking order is the opposite
+(page lock -> list lock).
 
-BTW, what is the future of this driver? Are there
-plans to move it over to the the industrial I/O
-framework?
+Possible unsafe locking scenario (reported by lockdep):
 
-	Arnd
+        CPU0                    CPU1
+        ----                    ----
+   lock(&(&zbpg->lock)->rlock);
+                                lock(zbud_budlists_spinlock);
+                                lock(&(&zbpg->lock)->rlock);
+   lock(zbud_budlists_spinlock);
+
+Fix by grabbing the locks in opposite order in zbud_free_and_delist().
+
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ drivers/staging/zcache/zcache-main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index ef7c52b..dce04be 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -299,10 +299,12 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
+ 	struct zbud_page *zbpg =
+ 		container_of(zh, struct zbud_page, buddy[budnum]);
+ 
++	spin_lock(&zbud_budlists_spinlock);
+ 	spin_lock(&zbpg->lock);
+ 	if (list_empty(&zbpg->bud_list)) {
+ 		/* ignore zombie page... see zbud_evict_pages() */
+ 		spin_unlock(&zbpg->lock);
++		spin_unlock(&zbud_budlists_spinlock);
+ 		return;
+ 	}
+ 	size = zbud_free(zh);
+@@ -310,7 +312,6 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
+ 	zh_other = &zbpg->buddy[(budnum == 0) ? 1 : 0];
+ 	if (zh_other->size == 0) { /* was unbuddied: unlist and free */
+ 		chunks = zbud_size_to_chunks(size) ;
+-		spin_lock(&zbud_budlists_spinlock);
+ 		BUG_ON(list_empty(&zbud_unbuddied[chunks].list));
+ 		list_del_init(&zbpg->bud_list);
+ 		zbud_unbuddied[chunks].count--;
+@@ -318,7 +319,6 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
+ 		zbud_free_raw_page(zbpg);
+ 	} else { /* was buddied: move remaining buddy to unbuddied list */
+ 		chunks = zbud_size_to_chunks(zh_other->size) ;
+-		spin_lock(&zbud_budlists_spinlock);
+ 		list_del_init(&zbpg->bud_list);
+ 		zcache_zbud_buddied_count--;
+ 		list_add_tail(&zbpg->bud_list, &zbud_unbuddied[chunks].list);
+-- 
+1.7.5.4
+
