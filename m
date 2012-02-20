@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab2BTLH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:07:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23907 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab2BTLHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:07:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127360767"
-Date: Mon, 20 Feb 2012 12:15:05 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] mfd: Fix section mismatch warning for da9052-spi
-Message-ID: <20120220111505.GS5387@sortiz-mobl>
-References: <1326274036.8938.3.camel@phoenix>
+	id S1753027Ab2BTLLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:11:54 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59591 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab2BTLLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 06:11:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of consul.kautuk@gmail.com designates 10.68.208.196 as permitted sender) smtp.mail=consul.kautuk@gmail.com; dkim=pass header.i=consul.kautuk@gmail.com
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] shmem.c: Compilation failure in shmem_file_setup for !CONFIG_MMU
+Date: Mon, 20 Feb 2012 06:11:32 -0500
+Message-Id: <1329736292-19087-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326274036.8938.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+I disabled the CONFIG_MMU and tried to compile the kernel and got the
+following problem:
+In function ‘shmem_file_setup’:
+error: implicit declaration of function ‘ramfs_nommu_expand_for_mapping’
 
-On Wed, Jan 11, 2012 at 05:27:16PM +0800, Axel Lin wrote:
-> Add __devinit annotation for da9052_spi_probe to fix below build warning:
-> 
-> WARNING: drivers/built-in.o(.text+0x349b4): Section mismatch in reference from the function da9052_spi_probe() to the function .devinit.text:da9052_device_init()
-> The function da9052_spi_probe() references
-> the function __devinit da9052_device_init().
-> This is often because da9052_spi_probe lacks a __devinit
-> annotation or the annotation of da9052_device_init is wrong.
-> 
-> Also add __devexit annotation for da9052_spi_remove because we have
-> __devexit_p around it in the remove callback.
-Applied, thanks.
+This is because, we do not include ramfs.h for CONFIG_SHMEM.
 
-Cheers,
-Samuel.
+Included linux/ramfs.h for both CONFIG_SHMEM as well as !CONFIG_SHMEM.
 
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ mm/shmem.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 269d049..4884188 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -30,6 +30,7 @@
+ #include <linux/mm.h>
+ #include <linux/export.h>
+ #include <linux/swap.h>
++#include <linux/ramfs.h>
+ 
+ static struct vfsmount *shm_mnt;
+ 
+@@ -2442,8 +2443,6 @@ out4:
+  * effectively equivalent, but much lighter weight.
+  */
+ 
+-#include <linux/ramfs.h>
+-
+ static struct file_system_type shmem_fs_type = {
+ 	.name		= "tmpfs",
+ 	.mount		= ramfs_mount,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.5.4
+
