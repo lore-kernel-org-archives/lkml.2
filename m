@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab2BTEoa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 23:44:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30852 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab2BTEo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 23:44:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127273538"
-Date: Mon, 20 Feb 2012 12:43:22 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        "lkml," <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        feng.tang@intel.com
-Subject: Re: pch_uart and pch_phub clock selection
-Message-ID: <20120220044322.GA4113@feng-i7>
-References: <4F3DA617.5030805@linux.intel.com>
- <20120217072808.GA26800@feng-i7>
- <CANKRQnhfQyUrMWaXJVsjmL-yFnHa9WuR5LfTkqv=QmRGnC2aTw@mail.gmail.com>
- <4F3E9909.7010301@linux.intel.com>
- <CANKRQnihp+CO9yz3SfEL=kFO18SMUJnU_LdELViPsNmd-Ew8yw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANKRQnihp+CO9yz3SfEL=kFO18SMUJnU_LdELViPsNmd-Ew8yw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752185Ab2BTEui (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 23:50:38 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:36908 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2BTEug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 23:50:36 -0500
+Date: Mon, 20 Feb 2012 15:50:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the scsi-post-merge tree with Linus'
+ tree
+Message-Id: <20120220155024.f627530239322e4ee92c9b9d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomoya,
+--Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Feb 20, 2012 at 01:28:33PM +0900, Tomoya MORINAGA wrote:
-> Hi
-> 
-> Considering Feng's/Darren's proposal/question,
-> I should have set 192MHz as default uart clock setting.
-> So, I created the following patch. (not formal patch but for review)
-> Let me know your opinion.
-> 
-> ---
->  drivers/misc/pch_phub.c       |   17 ++++++-----------
->  drivers/tty/serial/pch_uart.c |   15 +++++++--------
->  2 files changed, 13 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-> index 10fc478..8f9c1db 100644
-> --- a/drivers/misc/pch_phub.c
-> +++ b/drivers/misc/pch_phub.c
-> @@ -55,7 +55,7 @@
->  #define CLKCFG_CANCLK_MASK 0xFF000000
->  #define CLKCFG_UART_MASK			0xFFFFFF
-> 
-> -/* CM-iTC */
-> +/* 192MHz Clock configuration. USB_48MHz / 2 * 8 = 192 */
->  #define CLKCFG_UART_48MHZ			(1 << 16)
->  #define CLKCFG_BAUDDIV				(2 << 20)
->  #define CLKCFG_PLL2VCO				(8 << 9)
-> @@ -715,8 +715,6 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
->  	chip->pdev = pdev; /* Save pci device struct */
-> 
->  	if (id->driver_data == 1) { /* EG20T PCH */
-> -		const char *board_name;
-> -
->  		retval = sysfs_create_file(&pdev->dev.kobj,
->  					   &dev_attr_pch_mac.attr);
->  		if (retval)
-> @@ -731,14 +729,11 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
->  					       CLKCFG_CAN_50MHZ,
->  					       CLKCFG_CANCLK_MASK);
-> 
-> -		/* quirk for CM-iTC board */
-> -		board_name = dmi_get_system_info(DMI_BOARD_NAME);
-> -		if (board_name && strstr(board_name, "CM-iTC"))
-> -			pch_phub_read_modify_write_reg(chip,
-> -						(unsigned int)CLKCFG_REG_OFFSET,
-> -						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-> -						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-> -						CLKCFG_UART_MASK);
-> +		pch_phub_read_modify_write_reg(chip,
-> +					(unsigned int)CLKCFG_REG_OFFSET,
-> +					CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-> +					CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-> +					CLKCFG_UART_MASK);
+Hi Andrew,
 
-All the code looks fine to me except one point: Can we also set ML7213/7223's
-default clk to 192MHz? 192MHz works fine on my ML7213 board. And using an
-unified default clock rate for all EG20T compatible IOHs will save extra
-effort of setting the uart clock.
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/kernel/process_32.c between commit 34ddc81a230b ("i387:
+re-introduce FPU state preloading at context switch time") from Linus'
+tree and commit "x86: use this_cpu_xxx to replace percpu_xxx funcs" from
+the akpm tree.
 
-Thanks,
-Feng
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/x86/kernel/process_32.c
+index 80bfe1a,6acfb80..0000000
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@@ -358,9 -377,7 +358,9 @@@ __switch_to(struct task_struct *prev_p
+  	if (prev->gs | next->gs)
+  		lazy_load_gs(next->gs);
+ =20
+ +	switch_fpu_finish(next_p, fpu);
+ +
+- 	percpu_write(current_task, next_p);
++ 	__this_cpu_write(current_task, next_p);
+ =20
+  	return prev_p;
+  }
+
+--Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPQdEQAAoJEECxmPOUX5FE3mEP/jK9LY7QeQe0UZEIjsRabbED
+bemAFkwLZiN/iu73SWqwCIZBXJ82rBgo+Q0maTDn5A22PGLcoTXVJBy+UDNiTD2K
+0l1vunO0o6qW2zQw9ksNXGmPZF9PuVIZ7+hRGlaYXFVpL3eKFkf5eCb5KWPGzZ8L
+ocLTbjHcJ1QPhQYjOnUMyjSMjLy2rYazro7HDTcdpowC8mFsuSDV+K4nnWXgcI3/
+W2EI6Zxwv9ed6Ye/sI3VUW+XNVxwrxpihZkaT4RM+8UQMjX1fR1Foj6B3OzehdUr
+atF+CJuj/+yYvNMqGN/fS3DrwojkhaUf41Od4WqQcblHMsvp8ioh39Nelv1eZ9wv
+EAk/BuMkOQ2Z6Crvt8qGqvj5pBeJxhbCnMlNJc9Glz5iPUMvJhoJpP4s7vGUCQ5e
+VUNPnsvCfqQ3STItlsIyIOBMMocDzpDKZQKsKw2FkwcqfKMoj5xyWCHVby7FZce0
+tPsd4HsIFBntCPpHDdZmkv7kcEDa6ZFoRcW6WXFI/G7o2QwAB1frp7RRPZxBVf1s
+tddDfJygigjnmsyd8rL0supX0tViMBb6BqpwKBgNtE5JzAAGd7cse/YF3/J0iIUR
+CWCsSJcypGHLuZRRLdYOcTBy7WRI7JYiPh+QkQjKXohm1e4HNjXIpGdYk5QE130s
+e/CoAUtQ0+J90ZaxScgk
+=ufz9
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Feb_2012_15_50_24_+1100_cSLP_IqeszHFAb6u--
