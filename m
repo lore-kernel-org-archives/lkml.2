@@ -1,210 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2BTRok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:44:40 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:44956 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2BTRoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:44:39 -0500
-Date: Mon, 20 Feb 2012 09:44:18 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
- implementation
-Message-ID: <20120220174418.GI2470@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120213020951.GA12138@linux.vnet.ibm.com>
- <4F41F315.1040900@cn.fujitsu.com>
+	id S1752493Ab2BTRpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:45:12 -0500
+Received: from mms2.broadcom.com ([216.31.210.18]:1594 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751682Ab2BTRpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 12:45:09 -0500
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4F42865A.5060006@broadcom.com>
+Date: Mon, 20 Feb 2012 18:43:54 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F41F315.1040900@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022017-5518-0000-0000-00000260E951
+To: "Kay Sievers" <kay.sievers@vrfy.org>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Tom Gundersen" <teg@jklm.no>, "Andy Whitcroft" <apw@canonical.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>, "Greg KH" <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: calling request_firmware() from module init will not work
+ with recent/future udev versions
+References: <CAPXgP11iT9K2KcDCJvw_druf5qdNjs0jLfrbpS7CcYh5vXrz_w@mail.gmail.com>
+In-Reply-To: <CAPXgP11iT9K2KcDCJvw_druf5qdNjs0jLfrbpS7CcYh5vXrz_w@mail.gmail.com>
+X-WSS-ID: 635C57433GG30190790-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 03:15:33PM +0800, Lai Jiangshan wrote:
-> On 02/13/2012 10:09 AM, Paul E. McKenney wrote:
-> 
-> >  /*
-> >   * Helper function for synchronize_srcu() and synchronize_srcu_expedited().
-> >   */
-> > -static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
-> > +static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
-> >  {
-> >  	int idx;
-> >  
-> > @@ -178,90 +316,51 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
-> >  			   !lock_is_held(&rcu_sched_lock_map),
-> >  			   "Illegal synchronize_srcu() in same-type SRCU (or RCU) read-side critical section");
-> >  
-> > -	idx = sp->completed;
-> > +	idx = ACCESS_ONCE(sp->completed);
-> >  	mutex_lock(&sp->mutex);
-> >  
-> >  	/*
-> >  	 * Check to see if someone else did the work for us while we were
-> > -	 * waiting to acquire the lock.  We need -two- advances of
-> > +	 * waiting to acquire the lock.  We need -three- advances of
-> >  	 * the counter, not just one.  If there was but one, we might have
-> >  	 * shown up -after- our helper's first synchronize_sched(), thus
-> >  	 * having failed to prevent CPU-reordering races with concurrent
-> > -	 * srcu_read_unlock()s on other CPUs (see comment below).  So we
-> > -	 * either (1) wait for two or (2) supply the second ourselves.
-> > +	 * srcu_read_unlock()s on other CPUs (see comment below).  If there
-> > +	 * was only two, we are guaranteed to have waited through only one
-> > +	 * full index-flip phase.  So we either (1) wait for three or
-> > +	 * (2) supply the additional ones we need.
-> >  	 */
-> >  
-> > -	if ((sp->completed - idx) >= 2) {
-> > +	if (sp->completed == idx + 2)
-> > +		idx = 1;
-> > +	else if (sp->completed == idx + 3) {
-> >  		mutex_unlock(&sp->mutex);
-> >  		return;
-> > -	}
-> > -
-> > -	sync_func();  /* Force memory barrier on all CPUs. */
-> > +	} else
-> > +		idx = 0;
-> 
-> 
-> Hi, Paul
-> 
-> I don't think this check-and-return path is needed since we will introduce call_srcu().
-> 
-> We just need a correct code to show how it works and to be used for a while,
-> and new call_srcu() will be implemented based on this correct code which will be removed.
+On 01/14/2012 04:25 PM, Kay Sievers wrote:
+> We changed udev to strictly enforce sequence order and dependency
+> handling of events. This seems to break some netdev drivers which
+> block in modprobe until the firmware from userspace is loaded into the
+> driver.
 
-Hello, Lai!
+Working on the issue complicated the behavior of the driver so I decided 
+to take a step back to determine the actual issue.
 
-Yep, this code will be replaced with a state machine driven by callbacks.
+> These are the drivers we received bug reports so far. We didn't look
+> into any of details of the drivers, but according to the logs, they
+> seem to block for 60 seconds in modprobe, when userspace is not
+> behaving like expected:
+>    bnx2/bnx2-mips-06-6.2.1.fw
+>    rtlwifi/rtl8192sefw.bin
+>    brcm/bcm43xx-0.fw
 
-> And I think this unneeded check-and-return path is incorrect. See the following:
-> 
-> Reader			Updater						Helper thread
-> 			old_ptr = rcu_ptr;
-> 			/* rcu_ptr = NULL; but be reordered to (1) */
-> 			start synchronize_srcu()
-> 			idx = ACCESS_ONCE(sp->completed);(2)
-> 									synchronize_srcu()
-> 									synchronize_srcu()
-> srcu_read_lock();
-> old_ptr = rcu_ptr;
-> 			rcu_ptr = NULL;(1)
-> 			mutex_lock() and read sp->completed
-> 			and return from synchronize_srcu()
-> 			free(old_ptr);
-> use freed old_ptr
-> srcu_read_unlock();
-> 
-> 
-> So, we need a smb_mb() between (1) and (2) to force the order.
-> 
-> __synchronize_srcu() {
-> 	smp_mb(); /* F */
-> 	idx = ACCESS_ONCE(sp->completed); /* (2) */
+The main problem is that the init_module() syscall should not block. 
+However, the driver I am responsible for (brcm80211) does not request 
+firmware in the init_module() path. It does that on the probe() 
+callback. So the problem is that the probe() code path is done in the 
+context of the init_module() syscall. So the thing to do is decouple the 
+probe() callback from the init_module() syscall.
 
-And one here as well because mutex_lock() allows code to bleed in from
-outside the critical section.
+One option is using the nowait version of request_firmware(), but 
+another option I am considering is to defer the driver registration 
+using a workqueue and schedule it in the init_module() syscall. That way 
+I think I can avoid having to call the device_unregister_driver() when 
+firmware loading fails.
 
-> 	....
-> }
+Another thing to consider is to change the driver core subsystem and 
+assure the probe() callback is never done in the init_module() context.
 
-Good catch!  And shows the limitations of testing -- I hit this pretty
-hard and didn't get a failure.  I was focused so much on the complex
-part of the patch that I failed to get the simple stuff right!!!
+Any opinions?
 
-Shows the value of the Linux community's review processes, I guess.  ;-)
-
-> And this smp_mb() F is paired with helper's smp_mb() D. So if Updater sees X advances of
-> ->completed, Updater must sees X times of *full* flip_and_wait(). So We need see -two- advances of
-> ->completed from Helper only, not -three-.
-
-Hmmm...  Let's see...  The case I was worried about is where the updater
-samples ->completed just before it is incremented, then samples it again
-just after it is incremented a second time.  So you are arguing that this
-cannot happen because the second sample occurs after acquiring the lock,
-so that the second flip-and-wait cycle has to have already completed,
-correct?
-
-So waiting for three is appropriate for mutex_try_lock(), but is overly
-conservative for mutex_lock().
-
->         if (sp->completed == idx + 1)
->                 idx = 1;
->         else if (sp->completed == idx + 2) {
->                 mutex_unlock(&sp->mutex);
->                 return;
->         } else
->                 idx = 0;
-> 
-> 
-> Or simpler:
-> 
-> __synchronize_srcu() {
-> 	unsigned int idx;   /* <-------- unsigned */
-> 
-> 	/* comments for smp_mb() F */
-> 	smp_mb(); /* F */
-> 	idx = ACCESS_ONCE(sp->completed);
-> 
-> 	mutex_lock(&sp->mutex);
-> 	idx = sp->completed - idx;
-> 
-> 	/* original comments */
-> 	for (; idx < 2; idx++)
->                 flip_idx_and_wait(sp, expedited);
->         mutex_unlock(&sp->mutex);
-> }
-> 
-> At last, I can't understand the comments of this check-and-return path.
-> So maybe the above reply and I are totally wrong.
-
-I -think- you might be correct, but my approach is going to be to implement
-call_srcu() which will eliminate this anyway.
-
-> But the comments of this check-and-return path does not describe the code
-> well(especially the order), and it contains the old "synchronize_sched()"
-> which make me confuse.
-
-The diffs are confusing -- I have to look at the actual code in this case.
-
-> My conclusion, we can just remove the check-and-return path to reduce
-> the complexity since we will introduce call_srcu().
-
-If I actually submit the above upstream, that would be quite reasonable.
-My thought is that patch remains RFC and the upstream version has
-call_srcu().
-
-> This new srcu is very great, especially the SRCU_USAGE_COUNT for every
-> lock/unlock witch forces any increment/decrement pair changes the counter
-> for me.
-
-Glad you like it!  ;-)
-
-And thank you for your review and feedback!
-
-							Thanx, Paul
-
-> Thanks,
-> Lai
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Gr. AvS
 
