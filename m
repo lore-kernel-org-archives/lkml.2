@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab2BTTr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 14:47:28 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35869 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab2BTTr1 (ORCPT
+	id S1752643Ab2BTTr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 14:47:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10997 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab2BTTr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 14:47:27 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.68.73.138 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-Date: Mon, 20 Feb 2012 11:47:23 -0800 (PST)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-X-X-Sender: torvalds@i5.linux-foundation.org
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-cc: x86@kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/3] i387: fix up some fpu_counter confusion
-In-Reply-To: <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 20 Feb 2012 14:47:58 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=cmBuszERE20A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGLkceISAAAA:8 a=6rqHouBjAAAA:8 a=y3-NHI71wv_OTvW8qIIA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=TAmEwCHjoHMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329767276.25686.40.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] trace: don't print an extra separator of flags
+From: Steven Rostedt <rostedt@goodmis.org>
+To: avagin@gmail.com
+Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 20 Feb 2012 14:47:56 -0500
+In-Reply-To: <4F42A158.4090501@gmail.com>
+References: <1329650167-480655-1-git-send-email-avagin@openvz.org>
+	 <1329761354.25686.32.camel@gandalf.stny.rr.com>
+	 <4F42A158.4090501@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-02-20 at 23:39 +0400, avagin@gmail.com wrote:
+> On 02/20/2012 10:09 PM, Steven Rostedt wrote:
+> > On Sun, 2012-02-19 at 14:16 +0300, Andrew Vagin wrote:
+> >> From: Andrey Vagin<avagin@openvz.org>
+> >>
+> >> It occurs if __print_flags is used more than once
+> >
+> > Hi, which tracepoint does this? I like to see what the issue is.
+> 
+> The mainstream kernel doesn't have such trace-point, but I have.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 20 Feb 2012 10:24:09 -0800
-Subject: [PATCH v2 1/3] i387: fix up some fpu_counter confusion
+Could you send me that patch. Or a change to the kernel that shows the
+problem.
 
-This makes sure we clear the FPU usage counter for newly created tasks,
-just so that we start off in a known state (for example, don't try to
-preload the FPU state on the first task switch etc).
+> 
+> Do you want to say that this bug should not be fixed in this case? :)
 
-It also fixes a thinko in when we increment the fpu_counter at task
-switch time, introduced by commit 34ddc81a230b ("i387: re-introduce FPU
-state preloading at context switch time").  We should increment the
-*new* task fpu_counter, not the old task, and only if we decide to use
-that state (whether lazily or preloaded).
+No, if it is a issue with the infrastructure, even though nothing
+triggers the problem, it should still be fixed, especially if new code
+in the future will be triggering it.
 
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
----
+-- Steve
 
-That nonsensical "old->fpu_counter++" actually got the right result in
-most common cases (because in the case of a preload and holding on to
-the FPU for the whole timeslice - which is the normal case - it acted
-the same way as if we had incremented the count at FPU load time), but
-it really makes no sense. 
-
-And the "clear counters at fork time" don't really matter until you do
-lazy restore, but it annoyed me that we started out a new process with
-basically random fpu_counter values from the old one.
-
- arch/x86/include/asm/i387.h  |    3 ++-
- arch/x86/kernel/process_32.c |    1 +
- arch/x86/kernel/process_64.c |    1 +
- 3 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index a850b4d8d14d..8df95849721d 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -348,10 +348,10 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 		if (__save_init_fpu(old))
- 			fpu_lazy_state_intact(old);
- 		__thread_clear_has_fpu(old);
--		old->fpu_counter++;
- 
- 		/* Don't change CR0.TS if we just switch! */
- 		if (fpu.preload) {
-+			new->fpu_counter++;
- 			__thread_set_has_fpu(new);
- 			prefetch(new->thread.fpu.state);
- 		} else
-@@ -359,6 +359,7 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 	} else {
- 		old->fpu_counter = 0;
- 		if (fpu.preload) {
-+			new->fpu_counter++;
- 			if (fpu_lazy_restore(new))
- 				fpu.preload = 0;
- 			else
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 80bfe1ab0031..bc32761bc27a 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -214,6 +214,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 
- 	task_user_gs(p) = get_user_gs(regs);
- 
-+	p->fpu_counter = 0;
- 	p->thread.io_bitmap_ptr = NULL;
- 	tsk = current;
- 	err = -ENOMEM;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 1fd94bc4279d..8ad880b3bc1c 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -286,6 +286,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 
- 	set_tsk_thread_flag(p, TIF_FORK);
- 
-+	p->fpu_counter = 0;
- 	p->thread.io_bitmap_ptr = NULL;
- 
- 	savesegment(gs, p->thread.gsindex);
--- 
-1.7.9.188.g12766.dirty
 
