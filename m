@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab2BTUm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:42:28 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:36440 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753477Ab2BTUmV (ORCPT
+	id S1753763Ab2BTUne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:43:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47634 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab2BTUnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:42:21 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 0/4] AB8500 fixes and AB9540 support v2
-Date: Mon, 20 Feb 2012 21:41:48 +0100
-Message-ID: <1329770508-9451-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Mon, 20 Feb 2012 15:43:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.43.51.135 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20120220193146.GM5387@sortiz-mobl>
+References: <1328112547-32424-1-git-send-email-linus.walleij@stericsson.com>
+	<20120220193146.GM5387@sortiz-mobl>
+Date: Mon, 20 Feb 2012 21:43:31 +0100
+Message-ID: <CACRpkdbwPdXyrvC2DZf=mnGjHJC9S-xYLcTSvLid3089w7GHDQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] AB8500 fixes and AB9540 support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Feb 20, 2012 at 8:31 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
 
-This fixes the comments from Maxime and Samuel:
+> Could you please fix patch #1 according to Maxime's comments and remove the
+> board-mop500.c diff from patch #2 ?
 
-- Isolate the fix in [1/4] so it can be pushed to the
-  rc series if desired.
+OK I've sent out a v2 revision of the patches, thanks!
 
-- Remove pointless touching of board-mop500.c in [2/4]
-
-- Rebased the rest for simplicity to apply.
-
-Linus Walleij (4):
-  mfd/ab8500: fix error path bug
-  mfd/ab8500: add version detection and enforcing
-  mfd/ab8500: parametrize IRQ masks and registers
-  mfd/ab8500: support AB9540 variant
-
- .../mach-ux500/include/mach/irqs-board-mop500.h    |    2 +-
- drivers/mfd/ab8500-core.c                          |  301 ++++++++++++++++----
- drivers/mfd/ab8500-i2c.c                           |   15 +-
- include/linux/mfd/abx500.h                         |    7 -
- include/linux/mfd/abx500/ab8500-gpio.h             |    4 +-
- include/linux/mfd/abx500/ab8500-sysctrl.h          |   43 +++
- include/linux/mfd/abx500/ab8500.h                  |  114 +++++++-
- include/linux/regulator/ab8500.h                   |   70 +++++-
- 8 files changed, 487 insertions(+), 69 deletions(-)
-
--- 
-1.7.8
-
+Yours,
+Linus Walleij
