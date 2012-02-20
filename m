@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab2BTD2e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 22:28:34 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:50681 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752033Ab2BTD2c (ORCPT
+	id S1752369Ab2BTDa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 22:30:56 -0500
+Received: from 18.mo5.mail-out.ovh.net ([178.33.45.10]:40013 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751685Ab2BTDay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 22:28:32 -0500
-X-Sasl-enc: pbEY6xs/kVNfv9s3B6X6ZUnzekkyb9p/N04GVzSojXzHuflC+UVoOlatyQ 1329708511
-Message-ID: <1329708508.2253.9.camel@perseus.themaw.net>
-Subject: Re: Linux 3.3-rc4
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, thomas@m3y3r.de,
-        linux-kernel@vger.kernel.org
-Date: Mon, 20 Feb 2012 11:28:28 +0800
-In-Reply-To: <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
-	 <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-	 <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
-	 <20120219.144947.660678318380307878.davem@davemloft.net>
-	 <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 19 Feb 2012 22:30:54 -0500
+X-Greylist: delayed 70666 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 22:30:54 EST
+Date: Mon, 20 Feb 2012 04:23:24 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 04/18] ARM: at91: make ST (System Timer) soc independent
+Message-ID: <20120220032324.GF29599@game.jcrosoft.org>
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+ <957702b1ff83afcc0a8e842f53f05ff3f40b78b3.1329500622.git.nicolas.ferre@atmel.com>
+ <4F419246.6080405@gmail.com>
+ <20120220013825.GD29599@game.jcrosoft.org>
+ <4F41A76D.1070409@gmail.com>
+ <20120220030234.GE29599@game.jcrosoft.org>
+ <4F41BB20.8000901@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F41BB20.8000901@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13720779216324307725
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-02-19 at 12:02 -0800, Linus Torvalds wrote:
-> On Sun, Feb 19, 2012 at 11:49 AM, David Miller <davem@davemloft.net> wrote:
-> >
-> > A real shame, this should have used "__aligned_u64" from the
-> > beginning.
+On 14:16 Mon 20 Feb     , Ryan Mallon wrote:
+> On 20/02/12 14:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
 > 
-> I agree. Sadly, this is exactly the kind of thing that is *really*
-> easy to overlook, and once it is overlooked we're screwed because
-> fixing it just breaks the native 32-bit case.
+> > On 12:52 Mon 20 Feb     , Ryan Mallon wrote:
+> >> On 20/02/12 12:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >>
+> >>> On 11:22 Mon 20 Feb     , Ryan Mallon wrote:
+> >>>> On 18/02/12 04:49, Nicolas Ferre wrote:
+> >>>>
+> >>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> >>>>>
+> >>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> >>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >>>>> ---
+> >>>>>  arch/arm/mach-at91/at91rm9200.c              |    4 +-
+> >>>>>  arch/arm/mach-at91/at91rm9200_time.c         |   37 ++++++++++++++++----------
+> >>>>>  arch/arm/mach-at91/generic.h                 |    1 +
+> >>>>>  arch/arm/mach-at91/include/mach/at91_st.h    |   32 +++++++++++++++-------
+> >>>>>  arch/arm/mach-at91/include/mach/at91rm9200.h |    2 +-
+> >>>>>  drivers/watchdog/at91rm9200_wdt.c            |    8 +++---
+> >>>>>  6 files changed, 53 insertions(+), 31 deletions(-)
+> >>>>>
+> >>>>> diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+> >>>>
+> >>>> Hi Jean, Nicolas,
+> >>>>
+> >>>> Patch looks mostly good, couple of points below.
+> >>>>
+> >>>> ~Ryan
+> >>>>
+> >>>> <snip>
+> >>>>
+> >>>>>  	/* Cancel any pending alarm; flush any pending IRQ */
+> >>>>> -	at91_sys_write(AT91_ST_RTAR, alm);
+> >>>>> -	(void) at91_sys_read(AT91_ST_SR);
+> >>>>> +	at91_st_write(AT91_ST_RTAR, alm);
+> >>>>> +	(void) at91_st_read(AT91_ST_SR);
+> >>>>
+> >>>>
+> >>>> Can we please remove the (void) casting of the return value when making
+> >>>> this change, especially since at91_st_read is now a macro which doesn't
+> >>>> even have a return value. Same in a few other places.
+> >>> modification done by script and it's no the scope of this patch
+> >>
+> >>
+> >> That isn't an excuse to leave incorrect code there. It is a simple fix.
+> > no (void) in c means you don't care of the return so basically it's right
+> 
+> 
+> Because of the way the __raw_writel is defined you are casting the
+> result of an assignment, basically you are doing this:
+> 
+>    int foo, bar;
+> 
+>   (void)(foo = bar);
+> 
+> Which is pointless. Don't make excuses for silly, redundant code. Fix
+> it, please.
+except it's a read it has nothing to do with that
 
-It sure is.
-
-There was a suggestion from the systemd folks to bump the kernel
-protocol major version to 6 and add a packed structure for use with that
-version and beyond. That's a bit ugly too but won't break things that
-already work around it in user space for major version 5 and avoids.
-
-I've not got around to checking if the patch works correctly and
-finishing it.
-
-Ian
-
-
+Best Regards,
+J.
