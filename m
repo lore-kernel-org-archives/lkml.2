@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab2BTOgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 09:36:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab2BTOgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 09:36:31 -0500
-Date: Mon, 20 Feb 2012 09:36:22 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
-Message-ID: <20120220143622.GB10342@redhat.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-8-git-send-email-tj@kernel.org>
- <20120217011907.GA15073@google.com>
- <20120217221406.GJ29414@google.com>
- <20120217223420.GJ26620@redhat.com>
- <20120217224103.GN29414@google.com>
- <20120217225125.GK26620@redhat.com>
- <20120217225735.GP29414@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120217225735.GP29414@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753259Ab2BTOlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 09:41:19 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51847 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab2BTOlS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 09:41:18 -0500
+Message-ID: <1329748861.2293.345.camel@twins>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Date: Mon, 20 Feb 2012 15:41:01 +0100
+In-Reply-To: <1321629267.7080.13.camel@marge.simson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 17, 2012 at 02:57:35PM -0800, Tejun Heo wrote:
+On Fri, 2011-11-18 at 16:14 +0100, Mike Galbraith wrote:
 
-[..]
-> blkcg doesn't allow that anyway (it tries but is racy) and I actually
-> was thinking about sending a RFC patch to kill CLONE_IO.
+> ---
+>  kernel/sched_fair.c |   10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+> 
+> Index: linux-3.0-tip/kernel/sched_fair.c
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/sched_fair.c
+> +++ linux-3.0-tip/kernel/sched_fair.c
+> @@ -2276,17 +2276,11 @@ static int select_idle_sibling(struct ta
+>  		for_each_cpu_and(i, sched_domain_span(sd), tsk_cpus_allowed(p)) {
+>  			if (idle_cpu(i)) {
+>  				target = i;
+> +				if (sd->flags & SD_SHARE_CPUPOWER)
+> +					continue;
+>  				break;
+>  			}
+>  		}
+> -
+> -		/*
+> -		 * Lets stop looking for an idle sibling when we reached
+> -		 * the domain that spans the current cpu and prev_cpu.
+> -		 */
+> -		if (cpumask_test_cpu(cpu, sched_domain_span(sd)) &&
+> -		    cpumask_test_cpu(prev_cpu, sched_domain_span(sd)))
+> -			break;
+>  	}
+>  	rcu_read_unlock();
 
-Hi  Tejun,
+Mike, Suresh, did we ever get this sorted? I was looking at
+select_idle_sibling() and it looks like we dropped this.
 
-I have a question about CLONE_IO.
+Also, did anybody ever get an answer from a HW guy on why sharing stuff
+over SMT threads is so much worse than sharing it over proper cores? Its
+not like this workload actually does anything concurrently.
 
-In copy_io(), we don't share the io_context if "current" does not have
-task->io_context set. Does that mean if even if I specify CLONE_IO, two
-threads might not share io context depending on when clone() happened? Or
-I am reading the code wrong.
+I was looking at this code due to vatsa wanting to do SD_BALANCE_WAKE.
 
-Thanks
-Vivek
+
