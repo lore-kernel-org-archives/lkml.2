@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab2BTRXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:23:06 -0500
+	id S1752578Ab2BTRXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:23:23 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:43752 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab2BTRXB (ORCPT
+	with ESMTP id S1752426Ab2BTRXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:23:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.141.15 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v2 06/22] mm: deprecate pagevec lru-add functions
+	Mon, 20 Feb 2012 12:23:12 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.124.142 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v2 09/22] mm: link lruvec with zone and node
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 20 Feb 2012 21:22:58 +0400
-Message-ID: <20120220172257.22196.41219.stgit@zurg>
+Date: Mon, 20 Feb 2012 21:23:09 +0400
+Message-ID: <20120220172309.22196.76135.stgit@zurg>
 In-Reply-To: <20120220171138.22196.65847.stgit@zurg>
 References: <20120220171138.22196.65847.stgit@zurg>
 User-Agent: StGit/0.15
@@ -26,116 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They mostly unused, the last user is fs/cachefiles/rdwr.c
-This patch replaces __pagevec_lru_add() with smaller implementation.
-It is exported, so we should keep it for a while.
-
-Plus simplify and fix pathetic single-page page-vector operations in
-nfs_symlink(), this was second pagevec_lru_add_file() user.
+This patch adds links from lruvec to its zone and node.
+For CONFIG_CGROUP_MEM_RES_CTLR=n this is just container_of().
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- fs/nfs/dir.c            |   10 +++-------
- include/linux/pagevec.h |    4 +++-
- mm/swap.c               |   27 +++++++--------------------
- 3 files changed, 13 insertions(+), 28 deletions(-)
+ include/linux/mm.h     |   20 ++++++++++++++++++++
+ include/linux/mmzone.h |    4 ++++
+ mm/memcontrol.c        |    2 ++
+ mm/page_alloc.c        |    4 ++++
+ 4 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 0d71eb6..cbbc03c 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1863,7 +1863,6 @@ static int nfs_unlink(struct inode *dir, struct dentry *dentry)
-  */
- static int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
- {
--	struct pagevec lru_pvec;
- 	struct page *page;
- 	char *kaddr;
- 	struct iattr attr;
-@@ -1903,15 +1902,12 @@ static int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *sym
- 	 * No big deal if we can't add this page to the page cache here.
- 	 * READLINK will get the missing page from the server if needed.
- 	 */
--	pagevec_init(&lru_pvec, 0);
--	if (!add_to_page_cache(page, dentry->d_inode->i_mapping, 0,
-+	if (!add_to_page_cache_lru(page, dentry->d_inode->i_mapping, 0,
- 							GFP_KERNEL)) {
--		pagevec_add(&lru_pvec, page);
--		pagevec_lru_add_file(&lru_pvec);
- 		SetPageUptodate(page);
- 		unlock_page(page);
--	} else
--		__free_page(page);
-+	}
-+	put_page(page);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e483f30..24c24f0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -734,6 +734,16 @@ static inline void set_page_links(struct page *page, enum zone_type zone,
  
- 	return 0;
+ extern struct lruvec *page_lruvec(struct page *lruvec);
+ 
++static inline struct zone *lruvec_zone(struct lruvec *lruvec)
++{
++	return lruvec->zone;
++}
++
++static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
++{
++	return lruvec->node;
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ 
+ /* Single lruvec in zone */
+@@ -743,6 +753,16 @@ static inline struct lruvec *page_lruvec(struct page *page)
+ 	return &page_zone(page)->lruvec;
  }
-diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
-index 2aa12b8..4df37fe 100644
---- a/include/linux/pagevec.h
-+++ b/include/linux/pagevec.h
-@@ -21,7 +21,6 @@ struct pagevec {
+ 
++static inline struct zone *lruvec_zone(struct lruvec *lruvec)
++{
++	return container_of(lruvec, struct zone, lruvec);
++}
++
++static inline struct pglist_data *lruvec_node(struct lruvec *lruvec)
++{
++	return lruvec_zone(lruvec)->zone_pgdat;
++}
++
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR */
+ 
+ /*
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index b39f230..bd2cae4 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -297,6 +297,10 @@ struct zone_reclaim_stat {
  };
  
- void __pagevec_release(struct pagevec *pvec);
--void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
- unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
- 		pgoff_t start, unsigned nr_pages);
- unsigned pagevec_lookup_tag(struct pagevec *pvec,
-@@ -64,6 +63,9 @@ static inline void pagevec_release(struct pagevec *pvec)
- 		__pagevec_release(pvec);
- }
- 
-+/* Use lru_cache_add_list() instead */
-+void __deprecated __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
-+
- static inline void __pagevec_lru_add_anon(struct pagevec *pvec)
- {
- 	__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
-diff --git a/mm/swap.c b/mm/swap.c
-index 303fbc3..0d8845c 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -772,33 +772,20 @@ void lru_add_page_tail(struct zone* zone,
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
--static void __pagevec_lru_add_fn(struct page *page, void *arg)
--{
--	enum lru_list lru = (enum lru_list)arg;
--	struct zone *zone = page_zone(page);
--	int file = is_file_lru(lru);
--	int active = is_active_lru(lru);
--
--	VM_BUG_ON(PageActive(page));
--	VM_BUG_ON(PageUnevictable(page));
--	VM_BUG_ON(PageLRU(page));
--
--	SetPageLRU(page);
--	if (active)
--		SetPageActive(page);
--	update_page_reclaim_stat(zone, page, file, active);
--	add_page_to_lru_list(zone, page, lru);
--}
--
- /*
-  * Add the passed pages to the LRU, then drop the caller's refcount
-  * on them.  Reinitialises the caller's pagevec.
-  */
- void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
- {
--	VM_BUG_ON(is_unevictable_lru(lru));
-+	LIST_HEAD(pages);
-+	int i;
- 
--	pagevec_lru_move_fn(pvec, __pagevec_lru_add_fn, (void *)lru);
-+	VM_BUG_ON(is_unevictable_lru(lru));
-+	for ( i = 0 ; i < pvec->nr ; i++ )
-+		list_add_tail(&pvec->pages[i]->lru, &pages);
-+	pagevec_reinit(pvec);
-+	__lru_cache_add_list(&pages, lru);
- }
- EXPORT_SYMBOL(__pagevec_lru_add);
- 
+ struct lruvec {
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++	struct pglist_data	*node;
++	struct zone		*zone;
++#endif
+ 	struct list_head	pages_lru[NR_LRU_LISTS];
+ 	unsigned long		pages_count[NR_LRU_LISTS];
+ };
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index fa64817..e29420d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4673,6 +4673,8 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *memcg, int node)
+ 			INIT_LIST_HEAD(&mz->lruvec.pages_lru[lru]);
+ 			mz->lruvec.pages_count[lru] = 0;
+ 		}
++		mz->lruvec.node = NODE_DATA(node);
++		mz->lruvec.zone = &NODE_DATA(node)->node_zones[zone];
+ 		mz->usage_in_excess = 0;
+ 		mz->on_tree = false;
+ 		mz->memcg = memcg;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c7fcddc..c500084 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4366,6 +4366,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 			INIT_LIST_HEAD(&zone->lruvec.pages_lru[lru]);
+ 			zone->lruvec.pages_count[lru] = 0;
+ 		}
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++		zone->lruvec.node = pgdat;
++		zone->lruvec.zone = zone;
++#endif
+ 		zone->reclaim_stat.recent_rotated[0] = 0;
+ 		zone->reclaim_stat.recent_rotated[1] = 0;
+ 		zone->reclaim_stat.recent_scanned[0] = 0;
 
