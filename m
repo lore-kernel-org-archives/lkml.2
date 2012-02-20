@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2BTXyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 18:54:13 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52116 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab2BTXyL convert rfc822-to-8bit (ORCPT
+	id S1754803Ab2BTX41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 18:56:27 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:62800 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab2BTX40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 18:54:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of john.williams@petalogix.com designates 10.52.66.43 as permitted sender) smtp.mail=john.williams@petalogix.com
+	Mon, 20 Feb 2012 18:56:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.229.137.18 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Tue, 21 Feb 2012 00:56:22 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org
+Subject: Re: NoHZ and CPU isolation patches
+Message-ID: <20120220235619.GH5752@somewhere.redhat.com>
+References: <4F39DB3D.10805@qualcomm.com>
+ <CAOtvUMdta6RNvaHNRDbsUTA5tTEK01bwW_wpZkZOeNNL+podTA@mail.gmail.com>
+ <4F3AA481.6040707@qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUm=juT2efdHPzELK1MEeb1FJRQmS6=ajMqxmB_f5M4AQ@mail.gmail.com>
-References: <1329664319-3128-1-git-send-email-geert@linux-m68k.org>
- <1329664319-3128-2-git-send-email-geert@linux-m68k.org> <CACPZLaWnqxN_pWfonakqQ5i2W+prKFi6RVErebbO_FB6tw0Pew@mail.gmail.com>
- <CAMuHMdUm=juT2efdHPzELK1MEeb1FJRQmS6=ajMqxmB_f5M4AQ@mail.gmail.com>
-From: John Williams <john.williams@petalogix.com>
-Date: Tue, 21 Feb 2012 09:53:50 +1000
-Message-ID: <CACPZLaX79gaBR60tfQH+zeEX22RpJYwjvWzGU40t0hy1_iF-BQ@mail.gmail.com>
-Subject: Re: [microblaze-linux] [PATCH 2/5] microblaze: s/#if[!]
- CONFIG/#if[n]def CONFIG/
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Kosina <trivial@kernel.org>, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3AA481.6040707@qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Tue, Feb 14, 2012 at 10:14:25AM -0800, Max Krasnyansky wrote:
+> On 02/14/2012 01:44 AM, Gilad Ben-Yossef wrote:
+> >Hi Max,
+> >
+> >Any specific reason not to CC the LKML list? I know it is sometime
+> >noisy and I understand
+> >you are not subscribed, but it is the Right Thing (tm) to do...
+> 
+> No reason really. I was just going to keep it short and basically just ask
+> for CCs on future discussions :).
+> Looks like this might turn into a useful discussion. Added to the CC.
+> 
+> >On Tue, Feb 14, 2012 at 5:55 AM, Max Krasnyansky<maxk@qualcomm.com>  wrote:
+> >>Gilad, Frederic,
+> >>
+> >>At the time a lot of people
+> >>were totally opposed to that
+> >>from the recent threads it looks like things have changed quite a bit.
+> >
+> >I think people like the idea of CPU isolation, there is just the
+> >question of what CPU
+> >isolation means :-)
+> >
+> >At least my personal approach is that if a task is running on an
+> >isolated CPU has caused
+> >the kernel to need to do work on that CPU, that is fair game.
+> Yep. My definition is the same. ie If a task wants to avoid interference from the
+> kernel it better not use any syscalls() or at least not the syscalls that trigger
+> IO, mem allocations, etc.
 
-On Mon, Feb 20, 2012 at 9:59 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Mon, Feb 20, 2012 at 01:27, John Williams
-> <john.williams@petalogix.com> wrote:
->> NACK - please see comments below
->>
->> On Mon, Feb 20, 2012 at 1:11 AM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->>> Cc: Michal Simek <monstr@monstr.eu>
->>> Cc: microblaze-uclinux@itee.uq.edu.au
->>> ---
->>>  arch/microblaze/include/asm/exceptions.h |    2 +-
->>>  arch/microblaze/include/asm/irqflags.h   |    2 +-
->>>  arch/microblaze/kernel/entry-nommu.S     |    2 +-
->>>  arch/microblaze/kernel/entry.S           |    4 ++--
->>>  arch/microblaze/kernel/setup.c           |    4 ++--
->>>  5 files changed, 7 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/arch/microblaze/include/asm/exceptions.h b/arch/microblaze/include/asm/exceptions.h
->>> index e6a8dde..48c197b 100644
->>> --- a/arch/microblaze/include/asm/exceptions.h
->>> +++ b/arch/microblaze/include/asm/exceptions.h
->>> @@ -25,7 +25,7 @@
->>>  /* Define MSR enable bit for HW exceptions */
->>>  #define HWEX_MSR_BIT (1 << 8)
->>>
->>> -#if CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR
->>> +#ifdef CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR
->>
->> We actually care about the value of this one - it is always defined,
->> but is either 0 or 1 depending upon the presence or absence of this
->> feature in the target CPU.
->>
->> These CPU feature-related configs are defined in
->> arch/microblaze/platform/generic/Kconfig.auto
->>
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=arch/microblaze/platform/generic/Kconfig.auto;h=25a6f019e94d5d9a1c884dfef9e906435685f980;hb=HEAD
->>
->> not as bools, but as integers.  Kconfig.auto is actually a placeholder
->> for a design file which is emitted from the MicroBlaze CPU / SoC
->> design tool flow and copied into place by the user.
->>
->> In my view these should remain integers rather than booleans for a
->> couple of reasons:
->>  * breakage for all current users
->>  * MicroBlaze is an evolving architecture, there are other cases of
->> seemingly boolean HW parametesr growing to become integers, such as
->> the USE_FPU option.  Once upon a time it was yes/no, now there's 2
->> different flavours of FPU as well as 'none'.  MSR is just as likely to
->> change in future.
->>
->>> -#if CONFIG_MANUAL_RESET_VECTOR
->>> +#ifdef CONFIG_MANUAL_RESET_VECTOR
->>
->> This guy is also always defined (Kconfig 'hex' type), we just need to
->> do something different for a non-zero value.
->
-> Sorry, I missed these are not bool values.
+Right but we want a solution that works for everyone: those who need to issue syscalls
+from time to time (IO or whatever), those who don't issue syscalls at all, etc...
 
-No problem.
+So unplugging the CPU might work for pure isolation (no syscalls, no irq, no exception)
+but there may be lighter kind of isolation, with rare syscalls, exceptions or irqs, etc...
 
-> To avoid this from happening again, perhaps it's a good idea to
-> explicitly write e.g.
->
-> #if CONFIG_MANUAL_RESET_VECTOR != 0
->
-> like is done for other int config values?
+If the task is disturbed for useless work, then lets fix that. This may be useful for
+isolation and even much more globally.
 
-Yes I think that's probably worth doing.
-
-Thanks,
-
-John
+Note that unplugging the CPU also prevents the task from any return to the kernel. This
+include the do_exit() path. And I believe we don't want to deal with a CPU that is
+not in the online mask when we enter such a complicated path.
