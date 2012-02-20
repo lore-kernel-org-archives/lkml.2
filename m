@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2BTVQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:16:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63832 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2BTVQ1 convert rfc822-to-8bit (ORCPT
+	id S1754365Ab2BTVRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:17:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37367 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab2BTVRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:16:27 -0500
+	Mon, 20 Feb 2012 16:17:08 -0500
+Date: Mon, 20 Feb 2012 13:16:18 -0800
+From: tip-bot for David Howells <dhowells@redhat.com>
+Message-ID: <tip-cf420048b3b2af9ce928d35cc5455c646c9dd2f7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dhowells@redhat.com, tglx@linutronix.de, viro@zeniv.linux.org.uk
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, tglx@linutronix.de, viro@zeniv.linux.org.uk
+In-Reply-To: <20120216175006.23314.18984.stgit@warthog.procyon.org.uk>
+References: <20120216175006.23314.18984.stgit@warthog.procyon.org.uk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/types] Delete the __FD_*()
+  funcs for operating on fd_set from linux/time.h
+Git-Commit-ID: cf420048b3b2af9ce928d35cc5455c646c9dd2f7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120220205115.GA3538@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1329768563-13715-1-git-send-email-computersforpeace@gmail.com>
-	<1329768563-13715-2-git-send-email-computersforpeace@gmail.com>
-	<20120220205115.GA3538@dhcp-172-17-108-109.mtv.corp.google.com>
-Date: Mon, 20 Feb 2012 13:16:27 -0800
-Message-ID: <CAN8TOE8Jgje7kjpZ-bsoObs-kbYYjwwDVEeN-K7ExMq5NuR4tQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ahci: add AHCI_HFLAG_STRICT_SPEC host flag
-From: Brian Norris <computersforpeace@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Norbert Preining <preining@logic.at>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 20 Feb 2012 13:17:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 12:51 PM, Tejun Heo <tj@kernel.org> wrote:
-> Overall the patchset looks good but
->
-> On Mon, Feb 20, 2012 at 12:09:21PM -0800, Brian Norris wrote:
->> +     AHCI_HFLAG_STRICT_SPEC          = (1 << 15), /* strict AHCI spec */
->
-> can you please use something more specific?  e.g. something like
-> SKIP_ENGINE_ON_PORT_START and then explain what the flag is about in
-> the comment?
+Commit-ID:  cf420048b3b2af9ce928d35cc5455c646c9dd2f7
+Gitweb:     http://git.kernel.org/tip/cf420048b3b2af9ce928d35cc5455c646c9dd2f7
+Author:     David Howells <dhowells@redhat.com>
+AuthorDate: Thu, 16 Feb 2012 17:50:06 +0000
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 19 Feb 2012 10:32:28 -0800
 
-So you want AHCI_HFLAG_SKIP_ENGINE_ON_PORT_START? That seems
-excessively long... how about AHCI_HFLAG_DELAY_ENGINE? (since it
-pushes the start engine call back to the error-handling stage)
+Delete the __FD_*() funcs for operating on fd_set from linux/time.h
 
-I agree the STRICT_SPEC name is a little too generic, but I couldn't
-immediately come up with something better.
+Delete the __FD_*() functions for operating on fd_set structs from
+linux/time.h as they're no longer used within the kernel with the preceding
+patch and are not exported to userspace.
 
-Brian
+Whilst linux/time.h *does* export the FD_*() equivalents as wrappers around
+__FD_*(), userspace provides its own definition of __FD_*().
+
+Note that the definition of FD_ZERO() in linux/time.h may not be used with the
+fd_sets associated with struct fdtable as the fd_set may have been allocated in
+a truncated fashion.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Link: http://lkml.kernel.org/r/20120216175006.23314.18984.stgit@warthog.procyon.org.uk
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+---
+ include/linux/time.h |   23 -----------------------
+ 1 files changed, 0 insertions(+), 23 deletions(-)
+
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 93277a0..9f43487 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -4,11 +4,8 @@
+ #include <linux/types.h>
+ 
+ #ifdef __KERNEL__
+-# include <linux/bitops.h>
+ # include <linux/cache.h>
+-# include <linux/posix_types.h>
+ # include <linux/seqlock.h>
+-# include <linux/string.h>
+ # include <linux/math64.h>
+ #endif
+ 
+@@ -260,26 +257,6 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
+ 	a->tv_nsec = ns;
+ }
+ 
+-static inline void __FD_SET(unsigned long __fd, __kernel_fd_set *__fdsetp)
+-{
+-	__set_bit(__fd, __fdsetp->fds_bits);
+-}
+-
+-static inline void __FD_CLR(unsigned long __fd, __kernel_fd_set *__fdsetp)
+-{
+-	__clear_bit(__fd, __fdsetp->fds_bits);
+-}
+-
+-static inline int __FD_ISSET(unsigned long __fd, const __kernel_fd_set *__fdsetp)
+-{
+-	return test_bit(__fd, __fdsetp->fds_bits);
+-}
+-
+-static inline void __FD_ZERO(__kernel_fd_set *__fdsetp)
+-{
+-	memset(__fdsetp->fds_bits, 0, sizeof __fdsetp->fds_bits);
+-}
+-
+ #endif /* __KERNEL__ */
+ 
+ #define NFDBITS			__NFDBITS
