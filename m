@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab2BTEka (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 23:40:30 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:56257
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751893Ab2BTEk1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 23:40:27 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I936eK542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h946hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Zang Roy-R61911 <r61911@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-CC: Liu Qiang-B32616 <B32616@freescale.com>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Topic: [PATCH V2 RESEND] fsl-sata: I/O load balancing
-Thread-Index: AQHM7SMNDhLNb1Ztb0CSEEQyTvJWRpZFN8Kw
-Date: Mon, 20 Feb 2012 04:40:21 +0000
-Message-ID: <3E027F8168735B46AC006B1D0C7BB002065A30@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1329284944-17943-1-git-send-email-qiang.liu@freescale.com>
- <1329439216.2892.36.camel@pasglop>
- <94F013E7935FF44C83EBE7784D62AD3F0574273C@039-SN2MPN1-023.039d.mgd.msft.net>
- <1329448724.2892.43.camel@pasglop>
-In-Reply-To: <1329448724.2892.43.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.72]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1752032Ab2BTEoa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 23:44:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30852 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751374Ab2BTEo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 23:44:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127273538"
+Date: Mon, 20 Feb 2012 12:43:22 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "lkml," <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        feng.tang@intel.com
+Subject: Re: pch_uart and pch_phub clock selection
+Message-ID: <20120220044322.GA4113@feng-i7>
+References: <4F3DA617.5030805@linux.intel.com>
+ <20120217072808.GA26800@feng-i7>
+ <CANKRQnhfQyUrMWaXJVsjmL-yFnHa9WuR5LfTkqv=QmRGnC2aTw@mail.gmail.com>
+ <4F3E9909.7010301@linux.intel.com>
+ <CANKRQnihp+CO9yz3SfEL=kFO18SMUJnU_LdELViPsNmd-Ew8yw@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANKRQnihp+CO9yz3SfEL=kFO18SMUJnU_LdELViPsNmd-Ew8yw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tomoya,
 
-
-> -----Original Message-----
-> From: linuxppc-dev-bounces+tie-fei.zang=freescale.com@lists.ozlabs.org
-> [mailto:linuxppc-dev-bounces+tie-fei.zang=freescale.com@lists.ozlabs.org]
-> On Behalf Of Benjamin Herrenschmidt
-> Sent: Friday, February 17, 2012 11:19 AM
-> To: Li Yang-R58472
-> Cc: Liu Qiang-B32616; jgarzik@pobox.com; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org
-> Subject: RE: [PATCH V2 RESEND] fsl-sata: I/O load balancing
+On Mon, Feb 20, 2012 at 01:28:33PM +0900, Tomoya MORINAGA wrote:
+> Hi
 > 
-> On Fri, 2012-02-17 at 03:09 +0000, Li Yang-R58472 wrote:
-> > >I tried a debian install on the p5020ds here and I find SATA to be
-> > >extremely slow, generating millions of interrupts. I think the
-> > defaults
-> > >should be a lot more aggressive at coalescing.
-> >
-> > The P5020 has a hardware problem with SATA, making it generate more
-> > interrupts than it should.  A new revision of the silicon will fix it.
+> Considering Feng's/Darren's proposal/question,
+> I should have set 192MHz as default uart clock setting.
+> So, I created the following patch. (not formal patch but for review)
+> Let me know your opinion.
 > 
-> Ok cool. With a bit of luck you guys can send me a new silicon when it's
-> available then :-) (The one in the board you got me seems to be in a
-> socket).
-Ben,
-We still do not have the a P5020 sample to fix the problem.
-One workaround is to use the patch ( I think you have noticed the patch):
-http://git.freescale.com/git/cgit.cgi/ppc/sdk/linux.git/commit/?id=92c0ce1e599e788ffc0908739db9bd5e0dbdad69
+> ---
+>  drivers/misc/pch_phub.c       |   17 ++++++-----------
+>  drivers/tty/serial/pch_uart.c |   15 +++++++--------
+>  2 files changed, 13 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+> index 10fc478..8f9c1db 100644
+> --- a/drivers/misc/pch_phub.c
+> +++ b/drivers/misc/pch_phub.c
+> @@ -55,7 +55,7 @@
+>  #define CLKCFG_CANCLK_MASK 0xFF000000
+>  #define CLKCFG_UART_MASK			0xFFFFFF
+> 
+> -/* CM-iTC */
+> +/* 192MHz Clock configuration. USB_48MHz / 2 * 8 = 192 */
+>  #define CLKCFG_UART_48MHZ			(1 << 16)
+>  #define CLKCFG_BAUDDIV				(2 << 20)
+>  #define CLKCFG_PLL2VCO				(8 << 9)
+> @@ -715,8 +715,6 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+>  	chip->pdev = pdev; /* Save pci device struct */
+> 
+>  	if (id->driver_data == 1) { /* EG20T PCH */
+> -		const char *board_name;
+> -
+>  		retval = sysfs_create_file(&pdev->dev.kobj,
+>  					   &dev_attr_pch_mac.attr);
+>  		if (retval)
+> @@ -731,14 +729,11 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+>  					       CLKCFG_CAN_50MHZ,
+>  					       CLKCFG_CANCLK_MASK);
+> 
+> -		/* quirk for CM-iTC board */
+> -		board_name = dmi_get_system_info(DMI_BOARD_NAME);
+> -		if (board_name && strstr(board_name, "CM-iTC"))
+> -			pch_phub_read_modify_write_reg(chip,
+> -						(unsigned int)CLKCFG_REG_OFFSET,
+> -						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
+> -						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
+> -						CLKCFG_UART_MASK);
+> +		pch_phub_read_modify_write_reg(chip,
+> +					(unsigned int)CLKCFG_REG_OFFSET,
+> +					CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
+> +					CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
+> +					CLKCFG_UART_MASK);
 
-and  use a SSD hard drive.
-It will have a usable performance.
-Thanks.
-Roy
+All the code looks fine to me except one point: Can we also set ML7213/7223's
+default clk to 192MHz? 192MHz works fine on my ML7213 board. And using an
+unified default clock rate for all EG20T compatible IOHs will save extra
+effort of setting the uart clock.
+
+Thanks,
+Feng
 
