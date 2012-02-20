@@ -1,268 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab2BTJcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 04:32:10 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42597 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2BTJcH (ORCPT
+	id S1752725Ab2BTJdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 04:33:10 -0500
+Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:42680 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751995Ab2BTJdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 04:32:07 -0500
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Feb 2012 04:32:06 EST
-Message-ID: <4F4211B5.2050602@collabora.co.uk>
-Date: Mon, 20 Feb 2012 10:26:13 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	Mon, 20 Feb 2012 04:33:08 -0500
+Date: Mon, 20 Feb 2012 10:16:47 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ryan Mallon <rmallon@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 13/18] ARM: at91/rtc-at91sam9: pass the GPBR to use via
+ ressources
+Message-ID: <20120220091647.GA28066@game.jcrosoft.org>
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+ <8187feb330895bf9e077ede21e68cc81a72438cc.1329500622.git.nicolas.ferre@atmel.com>
+ <4F419742.70200@gmail.com>
+ <20120220012010.GA29599@game.jcrosoft.org>
+ <20120220073621.GB22562@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        Bart Cerneels <bart.cerneels@collabora.co.uk>,
-        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFCv3] 0/14 af_unix: Multicast and filtering features on AF_UNIX
-References: <4F35206D.8010604@collabora.co.uk>
-In-Reply-To: <4F35206D.8010604@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220073621.GB22562@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1242993499275307955
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 07:36 Mon 20 Feb     , Russell King - ARM Linux wrote:
+> On Mon, Feb 20, 2012 at 02:20:10AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 11:43 Mon 20 Feb     , Ryan Mallon wrote:
+> > > On 18/02/12 04:50, Nicolas Ferre wrote:
+> > > 
+> > > > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > > > 
+> > > > The GPBR registers are used for storing RTC values. The GPBR registers
+> > > > to use are now provided using standard resource entry. The array is
+> > > > filled in SoC specific code.
+> > > > rtc-at91sam9 RTT as RTC driver is modified to retrieve this information.
+> > > > 
+> > > > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > > > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > > > ---
+> > > >  arch/arm/mach-at91/at91sam9260_devices.c      |   10 +++++++-
+> > > >  arch/arm/mach-at91/at91sam9261_devices.c      |    8 ++++++-
+> > > >  arch/arm/mach-at91/at91sam9263_devices.c      |   16 +++++++++++--
+> > > >  arch/arm/mach-at91/at91sam9g45_devices.c      |    8 ++++++-
+> > > >  arch/arm/mach-at91/at91sam9rl_devices.c       |    8 ++++++-
+> > > >  arch/arm/mach-at91/include/mach/at91sam9260.h |    5 +--
+> > > >  arch/arm/mach-at91/include/mach/at91sam9261.h |    5 +--
+> > > >  arch/arm/mach-at91/include/mach/at91sam9263.h |    5 +--
+> > > >  arch/arm/mach-at91/include/mach/at91sam9g45.h |    5 +--
+> > > >  arch/arm/mach-at91/include/mach/at91sam9rl.h  |    2 +-
+> > > >  drivers/rtc/rtc-at91sam9.c                    |   29 +++++++++++++++++++++---
+> > > >  11 files changed, 76 insertions(+), 25 deletions(-)
+> > > > 
+> > > > diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+> > > > index 2071017..ae2b648 100644
+> > > > --- a/arch/arm/mach-at91/at91sam9260_devices.c
+> > > > +++ b/arch/arm/mach-at91/at91sam9260_devices.c
+> > > > @@ -718,14 +718,16 @@ static struct resource rtt_resources[] = {
+> > > >  		.start	= AT91SAM9260_BASE_RTT,
+> > > >  		.end	= AT91SAM9260_BASE_RTT + SZ_16 - 1,
+> > > >  		.flags	= IORESOURCE_MEM,
+> > > > -	}
+> > > > +	}, {
+> > > > +		.flags	= IORESOURCE_MEM,
+> > > > +	},
+> > > >  };
+> > > >  
+> > > >  static struct platform_device at91sam9260_rtt_device = {
+> > > >  	.name		= "at91_rtt",
+> > > >  	.id		= 0,
+> > > >  	.resource	= rtt_resources,
+> > > > -	.num_resources	= ARRAY_SIZE(rtt_resources),
+> > > > +	.num_resources	= 1,
+> > > 
+> > > 
+> > > Why this change? The device has two resources, and the rtc driver
+> > > request both of them, so why are you saying there is only one resource
+> > > here. It either needs to be changed back to use ARRAY_SIZE, or needs a
+> > > comment explaining what magic is in use.
+> > because the number of resources depends on the user of rtt
+> > we must not hardcode the GPBR reg as this resource will be present only if the
+> > rtc-at91sam9 is enabled
+> 
+> Better would be to leave .num_resources uninitalized and set that
+> appropriately elsewhere when you make the decision whether GPBR is
+> present or not.  That may help to avoid people trying to "fix" this
+> for you via static checking tools.
+> 
+> As Ryan mentions, a comment in the code would be a good idea too.
+the comment is in the drivers code and Kconfig
 
-Following is an extension to AF_UNIX datagram and seqpacket sockets to
-support multicast communication. This work was made by Alban Crequy as a
-result from a research we have been doing to improve the performance of
-the D-bus IPC system.
+and will be drop soon in favor of DT
 
-The first approach was to create a new AF_DBUS socket address family and
-move the routing logic of the D-bus daemon to the kernel. The
-motivations behind that approach and the thread of the patches post can
-be found in [1] and [2] respectively.
-
-The feedback was that having D-bus specific code in the kernel is a bad
-idea so the second approach was to implement multicast Unix domain
-sockets so clients can directly send messages to peers bypassing the
-D-bus daemon. A previous version of the patches was already posted by
-Alban [3] who has also a good explanation of the implementation on
-his blog [4].
-
-The stable and development version of the patches can be found in [5]
-and [6] respectively. It is a work in progress so probably some issues
-can be found.
-
-We didn't want to send the full patches since we are more interested to
-discuss the proposed architecture and ABI rather than the kernel
-implementation (which can always be rework to meet upstream code quality).
-
-[1]http://alban-apinc.blogspot.com/2011/12/d-bus-in-kernel-faster.html
-[2]http://thread.gmane.org/gmane.linux.kernel/1040481
-[3]http://thread.gmane.org/gmane.linux.network/178772
-[4]http://alban-apinc.blogspot.com/2011/12/introducing-multicast-unix-sockets.html
-[5]http://cgit.collabora.com/git/user/javier/linux.git/log/?h=multicast-unix-socket-stable
-[6]http://cgit.collabora.com/git/user/javier/linux.git/log/?h=multicast-attach-peer-filter
-
-Multicast Unix sockets summary
-==============================
-
-Multicast is implemented on SOCK_DGRAM and SOCK_SEQPACKET Unix sockets.
-
-An userspace application can create a multicast group with:
-
-  struct unix_mreq mreq = {0,};
-  mreq.address.sun_family = AF_UNIX;
-  mreq.address.sun_path[0] = '\0';
-  strcpy(mreq.address.sun_path + 1, "socket-address");
-
-  sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-  ret = setsockopt(sockfd, SOL_UNIX, UNIX_CREATE_GROUP, &mreq,
-sizeof(mreq));
-
-This allocates a struct unix_mcast_group, which is reference counted and
-exists as long as the socket who created it exists or the group has at
-least one member.
-
-SOCK_DGRAM sockets can join a multicast group with:
-
-  ret = setsockopt(sockfd, SOL_UNIX, UNIX_JOIN_GROUP, &mreq, sizeof(mreq));
-
-This allocates a struct unix_mcast, which holds the settings of the
-membership, mainly whether loopback is enabled. A socket can be a member
-of several multicast groups.
-
-Since the SOCK_SEQPACKET is connection-oriented the semantics are
-different. A client cannot join a group but it can only connect and the
-multicast listen socket is used to allow the peer to join the group with:
-
-  ret = setsockopt(groupfd, SOL_UNIX, UNIX_CREATE_GROUP, &val, vallen);
-  ret = listen(groupfd, 10);
-  connfd = accept(sockfd, NULL, 0);
-  ret = setsockopt(connfd, SOL_UNIX, UNIX_ACCEPT_GROUP, &mreq,
-sizeof(mreq));
-
-The socket is part of the multicast group until it is released, shutdown
-with RCV_SHUTDOWN or it leaves explicitely the group:
-
-  ret = setsockopt(sockfd, SOL_UNIX, UNIX_LEAVE_GROUP, &mreq, sizeof(mreq));
-
-Struct unix_mcast nodes are linked in two RCU lists:
-- (struct unix_sock)->mcast_subscriptions
-- (struct unix_mcast_group)->mcast_members
-
-              unix_mcast_group  unix_mcast_group
-                      |                 |
-                      v                 v
-unix_sock  ---->  unix_mcast  ----> unix_mcast
-                      |
-                      v
-unix_sock  ---->  unix_mcast
-                      |
-                      v
-unix_sock  ---->  unix_mcast
-
-
-SOCK_DGRAM semantics
-====================
-
-          G          The socket which created the group
-       /  |  \
-     P1  P2  P3      The member sockets
-
-Messages sent to the group are received by all members except the sender
-itself unless the sending socket has UNIX_MREQ_LOOPBACK set.
-
-Non-members can also send to the group socket G and the message will be
-broadcast to the group members, however socket G does not receive
-messages sent to the group, via it, itself.
-
-
-SOCK_SEQPACKET semantics
-========================
-
-When a connection is performed on a SOCK_SEQPACKET multicast socket, a
-new socket is created and its file descriptor is received by accept().
-
-          L          The listening socket
-       /  |  \
-     A1  A2  A3      The accepted sockets
-      |   |   |
-     C1  C2  C3      The connected sockets
-
-Messages sent on the C1 socket are received by:
-- C1 itself if UNIX_MREQ_LOOPBACK is set.
-- The peer socket A1 if UNIX_MREQ_SEND_TO_PEER is set.
-- The other members of the multicast group C2 and C3.
-
-Only members can send to the group in this case.
-
-
-Atomic delivery and ordering
-============================
-
-Each message sent is delivered atomically to either none of the
-recipients or all the recipients, even with interruptions and errors.
-
-Locking is used in order to keep the ordering consistent on all
-recipients. We want to avoid the following scenario. Two emitters A and
-B, and 2 recipients, C and D:
-
-           C    D
-A -------->|    |    Step 1: A's message is delivered to C
-B -------->|    |    Step 2: B's message is delivered to C
-B ---------|--->|    Step 3: B's message is delivered to D
-A ---------|--->|    Step 4: A's message is delivered to D
-
-Result: - C received (A, B)
-        - D received (B, A)
-
-Although A and B had a list of recipients (C, D) in the same order, C
-and D received the messages in a different order. To avoid this
-scenario, we need a locking mechanism while the messages are being
-delivered with skb_queue_tail().
-
-Solution 1:
-The easiest implementation would be to use a global spinlock on the
-group, but it creates an avoidable contention, especially when there are
-two independent streams set up with socket filters; e.g. if A sends
-messages received only by C, and B sends messages received only by D.
-
-Solution 2:
-Fine-grained locking could be implemented with a spinlock on each recipient.
-Before delivering the message to the recipients, the sender takes a
-spinlock on each recipient at the same time.
-
-Taking several spinlocks on the same struct can be dangerous and leads
-to deadlocks. This is prevented by sorting the list of sockets by memory
-address and taking the spinlocks in that order. The ordered list of
-recipients is computed on demand when a message is sent and the list is
-cached for performance. When the group membership changes, the
-generation of the membership is incremented and the ordered recipient
-list is invalidated.
-
-With this solution, the number of spinlocks taken simultaneously can be
-arbitrary big. Whilst it works, it breaks the lockdep mechanism.
-
-Solution 3:
-The current implementation is similar to solution 2 but with a limit on
-the number of spinlocks taken simultaneously (8), so lockdep works fine.
-A hash function and bit array with n=8 specifies which spinlocks to
-take. Contention on independent streams can still happen but it is less
-likely.
-
-
-Flow control
-============
-
-When a socket's receiving queue is full, the default behavior is to
-block senders (or to return -EAGAIN on non-blocking sockets). The socket
-can also join a multicast group with the flag UNIX_MREQ_DROP_WHEN_FULL.
-In this case, messages sent to the group will not be delivered to that
-socket when its receiving queue is full.
-
-Messages are still delivered atomically to all members who don't have
-the flag UNIX_MREQ_DROP_WHEN_FULL. If send() returns -EAGAIN, nobody
-received the message. If send() blocks because of one member, the other
-members don't receive the message until all sockets (except those with
-UNIX_MREQ_DROP_WHEN_FULL set) can receive at the same time.
-
-poll/epoll/select on POLLOUT events have a consistent behavior; they
-block if at least one member of the multicast group without
-UNIX_MREQ_DROP_WHEN_FULL has a full receiving queue.
-
-
-Multicast socket reference counting
-===================================
-
-A poller for POLLOUT events can block for any member of the group. The
-poller can use the wait queue "peer_wait" of any member. So it is
-important that Unix sockets are not released before all pollers exit.
-This is achieved by:
-
-- Incrementing the reference counter of a socket when it joins a
-multicast group.
-- Decrementing it when the group is destroyed, that is when all sockets
-keeping a reference on the group released their reference onthe group.
-
-struct unix_mcast_group keeps track of both current members and previous
-members. When a socket leaves a group, it is removed from the members
-list and put in the dead members list. This is done in order to take
-advantage of RCU lists, which reduces lock contention.
-
-=====================================
-
-diff stat:
-
- Documentation/networking/multicast-unix-sockets.txt	|  171 ++++
- include/linux/filter.h                                 |    4 +
- include/linux/socket.h                                 |    1 +
- include/net/af_unix.h                                  |   79 ++
- include/net/sock.h                                     |    4 +
- net/core/filter.c                                      |  118 +++
- net/unix/Kconfig                                       |    9 +
- net/unix/af_unix.c                                     | 1052
-
-Regards,
-Javier
+Best Regards,
+J.
