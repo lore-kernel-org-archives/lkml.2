@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab2BTLXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:23:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59918 "EHLO
+	id S1753578Ab2BTLYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:24:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34979 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab2BTLXb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753271Ab2BTLWV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:23:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of djkurtz@google.com designates 10.50.95.195 as permitted sender) smtp.mail=djkurtz@google.com; dkim=pass header.i=djkurtz@google.com
+	Mon, 20 Feb 2012 06:22:21 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of djkurtz@google.com designates 10.50.181.228 as permitted sender) smtp.mail=djkurtz@google.com; dkim=pass header.i=djkurtz@google.com
 MIME-Version: 1.0
-In-Reply-To: <20120106123531.3b5ca7db@endymion.delvare>
-References: <1325847502-17841-1-git-send-email-djkurtz@chromium.org> <20120106123531.3b5ca7db@endymion.delvare>
+In-Reply-To: <20120215104837.GB4095@phenom.ffwll.local>
+References: <1328817797-4026-1-git-send-email-bleung@chromium.org> <20120215104837.GB4095@phenom.ffwll.local>
 From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Mon, 20 Feb 2012 19:23:10 +0800
-X-Google-Sender-Auth: kLvIJb75R3s_lmvdXvnGLIOwqhM
-Message-ID: <CAGS+omBvULkWsowprvVWkodBxT=diui7g5GtKZ0mb=Uy7DZKtg@mail.gmail.com>
-Subject: Re: [PATCH 0/3 v2] i2c: i801: enable irq
-To: Jean Delvare <khali@linux-fr.org>
-Cc: ben-linux@fluff.org, seth.heasley@intel.com, ben@decadent.org.uk,
-        David.Woodhouse@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org, bleung@chromium.org
+Date: Mon, 20 Feb 2012 19:22:00 +0800
+X-Google-Sender-Auth: QIPgdkbd0ggtiVvjQEhXmAzZF9M
+Message-ID: <CAGS+omD8e9dBen_kQkoY+vc4yP6HCAeoNRYhzK+OPw+99HDoFg@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
+To: Benson Leung <bleung@chromium.org>, keithp@keithp.com, airlied@linux.ie,
+        chris@chris-wilson.co.uk, djkurtz@chromium.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
@@ -27,77 +26,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 6, 2012 at 7:35 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> Hi Daniel,
+On Feb 15, 2012 6:48 PM, "Daniel Vetter" <daniel@ffwll.ch> wrote:
 >
-> On Fri,  6 Jan 2012 18:58:19 +0800, Daniel Kurtz wrote:
->> This is a second version of a set of patches enables the Intel PCH SMBus
->> controller interrupt.  It refactors the second two patches a little bit by
->> relying on DEV_ERR interrupt for timeouts, instead of using an explicit
->> wait_event_timeout.
->>
->> The first attempt received absolutely no response. Maybe this time someone
->> will be interested.
->
-> I was on vacation. But I am very interested and will review and test
-> your patches. There have been several attempts to add IRQ support to
-> i2c-i801 in the past but each time there was a blocker issue which
-> prevented it from making it into mainline. Hopefully this time we'll
-> get it there!
->
->>
->> The SMBus Host Controller Interrupt can signify:
->>  INTR - the end of a complete transaction
->>  DEV_ERR - that a device did not ACK a transaction
->>  BYTE_DONE - the completion of a single byte during a byte-by-byte transaction
->>
->> This patchset arrives with the following caveats:
->>
->>  1)  It has only been tested with a Cougar Point (Intel 6 Series PCH) SMBus
->> controller, so the irq is only enabled for that chip type.
->
-> I can test on ICH10 easily, and also on ICH7 and ICH3-M if needed.
->
->>  2) It has not been tested with any devices that do transactions that use the
->>     PEC.  In fact, I believe that an additional small patch would be required
->>     to the driver working correctly in interrupt mode with PEC.
->>
->>  3) It has not been tested in SMBus Slave mode.
->>
->>  4) It has not been tested with SMI#-type interrupts.
->>
->>  5) The BIOS has to configure the PCH SMBus IRQ properly.
->>
->>  6) It has not been tested with a device that does byte-by-byte smbus (non-i2c)
->>     reads.
->
-> I think I can test this.
->
->>  7) It has not been tested with smbus 'process call' transactions.
->
-> But not this.
->
->> If would be very helpful if somebody could help test on other chipsets, with
->> a PEC device, or on additional BIOS that woudl be very helpful.
->
-> I will do what I can with the hardware I have here.
+> On Thu, Feb 09, 2012 at 12:03:17PM -0800, Benson Leung wrote:
+> > gmbus_xfer with a single message (particularly a single message write) would
+> > set Bus Cycle Select to 100b, the Gen Stop cycle, instead of 101b,
+> > No Index, Stop cycle. This would not start single message i2c transactions.
+> >
+> > Also, gmbus_xfer done: will disable the interface without checking if
+> > it is idle. In the case of writes, there will be no wait on status or delay
+> > to ensure the write starts and completes before the interface is turned off.
+> >
+> > Fixed the former issue by using the same cycle selection as used in the
+> > I2C_M_RD for the write case.
+> > GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0)
+> > Fixed the latter by waiting on GMBUS_ACTIVE to deassert before disable.
+> >
+> > Signed-off-by: Benson Leung <bleung@chromium.org>
 
-Jean,
-Ping?
-
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
 
 >
->> In the meantime, the interrupt behavior is only enabled on the Cougar Point,
->> and even here, it can be completely disabled with the "Interrupt" feature like
->> other advanced features of the driver.
->>
->> Daniel Kurtz (3):
->>   i2c: i801: refactor i801_block_transaction_byte_by_byte
->>   i2c: i801: enable irq for i801 smbus transactions
->>   i2c: i801: enable irq for byte_by_byte transactions
->>
->>  drivers/i2c/busses/i2c-i801.c |  199 ++++++++++++++++++++++++++++++++++++-----
->>  1 files changed, 175 insertions(+), 24 deletions(-)
+> Can you clarify the commit message a bit and say that the first hunk is
+> just for optics and the issue is only with the write path (because the
+> read path is correct already). Silly me is just to easily confused ;-)
+>
+> Btw, I've reworked the gmbus -> gpio bit-banging fallback code a bit and
+> if that passes review and all I'll reenable gmbus by default again. See
+>
+> http://cgit.freedesktop.org/~danvet/drm/log/?h=gmbus
+
+If the write case is fixed by Benson's patch, is there any known use
+case that still requires i2c bit banging on these pins?  It would be a
+nice cleanup to remove it completely.
+
+Also, I can think of at least two further potential performance
+improvements that I was wondering if anybody has yet pursued:
+  (1) Enabling the i915's gmbus interrupt.  This would eliminate the
+need for the (relatively slow) wait_for polling loop.
+  (2) Taking advantage of the i915's "INDEX" cycles to combine writing
+a (1 or 2 byte) address & reading back an array of bytes into a single
+transaction.
+
+Best Regards,
+-Daniel
+
+>
+> Yours, Daniel
+>
+> > ---
+> >  drivers/gpu/drm/i915/intel_i2c.c |   13 +++++++++----
+> >  1 files changed, 9 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
+> > index d30cccc..64bb9cd 100644
+> > --- a/drivers/gpu/drm/i915/intel_i2c.c
+> > +++ b/drivers/gpu/drm/i915/intel_i2c.c
+> > @@ -249,7 +249,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
+> >
+> >               if (msgs[i].flags & I2C_M_RD) {
+> >                       I915_WRITE(GMBUS1 + reg_offset,
+> > -                                GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+> > +                                GMBUS_CYCLE_WAIT |
+> > +                                (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+> >                                  (len << GMBUS_BYTE_COUNT_SHIFT) |
+> >                                  (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+> >                                  GMBUS_SLAVE_READ | GMBUS_SW_RDY);
+> > @@ -278,7 +279,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
+> >
+> >                       I915_WRITE(GMBUS3 + reg_offset, val);
+> >                       I915_WRITE(GMBUS1 + reg_offset,
+> > -                                (i + 1 == num ? GMBUS_CYCLE_STOP : GMBUS_CYCLE_WAIT) |
+> > +                                GMBUS_CYCLE_WAIT |
+> > +                                (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
+> >                                  (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
+> >                                  (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
+> >                                  GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+> > @@ -317,9 +319,12 @@ clear_err:
+> >       I915_WRITE(GMBUS1 + reg_offset, 0);
+> >
+> >  done:
+> > -     /* Mark the GMBUS interface as disabled. We will re-enable it at the
+> > -      * start of the next xfer, till then let it sleep.
+> > +     /* Mark the GMBUS interface as disabled after waiting for idle.
+> > +      * We will re-enable it at the start of the next xfer,
+> > +      * till then let it sleep.
+> >        */
+> > +     if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
+> > +             DRM_INFO("GMBUS timed out waiting for idle\n");
+> >       I915_WRITE(GMBUS0 + reg_offset, 0);
+> >       return i;
+> >
+> > --
+> > 1.7.1
+> >
+> > _______________________________________________
+> > dri-devel mailing list
+> > dri-devel@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
 >
 > --
-> Jean Delvare
+> Daniel Vetter
+> Mail: daniel@ffwll.ch
+> Mobile: +41 (0)79 365 57 48
