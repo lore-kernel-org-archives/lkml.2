@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab2BTDOy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 22:14:54 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45023 "EHLO
+	id S1752309Ab2BTDQy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 22:16:54 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38440 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2BTDOw (ORCPT
+	with ESMTP id S1751560Ab2BTDQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 22:14:52 -0500
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: mfm@muteddisk.com
-Cc: dan.carpenter@oracle.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        santosh.iitg@gmail.com, Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH] Staging: usbip: Remove commented code.
-Date: Mon, 20 Feb 2012 08:44:05 +0530
-Message-Id: <1329707645-25978-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sun, 19 Feb 2012 22:16:53 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.201.101 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F41BB20.8000901@gmail.com>
+Date: Mon, 20 Feb 2012 14:16:48 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/18] ARM: at91: make ST (System Timer) soc independent
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <957702b1ff83afcc0a8e842f53f05ff3f40b78b3.1329500622.git.nicolas.ferre@atmel.com> <4F419246.6080405@gmail.com> <20120220013825.GD29599@game.jcrosoft.org> <4F41A76D.1070409@gmail.com> <20120220030234.GE29599@game.jcrosoft.org>
+In-Reply-To: <20120220030234.GE29599@game.jcrosoft.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak  <santoshprasadnayak@gmail.com>
+On 20/02/12 14:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-Remove commented code of old style lock initilization
+> On 12:52 Mon 20 Feb     , Ryan Mallon wrote:
+>> On 20/02/12 12:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>
+>>> On 11:22 Mon 20 Feb     , Ryan Mallon wrote:
+>>>> On 18/02/12 04:49, Nicolas Ferre wrote:
+>>>>
+>>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>>
+>>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>> ---
+>>>>>  arch/arm/mach-at91/at91rm9200.c              |    4 +-
+>>>>>  arch/arm/mach-at91/at91rm9200_time.c         |   37 ++++++++++++++++----------
+>>>>>  arch/arm/mach-at91/generic.h                 |    1 +
+>>>>>  arch/arm/mach-at91/include/mach/at91_st.h    |   32 +++++++++++++++-------
+>>>>>  arch/arm/mach-at91/include/mach/at91rm9200.h |    2 +-
+>>>>>  drivers/watchdog/at91rm9200_wdt.c            |    8 +++---
+>>>>>  6 files changed, 53 insertions(+), 31 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+>>>>
+>>>> Hi Jean, Nicolas,
+>>>>
+>>>> Patch looks mostly good, couple of points below.
+>>>>
+>>>> ~Ryan
+>>>>
+>>>> <snip>
+>>>>
+>>>>>  	/* Cancel any pending alarm; flush any pending IRQ */
+>>>>> -	at91_sys_write(AT91_ST_RTAR, alm);
+>>>>> -	(void) at91_sys_read(AT91_ST_SR);
+>>>>> +	at91_st_write(AT91_ST_RTAR, alm);
+>>>>> +	(void) at91_st_read(AT91_ST_SR);
+>>>>
+>>>>
+>>>> Can we please remove the (void) casting of the return value when making
+>>>> this change, especially since at91_st_read is now a macro which doesn't
+>>>> even have a return value. Same in a few other places.
+>>> modification done by script and it's no the scope of this patch
+>>
+>>
+>> That isn't an excuse to leave incorrect code there. It is a simple fix.
+> no (void) in c means you don't care of the return so basically it's right
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/staging/usbip/stub_dev.c |    2 --
- drivers/staging/usbip/vhci_hcd.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 03420e2..fa870e3 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -297,7 +297,6 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	sdev->devid		= (busnum << 16) | devnum;
- 	sdev->ud.side		= USBIP_STUB;
- 	sdev->ud.status		= SDEV_ST_AVAILABLE;
--	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
- 	spin_lock_init(&sdev->ud.lock);
- 	sdev->ud.tcp_socket	= NULL;
- 
-@@ -306,7 +305,6 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
- 	INIT_LIST_HEAD(&sdev->priv_free);
- 	INIT_LIST_HEAD(&sdev->unlink_free);
- 	INIT_LIST_HEAD(&sdev->unlink_tx);
--	/* sdev->priv_lock = SPIN_LOCK_UNLOCKED; */
- 	spin_lock_init(&sdev->priv_lock);
- 
- 	init_waitqueue_head(&sdev->tx_waitq);
-diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 8d96ab0..dca9bf1 100644
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -895,14 +895,12 @@ static void vhci_device_init(struct vhci_device *vdev)
- 
- 	vdev->ud.side   = USBIP_VHCI;
- 	vdev->ud.status = VDEV_ST_NULL;
--	/* vdev->ud.lock   = SPIN_LOCK_UNLOCKED; */
- 	spin_lock_init(&vdev->ud.lock);
- 
- 	INIT_LIST_HEAD(&vdev->priv_rx);
- 	INIT_LIST_HEAD(&vdev->priv_tx);
- 	INIT_LIST_HEAD(&vdev->unlink_tx);
- 	INIT_LIST_HEAD(&vdev->unlink_rx);
--	/* vdev->priv_lock = SPIN_LOCK_UNLOCKED; */
- 	spin_lock_init(&vdev->priv_lock);
- 
- 	init_waitqueue_head(&vdev->waitq_tx);
--- 
-1.7.3.1
+Because of the way the __raw_writel is defined you are casting the
+result of an assignment, basically you are doing this:
+
+   int foo, bar;
+
+  (void)(foo = bar);
+
+Which is pointless. Don't make excuses for silly, redundant code. Fix
+it, please.
+
+~Ryan
 
