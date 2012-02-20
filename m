@@ -1,407 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab2BTWO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 17:14:58 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58095 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2BTWOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 17:14:30 -0500
-Date: Mon, 20 Feb 2012 14:14:02 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net
-Subject: Re: Linux 3.0.22
-Message-ID: <20120220221402.GB21224@kroah.com>
-References: <20120220221351.GA21224@kroah.com>
+	id S1754644Ab2BTWcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 17:32:13 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:59386 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab2BTWcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 17:32:12 -0500
+Date: Tue, 21 Feb 2012 00:32:09 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Tejun Heo <tj@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, sam@ravnborg.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+In-Reply-To: <20120220170603.GC7836@mtj.dyndns.org>
+Message-ID: <alpine.SOC.1.00.1202210030530.11350@math.ut.ee>
+References: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee> <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee>
+ <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120220221351.GA21224@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index d5f0598..a5b2253 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 21
-+SUBLEVEL = 22
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index f567965..6e96e65 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -308,7 +308,7 @@ int __init pci_xen_init(void)
- 
- int __init pci_xen_hvm_init(void)
- {
--	if (!xen_feature(XENFEAT_hvm_pirqs))
-+	if (!xen_have_vector_callback || !xen_feature(XENFEAT_hvm_pirqs))
- 		return 0;
- 
- #ifdef CONFIG_ACPI
-diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
-index 88f160b..107f6f7 100644
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -31,11 +31,6 @@ static inline u64 Maj(u64 x, u64 y, u64 z)
-         return (x & y) | (z & (x | y));
- }
- 
--static inline u64 RORu64(u64 x, u64 y)
--{
--        return (x >> y) | (x << (64 - y));
--}
--
- static const u64 sha512_K[80] = {
-         0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL,
-         0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
-@@ -66,10 +61,10 @@ static const u64 sha512_K[80] = {
-         0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL,
- };
- 
--#define e0(x)       (RORu64(x,28) ^ RORu64(x,34) ^ RORu64(x,39))
--#define e1(x)       (RORu64(x,14) ^ RORu64(x,18) ^ RORu64(x,41))
--#define s0(x)       (RORu64(x, 1) ^ RORu64(x, 8) ^ (x >> 7))
--#define s1(x)       (RORu64(x,19) ^ RORu64(x,61) ^ (x >> 6))
-+#define e0(x)       (ror64(x,28) ^ ror64(x,34) ^ ror64(x,39))
-+#define e1(x)       (ror64(x,14) ^ ror64(x,18) ^ ror64(x,41))
-+#define s0(x)       (ror64(x, 1) ^ ror64(x, 8) ^ (x >> 7))
-+#define s1(x)       (ror64(x,19) ^ ror64(x,61) ^ (x >> 6))
- 
- static inline void LOAD_OP(int I, u64 *W, const u8 *input)
- {
-@@ -78,7 +73,7 @@ static inline void LOAD_OP(int I, u64 *W, const u8 *input)
- 
- static inline void BLEND_OP(int I, u64 *W)
- {
--	W[I % 16] += s1(W[(I-2) % 16]) + W[(I-7) % 16] + s0(W[(I-15) % 16]);
-+	W[I & 15] += s1(W[(I-2) & 15]) + W[(I-7) & 15] + s0(W[(I-15) & 15]);
- }
- 
- static void
-@@ -89,46 +84,42 @@ sha512_transform(u64 *state, const u8 *input)
- 	int i;
- 	u64 W[16];
- 
--	/* load the input */
--        for (i = 0; i < 16; i++)
--                LOAD_OP(i, W, input);
--
- 	/* load the state into our registers */
- 	a=state[0];   b=state[1];   c=state[2];   d=state[3];
- 	e=state[4];   f=state[5];   g=state[6];   h=state[7];
- 
--#define SHA512_0_15(i, a, b, c, d, e, f, g, h)			\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[i];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--#define SHA512_16_79(i, a, b, c, d, e, f, g, h)			\
--	BLEND_OP(i, W);						\
--	t1 = h + e1(e) + Ch(e, f, g) + sha512_K[i] + W[(i)%16];	\
--	t2 = e0(a) + Maj(a, b, c);				\
--	d += t1;						\
--	h = t1 + t2
--
--	for (i = 0; i < 16; i += 8) {
--		SHA512_0_15(i, a, b, c, d, e, f, g, h);
--		SHA512_0_15(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_0_15(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_0_15(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_0_15(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_0_15(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_0_15(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_0_15(i + 7, b, c, d, e, f, g, h, a);
--	}
--	for (i = 16; i < 80; i += 8) {
--		SHA512_16_79(i, a, b, c, d, e, f, g, h);
--		SHA512_16_79(i + 1, h, a, b, c, d, e, f, g);
--		SHA512_16_79(i + 2, g, h, a, b, c, d, e, f);
--		SHA512_16_79(i + 3, f, g, h, a, b, c, d, e);
--		SHA512_16_79(i + 4, e, f, g, h, a, b, c, d);
--		SHA512_16_79(i + 5, d, e, f, g, h, a, b, c);
--		SHA512_16_79(i + 6, c, d, e, f, g, h, a, b);
--		SHA512_16_79(i + 7, b, c, d, e, f, g, h, a);
-+	/* now iterate */
-+	for (i=0; i<80; i+=8) {
-+		if (!(i & 8)) {
-+			int j;
-+
-+			if (i < 16) {
-+				/* load the input */
-+				for (j = 0; j < 16; j++)
-+					LOAD_OP(i + j, W, input);
-+			} else {
-+				for (j = 0; j < 16; j++) {
-+					BLEND_OP(i + j, W);
-+				}
-+			}
-+		}
-+
-+		t1 = h + e1(e) + Ch(e,f,g) + sha512_K[i  ] + W[(i & 15)];
-+		t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
-+		t1 = g + e1(d) + Ch(d,e,f) + sha512_K[i+1] + W[(i & 15) + 1];
-+		t2 = e0(h) + Maj(h,a,b);    c+=t1;    g=t1+t2;
-+		t1 = f + e1(c) + Ch(c,d,e) + sha512_K[i+2] + W[(i & 15) + 2];
-+		t2 = e0(g) + Maj(g,h,a);    b+=t1;    f=t1+t2;
-+		t1 = e + e1(b) + Ch(b,c,d) + sha512_K[i+3] + W[(i & 15) + 3];
-+		t2 = e0(f) + Maj(f,g,h);    a+=t1;    e=t1+t2;
-+		t1 = d + e1(a) + Ch(a,b,c) + sha512_K[i+4] + W[(i & 15) + 4];
-+		t2 = e0(e) + Maj(e,f,g);    h+=t1;    d=t1+t2;
-+		t1 = c + e1(h) + Ch(h,a,b) + sha512_K[i+5] + W[(i & 15) + 5];
-+		t2 = e0(d) + Maj(d,e,f);    g+=t1;    c=t1+t2;
-+		t1 = b + e1(g) + Ch(g,h,a) + sha512_K[i+6] + W[(i & 15) + 6];
-+		t2 = e0(c) + Maj(c,d,e);    f+=t1;    b=t1+t2;
-+		t1 = a + e1(f) + Ch(f,g,h) + sha512_K[i+7] + W[(i & 15) + 7];
-+		t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
- 	}
- 
- 	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
-diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-index 0451d7a..532f690 100644
---- a/drivers/gpio/pca953x.c
-+++ b/drivers/gpio/pca953x.c
-@@ -437,7 +437,7 @@ static irqreturn_t pca953x_irq_handler(int irq, void *devid)
- 
- 	do {
- 		level = __ffs(pending);
--		generic_handle_irq(level + chip->irq_base);
-+		handle_nested_irq(level + chip->irq_base);
- 
- 		pending &= ~(1 << level);
- 	} while (pending);
-@@ -481,8 +481,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 			int irq = lvl + chip->irq_base;
- 
- 			irq_set_chip_data(irq, chip);
--			irq_set_chip_and_handler(irq, &pca953x_irq_chip,
--						 handle_simple_irq);
-+			irq_set_chip(irq, &pca953x_irq_chip);
-+			irq_set_nested_thread(irq, true);
- #ifdef CONFIG_ARM
- 			set_irq_flags(irq, IRQF_VALID);
- #else
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index b28f7bd..21257f8 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -714,6 +714,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+                .ident = "AOpen i45GMx-I",
-+                .matches = {
-+                        DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
-+                        DMI_MATCH(DMI_BOARD_NAME, "i45GMx-I"),
-+                },
-+        },
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Aopen i945GTt-VFA",
- 		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
-diff --git a/drivers/hwmon/f75375s.c b/drivers/hwmon/f75375s.c
-index 95cbfb3..e4ab491 100644
---- a/drivers/hwmon/f75375s.c
-+++ b/drivers/hwmon/f75375s.c
-@@ -159,7 +159,7 @@ static inline void f75375_write8(struct i2c_client *client, u8 reg,
- static inline void f75375_write16(struct i2c_client *client, u8 reg,
- 		u16 value)
- {
--	int err = i2c_smbus_write_byte_data(client, reg, (value << 8));
-+	int err = i2c_smbus_write_byte_data(client, reg, (value >> 8));
- 	if (err)
- 		return;
- 	i2c_smbus_write_byte_data(client, reg + 1, (value & 0xFF));
-@@ -311,7 +311,7 @@ static int set_pwm_enable_direct(struct i2c_client *client, int nr, int val)
- 		fanmode  |= (3 << FAN_CTRL_MODE(nr));
- 		break;
- 	case 2: /* AUTOMATIC*/
--		fanmode  |= (2 << FAN_CTRL_MODE(nr));
-+		fanmode  |= (1 << FAN_CTRL_MODE(nr));
- 		break;
- 	case 3: /* fan speed */
- 		break;
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index a3ef66a..fc8a3ff 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -50,6 +50,26 @@ static inline unsigned long hweight_long(unsigned long w)
- }
- 
- /**
-+ * rol64 - rotate a 64-bit value left
-+ * @word: value to rotate
-+ * @shift: bits to roll
-+ */
-+static inline __u64 rol64(__u64 word, unsigned int shift)
-+{
-+	return (word << shift) | (word >> (64 - shift));
-+}
-+
-+/**
-+ * ror64 - rotate a 64-bit value right
-+ * @word: value to rotate
-+ * @shift: bits to roll
-+ */
-+static inline __u64 ror64(__u64 word, unsigned int shift)
-+{
-+	return (word >> shift) | (word << (64 - shift));
-+}
-+
-+/**
-  * rol32 - rotate a 32-bit value left
-  * @word: value to rotate
-  * @shift: bits to roll
-diff --git a/include/linux/proportions.h b/include/linux/proportions.h
-index cf793bb..22653d7 100644
---- a/include/linux/proportions.h
-+++ b/include/linux/proportions.h
-@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descriptor *pd, struct prop_local_percpu *pl)
-  * Limit the time part in order to ensure there are some bits left for the
-  * cycle counter and fraction multiply.
-  */
-+#if BITS_PER_LONG == 32
- #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
-+#else
-+#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
-+#endif
- 
- #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
- #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
-diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
-index 4e249b9..9b60c6f 100644
---- a/include/trace/events/writeback.h
-+++ b/include/trace/events/writeback.h
-@@ -23,7 +23,10 @@ DECLARE_EVENT_CLASS(writeback_work_class,
- 		__field(int, for_background)
- 	),
- 	TP_fast_assign(
--		strncpy(__entry->name, dev_name(bdi->dev), 32);
-+		struct device *dev = bdi->dev;
-+		if (!dev)
-+			dev = default_backing_dev_info.dev;
-+		strncpy(__entry->name, dev_name(dev), 32);
- 		__entry->nr_pages = work->nr_pages;
- 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
- 		__entry->sync_mode = work->sync_mode;
-diff --git a/kernel/relay.c b/kernel/relay.c
-index 859ea5a..2c242fb 100644
---- a/kernel/relay.c
-+++ b/kernel/relay.c
-@@ -164,10 +164,14 @@ depopulate:
-  */
- static struct rchan_buf *relay_create_buf(struct rchan *chan)
- {
--	struct rchan_buf *buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
--	if (!buf)
-+	struct rchan_buf *buf;
-+
-+	if (chan->n_subbufs > UINT_MAX / sizeof(size_t *))
- 		return NULL;
- 
-+	buf = kzalloc(sizeof(struct rchan_buf), GFP_KERNEL);
-+	if (!buf)
-+		return NULL;
- 	buf->padding = kmalloc(chan->n_subbufs * sizeof(size_t *), GFP_KERNEL);
- 	if (!buf->padding)
- 		goto free_buf;
-@@ -574,6 +578,8 @@ struct rchan *relay_open(const char *base_filename,
- 
- 	if (!(subbuf_size && n_subbufs))
- 		return NULL;
-+	if (subbuf_size > UINT_MAX / n_subbufs)
-+		return NULL;
- 
- 	chan = kzalloc(sizeof(struct rchan), GFP_KERNEL);
- 	if (!chan)
-diff --git a/mm/slub.c b/mm/slub.c
-index 35f351f..0d0901e 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1818,6 +1818,11 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
- 	if (unlikely(!node_match(c, node)))
- 		goto another_slab;
- 
-+	/* must check again c->freelist in case of cpu migration or IRQ */
-+	object = c->freelist;
-+	if (object)
-+		goto update_freelist;
-+
- 	stat(s, ALLOC_REFILL);
- 
- load_freelist:
-@@ -1827,6 +1832,7 @@ load_freelist:
- 	if (kmem_cache_debug(s))
- 		goto debug;
- 
-+update_freelist:
- 	c->freelist = get_freepointer(s, object);
- 	page->inuse = page->objects;
- 	page->freelist = NULL;
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 378bd67..4100065 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -610,7 +610,7 @@ static void ieee80211_sta_reorder_release(struct ieee80211_hw *hw,
- 	index = seq_sub(tid_agg_rx->head_seq_num, tid_agg_rx->ssn) %
- 						tid_agg_rx->buf_size;
- 	if (!tid_agg_rx->reorder_buf[index] &&
--	    tid_agg_rx->stored_mpdu_num > 1) {
-+	    tid_agg_rx->stored_mpdu_num) {
- 		/*
- 		 * No buffers ready to be released, but check whether any
- 		 * frames in the reorder buffer have timed out.
-diff --git a/sound/pci/intel8x0.c b/sound/pci/intel8x0.c
-index 6c896db..2e799a9 100644
---- a/sound/pci/intel8x0.c
-+++ b/sound/pci/intel8x0.c
-@@ -2076,6 +2076,12 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
- 	},
- 	{
- 		.subvendor = 0x161f,
-+		.subdevice = 0x202f,
-+		.name = "Gateway M520",
-+		.type = AC97_TUNE_INV_EAPD
-+	},
-+	{
-+		.subvendor = 0x161f,
- 		.subdevice = 0x203a,
- 		.name = "Gateway 4525GZ",		/* AD1981B */
- 		.type = AC97_TUNE_INV_EAPD
-diff --git a/tools/perf/bench/mem-memcpy-x86-64-asm.S b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-index a57b66e..185a96d 100644
---- a/tools/perf/bench/mem-memcpy-x86-64-asm.S
-+++ b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-@@ -1,2 +1,8 @@
- 
- #include "../../../arch/x86/lib/memcpy_64.S"
-+/*
-+ * We need to provide note.GNU-stack section, saying that we want
-+ * NOT executable stack. Otherwise the final linking will assume that
-+ * the ELF stack should not be restricted at all and set it RWX.
-+ */
-+.section .note.GNU-stack,"",@progbits
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 0239eb8..ad2183c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -348,6 +348,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 
- 	data->cpu = data->pid = data->tid = -1;
- 	data->stream_id = data->id = data->time = -1ULL;
-+	data->period = 1;
- 
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
- 		if (!sample_id_all)
+> On Mon, Feb 20, 2012 at 11:11:05AM +0200, Meelis Roos wrote:
+> > Finished bisecting on the other machine too (Sun Fire V100 where strlen 
+> > crashes):
+> > 
+> > 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077 is the first bad commit
+> > commit 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077
+> > Author: Tejun Heo <tj@kernel.org>
+> > Date:   Thu Dec 8 10:22:09 2011 -0800
+> > 
+> >     memblock: Reimplement memblock allocation using reverse free area iterator
+> >     
+> >     Now that all early memory information is in memblock when enabled, we
+> >     can implement reverse free area iterator and use it to implement NUMA
+> >     aware allocator which is then wrapped for simpler variants instead of
+> >     the confusing and inefficient mending of information in separate NUMA
+> >     aware allocator.
+> >     
+> >     Implement for_each_free_mem_range_reverse(), use it to reimplement
+> >     memblock_find_in_range_node() which in turn is used by all allocators.
+> >     
+> >     The visible allocator interface is inconsistent and can probably use
+> >     some cleanup too.
+> >     
+> >     Signed-off-by: Tejun Heo <tj@kernel.org>
+> >     Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >     Cc: Yinghai Lu <yinghai@kernel.org>
+> 
+> Hmmm.... So, different bisection results from two machines?  That's a
+> bit weird.  I *think* this bisection result makes more sense.  Can you
+> please verify the bisection result on e2500 once more?
+
+You were right. The first machine now bisects down to the same commit - 
+I was confused by "0 revisions to test" and did not run the last step 
+whe first bisecting.
+
+-- 
+Meelis Roos (mroos@linux.ee)
