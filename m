@@ -1,330 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2BTU3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:29:39 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62136 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab2BTU3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:29:37 -0500
-Date: Mon, 20 Feb 2012 20:29:30 +0000
-From: James Hogan <james@albanarts.com>
-To: Ravi Kumar V <kumarrav@codeaurora.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Trilok soni <tsoni@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, bryanh@codeaurora.org,
-        Jarod Wilson <jarod@redhat.com>, Anssi Hannula <anssi.hannula@iki.fi>,
-        "Juan J. Garcia de Soria" <skandalfo@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/1] rc: Add support for GPIO based IR Receiver driver.
-Message-ID: <20120220202930.GB32005@balrog>
-References: <1329731272-31476-1-git-send-email-kumarrav@codeaurora.org>
+	id S1753515Ab2BTUgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:36:43 -0500
+Received: from xes-mad.com ([216.165.139.218]:52157 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab2BTUgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 15:36:42 -0500
+Date: Mon, 20 Feb 2012 14:36:27 -0600 (CST)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter@roeck-us.net>, Peter Tyser <ptyser@xes-inc.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3 v4] mfd: Add LPC driver for Intel ICH chipsets
+Message-ID: <f850063d-78c1-4fa7-b7ba-49fb4aa28c5b@zimbra>
+In-Reply-To: <20120218183158.47dfc0b6@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329731272-31476-1-git-send-email-kumarrav@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.52.0.65]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 03:17:52PM +0530, Ravi Kumar V wrote:
-> Adds GPIO based IR Receiver driver. It decodes signals using decoders
-> available in rc framework.
+> > +{
+> > +	cell->id = id->driver_data;
+> > +	cell->platform_data = &lpc_chipset_info[id->driver_data];
+> > +	cell->pdata_size = sizeof(struct lpc_ich_info);
+> > +}
+> > +
+> > +static int __devinit lpc_ich_probe(struct pci_dev *dev,
+> > +				const struct pci_device_id *id)
+> > +{
+> > +	u32 base_addr_cfg;
+> > +	u32 base_addr;
+> > +	u8 reg_save;
+> > +	int ret;
+> > +	bool cell_added = false;
+> > +	bool acpi_conflict = false;
+> > +
+> > +	/* Setup power management base register */
+> > +	pci_read_config_dword(dev, ACPIBASE, &base_addr_cfg);
+> > +	base_addr = base_addr_cfg & 0x0000ff80;
+> > +	if (!base_addr) {
+> > +		dev_err(&dev->dev, "I/O space for ACPI uninitialized\n");
+> > +		goto pm_done;
+> > +	}
+> > +
+> > +	gpio_ich_res[ICH_RES_GPE0].start = base_addr + ACPIBASE_GPE_OFF;
+> > +	gpio_ich_res[ICH_RES_GPE0].end = base_addr + ACPIBASE_GPE_END;
+> > +	ret = acpi_check_resource_conflict(&gpio_ich_res[ICH_RES_GPE0]);
+> > +	if (ret) {
+> > +		/* this isn't necessarily fatal for the GPIO */
+> > +		gpio_ich_res[ICH_RES_GPE0].start = 0;
+> > +		gpio_ich_res[ICH_RES_GPE0].end = 0;
 > 
-> Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
-> ---
->  drivers/media/rc/Kconfig        |    9 ++
->  drivers/media/rc/Makefile       |    1 +
->  drivers/media/rc/gpio-ir-recv.c |  189 +++++++++++++++++++++++++++++++++++++++
->  include/media/gpio-ir-recv.h    |   23 +++++
->  4 files changed, 222 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/media/rc/gpio-ir-recv.c
->  create mode 100644 include/media/gpio-ir-recv.h
+> Is it really sufficient to disable the resource? I see that you handle
+> this case properly in the gpio-ich driver, however there's also the
+> platform subsystem which needs to be considered. The above will cause
+> platform_device_add_resources (called by mfd_add_device) to register
+> an I/O resource at address 0, size 1. I can see it in /proc/ioports:
 > 
-> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
-> index aeb7f43..6f63ded 100644
-> --- a/drivers/media/rc/Kconfig
-> +++ b/drivers/media/rc/Kconfig
-> @@ -256,4 +256,13 @@ config RC_LOOPBACK
->  	   To compile this driver as a module, choose M here: the module will
->  	   be called rc_loopback.
->  
-> +config IR_GPIO_CIR
-> +	tristate "GPIO IR remote control"
-> +	depends on RC_CORE
-> +	---help---
-> +	   Say Y if you want to use GPIO based IR Receiver.
-> +
-> +	   To compile this driver as a module, choose M here: the module will
-> +	   be called gpio-ir-recv.
-> +
->  endif #RC_CORE
-> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
-> index 2156e78..9b3568e 100644
-> --- a/drivers/media/rc/Makefile
-> +++ b/drivers/media/rc/Makefile
-> @@ -25,3 +25,4 @@ obj-$(CONFIG_IR_REDRAT3) += redrat3.o
->  obj-$(CONFIG_IR_STREAMZAP) += streamzap.o
->  obj-$(CONFIG_IR_WINBOND_CIR) += winbond-cir.o
->  obj-$(CONFIG_RC_LOOPBACK) += rc-loopback.o
-> +obj-$(CONFIG_IR_GPIO_CIR) += gpio-ir-recv.o
-> diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
-> new file mode 100644
-> index 0000000..cf6e7f6
-> --- /dev/null
-> +++ b/drivers/media/rc/gpio-ir-recv.c
-> @@ -0,0 +1,189 @@
-> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/gpio.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +#include <media/rc-core.h>
-> +#include <media/gpio-ir-recv.h>
-> +
-> +#define GPIO_IR_DRIVER_NAME	"gpio-rc-recv"
-> +#define GPIO_IR_DEVICE_NAME	"gpio_ir_recv"
-> +
-> +struct gpio_rc_dev {
-> +	struct rc_dev *rcdev;
-> +	struct mutex lock;
-
-I could be completely wrong here, but is this lock necessary since data
-is only read, and it's only used by a single interrupt handler?
-
-> +	unsigned int gpio_nr;
-> +	bool active_low;
-> +	bool can_wakeup;
-> +};
-> +
-> +static irqreturn_t gpio_ir_recv_irq(int irq, void *dev_id)
-> +{
-> +	struct gpio_rc_dev *gpio_dev = dev_id;
-> +	unsigned int gval;
-> +	int rc = 0;
-> +	enum raw_event_type type = IR_SPACE;
-> +
-> +	mutex_lock(&gpio_dev->lock);
-> +	gval = gpio_get_value_cansleep(gpio_dev->gpio_nr);
-> +
-> +	if (gval < 0)
-> +		goto err_get_value;
-> +
-> +	if (gpio_dev->active_low)
-> +		gval = !gval;
-> +
-> +	if (gval == 1)
-> +		type = IR_PULSE;
-> +
-> +	rc = ir_raw_event_store_edge(gpio_dev->rcdev, type);
-> +	if (rc < 0)
-> +		goto err_get_value;
-
-Since ir_raw_event_store_edge just puts the event into a kfifo for the
-ir-raw thread to handle, does this really have to be a threaded IRQ? I'd
-have thought you'd get more accurate time measurements (especially on
-slower/embedded CPUs) if the IRQ is serviced as soon as possible.
-
-If it needs to be threaded so that the gpio read can sleep, perhaps it
-could make use of a hard irq if the gpio can be accessed atomically, and
-fall back to threaded if not.
-
-> +
-> +	ir_raw_event_handle(gpio_dev->rcdev);
-> +
-> +err_get_value:
-> +	mutex_unlock(&gpio_dev->lock);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit gpio_ir_recv_probe(struct platform_device *pdev)
-> +{
-> +	struct gpio_rc_dev *gpio_dev;
-> +	struct rc_dev *rcdev;
-> +	const struct gpio_ir_recv_platform_data *pdata =
-> +					pdev->dev.platform_data;
-> +	int rc;
-> +
-> +	if (!pdata)
-> +		return -EINVAL;
-> +
-> +	if (pdata->gpio_nr < 0)
-> +		return -EINVAL;
-> +
-> +	gpio_dev = kzalloc(sizeof(struct gpio_rc_dev), GFP_KERNEL);
-> +	if (!gpio_dev)
-> +		return -ENOMEM;
-> +
-> +	mutex_init(&gpio_dev->lock);
-> +
-> +	rcdev = rc_allocate_device();
-> +	if (!rcdev) {
-> +		rc = -ENOMEM;
-> +		goto err_allocate_device;
-> +	}
-> +
-> +	rcdev->driver_type = RC_DRIVER_IR_RAW;
-> +	rcdev->allowed_protos = RC_TYPE_NEC;
-
-Is this necessary, since the driver is protocol agnostic?
-
-> +	rcdev->input_name = GPIO_IR_DEVICE_NAME;
-> +	rcdev->input_id.bustype = BUS_HOST;
-> +	rcdev->driver_name = GPIO_IR_DRIVER_NAME;
-> +	rcdev->map_name = RC_MAP_EMPTY;
-> +
-> +	gpio_dev->rcdev = rcdev;
-> +	gpio_dev->gpio_nr = pdata->gpio_nr;
-> +	gpio_dev->active_low = pdata->active_low;
-> +	gpio_dev->can_wakeup = pdata->can_wakeup;
-> +
-> +
-> +	rc = gpio_request(pdata->gpio_nr, "gpio-ir-recv");
-> +	if (rc < 0)
-> +		goto err_gpio_request;
-> +	rc  = gpio_direction_input(pdata->gpio_nr);
-> +	if (rc < 0)
-> +		goto err_gpio_direction_input;
-> +
-> +	rc = rc_register_device(rcdev);
-> +	if (rc < 0) {
-> +		dev_err(&pdev->dev, "failed to register rc device\n");
-> +		goto err_register_rc_device;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, gpio_dev);
-> +
-> +	rc = request_threaded_irq(gpio_to_irq(pdata->gpio_nr),
-> +			NULL, gpio_ir_recv_irq,
-> +			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-> +			"gpio-ir-recv-irq", gpio_dev);
-> +	if (rc < 0)
-> +		goto err_request_irq;
-> +
-> +	if (pdata->can_wakeup == true) {
-> +		rc = enable_irq_wake(gpio_to_irq(pdata->gpio_nr));
-> +		if (rc < 0)
-> +			goto err_enable_irq_wake;
-
-would this be better done in a suspend/resume callback, along with
-device_may_wakeup and device_set_wakeup_capable/device_init_wakeup so
-that it can be enabled and disabled with sysfs?
-
-Cheers
-James
-
-> +	}
-> +
-> +	return 0;
-> +
-> +err_enable_irq_wake:
-> +	free_irq(gpio_to_irq(gpio_dev->gpio_nr), gpio_dev);
-> +err_request_irq:
-> +	platform_set_drvdata(pdev, NULL);
-> +	rc_unregister_device(rcdev);
-> +err_register_rc_device:
-> +err_gpio_direction_input:
-> +	gpio_free(pdata->gpio_nr);
-> +err_gpio_request:
-> +	rc_free_device(rcdev);
-> +	rcdev = NULL;
-> +err_allocate_device:
-> +	mutex_destroy(&gpio_dev->lock);
-> +	kfree(gpio_dev);
-> +	return rc;
-> +}
-> +
-> +static int __devexit gpio_ir_recv_remove(struct platform_device *pdev)
-> +{
-> +	struct gpio_rc_dev *gpio_dev = platform_get_drvdata(pdev);
-> +
-> +	disable_irq_wake(gpio_to_irq(gpio_dev->gpio_nr));
-> +	free_irq(gpio_to_irq(gpio_dev->gpio_nr), gpio_dev);
-> +	platform_set_drvdata(pdev, NULL);
-> +	rc_unregister_device(gpio_dev->rcdev);
-> +	gpio_free(gpio_dev->gpio_nr);
-> +	rc_free_device(gpio_dev->rcdev);
-> +	mutex_destroy(&gpio_dev->lock);
-> +	kfree(gpio_dev);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver gpio_ir_recv_driver = {
-> +	.probe  = gpio_ir_recv_probe,
-> +	.remove = __devexit_p(gpio_ir_recv_remove),
-> +	.driver = {
-> +		.name   = GPIO_IR_DRIVER_NAME,
-> +		.owner  = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init gpio_ir_recv_init(void)
-> +{
-> +	return platform_driver_register(&gpio_ir_recv_driver);
-> +}
-> +module_init(gpio_ir_recv_init);
-> +
-> +static void __exit gpio_ir_recv_exit(void)
-> +{
-> +	platform_driver_unregister(&gpio_ir_recv_driver);
-> +}
-> +module_exit(gpio_ir_recv_exit);
-> +
-> +MODULE_DESCRIPTION("GPIO IR Receiver driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/media/gpio-ir-recv.h b/include/media/gpio-ir-recv.h
-> new file mode 100644
-> index 0000000..3eab611
-> --- /dev/null
-> +++ b/include/media/gpio-ir-recv.h
-> @@ -0,0 +1,23 @@
-> +/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef __GPIO_IR_RECV_H__
-> +#define __GPIO_IR_RECV_H__
-> +
-> +struct gpio_ir_recv_platform_data {
-> +	unsigned int gpio_nr;
-> +	bool active_low;
-> +	bool can_wakeup;
-> +};
-> +
-> +#endif /* __GPIO_IR_RECV_H__ */
-> +
-> -- 
-> Sent by a consultant of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 0000-0cf7 : PCI Bus 0000:00
+>   0000-001f : dma1
+>     0000-0000 : gpio_ich.32	<-- HERE
+>   0020-0021 : pic1
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> This is not clean and could cause a conflict on its own. So I don't
+> think this is the right approach. See below for a possible solution.
+
+I will work on a solution for this.
+
+> > +		acpi_conflict = true;
+> 
+> Don't you want to jump to pm_done here? There's no point in enabling
+> the LPC ACPI space if you are never going to access it. Not that it
+> should really make a difference in practice, I presume that if ACPI
+> is using the resource, the LPC ACPI space is already enabled...
+
+I think this is another case where the code structure is based on the
+complete 3-patch set. In this patch it would makes sense to have a jump
+here, but after the 3rd patch is applied it would be removed anyway
+because I consider the GPE region to be not strictly mandatory (which I
+get into more below) and the watchdog timer regions in ACPI space need
+to be tested before jumping.
+
+> > +	}
+> > +
+> > +	/* Enable LPC ACPI space */
+> > +	pci_read_config_byte(dev, ACPICTRL, &reg_save);
+> > +	pci_write_config_byte(dev, ACPICTRL, reg_save | 0x10);
+> > +	lpc_ich_acpi_save = reg_save;
+> > +
+> > +pm_done:
+> > +	/* Setup GPIO base register */
+> > +	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
+> > +	base_addr = base_addr_cfg & 0x0000ff80;
+> > +	if (!base_addr) {
+> > +		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
+> > +		/* GPIO in power-management space may still be available */
+> > +		goto gpio_reg;
+> > +	}
+> > +
+> > +	gpio_ich_res[ICH_RES_GPIO].start = base_addr;
+> > +	gpio_ich_res[ICH_RES_GPIO].end = base_addr + GPIOBASE_IO_SIZE -
+> > 1;
+> > +	ret = acpi_check_resource_conflict(&gpio_ich_res[ICH_RES_GPIO]);
+> > +	if (ret) {
+> > +		/* this isn't necessarily fatal for the GPIO */
+> > +		gpio_ich_res[ICH_RES_GPIO].start = 0;
+> > +		gpio_ich_res[ICH_RES_GPIO].end = 0;
+> 
+> I don't quite get how this can be non-fatal, given that the gpio-ich
+> driver's probe function will return -ENODEV in this case. So if this
+> resource is mandatory, let's make it exactly that.
+
+The necessity for the ICH_RES_GPIO resource to exist is an issue I
+thought better left to the gpio-ich driver. The way that driver is
+currently written it is mandatory, but it doesn't *have* to be written
+that way. For chipsets that have GPE0 and GPIO space, only one needs
+to be present to have some usable GPIO.
+
+> This means that resource 0 is mandatory and resource 1 is optional.
+> All you have to do then is:
+> * Don't register the mfd device at all if GPIO resource is
+> unavailable.
+> * If ACPI resource is unavailable, set num_resources to 1.
+> 
+> That should work, and this solves the ghost resource problem I
+> mentioned earlier.
+>
+> Yet a completely different approach would be to delegate the ACPI
+> resource conflict checking to the gpio-ich subdriver. I suspect we
+> may end up doing that anyway, as requesting the whole I/O range when
+> we only need subsets thereof is likely to cause ACPI resource
+> conflicts on too many systems for the driver to be useful in practice.
+> This is a bigger change though and I would understand if you are
+> reluctant to do it as this point of the review cycle. This can be
+> changed later and I volunteer to take care of it (I need it for my
+> Asus Z8NA-D6 board.)
+
+You mean creating resources for individual bytes within 32-bit registers?
+Otherwise, the only optimization (fix) I see is that ACPIBASE_GPE0_BASE
+should be 0x28, not 0x20 and gpe0_sts_ofs in gpio-ich should be removed.
+Currently, that portion of gpio-ich appears to be broken.
+
+The whole issue of anything related to boot firmware having dominion
+over hardware after booting to an OS is very frustrating.
+
+> > +		acpi_conflict = true;
+> > +		goto gpio_reg;
+> > +	}
+> > +
+> > +	/* Enable LPC GPIO space */
+> > +	pci_read_config_byte(dev, GPIOCTRL, &reg_save);
+> > +	pci_write_config_byte(dev, GPIOCTRL, reg_save | 0x10);
+> > +	lpc_ich_gpio_save = reg_save;
+> > +
+> > +gpio_reg:
+> 
+> Shouldn't this label be named gpio_done for consistency? Probably a
+> moot point given my remark above anyway.
+
+Again, the label names come from lpc_ich after all three patches have
+been applied. In that case one label jumps to code immediately following
+WDT cell registration, "done with registration" and the other jumps
+immediately before GPIO cell registration, "do registration". If I make
+ICH_RES_GPIO mandatory, like you suggest, these labels could both follow
+cell registration and be named consistently.
+ 
+> > +	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_GPIO], id);
+> > +	ret = mfd_add_devices(&dev->dev, 0, &lpc_ich_cells[LPC_GPIO],
+> > +				1, NULL, 0);
+> > +	if (!ret)
+> > +		cell_added = true;
+> > +
+> > +	if (acpi_conflict)
+> > +		dev_info(&dev->dev, "ACPI resource conflicts found; "
+> > +				"consider using acpi_enforce_resources=lax?\n");
+> 
+> I'm not sure if it really makes sense to report this. ACPI resource
+> conflicts are already reported quite loudly by the acpi core. And
+> passing acpi_enforce_resources=lax blindly isn't quite recommended,
+> so I'm not sure if we really want to mention it here, it might do more
+> harm than help.
+
+So the question mark doesn't imply strongly enough that it's not an action
+that should definitely be taken. Would you prefer a warning summarizing which
+drivers are affected by the detected resource conflicts or no additional warning
+at all?
+
+-Aaron S.
