@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab2BTA1h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:27:37 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56753 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab2BTA1g convert rfc822-to-8bit (ORCPT
+	id S1752374Ab2BTAcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:32:50 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34141 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab2BTAct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:27:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of john.williams@petalogix.com designates 10.220.157.75 as permitted sender) smtp.mail=john.williams@petalogix.com
+	Sun, 19 Feb 2012 19:32:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.216.225 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F4194AB.40403@gmail.com>
+Date: Mon, 20 Feb 2012 11:32:43 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
 MIME-Version: 1.0
-In-Reply-To: <1329664319-3128-2-git-send-email-geert@linux-m68k.org>
-References: <1329664319-3128-1-git-send-email-geert@linux-m68k.org> <1329664319-3128-2-git-send-email-geert@linux-m68k.org>
-From: John Williams <john.williams@petalogix.com>
-Date: Mon, 20 Feb 2012 10:27:14 +1000
-Message-ID: <CACPZLaWnqxN_pWfonakqQ5i2W+prKFi6RVErebbO_FB6tw0Pew@mail.gmail.com>
-Subject: Re: [microblaze-linux] [PATCH 2/5] microblaze: s/#if[!]
- CONFIG/#if[n]def CONFIG/
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Kosina <trivial@kernel.org>, microblaze-uclinux@itee.uq.edu.au,
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] ARM: at91/rtc-at91sam9: each SoC can select the
+ RTT device to use
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <9d1120bd8f1cf0615ff5044745b00fd3988397a7.1329500622.git.nicolas.ferre@atmel.com>
+In-Reply-To: <9d1120bd8f1cf0615ff5044745b00fd3988397a7.1329500622.git.nicolas.ferre@atmel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 18/02/12 04:50, Nicolas Ferre wrote:
 
-NACK - please see comments below
-
-On Mon, Feb 20, 2012 at 1:11 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: microblaze-uclinux@itee.uq.edu.au
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> For the RTT as RTC driver rtc-at91sam9, the platform_device structure
+> is filled during SoC initialization. This will allow to convert this
+> RTC driver as a standard platform driver.
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->  arch/microblaze/include/asm/exceptions.h |    2 +-
->  arch/microblaze/include/asm/irqflags.h   |    2 +-
->  arch/microblaze/kernel/entry-nommu.S     |    2 +-
->  arch/microblaze/kernel/entry.S           |    4 ++--
->  arch/microblaze/kernel/setup.c           |    4 ++--
->  5 files changed, 7 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/microblaze/include/asm/exceptions.h b/arch/microblaze/include/asm/exceptions.h
-> index e6a8dde..48c197b 100644
-> --- a/arch/microblaze/include/asm/exceptions.h
-> +++ b/arch/microblaze/include/asm/exceptions.h
-> @@ -25,7 +25,7 @@
->  /* Define MSR enable bit for HW exceptions */
->  #define HWEX_MSR_BIT (1 << 8)
->
-> -#if CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR
-> +#ifdef CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR
+>  arch/arm/mach-at91/at91sam9260_devices.c |   11 +++++
+>  arch/arm/mach-at91/at91sam9261_devices.c |   10 +++++
+>  arch/arm/mach-at91/at91sam9263_devices.c |   25 ++++++++++++
+>  arch/arm/mach-at91/at91sam9g45_devices.c |   10 +++++
+>  arch/arm/mach-at91/at91sam9rl_devices.c  |   10 +++++
+>  drivers/rtc/rtc-at91sam9.c               |   61 ++++-------------------------
+>  6 files changed, 75 insertions(+), 52 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+> index b93a337..2071017 100644
+> --- a/arch/arm/mach-at91/at91sam9260_devices.c
+> +++ b/arch/arm/mach-at91/at91sam9260_devices.c
+> @@ -728,8 +728,19 @@ static struct platform_device at91sam9260_rtt_device = {
+>  	.num_resources	= ARRAY_SIZE(rtt_resources),
+>  };
+>  
+> +
+> +#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+> +static void __init at91_add_device_rtt_rtc(void)
+> +{
+> +	at91sam9260_rtt_device.name = "rtc-at91sam9";
+> +}
 
-We actually care about the value of this one - it is always defined,
-but is either 0 or 1 depending upon the presence or absence of this
-feature in the target CPU.
 
-These CPU feature-related configs are defined in
-arch/microblaze/platform/generic/Kconfig.auto
+Nitpickish: This function doesn't _add_ anything. It would probably be
+better called at91_init_device_rtt_rtc. Same goes for the other "add"
+functions in this patch.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=arch/microblaze/platform/generic/Kconfig.auto;h=25a6f019e94d5d9a1c884dfef9e906435685f980;hb=HEAD
+> +#else
+> +static void __init at91_add_device_rtt_rtc(void) {}
+> +#endif
+> +
+>  static void __init at91_add_device_rtt(void)
+>  {
+> +	at91_add_device_rtt_rtc();
+>  	platform_device_register(&at91sam9260_rtt_device);
+>  }
 
-not as bools, but as integers.  Kconfig.auto is actually a placeholder
-for a design file which is emitted from the MicroBlaze CPU / SoC
-design tool flow and copied into place by the user.
 
-In my view these should remain integers rather than booleans for a
-couple of reasons:
- * breakage for all current users
- * MicroBlaze is an evolving architecture, there are other cases of
-seemingly boolean HW parametesr growing to become integers, such as
-the USE_FPU option.  Once upon a time it was yes/no, now there's 2
-different flavours of FPU as well as 'none'.  MSR is just as likely to
-change in future.
+Does this work by setting the rtt device name iff
+CONFIG_RTC_DRV_AT91SAM9 is set? If so, it seems a bit ugly. Why bother
+doing the platform_device_register at all if you know it isn't going to
+do anything? Shouldn't the at91sam9260_rrt_device struct declaration and
+the platform_device_register all be conditional on CONFIG_RTC_DRV_AT91SAM9?
 
-> -#if CONFIG_MANUAL_RESET_VECTOR
-> +#ifdef CONFIG_MANUAL_RESET_VECTOR
+~Ryan
 
-This guy is also always defined (Kconfig 'hex' type), we just need to
-do something different for a non-zero value.
 
-Regards,
-
-John
