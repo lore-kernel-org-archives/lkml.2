@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab2BTRW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:22:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43967 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab2BTRW2 (ORCPT
+	id S1752044Ab2BTRWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:22:40 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43752 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2BTRWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:22:28 -0500
-Date: Mon, 20 Feb 2012 17:21:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-arm-kernel@lists.infradead.org, Jason Baron <jbaron@redhat.com>,
+	Mon, 20 Feb 2012 12:22:39 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.156.129 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v2 00/22] mm: lru_lock splitting
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 5/6] jump label: detect %c support for ARM
-Message-ID: <20120220172158.GI26840@n2100.arm.linux.org.uk>
-References: <1327757725-10114-1-git-send-email-rabin@rab.in> <1327757725-10114-6-git-send-email-rabin@rab.in>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 20 Feb 2012 21:22:35 +0400
+Message-ID: <20120220171138.22196.65847.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1327757725-10114-6-git-send-email-rabin@rab.in>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 28, 2012 at 07:05:24PM +0530, Rabin Vincent wrote:
-> Some versions of ARM GCC which do support asm goto, have problems
-> handling the the %c specifier.  Since we need the %c to support jump
-> labels on ARM, detect that too in the asm goto detection script to avoid
-> build errors with these versions.
+There complete patch-set with my lru_lock splitting
+plus all related preparations and cleanups rebased to next-20120210
 
-I'm not sure how this detects properly working %c support.  %c support
-has been rather flakey on ARM for some time, I'm not sure which version
-of gcc was fixed for it.
+git: https://github.com/koct9i/linux/commits/lruvec
 
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
-> 
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  scripts/gcc-goto.sh |   18 +++++++++++++++++-
->  1 files changed, 17 insertions(+), 1 deletions(-)
-> 
-> diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
-> index 98cffcb..9b744de 100644
-> --- a/scripts/gcc-goto.sh
-> +++ b/scripts/gcc-goto.sh
-> @@ -2,4 +2,20 @@
->  # Test for gcc 'asm goto' support
->  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
->  
-> -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> +int main(void)
-> +{
-> +#ifdef __arm__
-> +	/*
-> +	 * Not related to asm goto, but used by jump label
-> +	 * and broken on some ARM GCC versions (see GCC Bug 48637).
-> +	 */
-> +	static struct { int dummy; int state; } tp;
-> +	asm ("@ %c0" :: "i" (&tp.state));
+main changes:
+* rebase
+* sed -e 's/book/lruvec/g'
+* fixed locking
+* some cleaning and reordering
 
-While this detects the presence of the ICE, previous compilers included
-the '#' before the constant, which leads to problems.  I think a better
-check would be:
-	asm(".long %c0" :: "i" (&tp.state));
+---
 
-to make sure that it spits out something purely numeric, rather than
-something prefixed with a '#'.
+Konstantin Khlebnikov (22):
+      memcg: rework inactive_ratio logic
+      memcg: fix page_referencies cgroup filter on global reclaim
+      memcg: use vm_swappiness from current memcg
+      mm: drain percpu lru add/rotate page-vectors on cpu hot-unplug
+      mm: replace per-cpu lru-add page-vectors with page-lists
+      mm: deprecate pagevec lru-add functions
+      mm: rename lruvec->lists into lruvec->pages_lru
+      mm: add lruvec->pages_count
+      mm: link lruvec with zone and node
+      mm: unify inactive_list_is_low()
+      mm: add lruvec->reclaim_stat
+      mm: kill struct mem_cgroup_zone
+      mm: move page-to-lruvec translation upper
+      mm: push lruvec into update_page_reclaim_stat()
+      mm: push lruvecs from pagevec_lru_move_fn() to iterator
+      mm: introduce lruvec locking primitives
+      mm: handle lruvec relocks on lumpy reclaim
+      mm: handle lruvec relocks in compaction
+      mm: handle lruvec relock in memory controller
+      mm: optimize putback for 0-order reclaim
+      mm: free lruvec in memcgroup via rcu
+      mm: split zone->lru_lock
+
+
+ fs/mpage.c                 |   21 +-
+ fs/nfs/dir.c               |   10 -
+ include/linux/memcontrol.h |   62 -------
+ include/linux/mm.h         |   37 ++++
+ include/linux/mm_inline.h  |   19 +-
+ include/linux/mmzone.h     |   19 +-
+ include/linux/pagevec.h    |    4 
+ include/linux/swap.h       |    5 -
+ mm/compaction.c            |   30 ++-
+ mm/huge_memory.c           |   10 +
+ mm/internal.h              |  226 +++++++++++++++++++++++++
+ mm/memcontrol.c            |  320 ++++++++++++++---------------------
+ mm/page_alloc.c            |   19 +-
+ mm/readahead.c             |   15 +-
+ mm/swap.c                  |  256 ++++++++++++++++------------
+ mm/vmscan.c                |  402 +++++++++++++++++++++-----------------------
+ 16 files changed, 821 insertions(+), 634 deletions(-)
+
+-- 
+Signature
