@@ -1,131 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab2BTLYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:24:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34979 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab2BTLWV convert rfc822-to-8bit (ORCPT
+	id S1753480Ab2BTLYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:24:01 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45726 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab2BTLWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Feb 2012 06:22:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of djkurtz@google.com designates 10.50.181.228 as permitted sender) smtp.mail=djkurtz@google.com; dkim=pass header.i=djkurtz@google.com
-MIME-Version: 1.0
-In-Reply-To: <20120215104837.GB4095@phenom.ffwll.local>
-References: <1328817797-4026-1-git-send-email-bleung@chromium.org> <20120215104837.GB4095@phenom.ffwll.local>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Mon, 20 Feb 2012 19:22:00 +0800
-X-Google-Sender-Auth: QIPgdkbd0ggtiVvjQEhXmAzZF9M
-Message-ID: <CAGS+omD8e9dBen_kQkoY+vc4yP6HCAeoNRYhzK+OPw+99HDoFg@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: Fix single msg gmbus_xfers writes
-To: Benson Leung <bleung@chromium.org>, keithp@keithp.com, airlied@linux.ie,
-        chris@chris-wilson.co.uk, djkurtz@chromium.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V1 7/9] hugetlbfs: Add truncate region functions
+Date: Mon, 20 Feb 2012 16:51:40 +0530
+Message-Id: <1329736902-26870-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12022001-5140-0000-0000-000000C591A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 15, 2012 6:48 PM, "Daniel Vetter" <daniel@ffwll.ch> wrote:
->
-> On Thu, Feb 09, 2012 at 12:03:17PM -0800, Benson Leung wrote:
-> > gmbus_xfer with a single message (particularly a single message write) would
-> > set Bus Cycle Select to 100b, the Gen Stop cycle, instead of 101b,
-> > No Index, Stop cycle. This would not start single message i2c transactions.
-> >
-> > Also, gmbus_xfer done: will disable the interface without checking if
-> > it is idle. In the case of writes, there will be no wait on status or delay
-> > to ensure the write starts and completes before the interface is turned off.
-> >
-> > Fixed the former issue by using the same cycle selection as used in the
-> > I2C_M_RD for the write case.
-> > GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0)
-> > Fixed the latter by waiting on GMBUS_ACTIVE to deassert before disable.
-> >
-> > Signed-off-by: Benson Leung <bleung@chromium.org>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+This will later be used by the task migration patches.
 
->
-> Can you clarify the commit message a bit and say that the first hunk is
-> just for optics and the issue is only with the write path (because the
-> read path is correct already). Silly me is just to easily confused ;-)
->
-> Btw, I've reworked the gmbus -> gpio bit-banging fallback code a bit and
-> if that passes review and all I'll reenable gmbus by default again. See
->
-> http://cgit.freedesktop.org/~danvet/drm/log/?h=gmbus
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/hugetlbfs/hugetlb_cgroup.c  |   84 ++++++++++++++++++++++++++++++++++++++++
+ fs/hugetlbfs/region.c          |   58 +++++++++++++++++++++++++++
+ include/linux/hugetlb_cgroup.h |   12 +++++-
+ 3 files changed, 153 insertions(+), 1 deletions(-)
 
-If the write case is fixed by Benson's patch, is there any known use
-case that still requires i2c bit banging on these pins?  It would be a
-nice cleanup to remove it completely.
+diff --git a/fs/hugetlbfs/hugetlb_cgroup.c b/fs/hugetlbfs/hugetlb_cgroup.c
+index a4c6786..b8b319b 100644
+--- a/fs/hugetlbfs/hugetlb_cgroup.c
++++ b/fs/hugetlbfs/hugetlb_cgroup.c
+@@ -323,6 +323,90 @@ long hugetlb_truncate_cgroup(struct hstate *h,
+ 	return chg;
+ }
+ 
++long hugetlb_truncate_cgroup_range(struct hstate *h,
++				   struct list_head *head, long from, long to)
++{
++	long chg = 0, csize;
++	int idx = h - hstates;
++	struct hugetlb_cgroup *h_cg;
++	struct file_region *rg, *trg;
++
++	/* Locate the region we are either in or before. */
++	list_for_each_entry(rg, head, link)
++		if (from <= rg->to)
++			break;
++	if (&rg->link == head)
++		return 0;
++
++	/* If we are in the middle of a region then adjust it. */
++	if (from > rg->from) {
++		if (to < rg->to) {
++			struct file_region *nrg;
++			/* rg->from from to rg->to */
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			/*
++			 * If we fail to allocate we return the
++			 * with the 0 charge . Later a complete
++			 * truncate will reclaim the left over space
++			 */
++			if (!nrg)
++				return 0;
++			nrg->from = to;
++			nrg->to = rg->to;
++			nrg->data = rg->data;
++			INIT_LIST_HEAD(&nrg->link);
++			list_add(&nrg->link, &rg->link);
++
++			/* Adjust the rg entry */
++			rg->to = from;
++			chg = to - from;
++			h_cg = (struct hugetlb_cgroup *)rg->data;
++			if (!hugetlb_cgroup_is_root(h_cg)) {
++				csize = chg * huge_page_size(h);
++				res_counter_uncharge(&h_cg->memhuge[idx],
++						     csize);
++			}
++			return chg;
++		}
++		chg = rg->to - from;
++		rg->to = from;
++		h_cg = (struct hugetlb_cgroup *)rg->data;
++		if (!hugetlb_cgroup_is_root(h_cg)) {
++			csize = chg * huge_page_size(h);
++			res_counter_uncharge(&h_cg->memhuge[idx], csize);
++		}
++		rg = list_entry(rg->link.next, typeof(*rg), link);
++	}
++	/* Drop any remaining regions till to */
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (rg->from >= to)
++			break;
++		if (&rg->link == head)
++			break;
++		if (rg->to > to) {
++			/* rg->from to rg->to */
++			chg += to - rg->from;
++			rg->from = to;
++			h_cg = (struct hugetlb_cgroup *)rg->data;
++			if (!hugetlb_cgroup_is_root(h_cg)) {
++				csize = (to - rg->from) * huge_page_size(h);
++				res_counter_uncharge(&h_cg->memhuge[idx],
++						     csize);
++			}
++			return chg;
++		}
++		chg += rg->to - rg->from;
++		h_cg = (struct hugetlb_cgroup *)rg->data;
++		if (!hugetlb_cgroup_is_root(h_cg)) {
++			csize = (rg->to - rg->from) * huge_page_size(h);
++			res_counter_uncharge(&h_cg->memhuge[idx], csize);
++		}
++		list_del(&rg->link);
++		kfree(rg);
++	}
++	return chg;
++}
++
+ int hugetlb_priv_page_charge(struct resv_map *map, struct hstate *h, long chg)
+ {
+ 	long csize;
+diff --git a/fs/hugetlbfs/region.c b/fs/hugetlbfs/region.c
+index d2445fb..8ac63b0 100644
+--- a/fs/hugetlbfs/region.c
++++ b/fs/hugetlbfs/region.c
+@@ -200,3 +200,61 @@ long region_count(struct list_head *head, long f, long t)
+ 
+ 	return chg;
+ }
++
++long region_truncate_range(struct list_head *head, long from, long to)
++{
++	long chg = 0;
++	struct file_region *rg, *trg;
++
++	/* Locate the region we are either in or before. */
++	list_for_each_entry(rg, head, link)
++		if (from <= rg->to)
++			break;
++	if (&rg->link == head)
++		return 0;
++
++	/* If we are in the middle of a region then adjust it. */
++	if (from > rg->from) {
++		if (to < rg->to) {
++			struct file_region *nrg;
++			/* rf->from f t rg->to */
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			/*
++			 * If we fail to allocate we return the
++			 * with the 0 charge . Later a complete
++			 * truncate will reclaim the left over space
++			 */
++			if (!nrg)
++				return 0;
++			nrg->from = to;
++			nrg->to = rg->to;
++			nrg->data = rg->data;
++			INIT_LIST_HEAD(&nrg->link);
++			list_add(&nrg->link, &rg->link);
++
++			/* Adjust the rg entry */
++			rg->to = from;
++			chg = to - from;
++			return chg;
++		}
++		chg = rg->to - from;
++		rg->to = from;
++		rg = list_entry(rg->link.next, typeof(*rg), link);
++	}
++	/* Drop any remaining regions till to */
++	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
++		if (rg->from >= to)
++			break;
++		if (&rg->link == head)
++			break;
++		if (rg->to > to) {
++			chg += to - rg->from;
++			rg->from = to;
++			return chg;
++		}
++		chg += rg->to - rg->from;
++		list_del(&rg->link);
++		kfree(rg);
++	}
++	return chg;
++}
+diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
+index eaad86b..68c1d61 100644
+--- a/include/linux/hugetlb_cgroup.h
++++ b/include/linux/hugetlb_cgroup.h
+@@ -27,7 +27,7 @@ extern void region_add(struct list_head *head, long f, long t,
+ 		       unsigned long data);
+ extern long region_truncate(struct list_head *head, long end);
+ extern long region_count(struct list_head *head, long f, long t);
+-
++extern long region_truncate_range(struct list_head *head, long from, long end);
+ #ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
+ extern u64 hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft);
+ extern int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
+@@ -40,6 +40,9 @@ extern void hugetlb_page_uncharge(struct list_head *head,
+ extern void hugetlb_commit_page_charge(struct list_head *head, long f, long t);
+ extern long hugetlb_truncate_cgroup(struct hstate *h,
+ 				    struct list_head *head, long from);
++extern long  hugetlb_truncate_cgroup_range(struct hstate *h,
++					   struct list_head *head,
++					   long from, long end);
+ extern int hugetlb_priv_page_charge(struct resv_map *map,
+ 				    struct hstate *h, long chg);
+ extern void hugetlb_priv_page_uncharge(struct resv_map *map,
+@@ -69,6 +72,13 @@ static inline long hugetlb_truncate_cgroup(struct hstate *h,
+ 	return region_truncate(head, from);
+ }
+ 
++static inline long  hugetlb_truncate_cgroup_range(struct hstate *h,
++						  struct list_head *head,
++						  long from, long end)
++{
++	return region_truncate_range(head, from, end);
++}
++
+ static inline int hugetlb_priv_page_charge(struct resv_map *map,
+ 					   struct hstate *h, long chg)
+ {
+-- 
+1.7.9
 
-Also, I can think of at least two further potential performance
-improvements that I was wondering if anybody has yet pursued:
-  (1) Enabling the i915's gmbus interrupt.  This would eliminate the
-need for the (relatively slow) wait_for polling loop.
-  (2) Taking advantage of the i915's "INDEX" cycles to combine writing
-a (1 or 2 byte) address & reading back an array of bytes into a single
-transaction.
-
-Best Regards,
--Daniel
-
->
-> Yours, Daniel
->
-> > ---
-> >  drivers/gpu/drm/i915/intel_i2c.c |   13 +++++++++----
-> >  1 files changed, 9 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-> > index d30cccc..64bb9cd 100644
-> > --- a/drivers/gpu/drm/i915/intel_i2c.c
-> > +++ b/drivers/gpu/drm/i915/intel_i2c.c
-> > @@ -249,7 +249,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
-> >
-> >               if (msgs[i].flags & I2C_M_RD) {
-> >                       I915_WRITE(GMBUS1 + reg_offset,
-> > -                                GMBUS_CYCLE_WAIT | (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
-> > +                                GMBUS_CYCLE_WAIT |
-> > +                                (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
-> >                                  (len << GMBUS_BYTE_COUNT_SHIFT) |
-> >                                  (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
-> >                                  GMBUS_SLAVE_READ | GMBUS_SW_RDY);
-> > @@ -278,7 +279,8 @@ gmbus_xfer(struct i2c_adapter *adapter,
-> >
-> >                       I915_WRITE(GMBUS3 + reg_offset, val);
-> >                       I915_WRITE(GMBUS1 + reg_offset,
-> > -                                (i + 1 == num ? GMBUS_CYCLE_STOP : GMBUS_CYCLE_WAIT) |
-> > +                                GMBUS_CYCLE_WAIT |
-> > +                                (i + 1 == num ? GMBUS_CYCLE_STOP : 0) |
-> >                                  (msgs[i].len << GMBUS_BYTE_COUNT_SHIFT) |
-> >                                  (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
-> >                                  GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
-> > @@ -317,9 +319,12 @@ clear_err:
-> >       I915_WRITE(GMBUS1 + reg_offset, 0);
-> >
-> >  done:
-> > -     /* Mark the GMBUS interface as disabled. We will re-enable it at the
-> > -      * start of the next xfer, till then let it sleep.
-> > +     /* Mark the GMBUS interface as disabled after waiting for idle.
-> > +      * We will re-enable it at the start of the next xfer,
-> > +      * till then let it sleep.
-> >        */
-> > +     if (wait_for((I915_READ(GMBUS2 + reg_offset) & GMBUS_ACTIVE) == 0, 10))
-> > +             DRM_INFO("GMBUS timed out waiting for idle\n");
-> >       I915_WRITE(GMBUS0 + reg_offset, 0);
-> >       return i;
-> >
-> > --
-> > 1.7.1
-> >
-> > _______________________________________________
-> > dri-devel mailing list
-> > dri-devel@lists.freedesktop.org
-> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
-> --
-> Daniel Vetter
-> Mail: daniel@ffwll.ch
-> Mobile: +41 (0)79 365 57 48
