@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2BTGrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 01:47:05 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19384 "EHLO
+	id S1752639Ab2BTGrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 01:47:03 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19378 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab2BTGqy (ORCPT
+	with ESMTP id S1752461Ab2BTGqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 01:46:54 -0500
+	Mon, 20 Feb 2012 01:46:52 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 19 Feb 2012 22:46:11 -0800
+	by hqnvupgp05.nvidia.com on Sun, 19 Feb 2012 22:46:11 -0800
 From: Stephen Warren <swarren@nvidia.com>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: B29396@freescale.com, s.hauer@pengutronix.de, dongas86@gmail.com,
         shawn.guo@linaro.org, thomas.abraham@linaro.org, tony@atomide.com,
         linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 07/20] pinctrl: core.c/h cleanups
-Date: Sun, 19 Feb 2012 23:45:47 -0700
-Message-Id: <1329720360-23227-8-git-send-email-swarren@nvidia.com>
+Subject: [PATCH 06/20] pinctrl: Re-order pinconf.[ch] to match each-other
+Date: Sun, 19 Feb 2012 23:45:46 -0700
+Message-Id: <1329720360-23227-7-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
 References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
@@ -25,80 +25,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Make all functions internal to core.c static. Remove any of these from
-  core.h.
-* Add any missing EXPORT_SYMBOL_GPL().
+Modify the two files so that the order of function prototypes in the
+header matches the order of implementations in the .c file.
+
+Don't prototype a couple of internal functions.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/pinctrl/core.c |   12 +++++++-----
- drivers/pinctrl/core.h |    3 ---
- 2 files changed, 7 insertions(+), 8 deletions(-)
+ drivers/pinctrl/pinconf.c |   31 +++++++++++++++----------------
+ drivers/pinctrl/pinconf.h |    5 +----
+ 2 files changed, 16 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 50bcc51..b6e3c35 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -293,9 +293,9 @@ pinctrl_match_gpio_range(struct pinctrl_dev *pctldev, unsigned gpio)
-  * the GPIO subsystem, return the device and the matching GPIO range. Returns
-  * negative if the GPIO range could not be found in any device.
-  */
--int pinctrl_get_device_gpio_range(unsigned gpio,
--				struct pinctrl_dev **outdev,
--				struct pinctrl_gpio_range **outrange)
-+static int pinctrl_get_device_gpio_range(unsigned gpio,
-+					 struct pinctrl_dev **outdev,
-+					 struct pinctrl_gpio_range **outrange)
- {
- 	struct pinctrl_dev *pctldev = NULL;
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index b74f64a..0c9d08d 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -23,7 +23,20 @@
+ #include "core.h"
+ #include "pinconf.h"
  
-@@ -332,6 +332,7 @@ void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
- 	list_add_tail(&range->node, &pctldev->gpio_ranges);
- 	mutex_unlock(&pctldev->gpio_ranges_lock);
+-int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
++int pinconf_check_ops(struct pinctrl_dev *pctldev)
++{
++	const struct pinconf_ops *ops = pctldev->desc->confops;
++
++	/* We must be able to read out pin status */
++	if (!ops->pin_config_get && !ops->pin_config_group_get)
++		return -EINVAL;
++	/* We have to be able to config the pins in SOME way */
++	if (!ops->pin_config_set && !ops->pin_config_group_set)
++		return -EINVAL;
++	return 0;
++}
++
++static int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+ 			   unsigned long *config)
+ {
+ 	const struct pinconf_ops *ops = pctldev->desc->confops;
+@@ -63,7 +76,7 @@ int pin_config_get(const char *dev_name, const char *name,
  }
-+EXPORT_SYMBOL_GPL(pinctrl_add_gpio_range);
+ EXPORT_SYMBOL(pin_config_get);
  
- /**
-  * pinctrl_remove_gpio_range() - remove a range of GPIOs fro a pin controller
-@@ -345,6 +346,7 @@ void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
- 	list_del(&range->node);
- 	mutex_unlock(&pctldev->gpio_ranges_lock);
+-int pin_config_set_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
++static int pin_config_set_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+ 			   unsigned long config)
+ {
+ 	const struct pinconf_ops *ops = pctldev->desc->confops;
+@@ -138,7 +151,6 @@ int pin_config_group_get(const char *dev_name, const char *pin_group,
  }
-+EXPORT_SYMBOL_GPL(pinctrl_remove_gpio_range);
+ EXPORT_SYMBOL(pin_config_group_get);
  
- /**
-  * pinctrl_get_group_selector() - returns the group selector for a group
-@@ -785,7 +787,7 @@ static int pinctrl_hog_map(struct pinctrl_dev *pctldev,
-  * map entries that need to be hogged, i.e. get+enabled until the system shuts
-  * down.
-  */
--int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
-+static int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
+-
+ int pin_config_group_set(const char *dev_name, const char *pin_group,
+ 			 unsigned long config)
  {
- 	struct device *dev = pctldev->dev;
- 	const char *devname = dev_name(dev);
-@@ -819,7 +821,7 @@ int pinctrl_hog_maps(struct pinctrl_dev *pctldev)
-  * pinctrl_unhog_maps() - unhog specific map entries on controller device
-  * @pctldev: the pin control device to unhog entries on
-  */
--void pinctrl_unhog_maps(struct pinctrl_dev *pctldev)
-+static void pinctrl_unhog_maps(struct pinctrl_dev *pctldev)
- {
- 	struct list_head *node, *tmp;
+@@ -205,19 +217,6 @@ int pin_config_group_set(const char *dev_name, const char *pin_group,
+ }
+ EXPORT_SYMBOL(pin_config_group_set);
  
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index de4c3ed..061c57d 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -101,8 +101,5 @@ struct pin_desc {
- struct pinctrl_dev *get_pinctrl_dev_from_devname(const char *dev_name);
- struct pin_desc *pin_desc_get(struct pinctrl_dev *pctldev, unsigned int pin);
- int pin_get_from_name(struct pinctrl_dev *pctldev, const char *name);
--int pinctrl_get_device_gpio_range(unsigned gpio,
--				  struct pinctrl_dev **outdev,
--				  struct pinctrl_gpio_range **outrange);
- int pinctrl_get_group_selector(struct pinctrl_dev *pctldev,
- 			       const char *pin_group);
+-int pinconf_check_ops(struct pinctrl_dev *pctldev)
+-{
+-	const struct pinconf_ops *ops = pctldev->desc->confops;
+-
+-	/* We must be able to read out pin status */
+-	if (!ops->pin_config_get && !ops->pin_config_group_get)
+-		return -EINVAL;
+-	/* We have to be able to config the pins in SOME way */
+-	if (!ops->pin_config_set && !ops->pin_config_group_set)
+-		return -EINVAL;
+-	return 0;
+-}
+-
+ #ifdef CONFIG_DEBUG_FS
+ 
+ static void pinconf_dump_pin(struct pinctrl_dev *pctldev,
+diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
+index 006b77f..1d6ea9d 100644
+--- a/drivers/pinctrl/pinconf.h
++++ b/drivers/pinctrl/pinconf.h
+@@ -14,12 +14,9 @@
+ #ifdef CONFIG_PINCONF
+ 
+ int pinconf_check_ops(struct pinctrl_dev *pctldev);
++
+ void pinconf_init_device_debugfs(struct dentry *devroot,
+ 				 struct pinctrl_dev *pctldev);
+-int pin_config_get_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+-			   unsigned long *config);
+-int pin_config_set_for_pin(struct pinctrl_dev *pctldev, unsigned pin,
+-			   unsigned long config);
+ 
+ #else
+ 
 -- 
 1.7.5.4
 
