@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab2BTKvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 05:51:36 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49458 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2BTKv0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 05:51:26 -0500
-Message-ID: <1329735073.2293.305.camel@twins>
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
-Date: Mon, 20 Feb 2012 11:51:13 +0100
-In-Reply-To: <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
-References: <20111230095147.GA10543@elte.hu>
-	 <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com>
-	 <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
-	 <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com>
-	 <4F04898B.1080600@redhat.com> <1325712710.3084.10.camel@laptop>
-	 <4F04C789.40209@redhat.com> <20120105091059.GA3249@elte.hu>
-	 <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752959Ab2BTKwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 05:52:11 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49581 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752628Ab2BTKwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 05:52:09 -0500
+Date: Mon, 20 Feb 2012 11:51:29 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jkenisto@us.ibm.com, a.p.zijlstra@chello.nl, ananth@in.ibm.com,
+        anton@redhat.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        oleg@redhat.com, tglx@linutronix.de,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>,
+        Josh Stone <jistone@redhat.com>, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/uprobes] uprobes/core: Clean up,  refactor and improve
+ the code
+Message-ID: <20120220105129.GB24200@elte.hu>
+References: <tip-ewbwhb8o6navvllsauu7k07p@git.kernel.org>
+ <20120220060825.GA22680@linux.vnet.ibm.com>
+ <20120220073823.GA30810@elte.hu>
+ <20120220101337.GE22680@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220101337.GE22680@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 13:38 +0530, Nikunj A Dadhania wrote:
-> +#ifdef CONFIG_PARAVIRT_FLUSH_TLB
-> +               while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
-> +                       cpu_relax();
-> +               if (!loop && !cpumask_empty(to_cpumask(f->flush_cpumask)))
-> +                       halt();
 
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-That's just vile, you don't need to wait for it, all you need to make
-sure is that when that vcpu wakes up it does the flush.
+> * Ingo Molnar <mingo@elte.hu> [2012-02-20 08:38:23]:
+> 
+> > 
+> > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> > 
+> > > The volatiles were added to arch/x86/kernel/kprobes.c because 
+> > > of commit 7115e3fcf45 and 315eb8a2a1b. The volatiles are 
+> > > required because gcc 4.6 gave a warning about the asm operand 
+> > > for test_bit.  So the same were added to 
+> > > arch/x86/kernel/uprobes.c.
+> > 
+> > Seems like a GCC bug - a bogus warning - or does it generate bad 
+> > code as well?
+> 
+> Yes it is a gcc bug and was fixed by Jakub.
+> As per Josh, only the first long is output if compiled on the buggy gcc.
 
-But yeah, the results are a good hint that you're on the right track.
+That's an important piece of information - the more reason to 
+document the quirk.
+
+> > In any case, kprobes.c did it correctly, it added the volatile 
+> > *and a comment*, pointing out that it's a GCC bug. No such 
+> > warning was added to uprobes.c, making the volatile look 
+> > entirely spurious.
+> 
+> okay. 
+
+Thanks,
+
+	Ingo
