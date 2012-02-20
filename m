@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab2BTTOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 14:14:42 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:45528 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab2BTTOk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 14:14:40 -0500
-X-Sasl-enc: xt27iqhORwlV3ZPdqqPRE5O7j+0sPn2TFeLhcgiv/zee 1329765280
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: Colin Walters <walters@verbum.org>
-To: Javier Martinez Canillas <javier@collabora.co.uk>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        Bart Cerneels <bart.cerneels@collabora.co.uk>,
-        Rodrigo Moya <rodrigo.moya@collabora.co.uk>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 20 Feb 2012 14:13:44 -0500
-In-Reply-To: <1329753455-1106-1-git-send-email-javier@collabora.co.uk>
-References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1329765252.22425.3.camel@lenny>
-Mime-Version: 1.0
+	id S1753078Ab2BTTQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 14:16:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17483 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905Ab2BTTQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 14:16:08 -0500
+Date: Mon, 20 Feb 2012 14:16:04 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+        ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/9] block: implement bio_associate_current()
+Message-ID: <20120220191604.GC13423@redhat.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-8-git-send-email-tj@kernel.org>
+ <20120217011907.GA15073@google.com>
+ <20120217221406.GJ29414@google.com>
+ <20120217223420.GJ26620@redhat.com>
+ <20120217224103.GN29414@google.com>
+ <20120217225125.GK26620@redhat.com>
+ <20120217225735.GP29414@google.com>
+ <20120220143622.GB10342@redhat.com>
+ <20120220170128.GB7836@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220170128.GB7836@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 16:57 +0100, Javier Martinez Canillas wrote:
-> This patch-set add multicast support to Unix domain socket familiy for datagram
-> and seqpacket sockets. This work was made by Alban Crequy as a result of a
-> research we have been doing to improve the performance of the D-bus IPC system.
+On Mon, Feb 20, 2012 at 09:01:28AM -0800, Tejun Heo wrote:
+> On Mon, Feb 20, 2012 at 09:36:22AM -0500, Vivek Goyal wrote:
+> > In copy_io(), we don't share the io_context if "current" does not have
+> > task->io_context set. Does that mean if even if I specify CLONE_IO, two
+> > threads might not share io context depending on when clone() happened? Or
+> > I am reading the code wrong.
+> 
+> Yeah, AFAICS, if the cloning task hasn't issued IO before, CLONE_IO is
+> ignored.
 
-Do you have links to any modifications to userspace dbus to take
-advantage of this?
+Will it make sense to try to allocate and attach io_context and then 
+share it in copy_io()?
 
+Well, you are planning to kill CLONE_IO altogether, so it does not
+make a difference.
 
-
+Vivek
