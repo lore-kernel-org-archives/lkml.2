@@ -1,284 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2BTWi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 17:38:59 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:5275
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754287Ab2BTWi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 17:38:57 -0500
-X-SpamScore: 2
-X-BigFish: VS2(zzbb2dIc85fhzz1202hzzz2dh87h2a8h668h839h8e2h8e3hbe9k34h)
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 20 Feb 2012 17:38:49 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <linux-kernel@vger.kernel.org>
-CC: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: [PATCH] perf_event use rdpmc rather than rdmsr when possible in
- kernel
-Message-ID: <alpine.DEB.2.00.1202201722120.2753@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754699Ab2BTWja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 17:39:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab2BTWj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 17:39:29 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] Adjust the comment on get_order() to describe the size==0
+ case
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 20 Feb 2012 22:39:18 +0000
+Message-ID: <20120220223917.16199.9416.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="8323329-606314816-1329777531=:2753"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8323329-606314816-1329777531=:2753
-Content-Type: text/plain; charset="US-ASCII"
+Adjust the comment on get_order() to note that the result of passing a size of
+0 results in an undefined value.
 
-Hello
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
 
-The perfctr interface uses rdpmc rather than rdmsr when possible in the 
-kernel, as rdpmc tends to have lower latencies.  (One can look in 
-etc/costs in the perfctr-2.6 package to see a historical list of the
-overhead).
+ include/asm-generic/getorder.h |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
 
-I have done some tests on a 3.2 kernel:
-
-                    rdmsr            rdpmc
-Core2 T9900:      203.9 cycles     30.9 cycles
-AMD fam0fh:        56.2 cycles      9.8 cycles
-Atom 6/28/2:      129.7 cycles     50.6 cycles
-
-As you can see the speedup of using rdpmc is large, although granted
-it really is a drop in the bucket compared to the other overheads 
-involved.
-
-I've attached a kernel module that can be used to test this on your own 
-personal x86 machine.
-
-Below is a patch that changes perf_event to use rdpmc rather than rdmsr 
-when possible.  It's probably possible (and desirable) to do this without 
-requiring a new field in the hw_perf_event structure, but the fixed events 
-make this tricky.
-
-Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 5adce10..5550047 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -85,7 +85,7 @@ u64 x86_perf_event_update(struct perf_event *event)
- 	 */
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
--	rdmsrl(hwc->event_base, new_raw_count);
-+	new_raw_count=native_read_pmc(hwc->event_base_rdpmc);
+diff --git a/include/asm-generic/getorder.h b/include/asm-generic/getorder.h
+index 67e7245..76e9687 100644
+--- a/include/asm-generic/getorder.h
++++ b/include/asm-generic/getorder.h
+@@ -5,7 +5,28 @@
  
- 	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
- 					new_raw_count) != prev_raw_count)
-@@ -768,9 +768,11 @@ static inline void x86_assign_hw_event(struct perf_event *event,
- 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
- 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
- 		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0 + (hwc->idx - X86_PMC_IDX_FIXED);
-+		hwc->event_base_rdpmc = (hwc->idx - X86_PMC_IDX_FIXED) | 1<<30;
- 	} else {
- 		hwc->config_base = x86_pmu_config_addr(hwc->idx);
- 		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
-+		hwc->event_base_rdpmc = x86_pmu_addr_offset(hwc->idx);
- 	}
- }
+ #include <linux/compiler.h>
  
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index abb2776..432ac69 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -562,6 +562,7 @@ struct hw_perf_event {
- 			u64		last_tag;
- 			unsigned long	config_base;
- 			unsigned long	event_base;
-+			unsigned long	event_base_rdpmc;
- 			int		idx;
- 			int		last_cpu;
- 			struct hw_perf_event_extra extra_reg;
---8323329-606314816-1329777531=:2753
-Content-Type: text/plain; charset="US-ASCII"; name="Makefile"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1202201738490.2753@cl320.eecs.utk.edu>
-Content-Description: Makefile
-Content-Disposition: attachment; filename="Makefile"
+-/* Pure 2^n version of get_order */
++/**
++ * get_order - Determine the allocation order of a memory size
++ * @size: The size for which to get the order
++ *
++ * Determine the allocation order of a particular sized block of memory.  This
++ * is on a logarithmic scale, where:
++ *
++ *	0 -> 2^0 * PAGE_SIZE and below
++ *	1 -> 2^1 * PAGE_SIZE to 2^0 * PAGE_SIZE + 1
++ *	2 -> 2^2 * PAGE_SIZE to 2^1 * PAGE_SIZE + 1
++ *	3 -> 2^3 * PAGE_SIZE to 2^2 * PAGE_SIZE + 1
++ *	4 -> 2^4 * PAGE_SIZE to 2^3 * PAGE_SIZE + 1
++ *	...
++ *
++ * The order returned is used to find the smallest allocation granule required
++ * to hold an object of the specified size.
++ *
++ * The result is undefined if the size is 0.
++ *
++ * This function may be used to initialise variables with compile time
++ * evaluations of constants.
++ */
+ static inline __attribute_const__ int get_order(unsigned long size)
+ {
+ 	int order;
 
-b2JqLW0gOj0gcmRwbWMtbW9kdWxlLm8NCktESVIgOj0gL2xpYi9tb2R1bGVz
-LyQoc2hlbGwgdW5hbWUgLXIpL2J1aWxkDQpQV0QgOj0gJChzaGVsbCBwd2Qp
-DQoNCmRlZmF1bHQ6DQoJJChNQUtFKSAtQyAkKEtESVIpIFNVQkRJUlM9JChQ
-V0QpIG1vZHVsZXMNCg0KI2NsZWFuOgkNCiMJcm0gLWYgKi5vICoua28gKn4g
-Ki5zeW12ZXJzICoub3JkZXI=
-
---8323329-606314816-1329777531=:2753
-Content-Type: text/x-csrc; name="rdpmc-module.c"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1202201738491.2753@cl320.eecs.utk.edu>
-Content-Description: rdpmc-module.c
-Content-Disposition: attachment; filename="rdpmc-module.c"
-
-LyogQ29kZSB0YWtlbiBmcm9tIHBlcmZjdHIgYnkgTWlrYWVsIFBldHRlcnNz
-b24gKi8NCi8qIGh0dHA6Ly91c2VyLml0LnV1LnNlL35taWtwZS9saW51eC9w
-ZXJmY3RyLyAgICovDQovKiBTbGlnaHRseSBtb2RpZmllZCBieSBWaW5jZSBX
-ZWF2ZXIgPHZ3ZWF2ZXIxQGVlY3MudXRrLmVkdT4gKi8NCg0KI2luY2x1ZGUg
-PGxpbnV4L21vZHVsZS5oPg0KI2luY2x1ZGUgPGxpbnV4L2luaXQuaD4NCg0K
-I2luY2x1ZGUgPGFzbS9tc3IuaD4NCg0KI2RlZmluZSBNU1JfUDVfQ0VTUiAg
-ICAgICAgICAgICAweDExDQojZGVmaW5lIE1TUl9QNV9DVFIwICAgICAgICAg
-ICAgIDB4MTINCiNkZWZpbmUgUDVfQ0VTUl9WQUwgICAgICAgICAgICAgKDB4
-MTYgfCAoMzw8NikpDQoNCiNkZWZpbmUgUDZfRVZOVFNFTDBfVkFMICAgICAg
-ICAgKDB4QzAgfCAoMzw8MTYpIHwgKDE8PDIyKSkNCg0KI2RlZmluZSBLN19F
-Vk5UU0VMMF9WQUwgICAgICAgICAoMHhDMCB8ICgzPDwxNikgfCAoMTw8MjIp
-KQ0KDQojZGVmaW5lIE1TUl9QNF9JUV9DT1VOVEVSMCAgICAgIDB4MzBDDQoj
-ZGVmaW5lIFA0X0NSVV9FU0NSMF9WQUwgICAgICAgICgoMjw8MjUpIHwgKDE8
-PDkpIHwgKDB4Mzw8MikpDQojZGVmaW5lIFA0X0lRX0NDQ1IwX1ZBTCAgICAg
-ICAgICgoMHgzPDwxNikgfCAoNDw8MTMpIHwgKDE8PDEyKSkNCg0KI2RlZmlu
-ZSBDT1JFMl9QTUNfRklYRURfQ1RSMCAgICAoKDE8PDMwKSB8IDApDQoNCg0K
-I2RlZmluZSBOSVRFUiAgIDY0DQojZGVmaW5lIFgyKFMpICAgUyI7IlMNCiNk
-ZWZpbmUgWDgoUykgICBYMihYMihYMihTKSkpDQoNCiNpZmRlZiBfX3g4Nl82
-NF9fDQojZGVmaW5lIENSNE1PViAgIm1vdnEiDQojZWxzZQ0KI2RlZmluZSBD
-UjRNT1YgICJtb3ZsIg0KI2VuZGlmDQoNCg0KI2RlZmluZSByZHRzY19sb3co
-bG93KSBcDQogIF9fYXNtX18gX192b2xhdGlsZV9fKCJyZHRzYyIgOiAiPWEi
-KGxvdykgOiA6ICJlZHgiKQ0KDQoNCnN0YXRpYyB2b2lkIF9faW5pdCBkb19y
-ZHBtYyh1bnNpZ25lZCBwbWMsIHVuc2lnbmVkIHVudXNlZDIpDQp7DQogIHVu
-c2lnbmVkIGk7DQogIGZvcihpID0gMDsgaSA8IE5JVEVSLzg7ICsraSkNCiAg
-ICBfX2FzbV9fIF9fdm9sYXRpbGVfXyhYOCgicmRwbWMiKSA6IDogImMiKHBt
-YykgOiAiZWF4IiwgImVkeCIpOw0KfQ0KDQpzdGF0aWMgdm9pZCBfX2luaXQg
-ZG9fcmRtc3IodW5zaWduZWQgbXNyLCB1bnNpZ25lZCB1bnVzZWQyKQ0Kew0K
-ICB1bnNpZ25lZCBpOw0KICBmb3IoaSA9IDA7IGkgPCBOSVRFUi84OyArK2kp
-DQogICAgX19hc21fXyBfX3ZvbGF0aWxlX18oWDgoInJkbXNyIikgOiA6ICJj
-Iihtc3IpIDogImVheCIsICJlZHgiKTsNCn0NCg0Kc3RhdGljIHZvaWQgX19p
-bml0IGRvX3dybXNyKHVuc2lnbmVkIG1zciwgdW5zaWduZWQgZGF0YSkNCnsN
-CiAgdW5zaWduZWQgaTsNCiAgZm9yKGkgPSAwOyBpIDwgTklURVIvODsgKytp
-KQ0KICAgIF9fYXNtX18gX192b2xhdGlsZV9fKFg4KCJ3cm1zciIpIDogOiAi
-YyIobXNyKSwgImEiKGRhdGEpLCAiZCIoMCkpOw0KfQ0KDQpzdGF0aWMgdm9p
-ZCBfX2luaXQgZG9fcmRjcjQodW5zaWduZWQgdW51c2VkMSwgdW5zaWduZWQg
-dW51c2VkMikNCnsNCiAgdW5zaWduZWQgaTsNCiAgdW5zaWduZWQgbG9uZyBk
-dW1teTsNCiAgZm9yKGkgPSAwOyBpIDwgTklURVIvODsgKytpKQ0KICAgIF9f
-YXNtX18gX192b2xhdGlsZV9fKFg4KENSNE1PViIgJSVjcjQsJTAiKSA6ICI9
-ciIoZHVtbXkpKTsNCn0NCg0Kc3RhdGljIHZvaWQgX19pbml0IGRvX3dyY3I0
-KHVuc2lnbmVkIGNyNCwgdW5zaWduZWQgdW51c2VkMikNCnsNCiAgdW5zaWdu
-ZWQgaTsNCiAgZm9yKGkgPSAwOyBpIDwgTklURVIvODsgKytpKQ0KICAgIF9f
-YXNtX18gX192b2xhdGlsZV9fKFg4KENSNE1PViIgJTAsJSVjcjQiKSA6IDog
-InIiKChsb25nKWNyNCkpOw0KfQ0KDQpzdGF0aWMgdm9pZCBfX2luaXQgZG9f
-cmR0c2ModW5zaWduZWQgdW51c2VkMSwgdW5zaWduZWQgdW51c2VkMikNCnsN
-CiAgdW5zaWduZWQgaTsNCiAgZm9yKGkgPSAwOyBpIDwgTklURVIvODsgKytp
-KQ0KICAgIF9fYXNtX18gX192b2xhdGlsZV9fKFg4KCJyZHRzYyIpIDogOiA6
-ICJlYXgiLCAiZWR4Iik7DQp9DQoNCiNpZiAwDQpzdGF0aWMgdm9pZCBfX2lu
-aXQgZG9fd3JsdnRwYyh1bnNpZ25lZCB2YWwsIHVuc2lnbmVkIHVudXNlZDIp
-DQp7DQogIHVuc2lnbmVkIGk7DQogIGZvcihpID0gMDsgaSA8IE5JVEVSLzg7
-ICsraSkgew0KICAgIGFwaWNfd3JpdGUoQVBJQ19MVlRQQywgdmFsKTsNCiAg
-ICBhcGljX3dyaXRlKEFQSUNfTFZUUEMsIHZhbCk7DQogICAgYXBpY193cml0
-ZShBUElDX0xWVFBDLCB2YWwpOw0KICAgIGFwaWNfd3JpdGUoQVBJQ19MVlRQ
-QywgdmFsKTsNCiAgICBhcGljX3dyaXRlKEFQSUNfTFZUUEMsIHZhbCk7DQog
-ICAgYXBpY193cml0ZShBUElDX0xWVFBDLCB2YWwpOw0KICAgIGFwaWNfd3Jp
-dGUoQVBJQ19MVlRQQywgdmFsKTsNCiAgICBhcGljX3dyaXRlKEFQSUNfTFZU
-UEMsIHZhbCk7DQogIH0NCn0NCiNlbmRpZg0KDQpzdGF0aWMgdm9pZCBfX2lu
-aXQgZG9fc3luY19jb3JlKHVuc2lnbmVkIHVudXNlZDEsIHVuc2lnbmVkIHVu
-dXNlZDIpDQp7DQogIHVuc2lnbmVkIGk7DQogIGZvcihpID0gMDsgaSA8IE5J
-VEVSLzg7ICsraSkgew0KICAgIHN5bmNfY29yZSgpOw0KICAgIHN5bmNfY29y
-ZSgpOw0KICAgIHN5bmNfY29yZSgpOw0KICAgIHN5bmNfY29yZSgpOw0KICAg
-IHN5bmNfY29yZSgpOw0KICAgIHN5bmNfY29yZSgpOw0KICAgIHN5bmNfY29y
-ZSgpOw0KICAgIHN5bmNfY29yZSgpOw0KICB9DQp9DQoNCg0Kc3RhdGljIHZv
-aWQgX19pbml0IGRvX2VtcHR5X2xvb3AodW5zaWduZWQgdW51c2VkMSwgdW5z
-aWduZWQgdW51c2VkMikNCnsNCiAgdW5zaWduZWQgaTsNCiAgZm9yKGkgPSAw
-OyBpIDwgTklURVIvODsgKytpKQ0KICAgIF9fYXNtX18gX192b2xhdGlsZV9f
-KCIiIDogOiAiYyIoMCkpOw0KfQ0KDQpzdGF0aWMgdW5zaWduZWQgX19pbml0
-IHJ1bih2b2lkICgqZG9pdCkodW5zaWduZWQsIHVuc2lnbmVkKSwNCiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgIHVuc2lnbmVkIGFyZzEsIHVuc2lnbmVk
-IGFyZzIpDQp7DQogIHVuc2lnbmVkIHN0YXJ0LCBzdG9wOw0KICBzeW5jX2Nv
-cmUoKTsNCiAgcmR0c2NfbG93KHN0YXJ0KTsNCiAgKCpkb2l0KShhcmcxLCBh
-cmcyKTsgICAgLyogc2hvdWxkIHRha2UgPCAyXjMyIGN5Y2xlcyB0byBjb21w
-bGV0ZSAqLw0KICBzeW5jX2NvcmUoKTsNCiAgcmR0c2NfbG93KHN0b3ApOw0K
-ICByZXR1cm4gc3RvcCAtIHN0YXJ0Ow0KfQ0KDQoNCg0KDQpzdGF0aWMgdm9p
-ZCBfX2luaXQNCm1lYXN1cmVfb3ZlcmhlYWRzKHVuc2lnbmVkIG1zcl9ldm50
-c2VsMCwgdW5zaWduZWQgZXZudHNlbDAsIHVuc2lnbmVkIG1zcl9wZXJmY3Ry
-MCwNCiAgICAgICAgICAgICAgICAgIHVuc2lnbmVkIG1zcl9jY2NyLCB1bnNp
-Z25lZCBjY2NyX3ZhbCwgdW5zaWduZWQgaXNfY29yZTIpDQp7DQogIGludCBp
-Ow0KICB1bnNpZ25lZCBpbnQgbG9vcCwgdGlja3NbMTRdOw0KICBjb25zdCBj
-aGFyICpuYW1lWzE0XTsNCg0KICBpZiggbXNyX2V2bnRzZWwwICkNCiAgICB3
-cm1zcihtc3JfZXZudHNlbDAsIDAsIDApOw0KICBpZiggbXNyX2NjY3IgKQ0K
-ICAgIHdybXNyKG1zcl9jY2NyLCAwLCAwKTsNCg0KICBuYW1lWzBdID0gInJk
-dHNjIjsNCiAgdGlja3NbMF0gPSBydW4oZG9fcmR0c2MsIDAsIDApOw0KICBu
-YW1lWzFdID0gInJkcG1jIjsNCiAgdGlja3NbMV0gPSBydW4oZG9fcmRwbWMs
-MSwwKTsNCiAgbmFtZVsyXSA9ICJyZG1zciAoY291bnRlcikiOw0KICB0aWNr
-c1syXSA9IG1zcl9wZXJmY3RyMCA/IHJ1bihkb19yZG1zciwgbXNyX3BlcmZj
-dHIwLCAwKSA6IDA7DQogIG5hbWVbM10gPSBtc3JfY2NjciA/ICJyZG1zciAo
-ZXNjcikiIDogInJkbXNyIChldm50c2VsKSI7DQogIHRpY2tzWzNdID0gbXNy
-X2V2bnRzZWwwID8gcnVuKGRvX3JkbXNyLCBtc3JfZXZudHNlbDAsIDApIDog
-MDsNCiAgbmFtZVs0XSA9ICJ3cm1zciAoY291bnRlcikiOw0KICB0aWNrc1s0
-XSA9IG1zcl9wZXJmY3RyMCA/IHJ1bihkb193cm1zciwgbXNyX3BlcmZjdHIw
-LCAwKSA6IDA7DQogIG5hbWVbNV0gPSBtc3JfY2NjciA/ICJ3cm1zciAoZXNj
-cikiIDogIndybXNyIChldm50c2VsKSI7DQogIHRpY2tzWzVdID0gbXNyX2V2
-bnRzZWwwID8gcnVuKGRvX3dybXNyLCBtc3JfZXZudHNlbDAsIGV2bnRzZWww
-KSA6IDA7DQogIG5hbWVbNl0gPSAicmVhZCBjcjQiOw0KICB0aWNrc1s2XSA9
-IHJ1bihkb19yZGNyNCwgMCwgMCk7DQogIG5hbWVbN10gPSAid3JpdGUgY3I0
-IjsNCiAgdGlja3NbN10gPSBydW4oZG9fd3JjcjQsIHJlYWRfY3I0KCksIDAp
-Ow0KICBuYW1lWzhdID0gInJkcG1jIChmYXN0KSI7DQogIHRpY2tzWzhdID0g
-bXNyX2NjY3IgPyBydW4oZG9fcmRwbWMsIDB4ODAwMDAwMDEsIDApIDogMDsN
-CiAgbmFtZVs5XSA9ICJyZG1zciAoY2NjcikiOw0KICB0aWNrc1s5XSA9IG1z
-cl9jY2NyID8gcnVuKGRvX3JkbXNyLCBtc3JfY2NjciwgMCkgOiAwOw0KICBu
-YW1lWzEwXSA9ICJ3cm1zciAoY2NjcikiOw0KICB0aWNrc1sxMF0gPSBtc3Jf
-Y2NjciA/IHJ1bihkb193cm1zciwgbXNyX2NjY3IsIGNjY3JfdmFsKSA6IDA7
-DQogIG5hbWVbMTFdID0gInN5bmNfY29yZSI7DQogIHRpY2tzWzExXSA9IHJ1
-bihkb19zeW5jX2NvcmUsIDAsIDApOw0KICBuYW1lWzEyXSA9ICJyZWFkIGZp
-eGVkX2N0cjAiOw0KICB0aWNrc1sxMl0gPSBpc19jb3JlMiA/IHJ1bihkb19y
-ZHBtYywgQ09SRTJfUE1DX0ZJWEVEX0NUUjAsIDApIDogMDsNCiAgbmFtZVsx
-M10gPSAid3Jtc3IgZml4ZWRfY3RyX2N0cmwiOw0KICB0aWNrc1sxM10gPSBp
-c19jb3JlMiA/IHJ1bihkb193cm1zciwgTVNSX0NPUkVfUEVSRl9GSVhFRF9D
-VFJfQ1RSTCwgMCkgOiAwOw0KICAvKg0KICBuYW1lWzE0XSA9ICJ3cml0ZSBM
-VlRQQyI7DQogIHRpY2tzWzE0XSA9IChwZXJmY3RyX2luZm8uY3B1X2ZlYXR1
-cmVzICYgUEVSRkNUUl9GRUFUVVJFX1BDSU5UKQ0KICAgID8gcnVuKGRvX3dy
-bHZ0cGMsIEFQSUNfRE1fTk1JfEFQSUNfTFZUX01BU0tFRCwgMCkgOiAwOw0K
-ICAqLw0KDQogIGxvb3AgPSBydW4oZG9fZW1wdHlfbG9vcCwgMCwgMCk7DQoN
-CiAgaWYoIG1zcl9ldm50c2VsMCApDQogICAgd3Jtc3IobXNyX2V2bnRzZWww
-LCAwLCAwKTsNCiAgaWYoIG1zcl9jY2NyICkNCiAgICB3cm1zcihtc3JfY2Nj
-ciwgMCwgMCk7DQoNCiAgcHJpbnRrKEtFUk5fSU5GTyAiQ09VTlRFUl9PVkVS
-SEVBRDogTklURVIgPT0gJXVcbiIsIE5JVEVSKTsNCiAgcHJpbnRrKEtFUk5f
-SU5GTyAiQ09VTlRFUl9PVkVSSEVBRDogbG9vcCBvdmVyaGVhZCBpcyAldSBj
-eWNsZXNcbiIsIGxvb3ApOw0KICBmb3IoaSA9IDA7IGkgPCBBUlJBWV9TSVpF
-KHRpY2tzKTsgKytpKSB7DQogICAgdW5zaWduZWQgaW50IHg7DQogICAgaWYo
-ICF0aWNrc1tpXSApDQogICAgICBjb250aW51ZTsNCiAgICB4ID0gKCh0aWNr
-c1tpXSAtIGxvb3ApICogMTApIC8gTklURVI7DQogICAgcHJpbnRrKEtFUk5f
-SU5GTyAiQ09VTlRFUl9PVkVSSEVBRDogJXMgY29zdCBpcyAldS4ldSBjeWNs
-ZXMgKCV1IHRvdGFsKVxuIiwNCgkgICBuYW1lW2ldLCB4LzEwLCB4JTEwLCB0
-aWNrc1tpXSk7DQogIH0NCn0NCg0KDQpzdGF0aWMgaW5saW5lIHZvaWQgcGVy
-ZmN0cl9wNV9pbml0X3Rlc3RzKHZvaWQpDQp7DQogIG1lYXN1cmVfb3Zlcmhl
-YWRzKE1TUl9QNV9DRVNSLCBQNV9DRVNSX1ZBTCwgTVNSX1A1X0NUUjAsIDAs
-IDAsIDApOw0KfQ0KDQpzdGF0aWMgaW5saW5lIHZvaWQgcGVyZmN0cl9wNl9p
-bml0X3Rlc3RzKHZvaWQpDQp7DQogIG1lYXN1cmVfb3ZlcmhlYWRzKE1TUl9Q
-Nl9FVk5UU0VMMCwgUDZfRVZOVFNFTDBfVkFMLCBNU1JfUDZfUEVSRkNUUjAs
-IDAsIA0KCQkgICAgMCwgMCk7DQp9DQoNCnN0YXRpYyBpbmxpbmUgdm9pZCBw
-ZXJmY3RyX2NvcmUyX2luaXRfdGVzdHModm9pZCkNCnsNCiAgbWVhc3VyZV9v
-dmVyaGVhZHMoTVNSX1A2X0VWTlRTRUwwLCBQNl9FVk5UU0VMMF9WQUwsIE1T
-Ul9QNl9QRVJGQ1RSMCwgMCwgDQoJCSAgICAwLCAxKTsNCn0NCg0Kc3RhdGlj
-IGlubGluZSB2b2lkIHBlcmZjdHJfcDRfaW5pdF90ZXN0cyh2b2lkKQ0Kew0K
-ICBtZWFzdXJlX292ZXJoZWFkcyhNU1JfUDRfQ1JVX0VTQ1IwLCBQNF9DUlVf
-RVNDUjBfVkFMLCBNU1JfUDRfSVFfQ09VTlRFUjAsDQoJCSAgICBNU1JfUDRf
-SVFfQ0NDUjAsIFA0X0lRX0NDQ1IwX1ZBTCwgMCk7DQp9DQoNCg0KDQpzdGF0
-aWMgaW5saW5lIHZvaWQgcGVyZmN0cl9rN19pbml0X3Rlc3RzKHZvaWQpDQp7
-DQogIG1lYXN1cmVfb3ZlcmhlYWRzKE1TUl9LN19FVk5UU0VMMCwgSzdfRVZO
-VFNFTDBfVkFMLCBNU1JfSzdfUEVSRkNUUjAsIDAsIDAsIDApOw0KfQ0KDQpz
-dGF0aWMgaW5saW5lIHZvaWQgcGVyZmN0cl9nZW5lcmljX2luaXRfdGVzdHMo
-dm9pZCkNCnsNCiAgbWVhc3VyZV9vdmVyaGVhZHMoMCwgMCwgMCwgMCwgMCwg
-MCk7DQp9DQoNCg0KDQoNCnN0YXRpYyBpbnQgX19pbml0IG15bW9kdWxlX2lu
-aXQodm9pZCkNCnsNCg0KICBwcmludGsoS0VSTl9JTkZPICJDT1VOVEVSX09W
-RVJIRUFEOiB2ZW5kb3IgJXUsIGZhbWlseSAldSwgbW9kZWwgJXUsIHN0ZXBw
-aW5nICV1XG4iLA0KCSBib290X2NwdV9kYXRhLng4Nl92ZW5kb3IsDQoJIGJv
-b3RfY3B1X2RhdGEueDg2LA0KCSBib290X2NwdV9kYXRhLng4Nl9tb2RlbCwN
-CgkgYm9vdF9jcHVfZGF0YS54ODZfbWFzayk7DQoNCiAgaWYgKGJvb3RfY3B1
-X2RhdGEueDg2X3ZlbmRvciA9PSBYODZfVkVORE9SX0FNRCkgew0KICAgICBw
-ZXJmY3RyX2s3X2luaXRfdGVzdHMoKTsNCiAgfQ0KICBlbHNlIGlmIChib290
-X2NwdV9kYXRhLng4Nl92ZW5kb3IgPT0gWDg2X1ZFTkRPUl9JTlRFTCkgew0K
-ICAgICBpZiAoYm9vdF9jcHVfZGF0YS54ODZfbW9kZWw9PTUpIHBlcmZjdHJf
-cDVfaW5pdF90ZXN0cygpOw0KICAgICBlbHNlIGlmIChib290X2NwdV9kYXRh
-Lng4Nl9tb2RlbD09NikgcGVyZmN0cl9wNl9pbml0X3Rlc3RzKCk7DQogICAg
-IGVsc2UgaWYgKGJvb3RfY3B1X2RhdGEueDg2X21vZGVsPT0xNSkgcGVyZmN0
-cl9wNF9pbml0X3Rlc3RzKCk7DQogICAgIGVsc2UgcGVyZmN0cl9jb3JlMl9p
-bml0X3Rlc3RzKCk7ICAgICANCiAgfQ0KICBlbHNlIHsNCiAgICAgcGVyZmN0
-cl9nZW5lcmljX2luaXRfdGVzdHMoKTsNCiAgfQ0KICByZXR1cm4gMDsNCn0N
-Cg0Kc3RhdGljIHZvaWQgX19leGl0IG15bW9kdWxlX2V4aXQodm9pZCkNCnsN
-CiBwcmludGsgKCJDT1VOVEVSX09WRVJIRUFEOiBVbmxvYWRpbmcuXG4iKTsN
-CiAgICAgICAgcmV0dXJuOw0KfQ0KDQptb2R1bGVfaW5pdChteW1vZHVsZV9p
-bml0KTsNCm1vZHVsZV9leGl0KG15bW9kdWxlX2V4aXQpOw0KDQpNT0RVTEVf
-TElDRU5TRSgiR1BMIik7DQo=
-
---8323329-606314816-1329777531=:2753--
