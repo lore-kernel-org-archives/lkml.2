@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2BTVaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:30:19 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39052 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab2BTVaR (ORCPT
+	id S1754292Ab2BTVdA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:33:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50043 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753871Ab2BTVc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:30:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of egmont@gmail.com designates 10.180.97.196 as permitted sender) smtp.mail=egmont@gmail.com; dkim=pass header.i=egmont@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAGWcZkL_Uc3Stug7nspjBnrAJ-zMLm7AtYnrxPnqas23L+PN_A@mail.gmail.com>
-References: <CAGWcZkKV1vc47zB_d0e+Q3+XG08mDt6TfzQ3d0p4=wswKN3ePg@mail.gmail.com>
- <20120215233002.GB20816@kroah.com> <CAGWcZkJHCRppjONbHuNop2r2X=n7efK94dQMXrA2=0Ou39bOAg@mail.gmail.com>
- <20120216005437.GA22858@kroah.com> <20120217192825.GE2707@elf.ucw.cz>
- <20120217225708.0f31f2ac@neptune.home> <CAGWcZk+_NpBZ2Gquv_ynXKdAivd3FhkHDDxu488y9Y9OrG2yfw@mail.gmail.com>
- <20120219221412.1b6912ba@neptune.home> <CAGWcZkJDi+AAG1KmvzAymBPt64JxKNizH-vCtsE7Lb=utFXG-g@mail.gmail.com>
- <CAGWcZkJZZ5FYTi+_VkjwhsZkwMtvxit5p+m2q0MARjEdEkiD4A@mail.gmail.com>
- <20120220173106.GA17124@elf.ucw.cz> <CAGWcZkL_Uc3Stug7nspjBnrAJ-zMLm7AtYnrxPnqas23L+PN_A@mail.gmail.com>
-From: Egmont Koblinger <egmont@gmail.com>
-Date: Mon, 20 Feb 2012 22:29:36 +0100
-Message-ID: <CAGWcZkK=9tvcXLXpuh4R1AkM4n3RxT6-aE63bp9WtVN-tFiM=Q@mail.gmail.com>
-Subject: Re: PROBLEM: Data corruption when pasting large data to terminal
-To: Pavel Machek <pavel@ucw.cz>
-Cc: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=f46d0443067c1bece404b96c00d6
+	Mon, 20 Feb 2012 16:32:59 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        stable@vger.kernel.org
+Subject: [PATCH 3.3] mfd: Test for jack detection when deciding if wm8994 should suspend
+Date: Mon, 20 Feb 2012 21:32:32 +0000
+Message-Id: <1329773552-22271-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0443067c1bece404b96c00d6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+The jack detection on WM1811 is often required during system suspend, add
+it as another check when deciding if we should suspend.
 
-> What does make a difference though, is the read size (rsz). =C2=A0The bug
-> is reproducible if and only if the read size is a divisor of the
-> length of the line excluding the terminating newline (i.e. the length
-> of the full line minus one); that is, a divisor of 62 in this example.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: stable@vger.kernel.org
+---
 
-Errr, forget this paragraph, this was a bug in my code.  When trying
-to emulate readline, rsz should really be 1.  I was not scanning
-through the whole buffer looking for a newline, and was looking at an
-incorrect offset.  Sorry for the pebkac.
+Samuel, could you please add this to your for-linus branch?  It's been
+sitting around unloved for some considerable time now...
 
-Fixed version attached.  Anyway, the point is still the same, the data
-corruption or deadlock are still triggered the same way.
+ drivers/mfd/wm8994-core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index f117e7f..a04b3c1 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -256,6 +256,20 @@ static int wm8994_suspend(struct device *dev)
+ 		break;
+ 	}
+ 
++	switch (wm8994->type) {
++	case WM1811:
++		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
++		if (ret < 0) {
++			dev_err(dev, "Failed to read jackdet: %d\n", ret);
++		} else if (ret & WM1811_JACKDET_MODE_MASK) {
++			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
++			return 0;
++		}
++		break;
++	default:
++		break;
++	}
++
+ 	/* Disable LDO pulldowns while the device is suspended if we
+ 	 * don't know that something will be driving them. */
+ 	if (!wm8994->ldo_ena_always_driven)
+-- 
+1.7.9
 
-thx,
-egmont
-
---f46d0443067c1bece404b96c00d6
-Content-Type: text/x-csrc; charset=US-ASCII; name="ptmx3.c"
-Content-Disposition: attachment; filename="ptmx3.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gyw0mbud1
-
-I2RlZmluZSBfWE9QRU5fU09VUkNFIDcwMAojaW5jbHVkZSA8c3RkaW8uaD4KI2luY2x1ZGUgPHN0
-ZGxpYi5oPgojaW5jbHVkZSA8ZXJybm8uaD4KI2luY2x1ZGUgPHN0cmluZy5oPgojaW5jbHVkZSA8
-c3lzL3R5cGVzLmg+CiNpbmNsdWRlIDxzeXMvc3RhdC5oPgojaW5jbHVkZSA8ZmNudGwuaD4KI2lu
-Y2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8dGltZS5oPgojaW5jbHVkZSA8c3lzL3dhaXQuaD4K
-I2luY2x1ZGUgPHN5cy9zZWxlY3QuaD4KI2luY2x1ZGUgPHN5cy9pb2N0bC5oPgojaW5jbHVkZSA8
-dGVybWlvcy5oPgoKI2RlZmluZSBCVUZGX1NaICg0MDk2KjI1NikKLy8gRXhwZWN0IGZld2VyIGJ5
-dGVzIHRoYW4gdGhlIG1hc3RlciB3cml0ZXMsIGJlY2F1c2UgdGhlIGxhc3QgaW5jb21wbGV0ZSBs
-aW5lCi8vIGlzIG5vdCBzZW50IHRvIHRoZSBzbGF2ZSBpbiBjb29rZWQgbW9kZS4KI2RlZmluZSBS
-RUFEX0JVRkZfU1ogKEJVRkZfU1ogLSAxMDApCgp2b2lkIHJhdyhpbnQgcHR5KSB7CglzdHJ1Y3Qg
-dGVybWlvcyB0OwoJaW9jdGwocHR5LCBUQ0dFVFMsICZ0KTsKCXQuY19sZmxhZyAmPSB+SUNBTk9O
-OwoJdC5jX2lmbGFnICY9IH5JTkxDUjsKCWlvY3RsKHB0eSwgVENTRVRTVywgJnQpOwp9Cgp2b2lk
-IGNvb2tlZChpbnQgcHR5KSB7CglzdHJ1Y3QgdGVybWlvcyB0OwoJaW9jdGwocHR5LCBUQ0dFVFMs
-ICZ0KTsKCXQuY19sZmxhZyB8PSBJQ0FOT047Cgl0LmNfaWZsYWcgfD0gSU5MQ1I7Cglpb2N0bChw
-dHksIFRDU0VUU1csICZ0KTsKfQoKdm9pZCB3cml0ZV9idWZmZXIoY29uc3QgY2hhciAqYnVmZiwg
-c2l6ZV90IGJ1ZmZfc3osIGNvbnN0IGNoYXIgKmZuYW1lKSB7CglpbnQgZmQgPSBvcGVuKGZuYW1l
-LCBPX0NSRUFUIHwgT19XUk9OTFkgfCBPX1RSVU5DLCAwNjY0KTsKCXNpemVfdCBuID0gMDsKCXNz
-aXplX3QgcjsKCWlmICghZmQpIHsKCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byBvcGVuKDMp
-ICVzOiAlc1xuIiwgZm5hbWUsIHN0cmVycm9yKGVycm5vKSk7CgkJcmV0dXJuOwoJfQoKCWRvIHsK
-CQlyID0gd3JpdGUoZmQsIGJ1ZmYgKyBuLCBidWZmX3N6IC0gbik7CgkJaWYgKHIgPT0gLTEpIHsK
-CQkJaWYgKGVycm5vID09IEVBR0FJTiB8fCBlcnJubyA9PSBFV09VTERCTE9DSyB8fCBlcnJubyA9
-PSBFSU5UUikKCQkJCWNvbnRpbnVlOwoJCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byB3cml0
-ZSgyKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJCXJldHVybjsKCQl9IGVsc2UgaWYgKHIg
-PT0gMCkgewoJCQlicmVhazsKCQl9IGVsc2UgewoJCQluICs9IHI7CgkJfQoJfSB3aGlsZSAobiA8
-IGJ1ZmZfc3opOwoJY2xvc2UoZmQpOwp9Cgp2b2lkIHB0bXhfc2xhdmVfdGVzdChpbnQgcHR5LCBj
-b25zdCBjaGFyICpsaW5lLCBzaXplX3QgcnN6KSB7CgljaGFyICpidWZmID0gbWFsbG9jKFJFQURf
-QlVGRl9TWik7CglzaXplX3QgbiA9IDAsIG5uOwoJc3NpemVfdCByOwoJaW50IGwsIGJhZDsKCXN0
-cnVjdCB0aW1lc3BlYyBzbGVuOwoKCWlmICghYnVmZikgewoJCWZwcmludGYoc3RkZXJyLCAiRmFp
-bGVkIHRvIG1hbGxvYygzKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJcmV0dXJuOwoJfQoJ
-bWVtc2V0KGJ1ZmYsIDAsIFJFQURfQlVGRl9TWik7CgoJcmF3KHB0eSk7IC8vIGVtdWxhdGUgdGhl
-IGluaXRpYWxpemF0aW9uIG9mIGEgcmVhZGxpbmUgYXBwCglkbyB7CgkJciA9IHJlYWQocHR5LCBi
-dWZmICsgbiwgcnN6ICsgbiA+IFJFQURfQlVGRl9TWiA/IFJFQURfQlVGRl9TWiAtIG4gOiByc3op
-OwoJCWlmIChyID09IC0xKSB7CgkJCWlmIChlcnJubyA9PSBFQUdBSU4gfHwgZXJybm8gPT0gRVdP
-VUxEQkxPQ0sgfHwgZXJybm8gPT0gRUlOVFIpCgkJCQljb250aW51ZTsKCQkJZnByaW50ZihzdGRl
-cnIsICJGYWlsZWQgdG8gcmVhZCgyKSBhZnRlciByZWFkaW5nICVkIGJ5dGVzOiAlc1xuIiwgbiwg
-c3RyZXJyb3IoZXJybm8pKTsKCQkJYnJlYWs7ICAvLyBEZXNwaXRlIHRoZSBlcnJvciwgY29tcGFy
-ZSB0aGUgYnVmZmVyIGFnYWluc3QgdGhlIHJlZmVyZW5jZS4KCQl9IGVsc2UgaWYgKHIgPT0gMCkg
-ewoJCQlpZiAobiA8IFJFQURfQlVGRl9TWikKCQkJCWZwcmludGYoc3RkZXJyLCAiUmVhZCAlenUg
-Ynl0ZXMsIGV4cGVjdGVkICV6dSFcbiIsIG4sIFJFQURfQlVGRl9TWik7CgkJCWJyZWFrOwoJCX0g
-ZWxzZSB7CgkJCW4gKz0gcjsKCQkJaWYgKGJ1ZmZbbi0xXSA9PSAnXG4nKSB7CgkJCQkvLyBlbXVs
-YXRlIGEgcmVhZGxpbmUgYXBwIHRha2luZyBhY3Rpb24gb24gdGhlIGlucHV0CgkJCQljb29rZWQo
-cHR5KTsKCQkJCW1lbXNldCgmc2xlbiwgMCwgc2l6ZW9mKHNsZW4pKTsKCQkJCXNsZW4udHZfbnNl
-YyA9IDEwMDAgKiAxMDAwOwoJCQkJbmFub3NsZWVwKCZzbGVuLCBOVUxMKTsKCQkJCXJhdyhwdHkp
-OwoJCQl9CgkJfQoJfSB3aGlsZSAobiA8IFJFQURfQlVGRl9TWik7CglubiA9IG47CgoJLyogY2hl
-Y2sgYnVmZmVyIGlmIGl0IG1hdGNoZXMgZXhwZWN0ZWQgdmFsdWUuLi4gKi8KCXIgPSBzdHJsZW4o
-bGluZSk7CglsID0gMDsKCWJhZCA9IDA7Cglmb3IgKG4gPSAwOyBuIDwgUkVBRF9CVUZGX1NaOyBu
-ICs9IHIrMSkgewoJCWwrKzsKCQlpZiAobWVtY21wKGJ1ZmYgKyBuLCBsaW5lLCBuICsgciA8IFJF
-QURfQlVGRl9TWiA/IHIgOiBSRUFEX0JVRkZfU1ogLSBuKSAhPSAwKSB7CgkJCS8vIFRPRE86IGRl
-dGVybWluZSBwb3NpdGlvbiBvZiBicmVha2FnZSEKCQkJZnByaW50ZihzdGRlcnIsICJMaW5lIGRh
-dGEgbWlzbWF0Y2ggZm9yIGxpbmUgJWQhXG4iLCBsKTsKCQkJYmFkID0gMTsKCQkJYnJlYWs7CgkJ
-fQoJCWlmIChuICsgciArIDEgPCBSRUFEX0JVRkZfU1ogJiYgYnVmZltuK3JdICE9ICdcbicpIHsK
-CQkJaWYgKCFiYWQpCgkJCQlmcHJpbnRmKHN0ZGVyciwgIkV4cGVjdGluZyAnXFxuJyBhdCBlbmQg
-b2YgbGluZSAlZCwgYnV0IGZvdW5kIDB4JWhoeFxuIiwgbCwgYnVmZltuK3JdKTsKCQkJYmFkID0g
-MTsKCQkJLy8gRG9uJ3QgYnJlYWssIHNlZSBpZiB0aGVyZSdzIGEgbW9yZSBzZXJpb3VzIG1pc3Rh
-a2UgdGhhbiBhIFxyIC0+IFxuLgoJCX0KCX0KCi8vCWZwcmludGYoc3RkZXJyLCAiQnVmZmVyIHNl
-ZW4gYnkgc2xhdmUgaXM6XG4iKTsKLy8JZndyaXRlKGJ1ZmYsIFJFQURfQlVGRl9TWiwgMSwgc3Rk
-b3V0KTsKCWlmIChiYWQpIHsKCQl3cml0ZV9idWZmZXIoYnVmZiwgbm4sICIvdG1wL3B0bXhfb3V0
-LnR4dCIpOwoJCWZwcmludGYoc3RkZXJyLCAiU2VlIHBheWxvYWQgaW4gL3RtcC9wdG14X291dC50
-eHRcbiIpOwoJfSBlbHNlCgkJZnByaW50ZihzdGRlcnIsICJzbGF2ZSBzYXlzOiBldmVyeXRoaW5n
-J3Mgb2theVxuIik7Cn0KCnZvaWQgcHRteF9tYXN0ZXJfdGVzdChpbnQgcHR5LCBjb25zdCBjaGFy
-ICpsaW5lLCBzaXplX3Qgd3N6KSB7CgljaGFyICpidWZmID0gbWFsbG9jKEJVRkZfU1opOwoJc2l6
-ZV90IG4gPSAwOwoJc3NpemVfdCByOwoKCWlmICghYnVmZikgewoJCWZwcmludGYoc3RkZXJyLCAi
-RmFpbGVkIHRvIG1hbGxvYygzKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJcmV0dXJuOwoJ
-fQoKCS8qIGluaXRpYWxpemUgYnVmZmVyICovCglyID0gc3RybGVuKGxpbmUpOwoJZm9yIChuID0g
-MDsgbiA8IEJVRkZfU1o7IG4gKz0gcisxKSB7CgkJbWVtY3B5KGJ1ZmYgKyBuLCBsaW5lLCBuICsg
-ciA8IEJVRkZfU1ogPyByIDogQlVGRl9TWiAtIG4pOwoJCWlmIChuICsgciArIDEgPCBCVUZGX1Na
-KQoJCQlidWZmW24rcl0gPSAnXG4nOwoJfQoKCW4gPSAwOwoJZG8gewoJCWZwcmludGYoc3RkZXJy
-LCAid3JpdGUgJWRcbiIsIHdzeiArIG4gPiBCVUZGX1NaID8gQlVGRl9TWiAtIG4gOiB3c3opOwoJ
-CXIgPSB3cml0ZShwdHksIGJ1ZmYgKyBuLCB3c3ogKyBuID4gQlVGRl9TWiA/IEJVRkZfU1ogLSBu
-IDogd3N6KTsKCQlmcHJpbnRmKHN0ZGVyciwgIiAgICAgICAgICAgICAtPiB3cm90ZSAlZFxuIiwg
-cik7CgkJaWYgKHIgPT0gLTEpIHsKCQkJaWYgKGVycm5vID09IEVBR0FJTiB8fCBlcnJubyA9PSBF
-V09VTERCTE9DSyB8fCBlcnJubyA9PSBFSU5UUikgewoJCQkJZmRfc2V0IHdyaXRlX2ZkczsKCQkJ
-CUZEX1pFUk8oJndyaXRlX2Zkcyk7CgkJCQlGRF9TRVQocHR5LCAmd3JpdGVfZmRzKTsKCQkJCXNl
-bGVjdChwdHkrMSwgTlVMTCwgJndyaXRlX2ZkcywgTlVMTCwgTlVMTCk7CgkJCQljb250aW51ZTsK
-CQkJfQoJCQlmcHJpbnRmKHN0ZGVyciwgIkZhaWxlZCB0byB3cml0ZSgyKTogJXNcbiIsIHN0cmVy
-cm9yKGVycm5vKSk7CgkJCXJldHVybjsKCQl9IGVsc2UgaWYgKHIgPT0gMCkgewoJCQlicmVhazsK
-CQl9IGVsc2UgewoJCQluICs9IHI7CgkJfQoJfSB3aGlsZSAobiA8IEJVRkZfU1opOwoJZnByaW50
-ZihzdGRlcnIsICJtYXN0ZXIgaXMgc2xlZXBpbmcgbm93Li4uXG4iKTsKCXNsZWVwKDEwKTsKCWZw
-cmludGYoc3RkZXJyLCAibWFzdGVyIGV4aXRpbmdcbiIpOwoJY2xvc2UocHR5KTsKCXdyaXRlX2J1
-ZmZlcihidWZmLCBCVUZGX1NaLCAiL3RtcC9wdG14X2luLnR4dCIpOwp9CgppbnQgbWFpbigpIHsK
-CWNvbnN0IGNoYXIgKmxpbmUgPSAiMDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
-QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVoiOwoJY29uc3QgY2hhciAqcHRzZG5hbWUgPSBOVUxM
-OwoJaW50IHB0eSwgcGlkOwoJc2l6ZV90IHJzeiA9IDEsIHdzeiA9IDQwOTYgKiAyNTY7CgkKCXB0
-eSA9IG9wZW4oIi9kZXYvcHRteCIsIE9fUkRXUiAvKiB8IE9fTk9OQkxPQ0sgKi8pOwoJaWYgKHB0
-eSA9PSAtMSkgewoJCWZwcmludGYoc3RkZXJyLCAiRmFpbGVkIHRvIG9wZW4oMykgL2Rldi9wdG14
-OiAlc1xuIiwgc3RyZXJyb3IoZXJybm8pKTsKCQlyZXR1cm4gMTsKCX0KCglwdHNkbmFtZSA9IHB0
-c25hbWUocHR5KTsKCWZwcmludGYoc3RkZXJyLCAicHRzbmFtZSA9ICVzXG4iLCBwdHNkbmFtZSk7
-CglpZiAoIXB0c2RuYW1lKSB7CgkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gcHRzbmFtZSgz
-KTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJY2xvc2UocHR5KTsKCQlyZXR1cm4gMTsKCX0K
-CglpZiAoZ3JhbnRwdChwdHkpID09IC0xKSB7CgkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8g
-Z3JhbnRwdHkoMyk6ICVzXG4iLCBzdHJlcnJvcihlcnJubykpOwoJCWNsb3NlKHB0eSk7CgkJcmV0
-dXJuIDE7Cgl9CgoJaWYgKHVubG9ja3B0KHB0eSkgPT0gLTEpIHsKCQlmcHJpbnRmKHN0ZGVyciwg
-IkZhaWxlZCB0byB1bmxvY2twdCgzKTogJXNcbiIsIHN0cmVycm9yKGVycm5vKSk7CgkJY2xvc2Uo
-cHR5KTsKCQlyZXR1cm4gMTsKCX0KCglwaWQgPSBmb3JrKCk7CglpZiAocGlkID09IC0xKSB7CgkJ
-ZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gZm9yaygzKTogJXNcbiIsIHN0cmVycm9yKGVycm5v
-KSk7CgkJY2xvc2UocHR5KTsKCQlyZXR1cm4gMTsKCX0gZWxzZSBpZiAocGlkID09IDApIHsKCQlj
-bG9zZShwdHkpOwoKCQlwdHkgPSBvcGVuKHB0c2RuYW1lLCBPX1JEV1IpOwoJCWlmIChwdHkgPT0g
-LTEpIHsKCQkJZnByaW50ZihzdGRlcnIsICJGYWlsZWQgdG8gb3BlbigzKSAlczogJXNcbiIsIHB0
-c2RuYW1lLCBzdHJlcnJvcihlcnJubykpOwoJCQlyZXR1cm4gMTsKCQl9CgoJCXB0bXhfc2xhdmVf
-dGVzdChwdHksIGxpbmUsIHJzeik7CgkJY2xvc2UocHR5KTsKCQlyZXR1cm4gMDsKCX0gZWxzZSB7
-CgkJaW50IHM7CgkJcHRteF9tYXN0ZXJfdGVzdChwdHksIGxpbmUsIHdzeik7CgoJCWlmICh3YWl0
-cGlkKHBpZCwgJnMsIDApID09IC0xKSB7CgkJCWZwcmludGYoc3RkZXJyLCAiRmFpbGVkIHRvIHdh
-aXRwaWQoMikgZm9yICVkOiAlc1xuIiwgcGlkLCBzdHJlcnJvcihlcnJubykpOwoJCQlyZXR1cm4g
-MTsKCQl9CgkJaWYgKFdJRkVYSVRFRChzKSAmJiBXRVhJVFNUQVRVUyhzKSA9PSAwKQoJCQlyZXR1
-cm4gMDsKCQlpZiAoV0lGRVhJVEVEKHMpKQoJCQlmcHJpbnRmKHN0ZGVyciwgIkNoaWxkIGV4aXRl
-ZCB3aXRoICVkXG4iLCBXRVhJVFNUQVRVUyhzKSk7CgkJZWxzZSBpZiAoV0lGU0lHTkFMRUQocykp
-CgkJCWZwcmludGYoc3RkZXJyLCAiQ2hpbGQgZGllZCB3aXRoIHNpZ25hbCAlZFxuIiwgV1RFUk1T
-SUcocykpOwoJCWVsc2UKCQkJZnByaW50ZihzdGRlcnIsICJDaGlsZCB0ZXJtaW5hdGVkIGluIGFu
-IHVua25vd24gd2F5IHdpdGggc3RhdHVzICVkXG4iLCBzKTsKCQlyZXR1cm4gMTsKCX0KfQo=
---f46d0443067c1bece404b96c00d6--
