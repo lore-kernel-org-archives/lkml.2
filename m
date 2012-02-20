@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab2BTKUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 05:20:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33039 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab2BTKUd convert rfc822-to-8bit (ORCPT
+	id S1752808Ab2BTKVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 05:21:42 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49740 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2BTKVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 05:20:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.50.153.133 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
+	Mon, 20 Feb 2012 05:21:40 -0500
+Date: Mon, 20 Feb 2012 15:50:29 +0530
+From: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: KVM: perf: a smart tool to analyse kvm events
+Message-ID: <20120220102029.GC8666@linux.vnet.ibm.com>
+Reply-To: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+References: <20120216155248.6865.47935.sendpatchset@localhost.localdomain>
+ <4F3DBCD8.2020505@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4F416C9D.3030302@gmail.com>
-References: <1329683796.10124.21.camel@lappy> <1329686346-16752-1-git-send-email-jslaby@suse.cz>
- <4F416C9D.3030302@gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 20 Feb 2012 12:20:13 +0200
-Message-ID: <CA+1xoqfEUkVjRdE3BYnUVhvuPGCLhgbraZAEE9A9tfCKAXg9sQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] TTY: fix PTY hangup vs close race
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4F3DBCD8.2020505@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022010-5518-0000-0000-0000025E4467
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 19, 2012 at 11:41 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 02/19/2012 10:19 PM, Jiri Slaby wrote:
->> Commit d3bda5298 (TTY: get rid of BTM around devpts_*) moved
->> devpts_pty_kill out of BTM, but the BTM was not protecting only
->> devpts_pty_kill, but also tty->link. Hence move the function back at
->> this late stage until this gets resolved properly some time later.
->>
->> I was confused by tty_vhangup(tty->link) outside BTM. But inside of
->> tty_vhangup, there is a check for tty == NULL. But we cannot add such
->> a check here. We have to have the tty and free the devpts node...
->>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> Reported-by: Sasha Levin <levinsasha928@gmail.com>
->> ---
->>
->> Gee, I messed up Greg's address again...
->>
->>  drivers/tty/pty.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
->> index fa1bd2e..95037aa 100644
->> --- a/drivers/tty/pty.c
->> +++ b/drivers/tty/pty.c
->> @@ -54,8 +54,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
->>       wake_up_interruptible(&tty->link->write_wait);
->>       if (tty->driver->subtype == PTY_TYPE_MASTER) {
->>               set_bit(TTY_OTHER_CLOSED, &tty->flags);
->> -             tty_unlock();
->> +             /* BTM protects tty->link here */
->>               devpts_pty_kill(tty->link);
->> +             tty_unlock();
->
-> I'm afraid this won't help. As this is based on an assumption that
-> tty->link is NULL [*] and that is not just true.
->
-> Greg, please revert commit d3bda5298 completely.
->
-> [*] Your dump reveals that the code fetches tty->driver_data (mov
-> 0x428(%rdi),%rbx) and traps at a fetch of inode->i_sbm because inode is
-> NULL (mov    0x28(%rbx),%rax).
+* Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> [2012-02-17 10:35:04]:
 
-It actually looks even more complex than that. I reverted the patch
-above, but still got the error. A quick bisection pointed me to
-a50f724a432997321cabb6c9e665c28e34850f78.
+> On 02/16/2012 11:52 PM, Pradeep Kumar wrote:
+> 
+> > Xiao,
+> > 
+> >  i tried your perf events patch set on RHEL 6.1 host and failed to trace kvm-events with below error message.
+> > 
+> >   [root@kvm perf]# ./perf kvm-events report
+> >   Warning: unknown op '{'
+> >   Warning: Error: expected type 5 but read 1
+> >   Warning: failed to read event print fmt for hrtimer_start
+> >   Warning: unknown op '{'
+> >   Warning: Error: expected type 5 but read 1
+> >   Warning: failed to read event print fmt for hrtimer_expire_entry
+> >   Analyze events for all VCPUs:
+> >   VM-EXIT    Samples  Samples%     Time%         Avg time               
+> >   Total Samples:0, Total events handled time:0.00us.
+> >   [root@kvm perf]#          
+> > 	     
+> 
+> 
+> Thanks for your try, Pradeep!
+> 
+> It seems that kvm events do not be recorded.
+> 
+> Do your guest was running when kvm-events was executed?
 
-Looks like reverting both actually solves the problem. Reverting just
-one of them doesn't.
+Hello Xiao
+
+my guest was not running when i executed. 
+
+> What is the output of "./perf script | grep kvm_*"?
+
+[root@phx3 perf]# ./perf script | grep kvm_*
+Warning: unknown op '{'
+Warning: Error: expected type 5 but read 1
+Warning: failed to read event print fmt for hrtimer_start
+Warning: unknown op '{'
+Warning: Error: expected type 5 but read 1
+Warning: failed to read event print fmt for
+hrtimer_expire_entry
+# cmdline : /home/patch/linux/tools/perf/perf record -a -R
+# -f -m 1024 -c 1 -e kvm:kvm_entry -e kvm:kvm_exit -e
+# kvm:kvm_mmio -e kvm:kvm_pio -e timer:* 
+# event : name = kvm:kvm_entry, type = 2, config = 0x2ef,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0,
+# id = { 6241, 6242, 6243, 6244, 6245, 6246, 6247, 6248 }
+# event : name = kvm:kvm_exit, type = 2, config = 0x2ea,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0,
+# id = { 6249, 6250, 6251, 6252, 6253, 6254, 6255, 6256 }
+# event : name = kvm:kvm_mmio, type = 2, config = 0x2dd,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0,
+# id = { 6257, 6258, 6259, 6260, 6261, 6262, 6263, 6264 }
+# event : name = kvm:kvm_pio, type = 2, config = 0x2ed,
+# config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0,
+# id = { 6265, 6266, 6267, 6268, 6269, 6270, 6271, 6272 }
+no symbols found in /sbin/killall5, maybe install a debug
+package?
+
+--Pradeep
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
