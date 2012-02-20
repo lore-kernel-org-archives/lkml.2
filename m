@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab2BTLtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:49:47 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59361 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab2BTLtq (ORCPT
+	id S1753410Ab2BTLxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:53:41 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42393 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2BTLxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:49:46 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: James Hogan <james@albanarts.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL FOR v3.3] uvcvideo divide by 0 fix
-Date: Mon, 20 Feb 2012 12:49:39 +0100
-Message-ID: <1689974.qoel1Ujv1I@avalon>
-User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.0; x86_64; ; )
-In-Reply-To: <20120219234151.GA32005@balrog>
-References: <20120219234151.GA32005@balrog>
+	Mon, 20 Feb 2012 06:53:40 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <1329735073.2293.305.camel@twins>
+References: <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com> <4F04898B.1080600@redhat.com> <1325712710.3084.10.camel@laptop> <4F04C789.40209@redhat.com> <20120105091059.GA3249@elte.hu> <87fwe6ork3.fsf@abhimanyu.in.ibm.com> <1329735073.2293.305.camel@twins>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 20 Feb 2012 17:23:16 +0530
+Message-ID: <877gzhpvpv.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12022001-5140-0000-0000-000000C597E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Mon, 20 Feb 2012 11:51:13 +0100, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-02-20 at 13:38 +0530, Nikunj A Dadhania wrote:
+> > +#ifdef CONFIG_PARAVIRT_FLUSH_TLB
+> > +               while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
+> > +                       cpu_relax();
+> > +               if (!loop && !cpumask_empty(to_cpumask(f->flush_cpumask)))
+> > +                       halt();
+> 
+> 
+> That's just vile, you don't need to wait for it, all you need to make
+> sure is that when that vcpu wakes up it does the flush.
+>
+Yes, but we are not sure the vcpu will be sleeping or running. In the
+case where vcpus are running, it might be beneficial to wait a while.
 
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
+For example: If its a remote flush to only one of the vcpu and its
+already running, is it worthed to halt and come back?
 
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
-
-are available in the git repository at:
-  git://linuxtv.org/pinchartl/uvcvideo.git uvcvideo-stable
-
-The patch fixes a divide by 0 bug reported by a couple of users already. Could 
-you please make sure it gets into v3.3 ?
-
-Laurent Pinchart (1):
-      uvcvideo: Avoid division by 0 in timestamp calculation
-
- drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
-
--- 
 Regards,
+Nikunj
 
-Laurent Pinchart
