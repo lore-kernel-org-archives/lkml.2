@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab2BTUzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 15:55:23 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26484 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab2BTUzW (ORCPT
+	id S1753889Ab2BTU6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 15:58:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35467 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753329Ab2BTU6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 15:55:22 -0500
-Date: Mon, 20 Feb 2012 21:56:20 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-rdma@vger.kernel.org, Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Sean Hefty <sean.hefty@intel.com>, Roland Dreier <roland@kernel.org>,
-        Faisal Latif <faisal.latif@intel.com>
-Subject: [PATCH] IB: Fix potential mem leak in schedule_nes_timer()
-Message-ID: <alpine.LNX.2.00.1202202153230.20998@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 20 Feb 2012 15:58:03 -0500
+Date: Mon, 20 Feb 2012 12:57:57 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Fix and simplify debugfs support
+Message-ID: <20120220205756.GA3052@opensource.wolfsonmicro.com>
+References: <1329636505-13651-1-git-send-email-sboyd@codeaurora.org>
+ <20120220021157.GF3194@opensource.wolfsonmicro.com>
+ <4F41FA60.7090503@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+In-Reply-To: <4F41FA60.7090503@codeaurora.org>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/infiniband/hw/nes/nes_cm.c::schedule_nes_timer(), if we do
-not take the true branch of either the
-  (type == NES_TIMER_TYPE_SEND)
-or
-  (type == NES_TIMER_TYPE_SEND)
-'if' statements (which it looks like we potentially could since that
-enum can have other values), then we'll leak the memory allocated to
-'new_send'.
 
-This (admittedly, rather clumsy) patch addresses that issue by turning
-the two 'if's into 'if' 'else if' and then adding a 'else' branch
-where we note that we need to free the mem and then later, when we are
-done with it, does a conditional kfree() based on the bool we set in
-the 'else' branch.
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I also removed a redundant variable ('was_timer_set').
+On Sun, Feb 19, 2012 at 11:46:40PM -0800, Stephen Boyd wrote:
+> On 2/19/2012 6:12 PM, Mark Brown wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/infiniband/hw/nes/nes_cm.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+> >This was actually a deliberate decision to make the code more robust
+> >against change - the IS_ERR_OR_NULL doesn't make the code any bigger but
+> >it means it's less likely to break in the face of changes.
 
- Compile tested only.
+> More robust? The debugfs code in the regulator core looks confused
+> on what the return value is. Sometimes it's IS_ERR, sometimes it's
+> NULL, sometimes it's both. Might as well clean it up to be
+> consistent and proper.
 
-diff --git a/drivers/infiniband/hw/nes/nes_cm.c b/drivers/infiniband/hw/nes/nes_cm.c
-index a4972ab..434a25b 100644
---- a/drivers/infiniband/hw/nes/nes_cm.c
-+++ b/drivers/infiniband/hw/nes/nes_cm.c
-@@ -663,8 +663,8 @@ int schedule_nes_timer(struct nes_cm_node *cm_node, struct sk_buff *skb,
- 	unsigned long flags;
- 	struct nes_cm_core *cm_core = cm_node->cm_core;
- 	struct nes_timer_entry *new_send;
-+	bool free_new_send = false;
- 	int ret = 0;
--	u32 was_timer_set;
- 
- 	new_send = kzalloc(sizeof(*new_send), GFP_ATOMIC);
- 	if (!new_send)
-@@ -688,9 +688,7 @@ int schedule_nes_timer(struct nes_cm_node *cm_node, struct sk_buff *skb,
- 			return -EINVAL;
- 		}
- 		cm_node->recv_entry = new_send;
--	}
--
--	if (type == NES_TIMER_TYPE_SEND) {
-+	} else if (type == NES_TIMER_TYPE_SEND) {
- 		new_send->seq_num = ntohl(tcp_hdr(skb)->seq);
- 		atomic_inc(&new_send->skb->users);
- 		spin_lock_irqsave(&cm_node->retrans_list_lock, flags);
-@@ -714,15 +712,18 @@ int schedule_nes_timer(struct nes_cm_node *cm_node, struct sk_buff *skb,
- 				return ret;
- 			}
- 		}
-+	} else {
-+		free_new_send = true;
- 	}
- 
--	was_timer_set = timer_pending(&cm_core->tcp_timer);
--
--	if (!was_timer_set) {
-+	if (!timer_pending(&cm_core->tcp_timer)) {
- 		cm_core->tcp_timer.expires = new_send->timetosend;
- 		add_timer(&cm_core->tcp_timer);
- 	}
- 
-+	if (free_new_send)
-+		kfree(new_send);
-+
- 	return ret;
- }
- 
--- 
-1.7.9.1
+Well, the intention when I originally wrote it was to always check for
+all possible error codes.  Looking at the code in mainline it's pretty
+consistent, the class wide check and the per rdev checks are both open
+coded IS_ERR_OR_NULL() and the per supply stuff uses the helper.  The
+only case where we do a plain IS_ERR() is when we warn about not being
+able to create supply_map and the consistent thing there would just be
+to ignore the error since it's what we do for all the other individual
+files.
 
+This thing with returning NULL instead of an actual ERR_PTR() is pretty
+unhelpful really, especially for something like debugfs where the caller
+shouldn't care much if it works or not.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPQrPJAAoJEBus8iNuMP3dOrIP/2K0cVItI3H5Vx0LoaG3H7Vb
+Z46zABaStXJsk5MY76k1bfjZRn3YooRx9uimvLAGDqcLnb5j4SLGh2RU8PSpr/XG
+yoQmwNeFsMceVclcvdRlWjkqppTA4hPnVbwGXpUfbZYrUC+ammOByOXrmQZXBUtr
+vOTD6Ps7e8DhYLOa1AYdP2KhCrBmGyik77mMnjtQqmMhclpVy7K0ptsV/f4y01B2
+5A444fN5bqAhJZY8dGF4EuR/DwOsROIcTZ7pLTqIXLmF8p185HJLPdcZt1DGDLgy
+B0Z8oiItof1tvwcc0hL+L7i0ItFlFr7xDOcr6BAfODN3xiVMIxzJXCxLOsHHMej9
+xijclpyW8Qibga2AtTnGICcIjMg37i/glrHd3xmvd87QpPuYKsWkxhJk9Esybuef
+CpY381+tF0+AX2jtwL5xunFxspRYF0dAKAG2Fz5+x7+9O368XWI+QTGQsz/McYez
+GT3tb78GXq9ycP7Efsf5BxEAJxEaiSvXXAfmRoTDRm1K0BC0gyEYntgFDU2Oal7c
+y5m3FUjGie2dSv05ycZXy72t6FsoS0LyU/7sx3gabEicuOXv1hLW0vUrQPPsv0wQ
++JWulsmsiCoJm3SQqAZPmbjLEnhmMSPL8jCXMzD+NXKmYK38LDAHanhC9CrzOg+T
+nRQAulk0PCVdOjb785n2
+=kPTv
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
