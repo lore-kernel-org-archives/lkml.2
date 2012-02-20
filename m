@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab2BTIVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:21:43 -0500
-Received: from mail2.nsc.com ([12.238.8.132]:55241 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751368Ab2BTIVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:21:42 -0500
-X-WSS-ID: 0LZON81-0A-3G3-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "Axel Lin" <axel.lin@gmail.com>
-cc: "Richard Purdie" <rpurdie@rpsys.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Feb 2012 00:21:30 -0800
-Subject: RE: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
- initial value for max_brightness and brightness
-Thread-Topic: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
- initial value for max_brightness and brightness
-Thread-Index: Aczu1UszludPwLRqTXa0ybEPaFJAAwA0hNxg
-Message-ID: <B567DBAB974C0544994013492B949F8E3813076468@EXMAIL03.scwf.nsc.com>
-References: <1329635302.4818.1.camel@phoenix>
-In-Reply-To: <1329635302.4818.1.camel@phoenix>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	id S1752224Ab2BTIWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:22:43 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40157 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751368Ab2BTIWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:22:41 -0500
+Date: Mon, 20 Feb 2012 09:22:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH] fs: hardlink creation restrictions
+Message-ID: <20120220082223.GF30810@elte.hu>
+References: <20120218193857.GA30985@www.outflux.net>
+ <20120219124916.GB25900@elte.hu>
+ <CAGXu5jL-NZP9At16q-b6biszMAWQQ4HLzW3cHDQUf0m7PGwGbQ@mail.gmail.com>
 MIME-Version: 1.0
-X-WSS-ID: 635CDD041LS10489775-01-01
-Content-Type: text/plain;
- charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jL-NZP9At16q-b6biszMAWQQ4HLzW3cHDQUf0m7PGwGbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1K8Ll75011640
 
-Thanks for this patch.
 
-But it would be better if max_brightness of platform data is removed.
-Actually, there is no need to use max_brightness in the platform data.
-All LP855x devices have 8-bit brightness control register.
-Simply, value of max_brightness can be set to 255.
+* Kees Cook <keescook@chromium.org> wrote:
 
-I'll send the patch for this.
+> >> +#ifdef CONFIG_AUDIT
+> >> +     if (error) {
+> >> +             struct audit_buffer *ab;
+> >> +
+> >> +             ab = audit_log_start(current->audit_context,
+> >> +                                  GFP_KERNEL, AUDIT_AVC);
+> >> +             audit_log_format(ab, "op=linkat action=denied");
+> >> +             audit_log_format(ab, " pid=%d comm=", current->pid);
+> >> +             audit_log_untrustedstring(ab, current->comm);
+> >> +             audit_log_d_path(ab, " path=", old_path);
+> >> +             audit_log_format(ab, " dev=");
+> >> +             audit_log_untrustedstring(ab, inode->i_sb->s_id);
+> >> +             audit_log_format(ab, " ino=%lu", inode->i_ino);
+> >> +             audit_log_end(ab);
+> >> +     }
+> >> +#endif
+> >
+> > Small detail: don't these audit methods map to nothing on
+> > !CONFIG_AUDIT, allowing the #ifdef to be dropped? (if not then
+> > it should really be so.)
+> 
+> Ah-ha; a more careful look at audit.h agrees. :) I'll adjust 
+> this as well.
 
-Thanks & BR
-Milo -
+Another detail, I'd also stick those logging lines into a 
+separate inline function right before the linkat function, so 
+that the logging details do not obscure the main flow of VFS 
+logic:
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@gmail.com]
-> Sent: Sunday, February 19, 2012 4:08 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Richard Purdie; Kim, Milo; Andrew Morton
-> Subject: [PATCH] drivers/video/backlight/lp855x_bl.c: fix setting
-> initial value for max_brightness and brightness
-> 
-> Current code does not always ensure
-> pdata->initial_brightness <= pdata->max_brightness <= MAX_BRIGHTNESS.
-> Fix it.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/video/backlight/lp855x_bl.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/lp855x_bl.c
-> b/drivers/video/backlight/lp855x_bl.c
-> index d32c097..29a3af2 100644
-> --- a/drivers/video/backlight/lp855x_bl.c
-> +++ b/drivers/video/backlight/lp855x_bl.c
-> @@ -24,6 +24,7 @@
-> 
->  #define BUF_SIZE		(20)
->  #define DEFAULT_BL_NAME		"lcd-backlight"
-> +#define MAX_BRIGHTNESS		255
-> 
->  struct lp855x {
->  	const char *chipid;
-> @@ -171,10 +172,14 @@ static int lp855x_backlight_register(struct
-> lp855x *lp)
->  	char *name = pdata->name ? : DEFAULT_BL_NAME;
-> 
->  	props.type = BACKLIGHT_PLATFORM;
-> +
-> +	if (pdata->max_brightness > MAX_BRIGHTNESS)
-> +		pdata->max_brightness = MAX_BRIGHTNESS;
-> +	props.max_brightness = pdata->max_brightness;
-> +
-> +	if (pdata->initial_brightness > pdata->max_brightness)
-> +		pdata->initial_brightness = pdata->max_brightness;
->  	props.brightness = pdata->initial_brightness;
-> -	props.max_brightness =
-> -		(pdata->max_brightness < pdata->initial_brightness) ?
-> -		255 : pdata->max_brightness;
-> 
->  	bl = backlight_device_register(name, lp->dev, lp,
->  				       &lp855x_bl_ops, &props);
-> --
-> 1.7.5.4
-> 
-> 
+	if (error)
+		audit_log_linkat_denied(current, old_path, inode);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+... or so. People reading this function won't be interested in 
+the logging details 99.9% of the time.
+
+Thanks,
+
+	Ingo
