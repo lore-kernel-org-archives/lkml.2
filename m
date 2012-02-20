@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab2BTBqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 20:46:14 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63459 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab2BTBqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 20:46:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="127239063"
-Subject: Re: TCP_STREAM performance regression on commit b3613118
-From: "Alex,Shi" <alex.shi@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org, tim.c.chen@intel.com,
-        ying.huang@intel.com, netdev@vger.kernel.org
-In-Reply-To: <20120217.133327.1178765872497293871.davem@davemloft.net>
-References: <1329466694.12669.2976.camel@debian>
-	 <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20120217.133327.1178765872497293871.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Feb 2012 09:44:13 +0800
-Message-ID: <1329702253.14084.22.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1753225Ab2BTBq6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 20:46:58 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64601 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab2BTBq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 Feb 2012 20:46:56 -0500
+X-AuditID: 9c930197-b7cdbae000001518-0d-4f41a60df49e
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] perf stat: Fix event grouping on forked task
+Date: Mon, 20 Feb 2012 11:04:57 +0900
+Message-Id: <1329703498-25192-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.9
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-02-17 at 13:33 -0500, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Fri, 17 Feb 2012 10:50:39 +0100
-> 
-> > Le vendredi 17 février 2012 à 16:18 +0800, Alex,Shi a écrit :
-> >> The tcp_stream loop back performance has about 10% drop on the
-> >> commitment on our core2 2 sockets server. This commit has 2
-> >> parents(7505afe28, 5983fe), but both of them have no regression. So
-> >> guess the impact just happened when this 2 parents joint. That beyond
-> >> our capability to dig it more.
-> >> 
-> >> Any ideas? 
-> > 
-> > Most probably the more accurate truesize determination is responsible of
-> > this tcp regression, since some prior assumptions might be wrong.
-> > 
-> > Want to give more information on the workload ?
-> > Is it a 32 or 64 bit kernel ?
+When event group is enabled for forked task (i.e. no target task was
+specified) all events were disabled and marked ->enable_on_exec.
+However they are not counted at all since only group leader will be
+enabled on exec actually. So the result looked like below:
 
-It is 64 bit kernel. Currently we only care 64bit. 
+ $ ./perf stat --group -- sleep 1
 
-Will try to bring more statistic after our lab recovered. 
-> 
-> And let's start CC:'ing netdev too.
+ Performance counter stats for 'sleep 1':
 
+          0.554926 task-clock                #    0.001 CPUs utilized
+     <not counted> context-switches
+     <not counted> CPU-migrations
+     <not counted> page-faults
+     <not counted> cycles
+   <not supported> stalled-cycles-frontend
+   <not supported> stalled-cycles-backend
+     <not counted> instructions
+     <not counted> branches
+     <not counted> branch-misses
+
+       1.001228093 seconds time elapsed
+
+Fix it by disabling group leader only.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/builtin-stat.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index e54cbc9fc4fd..cda1e757ea87 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -296,7 +296,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 	if (system_wide)
+ 		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+ 						group, group_fd);
+-	if (!target_pid && !target_tid) {
++	if (!target_pid && !target_tid && (!group || evsel == first)) {
+ 		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
+ 	}
+-- 
+1.7.9
 
