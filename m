@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab2BTD4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 22:56:44 -0500
-Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:33258 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752113Ab2BTD4n (ORCPT
+	id S1752693Ab2BTECd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 23:02:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:41149 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab2BTECc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 22:56:43 -0500
-X-Greylist: delayed 65615 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 22:56:42 EST
-Date: Mon, 20 Feb 2012 04:49:13 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 04/18] ARM: at91: make ST (System Timer) soc independent
-Message-ID: <20120220034913.GG29599@game.jcrosoft.org>
-References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
- <957702b1ff83afcc0a8e842f53f05ff3f40b78b3.1329500622.git.nicolas.ferre@atmel.com>
- <4F419246.6080405@gmail.com>
- <20120220013825.GD29599@game.jcrosoft.org>
- <4F41A76D.1070409@gmail.com>
- <20120220030234.GE29599@game.jcrosoft.org>
- <4F41BB20.8000901@gmail.com>
- <20120220032324.GF29599@game.jcrosoft.org>
- <4F41C29D.2090702@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F41C29D.2090702@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 14156783954614725389
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+	Sun, 19 Feb 2012 23:02:32 -0500
+Date: Mon, 20 Feb 2012 15:02:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the remoteproc tree with the scsi tree
+Message-Id: <20120220150215.68e88ae1bf96e5790ecd19fd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_Feb_2012_15_02_15_+1100_M5V7eJ59ClSwVIct"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:48 Mon 20 Feb     , Ryan Mallon wrote:
-> On 20/02/12 14:23, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> 
-> > On 14:16 Mon 20 Feb     , Ryan Mallon wrote:
-> >> On 20/02/12 14:02, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >>
-> >>> On 12:52 Mon 20 Feb     , Ryan Mallon wrote:
-> >>>> On 20/02/12 12:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> >>>>
-> >>>>> On 11:22 Mon 20 Feb     , Ryan Mallon wrote:
-> >>>>>> On 18/02/12 04:49, Nicolas Ferre wrote:
-> >>>>>>
-> >>>>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> >>>>>>>
-> >>>>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> >>>>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >>>>>>> ---
-> >>>>>>>  arch/arm/mach-at91/at91rm9200.c              |    4 +-
-> >>>>>>>  arch/arm/mach-at91/at91rm9200_time.c         |   37 ++++++++++++++++----------
-> >>>>>>>  arch/arm/mach-at91/generic.h                 |    1 +
-> >>>>>>>  arch/arm/mach-at91/include/mach/at91_st.h    |   32 +++++++++++++++-------
-> >>>>>>>  arch/arm/mach-at91/include/mach/at91rm9200.h |    2 +-
-> >>>>>>>  drivers/watchdog/at91rm9200_wdt.c            |    8 +++---
-> >>>>>>>  6 files changed, 53 insertions(+), 31 deletions(-)
-> >>>>>>>
-> >>>>>>> diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-> >>>>>>
-> >>>>>> Hi Jean, Nicolas,
-> >>>>>>
-> >>>>>> Patch looks mostly good, couple of points below.
-> >>>>>>
-> >>>>>> ~Ryan
-> >>>>>>
-> >>>>>> <snip>
-> >>>>>>
-> >>>>>>>  	/* Cancel any pending alarm; flush any pending IRQ */
-> >>>>>>> -	at91_sys_write(AT91_ST_RTAR, alm);
-> >>>>>>> -	(void) at91_sys_read(AT91_ST_SR);
-> >>>>>>> +	at91_st_write(AT91_ST_RTAR, alm);
-> >>>>>>> +	(void) at91_st_read(AT91_ST_SR);
-> >>>>>>
-> >>>>>>
-> >>>>>> Can we please remove the (void) casting of the return value when making
-> >>>>>> this change, especially since at91_st_read is now a macro which doesn't
-> >>>>>> even have a return value. Same in a few other places.
-> >>>>> modification done by script and it's no the scope of this patch
-> >>>>
-> >>>>
-> >>>> That isn't an excuse to leave incorrect code there. It is a simple fix.
-> >>> no (void) in c means you don't care of the return so basically it's right
-> >>
-> >>
-> >> Because of the way the __raw_writel is defined you are casting the
-> >> result of an assignment, basically you are doing this:
-> >>
-> >>    int foo, bar;
-> >>
-> >>   (void)(foo = bar);
-> >>
-> >> Which is pointless. Don't make excuses for silly, redundant code. Fix
-> >> it, please.
-> > except it's a read it has nothing to do with that
-> 
-> 
-> It makes no difference, it is still equally pointless. We don't cast
-> unused return values to void, for functions or assignments, in the kernel.
-> 
-> It is pointless, superfluous code, and now is a really good opportunity
-> to fix it. You can probably even make your script do it for you :-).
-I do not want to do 2 thinks at the same time
-[
-if there is a need to o fix this, it must be done in other patch bisectable
+--Signature=_Mon__20_Feb_2012_15_02_15_+1100_M5V7eJ59ClSwVIct
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best Regards,
-J.
+Hi Ohad,
+
+Today's linux-next merge of the remoteproc tree got a conflict in
+include/linux/virtio_ids.h between commit 4fe74b1cb051 ("[SCSI]
+virtio-scsi: SCSI driver for QEMU based virtual machines") from the scsi
+tree and commit bcabbccabffe ("rpmsg: add virtio-based remote processor
+messaging bus") from the remoteproc tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/virtio_ids.h
+index c5d8455,b37c521..0000000
+--- a/include/linux/virtio_ids.h
++++ b/include/linux/virtio_ids.h
+@@@ -34,7 -34,7 +34,8 @@@
+  #define VIRTIO_ID_CONSOLE	3 /* virtio console */
+  #define VIRTIO_ID_RNG		4 /* virtio ring */
+  #define VIRTIO_ID_BALLOON	5 /* virtio balloon */
++ #define VIRTIO_ID_RPMSG		7 /* virtio remote processor messaging */
+ +#define VIRTIO_ID_SCSI		8 /* virtio scsi */
+  #define VIRTIO_ID_9P		9 /* 9p virtio console */
+ =20
+  #endif /* _LINUX_VIRTIO_IDS_H */
+
+--Signature=_Mon__20_Feb_2012_15_02_15_+1100_M5V7eJ59ClSwVIct
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPQcXHAAoJEECxmPOUX5FEgrUP/3UB2jBABH30nX7MLx+CsbSd
+76Odk14DkcaVvUe4eRSSLpnYuypSs9PK882H6aganaSiglBkJA1YMPuSy70Pj1uG
+DhcjCWEVWtPPKAyJt+fsOXroFn33ihB0oa8bboiV9G0dBjNuP31EqIgYMZj/9yx7
+OwoptEAZamz88cWOrbRUDKsbCOZVoyQOdZJACdobQ39DgXJ24Vl9jwkF99hb93kP
+ROUklHW3nYjr3CCyKzuhBAeSyFxy1gTJZQlq6eTz05G2vnT0U+DjcFCwCy6pGd6t
+XR+EPxgoJcK++E1tO15TQrBfzb5dP+l9I/gAUjcFcmSY9moAKxSdvg1h4XQroQ6K
+lFd++ZnWff03tAvPVltCBriv6s+80GbRLnNhqcZsMKnbA7rHDL81iKQP94bggyeC
+WSqUfWImUwwMutt4tC+DzVC+C7jxNS4kL7PUCRpMOrv+f90Mcalw7ig2yKAcuXtz
+fl7G3jbpXMDCxeUMLDL8oG/ctaayameTMIQ7b/a0L9HJt2C4oH0Y80Mg3w2u/ux6
+rGG2W12jgwfGDeJdYbN1/KW2JjkaSJwtWGxhEYzu3Wvie8nZbvX5c8fil3feychk
+s/gTs9URgX+goy9YX6tBxPOv8JqfjU4RM23QMbl/bUDbqcsSoIJlXWU/yh/4SLRE
+ULDIs9dznWMf/InK08op
+=t+fT
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_Feb_2012_15_02_15_+1100_M5V7eJ59ClSwVIct--
