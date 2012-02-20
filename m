@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2BTWoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 17:44:25 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61809 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab2BTWoX (ORCPT
+	id S1754770Ab2BTWoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 17:44:30 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61881 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab2BTWo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 17:44:23 -0500
-From: Haogang Chen <haogangchen@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, haogangchen@gmail.com
-Subject: [PATCH] FS: ext4: fix integer overflow in alloc_flex_gd()
-Date: Mon, 20 Feb 2012 17:41:24 -0500
-Message-Id: <1329777684-18396-1-git-send-email-haogangchen@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 20 Feb 2012 17:44:27 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of masami256@gmail.com designates 10.68.125.233 as permitted sender) smtp.mail=masami256@gmail.com; dkim=pass header.i=masami256@gmail.com
+From: Masami Ichikawa <masami256@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Masami Ichikawa <masami256@gmail.com>
+Subject: [PATCH] Fix memory leak in sysfs_sd_setsecdata().
+Date: Tue, 21 Feb 2012 07:43:50 +0900
+Message-Id: <1329777830-2942-1-git-send-email-masami256@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In alloc_flex_gd(), when flexbg_size is large, kmalloc size would
-overflow and flex_gd->groups would point to a buffer smaller than
-expected, causing OOB accesses when it is used.
+This patch fixies follwing two memory leak patterns that reported by kmemleak.
+sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
+It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
+sysfs_init_inode_attrs() to allocate memory.
+That code is this.
 
-Note that in ext4_resize_fs(), flexbg_size is calculated using
-sbi->s_log_groups_per_flex, which is read from the disk and only bounded
-to [1, 31]. The patch returns NULL for too large flexbg_size.
+iattrs = sd->s_iattr;
+if (!iattrs)
+                iattrs = sysfs_init_inode_attrs(sd);
 
-Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+The iattrs recieves sysfs_init_inode_attrs()'s result,  but sd->s_iattr
+doesn't know the address. so it needs to set correct address to
+sd->s_iattr to free memory in other function.
+
+unreferenced object 0xffff880250b73e60 (size 32):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    73 79 73 74 65 6d 5f 75 3a 6f 62 6a 65 63 74 5f  system_u:object_
+    72 3a 73 79 73 66 73 5f 74 3a 73 30 00 00 00 00  r:sysfs_t:s0....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff811270ab>] __kmalloc+0x100/0x12c
+    [<ffffffff8120775a>] context_struct_to_string+0x106/0x210
+    [<ffffffff81207cc1>] security_sid_to_context_core+0x10b/0x129
+    [<ffffffff812090ef>] security_sid_to_context+0x10/0x12
+    [<ffffffff811fb0da>] selinux_inode_getsecurity+0x7d/0xa8
+    [<ffffffff811fb127>] selinux_inode_getsecctx+0x22/0x2e
+    [<ffffffff811f4d62>] security_inode_getsecctx+0x16/0x18
+    [<ffffffff81191dad>] sysfs_setxattr+0x96/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+unreferenced object 0xffff88024163c5a0 (size 96):
+  comm "systemd", pid 1, jiffies 4294683888 (age 94.553s)
+  hex dump (first 32 bytes):
+    00 00 00 00 ed 41 00 00 00 00 00 00 00 00 00 00  .....A..........
+    00 00 00 00 00 00 00 00 0c 64 42 4f 00 00 00 00  .........dBO....
+  backtrace:
+    [<ffffffff814cb1d0>] kmemleak_alloc+0x73/0x98
+    [<ffffffff81127402>] kmem_cache_alloc_trace+0xc4/0xee
+    [<ffffffff81191cbe>] sysfs_init_inode_attrs+0x2a/0x83
+    [<ffffffff81191dd6>] sysfs_setxattr+0xbf/0x117
+    [<ffffffff811542f0>] __vfs_setxattr_noperm+0x73/0xd9
+    [<ffffffff811543d9>] vfs_setxattr+0x83/0xa1
+    [<ffffffff811544c6>] setxattr+0xcf/0x101
+    [<ffffffff81154745>] sys_lsetxattr+0x6a/0x8f
+    [<ffffffff814efda9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+`
+
+Signed-off-by: Masami Ichikawa <masami256@gmail.com>
 ---
- fs/ext4/resize.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/sysfs/inode.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index f9d948f..8601f4b 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -161,6 +161,8 @@ static struct ext4_new_flex_group_data *alloc_flex_gd(unsigned long flexbg_size)
- 	if (flex_gd == NULL)
- 		goto out3;
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index 85eb816..feb2d69 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -136,12 +136,13 @@ static int sysfs_sd_setsecdata(struct sysfs_dirent *sd, void **secdata, u32 *sec
+ 	void *old_secdata;
+ 	size_t old_secdata_len;
  
-+	if (flexbg_size >= UINT_MAX / sizeof(struct ext4_new_flex_group_data))
-+		goto out2;
- 	flex_gd->count = flexbg_size;
+-	iattrs = sd->s_iattr;
+-	if (!iattrs)
+-		iattrs = sysfs_init_inode_attrs(sd);
+-	if (!iattrs)
+-		return -ENOMEM;
++	if (!sd->s_iattr) {
++		sd->s_iattr = sysfs_init_inode_attrs(sd);
++		if (!sd->s_iattr)
++			return -ENOMEM;
++	}
  
- 	flex_gd->groups = kmalloc(sizeof(struct ext4_new_group_data) *
++	iattrs = sd->s_iattr;
+ 	old_secdata = iattrs->ia_secdata;
+ 	old_secdata_len = iattrs->ia_secdata_len;
+ 
 -- 
-1.7.5.4
+1.7.7.6
 
