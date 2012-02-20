@@ -1,104 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab2BTBrP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 20:47:15 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64601 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893Ab2BTBq5 (ORCPT
+	id S1752909Ab2BTBwv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 20:52:51 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59974 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab2BTBwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 20:46:57 -0500
-X-AuditID: 9c930197-b7cdbae000001518-12-4f41a60db473
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] perf tools: Do not disable members of group event
-Date: Mon, 20 Feb 2012 11:04:58 +0900
-Message-Id: <1329703498-25192-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329703498-25192-1-git-send-email-namhyung.kim@lge.com>
-References: <1329703498-25192-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 19 Feb 2012 20:52:50 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.236.167 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F41A76D.1070409@gmail.com>
+Date: Mon, 20 Feb 2012 12:52:45 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/18] ARM: at91: make ST (System Timer) soc independent
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <957702b1ff83afcc0a8e842f53f05ff3f40b78b3.1329500622.git.nicolas.ferre@atmel.com> <4F419246.6080405@gmail.com> <20120220013825.GD29599@game.jcrosoft.org>
+In-Reply-To: <20120220013825.GD29599@game.jcrosoft.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When event group is enabled for forked task (i.e. no target task/cpu
-was specified) all events were disabled and marked ->enable_on_exec.
-However they wouldn't be counted at all since only group leader will
-be enabled on exec actually.
+On 20/02/12 12:38, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-In contrast to perf stat, perf record doesn't have a real problem
-as it enables all the event before proceeding. But it needs to be
-fixed anyway IMHO.
+> On 11:22 Mon 20 Feb     , Ryan Mallon wrote:
+>> On 18/02/12 04:49, Nicolas Ferre wrote:
+>>
+>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>
+>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> ---
+>>>  arch/arm/mach-at91/at91rm9200.c              |    4 +-
+>>>  arch/arm/mach-at91/at91rm9200_time.c         |   37 ++++++++++++++++----------
+>>>  arch/arm/mach-at91/generic.h                 |    1 +
+>>>  arch/arm/mach-at91/include/mach/at91_st.h    |   32 +++++++++++++++-------
+>>>  arch/arm/mach-at91/include/mach/at91rm9200.h |    2 +-
+>>>  drivers/watchdog/at91rm9200_wdt.c            |    8 +++---
+>>>  6 files changed, 53 insertions(+), 31 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+>>
+>> Hi Jean, Nicolas,
+>>
+>> Patch looks mostly good, couple of points below.
+>>
+>> ~Ryan
+>>
+>> <snip>
+>>
+>>>  	/* Cancel any pending alarm; flush any pending IRQ */
+>>> -	at91_sys_write(AT91_ST_RTAR, alm);
+>>> -	(void) at91_sys_read(AT91_ST_SR);
+>>> +	at91_st_write(AT91_ST_RTAR, alm);
+>>> +	(void) at91_st_read(AT91_ST_SR);
+>>
+>>
+>> Can we please remove the (void) casting of the return value when making
+>> this change, especially since at91_st_read is now a macro which doesn't
+>> even have a return value. Same in a few other places.
+> modification done by script and it's no the scope of this patch
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/util/evlist.c |    6 ++++--
- tools/perf/util/evsel.c  |    6 ++++--
- tools/perf/util/evsel.h  |    3 ++-
- 3 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index f8da9fada002..ec4e338ee291 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -51,13 +51,15 @@ struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
- void perf_evlist__config_attrs(struct perf_evlist *evlist,
- 			       struct perf_record_opts *opts)
- {
--	struct perf_evsel *evsel;
-+	struct perf_evsel *evsel, *first;
- 
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
- 
-+	first = list_entry(evlist->entries.next, struct perf_evsel, node);
-+
- 	list_for_each_entry(evsel, &evlist->entries, node) {
--		perf_evsel__config(evsel, opts);
-+		perf_evsel__config(evsel, opts, first);
- 
- 		if (evlist->nr_entries > 1)
- 			evsel->attr.sample_type |= PERF_SAMPLE_ID;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 302d49a9f985..c92693c3d108 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -63,7 +63,8 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
- 	return evsel;
- }
- 
--void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
-+void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
-+			struct perf_evsel *first)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
-@@ -130,7 +131,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
- 	attr->mmap = track;
- 	attr->comm = track;
- 
--	if (!opts->target_pid && !opts->target_tid && !opts->system_wide) {
-+	if (!opts->target_pid && !opts->target_tid && !opts->system_wide &&
-+	    (!opts->group || evsel == first)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 326b8e4d5035..3158ca3d69a1 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -80,7 +80,8 @@ void perf_evsel__exit(struct perf_evsel *evsel);
- void perf_evsel__delete(struct perf_evsel *evsel);
- 
- void perf_evsel__config(struct perf_evsel *evsel,
--			struct perf_record_opts *opts);
-+			struct perf_record_opts *opts,
-+			struct perf_evsel *first);
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
--- 
-1.7.9
+That isn't an excuse to leave incorrect code there. It is a simple fix.
 
+~Ryan
