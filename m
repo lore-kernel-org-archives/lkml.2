@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab2BTLT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:19:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49406 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab2BTLT6 (ORCPT
+	id S1753148Ab2BTLWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:22:09 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54730 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545Ab2BTLWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:19:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of thomas.weber.linux@googlemail.com designates 10.204.129.220 as permitted sender) smtp.mail=thomas.weber.linux@googlemail.com; dkim=pass header.i=thomas.weber.linux@googlemail.com
-Message-ID: <4F422C2B.9030908@gmail.com>
-Date: Mon, 20 Feb 2012 12:19:07 +0100
-From: Thomas Weber <thomas.weber.linux@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120213 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Thomas Weber <thomas.weber.linux@googlemail.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>, GregKH <greg@kroah.com>,
-        Thomas Weber <weber@corscience.de>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 0/3] Small fixes for w1_bq27000 driver
-References: <20120219020910.4958.46866.stgit@notabene.brown> <4F409BAF.9070809@gmail.com> <20120219180608.342a8877@notabene.brown>
-In-Reply-To: <20120219180608.342a8877@notabene.brown>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Feb 2012 06:22:06 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@kernel.org
+Subject: [PATCH -V1 0/9] hugetlbfs: Add cgroup resource controller for hugetlbfs
+Date: Mon, 20 Feb 2012 16:51:33 +0530
+Message-Id: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+x-cbid: 12022001-5490-0000-0000-000000C5AE74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Neil,
+Hi,
 
-thanks for the link to your git repo. I checked today with an
-oscilloscope and there were no communication between the omap and the
-battery. I then merged your whole hdq branch and now it works.
+This patchset implements a cgroup resource controller for HugeTLB pages.
+It is similar to the existing hugetlb quota support in that the limit is
+enforced at mmap(2) time and not at fault time. HugeTLB quota limit the
+number of huge pages that can allocated per superblock.
 
-Thanks. Have to look, which commit makes it work.
+For shared mapping we track the region mapped by a task along with the
+hugetlb cgroup. We keep the hugetlb cgroup charged even after the task
+that did mmap(2) exit. The uncharge happens during truncate. For Private
+mapping we charge and uncharge from the current task cgroup.
+
+A sample strace output for an application doing malloc with hugectl is given
+below. libhugetlbfs will fallback to normal pagesize if the HugeTLB mmap fails.
+
+open("/mnt/libhugetlbfs.tmp.uhLMgy", O_RDWR|O_CREAT|O_EXCL, 0600) = 3
+unlink("/mnt/libhugetlbfs.tmp.uhLMgy")  = 0
+
+.........
+
+mmap(0x20000000000, 50331648, PROT_READ|PROT_WRITE, MAP_PRIVATE, 3, 0) = -1 ENOMEM (Cannot allocate memory)
+write(2, "libhugetlbfs", 12libhugetlbfs)            = 12
+write(2, ": WARNING: New heap segment map" ....
+mmap(NULL, 42008576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xfff946c0000
+....
 
 
-Thomas
+Changes from RFC post:
+* Added support for HugeTLB cgroup hierarchy
+* Added support for task migration
+* Added documentation patch
+* Other Bug fixes
 
-
-On 19.02.2012 08:06, NeilBrown wrote:
-> On Sun, 19 Feb 2012 07:50:23 +0100 Thomas Weber
-> <thomas.weber.linux@googlemail.com> wrote:
-> 
->> On 02/19/2012 03:10 AM, NeilBrown wrote:
->>> The following three patches fix a problem with the w1 interface for
->>> the bq27000 battery charge meter, and remove some unnecessary code.
->>>
->>> thanks,
->>> NeilBrown
->>>
->>>
->>> ---
->>>
->>> NeilBrown (3):
->>>        w1_bq27000: Only one thread can access the bq27000 at a time.
->>>        w1_bq27000 - remove w1_bq27000_write
->>>        w1_bq27000: remove unnecessary NULL test.
->>>
->>>
->>>   drivers/w1/slaves/w1_bq27000.c |   19 ++-----------------
->>>   1 files changed, 2 insertions(+), 17 deletions(-)
->>>
->> Hello Neil,
->> I have the following problem. The board not correctly reads the values 
->> from the bq27000. It also doesn't detects if the bq27000 is connected. I 
->> think it always reads 0xFF.
->>
->> Do you have an omap3 board and a bq27000 battery?
-> 
-> Yes, I have an OMAP3 with the HDQ line connected to a battery with a bq27000
-> in it.  It now works fine.
-> 
-> When I first started working on it I would sometimes get problems with lots
-> of 0xFF being read, usually with lots of delays.
-> 
-> One problem was that during boot there would often be multiple threads
-> accessing the battery and tripping over each other.
-> The third patch of this set fixes that.
-> 
-> The other problem was power saving issues in the OMAP3 drivers.  These
-> we address with lots of help from Paul Walmsley.
-> 
-> You can find my current set of HDQ patches here:
-> 
-> http://neil.brown.name/git?p=gta04;a=shortlog;h=refs/heads/hdq
-> 
->  (or git://neil.brown.name/gta04 hdq)
-> 
-> Most of these are from Paul.
-> 
-> Please let me know if they help.
-> 
-> NeilBrown
+-aneesh
 
