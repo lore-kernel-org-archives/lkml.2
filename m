@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab2BTIOh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 03:14:37 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38255 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab2BTIOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 03:14:36 -0500
-Date: Mon, 20 Feb 2012 09:14:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-Message-ID: <20120220081416.GE30810@elte.hu>
-References: <87pqf5mqg4.fsf@abhimanyu.in.ibm.com>
- <4F017AD2.3090504@redhat.com>
- <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
- <4F046536.5080207@redhat.com>
- <4F048295.1050907@redhat.com>
- <4F04898B.1080600@redhat.com>
- <1325712710.3084.10.camel@laptop>
- <4F04C789.40209@redhat.com>
- <20120105091059.GA3249@elte.hu>
- <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
+	id S1752044Ab2BTIUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 03:20:43 -0500
+Received: from nctlincom01.orcon.net.nz ([60.234.4.74]:58368 "EHLO
+	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2BTIUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 03:20:41 -0500
+Message-ID: <4F420256.2090600@orcon.net.nz>
+Date: Mon, 20 Feb 2012 21:20:38 +1300
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fwe6ork3.fsf@abhimanyu.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+To: Michel Lespinasse <walken@google.com>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Turner <mattst88@gmail.com>
+Subject: alpha: futex regression bisected
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx4.orcon.net.nz on Mon, 20 Feb 2012 21:20:39 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Mon Feb 20 21:20:39 2012
+X-DSPAM-Confidence: 0.5675
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: 0.00 () [Hold at 5.00] 
+X-CanIt-Geo: ip=60.234.221.162; country=NZ; region=E7; city=Auckland; latitude=-36.8667; longitude=174.7667; http://maps.google.com/maps?q=-36.8667,174.7667&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 06GA8kh9T - 5bd69d4b7d0d - 20120220
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I have noticed some user space problems (pulseaudio crashes in pthread
+code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
+systems) that arise when using a 2.6.39 or later kernel on Alpha.
+Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
+criterion for good/bad kernel) eventually leads to:
 
-* Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
+commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
+Author: Michel Lespinasse <walken@google.com>
+Date:   Thu Mar 10 18:50:58 2011 -0800
 
-> > Here it would massively improve performance - without 
-> > regressing the scheduler code massively.
-> 
-> I tried doing an experiment with the flush_tlb_others_ipi. 
-> This depends on Raghu's "kvm : Paravirt-spinlock support for 
-> KVM guests" (https://lkml.org/lkml/2012/1/14/66), which has 
-> new hypercall for kicking another vcpu out of halt.
-> 
->   Here are the results from non-PLE hardware. Running ebizzy 
->   workload inside the VMs. The table shows the ebizzy score - 
->   Records/sec.
-> 
->   8CPU Intel Xeon, HT disabled, 64 bit VM(8vcpu, 1G RAM)
-> 
->   +--------+------------+------------+-------------+
->   |        |  baseline  |   gang     |   pv_flush  |
->   +--------+------------+------------+-------------+
->   |   2VM  |   3979.50  |   8818.00  |   11002.50  |
->   |   4VM  |   1817.50  |   6236.50  |    6196.75  |
->   |   8VM  |    922.12  |   4043.00  |    4001.38  |
->   +--------+------------+------------+-------------+
+    futex: Sanitize futex ops argument types
 
-Very nice results!
+    Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
+    prototypes to use u32 types for the futex as this is the data type the
+    futex core code uses all over the place.
 
-Seems like the PV approach is massively faster on 2 VMs than 
-even the gang scheduling hack, because it attacks the problem
-at its root, not just the symptom.
+Looking at the commit I see there is a change of the uaddr argument in
+the Alpha architecture specific code for futexes from int to u32, but I
+don't see why this should cause a problem.
 
-The patch is also an order of magnitude simpler. Gang 
-scheduling, R.I.P.
+I am hoping someone better than I at Alpha assembly (Richard?, Ivan?)
+might be able to look at the commit and propose a fix!
 
-Thanks,
-
-	Ingo
+Cheers
+Michael.
