@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab2BTRBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:01:52 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60661 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2BTRBv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:01:51 -0500
-Message-ID: <1329757291.2293.372.camel@twins>
-Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Mon, 20 Feb 2012 18:01:31 +0100
-In-Reply-To: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752983Ab2BTREX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:04:23 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21482 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750730Ab2BTREX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 12:04:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="68387841"
+Date: Mon, 20 Feb 2012 18:11:30 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@st.com>,
+        Michel Jaouen <michel.jaouen@stericsson.com>,
+        Chris Blair <chris.blair@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd/stmpe: Add support for no-interrupt config
+Message-ID: <20120220171130.GA7950@sortiz-mobl>
+References: <1327400314-18030-1-git-send-email-linus.walleij@stericsson.com>
+ <20120220170620.GG5387@sortiz-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220170620.GG5387@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 20, 2012 at 06:06:20PM +0100, Samuel Ortiz wrote:
+> Hi Linus,
+> 
+> On Tue, Jan 24, 2012 at 11:18:34AM +0100, Linus Walleij wrote:
+> > From: Chris Blair <chris.blair@stericsson.com>
+> > 
+> > Adds support for boards which have an STMPE device without the
+> > interrupt pin connected.
+> Applied, thanks.
+I applied v3 of this patch...
 
-One more thing though, check what it all does when you run with the
-'default' jiffies based sched_clock(). Nobody sane should use that, but
-then there's bound to be people who disagree with that :-)
+Cheers,
+Samuel.
 
-I suspect it will all more or less work out, but someone should verify
-that it actually does. It would be such a shame to have to revert this
-because we broken something daft like m68k or so ;-)
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
