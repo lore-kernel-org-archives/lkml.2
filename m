@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab2BTGq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 01:46:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5167 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab2BTGqL (ORCPT
+	id S1751327Ab2BTHCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 02:02:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37364 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2BTHCL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 01:46:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 19 Feb 2012 22:46:09 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: B29396@freescale.com, s.hauer@pengutronix.de, dongas86@gmail.com,
-        shawn.guo@linaro.org, thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 05/20] pinctrl: Re-order pinmux.[ch] to match each-other
-Date: Sun, 19 Feb 2012 23:45:45 -0700
-Message-Id: <1329720360-23227-6-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 20 Feb 2012 02:02:11 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.50.36.230 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20120220022430.GI3194@opensource.wolfsonmicro.com>
+References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
+	<1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+	<1328856038-21912-4-git-send-email-myungjoo.ham@samsung.com>
+	<20120220022430.GI3194@opensource.wolfsonmicro.com>
+Date: Mon, 20 Feb 2012 16:02:11 +0900
+X-Google-Sender-Auth: L9HzuF3E2qlyIrRiQ3IFBjTSLqk
+Message-ID: <CAJ0PZbQToSWbPQPF_ku9rmuesNs+aYHdVEsoBvMFijz3PVL1qA@mail.gmail.com>
+Subject: Re: [PATCH v5 3/5] Extcon: support multiple states at a device.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify the two files so that the order of function prototypes in the
-header matches the order of implementations in the .c file.
+On Mon, Feb 20, 2012 at 11:24 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Feb 10, 2012 at 03:40:36PM +0900, MyungJoo Ham wrote:
+>
+>> +     [EXTCON_AUDIO_IN]       = "Audio-in",
+>> +     [EXTCON_AUDIO_OUT]      = "Audio-out",
+>
+> Can I suggest making these more specific - how about
+>
+>        [EXTCON_LINE_IN]        = "Line-in",
+>        [EXTCON_LINE_OUT]       = "Line-out",
+>        [EXTCON_MIC_IN]         = "Microphone",
+>        [EXTCON_HEADPHONE_OUT]  = "Headphone",
+>
+> as a starting point?  The distinction between line and the other two is
+> often pretty important from a UI/system interaction point of view.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/pinctrl/pinmux.c |   56 +++++++++++++++++++++++-----------------------
- drivers/pinctrl/pinmux.h |   16 ++++++------
- 2 files changed, 36 insertions(+), 36 deletions(-)
+Sure, this looks more generic. I'll add them along with SPDIF in/out.
 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 24c4de1..2887897 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -40,6 +40,34 @@ struct pinmux_group {
- 	unsigned group_selector;
- };
- 
-+int pinmux_check_ops(struct pinctrl_dev *pctldev)
-+{
-+	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-+	unsigned selector = 0;
-+
-+	/* Check that we implement required operations */
-+	if (!ops->list_functions ||
-+	    !ops->get_function_name ||
-+	    !ops->get_function_groups ||
-+	    !ops->enable ||
-+	    !ops->disable)
-+		return -EINVAL;
-+
-+	/* Check that all functions registered have names */
-+	while (ops->list_functions(pctldev, selector) >= 0) {
-+		const char *fname = ops->get_function_name(pctldev,
-+							   selector);
-+		if (!fname) {
-+			pr_err("pinmux ops has no name for function%u\n",
-+				selector);
-+			return -EINVAL;
-+		}
-+		selector++;
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * pin_request() - request a single pin to be muxed in, typically for GPIO
-  * @pin: the pin number in the global pin space
-@@ -553,34 +581,6 @@ void pinmux_disable(struct pinctrl *p)
- 	}
- }
- 
--int pinmux_check_ops(struct pinctrl_dev *pctldev)
--{
--	const struct pinmux_ops *ops = pctldev->desc->pmxops;
--	unsigned selector = 0;
--
--	/* Check that we implement required operations */
--	if (!ops->list_functions ||
--	    !ops->get_function_name ||
--	    !ops->get_function_groups ||
--	    !ops->enable ||
--	    !ops->disable)
--		return -EINVAL;
--
--	/* Check that all functions registered have names */
--	while (ops->list_functions(pctldev, selector) >= 0) {
--		const char *fname = ops->get_function_name(pctldev,
--							   selector);
--		if (!fname) {
--			pr_err("pinmux ops has no name for function%u\n",
--				selector);
--			return -EINVAL;
--		}
--		selector++;
--	}
--
--	return 0;
--}
--
- #ifdef CONFIG_DEBUG_FS
- 
- /* Called from pincontrol core */
-diff --git a/drivers/pinctrl/pinmux.h b/drivers/pinctrl/pinmux.h
-index 7680a17..84b8fe9 100644
---- a/drivers/pinctrl/pinmux.h
-+++ b/drivers/pinctrl/pinmux.h
-@@ -13,8 +13,6 @@
- #ifdef CONFIG_PINMUX
- 
- int pinmux_check_ops(struct pinctrl_dev *pctldev);
--void pinmux_init_device_debugfs(struct dentry *devroot,
--				struct pinctrl_dev *pctldev);
- int pinmux_request_gpio(struct pinctrl_dev *pctldev,
- 			struct pinctrl_gpio_range *range,
- 			unsigned pin, unsigned gpio);
-@@ -36,6 +34,8 @@ int pinmux_apply_muxmap(struct pinctrl_dev *pctldev,
- void pinmux_put(struct pinctrl *p);
- int pinmux_enable(struct pinctrl *p);
- void pinmux_disable(struct pinctrl *p);
-+void pinmux_init_device_debugfs(struct dentry *devroot,
-+				struct pinctrl_dev *pctldev);
- void pinmux_dbg_show(struct seq_file *s, struct pinctrl *p);
- 
- #else
-@@ -45,11 +45,6 @@ static inline int pinmux_check_ops(struct pinctrl_dev *pctldev)
- 	return 0;
- }
- 
--static inline void pinmux_init_device_debugfs(struct dentry *devroot,
--					      struct pinctrl_dev *pctldev)
--{
--}
--
- static inline int pinmux_request_gpio(struct pinctrl_dev *pctldev,
- 			struct pinctrl_gpio_range *range,
- 			unsigned pin, unsigned gpio)
-@@ -95,7 +90,12 @@ static inline void pinmux_disable(struct pinctrl *p)
- {
- }
- 
--void pinmux_dbg_show(struct seq_file *s, struct pinctrl *p)
-+static inline void pinmux_init_device_debugfs(struct dentry *devroot,
-+					      struct pinctrl_dev *pctldev)
-+{
-+}
-+
-+static inline void pinmux_dbg_show(struct seq_file *s, struct pinctrl *p)
- {
- }
- 
+>
+>> +     /* TODO: remove before submit */
+>> +     pr_info("[%s][%d]\n", buffer, enabled);
+>
+> :)
+
+Whoops...
+
 -- 
-1.7.5.4
-
+MyungJoo Ham, Ph.D.
+System S/W Lab, Software Center, Samsung Electronics
