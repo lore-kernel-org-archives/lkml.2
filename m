@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2BTB3f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 20:29:35 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58391 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab2BTB3d (ORCPT
+	id S1752882Ab2BTBcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 20:32:48 -0500
+Received: from 9.mo5.mail-out.ovh.net ([178.32.96.204]:60984 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752215Ab2BTBcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 20:29:33 -0500
-X-AuditID: 9c93016f-b7c04ae000000eac-3c-4f41a1faa687
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH RESEND 2/2] perf tools: Add error message for EMFILE
-Date: Mon, 20 Feb 2012 10:47:27 +0900
-Message-Id: <1329702447-25045-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329702447-25045-1-git-send-email-namhyung.kim@lge.com>
-References: <1329702447-25045-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 19 Feb 2012 20:32:47 -0500
+X-Greylist: delayed 65380 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 Feb 2012 20:32:47 EST
+Date: Mon, 20 Feb 2012 02:25:20 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH 11/18] ARM: at91/rtc-at91sam9: each SoC can select the
+ RTT device to use
+Message-ID: <20120220012520.GB29599@game.jcrosoft.org>
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com>
+ <9d1120bd8f1cf0615ff5044745b00fd3988397a7.1329500622.git.nicolas.ferre@atmel.com>
+ <4F4194AB.40403@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F4194AB.40403@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 11726529005655599885
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeguddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a user tries to open so many event on multiple tasks/cpus,
-perf_event_open syscall may fail with EMFILE. Provide an advice
-for that case.
+On 11:32 Mon 20 Feb     , Ryan Mallon wrote:
+> On 18/02/12 04:50, Nicolas Ferre wrote:
+> 
+> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > 
+> > For the RTT as RTC driver rtc-at91sam9, the platform_device structure
+> > is filled during SoC initialization. This will allow to convert this
+> > RTC driver as a standard platform driver.
+> > 
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > ---
+> >  arch/arm/mach-at91/at91sam9260_devices.c |   11 +++++
+> >  arch/arm/mach-at91/at91sam9261_devices.c |   10 +++++
+> >  arch/arm/mach-at91/at91sam9263_devices.c |   25 ++++++++++++
+> >  arch/arm/mach-at91/at91sam9g45_devices.c |   10 +++++
+> >  arch/arm/mach-at91/at91sam9rl_devices.c  |   10 +++++
+> >  drivers/rtc/rtc-at91sam9.c               |   61 ++++-------------------------
+> >  6 files changed, 75 insertions(+), 52 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+> > index b93a337..2071017 100644
+> > --- a/arch/arm/mach-at91/at91sam9260_devices.c
+> > +++ b/arch/arm/mach-at91/at91sam9260_devices.c
+> > @@ -728,8 +728,19 @@ static struct platform_device at91sam9260_rtt_device = {
+> >  	.num_resources	= ARRAY_SIZE(rtt_resources),
+> >  };
+> >  
+> > +
+> > +#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+> > +static void __init at91_add_device_rtt_rtc(void)
+> > +{
+> > +	at91sam9260_rtt_device.name = "rtc-at91sam9";
+> > +}
+> 
+> 
+> Nitpickish: This function doesn't _add_ anything. It would probably be
+> better called at91_init_device_rtt_rtc. Same goes for the other "add"
+> functions in this patch.
+yes but an other patch update it to add gpbr resource
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-record.c |    5 +++++
- tools/perf/builtin-stat.c   |    4 ++++
- tools/perf/builtin-top.c    |    3 ++-
- 3 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> > +#else
+> > +static void __init at91_add_device_rtt_rtc(void) {}
+> > +#endif
+> > +
+> >  static void __init at91_add_device_rtt(void)
+> >  {
+> > +	at91_add_device_rtt_rtc();
+> >  	platform_device_register(&at91sam9260_rtt_device);
+> >  }
+> 
+> 
+> Does this work by setting the rtt device name iff
+> CONFIG_RTC_DRV_AT91SAM9 is set? If so, it seems a bit ugly. Why bother
+> doing the platform_device_register at all if you know it isn't going to
+> do anything? Shouldn't the at91sam9260_rrt_device struct declaration and
+> the platform_device_register all be conditional on CONFIG_RTC_DRV_AT91SAM9?
+no people use rtt for other purpose
+RTT is a timer and the rtc use it
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 75d230fef202..b1112084a0ae 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -260,6 +260,11 @@ try_again:
- 				ui__warning("The %s event is not supported.\n",
- 					    event_name(pos));
- 				exit(EXIT_FAILURE);
-+			} else if (err == EMFILE) {
-+				ui__warning("Too many events are opened.\n"
-+					    "Try again after reducing the number of events,\n"
-+					    "tasks and/or cpus.\n");
-+				exit(EXIT_FAILURE);
- 			}
- 
- 			printf("\n");
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ea40e4e8b227..e54cbc9fc4fd 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -477,6 +477,10 @@ static int run_perf_stat(int argc __used, const char **argv)
- 				      "\t Consider tweaking"
- 				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
- 				      system_wide ? "system-wide " : "");
-+			} else if (errno == EMFILE) {
-+				error("Too many events are opened.\n"
-+				      "\t Try again after reducing the number of events,\n"
-+				      "\t tasks and/or cpus.");
- 			} else {
- 				error("open_counter returned with %d (%s). "
- 				      "/bin/dmesg may provide additional information.\n",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e3c63aef8efc..d0d05943fade 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -923,7 +923,8 @@ try_again:
- 				goto out_err;
- 			} else if (err == EMFILE) {
- 				ui__warning("Too many events are opened.\n"
--					    "Try again after reducing the number of events\n");
-+					    "Try again after reducing the number of events,\n"
-+					    "tasks and/or cpus.\n");
- 				goto out_err;
- 			}
- 
--- 
-1.7.9
+anyway this will be dropped via DT
+and the resource will be optional
 
+Best Regards,
+J.
