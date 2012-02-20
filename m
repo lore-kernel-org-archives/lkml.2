@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2BTCnP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 21:43:15 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61282 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2BTCnN (ORCPT
+	id S1752174Ab2BTCux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 21:50:53 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51357 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2BTCuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 21:43:13 -0500
-MIME-Version: 1.0
-From: Yang Bai <hamo.by@gmail.com>
-Date: Mon, 20 Feb 2012 10:42:53 +0800
-Message-ID: <CAO_0yfPDFUw-xWA9Ce0HiOMv_3PAP_2+1QzP1SqVQ9UhThX9pQ@mail.gmail.com>
-Subject: [BUG] SCSI device hot plug out with /dev node left
-To: JBottomley@parallels.com, julia@diku.dk, nagalakshmi.nandigama@lsi.com,
-        kashyap.desai@lsi.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 19 Feb 2012 21:50:52 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Feb 2012 11:49:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] rmap: anon_vma_prepare: Reduce code duplication by
+ calling anon_vma_chain_link
+Message-Id: <20120220114928.8507095c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1329488908-7304-1-git-send-email-consul.kautuk@gmail.com>
+References: <1329488908-7304-1-git-send-email-consul.kautuk@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, 17 Feb 2012 09:28:28 -0500
+Kautuk Consul <consul.kautuk@gmail.com> wrote:
 
-During our test on kernel 2.6.32, we found a problem about SCSI device
-hot-plug and this may be a bug. Our SCSI host is MPT2SAS.
-assume the SCSI disk is /dev/sdb and it's SCSI ID is 0:0:1:0.
+> Reduce code duplication by calling anon_vma_chain_link from
+> anon_vma_prepare.
+> 
+> Also move the anon_vmal_chain_link function to a more suitable location
+> in the file.
+> 
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 
-First,  Let's mount it at /mnt/test with following command:
+Reviewed-by: KAMEZWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-mount /dev/sdb /mnt/test
 
-now we can access this disk through /mnt/test
-
-Then we hot plug out this device as following:
-
-echo 1 > /sys/block/sdb/device/delete
-
-At here, /mnt/test is not accessible but /dev/sdb is still there.
-
-Then we re-scan the host:
-echo "0 1 0" > /sys/class/scsi_host/host0/scan
-
-We found that a new dev node such as sdf is allocated to this disk but
-sdb is not freed and is not reusable.
-We want that sdb can be freed when we hot plug-out the disk and can be
-reused when we plug-in a new disk.
-
-Is this some kind of bug?  Has it been fixed in the newer version?
-Any suggestion or any workaround?
-
-Thanks,
-Yang
