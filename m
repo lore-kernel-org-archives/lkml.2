@@ -1,215 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab2BTLjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:39:03 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37410 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab2BTLjB (ORCPT
+	id S1753245Ab2BTLra (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:47:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33332 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab2BTLr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:39:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.233.74 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Mon, 20 Feb 2012 03:38:27 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, Jiri Slaby <jslaby@suse.cz>
-cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
-In-Reply-To: <1329722927-12108-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.LSU.2.00.1202200329420.4225@eggly.anvils>
-References: <1329722927-12108-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Mon, 20 Feb 2012 06:47:29 -0500
+Date: Mon, 20 Feb 2012 03:46:19 -0800
+From: tip-bot for Dimitri Sivanich <sivanich@sgi.com>
+Message-ID: <tip-b0deca2e0270135f797e81bdb0743e50fd1dc58d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        steiner@sgi.com, johnstul@us.ibm.com, tglx@linutronix.de,
+        sivanich@sgi.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, steiner@sgi.com, tglx@linutronix.de,
+        sivanich@sgi.com, mingo@elte.hu
+In-Reply-To: <20120217141641.GA28063@sgi.com>
+References: <20120217141641.GA28063@sgi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/uv] x86/UV: Lower UV rtc clocksource rating
+Git-Commit-ID: b0deca2e0270135f797e81bdb0743e50fd1dc58d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 20 Feb 2012 03:46:48 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Feb 2012, Naoya Horiguchi wrote:
-> On Sun, Feb 19, 2012 at 01:21:02PM -0800, Hugh Dickins wrote:
-> > On Wed, 8 Feb 2012, Naoya Horiguchi wrote:
-> > > Currently when we check if we can handle thp as it is or we need to
-> > > split it into regular sized pages, we hold page table lock prior to
-> > > check whether a given pmd is mapping thp or not. Because of this,
-> > > when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
-> > > To remove it, this patch introduces a optimized check function and
-> > > replace several similar logics with it.
-> > > 
-> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > Cc: David Rientjes <rientjes@google.com>
-> > > 
-> > > Changes since v4:
-> > >   - Rethink returned value of __pmd_trans_huge_lock()
-> > 
-> > [snip]
-> > 
-> > > --- 3.3-rc2.orig/mm/mremap.c
-> > > +++ 3.3-rc2/mm/mremap.c
-> > > @@ -155,8 +155,6 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
-> > >  			if (err > 0) {
-> > >  				need_flush = true;
-> > >  				continue;
-> > > -			} else if (!err) {
-> > > -				split_huge_page_pmd(vma->vm_mm, old_pmd);
-> > >  			}
-> > >  			VM_BUG_ON(pmd_trans_huge(*old_pmd));
-> > >  		}
-> 
-> Thanks for reporting, 
-> 
-> > Is that what you intended to do there?
-> 
-> No. This is a bug.
-> 
-> > I just hit that VM_BUG_ON on rc3-next-20120217.
-> 
-> I found that when extend != HPAGE_PMD_SIZE, thp is not split so
-> it hits the VM_BUG_ON.
-> The following patch cancels the change in returned value in v4->v5
-> and I confirmed this fixes the problem in my simple test.
-> Andrew, could you add it on top of this optimization patch?
-> 
-> Naoya
-> ----------------------------------------------------
-> From 3c49816cab7d8cb072d9dffb97242e40f5124230 Mon Sep 17 00:00:00 2001
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Mon, 20 Feb 2012 01:48:12 -0500
-> Subject: [PATCH] fix mremap bug of failing to split thp
-> 
-> The patch "thp: optimize away unnecessary page table locking" introduced
-> a bug to move_page_tables(), where we fail to split thp when move_huge_pmd()
-> is not called. To fix it, this patch reverts the return value changes and
-> readd if (!err) block.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Commit-ID:  b0deca2e0270135f797e81bdb0743e50fd1dc58d
+Gitweb:     http://git.kernel.org/tip/b0deca2e0270135f797e81bdb0743e50fd1dc58d
+Author:     Dimitri Sivanich <sivanich@sgi.com>
+AuthorDate: Fri, 17 Feb 2012 08:16:41 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 20 Feb 2012 09:07:56 +0100
 
-That fixes the case I hit, thank you.  Though I did have to apply
-the task_mmu.c part by hand, there are differences on neighbouring
-lines.
+x86/UV: Lower UV rtc clocksource rating
 
-Jiri, your "Regression: Bad page map in process xyz" is actually
-on linux-next, isn't it?  I wonder if this patch will fix yours too
-(you were using zypper, I was updating with yast2).
+Lower the rating of the UV rtc clocksource to just below that of
+the tsc, to improve performance.
 
-Hugh
+Reading the tsc clocksource has lower latency than reading the
+rtc, so favor it in situations where it is synchronized and
+stable.  When the tsc is unsynchronized, the rtc needs to be the
+chosen clocksource.
 
-> ---
->  fs/proc/task_mmu.c |    6 +++---
->  mm/huge_memory.c   |   13 ++++++-------
->  mm/mremap.c        |    2 ++
->  3 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 7810281..2d12325 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -394,7 +394,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  	pte_t *pte;
->  	spinlock_t *ptl;
->  
-> -	if (pmd_trans_huge_lock(pmd, vma)) {
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
->  		smaps_pte_entry(pmd_to_pte_t(pmd), addr, HPAGE_PMD_SIZE, walk);
->  		spin_unlock(&walk->mm->page_table_lock);
->  		mss->anonymous_thp += HPAGE_PMD_SIZE;
-> @@ -696,7 +696,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  	/* find the first VMA at or above 'addr' */
->  	vma = find_vma(walk->mm, addr);
->  
-> -	if (pmd_trans_huge_lock(pmd, vma)) {
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
->  		for (; addr != end; addr += PAGE_SIZE) {
->  			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
->  				>> PAGE_SHIFT;
-> @@ -973,7 +973,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
->  
->  	md = walk->private;
->  
-> -	if (pmd_trans_huge_lock(pmd, md->vma)) {
-> +	if (pmd_trans_huge_lock(pmd, md->vma) == 1) {
->  		pte_t huge_pte = pmd_to_pte_t(pmd);
->  		struct page *page;
->  
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index bbf57b5..f342bb2 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1030,7 +1030,7 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  {
->  	int ret = 0;
->  
-> -	if (__pmd_trans_huge_lock(pmd, vma)) {
-> +	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
->  		struct page *page;
->  		pgtable_t pgtable;
->  		pgtable = get_pmd_huge_pte(tlb->mm);
-> @@ -1056,7 +1056,7 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
->  {
->  	int ret = 0;
->  
-> -	if (__pmd_trans_huge_lock(pmd, vma)) {
-> +	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
->  		/*
->  		 * All logical pages in the range are present
->  		 * if backed by a huge page.
-> @@ -1094,12 +1094,11 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
->  		goto out;
->  	}
->  
-> -	if (__pmd_trans_huge_lock(old_pmd, vma)) {
-> +	if ((ret = __pmd_trans_huge_lock(old_pmd, vma)) == 1) {
->  		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
->  		VM_BUG_ON(!pmd_none(*new_pmd));
->  		set_pmd_at(mm, new_addr, new_pmd, pmd);
->  		spin_unlock(&mm->page_table_lock);
-> -		ret = 1;
->  	}
->  out:
->  	return ret;
-> @@ -1111,7 +1110,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
->  	struct mm_struct *mm = vma->vm_mm;
->  	int ret = 0;
->  
-> -	if (__pmd_trans_huge_lock(pmd, vma)) {
-> +	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
->  		pmd_t entry;
->  		entry = pmdp_get_and_clear(mm, addr, pmd);
->  		entry = pmd_modify(entry, newprot);
-> @@ -1125,7 +1124,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
->  
->  /*
->   * Returns 1 if a given pmd maps a stable (not under splitting) thp.
-> - * Returns 0 otherwise.
-> + * Returns -1 if it maps a thp under splitting. Returns 0 otherwise.
->   *
->   * Note that if it returns 1, this routine returns without unlocking page
->   * table locks. So callers must unlock them.
-> @@ -1137,7 +1136,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
->  		if (unlikely(pmd_trans_splitting(*pmd))) {
->  			spin_unlock(&vma->vm_mm->page_table_lock);
->  			wait_split_huge_page(vma->anon_vma, pmd);
-> -			return 0;
-> +			return -1;
->  		} else {
->  			/* Thp mapped by 'pmd' is stable, so we can
->  			 * handle it as it is. */
-> diff --git a/mm/mremap.c b/mm/mremap.c
-> index 22458b9..87bb839 100644
-> --- a/mm/mremap.c
-> +++ b/mm/mremap.c
-> @@ -155,6 +155,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
->  			if (err > 0) {
->  				need_flush = true;
->  				continue;
-> +			} else if (!err) {
-> +				split_huge_page_pmd(vma->vm_mm, old_pmd);
->  			}
->  			VM_BUG_ON(pmd_trans_huge(*old_pmd));
->  		}
-> -- 
-> 1.7.7.6
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Jack Steiner <steiner@sgi.com>
+Link: http://lkml.kernel.org/r/20120217141641.GA28063@sgi.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/platform/uv/uv_time.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
+index 9f29a01..5032e0d 100644
+--- a/arch/x86/platform/uv/uv_time.c
++++ b/arch/x86/platform/uv/uv_time.c
+@@ -37,7 +37,7 @@ static void uv_rtc_timer_setup(enum clock_event_mode,
+ 
+ static struct clocksource clocksource_uv = {
+ 	.name		= RTC_NAME,
+-	.rating		= 400,
++	.rating		= 299,
+ 	.read		= uv_read_rtc,
+ 	.mask		= (cycle_t)UVH_RTC_REAL_TIME_CLOCK_MASK,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+@@ -379,10 +379,6 @@ static __init int uv_rtc_setup_clock(void)
+ 	if (!is_uv_system())
+ 		return -ENODEV;
+ 
+-	/* If single blade, prefer tsc */
+-	if (uv_num_possible_blades() == 1)
+-		clocksource_uv.rating = 250;
+-
+ 	rc = clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
+ 	if (rc)
+ 		printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
