@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2BTTIC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 14:08:02 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:45505 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab2BTTH6 (ORCPT
+	id S1752762Ab2BTTIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 14:08:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53519 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2BTTH6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 Feb 2012 14:07:58 -0500
-Date: Mon, 20 Feb 2012 22:09:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Pradheep Shrinivasan <pradheep.sh@gmail.com>
-Cc: gregkh@linuxfoundation.org, lucas.demarchi@profusion.mobi,
-        devel@driverdev.osuosl.org, devel@linuxdriverproject.org,
-        Andy Whitcroft <apw@canonical.com>, joe@perches.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] staging: bcm: fix checkpatch.pl errors and warnings
- in Version.h
-Message-ID: <20120220190952.GN2912@mwanda>
-References: <4f428dfc.e302440a.02ba.6747@mx.google.com>
- <20120220183109.GL2855@mwanda>
- <CANz8tm3t5HM9QeNk+h4gNtbTs2UUW1qOe0t=TgnuSD3_gw_A7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+nG9yj4eE4W6Oba0"
-Content-Disposition: inline
-In-Reply-To: <CANz8tm3t5HM9QeNk+h4gNtbTs2UUW1qOe0t=TgnuSD3_gw_A7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F429A03.0098,ss=1,re=0.000,fgs=0
+Message-ID: <1329764866.2293.376.camel@twins>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Date: Mon, 20 Feb 2012 20:07:46 +0100
+In-Reply-To: <1329761661.6276.146.camel@marge.simpson.net>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1329748861.2293.345.camel@twins>
+	 <1329761661.6276.146.camel@marge.simpson.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
+> Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
+> Maybe that has changed, but I doubt it.
 
---+nG9yj4eE4W6Oba0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, I through I remembered some such, you could see it on wakeup
+heavy things like pipe-bench and that java msg passing thing, right?
 
-On Tue, Feb 21, 2012 at 12:13:40AM +0530, Pradheep Shrinivasan wrote:
-> Hi Dan
->=20
->  I remember the bug .. but i think in this case it would be ok as it does
-> not look that weird as in the case of the single character brackets.
->=20
-> In case you feel it is totally un necessary i can fix it and send the pat=
-ch
-> again.
 
-So are you asking me, are the parenthesis totally unnecessary?  Yes.
-Absolutely.  How could that macro possibly be expanded in a way that
-would cause a bug.
-
-Are you asking me if I think the code is better without unneeded
-parenthesis?  Yes again.
-
-Are you asking me if I'm going to NAK your patch?  No.  It's an
-unfortunate thing.  Checkpatch.pl is going around telling people to
-add bogus parenthesis everywhere, and no one likes to redo their
-patches.  And I feel like a jerk for telling people that they should
-redo their patches.  And checkpatch.pl is a robot which has more
-energy than I do.
-
-regards,
-dan carpenter
-
---+nG9yj4eE4W6Oba0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQpqAAAoJEOnZkXI/YHqRFtEQAKjb8PcqzLrPReugn+IVwmB+
-Osygdl36KQ0YjXXqcZcUrYleKIlNgQHcjbVMxxrlNRu+O3cL4a9Qp9m1DSV1MnpV
-nWut+QhFlEKe9DXtJUYGA92VdBmcVFeJC+Lxf9QavoueoUqkbEFY8otmUSjBisD2
-dQfnigrGlaLfS9lyAICr4mPi9pugunJPlSPmDwBk1oRo5w+ABgAb8NKlFZR1NTYc
-CxxKdJ4t/IlqN54RR86ga9zmxoz19LntIXUfEIkLZe8F8laWp9VYWaJCdsAbtWO/
-POAVOmAoNdWmob/LXTusYO/VjdASXGu00vr2+81iBqRSptQ0CvI0LHnN9mwQQQ4P
-TZb8RtdufUdWJwxssLNdavP4CPS6c0OeC1VpCjuaHwcpD/PPfOKOfx9gEBp0ZHrO
-+V+cAR22ILexLZGSwTY6rhcgUvZXhOp7pSXA/rVaDrVFjvx4qhFGlRW3i76SnE9W
-OJ3Og3xLfwyS9QGHZe/+43VA9dUPJhEZa63YIQoeEipVHj06PuHFRAtZu81swevh
-XzOk7Li8OrmW/eJwzuqz21XOoSieYZscE+AK0Z6E/GguJY/XTqVa1VwmpI8PxjGa
-vUHAeGJJDZVaaE6we8DXkeZlT6qkLnbziX+eLAN/vtwhtQesWRIlpQ7j7GWLXJKx
-6uZFThvoBBTm0txEKwVH
-=gZd7
------END PGP SIGNATURE-----
-
---+nG9yj4eE4W6Oba0--
