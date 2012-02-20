@@ -1,141 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2BTQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 11:29:47 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:50835 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab2BTQ3n (ORCPT
+	id S1753534Ab2BTQaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 11:30:15 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53255 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313Ab2BTQaM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 11:29:43 -0500
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, konrad.wilk@oracle.com,
-        dan.magenheimer@oracle.com
-Subject: [PATCH 1/2] staging: ramster: build ramster properly when CONFIG_OCFS2=m|y
-Date: Mon, 20 Feb 2012 08:29:30 -0800
-Message-Id: <1329755371-5444-1-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F4274ED.009C,ss=1,re=0.000,fgs=0
+	Mon, 20 Feb 2012 11:30:12 -0500
+Message-ID: <1329755402.2293.365.camel@twins>
+Subject: Re: [RFC PATCH 14/14] sched: implement usage tracking
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Date: Mon, 20 Feb 2012 17:30:02 +0100
+In-Reply-To: <CAPM31R+xLCnPE10SZRYnTMe=O=j5mZEoutH=e3npw5xKOS_s7w@mail.gmail.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+	 <20120202013827.20844.49057.stgit@kitami.mtv.corp.google.com>
+	 <1329411510.2293.254.camel@twins>
+	 <CAPM31R+xLCnPE10SZRYnTMe=O=j5mZEoutH=e3npw5xKOS_s7w@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to some conflicting debug vars, kernel build will warn when
-CONFIG_RAMSTER=y and CONFIG_OCFS2=m and will fail when
-CONFIG_RAMSTER=y and CONFIG_OCFS2=y (rare).
+On Fri, 2012-02-17 at 03:32 -0800, Paul Turner wrote:
 
-Rename ramster mlog vars to avoid the name conflict.
+> Since we do not know where we slept relative to the tick, unless we
+> explicitly track where this occurred we don't know for a "n.y" jiffy
+> sleep whether the "0.y" fraction included an extra decay. 
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/staging/ramster/cluster/masklog.c |   28 ++++++++++++++--------------
- drivers/staging/ramster/cluster/masklog.h |   10 +++++-----
- 2 files changed, 19 insertions(+), 19 deletions(-)
+but isn't that the same problem you have in
+__update_entity_runnable_avg() where you use ->runnable_avg_period %
+1024 ?
 
-diff --git a/drivers/staging/ramster/cluster/masklog.c b/drivers/staging/ramster/cluster/masklog.c
-index c2af3c7..1261d85 100644
---- a/drivers/staging/ramster/cluster/masklog.c
-+++ b/drivers/staging/ramster/cluster/masklog.c
-@@ -28,18 +28,18 @@
- 
- #include "masklog.h"
- 
--struct mlog_bits mlog_and_bits = MLOG_BITS_RHS(MLOG_INITIAL_AND_MASK);
--EXPORT_SYMBOL_GPL(mlog_and_bits);
--struct mlog_bits mlog_not_bits = MLOG_BITS_RHS(0);
--EXPORT_SYMBOL_GPL(mlog_not_bits);
-+struct mlog_bits r2_mlog_and_bits = MLOG_BITS_RHS(MLOG_INITIAL_AND_MASK);
-+EXPORT_SYMBOL_GPL(r2_mlog_and_bits);
-+struct mlog_bits r2_mlog_not_bits = MLOG_BITS_RHS(0);
-+EXPORT_SYMBOL_GPL(r2_mlog_not_bits);
- 
- static ssize_t mlog_mask_show(u64 mask, char *buf)
- {
- 	char *state;
- 
--	if (__mlog_test_u64(mask, mlog_and_bits))
-+	if (__mlog_test_u64(mask, r2_mlog_and_bits))
- 		state = "allow";
--	else if (__mlog_test_u64(mask, mlog_not_bits))
-+	else if (__mlog_test_u64(mask, r2_mlog_not_bits))
- 		state = "deny";
- 	else
- 		state = "off";
-@@ -50,14 +50,14 @@ static ssize_t mlog_mask_show(u64 mask, char *buf)
- static ssize_t mlog_mask_store(u64 mask, const char *buf, size_t count)
- {
- 	if (!strnicmp(buf, "allow", 5)) {
--		__mlog_set_u64(mask, mlog_and_bits);
--		__mlog_clear_u64(mask, mlog_not_bits);
-+		__mlog_set_u64(mask, r2_mlog_and_bits);
-+		__mlog_clear_u64(mask, r2_mlog_not_bits);
- 	} else if (!strnicmp(buf, "deny", 4)) {
--		__mlog_set_u64(mask, mlog_not_bits);
--		__mlog_clear_u64(mask, mlog_and_bits);
-+		__mlog_set_u64(mask, r2_mlog_not_bits);
-+		__mlog_clear_u64(mask, r2_mlog_and_bits);
- 	} else if (!strnicmp(buf, "off", 3)) {
--		__mlog_clear_u64(mask, mlog_not_bits);
--		__mlog_clear_u64(mask, mlog_and_bits);
-+		__mlog_clear_u64(mask, r2_mlog_not_bits);
-+		__mlog_clear_u64(mask, r2_mlog_and_bits);
- 	} else
- 		return -EINVAL;
- 
-@@ -134,7 +134,7 @@ static struct kset mlog_kset = {
- 	.kobj   = {.ktype = &mlog_ktype},
- };
- 
--int mlog_sys_init(struct kset *r2cb_kset)
-+int r2_mlog_sys_init(struct kset *r2cb_kset)
- {
- 	int i = 0;
- 
-@@ -149,7 +149,7 @@ int mlog_sys_init(struct kset *r2cb_kset)
- 	return kset_register(&mlog_kset);
- }
- 
--void mlog_sys_shutdown(void)
-+void r2_mlog_sys_shutdown(void)
- {
- 	kset_unregister(&mlog_kset);
- }
-diff --git a/drivers/staging/ramster/cluster/masklog.h b/drivers/staging/ramster/cluster/masklog.h
-index 7609e66..918ae11 100644
---- a/drivers/staging/ramster/cluster/masklog.h
-+++ b/drivers/staging/ramster/cluster/masklog.h
-@@ -127,7 +127,7 @@ struct mlog_bits {
- 	unsigned long words[MLOG_MAX_BITS / BITS_PER_LONG];
- };
- 
--extern struct mlog_bits mlog_and_bits, mlog_not_bits;
-+extern struct mlog_bits r2_mlog_and_bits, r2_mlog_not_bits;
- 
- #if BITS_PER_LONG == 32
- 
-@@ -186,8 +186,8 @@ extern struct mlog_bits mlog_and_bits, mlog_not_bits;
- #define mlog(mask, fmt, args...) do {					\
- 	u64 __m = MLOG_MASK_PREFIX | (mask);				\
- 	if ((__m & ML_ALLOWED_BITS) &&					\
--	    __mlog_test_u64(__m, mlog_and_bits) &&			\
--	    !__mlog_test_u64(__m, mlog_not_bits)) {			\
-+	    __mlog_test_u64(__m, r2_mlog_and_bits) &&			\
-+	    !__mlog_test_u64(__m, r2_mlog_not_bits)) {			\
- 		if (__m & ML_ERROR)					\
- 			__mlog_printk(KERN_ERR, "ERROR: "fmt , ##args);	\
- 		else if (__m & ML_NOTICE)				\
-@@ -214,7 +214,7 @@ extern struct mlog_bits mlog_and_bits, mlog_not_bits;
- 
- #include <linux/kobject.h>
- #include <linux/sysfs.h>
--int mlog_sys_init(struct kset *r2cb_subsys);
--void mlog_sys_shutdown(void);
-+int r2_mlog_sys_init(struct kset *r2cb_subsys);
-+void r2_mlog_sys_shutdown(void);
- 
- #endif /* R2CLUSTER_MASKLOG_H */
--- 
-1.7.1
+Also, shouldn't __synchronize_entity_decay() update
+->runnable_avg_period? Surely when you wake up your window fraction
+could be different than when you went to sleep?
+
+>  It's
+> important to get this right to reduce instability, since when the
+> entity wakes back up we need to charge an equivalent decay against
+> it's contribution before we can remove it from the blocked_load_sum.
+> 
+> For the common case of a short sleep whether we charge an extra period
+> (if y included a jiffy edge) or not is significant to stability since
+> getting it wrong means we leave a little extra load in blocked_load.
+
+Sure..
+
+> Further complicating this we need to be able to do said
+> synchronization in the annoying cases of wake-up migration (where we
+> don't hold the lock on previous rq) and 32-bit machines (where
+> everything sucks).
+
+Ah, wouldn't task_waking_fair() be a better place though?
+
+> >
+> > C) 'Migrate'
+> >    - uses contributes_blocked_load to check if we actually did migrate?
+> >
+> 
+> We actually use se->avg.decay_count to check whether we were migrated
+> (setting it appropriately at migration); contributes_blocked_load is
+> just a convenience variable to track whether we're a part of
+> cfs_rq->blocked_load_avg or not.
+
+If you use task_waking_fair() you can also use ENQUEUE_WAKING.
+
+> There's a one or two other paths (than ttwu) that this matters for,
+> using set_task_rq() gets them all.
+
+What paths are those? Having a cfs hook in the generic code there isn't
+pretty an suggests funny things could happen when PI gets done.
 
