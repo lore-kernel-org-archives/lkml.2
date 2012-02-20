@@ -1,438 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab2BTLWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 06:22:22 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55339 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab2BTLWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 06:22:16 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V1 4/9] hugetlbfs: Add controller support for shared mapping
-Date: Mon, 20 Feb 2012 16:51:37 +0530
-Message-Id: <1329736902-26870-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1329736902-26870-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12022001-7014-0000-0000-00000099E66E
+	id S1753424Ab2BTLW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 06:22:26 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:3499 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752545Ab2BTLWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 06:22:24 -0500
+Message-ID: <4F422CCC.7070900@atmel.com>
+Date: Mon, 20 Feb 2012 12:21:48 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ryan Mallon <rmallon@gmail.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 13/18] ARM: at91/rtc-at91sam9: pass the GPBR to use via
+ ressources
+References: <1329501010-30468-1-git-send-email-nicolas.ferre@atmel.com> <8187feb330895bf9e077ede21e68cc81a72438cc.1329500622.git.nicolas.ferre@atmel.com> <4F419742.70200@gmail.com> <20120220012010.GA29599@game.jcrosoft.org> <20120220073621.GB22562@n2100.arm.linux.org.uk> <20120220091647.GA28066@game.jcrosoft.org> <20120220100437.GD22562@n2100.arm.linux.org.uk>
+In-Reply-To: <20120220100437.GD22562@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On 02/20/2012 11:04 AM, Russell King - ARM Linux :
+> On Mon, Feb 20, 2012 at 10:16:47AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On 07:36 Mon 20 Feb     , Russell King - ARM Linux wrote:
+>>> On Mon, Feb 20, 2012 at 02:20:10AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>> On 11:43 Mon 20 Feb     , Ryan Mallon wrote:
+>>>>> On 18/02/12 04:50, Nicolas Ferre wrote:
+>>>>>
+>>>>>> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>>>
+>>>>>> The GPBR registers are used for storing RTC values. The GPBR registers
+>>>>>> to use are now provided using standard resource entry. The array is
+>>>>>> filled in SoC specific code.
+>>>>>> rtc-at91sam9 RTT as RTC driver is modified to retrieve this information.
+>>>>>>
+>>>>>> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>>>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>>> ---
+>>>>>>  arch/arm/mach-at91/at91sam9260_devices.c      |   10 +++++++-
+>>>>>>  arch/arm/mach-at91/at91sam9261_devices.c      |    8 ++++++-
+>>>>>>  arch/arm/mach-at91/at91sam9263_devices.c      |   16 +++++++++++--
+>>>>>>  arch/arm/mach-at91/at91sam9g45_devices.c      |    8 ++++++-
+>>>>>>  arch/arm/mach-at91/at91sam9rl_devices.c       |    8 ++++++-
+>>>>>>  arch/arm/mach-at91/include/mach/at91sam9260.h |    5 +--
+>>>>>>  arch/arm/mach-at91/include/mach/at91sam9261.h |    5 +--
+>>>>>>  arch/arm/mach-at91/include/mach/at91sam9263.h |    5 +--
+>>>>>>  arch/arm/mach-at91/include/mach/at91sam9g45.h |    5 +--
+>>>>>>  arch/arm/mach-at91/include/mach/at91sam9rl.h  |    2 +-
+>>>>>>  drivers/rtc/rtc-at91sam9.c                    |   29 +++++++++++++++++++++---
+>>>>>>  11 files changed, 76 insertions(+), 25 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+>>>>>> index 2071017..ae2b648 100644
+>>>>>> --- a/arch/arm/mach-at91/at91sam9260_devices.c
+>>>>>> +++ b/arch/arm/mach-at91/at91sam9260_devices.c
+>>>>>> @@ -718,14 +718,16 @@ static struct resource rtt_resources[] = {
+>>>>>>  		.start	= AT91SAM9260_BASE_RTT,
+>>>>>>  		.end	= AT91SAM9260_BASE_RTT + SZ_16 - 1,
+>>>>>>  		.flags	= IORESOURCE_MEM,
+>>>>>> -	}
+>>>>>> +	}, {
+>>>>>> +		.flags	= IORESOURCE_MEM,
+>>>>>> +	},
+>>>>>>  };
+>>>>>>  
+>>>>>>  static struct platform_device at91sam9260_rtt_device = {
+>>>>>>  	.name		= "at91_rtt",
+>>>>>>  	.id		= 0,
+>>>>>>  	.resource	= rtt_resources,
+>>>>>> -	.num_resources	= ARRAY_SIZE(rtt_resources),
+>>>>>> +	.num_resources	= 1,
+>>>>>
+>>>>>
+>>>>> Why this change? The device has two resources, and the rtc driver
+>>>>> request both of them, so why are you saying there is only one resource
+>>>>> here. It either needs to be changed back to use ARRAY_SIZE, or needs a
+>>>>> comment explaining what magic is in use.
+>>>> because the number of resources depends on the user of rtt
+>>>> we must not hardcode the GPBR reg as this resource will be present only if the
+>>>> rtc-at91sam9 is enabled
+>>>
+>>> Better would be to leave .num_resources uninitalized and set that
+>>> appropriately elsewhere when you make the decision whether GPBR is
+>>> present or not.  That may help to avoid people trying to "fix" this
+>>> for you via static checking tools.
+>>>
+>>> As Ryan mentions, a comment in the code would be a good idea too.
+>> the comment is in the drivers code and Kconfig
+> 
+> Not good enough.  It needs to explain at the at91sam9260_rtt_device
+> definition why there is a disparity between the number of resources
+> and the number in the device definition.
+> 
+> People running static checking tools or reading this code aren't going
+> to look in the Kconfig nor the corresponding driver source for this
+> information.
 
-HugeTLB controller is different from a memory controller in that we charge
-controller during mmap() time and not fault time. This make sure userspace
-can fallback to non-hugepage allocation when mmap fails during to controller
-limit.
+Absolutely, I am in favor of clear documentation.
+Moreover, it seems that some lines of explanation have been lost during
+the reworking process.
 
-For shared mapping we need to track the hugetlb cgroup along with the range.
-If two task in two different cgroup map the same area only the non-overlapping
-part should be charged to the second task. Hence we need to track the cgroup
-along with range.  We always charge during mmap(2) and we do uncharge during
-truncate. The region list is tracked in the inode->i_mapping->private_list.
+So, we cook another patch series now...
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/hugetlbfs/hugetlb_cgroup.c  |  114 ++++++++++++++++++++++++++++++++++++++++
- fs/hugetlbfs/inode.c           |    1 +
- include/linux/hugetlb_cgroup.h |   39 ++++++++++++++
- mm/hugetlb.c                   |   84 ++++++++++++++++++++---------
- 4 files changed, 212 insertions(+), 26 deletions(-)
-
-diff --git a/fs/hugetlbfs/hugetlb_cgroup.c b/fs/hugetlbfs/hugetlb_cgroup.c
-index 9bd2691..4806d43 100644
---- a/fs/hugetlbfs/hugetlb_cgroup.c
-+++ b/fs/hugetlbfs/hugetlb_cgroup.c
-@@ -17,6 +17,7 @@
- #include <linux/slab.h>
- #include <linux/hugetlb.h>
- #include <linux/res_counter.h>
-+#include <linux/list.h>
- 
- /* lifted from mem control */
- #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-@@ -333,3 +334,116 @@ struct cgroup_subsys hugetlb_subsys = {
- 	.populate   = hugetlbcgroup_populate,
- 	.subsys_id  = hugetlb_subsys_id,
- };
-+
-+long hugetlb_page_charge(struct list_head *head,
-+			struct hstate *h, long f, long t)
-+{
-+	long chg;
-+	int ret = 0, idx;
-+	unsigned long csize;
-+	struct hugetlb_cgroup *h_cg;
-+	struct res_counter *fail_res;
-+
-+	/*
-+	 * Get the task cgroup within rcu_readlock and also
-+	 * get cgroup reference to make sure cgroup destroy won't
-+	 * race with page_charge. We don't allow a cgroup destroy
-+	 * when the cgroup have some charge against it
-+	 */
-+	rcu_read_lock();
-+	h_cg = task_hugetlbcgroup(current);
-+	css_get(&h_cg->css);
-+	rcu_read_unlock();
-+
-+	chg = region_chg_with_same(head, f, t, (unsigned long)h_cg);
-+	if (chg < 0)
-+		goto err_out;
-+
-+	if (hugetlb_cgroup_is_root(h_cg))
-+		goto err_out;
-+
-+	csize = chg * huge_page_size(h);
-+	idx = h - hstates;
-+	ret = res_counter_charge(&h_cg->memhuge[idx], csize, &fail_res);
-+
-+err_out:
-+	/* Now that we have charged we can drop cgroup reference */
-+	css_put(&h_cg->css);
-+	if (!ret)
-+		return chg;
-+
-+	/* We don't worry about region_uncharge */
-+	return ret;
-+}
-+
-+void hugetlb_page_uncharge(struct list_head *head, int idx, long nr_pages)
-+{
-+	struct hugetlb_cgroup *h_cg;
-+	unsigned long csize = nr_pages * PAGE_SIZE;
-+
-+	rcu_read_lock();
-+	h_cg = task_hugetlbcgroup(current);
-+
-+	if (!hugetlb_cgroup_is_root(h_cg))
-+		res_counter_uncharge(&h_cg->memhuge[idx], csize);
-+	rcu_read_unlock();
-+	/*
-+	 * We could ideally remove zero size regions from
-+	 * resv map hcg_regions here
-+	 */
-+	return;
-+}
-+
-+void hugetlb_commit_page_charge(struct list_head *head, long f, long t)
-+{
-+	struct hugetlb_cgroup *h_cg;
-+
-+	rcu_read_lock();
-+	h_cg = task_hugetlbcgroup(current);
-+	region_add_with_same(head, f, t, (unsigned long)h_cg);
-+	rcu_read_unlock();
-+	return;
-+}
-+
-+long hugetlb_truncate_cgroup(struct hstate *h,
-+			     struct list_head *head, long end)
-+{
-+	long chg = 0, csize;
-+	int idx = h - hstates;
-+	struct hugetlb_cgroup *h_cg;
-+	struct file_region_with_data *rg, *trg;
-+
-+	/* Locate the region we are either in or before. */
-+	list_for_each_entry(rg, head, link)
-+		if (end <= rg->to)
-+			break;
-+	if (&rg->link == head)
-+		return 0;
-+
-+	/* If we are in the middle of a region then adjust it. */
-+	if (end > rg->from) {
-+		chg = rg->to - end;
-+		rg->to = end;
-+		h_cg = (struct hugetlb_cgroup *)rg->data;
-+		if (!hugetlb_cgroup_is_root(h_cg)) {
-+			csize = chg * huge_page_size(h);
-+			res_counter_uncharge(&h_cg->memhuge[idx], csize);
-+		}
-+		rg = list_entry(rg->link.next, typeof(*rg), link);
-+	}
-+
-+	/* Drop any remaining regions. */
-+	list_for_each_entry_safe(rg, trg, rg->link.prev, link) {
-+		if (&rg->link == head)
-+			break;
-+		chg += rg->to - rg->from;
-+		h_cg = (struct hugetlb_cgroup *)rg->data;
-+		if (!hugetlb_cgroup_is_root(h_cg)) {
-+			csize = (rg->to - rg->from) * huge_page_size(h);
-+			res_counter_uncharge(&h_cg->memhuge[idx], csize);
-+		}
-+		list_del(&rg->link);
-+		kfree(rg);
-+	}
-+	return chg;
-+}
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 1e85a7a..2680578 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -32,6 +32,7 @@
- #include <linux/security.h>
- #include <linux/magic.h>
- #include <linux/migrate.h>
-+#include <linux/hugetlb_cgroup.h>
- 
- #include <asm/uaccess.h>
- 
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index 11cd6c4..9240e99 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -15,8 +15,47 @@
- #ifndef _LINUX_HUGETLB_CGROUP_H
- #define _LINUX_HUGETLB_CGROUP_H
- 
-+extern long region_add(struct list_head *head, long f, long t);
-+extern long region_chg(struct list_head *head, long f, long t);
-+extern long region_truncate(struct list_head *head, long end);
-+extern long region_count(struct list_head *head, long f, long t);
-+
-+#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
- extern u64 hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft);
- extern int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
- 				const char *buffer);
- extern int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event);
-+extern long hugetlb_page_charge(struct list_head *head,
-+				struct hstate *h, long f, long t);
-+extern void hugetlb_page_uncharge(struct list_head *head,
-+				  int idx, long nr_pages);
-+extern void hugetlb_commit_page_charge(struct list_head *head, long f, long t);
-+extern long hugetlb_truncate_cgroup(struct hstate *h,
-+				    struct list_head *head, long from);
-+#else
-+static inline long hugetlb_page_charge(struct list_head *head,
-+				       struct hstate *h, long f, long t)
-+{
-+	return region_chg(head, f, t);
-+}
-+
-+static inline void hugetlb_page_uncharge(struct list_head *head,
-+					 int idx, long nr_pages)
-+{
-+	return;
-+}
-+
-+static inline void hugetlb_commit_page_charge(struct list_head *head,
-+					      long f, long t)
-+{
-+	region_add(head, f, t);
-+	return;
-+}
-+
-+static inline long hugetlb_truncate_cgroup(struct hstate *h,
-+					   struct list_head *head, long from)
-+{
-+	return region_truncate(head, from);
-+}
-+#endif /* CONFIG_CGROUP_HUGETLB_RES_CTLR */
- #endif
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 865b41f..80ee085 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -78,7 +78,7 @@ struct file_region {
- 	long to;
- };
- 
--static long region_add(struct list_head *head, long f, long t)
-+long region_add(struct list_head *head, long f, long t)
- {
- 	struct file_region *rg, *nrg, *trg;
- 
-@@ -114,7 +114,7 @@ static long region_add(struct list_head *head, long f, long t)
- 	return 0;
- }
- 
--static long region_chg(struct list_head *head, long f, long t)
-+long region_chg(struct list_head *head, long f, long t)
- {
- 	struct file_region *rg, *nrg;
- 	long chg = 0;
-@@ -163,7 +163,7 @@ static long region_chg(struct list_head *head, long f, long t)
- 	return chg;
- }
- 
--static long region_truncate(struct list_head *head, long end)
-+long region_truncate(struct list_head *head, long end)
- {
- 	struct file_region *rg, *trg;
- 	long chg = 0;
-@@ -193,7 +193,7 @@ static long region_truncate(struct list_head *head, long end)
- 	return chg;
- }
- 
--static long region_count(struct list_head *head, long f, long t)
-+long region_count(struct list_head *head, long f, long t)
- {
- 	struct file_region *rg;
- 	long chg = 0;
-@@ -983,11 +983,11 @@ static long vma_needs_reservation(struct hstate *h,
- 	struct address_space *mapping = vma->vm_file->f_mapping;
- 	struct inode *inode = mapping->host;
- 
-+
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		return region_chg(&inode->i_mapping->private_list,
--							idx, idx + 1);
--
-+		return hugetlb_page_charge(&inode->i_mapping->private_list,
-+					   h, idx, idx + 1);
- 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		return 1;
- 
-@@ -1002,16 +1002,33 @@ static long vma_needs_reservation(struct hstate *h,
- 		return 0;
- 	}
- }
-+
-+static void vma_uncharge_reservation(struct hstate *h,
-+				     struct vm_area_struct *vma,
-+				     unsigned long chg)
-+{
-+	struct address_space *mapping = vma->vm_file->f_mapping;
-+	struct inode *inode = mapping->host;
-+
-+
-+	if (vma->vm_flags & VM_MAYSHARE) {
-+		return hugetlb_page_uncharge(&inode->i_mapping->private_list,
-+					     h - hstates,
-+					     chg << huge_page_order(h));
-+	}
-+}
-+
- static void vma_commit_reservation(struct hstate *h,
- 			struct vm_area_struct *vma, unsigned long addr)
- {
-+
- 	struct address_space *mapping = vma->vm_file->f_mapping;
- 	struct inode *inode = mapping->host;
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		region_add(&inode->i_mapping->private_list, idx, idx + 1);
--
-+		hugetlb_commit_page_charge(&inode->i_mapping->private_list,
-+					   idx, idx + 1);
- 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
- 		struct resv_map *reservations = vma_resv_map(vma);
-@@ -1040,9 +1057,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	chg = vma_needs_reservation(h, vma, addr);
- 	if (chg < 0)
- 		return ERR_PTR(-VM_FAULT_OOM);
--	if (chg)
--		if (hugetlb_get_quota(inode->i_mapping, chg))
-+	if (chg) {
-+		if (hugetlb_get_quota(inode->i_mapping, chg)) {
-+			vma_uncharge_reservation(h, vma, chg);
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
-+		}
-+	}
- 
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
-@@ -1051,7 +1071,10 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	if (!page) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
--			hugetlb_put_quota(inode->i_mapping, chg);
-+			if (chg) {
-+				vma_uncharge_reservation(h, vma, chg);
-+				hugetlb_put_quota(inode->i_mapping, chg);
-+			}
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
- 		}
- 	}
-@@ -1059,7 +1082,6 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	set_page_private(page, (unsigned long) mapping);
- 
- 	vma_commit_reservation(h, vma, addr);
--
- 	return page;
- }
- 
-@@ -2961,9 +2983,10 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * to reserve the full area even if read-only as mprotect() may be
- 	 * called to make the mapping read-write. Assume !vma is a shm mapping
- 	 */
--	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		chg = region_chg(&inode->i_mapping->private_list, from, to);
--	else {
-+	if (!vma || vma->vm_flags & VM_MAYSHARE) {
-+		chg = hugetlb_page_charge(&inode->i_mapping->private_list,
-+					  h, from, to);
-+	} else {
- 		struct resv_map *resv_map = resv_map_alloc();
- 		if (!resv_map)
- 			return -ENOMEM;
-@@ -2978,19 +3001,17 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		return chg;
- 
- 	/* There must be enough filesystem quota for the mapping */
--	if (hugetlb_get_quota(inode->i_mapping, chg))
--		return -ENOSPC;
--
-+	if (hugetlb_get_quota(inode->i_mapping, chg)) {
-+		ret = -ENOSPC;
-+		goto err_quota;
-+	}
- 	/*
- 	 * Check enough hugepages are available for the reservation.
- 	 * Hand back the quota if there are not
- 	 */
- 	ret = hugetlb_acct_memory(h, chg);
--	if (ret < 0) {
--		hugetlb_put_quota(inode->i_mapping, chg);
--		return ret;
--	}
--
-+	if (ret < 0)
-+		goto err_acct_mem;
- 	/*
- 	 * Account for the reservations made. Shared mappings record regions
- 	 * that have reservations as they are shared by multiple VMAs.
-@@ -3003,15 +3024,26 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * else has to be done for private mappings here
- 	 */
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		region_add(&inode->i_mapping->private_list, from, to);
-+		hugetlb_commit_page_charge(&inode->i_mapping->private_list,
-+					   from, to);
- 	return 0;
-+err_acct_mem:
-+	hugetlb_put_quota(inode->i_mapping, chg);
-+err_quota:
-+	if (!vma || vma->vm_flags & VM_MAYSHARE)
-+		hugetlb_page_uncharge(&inode->i_mapping->private_list,
-+				      h - hstates, chg << huge_page_order(h));
-+	return ret;
-+
- }
- 
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
- {
-+	long chg;
- 	struct hstate *h = hstate_inode(inode);
--	long chg = region_truncate(&inode->i_mapping->private_list, offset);
- 
-+	chg = hugetlb_truncate_cgroup(h, &inode->i_mapping->private_list,
-+				      offset);
- 	spin_lock(&inode->i_lock);
- 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
- 	spin_unlock(&inode->i_lock);
+Best regards,
 -- 
-1.7.9
-
+Nicolas Ferre
