@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2BTJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 04:46:16 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:59056 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab2BTJqO (ORCPT
+	id S1752903Ab2BTJrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 04:47:40 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16222 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2BTJrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 04:46:14 -0500
-Subject: Re: will these methods work with firmware loading?
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        linux-hotplug@vger.kernel.org
-In-Reply-To: <4F414230.5040506@lwfinger.net> (sfid-20120219_194128_235089_6C62CE24)
-References: <4F414230.5040506@lwfinger.net>
-	 (sfid-20120219_194128_235089_6C62CE24)
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 20 Feb 2012 10:46:07 +0100
-Message-ID: <1329731167.3458.4.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 Feb 2012 04:47:39 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6625"; a="162301906"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Trilok soni <tsoni@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        bryanh@codeaurora.org, Jarod Wilson <jarod@redhat.com>,
+        Anssi Hannula <anssi.hannula@iki.fi>,
+        "Juan J. Garcia de Soria" <skandalfo@gmail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ravi Kumar V <kumarrav@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/1] Add support for GPIO IR receiver driver
+Date: Mon, 20 Feb 2012 15:17:24 +0530
+Message-Id: <1329731244-31440-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Larry,
+This driver is for GPIO based IR receivers, it can listen only to IR receiver
+modules which gives demodulated signal as output, this driver only passes the
+interrupt events to rc framework where pulse and space widths are calculated
+and input to decoders avaliable.
 
-> I know that changing the request_firmware() call to request_firmware_nowait() 
-> solves the problem; however, that gives some trouble for driver b43legacy as it 
-> loads 3 or 4 firmware files depending on the hardware version. When I launch the 
-> 3 or 4 nowait requests, I get an error because the system is trying to start 
-> several tasks with the same name.
-> 
-> Would it be OK to load the first file with the nowait version, and issue a 
-> request_firmware() for the others from the callback routine? I think that would 
-> not cause any problems, but I would like to get confirmation from an expert.
+Ravi Kumar V (1):
+  rc: Add support for GPIO based IR Receiver driver.
 
-That should work -- I just looked at the firmware code and it spawns a
-new thread for every "nowait" request (and it calls the callback in that
-thread's context), so it won't block against itself.
+ drivers/media/rc/Kconfig        |    9 ++
+ drivers/media/rc/Makefile       |    1 +
+ drivers/media/rc/gpio-ir-recv.c |  189 +++++++++++++++++++++++++++++++++++++++
+ include/media/gpio-ir-recv.h    |   23 +++++
+ 4 files changed, 222 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/rc/gpio-ir-recv.c
+ create mode 100644 include/media/gpio-ir-recv.h
 
-> Similarly, if I were to create a work queue, init and schedule it from 
-> module_init(), and then use synchronous loads to get the firmware from the work 
-> queue callback, would that get around the boot problem? I know it works as I 
-> have trial patches; however, my version of udev is not one affected. This method 
-> is very easy to implement, but again I would like confirmation from an expert.
-
-We discussed that before, and technically it should work, I'm just a bit
-worried about udev treating asynchronous and synchronous requests
-differently and that causing issues, but somebody who knows udev better
-will have to comment on that.
-
-johannes
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
