@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750746Ab2BTFQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 00:16:47 -0500
-Received: from claw.goop.org ([74.207.240.146]:35736 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab2BTFQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 00:16:44 -0500
-Message-ID: <4F41D72E.7000605@goop.org>
-Date: Sun, 19 Feb 2012 21:16:30 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH 1/1] linux headers: header file(s) changes to enable spinlock
- use jumplabel
-References: <20120217082527.15283.72980.sendpatchset@oc5400248562.ibm.com> <4F403268.7040804@goop.org> <20120219092456.GB10038@redhat.com>
-In-Reply-To: <20120219092456.GB10038@redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751463Ab2BTFSF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 00:18:05 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33095 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab2BTFSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 00:18:03 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 20 Feb 2012 14:17:33 +0900 (   )
+Message-Id: <20120220.141733.294710222.d.hatayama@jp.fujitsu.com>
+To: dzickus@redhat.com
+Cc: ebiederm@xmission.com, yinghai@kernel.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        kexec@lists.infradead.org, vgoyal@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20120217201842.GP9751@redhat.com>
+References: <m1fwe9bpk2.fsf@fess.ebiederm.org>
+	<CABOkKT21zhyMwMmbR9WTipk5e=y_qMZ8ByG=njatjKbFLZW+xQ@mail.gmail.com>
+	<20120217201842.GP9751@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2012 01:24 AM, Gleb Natapov wrote:
-> On Sat, Feb 18, 2012 at 03:21:12PM -0800, Jeremy Fitzhardinge wrote:
->> On 02/17/2012 12:25 AM, Raghavendra K T wrote:
->>> From:  Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>
->>> Changelog:
->>>   Reordering in header files and adding declarations to enable
->>>  spinlock header to use jump label technique.
->>>     
->>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>> ---
->>>  I was re-basing Jermey patches (https://lkml.org/lkml/2011/10/12/496), while working
->>> on paravirtualized ticket spinlock (3.3.-rc3).
->>>
->>> Currently <jump_label.h> includes <workqueue.h> (commit: b202952075f62603bea9bfb6ebc6b0420db11949)
->>>
->>>  So we get following error when we try to include jump_label.h from
->>> arch/x86/include/asm/spinlock.h because of cyclic dependency
->>> <spinlock.h> -> <jumplabe.h> -> <workque.h> -> ... <seqlock.h> -> <spinlock.h>
->> What about splitting the jump_label_key_deferred stuff into a separate
->> jump_label_deferred.h, and just include that where it's needed?
->>
-> Andrew Jones did exactly that (CCed). But does pvlock have to use jump
-> label? I looked at the code and it is used like paravirt patching. Meaning
-> it is patched only once on a boot up when XEN is detected. May be use
-> paravirt patching instead of jump label? What if jump label will want
-> to use spinlock for some reason in the future (it uses mutex currently)?
+From: Don Zickus <dzickus@redhat.com>
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
+Date: Fri, 17 Feb 2012 15:18:42 -0500
 
-The point of the pv ticketlocks is to avoid any pvop calls on the
-lock/unlock fastpath, relegating them to only the slow path. 
-Unfortunately, the pv unlock case can't be identical with the non-pv
-unlock, and jump_labels are lighter weight and more efficient than pvops.
+> On Sat, Feb 18, 2012 at 12:49:16AM +0900, HATAYAMA Daisuke wrote:
+>> A few days ago I investigted the case where system is reseted due to
+>> triple fault caused by the NMI after idt is disabled in
+>> machine_kexec. I didn't see the reset when trigering the kdump with
+>> NMI since the NMI is masked until next iret instruction executed as
+>> described in 6.7.2. Handling Multiple NMIs of Intel Manual Vol.3A.
+>> The NMI mask remains untill the first iret execution on the 2nd
+>> kernel: just the return path of the first kernel_thread invocation for
+>> init process. The exact path is:
+> 
+> hmm.  So even though the local apic was disabled you still got an NMI?
+> That could have been from an external NMI.  I forget how that is wired up,
+> if it goes through the IOAPIC to the Local APIC or directly to the NMI pin
+> on the cpu.
+> 
 
-It doesn't matter if jump_labels start using spinlocks; all we need the
-jump_label machinery to do is patch the jump sites in the code so that
-one of two execution paths can be selected.  Since all the ticketlock
-jump_label patching happens before SMP is enabled, there's no problem
-with changing a lock while a cpu is executing the code.
+Please don't confused. I used RHEL kernels based on 2.6.18 and
+2.6.32. I didn't use the patch disabling local apic.
 
-    J
+>> 
+>>   switch_to
+>>   -> ret_from_fork
+>>      -> int_ret_from_sys_call
+>>         -> retint_restore_args
+>>            -> irq_return
+>> 
+>> At that phase idt is already set up and kdump works.
+>> 
+>> From the discussion I interpret kdump doesn't assume this behaviour,
+>> right?
+> 
+> probably not.
+> 
+
+Thanks.
+
+>> 
+>> BTW, does anyone know the detail of the NMI mask? I couldn't figure
+>> out about it from the Intel spec more than ``certain hardware
+>> conditions''... I expect those who look at here are x86 NMI experts.
+> 
+> I don't understand the question.
+> 
+> Cheers,
+> Don
+> 
+
+Fig 10-4 explaining Local APIC Structure says INIT/NMI/SMI are
+directly sent to CPU Core, but the later part of this route is not
+explained formally anyware. Only the explanation is the sentence in
+6.7 Nonmaskable Interrupt (NMI):
+
+  The processor also invokes certain hardware conditions to insure
+  that no other interrupts, including NMI interrupts, are received
+  until the NMI handler has completed executing.
+
+I'm just wondering if this is explained more formally anyware.
+
+Thanks.
+HATAYAMA, Daisuke
+
