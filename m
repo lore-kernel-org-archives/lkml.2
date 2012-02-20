@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab2BTML6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 07:11:58 -0500
-Received: from mail.betterlinux.com ([199.58.199.50]:38059 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab2BTML5 (ORCPT
+	id S1753516Ab2BTMMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 07:12:37 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62104 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab2BTMMg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 07:11:57 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 2EAF282A0D
-From: Andrea Righi <andrea@betterlinux.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] zcache: avoid AB-BA deadlock condition
-Date: Mon, 20 Feb 2012 13:11:49 +0100
-Message-Id: <1329739909-3174-1-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 20 Feb 2012 07:12:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1329696488-16970-7-git-send-email-hpa@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+	<1329696488-16970-7-git-send-email-hpa@zytor.com>
+Date: Mon, 20 Feb 2012 13:12:34 +0100
+X-Google-Sender-Auth: 5Oho65wLGdNuqy55oXfaCSKAU-8
+Message-ID: <CAMuHMdV2-StqLjnMXk8EDbfMSUik7BWuQ1phNSoUq_D0i_1icQ@mail.gmail.com>
+Subject: Re: [PATCH 06/30] sysinfo: Use explicit types in <linux/sysinfo.h>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, hjl.tools@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9256a47 fixed a deadlock condition, being sure that the buddy
-list spinlock is always taken before the page spinlock.
+On Mon, Feb 20, 2012 at 01:07, H. Peter Anvin <hpa@zytor.com> wrote:
+> --- a/include/linux/sysinfo.h
+> +++ b/include/linux/sysinfo.h
+> @@ -1,22 +1,24 @@
+>  #ifndef _LINUX_SYSINFO_H
+>  #define _LINUX_SYSINFO_H
+>
+> +#include <linux/types.h>
+> +
+>  #define SI_LOAD_SHIFT  16
+>  struct sysinfo {
+> -       long uptime;                    /* Seconds since boot */
+> -       unsigned long loads[3];         /* 1, 5, and 15 minute load averages */
+> -       unsigned long totalram;         /* Total usable main memory size */
+> -       unsigned long freeram;          /* Available memory size */
+> -       unsigned long sharedram;        /* Amount of shared memory */
+> -       unsigned long bufferram;        /* Memory used by buffers */
+> -       unsigned long totalswap;        /* Total swap space size */
+> -       unsigned long freeswap;         /* swap space still available */
+> -       unsigned short procs;           /* Number of current processes */
+> -       unsigned short pad;             /* explicit padding for m68k */
+> -       unsigned long totalhigh;        /* Total high memory size */
+> -       unsigned long freehigh;         /* Available high memory size */
+> -       unsigned int mem_unit;          /* Memory unit size in bytes */
+> -       char _f[20-2*sizeof(long)-sizeof(int)]; /* Padding: libc5 uses this.. */
+> +       __kernel_long_t uptime;         /* Seconds since boot */
+> +       __kernel_ulong_t loads[3];      /* 1, 5, and 15 minute load averages */
+> +       __kernel_ulong_t totalram;      /* Total usable main memory size */
+> +       __kernel_ulong_t freeram;       /* Available memory size */
+> +       __kernel_ulong_t sharedram;     /* Amount of shared memory */
+> +       __kernel_ulong_t bufferram;     /* Memory used by buffers */
+> +       __kernel_ulong_t totalswap;     /* Total swap space size */
+> +       __kernel_ulong_t freeswap;      /* swap space still available */
+> +       __u16 procs;                    /* Number of current processes */
+> +       __u16 pad;                      /* Explicit padding for m68k */
 
-However in zbud_free_and_delist() locking order is the opposite
-(page lock -> list lock).
+Fueling the discussion about natural vs. 4-byte alignment?
 
-Possible unsafe locking scenario (reported by lockdep):
+> +       __kernel_ulong_t totalhigh;     /* Total high memory size */
+> +       __kernel_ulong_t freehigh;      /* Available high memory size */
+> +       __u32 mem_unit;                 /* Memory unit size in bytes */
+> +       char _f[20-2*sizeof(__kernel_ulong_t)-sizeof(__u32)];   /* Padding: libc5 uses this.. */
+>  };
 
-        CPU0                    CPU1
-        ----                    ----
-   lock(&(&zbpg->lock)->rlock);
-                                lock(zbud_budlists_spinlock);
-                                lock(&(&zbpg->lock)->rlock);
-   lock(zbud_budlists_spinlock);
+Gr{oetje,eeting}s,
 
-Fix by grabbing the locks in opposite order in zbud_free_and_delist().
+                        Geert
 
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- drivers/staging/zcache/zcache-main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index ef7c52b..dce04be 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -299,10 +299,12 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
- 	struct zbud_page *zbpg =
- 		container_of(zh, struct zbud_page, buddy[budnum]);
- 
-+	spin_lock(&zbud_budlists_spinlock);
- 	spin_lock(&zbpg->lock);
- 	if (list_empty(&zbpg->bud_list)) {
- 		/* ignore zombie page... see zbud_evict_pages() */
- 		spin_unlock(&zbpg->lock);
-+		spin_unlock(&zbud_budlists_spinlock);
- 		return;
- 	}
- 	size = zbud_free(zh);
-@@ -310,7 +312,6 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
- 	zh_other = &zbpg->buddy[(budnum == 0) ? 1 : 0];
- 	if (zh_other->size == 0) { /* was unbuddied: unlist and free */
- 		chunks = zbud_size_to_chunks(size) ;
--		spin_lock(&zbud_budlists_spinlock);
- 		BUG_ON(list_empty(&zbud_unbuddied[chunks].list));
- 		list_del_init(&zbpg->bud_list);
- 		zbud_unbuddied[chunks].count--;
-@@ -318,7 +319,6 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
- 		zbud_free_raw_page(zbpg);
- 	} else { /* was buddied: move remaining buddy to unbuddied list */
- 		chunks = zbud_size_to_chunks(zh_other->size) ;
--		spin_lock(&zbud_budlists_spinlock);
- 		list_del_init(&zbpg->bud_list);
- 		zcache_zbud_buddied_count--;
- 		list_add_tail(&zbpg->bud_list, &zbud_unbuddied[chunks].list);
--- 
-1.7.5.4
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
