@@ -1,221 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab2BTAUo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 19:20:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57384 "EHLO
+	id S1753302Ab2BTAVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 19:21:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57398 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab2BTAUm (ORCPT
+	with ESMTP id S1752410Ab2BTAVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 19:20:42 -0500
+	Sun, 19 Feb 2012 19:21:15 -0500
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        hjl.tools@gmail.com
-Subject: [PATCH 26/30] x32: Signal-related system calls
-Date: Sun, 19 Feb 2012 16:08:04 -0800
-Message-Id: <1329696488-16970-27-git-send-email-hpa@zytor.com>
+        hjl.tools@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 27/30] x32: Handle process creation
+Date: Sun, 19 Feb 2012 16:08:05 -0800
+Message-Id: <1329696488-16970-28-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
 References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 19 Feb 2012 16:20:36 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 19 Feb 2012 16:21:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-x32 uses the 64-bit signal frame format, obviously, but there are some
-structures which mixes that with pointers or sizeof(long) types, as
-such we have to create a handful of system calls specific to x32.  By
-and large these are a mixture of the 64-bit and the compat system
-calls.
+Allow an x32 process to be started.
 
 Originally-by: H. J. Lu <hjl.tools@gmail.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/x86/kernel/entry_64.S |   19 +++++++
- arch/x86/kernel/signal.c   |  118 +++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 136 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/compat.h    |   26 ++++++++++++++++++++++++--
+ arch/x86/include/asm/elf.h       |   25 +++++++++++++++++++++----
+ arch/x86/kernel/cpu/perf_event.c |    4 +++-
+ arch/x86/kernel/entry_64.S       |   15 +++++++++++++++
+ arch/x86/kernel/process_64.c     |   23 ++++++++++++++++-------
+ 5 files changed, 79 insertions(+), 14 deletions(-)
 
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index 7938b84..e7f68b4 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -6,6 +6,7 @@
+  */
+ #include <linux/types.h>
+ #include <linux/sched.h>
++#include <asm/processor.h>
+ #include <asm/user32.h>
+ #include <asm/unistd.h>
+ 
+@@ -187,7 +188,20 @@ struct compat_shmid64_ds {
+ /*
+  * The type of struct elf_prstatus.pr_reg in compatible core dumps.
+  */
++#ifdef CONFIG_X86_X32_ABI
++typedef struct user_regs_struct compat_elf_gregset_t;
++
++#define PR_REG_SIZE(S) (test_thread_flag(TIF_IA32) ? 68 : 216)
++#define PRSTATUS_SIZE(S) (test_thread_flag(TIF_IA32) ? 144 : 296)
++#define SET_PR_FPVALID(S,V) \
++  do { *(int *) (((void *) &((S)->pr_reg)) + PR_REG_SIZE(0)) = (V); } \
++  while (0)
++
++#define COMPAT_USE_64BIT_TIME \
++	(!!(task_pt_regs(current)->orig_ax & __X32_SYSCALL_BIT))
++#else
+ typedef struct user_regs_struct32 compat_elf_gregset_t;
++#endif
+ 
+ /*
+  * A pointer passed in from user mode. This should not
+@@ -209,8 +223,16 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 
+ static inline void __user *arch_compat_alloc_user_space(long len)
+ {
+-	struct pt_regs *regs = task_pt_regs(current);
+-	return (void __user *)regs->sp - len;
++	compat_uptr_t sp;
++
++	if (test_thread_flag(TIF_IA32)) {
++		sp = task_pt_regs(current)->sp;
++	} else {
++		/* -128 for the x32 ABI redzone */
++		sp = percpu_read(old_rsp) - 128;
++	}
++
++	return (void __user *)round_down(sp - len, 16);
+ }
+ 
+ static inline bool is_compat_task(void)
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 410fa6a..83aabea 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -156,7 +156,12 @@ do {						\
+ #define elf_check_arch(x)			\
+ 	((x)->e_machine == EM_X86_64)
+ 
+-#define compat_elf_check_arch(x)	elf_check_arch_ia32(x)
++#define compat_elf_check_arch(x)		\
++	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
++
++#if __USER32_DS != __USER_DS
++# error "The following code assumes __USER32_DS == __USER_DS"
++#endif
+ 
+ static inline void elf_common_init(struct thread_struct *t,
+ 				   struct pt_regs *regs, const u16 ds)
+@@ -179,8 +184,9 @@ static inline void elf_common_init(struct thread_struct *t,
+ void start_thread_ia32(struct pt_regs *regs, u32 new_ip, u32 new_sp);
+ #define compat_start_thread start_thread_ia32
+ 
+-void set_personality_ia32(void);
+-#define COMPAT_SET_PERSONALITY(ex) set_personality_ia32()
++void set_personality_ia32(bool);
++#define COMPAT_SET_PERSONALITY(ex)			\
++	set_personality_ia32((ex).e_machine == EM_X86_64)
+ 
+ #define COMPAT_ELF_PLATFORM			("i686")
+ 
+@@ -296,9 +302,20 @@ do {									\
+ 			    (unsigned long)current->mm->context.vdso);	\
+ } while (0)
+ 
++#define ARCH_DLINFO_X32							\
++do {									\
++	if (vdso_enabled)						\
++		NEW_AUX_ENT(AT_SYSINFO_EHDR,				\
++			    (unsigned long)current->mm->context.vdso);	\
++} while (0)
++
+ #define AT_SYSINFO		32
+ 
+-#define COMPAT_ARCH_DLINFO	ARCH_DLINFO_IA32(sysctl_vsyscall32)
++#define COMPAT_ARCH_DLINFO						\
++if (test_thread_flag(TIF_X32))						\
++	ARCH_DLINFO_X32;						\
++else									\
++	ARCH_DLINFO_IA32(sysctl_vsyscall32)
+ 
+ #define COMPAT_ELF_ET_DYN_BASE	(TASK_UNMAPPED_BASE + 0x1000000)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5adce10..63c0e05 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -28,7 +28,6 @@
+ #include <asm/apic.h>
+ #include <asm/stacktrace.h>
+ #include <asm/nmi.h>
+-#include <asm/compat.h>
+ #include <asm/smp.h>
+ #include <asm/alternative.h>
+ 
+@@ -1595,6 +1594,9 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ }
+ 
+ #ifdef CONFIG_COMPAT
++
++#include <asm/compat.h>
++
+ static inline int
+ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ {
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index a17b342..53dc821 100644
+index 53dc821..9e036f0 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -746,6 +746,25 @@ ENTRY(stub_rt_sigreturn)
+@@ -763,6 +763,21 @@ ENTRY(stub_x32_rt_sigreturn)
  	CFI_ENDPROC
- END(stub_rt_sigreturn)
+ END(stub_x32_rt_sigreturn)
  
-+#ifdef CONFIG_X86_X32_ABI
-+	PTREGSCALL stub_x32_sigaltstack, sys32_sigaltstack, %rdx
-+
-+ENTRY(stub_x32_rt_sigreturn)
++ENTRY(stub_x32_execve)
 +	CFI_STARTPROC
 +	addq $8, %rsp
 +	PARTIAL_FRAME 0
 +	SAVE_REST
-+	movq %rsp,%rdi
 +	FIXUP_TOP_OF_STACK %r11
-+	call sys32_x32_rt_sigreturn
-+	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
++	movq %rsp, %rcx
++	call sys32_execve
++	RESTORE_TOP_OF_STACK %r11
++	movq %rax,RAX(%rsp)
 +	RESTORE_REST
 +	jmp int_ret_from_sys_call
 +	CFI_ENDPROC
-+END(stub_x32_rt_sigreturn)
++END(stub_x32_execve)
 +
-+#endif
-+
+ #endif
+ 
  /*
-  * Build the entry stubs and pointer table with some assembler magic.
-  * We pack 7 stubs into a single 32-byte chunk, which will fit in a
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 450fb25..c3846b6 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -29,6 +29,7 @@
- #ifdef CONFIG_X86_64
- #include <asm/proto.h>
- #include <asm/ia32_unistd.h>
-+#include <asm/sys_ia32.h>
- #endif /* CONFIG_X86_64 */
- 
- #include <asm/syscall.h>
-@@ -632,6 +633,16 @@ static int signr_convert(int sig)
- #define is_ia32	0
- #endif /* CONFIG_IA32_EMULATION */
- 
-+#ifdef CONFIG_X86_X32_ABI
-+#define is_x32	test_thread_flag(TIF_X32)
-+
-+static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
-+			      siginfo_t *info, compat_sigset_t *set,
-+			      struct pt_regs *regs);
-+#else /* !CONFIG_X86_X32_ABI */
-+#define is_x32	0
-+#endif /* CONFIG_X86_X32_ABI */
-+
- int ia32_setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		sigset_t *set, struct pt_regs *regs);
- int ia32_setup_frame(int sig, struct k_sigaction *ka,
-@@ -656,8 +667,14 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 			ret = ia32_setup_rt_frame(usig, ka, info, set, regs);
- 		else
- 			ret = ia32_setup_frame(usig, ka, set, regs);
--	} else
-+#ifdef CONFIG_X86_X32_ABI
-+	} else if (is_x32) {
-+		ret = x32_setup_rt_frame(usig, ka, info,
-+					 (compat_sigset_t *)set, regs);
-+#endif
-+	} else {
- 		ret = __setup_rt_frame(sig, ka, info, set, regs);
-+	}
- 
- 	if (ret) {
- 		force_sigsegv(sig, current);
-@@ -840,3 +857,102 @@ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
- 
- 	force_sig(SIGSEGV, me);
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 5fe2fba..a0701da 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -364,7 +364,9 @@ start_thread(struct pt_regs *regs, unsigned long new_ip, unsigned long new_sp)
+ void start_thread_ia32(struct pt_regs *regs, u32 new_ip, u32 new_sp)
+ {
+ 	start_thread_common(regs, new_ip, new_sp,
+-			    __USER32_CS, __USER32_DS, __USER32_DS);
++			    test_thread_flag(TIF_X32)
++			    ? __USER_CS : __USER32_CS,
++			    __USER_DS, __USER_DS);
  }
-+
-+#ifdef CONFIG_X86_X32_ABI
-+static int x32_setup_rt_frame(int sig, struct k_sigaction *ka,
-+			      siginfo_t *info, compat_sigset_t *set,
-+			      struct pt_regs *regs)
-+{
-+	struct rt_sigframe_x32 __user *frame;
-+	void __user *restorer;
-+	int err = 0;
-+	void __user *fpstate = NULL;
-+
-+	frame = get_sigframe(ka, regs, sizeof(*frame), &fpstate);
-+
-+	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
-+		return -EFAULT;
-+
-+	if (ka->sa.sa_flags & SA_SIGINFO) {
-+		if (copy_siginfo_to_user32(&frame->info, info))
-+			return -EFAULT;
+ #endif
+ 
+@@ -508,6 +510,7 @@ void set_personality_64bit(void)
+ 
+ 	/* Make sure to be in 64bit mode */
+ 	clear_thread_flag(TIF_IA32);
++	clear_thread_flag(TIF_X32);
+ 	clear_thread_flag(TIF_ADDR32);
+ 	clear_thread_flag(TIF_X32);
+ 
+@@ -522,22 +525,28 @@ void set_personality_64bit(void)
+ 	current->personality &= ~READ_IMPLIES_EXEC;
+ }
+ 
+-void set_personality_ia32(void)
++void set_personality_ia32(bool x32)
+ {
+ 	/* inherit personality from parent */
+ 
+ 	/* Make sure to be in 32bit mode */
+-	set_thread_flag(TIF_IA32);
+ 	set_thread_flag(TIF_ADDR32);
+-	clear_thread_flag(TIF_X32);
+-	current->personality |= force_personality32;
+ 
+ 	/* Mark the associated mm as containing 32-bit tasks. */
+ 	if (current->mm)
+ 		current->mm->context.ia32_compat = 1;
+ 
+-	/* Prepare the first "return" to user space */
+-	current_thread_info()->status |= TS_COMPAT;
++	if (x32) {
++		clear_thread_flag(TIF_IA32);
++		set_thread_flag(TIF_X32);
++		current->personality &= ~READ_IMPLIES_EXEC;
++	} else {
++		set_thread_flag(TIF_IA32);
++		clear_thread_flag(TIF_X32);
++		current->personality |= force_personality32;
++		/* Prepare the first "return" to user space */
++		current_thread_info()->status |= TS_COMPAT;
 +	}
-+
-+	put_user_try {
-+		/* Create the ucontext.  */
-+		if (cpu_has_xsave)
-+			put_user_ex(UC_FP_XSTATE, &frame->uc.uc_flags);
-+		else
-+			put_user_ex(0, &frame->uc.uc_flags);
-+		put_user_ex(0, &frame->uc.uc_link);
-+		put_user_ex(current->sas_ss_sp, &frame->uc.uc_stack.ss_sp);
-+		put_user_ex(sas_ss_flags(regs->sp),
-+			    &frame->uc.uc_stack.ss_flags);
-+		put_user_ex(current->sas_ss_size, &frame->uc.uc_stack.ss_size);
-+		put_user_ex(0, &frame->uc.uc__pad0);
-+		err |= setup_sigcontext(&frame->uc.uc_mcontext, fpstate,
-+					regs, set->sig[0]);
-+		err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
-+
-+		if (ka->sa.sa_flags & SA_RESTORER) {
-+			restorer = ka->sa.sa_restorer;
-+		} else {
-+			/* could use a vstub here */
-+			restorer = NULL;
-+			err |= -EFAULT;
-+		}
-+		put_user_ex(restorer, &frame->pretcode);
-+	} put_user_catch(err);
-+
-+	if (err)
-+		return -EFAULT;
-+
-+	/* Set up registers for signal handler */
-+	regs->sp = (unsigned long) frame;
-+	regs->ip = (unsigned long) ka->sa.sa_handler;
-+
-+	/* We use the x32 calling convention here... */
-+	regs->di = sig;
-+	regs->si = (unsigned long) &frame->info;
-+	regs->dx = (unsigned long) &frame->uc;
-+
-+	loadsegment(ds, __USER_DS);
-+	loadsegment(es, __USER_DS);
-+
-+	regs->cs = __USER_CS;
-+	regs->ss = __USER_DS;
-+
-+	return 0;
-+}
-+
-+asmlinkage long sys32_x32_rt_sigreturn(struct pt_regs *regs)
-+{
-+	struct rt_sigframe_x32 __user *frame;
-+	sigset_t set;
-+	unsigned long ax;
-+	struct pt_regs tregs;
-+
-+	frame = (struct rt_sigframe_x32 __user *)(regs->sp - 8);
-+
-+	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-+		goto badframe;
-+	if (__copy_from_user(&set, &frame->uc.uc_sigmask, sizeof(set)))
-+		goto badframe;
-+
-+	sigdelsetmask(&set, ~_BLOCKABLE);
-+	set_current_blocked(&set);
-+
-+	if (restore_sigcontext(regs, &frame->uc.uc_mcontext, &ax))
-+		goto badframe;
-+
-+	tregs = *regs;
-+	if (sys32_sigaltstack(&frame->uc.uc_stack, NULL, &tregs) == -EFAULT)
-+		goto badframe;
-+
-+	return ax;
-+
-+badframe:
-+	signal_fault(regs, frame, "x32 rt_sigreturn");
-+	return 0;
-+}
-+#endif
+ }
+ 
+ unsigned long get_wchan(struct task_struct *p)
 -- 
 1.7.6.5
 
