@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2BTVvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 16:51:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59816 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470Ab2BTVvb (ORCPT
+	id S1754127Ab2BTVy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 16:54:29 -0500
+Received: from mxgmail2.tau.ac.il ([132.66.7.202]:25419 "EHLO
+	mxgmail2.tau.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab2BTVy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 16:51:31 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.179.8 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Mon, 20 Feb 2012 16:54:28 -0500
+X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Feb 2012 16:54:27 EST
+Message-ID: <20120220234431.19431zbm6qmjajzz@webmail.tau.ac.il>
+Date: Mon, 20 Feb 2012 23:44:31 +0200
+From: yehonat7@post.tau.ac.il
+To: undisclosed-recipients:;
+Subject: Attn. Mail User!
 MIME-Version: 1.0
-In-Reply-To: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-Date: Mon, 20 Feb 2012 22:51:30 +0100
-Message-ID: <CACRpkdah8z2igdEgMee-ACBsLKgtfu1qij5wzCZ5wkva83qmrQ@mail.gmail.com>
-Subject: Re: [PATCH 00/20] pinctrl: API change, config in mapping table
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=UTF-8;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK I got to patch 10 tonight, so I applied these to for-next
-and pushed:
+Attn. Mail User!
 
-3a4de0b pinctrl: core.c/h cleanups
-144e2bb pinctrl: Re-order pinconf.[ch] to match each-other
-dd36982b pinctrl: Re-order pinmux.[ch] to match each-other
-7dbf763 pinctrl: Store mapping table as a list of chunks
-78917f6 pinctrl: use list_add_tail instead of list_add
-9c8484d pinctrl: pinctrl_register_mappings() shouldn't be __init
+WEB-MAIL SUPPORT TEAM (WST) are currently upgrading e-mail accounts.   
+This will provide you the ability to store a greatly
 
-Will continue reviewing tomorrow.
+increased amount of e-mail correspondence in your e-mail account. Your  
+account has been identified as one of the accounts
 
-Thanks,
-Linus Walleij
+which are to be upgraded.
+
+Kindly click the link below and follow the instructions:
+
+http://www.hotelmarocca.com/book/use/bokos/form1.html
+
+The new minimum quota level for e-mail accounts will be set to 1000mb.
+
+Please be informed that  we  will delete all mailbox account user that  
+do not adhere to this notice.
+
+Regards,
+@2012 Support Team.
+
+
