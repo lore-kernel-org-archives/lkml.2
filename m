@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2BTTYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 14:24:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22562 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab2BTTYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 14:24:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="68415742"
-Date: Mon, 20 Feb 2012 20:31:46 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 0/4] AB8500 fixes and AB9540 support
-Message-ID: <20120220193146.GM5387@sortiz-mobl>
-References: <1328112547-32424-1-git-send-email-linus.walleij@stericsson.com>
+	id S1753212Ab2BTT00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 14:26:26 -0500
+Received: from mailfe03.c2i.net ([212.247.154.66]:40005 "EHLO swip.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752657Ab2BTT0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 14:26:25 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 Feb 2012 14:26:25 EST
+X-T2-Spam-Status: No, hits=-0.2 required=5.0 tests=ALL_TRUSTED,
+	BAYES_50
+From: Hans Petter Selasky <hselasky@c2i.net>
+To: James Hogan <james@albanarts.com>
+Subject: Re: [BUG] divide by zero in uvc_video_clock_update, v3.3-rc4
+Date: Mon, 20 Feb 2012 20:19:32 +0100
+User-Agent: KMail/1.13.5 (FreeBSD/8.3-PRERELEASE; KDE/4.4.5; amd64; ; )
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120219234151.GA32005@balrog>
+In-Reply-To: <20120219234151.GA32005@balrog>
+X-Face: 'mmZ:T{)),Oru^0c+/}w'`gU1$ubmG?lp!=R4Wy\ELYo2)@'UZ24N@d2+AyewRX}mAm;Yp
+	|U[@,_z/([?1bCfM{_"B<.J>mICJCHAzzGHI{y7{%JVz%R~yJHIji`y>Y}k1C4TfysrsUI
+	-%GU9V5]iUZF&nRn9mJ'?&>O
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328112547-32424-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202202019.32756.hselasky@c2i.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Wed, Feb 01, 2012 at 05:09:07PM +0100, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Monday 20 February 2012 00:41:51 James Hogan wrote:
+> Hi,
 > 
-> This breaks the earlier patch to support AB9540 apart into
-> smaller pieces, and uses the platform device ID to enforce
-> which version of the ASIC is being used.
+> I just tried v3.3-rc4 on an Acer Aspire One Happy 2 netbook. I happened
+> to open the settings dialog box of kopete, which shows a view of the
+> webcam. The kernel switched to a text console with a register dump (see
+> below), indicating a divide error in uvc_video_clock_update.
 > 
-> Sam: seeking ACKs for these, [1/4] could possibly go into
-> the -rc series if you find time for it.
-Yes, I will add it to my final fixes pull request to the other Linus.
-Could you please fix patch #1 according to Maxime's comments and remove the
-board-mop500.c diff from patch #2 ?
+> The IP is on 7482, a divide, presumably by %r11 (see objdump output below)
+> which is 0 in the register dump. It appears to be the div_u64 in
+> uvc_video_clock_update().
+> 
+> I haven't tried any other recent kernel versions.
+> 
+> My asm is rusty and I don't really have any time to look further into it.
+> Is this enough to go on?
+> 
+> Thanks
+> James
 
-Cheers,
-Samuel.
+Hi,
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+This is a known issue which has been fixed by:
+
+http://git.linuxtv.org/pinchartl/uvcvideo.git/commit/5c97eb2eb9c45dad8825de7754ceb33699451978
+
+--HPS
