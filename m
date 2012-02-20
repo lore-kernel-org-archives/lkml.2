@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2BTCYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 Feb 2012 21:24:47 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60885 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753885Ab2BTCYp (ORCPT
+	id S1754116Ab2BTCYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 Feb 2012 21:24:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58049 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab2BTCYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 Feb 2012 21:24:45 -0500
-Date: Sun, 19 Feb 2012 18:24:33 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?Q?Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
-Subject: Re: [PATCH v5 3/5] Extcon: support multiple states at a device.
-Message-ID: <20120220022430.GI3194@opensource.wolfsonmicro.com>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
- <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
- <1328856038-21912-4-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
-Content-Disposition: inline
-In-Reply-To: <1328856038-21912-4-git-send-email-myungjoo.ham@samsung.com>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 19 Feb 2012 21:24:50 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: mingo@kernel.org, tglx@linutronix.de, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, davem@davemloft.net, hjl.tools@gmail.com,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 1/7] compat: Introduce COMPAT_USE_64BIT_TIME
+Date: Sun, 19 Feb 2012 18:22:44 -0800
+Message-Id: <1329704570-3792-2-git-send-email-hpa@zytor.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1329704570-3792-1-git-send-email-hpa@zytor.com>
+References: <CA+55aFwiV3N-9-pB6ofN-5GBS0mnPTBGAdPH1M70wK8qr-=PQg@mail.gmail.com>
+ <1329704570-3792-1-git-send-email-hpa@zytor.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 19 Feb 2012 18:24:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "H. J. Lu" <hjl.tools@gmail.com>
 
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Allow a compatibility ABI to use a 64-bit time_t and 64-bit members in
+struct timeval and struct timespec to avoid the Y2038 problem.
 
-On Fri, Feb 10, 2012 at 03:40:36PM +0900, MyungJoo Ham wrote:
+This will be used for the x32 ABI.
 
-> +	[EXTCON_AUDIO_IN]	= "Audio-in",
-> +	[EXTCON_AUDIO_OUT]	= "Audio-out",
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ include/linux/compat.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Can I suggest making these more specific - how about
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 41c9f65..1be91c0 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -19,6 +19,10 @@
+ #include <asm/siginfo.h>
+ #include <asm/signal.h>
+ 
++#ifndef COMPAT_USE_64BIT_TIME
++#define COMPAT_USE_64BIT_TIME 0
++#endif
++
+ #define compat_jiffies_to_clock_t(x)	\
+ 		(((unsigned long)(x) * COMPAT_USER_HZ) / HZ)
+ 
+-- 
+1.7.6.5
 
-	[EXTCON_LINE_IN]	= "Line-in",
-	[EXTCON_LINE_OUT]	= "Line-out",
-	[EXTCON_MIC_IN]		= "Microphone",
-	[EXTCON_HEADPHONE_OUT]	= "Headphone",
-
-as a starting point?  The distinction between line and the other two is
-often pretty important from a UI/system interaction point of view.
-
-> +	/* TODO: remove before submit */
-> +	pr_info("[%s][%d]\n", buffer, enabled);
-
-:)
-
---hUH5gZbnpyIv7Mn4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQa6hAAoJEBus8iNuMP3dPvQQAIlhBMhLz0pTOfSkIODDtnzy
-M0go3UAQS9HXkBEtqpx8r+/1L8pYqX0k59uc146R9MVnc2suijvfvkIhrisAdU83
-bJUoA9K5AdQHcyQPMSzbphMCvdr546VqmoRx27sPBEuiUBBoozqtKvFyVpRWORU2
-31Aig/nylL5bh/X/lO9r44IILLIdrGa9+jxqWrIG2U+MR3WDBm7hkweQrWEzY0+m
-idJNK9dBUgU4c+7mMz1cYGkDONSgoKH+M9Uf/ChVM4zsHmORSYLtykRWek/X1R3u
-0i3PUXYpmTpoVXW4XZBXnIK0AOZssNmqRtkksbvSCo4cQxxoPet2IsnwF+wfBd40
-4Rc6S50rtgJQOqhDt6ibcU5IpFYRcYvthGwNUg28kvpwYwk5n2BqRK4nM5mPv4u4
-dxzXStSKJn0+SmGWzCa56rjYdpUu/HAMglzdRCzzwVpIdXp4RPdjSatyP8NeDwj0
-/AYGFcu84IzQgvv7bgZv0f5ERyLwlHRmTqHYyk8SKy5Gs278DcqcrpMZmTf51wit
-UiN9Lfgm7pR2WyGOfVuD2ShQJgKfz8jZHSYWa5Nay5xF/cA7Md1pUXwLDvyA0dXI
-UB8mTExY8dvas9vP4ABkTE8T9DIbJv3RPGx4kVzWKNRli0/I+9BwpHJ81Vudx97A
-uIQJhiJDE2MoXZmC9oMf
-=pr/j
------END PGP SIGNATURE-----
-
---hUH5gZbnpyIv7Mn4--
