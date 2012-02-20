@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2BTJlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 04:41:50 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51100 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab2BTJls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 04:41:48 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
-In-Reply-To: <CAPM31RLWpF0mO2faCfY+HOeThz0iW6_7D+S++pGHtJi6hhiAVQ@mail.gmail.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com> <87k43lde0r.fsf@linux.vnet.ibm.com> <CAPM31RLWpF0mO2faCfY+HOeThz0iW6_7D+S++pGHtJi6hhiAVQ@mail.gmail.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 20 Feb 2012 15:11:21 +0530
-Message-ID: <87aa4dq1tq.fsf@abhimanyu.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12021923-5140-0000-0000-000000C578EB
+	id S1752778Ab2BTJnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 04:43:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:55678 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304Ab2BTJnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 04:43:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of matt.fleming@intel.com designates 10.180.83.97 as permitted sender) smtp.mail=matt.fleming@intel.com
+Subject: Re: build failure in Linus' tree with gcc 4.4.3
+From: Matt Fleming <matt.fleming@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120220142208.ab97f13b9ade345402d054fb@canb.auug.org.au>
+References: <20120220133936.936bff0d5817ac609a5211e0@canb.auug.org.au>
+	 <20120220142208.ab97f13b9ade345402d054fb@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Mon, 20 Feb 2012 09:43:39 +0000
+Message-ID: <1329731019.3639.20.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 Feb 2012 02:48:06 -0800, Paul Turner <pjt@google.com> wrote:
-> 
-> This is almost certainly a result of me twiddling with the weight in
-> calc_cfs_shares (using average instead of instantaneous weight) in
-> this version -- see patch 11/14.  While this had some nice stability
-> properties it was not hot for fairness so I've since reverted it
-> (snippet attached below).
->
-For my understanding, what do you mean by stability here?
+On Mon, 2012-02-20 at 14:22 +1100, Stephen Rothwell wrote:
+> Which is all endian specific code that will run on the host when building
+> the kernel ...
 
-> 
-> 24-core:
-> Starting task group fair16...done
-> Starting task group fair32...done
-> Starting task group fair48...done
-> Waiting for the task to run for 120 secs
-> Interpreting the results. Please wait....
-> Time consumed by fair16 cgroup:  12628615 Tasks: 96
-> Time consumed by fair32 cgroup:  12562859 Tasks: 192
-> Time consumed by fair48 cgroup:  12600364 Tasks: 288
-> 
-"Tasks:" should be 16,32,48? 
+Gah, right. I didn't think about cross-building this code.
 
-Regards,
-Nikunj
+Thanks Stephen, I'll fix this up.
+
+
 
