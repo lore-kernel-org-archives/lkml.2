@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab2BTRWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:22:52 -0500
+	id S1752400Ab2BTRXG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:23:06 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:43752 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab2BTRWu (ORCPT
+	with ESMTP id S1751734Ab2BTRXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:22:50 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.125.12 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Subject: [PATCH v2 03/22] memcg: use vm_swappiness from current memcg
+	Mon, 20 Feb 2012 12:23:01 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.141.15 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH v2 06/22] mm: deprecate pagevec lru-add functions
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: Hugh Dickins <hughd@google.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 20 Feb 2012 21:22:46 +0400
-Message-ID: <20120220172246.22196.82590.stgit@zurg>
+Date: Mon, 20 Feb 2012 21:22:58 +0400
+Message-ID: <20120220172257.22196.41219.stgit@zurg>
 In-Reply-To: <20120220171138.22196.65847.stgit@zurg>
 References: <20120220171138.22196.65847.stgit@zurg>
 User-Agent: StGit/0.15
@@ -26,41 +26,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this point this is always the same cgroup, but it allows to drop one argument.
+They mostly unused, the last user is fs/cachefiles/rdwr.c
+This patch replaces __pagevec_lru_add() with smaller implementation.
+It is exported, so we should keep it for a while.
+
+Plus simplify and fix pathetic single-page page-vector operations in
+nfs_symlink(), this was second pagevec_lru_add_file() user.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- mm/vmscan.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ fs/nfs/dir.c            |   10 +++-------
+ include/linux/pagevec.h |    4 +++-
+ mm/swap.c               |   27 +++++++--------------------
+ 3 files changed, 13 insertions(+), 28 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4bb23ef..c54a75b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1890,12 +1890,11 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 	return shrink_inactive_list(nr_to_scan, mz, sc, priority, file);
- }
- 
--static int vmscan_swappiness(struct mem_cgroup_zone *mz,
--			     struct scan_control *sc)
-+static int vmscan_swappiness(struct scan_control *sc)
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 0d71eb6..cbbc03c 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1863,7 +1863,6 @@ static int nfs_unlink(struct inode *dir, struct dentry *dentry)
+  */
+ static int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
  {
- 	if (global_reclaim(sc))
- 		return vm_swappiness;
--	return mem_cgroup_swappiness(mz->mem_cgroup);
-+	return mem_cgroup_swappiness(sc->current_mem_cgroup);
+-	struct pagevec lru_pvec;
+ 	struct page *page;
+ 	char *kaddr;
+ 	struct iattr attr;
+@@ -1903,15 +1902,12 @@ static int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *sym
+ 	 * No big deal if we can't add this page to the page cache here.
+ 	 * READLINK will get the missing page from the server if needed.
+ 	 */
+-	pagevec_init(&lru_pvec, 0);
+-	if (!add_to_page_cache(page, dentry->d_inode->i_mapping, 0,
++	if (!add_to_page_cache_lru(page, dentry->d_inode->i_mapping, 0,
+ 							GFP_KERNEL)) {
+-		pagevec_add(&lru_pvec, page);
+-		pagevec_lru_add_file(&lru_pvec);
+ 		SetPageUptodate(page);
+ 		unlock_page(page);
+-	} else
+-		__free_page(page);
++	}
++	put_page(page);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/pagevec.h b/include/linux/pagevec.h
+index 2aa12b8..4df37fe 100644
+--- a/include/linux/pagevec.h
++++ b/include/linux/pagevec.h
+@@ -21,7 +21,6 @@ struct pagevec {
+ };
+ 
+ void __pagevec_release(struct pagevec *pvec);
+-void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
+ unsigned pagevec_lookup(struct pagevec *pvec, struct address_space *mapping,
+ 		pgoff_t start, unsigned nr_pages);
+ unsigned pagevec_lookup_tag(struct pagevec *pvec,
+@@ -64,6 +63,9 @@ static inline void pagevec_release(struct pagevec *pvec)
+ 		__pagevec_release(pvec);
  }
  
- /*
-@@ -1963,8 +1962,8 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 	 * With swappiness at 100, anonymous and file have the same priority.
- 	 * This scanning priority is essentially the inverse of IO cost.
- 	 */
--	anon_prio = vmscan_swappiness(mz, sc);
--	file_prio = 200 - vmscan_swappiness(mz, sc);
-+	anon_prio = vmscan_swappiness(sc);
-+	file_prio = 200 - vmscan_swappiness(sc);
++/* Use lru_cache_add_list() instead */
++void __deprecated __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru);
++
+ static inline void __pagevec_lru_add_anon(struct pagevec *pvec)
+ {
+ 	__pagevec_lru_add(pvec, LRU_INACTIVE_ANON);
+diff --git a/mm/swap.c b/mm/swap.c
+index 303fbc3..0d8845c 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -772,33 +772,20 @@ void lru_add_page_tail(struct zone* zone,
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
  
- 	/*
- 	 * OK, so we have swap space and a fair amount of page cache
+-static void __pagevec_lru_add_fn(struct page *page, void *arg)
+-{
+-	enum lru_list lru = (enum lru_list)arg;
+-	struct zone *zone = page_zone(page);
+-	int file = is_file_lru(lru);
+-	int active = is_active_lru(lru);
+-
+-	VM_BUG_ON(PageActive(page));
+-	VM_BUG_ON(PageUnevictable(page));
+-	VM_BUG_ON(PageLRU(page));
+-
+-	SetPageLRU(page);
+-	if (active)
+-		SetPageActive(page);
+-	update_page_reclaim_stat(zone, page, file, active);
+-	add_page_to_lru_list(zone, page, lru);
+-}
+-
+ /*
+  * Add the passed pages to the LRU, then drop the caller's refcount
+  * on them.  Reinitialises the caller's pagevec.
+  */
+ void __pagevec_lru_add(struct pagevec *pvec, enum lru_list lru)
+ {
+-	VM_BUG_ON(is_unevictable_lru(lru));
++	LIST_HEAD(pages);
++	int i;
+ 
+-	pagevec_lru_move_fn(pvec, __pagevec_lru_add_fn, (void *)lru);
++	VM_BUG_ON(is_unevictable_lru(lru));
++	for ( i = 0 ; i < pvec->nr ; i++ )
++		list_add_tail(&pvec->pages[i]->lru, &pages);
++	pagevec_reinit(pvec);
++	__lru_cache_add_list(&pages, lru);
+ }
+ EXPORT_SYMBOL(__pagevec_lru_add);
+ 
 
