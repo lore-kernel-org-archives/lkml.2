@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab2BTRTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 12:19:10 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:34782 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751682Ab2BTRTH (ORCPT
+	id S1751973Ab2BTRW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 12:22:29 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43967 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2BTRW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 12:19:07 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZPC0I-02-1O0-02
-X-M-MSG: 
-Date: Mon, 20 Feb 2012 18:17:05 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Steffen Persvold <sp@numascale.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86: Remove wrong error message in x86_default_fixup_cpu_id
-Message-ID: <20120220171705.GA17069@alberich.amd.com>
+	Mon, 20 Feb 2012 12:22:28 -0500
+Date: Mon, 20 Feb 2012 17:21:58 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-arm-kernel@lists.infradead.org, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 5/6] jump label: detect %c support for ARM
+Message-ID: <20120220172158.GI26840@n2100.arm.linux.org.uk>
+References: <1327757725-10114-1-git-send-email-rabin@rab.in> <1327757725-10114-6-git-send-email-rabin@rab.in>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1327757725-10114-6-git-send-email-rabin@rab.in>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jan 28, 2012 at 07:05:24PM +0530, Rabin Vincent wrote:
+> Some versions of ARM GCC which do support asm goto, have problems
+> handling the the %c specifier.  Since we need the %c to support jump
+> labels on ARM, detect that too in the asm goto detection script to avoid
+> build errors with these versions.
 
-It's only called from amd.c:srat_detect_node(). The introduced
-condition for calling the fixup code is true for all AMD multi-node
-processors, e.g. Magny-Cours and Interlagos. There we have 2 NUMA
-nodes on one socket. And thus there are cores having different
-numa-node-id but with equal phys_proc_id. For example on such a system
-we now get
+I'm not sure how this detects properly working %c support.  %c support
+has been rather flakey on ARM for some time, I'm not sure which version
+of gcc was fixed for it.
 
-[    0.228109] Booting Node   0, Processors  #1
-[    0.232337] smpboot cpu 1: start_ip = 83000
-[    0.252088]  #2
-[    0.253746] smpboot cpu 2: start_ip = 83000
-[    0.272086]  #3
-[    0.276018] smpboot cpu 3: start_ip = 83000
-[    0.296088]  #4
-[    0.297745] smpboot cpu 4: start_ip = 83000
-[    0.316088]  #5
-[    0.320021] smpboot cpu 5: start_ip = 83000
-[    0.340113]  Ok.
-[    0.342324] Booting Node   1, Processors  #6
-[    0.344344] smpboot cpu 6: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
-[    0.372110]  #7
-[    0.373771] smpboot cpu 7: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
-[    0.396104]  #8
-[    0.397764] smpboot cpu 8: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
-[    0.420109]  #9
-[    0.421773] smpboot cpu 9: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
-[    0.444113]  #10
-[    0.445865] smpboot cpu 10: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
-[    0.468111]  #11
-[    0.472030] smpboot cpu 11: start_ip = 83000
-[    0.016000] NUMA core number 1 differs from configured core number 0
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
+> 
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+>  scripts/gcc-goto.sh |   18 +++++++++++++++++-
+>  1 files changed, 17 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
+> index 98cffcb..9b744de 100644
+> --- a/scripts/gcc-goto.sh
+> +++ b/scripts/gcc-goto.sh
+> @@ -2,4 +2,20 @@
+>  # Test for gcc 'asm goto' support
+>  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
+>  
+> -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> +int main(void)
+> +{
+> +#ifdef __arm__
+> +	/*
+> +	 * Not related to asm goto, but used by jump label
+> +	 * and broken on some ARM GCC versions (see GCC Bug 48637).
+> +	 */
+> +	static struct { int dummy; int state; } tp;
+> +	asm ("@ %c0" :: "i" (&tp.state));
 
-These NUMA core numbering error messages are plain wrong.
+While this detects the presence of the ICE, previous compilers included
+the '#' before the constant, which leads to problems.  I think a better
+check would be:
+	asm(".long %c0" :: "i" (&tp.state));
 
-The confusing/misleading error message was introduced with commit
-64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add x86_init platform
-override to fix up NUMA core numbering) and should be removed.
-
-Reported-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/cpu/common.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-BTW, I wonder why the fixup code isn't called from the Intel path.  At
-least the mentioned patch suggests that something more generic was
-introduced here.
-
-And I am curious why there is this specific condition to decide
-whether a call to x86_cpuinit.fixup_cpu_id is required.
-
-
-Regards,
-Andreas
-
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index d43cad7..2ef7685 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1163,7 +1163,6 @@ static void dbg_restore_debug_regs(void)
-  */
- void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
--	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
- }
- 
- /*
--- 
-1.7.8.4
-
-
-
+to make sure that it spits out something purely numeric, rather than
+something prefixed with a '#'.
