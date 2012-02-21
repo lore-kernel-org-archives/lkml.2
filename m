@@ -1,121 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab2BUOwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:52:10 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:52870 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752811Ab2BUOwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:52:08 -0500
+	id S1755498Ab2BUOwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:52:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:51808 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab2BUOwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 09:52:16 -0500
+Message-ID: <4F43AF71.4060207@ti.com>
+Date: Tue, 21 Feb 2012 15:51:29 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <84EBD7CD-1085-4B33-BF71-8CE104AE2933@antoniou-consulting.com>
-References: <20120208013959.GA24535@panacea>
-	<1328670355.2482.68.camel@laptop>
-	<20120208202314.GA28290@redhat.com>
-	<1328736834.2903.33.camel@pasglop>
-	<20120209075106.GB18387@elte.hu>
-	<4F35DD3E.4020406@codeaurora.org>
-	<20120211144530.GA497@elte.hu>
-	<4F3AEC4E.9000303@codeaurora.org>
-	<1329313085.2293.106.camel@twins>
-	<20120215140245.GB27825@n2100.arm.linux.org.uk>
-	<1329318063.2293.136.camel@twins>
-	<69B0D95C-2A80-41A9-97E1-86F5840B84CF@antoniou-consulting.com>
-	<1329828982.2293.405.camel@twins>
-	<84EBD7CD-1085-4B33-BF71-8CE104AE2933@antoniou-consulting.com>
-Date: Tue, 21 Feb 2012 16:52:05 +0200
-Message-ID: <CAP245DXjrRtoJYbyLQ=xUvszmwt=5gus7+=s1UmwKWXcKc05AA@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linaro-kernel@lists.linaro.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Oleg Nesterov <oleg@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Todd Poynor <toddpoynor@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>, Mike Chan <mike@android.com>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        kernel-team@android.com, linux-arm-kernel@lists.infradead.org,
-        Arjan Van De Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Milton Miller <miltonm@bga.com>, Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 00/27] irq_domain generalization and rework
+References: <1329383368-12122-1-git-send-email-grant.likely@secretlab.ca> <20120216145219.0f1c1b98.akpm@linux-foundation.org> <4F3E9187.9080308@ti.com> <20120217175550.GQ27825@n2100.arm.linux.org.uk>
+In-Reply-To: <20120217175550.GQ27825@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 3:31 PM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
->
-> On Feb 21, 2012, at 2:56 PM, Peter Zijlstra wrote:
->
->> On Tue, 2012-02-21 at 14:38 +0200, Pantelis Antoniou wrote:
->>>
->>> If we go to all the trouble of integrating cpufreq/cpuidle/sched into scheduler
->>> callbacks, we should place hooks into the thermal framework/PM as well.
->>>
->>> It will pretty common to have per core temperature readings, on most
->>> modern SoCs.
->>>
->>> It is quite conceivable to have a case with a multi-core CPU where due
->>> to load imbalance, one (or more) of the cores is running at full speed
->>> while the rest are mostly idle. What you want do, for best performance
->>> and conceivably better power consumption, is not to throttle either
->>> frequency or lowers voltage to the overloaded CPU but to migrate the
->>> load to one of the cooler CPUs.
->>>
->>> This affects CPU capacity immediately, i.e. you shouldn't schedule more
->>> load on a CPU that its too hot, since you'll only end up triggering thermal
->>> shutdown. The ideal solution would be to round robin
->>> the load from the hot CPU to the cooler ones, but not so fast that we lose
->>> due to the migration of state from one CPU to the other.
->>>
->>> In a nutshell, the processing capacity of a core is not static, i.e. it
->>> might degrade over time due to the increase of temperature caused by the
->>> previous load.
->>>
->>> What do you think?
->>
->> This is called core-hopping, and yes that's a nice goal, although I
->> would like to do that after we get the 'simple' bits up and running. I
->> suspect it'll end up being slightly more complex than we'd like to due
->> to the fact that the goal conflicts with wanting to aggregate things on
->> cpu0 due to cpu0 being special for a host of reasons.
->>
->>
->
-> Hi Peter,
->
-> Agreed. We need to get there step by step, and I think that per-task load tracking
-> is the first one. We do have other metrics besides load that can influence the
-> scheduler decisions, with the most obvious being power consumption.
->
-> BTW, since we're going to the trouble of calculating per-task load with
-> increased accuracy, how about having some thought of translating the load numbers
-> in an absolute format. I.e. with the CPUs now having fluctuating performance
-> (due to cpufreq etc.) one would say that each CPU would have an X bogomips
-> (or some else absolute) capacity per OPP. Perhaps having such a bogomips number
-> calculated per-task would make things easier.
->
-> Perhaps the same can be done with power/energy, i.e. have a per-task power
-> consumption figure that we can use for scheduling, according to the available
-> power budget per CPU.
->
-> Dunno, it might not be feasible ATM, but having a power-aware scheduler would
-> assume some kind of power measurement, no?
+On 2/17/2012 6:55 PM, Russell King - ARM Linux wrote:
+> On Fri, Feb 17, 2012 at 06:42:31PM +0100, Cousson, Benoit wrote:
 
-No please. We don't want to document ADC requirements, current probe
-specs and sampling rates to successfully run the Linux kernel. :)
+[...]
 
-But from the scheduler mini-summit, there is acceptance that we need
-to pass *some* knowledge of CPU characteristics to Linux. These need
-to be distilled down to a few that guide scheduler policy e.g. power
-cost of using a core. This in turn would influence the scheduler's
-spread or gather decision (better to consolidate task onto few cores
-or spread them out at low frequencies). Manufacturing processes and
-CPU architecture obviously play a role in the differences here.
-However, I don't expect unit for these parameters to be in mW. :)
+>> @@ -1237,8 +1238,10 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>>
+>>   	pdata->irq_base = status;
+>>   	pdata->irq_end = pdata->irq_base + nr_irqs;
+>> +#ifdef IRQ_DOMAIN
+>>   	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
+>>   			&irq_domain_simple_ops, NULL);
+>> +#endif
+> 
+> Do you really need this?  If you've tested this, then apparantly the answer
+> is no, because it won't ever be built like that.  (You're missing a
+> CONFIG_ prefix.)
 
-/Amit
+Ooops, sorry about that.
+It was indeed working fine in every cases except for the DT boot :-(
+
+As explain before, for the moment the interrupt domain is used only for the DT boot. It is mandatory do get the interrupt binding to work properly for all the TWL sub modules (RTC...).
+
+> Maybe the only solution to the x86 problem is to ensure that the driver
+> includes linux/irq.h ?
+
+Both will be needed to allow a DT boot with OMAP. Here is the updated version.
+
+Regards,
+Benoit
+
+---
+>From d844a8fc84d4514884356c935967f59d88a00124 Mon Sep 17 00:00:00 2001
+From: Benoit Cousson <b-cousson@ti.com>
+Date: Mon, 20 Feb 2012 10:58:34 +0100
+Subject: [PATCH] mfd: twl-core: Fix IRQ_DOMAIN dependency
+
+TWL chips might be potentially used on architecture that does not support
+ird_domain yet.
+
+Do not call ird_domain API in that case.
+
+Include <linux/irq.h> directly since it will not be included anymore by
+<linux/irqdomain.h> if !IRQ_DOMAIN.
+
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+---
+ drivers/mfd/twl-core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 66f9bff..18c4f93 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -38,6 +38,7 @@
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/irq.h>
+ #include <linux/irqdomain.h>
+ 
+ #include <linux/regulator/machine.h>
+@@ -1223,8 +1224,10 @@ twl_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	pdata->irq_base = status;
+ 	pdata->irq_end = pdata->irq_base + nr_irqs;
++#ifdef CONFIG_IRQ_DOMAIN
+ 	irq_domain_add_legacy(node, nr_irqs, pdata->irq_base, 0,
+ 			      &irq_domain_simple_ops, NULL);
++#endif
+ 
+ 	if (i2c_check_functionality(client->adapter, I2C_FUNC_I2C) == 0) {
+ 		dev_dbg(&client->dev, "can't talk I2C?\n");
+-- 
+1.7.0.4
+
+
