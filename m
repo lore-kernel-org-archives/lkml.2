@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2BUXgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 18:36:06 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35825 "EHLO ogre.sisk.pl"
+	id S1756317Ab2BUXga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 18:36:30 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35797 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab2BUXfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 18:35:37 -0500
+	id S1751230Ab2BUXfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 18:35:25 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 7/7] PM / Sleep: Add user space interface for manipulating wakeup sources
-Date: Wed, 22 Feb 2012 00:37:53 +0100
+Subject: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take 2
+Date: Wed, 22 Feb 2012 00:31:45 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -19,443 +19,151 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl>
-In-Reply-To: <201202220031.46219.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl>
+In-Reply-To: <201202070200.55505.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201202220037.53776.rjw@sisk.pl>
+Message-Id: <201202220031.46219.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi all,
 
-Android allows user space to manipulate wakelocks using two
-sysfs file located in /sys/power/, wake_lock and wake_unlock.
-Writing a wakelock name and optionally a timeout to the wake_lock
-file causes the wakelock whose name was written to be acquired (it
-is created before is necessary), optionally with the given timeout.
-Writing the name of a wakelock to wake_unlock causes that wakelock
-to be released.
+After the feedback so far I've decided to follow up with a refreshed patchset.
+The first two patches from the previous one went to linux-pm/linux-next
+and I included the recent evdev patch from Arve (with some modifications)
+to this patchset for completness.
 
-Implement an analogous interface for user space using wakeup sources.
-Add the /sys/power/wake_lock and /sys/power/wake_unlock files
-allowing user space to create, activate and deactivate wakeup
-sources, such that writing a name and optionally a timeout to
-wake_lock causes the wakeup source of that name to be activated,
-optionally with the given timeout.  If that wakeup source doesn't
-exist, it will be created and then activated.  Writing a name to
-wake_unlock causes the wakeup source of that name, if there is one,
-to be deactivated.  Wakeup sources created with the help of
-wake_lock that haven't been used for more than 5 minutes are garbage
-collected and destroyed.  Moreover, there can be only WL_NUMBER_LIMIT
-wakeup sources created with the help of wake_lock present at a time.
+On Tuesday, February 07, 2012, Rafael J. Wysocki wrote:
+> Hi all,
+> 
+> This series tests the theory that the easiest way to sell a once rejected
+> feature is to advertise it under a different name.
+> 
+> Well, there actually are two different features, although they are closely
+> related to each other.  First, patch [6/8] introduces a feature that allows
+> the kernel to trigger system suspend (or more generally a transition into
+> a sleep state) whenever there are no active wakeup sources (no, they aren't
+> called wakelocks).  It is called "autosleep" here, but it was called a few
+> different names in the past ("opportunistic suspend" was probably the most
+> popular one).  Second, patch [8/8] introduces "wake locks" that are,
+> essentially, wakeup sources which may be created and manipulated by user
+> space.  Using them user space may control the autosleep feature introduced
+> earlier.
+> 
+> This also is a kind of a proof of concept for the people who wanted me to
+> show a kernel-based implementation of automatic suspend, so there you go.
+> Please note, however, that it is done so that the user space "wake locks"
+> interface is compatible with Android in support of its user space.  I don't
+> really like this interface, but since the Android's user space seems to rely
+> on it, I'm fine with using it as is.  YMMV.
+> 
+> Let me say a few words about every patch in the series individually.
+> 
+> [1/8] - This really is a bug fix, so it's v3.4 material.  Nobody has stepped
+>   on this bug so far, but it should be fixed anyway.
+> 
+> [2/8] - This is a freezer cleanup, worth doing anyway IMO, so v3.4 material too.
 
-The data type used to track wakeup sources created by user space is
-called "struct wakelock" to indicate the origins of this feature.
+The above two are in linux-pm/linux-next now.  There are a few more fixes
+related to wakeup sources in there and the patches below are based on that
+branch.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/ABI/testing/sysfs-power |   42 ++++++
- drivers/base/power/wakeup.c           |    1 
- kernel/power/Kconfig                  |    8 +
- kernel/power/Makefile                 |    1 
- kernel/power/main.c                   |   41 ++++++
- kernel/power/power.h                  |    9 +
- kernel/power/wakelock.c               |  218 ++++++++++++++++++++++++++++++++++
- 7 files changed, 320 insertions(+)
+> [3/8] - This is something we can do no problem, although completely optional
+>   without the autosleep feature.  Rather necessary with it, though.
 
-Index: linux/kernel/power/main.c
-===================================================================
---- linux.orig/kernel/power/main.c
-+++ linux/kernel/power/main.c
-@@ -422,6 +422,43 @@ static ssize_t autosleep_store(struct ko
- 
- power_attr(autosleep);
- #endif /* CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+static ssize_t wake_lock_show(struct kobject *kobj,
-+			      struct kobj_attribute *attr,
-+			      char *buf)
-+{
-+	return pm_show_wakelocks(buf, true);
-+}
-+
-+static ssize_t wake_lock_store(struct kobject *kobj,
-+			       struct kobj_attribute *attr,
-+			       const char *buf, size_t n)
-+{
-+	int error = pm_wake_lock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_lock);
-+
-+static ssize_t wake_unlock_show(struct kobject *kobj,
-+				struct kobj_attribute *attr,
-+				char *buf)
-+{
-+	return pm_show_wakelocks(buf, false);
-+}
-+
-+static ssize_t wake_unlock_store(struct kobject *kobj,
-+				 struct kobj_attribute *attr,
-+				 const char *buf, size_t n)
-+{
-+	int error = pm_wake_unlock(buf);
-+	return error ? error : n;
-+}
-+
-+power_attr(wake_unlock);
-+
-+#endif /* CONFIG_PM_WAKELOCKS */
- #endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_TRACE
-@@ -478,6 +515,10 @@ static struct attribute * g[] = {
- #ifdef CONFIG_PM_AUTOSLEEP
- 	&autosleep_attr.attr,
- #endif
-+#ifdef CONFIG_PM_WAKELOCKS
-+	&wake_lock_attr.attr,
-+	&wake_unlock_attr.attr,
-+#endif
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
- #endif
-Index: linux/kernel/power/power.h
-===================================================================
---- linux.orig/kernel/power/power.h
-+++ linux/kernel/power/power.h
-@@ -282,3 +282,12 @@ static inline void pm_autosleep_unlock(v
- static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
- 
- #endif /* !CONFIG_PM_AUTOSLEEP */
-+
-+#ifdef CONFIG_PM_WAKELOCKS
-+
-+/* kernel/power/wakelock.c */
-+extern ssize_t pm_show_wakelocks(char *buf, bool show_active);
-+extern int pm_wake_lock(const char *buf);
-+extern int pm_wake_unlock(const char *buf);
-+
-+#endif /* !CONFIG_PM_WAKELOCKS */
-Index: linux/kernel/power/Kconfig
-===================================================================
---- linux.orig/kernel/power/Kconfig
-+++ linux/kernel/power/Kconfig
-@@ -111,6 +111,14 @@ config PM_AUTOSLEEP
- 	Allow the kernel to trigger a system transition into a global sleep
- 	state automatically whenever there are no active wakeup sources.
- 
-+config PM_WAKELOCKS
-+	bool "User space wakeup sources interface"
-+	depends on PM_SLEEP
-+	default n
-+	---help---
-+	Allow user space to create, activate and deactivate wakeup source
-+	objects with the help of a sysfs-based interface.
-+
- config PM_RUNTIME
- 	bool "Run-time PM core functionality"
- 	depends on !IA64_HP_SIM
-Index: linux/kernel/power/wakelock.c
-===================================================================
---- /dev/null
-+++ linux/kernel/power/wakelock.c
-@@ -0,0 +1,218 @@
-+/*
-+ * kernel/power/wakelock.c
-+ *
-+ * User space wakeup sources support.
-+ *
-+ * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
-+ *
-+ * This code is based on the analogous interface allowing user space to
-+ * manipulate wakelocks on Android.
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/hrtimer.h>
-+#include <linux/list.h>
-+#include <linux/rbtree.h>
-+#include <linux/slab.h>
-+
-+#define WL_NUMBER_LIMIT	100
-+#define WL_GC_COUNT_MAX	100
-+#define WL_GC_TIME_SEC	300
-+
-+static DEFINE_MUTEX(wakelocks_lock);
-+
-+struct wakelock {
-+	char			*name;
-+	struct rb_node		node;
-+	struct wakeup_source	ws;
-+	struct list_head	lru;
-+};
-+
-+static struct rb_root wakelocks_tree = RB_ROOT;
-+static LIST_HEAD(wakelocks_lru_list);
-+static unsigned int number_of_wakelocks;
-+static unsigned int wakelocks_gc_count;
-+
-+ssize_t pm_show_wakelocks(char *buf, bool show_active)
-+{
-+	struct rb_node *node;
-+	struct wakelock *wl;
-+	char *str = buf;
-+	char *end = buf + PAGE_SIZE;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	for (node = rb_first(&wakelocks_tree); node; node = rb_next(node)) {
-+		bool active;
-+
-+		wl = rb_entry(node, struct wakelock, node);
-+		spin_lock_irq(&wl->ws.lock);
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+		if (active == show_active)
-+			str += scnprintf(str, end - str, "%s ", wl->name);
-+	}
-+	str += scnprintf(str, end - str, "\n");
-+
-+	mutex_unlock(&wakelocks_lock);
-+	return (str - buf);
-+}
-+
-+static struct wakelock *wakelock_lookup_add(const char *name, size_t len,
-+					    bool add_if_not_found)
-+{
-+	struct rb_node **node = &wakelocks_tree.rb_node;
-+	struct rb_node *parent = *node;
-+	struct wakelock *wl;
-+
-+	while (*node) {
-+		int diff;
-+
-+		wl = rb_entry(*node, struct wakelock, node);
-+		diff = strncmp(name, wl->name, len);
-+		if (diff == 0) {
-+			if (wl->name[len])
-+				diff = -1;
-+			else
-+				return wl;
-+		}
-+		if (diff < 0)
-+			node = &(*node)->rb_left;
-+		else
-+			node = &(*node)->rb_right;
-+
-+		parent = *node;
-+	}
-+	if (!add_if_not_found)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (number_of_wakelocks > WL_NUMBER_LIMIT)
-+		return ERR_PTR(-ENOSPC);
-+
-+	/* Not found, we have to add a new one. */
-+	wl = kzalloc(sizeof(*wl), GFP_KERNEL);
-+	if (!wl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	wl->name = kstrndup(name, len, GFP_KERNEL);
-+	if (!wl->name) {
-+		kfree(wl);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	wl->ws.name = wl->name;
-+	wakeup_source_add(&wl->ws);
-+	rb_link_node(&wl->node, parent, node);
-+	rb_insert_color(&wl->node, &wakelocks_tree);
-+	list_add(&wl->lru, &wakelocks_lru_list);
-+	number_of_wakelocks++;
-+	return wl;
-+}
-+
-+int pm_wake_lock(const char *buf)
-+{
-+	const char *str = buf;
-+	struct wakelock *wl;
-+	u64 timeout_ns = 0;
-+	size_t len;
-+	int ret = 0;
-+
-+	while (*str && !isspace(*str))
-+		str++;
-+
-+	len = str - buf;
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (*str && *str != '\n') {
-+		/* Find out if there's a valid timeout string appended. */
-+		ret = kstrtou64(skip_spaces(str), 10, &timeout_ns);
-+		if (ret)
-+			return -EINVAL;
-+	}
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, true);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	if (timeout_ns) {
-+		u64 timeout_ms = timeout_ns + NSEC_PER_MSEC - 1;
-+
-+		do_div(timeout_ms, NSEC_PER_MSEC);
-+		__pm_wakeup_event(&wl->ws, timeout_ms);
-+	} else {
-+		__pm_stay_awake(&wl->ws);
-+	}
-+
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
-+
-+static void wakelocks_gc(void)
-+{
-+	struct wakelock *wl, *aux;
-+	ktime_t now = ktime_get();
-+
-+	list_for_each_entry_safe_reverse(wl, aux, &wakelocks_lru_list, lru) {
-+		u64 idle_time_ns;
-+		bool active;
-+
-+		spin_lock_irq(&wl->ws.lock);
-+		idle_time_ns = ktime_to_ns(ktime_sub(now, wl->ws.last_time));
-+		active = wl->ws.active;
-+		spin_unlock_irq(&wl->ws.lock);
-+
-+		if (idle_time_ns < ((u64)WL_GC_TIME_SEC * NSEC_PER_SEC))
-+			break;
-+
-+		if (!active) {
-+			wakeup_source_remove(&wl->ws);
-+			rb_erase(&wl->node, &wakelocks_tree);
-+			list_del(&wl->lru);
-+			kfree(wl->name);
-+			kfree(wl);
-+			number_of_wakelocks--;
-+		}
-+	}
-+	wakelocks_gc_count = 0;
-+}
-+
-+int pm_wake_unlock(const char *buf)
-+{
-+	struct wakelock *wl;
-+	size_t len;
-+	int ret = 0;
-+
-+	len = strlen(buf);
-+	if (!len)
-+		return -EINVAL;
-+
-+	if (buf[len-1] == '\n')
-+		len--;
-+
-+	if (!len)
-+		return -EINVAL;
-+
-+	mutex_lock(&wakelocks_lock);
-+
-+	wl = wakelock_lookup_add(buf, len, false);
-+	if (IS_ERR(wl)) {
-+		ret = PTR_ERR(wl);
-+		goto out;
-+	}
-+	__pm_relax(&wl->ws);
-+	list_move(&wl->lru, &wakelocks_lru_list);
-+	if (++wakelocks_gc_count > WL_GC_COUNT_MAX)
-+		wakelocks_gc();
-+
-+ out:
-+	mutex_unlock(&wakelocks_lock);
-+	return ret;
-+}
-Index: linux/kernel/power/Makefile
-===================================================================
---- linux.orig/kernel/power/Makefile
-+++ linux/kernel/power/Makefile
-@@ -10,5 +10,6 @@ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
- 				   block_io.o
- obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
-+obj-$(CONFIG_PM_WAKELOCKS)	+= wakelock.o
- 
- obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
-Index: linux/drivers/base/power/wakeup.c
-===================================================================
---- linux.orig/drivers/base/power/wakeup.c
-+++ linux/drivers/base/power/wakeup.c
-@@ -132,6 +132,7 @@ void wakeup_source_add(struct wakeup_sou
- 	spin_lock_init(&ws->lock);
- 	setup_timer(&ws->timer, pm_wakeup_timer_fn, (unsigned long)ws);
- 	ws->active = false;
-+	ws->last_time = ktime_get();
- 
- 	spin_lock_irq(&events_lock);
- 	list_add_rcu(&ws->entry, &wakeup_sources);
-Index: linux/Documentation/ABI/testing/sysfs-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-power
-+++ linux/Documentation/ABI/testing/sysfs-power
-@@ -189,3 +189,45 @@ Description:
- 
- 		Reading from this file causes the last string successfully
- 		written to it to be displayed.
-+
-+What:		/sys/power/wake_lock
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/wake_lock file allows user space to create
-+		wakeup source objects and activate them on demand (if one of
-+		those wakeup sources is active, reads from the
-+		/sys/power/wakeup_count file block or return false).  When a
-+		string without white space is written to /sys/power/wake_lock,
-+		it will be assumed to represent a wakeup source name.  If there
-+		is a wakeup source object with that name, it will be activated
-+		(unless active already).  Otherwise, a new wakeup source object
-+		will be registered, assigned the given name and activated.
-+		If a string written to /sys/power/wake_lock contains white
-+		space, the part of the string preceding the white space will be
-+		regarded as a wakeup source name and handled as descrived above.
-+		The other part of the string will be regarded as a timeout (in
-+		nanoseconds) such that the wakeup source will be automatically
-+		deactivated after it has expired.  The timeout, if present, is
-+		set regardless of the current state of the wakeup source object
-+		in question.
-+
-+		Reads from this file return a string consisting of the names of
-+		wakeup sources created with the help of it that are active at
-+		the moment, separated with spaces.
-+
-+
-+What:		/sys/power/wake_unlock
-+Date:		February 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/power/wake_unlock file allows user space to deactivate
-+		wakeup sources created with the help of /sys/power/wake_lock.
-+		When a string is written to /sys/power/wake_unlock, it will be
-+		assumed to represent the name of a wakeup source to deactivate.
-+		If a wakeup source object of that name exists and is active at
-+		the moment, it will be deactivated.
-+
-+		Reads from this file return a string consisting of the names of
-+		wakeup sources created with the help of /sys/power/wake_lock
-+		that are inactive at the moment, separated with spaces.
+Now [1/7] - Look for wakeup events in later stages of device suspend.
+
+> [4/8] - This kind of reintroduces my original idea of using a wait queue for
+>   waiting until there are no wakeup events in progress.  Alan convinced me that
+>   it would be better to poll the counter to prevent wakeup_source_deactivate()
+>   from having to call wake_up_all() occasionally (that may be costly in fast
+>   paths), but then quite some people told me that the wait queue migh be
+>   better.  I think that the polling will make much less sense with autosleep
+>   and user space "wake locks".  Anyway, [4/8] is something we can do without
+>   those things too.
+
+Now [2/7] - Use wait queue to signal "no wakeup events in progress"
+
+  With a couple of improvements suggested by Neil.
+
+> The patches above were given Sign-off-by tags, because I think they make some
+> sense regardless of the features introcuded by the remaining patches that in
+> turn are total RFC.
+
+This time all of the patches are signed-off and include the requisite
+documentation changes (hopefully, I haven't forgotten about anything).
+
+> [5/8] - This changes wakeup source statistics so that they are more similar to
+>   the statistics collected for wakelocks on Android.  The file those statistics
+>   may be read from is still located in debugfs, though (I don't think it
+>   belongs to proc and its name is different from the analogous Android's file
+>   name anyway).  It could be done without autosleep, but then it would be a bit
+>   pointless.  BTW, this changes interfaces that _in_ _theory_ may be used by
+>   someone, but I'm not aware of anyone using them.  If you are one, I'll be
+>   pleased to learn about that, so please tell me who you are. :-)
+
+Now [3/7] - Change wakeup source statistics to follow Android.
+
+  Rebased and reworked in accordance with the Arve's feedback.
+
+[4/7] - Add ioctl to block suspend while event queue is not empty.
+
+  Originally posted by Arve as http://marc.info/?l=linux-pm&m=132711288825973&w=4
+  Reworked and with modified changelog (I wonder what Dmity thinks about this).
+
+  It has some minor problems (for example, in some situations the queue wakeup
+  source may be activated for events that are not coming from a wakeup device),
+  but I think it's simple enough, at least for illustration.  The ioctls
+  introduced here will be used by Android user space anyway, although perhaps
+  under different names, AFAICS.
+
+> [6/8] - Autosleep implementation.  I think the changelog explains the idea
+>   quite well and the code is really nothing special.  It doesn't really add
+>   anything new to the kernel in terms of infrastructure etc., it just uses
+>   the existing stuff to implement an alternative method of triggering system
+>   sleep transitions.  Note, though, that the interface here is different
+>   from the Android's one, because Android actually modifies /sys/power/state
+>   to trigger something called "early suspend" (that is never going to be
+>   implemented in the "stock" kernel as long as I have any influence on it) and
+>   we simply can't do that in the mainline.
+
+Now [5/7] - Implement opportunistic sleep
+
+  Rebased and simplified (most notably, I've dropped the "main" wakeup source,
+  since it wasn't really necessary).
+
+> [7/8] - This adds a wakeup source statistics that only makes sense with
+>   autosleep and (I believe) is analogous to the Android's prevent_suspend_time
+>   statistics.  Nothing really special, but I didn't want
+>   wakeup_source_activate/deactivate() to take a common lock to avoid
+>   congestion.
+
+Now [6/7] - Add "prevent autosleep time" statistics to wakeup sources.
+
+  Rebased.
+
+> [8/8] - This adds a user space interface to create, activate and deactivate
+>   wakeup sources.  Since the files it consists of are called wake_lock and
+>   wake_unlock, to follow Android, the objects the wakeup sources are wrapped
+>   into are called "wakelocks" (for added confusion).  Since the interface
+>   doesn't provide any means to destroy those "wakelocks", I added a garbage
+>   collection mechanism to get rid of the unused ones, if any.  I also tought
+>   it might be a good idea to put a limit on the number of those things that
+>   user space can operate simultaneously, so I did that too.
+
+Now [7/7] - Add user space interface for manipulating wakeup sources.
+
+> All of the above has been tested very briefly on my test-bed Mackerel board
+> and it quite obviously requires more thorough testing, but first I need to know
+> if it makes sense to spend any more time on it.
+
+The above is still accurate, but I also verified that the patches don't break
+my PC test boxes (at least as long as the new features aren't used ;-)).
+
+Thanks,
+Rafael
 
