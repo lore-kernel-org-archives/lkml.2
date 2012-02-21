@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2BUPBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 10:01:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43234 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab2BUPBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 10:01:40 -0500
-Date: Tue, 21 Feb 2012 16:01:38 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Subject: Re: [PATCH v2] HID: use generic driver for Logitech Unifying receivers
- if CONFIG_HID_LOGITECH_DJ=n
-In-Reply-To: <20120213101303.8665.76516.stgit@zurg>
-Message-ID: <alpine.LNX.2.00.1202211600420.31150@pobox.suse.cz>
-References: <20120213080644.6105.54221.stgit@zurg> <20120213101303.8665.76516.stgit@zurg>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755518Ab2BUPIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 10:08:06 -0500
+Received: from mail-gx0-f202.google.com ([209.85.161.202]:34148 "EHLO
+	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2BUPIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 10:08:04 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of cywang@google.com designates 10.236.145.135 as permitted sender) smtp.mail=cywang@google.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Chung-yih Wang <cywang@chromium.org>
+To: Alessandro Rubini <rubini@cvml.unipv.it>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
+        Chung-yih Wang <cywang@chromium.org>
+Subject: [PATCH] CHROMIUM: Input: synaptics - filter out the events with low z values
+Date: Tue, 21 Feb 2012 23:07:38 +0800
+Message-Id: <1329836858-9369-1-git-send-email-cywang@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Feb 2012, Konstantin Khlebnikov wrote:
+The single touch path imposes a minimum z value (with hysterisis) before
+registering BTN_TOUCH. Apply the same (hard coded) threshold when
+deciding how many fingers to report in the semi-mt path.
 
-> Before commit 534a7b8e1 "HID: Add full support for Logitech Unifying receivers"
-> Logitech Unifying receiver can work as generic device without special driver,
-> after that commit these devices does not works without special driver.
-> 
-> After this patch they will use generic driver if special driver is disabled.
-> 
+This patch improves performance of the Google Cr-48 chromebook's
+extremely sensitive Synaptics profile sensor touchpad by filtering out
+touch events for hovering fingers.
 
-Okay, I haven't originally fully realized that this device works 
-flawlessly in "single" case without the driver.
+Note: We continue to use the same hard coded threshold value used in the
+single touch case as it appears this works just as well on these
+multitouch profile sensor pads as on whatever pads it was originally
+discovered.
 
-I like to avoid polluting the have_special_driver[] with ifdefs, but in 
-this particular case it seems to make sense. So I am queuing this.
+Signed-off-by: Chung-Yih Wang <cywang@chromium.org>
+---
+ drivers/input/mouse/synaptics.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 8081a0a..7936a1a 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -568,17 +568,22 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
+ 	}
+ }
+ 
++static bool finger_touched(const struct synaptics_hw_state *hw)
++{
++	return (hw->z > 30);
++}
++
+ static void synaptics_report_semi_mt_data(struct input_dev *dev,
+ 					  const struct synaptics_hw_state *a,
+ 					  const struct synaptics_hw_state *b,
+ 					  int num_fingers)
+ {
+-	if (num_fingers >= 2) {
++	if ((num_fingers >= 2) && finger_touched(a) && finger_touched(b)) {
+ 		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
+ 					      min(a->y, b->y));
+ 		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
+ 					      max(a->y, b->y));
+-	} else if (num_fingers == 1) {
++	} else if ((num_fingers == 1) && finger_touched(a)) {
+ 		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
+ 		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
+ 	} else {
+@@ -1040,7 +1045,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
+ 	 * absolute -> relative conversion
+ 	 */
+-	if (hw.z > 30) input_report_key(dev, BTN_TOUCH, 1);
++	if (finger_touched(&hw))
++		input_report_key(dev, BTN_TOUCH, 1);
+ 	if (hw.z < 25) input_report_key(dev, BTN_TOUCH, 0);
+ 
+ 	if (num_fingers > 0) {
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.7.3
+
