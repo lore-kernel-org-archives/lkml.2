@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab2BUQwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 11:52:42 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64886 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751942Ab2BUQwk (ORCPT
+	id S1752847Ab2BUQ6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 11:58:47 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33096 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab2BUQ6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 11:52:40 -0500
+	Tue, 21 Feb 2012 11:58:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.132.229 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Tue, 21 Feb 2012 08:58:41 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: fix generic definition of
+ __this_cpu_add_and_return()
+Message-ID: <20120221165841.GA12236@google.com>
+References: <20120219142911.12300.7497.stgit@zurg>
+ <alpine.DEB.2.00.1202210952510.10145@router.home>
 MIME-Version: 1.0
-In-Reply-To: <4F431665.3010004@zytor.com>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
- <1329696488-16970-31-git-send-email-hpa@zytor.com> <4F42E171.9080005@mit.edu> <4F431665.3010004@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 21 Feb 2012 08:52:20 -0800
-X-Google-Sender-Auth: zU6sBsL3VQKO-dxIja8RzlZXXe8
-Message-ID: <CAObL_7Hy8Y0PWrcZdRSGRcEt+aoma7ax4XU44f-gdHEGoWBzTg@mail.gmail.com>
-Subject: Re: [PATCH 30/30] x32: Add x32 VDSO support
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, hjl.tools@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202210952510.10145@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 7:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/20/2012 04:12 PM, Andy Lutomirski wrote:
->>
->> Would it make sense to remove the non-__vdso-prefixed weak symbols?
->> AFAICT they are somewhere between useless (because the __vdso symbols
->> are unambiguous), confusing (has anyone not read this and said "huh?"),
->> and wrong (they are not interchangeable with glibc's symbols as they
->> return different values).
->>
->> We're stuck with them on x86-64, but x32 is new and has no
->> backwards-compatibility issues.
->>
->
-> What about non-glibc?
+On Tue, Feb 21, 2012 at 09:53:08AM -0600, Christoph Lameter wrote:
+> On Sun, 19 Feb 2012, Konstantin Khlebnikov wrote:
+> 
+> > This patch adds missed "__" into function prefix.
+> > Otherwise on all archectures (except x86) it expands to irq/preemtion-safe
+> > variant: _this_cpu_generic_add_return(), which do extra irq-save/irq-restore.
+> > Optimal generic implementation is __this_cpu_generic_add_return().
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
 
-IMO non-glibc users should just call __vdso_clock_gettime, etc.
-Currently, code like:
+Applied to 3.3-fixes.  Thanks.
 
-if (clock_gettime(whatever) == -1)
-  handle_the_error();
-
-is correct when linked against glibc but incorrect when linked
-directly against the vdso.
-
---Andy
+-- 
+tejun
