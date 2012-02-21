@@ -1,122 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab2BUWVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:21:25 -0500
-Received: from xes-mad.com ([216.165.139.218]:56065 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab2BUWVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:21:24 -0500
-Date: Tue, 21 Feb 2012 16:21:12 -0600 (CST)
-From: Aaron Sierra <asierra@xes-inc.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter@roeck-us.net>, Peter Tyser <ptyser@xes-inc.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3 v4] mfd: Add LPC driver for Intel ICH chipsets
-Message-ID: <14262b0b-3937-45c0-bc01-93de9e2b4113@zimbra>
-In-Reply-To: <20120221152853.054855fe@endymion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756039Ab2BUWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:23:59 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53149 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab2BUWX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:23:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of msb@google.com designates 10.68.217.42 as permitted sender) smtp.mail=msb@google.com; dkim=pass header.i=msb@google.com
+Date: Tue, 21 Feb 2012 14:23:43 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
+ cgroup_enable_task_cg_list
+Message-ID: <20120221222343.GU3090@google.com>
+References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+ <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.52.0.65]
-X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 20 Feb 2012 14:36:27 -0600 (CST), Aaron Sierra wrote:
-> > > > +	}
-> > > > +
-> > > > +	/* Enable LPC ACPI space */
-> > > > +	pci_read_config_byte(dev, ACPICTRL, &reg_save);
-> > > > +	pci_write_config_byte(dev, ACPICTRL, reg_save | 0x10);
-> > > > +	lpc_ich_acpi_save = reg_save;
-> > > > +
-> > > > +pm_done:
-> > > > +	/* Setup GPIO base register */
-> > > > +	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
-> > > > +	base_addr = base_addr_cfg & 0x0000ff80;
-> > > > +	if (!base_addr) {
-> > > > +		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
-> > > > +		/* GPIO in power-management space may still be available */
-> > > > +		goto gpio_reg;
-> > > > +	}
-> > > > +
-> > > > +	gpio_ich_res[ICH_RES_GPIO].start = base_addr;
-> > > > +	gpio_ich_res[ICH_RES_GPIO].end = base_addr + GPIOBASE_IO_SIZE
-> > > > -
-> > > > 1;
-> > > > +	ret =
-> > > > acpi_check_resource_conflict(&gpio_ich_res[ICH_RES_GPIO]);
-> > > > +	if (ret) {
-> > > > +		/* this isn't necessarily fatal for the GPIO */
-> > > > +		gpio_ich_res[ICH_RES_GPIO].start = 0;
-> > > > +		gpio_ich_res[ICH_RES_GPIO].end = 0;
-> > > 
-> > > I don't quite get how this can be non-fatal, given that the
-> > > gpio-ich driver's probe function will return -ENODEV in this
-> > > case. So if this resource is mandatory, let's make it exactly
-> > > that.
-> > 
-> > The necessity for the ICH_RES_GPIO resource to exist is an issue I
-> > thought better left to the gpio-ich driver. The way that driver is
-> > currently written it is mandatory, but it doesn't *have* to be
-> > written that way. For chipsets that have GPE0 and GPIO space, only
-> > one needs to be present to have some usable GPIO.
+Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> Walking through the tasklist in cgroup_enable_task_cg_list() inside
+> an RCU read side critical section is not enough because:
 > 
-> Ah, OK, I had misunderstood this, I thought GPIO was always
-> mandatory.
+> - RCU is not (yet) safe against while_each_thread()
 > 
-> We're only talking about the ICH6 and 3100, right? I find it
-> questionable that you even attempt to request and enable the GPE0
-> space on all other chips then. This could cause error messages
-> that are not relevant at all.
-
-You'll see in the V5 patch that I followed your suggestion and now
-treat the GPIO space as mandatory. The local version I have
-prepared for V6 only looks for GPE0 space for ICH6 and i3100
-devices.
-
-> > Otherwise, the only optimization (fix) I see is that
-> > ACPIBASE_GPE0_BASE should be 0x28, not 0x20 and gpe0_sts_ofs
-> > in gpio-ich should be removed. Currently, that portion of
-> > gpio-ich appears to be broken.
+> - If we use only RCU, a forking task that has passed cgroup_post_fork()
+>   without seeing use_task_css_set_links == 1 is not guaranteed to have
+>   its child immediately visible in the tasklist if we walk through it
+>   remotely with RCU. In this case it will be missing in its css_set's
+>   task list.
 > 
-> If you only need the I/O port at offset 0x28, then indeed it might
-> make sense to only request that one to limit the risk of resource
-> conflicts.
-
-I addressed this with V5.
-
-> > > > +	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_GPIO], id);
-> > > > +	ret = mfd_add_devices(&dev->dev, 0, &lpc_ich_cells[LPC_GPIO],
-> > > > +				1, NULL, 0);
-> > > > +	if (!ret)
-> > > > +		cell_added = true;
-> > > > +
-> > > > +	if (acpi_conflict)
-> > > > +		dev_info(&dev->dev, "ACPI resource conflicts found; "
-> > > > +				"consider using acpi_enforce_resources=lax?\n");
-> > > 
-> > > I'm not sure if it really makes sense to report this. ACPI
-> > > resource
-> > > conflicts are already reported quite loudly by the acpi core. And
-> > > passing acpi_enforce_resources=lax blindly isn't quite
-> > > recommended,
-> > > so I'm not sure if we really want to mention it here, it might do
-> > > more
-> > > harm than help.
-> > 
-> > So the question mark doesn't imply strongly enough that it's not an
-> > action that should definitely be taken. Would you prefer a warning
-> > summarizing which drivers are affected by the detected resource
-> > conflicts or no additional warning at all?
+> Thus we need to traverse the list (unfortunately) under the
+> tasklist_lock. It makes us safe against while_each_thread() and also
+> make sure we see all forked task that have been added to the tasklist.
 > 
-> I wouldn't put any additional warning at all. But maybe that's just
-> me.
+> As a secondary effect, reading and writing use_task_css_set_links are
+> now well ordered against tasklist traversing and modification. The new
+> layout is:
+> 
+> CPU 0                                      CPU 1
+> 
+> use_task_css_set_links = 1                write_lock(tasklist_lock)
+> read_lock(tasklist_lock)                  add task to tasklist
+> do_each_thread() {                        write_unlock(tasklist_lock)
+> 	add thread to css set links       if (use_task_css_set_links)
+> } while_each_thread()                         add thread to css set links
+> read_unlock(tasklist_lock)
+> 
+> If CPU 0 traverse the list after the task has been added to the tasklist
+> then it is correctly added to the css set links. OTOH if CPU 0 traverse
+> the tasklist before the new task had the opportunity to be added to the
+> tasklist because it was too early in the fork process, then CPU 1
+> catches up and add the task to the css set links after it added the task
+> to the tasklist. The right value of use_task_css_set_links is guaranteed
+> to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
+> the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
+> and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
+> afterward to return the correct value.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Mandeep Singh Baines <msb@chromium.org>
 
-In V5, I added warnings indicating which drivers are affected by
-conflicts, since it was trivial with the way that I compartmentalized
-gpio and watchdog mfd cell creation in that version.
+Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
 
--Aaron S.
+Sorry for being late. My feedback is really just comments.
+
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/cgroup.c |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 6e4eb43..c6877fe 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
+>  	struct task_struct *p, *g;
+>  	write_lock(&css_set_lock);
+
+You might want to re-test use_task_css_set_links once you have the lock
+in order to avoid an unnecessary do_each_thread()/while_each_thread() in
+case you race between reading the value and entering the loop. This is
+a potential optimization in a rare case so maybe not worth the LOC.
+
+>  	use_task_css_set_links = 1;
+> +	/*
+> +	 * We need tasklist_lock because RCU is not safe against
+> +	 * while_each_thread(). Besides, a forking task that has passed
+> +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
+> +	 * is not guaranteed to have its child immediately visible in the
+> +	 * tasklist if we walk through it with RCU.
+> +	 */
+
+Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
+is made rcu safe. On a large system, it could take a while to iterate
+over every thread in the system. Thats a long time to hold a spinlock.
+But it only happens once so probably not that big a deal.
+
+> +	read_lock(&tasklist_lock);
+>  	do_each_thread(g, p) {
+>  		task_lock(p);
+>  		/*
+> @@ -2718,6 +2726,7 @@ static void cgroup_enable_task_cg_lists(void)
+>  			list_add(&p->cg_list, &p->cgroups->tasks);
+>  		task_unlock(p);
+>  	} while_each_thread(g, p);
+> +	read_unlock(&tasklist_lock);
+>  	write_unlock(&css_set_lock);
+>  }
+>  
+> @@ -4522,6 +4531,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
+>   */
+>  void cgroup_post_fork(struct task_struct *child)
+>  {
+> +	/*
+> +	 * use_task_css_set_links is set to 1 before we walk the tasklist
+> +	 * under the tasklist_lock and we read it here after we added the child
+> +	 * to the tasklist under the tasklist_lock as well. If the child wasn't
+> +	 * yet in the tasklist when we walked through it from
+> +	 * cgroup_enable_task_cg_lists(), then use_task_css_set_links value
+> +	 * should be visible now due to the paired locking and barriers implied
+> +	 * by LOCK/UNLOCK: it is written before the tasklist_lock unlock
+> +	 * in cgroup_enable_task_cg_lists() and read here after the tasklist_lock
+> +	 * lock on fork.
+> +	 */
+>  	if (use_task_css_set_links) {
+>  		write_lock(&css_set_lock);
+>  		if (list_empty(&child->cg_list)) {
+> -- 
+> 1.7.5.4
+> 
