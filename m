@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab2BUFfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 00:35:09 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:20053 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2BUFfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 00:35:06 -0500
-X-AuditID: cbfee61b-b7c62ae000000989-c5-4f432d088969
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org
-Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-References: <000b01ccdc0a$0336abc0$09a40340$%jun@samsung.com>
- <e62a9b49ee1778129ef1b0adf2e14fc7.squirrel@www.codeaurora.org>
-In-reply-to: <e62a9b49ee1778129ef1b0adf2e14fc7.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH v4 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Tue, 21 Feb 2012 14:35:03 +0900
-Message-id: <000401ccf05a$9032c130$b0984390$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczwFdcPIN1cEJJYQE+cLyLUJDIblgANyLnw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1752193Ab2BUFfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 00:35:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40563 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab2BUFft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 00:35:49 -0500
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 20 Feb 2012 21:35:16 -0800
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <d52b567f-2fd5-4b9d-b20c-8a83e813caa1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya Erez <merez@codeaurora.org> wrote:
-> > @@ -1262,21 +1608,32 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
-> > *mq, struct request *rqc)
-> >  	int ret = 1, disable_multi = 0, retry = 0, type;
-> >  	enum mmc_blk_status status;
-> >  	struct mmc_queue_req *mq_rq;
-> > -	struct request *req;
-> > +	struct request *req, *prq;
-> >  	struct mmc_async_req *areq;
-> > +	u8 reqs = 0;
-> >
-> >  	if (!rqc && !mq->mqrq_prev->req)
-> >  		return 0;
-> >
-> > +	if (rqc)
-> > +		reqs = mmc_blk_prep_packed_list(mq, rqc);
-> > +
-> >  	do {
-> >  		if (rqc) {
-> > -			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-> > +			if (reqs >= card->host->packed_min)
-> In case host->packed_min will be set to a value bigger than 2 you will
-> loose all the requests that were added to the packed list. If you want to
-> support dynamic number of min packed requests you need to move the packed
-> list preparation to queue.c where you can issue the fetched requests one
-> after another, when (reqs < card->host->packed_min).
+Running build tests now; will check results in the morning.
 
-That's a good point.
-The requests added to the packed list will be remained
-if current number of packed request is less than packed_min.
-In such a case, requests should be put back to request_queue from packed list.
-I think it's a additional and unnecessary work due to packed_min.
-It's not interesting. So I want to revert this regulation of packed_min.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-And we have discussed the location of mmc_blk_prep_packed_list(block.c or queue.c) several times.
-Packed command is valid only if request type is read/write,
-so it may be a good location to decide in mmc_blk_issue_rw_rq in block.c.
-I guess you want this function to be located in mmc_queue_thread in queue.c, right?
-Is it advantageous? Could you explain for this?
+>On Mon, Feb 20, 2012 at 6:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 02/20/2012 06:10 PM, Linus Torvalds wrote:
+>>>
+>>> Although I do wonder if we should just make kernel_fpu_begin() be a
+>>> real function instead of inlining it. I'm not sure it makes sense to
+>>> inline that thing, and it might be better to export that one
+>instead.
+>>> Comments?
+>>
+>> I would agree with that.
+>
+>So I have a patch that does that, but it's noticeably bigger.
+>
+>It uninlines a fair amount of i387.h, and moves it into i387.c. I do
+>think it's probably the right thing to do, though.
+>
+>I did a "make allmodconfig" with this on x86-64, but it's quite
+>possible that x86-32 does additional cases. Does this patch work for
+>people?
+>
+>(This is *on*top*of* the quick "let's just get it to work" patch that
+>just exports the new percpu variable. I already committed that and
+>pushed it out, since I wanted a quick fix so that people wouldn't be
+>held up by this)
+>
+>IOW, if you can try this on top of current -git, that would be lovely.
+>
+>                         Linus
 
-Thanks,
-Seungwon Jeon
-> > +				mmc_blk_packed_hdr_wrq_prep(mq->mqrq_cur, card, mq, reqs);
-> > +			else
-> > +				mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-> 
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
