@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2BTX41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 18:56:27 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:62800 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab2BTX40 (ORCPT
+	id S1754784Ab2BUACi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 19:02:38 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58180 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab2BUACh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 18:56:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.229.137.18 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
-Date: Tue, 21 Feb 2012 00:56:22 +0100
+	Mon, 20 Feb 2012 19:02:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.229.106.23 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Tue, 21 Feb 2012 01:02:30 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org
-Subject: Re: NoHZ and CPU isolation patches
-Message-ID: <20120220235619.GH5752@somewhere.redhat.com>
-References: <4F39DB3D.10805@qualcomm.com>
- <CAOtvUMdta6RNvaHNRDbsUTA5tTEK01bwW_wpZkZOeNNL+podTA@mail.gmail.com>
- <4F3AA481.6040707@qualcomm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120221000225.GJ5752@somewhere.redhat.com>
+References: <4F2AC69B.7000704@redhat.com>
+ <20120202175155.GV2518@linux.vnet.ibm.com>
+ <4F2E7311.8060808@redhat.com>
+ <20120205165927.GH2467@linux.vnet.ibm.com>
+ <20120209152155.GA22552@somewhere.redhat.com>
+ <4F33EEB3.4080807@redhat.com>
+ <20120209182216.GG22552@somewhere.redhat.com>
+ <20120209234144.GC2458@linux.vnet.ibm.com>
+ <20120210013911.GM22552@somewhere.redhat.com>
+ <4F3A5F0B.2090309@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F3AA481.6040707@qualcomm.com>
+In-Reply-To: <4F3A5F0B.2090309@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 10:14:25AM -0800, Max Krasnyansky wrote:
-> On 02/14/2012 01:44 AM, Gilad Ben-Yossef wrote:
-> >Hi Max,
+On Tue, Feb 14, 2012 at 03:18:03PM +0200, Avi Kivity wrote:
+> On 02/10/2012 03:39 AM, Frederic Weisbecker wrote:
+> > > 
+> > > As long as the code doesn't enter RCU read-side critical sections in
+> > > the time between rcu_idle_enter() and rcu_idle_exit(), this should
+> > > work fine.
 > >
-> >Any specific reason not to CC the LKML list? I know it is sometime
-> >noisy and I understand
-> >you are not subscribed, but it is the Right Thing (tm) to do...
+> > This should work fine yeah but further the correctness, I wonder if this
+> > is going to be a win.
+> >
+> > We use rcu_idle_enter() in idle to avoid to keep the tick for RCU. But
+> > what about falling into guest mode? I guess the tick is kept there
+> > so is it going to be a win in throughput or something to use rcu_idle_enter()?
 > 
-> No reason really. I was just going to keep it short and basically just ask
-> for CCs on future discussions :).
-> Looks like this might turn into a useful discussion. Added to the CC.
-> 
-> >On Tue, Feb 14, 2012 at 5:55 AM, Max Krasnyansky<maxk@qualcomm.com>  wrote:
-> >>Gilad, Frederic,
-> >>
-> >>At the time a lot of people
-> >>were totally opposed to that
-> >>from the recent threads it looks like things have changed quite a bit.
-> >
-> >I think people like the idea of CPU isolation, there is just the
-> >question of what CPU
-> >isolation means :-)
-> >
-> >At least my personal approach is that if a task is running on an
-> >isolated CPU has caused
-> >the kernel to need to do work on that CPU, that is fair game.
-> Yep. My definition is the same. ie If a task wants to avoid interference from the
-> kernel it better not use any syscalls() or at least not the syscalls that trigger
-> IO, mem allocations, etc.
+> We could disable the tick while in guest mode as well.  Interrupts in
+> guest mode are even more expensive than interrupts in user mode.
 
-Right but we want a solution that works for everyone: those who need to issue syscalls
-from time to time (IO or whatever), those who don't issue syscalls at all, etc...
-
-So unplugging the CPU might work for pure isolation (no syscalls, no irq, no exception)
-but there may be lighter kind of isolation, with rare syscalls, exceptions or irqs, etc...
-
-If the task is disturbed for useless work, then lets fix that. This may be useful for
-isolation and even much more globally.
-
-Note that unplugging the CPU also prevents the task from any return to the kernel. This
-include the do_exit() path. And I believe we don't want to deal with a CPU that is
-not in the online mask when we enter such a complicated path.
+Right, that's definitely something I need to explore with the adaptive tickless
+thing.
