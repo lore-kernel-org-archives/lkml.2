@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab2BUHOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 02:14:06 -0500
-Received: from www.coomevamail.com ([200.1.126.66]:43138 "HELO coomevamail.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750804Ab2BUHOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 02:14:04 -0500
-Message-ID: <20120221005847.14032833f3ff0zvr@www.coomevamail.com>
-X-Priority: 3 (Normal)
-Date: Tue, 21 Feb 2012 00:58:47 -0600
-From: "info@mail.org" <elsamoya@coomevamail.com>
-Reply-to: aa.violet-large01@hotmail.co.uk
-To: undisclosed-recipients:;
-Subject: Dear Sir/Madam,
+	id S1752731Ab2BUH2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 02:28:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34825 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2BUH2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 02:28:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of xiyou.wangcong@gmail.com designates 10.68.234.132 as permitted sender) smtp.mail=xiyou.wangcong@gmail.com; dkim=pass header.i=xiyou.wangcong@gmail.com
+Message-ID: <4F434789.9080608@gmail.com>
+Date: Tue, 21 Feb 2012 15:28:09 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Yang Honggang <eagle.rtlinux@gmail.com>
+CC: hjk@hansjkoch.de, linux-kernel@vger.kernel.org
+Subject: Re: Is there a mail list dedicated for UIO (userspace I/O)?
+References: <4F43BCDB.90606@gmail.com>
+In-Reply-To: <4F43BCDB.90606@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
-X-Originating-IP: 83.170.105.241
-X-Remote-Browser: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0.1)
- Gecko/20100101 Firefox/9.0.1
-X-Proveedor: Calipso Comunicaciones S.A. http://www.calipso.com.co/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/21/2012 11:48 PM, Yang Honggang wrote:
+> hi, everyone
+>
+> Is there a mail list dedicated for UIO (userspace I/O)?
+> I want to contribute to UIO but did not find the right
+> mail list.
 
+At least get_maintainer.pl said it it LKML:
 
-Dear Sir/Madam,
-
-This is a personal email directed to you. I and my wife won a Jackpot  
-Lottery of $11.3 million in July and have voluntarily decided to  
-donate the sum of $500,000.00 USD to you as part of our own charity  
-project to improve the lot of 10 lucky individuals all over the world.  
-If you have received this email then you are one of the lucky  
-recipients and all you have to do is get back with us so that we can  
-send your details to the payout bank.
-
-You can verify this by visiting the web pages below.
-http://news.yahoo.com/blogs/upshot/nicest-canadian-couple-world-dole-lottery-winnings.html
-
-You have to contact me at my private email address  
-(aa.violet-large01@hotmail.co.uk)
-
-Good luck,
-Allen and Violet Large
-Email: aa.violet-large01@hotmail.co.uk
-
-----------------------------------------------------------------
-Mensaje enviado usando correoweb http://www.calipso.com.co
-
-
+% ./scripts/get_maintainer.pl -f drivers/uio
+"Hans J. Koch" <hjk@hansjkoch.de> (maintainer:USERSPACE I/O (UIO))
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> (maintainer:USERSPACE 
+I/O (UIO))
+linux-kernel@vger.kernel.org (open list)
