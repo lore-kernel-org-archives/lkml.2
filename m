@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab2BUTyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:54:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50385 "EHLO mx1.redhat.com"
+	id S1755951Ab2BUTyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:54:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab2BUTyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:54:06 -0500
+	id S1755992Ab2BUTyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:54:08 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 55/73] fallthru: tmpfs support for lookup of d_type/d_ino in
- fallthrus [ver #2]
+Subject: [PATCH 09/73] VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
+ [ver #2]
 To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
         valerie.aurora@gmail.com
 Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
-Date: Tue, 21 Feb 2012 18:04:22 +0000
-Message-ID: <20120221180422.25235.59500.stgit@warthog.procyon.org.uk>
+        Ram Pai <linuxram@us.ibm.com>
+Date: Tue, 21 Feb 2012 17:58:32 +0000
+Message-ID: <20120221175832.25235.96909.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -31,45 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Valerie Aurora <vaurora@redhat.com>
 
-Now that we have full union lookup support, lookup the true d_type and
-d_ino of a fallthru.
+Passing the CL_NO_SLAVE flag to clone_mnt() causes the clone
+to fail if the source mnt is a slave.
 
 Original-author: Valerie Aurora <vaurora@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org
+Cc: Ram Pai <linuxram@us.ibm.com>
 ---
 
- fs/libfs.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ fs/namespace.c |    3 +++
+ fs/pnode.h     |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index 43f1ac2..bd9388f 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -143,6 +143,7 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 	ino_t ino;
- 	char d_type;
- 	int i = filp->f_pos;
-+	int err = 0;
+diff --git a/fs/namespace.c b/fs/namespace.c
+index f92f574..96f43f2 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -743,6 +743,9 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 	if ((flag & CL_NO_SHARED) && IS_MNT_SHARED(old))
+ 		return ERR_PTR(-EINVAL);
  
- 	switch (i) {
- 		case 0:
-@@ -177,9 +178,13 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 				spin_unlock(&next->d_lock);
- 				spin_unlock(&dentry->d_lock);
- 				if (d_is_fallthru(next)) {
--					/* XXX placeholder until generic_readdir_fallthru() arrives */
--					ino = 1;
--					d_type = DT_UNKNOWN;
-+					/* On tmpfs, should only fail with ENOMEM, EIO, etc. */
-+					err = generic_readdir_fallthru(filp->f_path.dentry,
-+								       next->d_name.name,
-+								       next->d_name.len,
-+								       &ino, &d_type);
-+					if (err)
-+						return err;
- 				} else {
- 					ino = next->d_inode->i_ino;
- 					d_type = dt_type(next->d_inode);
++	if ((flag & CL_NO_SLAVE) && IS_MNT_SLAVE(old))
++		return ERR_PTR(-EINVAL);
++
+ 	mnt = alloc_vfsmnt(old->mnt_devname);
+ 	if (!mnt)
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/fs/pnode.h b/fs/pnode.h
+index c7089dd..f7ae149 100644
+--- a/fs/pnode.h
++++ b/fs/pnode.h
+@@ -23,6 +23,7 @@
+ #define CL_MAKE_SHARED 		0x08
+ #define CL_PRIVATE 		0x10
+ #define CL_NO_SHARED 		0x20
++#define CL_NO_SLAVE 		0x40
+ 
+ static inline void set_mnt_shared(struct mount *mnt)
+ {
 
