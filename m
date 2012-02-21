@@ -1,91 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2BUWF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:05:57 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37057 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab2BUWFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:05:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.243.144 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 14:05:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
-In-Reply-To: <4F440154.7010403@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202211340530.2012@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <4F4331BC.70205@openvz.org> <alpine.LSU.2.00.1202211117340.1858@eggly.anvils> <4F440154.7010403@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1755822Ab2BUWHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:07:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2337 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773Ab2BUWHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:07:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="113005552"
+Message-ID: <4F441588.8010101@linux.intel.com>
+Date: Tue, 21 Feb 2012 14:07:04 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, feng.tang@intel.com
+Subject: Re: [PATCH] pch_uart: Change default UART clock setting 192MHz
+References: <1329800140-4279-1-git-send-email-tomoya.rohm@gmail.com>
+In-Reply-To: <1329800140-4279-1-git-send-email-tomoya.rohm@gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
-> Hugh Dickins wrote:
-> > 
-> > As things stand, that would mean lock_page_cgroup() has to disable irqs
-> > everywhere.  I'm not sure of the further ramifications of moving uncharge
-> > to __page_cache_release() and release_pages().  I don't think a change
-> > like that is out of the question, but it's certainly a bigger change
-> > than I'd like to consider in this series.
+
+
+On 02/20/2012 08:55 PM, Tomoya MORINAGA wrote:
+> Currently, PCH_UART uses 1843200Hz as default clock.
+> However, in case of using high baud rate, users need to modify
+> clock setting.
 > 
-> Ok. I have another big question: Why we remove pages from lru at last
-> put_page()?
+> This patch uses 192MHz setting as default UART clock setting.
+> Using this clock, users can use almost high baud rate without modifying
+> clock settings.
 > 
-> Logically we can remove them in truncate_inode_pages_range() for file
-> and in free_pages_and_swap_cache() or something at last unmap for anon.
-> Pages are unreachable after that, they never become alive again.
-> Reclaimer also cannot reclaim them in this state, so there no reasons for
-> keeping them in lru.
-> Into those two functions pages come in large batches, so we can remove them
-> more effectively,
-> currently they are likely to be removed right in this place, just because
-> release_pages() drops
-> last references, but we can do this lru remove unconditionally.
+> This setting is the same as quirk for CM-iTC board.
+> So, delete the quirk.
 
-That may be a very good idea, but I'm not going to commit myself
-in a hurry.
+With this change, the serial console will work, but only after the
+device is initialized. We get garbage out of the early serial console
+(as it still uses the 115200 as the BASE_BAUD and the firmware in my
+case has set this to 64000000/16):
 
-I think Kamezawa-san was involved, and has a much better grasp than
-I have, of the choices of precisely when to charge and uncharge;
-and why we would not have removed from lru at the point of uncharge.
+xĀx�x��x�x��xx�x��xxx�xxx�x��x�x�xxxx���xxx�x�x��x�x�x�����x��xx���x�x�x�xx�x��x�x6
+ahci 0000:03:06.0: AHCI 0001.0100 32 slots 2 ports 3 Gbps 0x3 impl SATA mode
+ahci 0000:03:06.0: flags: ncq sntf pm led clo only pmp pio slum part ccc
+scsi0 : ahci
+scsi1 : ahci
+...
 
-There may have been lock ordering reasons, now gone away, why it could
-not have been done.  Or they may just have been the overriding reason,
-now going away, that memcg should not make any change to what already
-was happening without memcg.
+Perhaps a reasonable solution would be to add a KCONFIG option for the
+early_console BASE_BAUD. I prefer the fixed 192MHz solution here to
+special casing every EG20T PCH board.
 
-One difficulty that comes to mind, is that at the point of uncharge,
-the page may be (temporarily) off lru already: what then?  We certainly
-don't want the uncharge to wait until the page comes back on to lru.
-But it should be possible to deal with, by just making everywhere that
-puts a page back on lru check for the charge first.  Hmm, but then
-what of non-memcg, where there is never any charge?  And what of
-those swapin readahead pages?  I think what you were suggesting
-is probably slightly different from what I went on to imagine.
+I'll prepare and test a patch for early_serial_console BASE_BAUD.
 
-Please keep this idea in mind: maybe Kamezawa will immediately point
-out the fatal flaw in it, or maybe we should come back to it later -
-I'm not getting deeper into it now.
+Please resend these patches with my clock_param changes removed as they
+shouldn't be necessary now that we set all boards to 192MHz.
 
-> Plus it never happens in irq context, so lru_lock can be converted to
-> irq-unsafe in some distant future.
+--
+Darren
 
-I'd love that: no very strong reason, the irq-disabling just irritates
-me.  But note that the irq-disabling was introduced by Andrew, not for
-I/O completion reasons (those somehow followed later IIRC), but because
-the lock was so contended that he didn't want the holders interrupted.
-Though I've not seen such a justification used recently.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+> ---
+> Related patch is 
+> http://marc.info/?l=linux-kernel&m=132979974907774&w=2
+> ---
+>  drivers/tty/serial/pch_uart.c |   15 ++++++---------
+>  1 files changed, 6 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+> index 17ae657..d068c34 100644
+> --- a/drivers/tty/serial/pch_uart.c
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -203,7 +203,7 @@ enum {
+>  
+>  #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+>  
+> -#define DEFAULT_BAUD_RATE 1843200 /* 1.8432MHz */
+> +#define DEFAULT_UART_CLOCK 192000000 /* 192.0MHz */
+>  
+>  struct pch_uart_buffer {
+>  	unsigned char *buf;
+> @@ -287,6 +287,7 @@ static struct pch_uart_driver_data drv_dat[] = {
+>  static struct eg20t_port *pch_uart_ports[PCH_UART_NR];
+>  #endif
+>  static unsigned int default_baud = 9600;
+> +static unsigned int clock_param;
+>  static const int trigger_level_256[4] = { 1, 64, 128, 224 };
+>  static const int trigger_level_64[4] = { 1, 16, 32, 56 };
+>  static const int trigger_level_16[4] = { 1, 4, 8, 14 };
+> @@ -1507,7 +1508,7 @@ static int __init pch_console_setup(struct console *co, char *options)
+>  		return -ENODEV;
+>  
+>  	/* setup uartclock */
+> -	port->uartclk = DEFAULT_BAUD_RATE;
+> +	port->uartclk = clock_param ? clock_param : DEFAULT_UART_CLOCK;
+>  
+>  	if (options)
+>  		uart_parse_options(options, &baud, &parity, &bits, &flow);
+> @@ -1553,7 +1554,6 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+>  	int fifosize, base_baud;
+>  	int port_type;
+>  	struct pch_uart_driver_data *board;
+> -	const char *board_name;
+>  
+>  	board = &drv_dat[id->driver_data];
+>  	port_type = board->port_type;
+> @@ -1566,12 +1566,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+>  	if (!rxbuf)
+>  		goto init_port_free_txbuf;
+>  
+> -	base_baud = DEFAULT_BAUD_RATE;
+> -
+> -	/* quirk for CM-iTC board */
+> -	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+> -	if (board_name && strstr(board_name, "CM-iTC"))
+> -		base_baud = 192000000; /* 192.0MHz */
+> +	/* The module parameter overrides default. */
+> +	base_baud = clock_param ? clock_param : DEFAULT_UART_CLOCK;
+>  
+>  	switch (port_type) {
+>  	case PORT_UNKNOWN:
+> @@ -1785,3 +1781,4 @@ module_exit(pch_uart_module_exit);
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_DESCRIPTION("Intel EG20T PCH UART PCI Driver");
+>  module_param(default_baud, uint, S_IRUGO);
+> +module_param(clock_param, uint, (S_IRUSR | S_IWUSR));
 
-We'd also have to do something about the "rotation",
-maybe Mel's separate list would help, maybe not.
-
-Hugh
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
