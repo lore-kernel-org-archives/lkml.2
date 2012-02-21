@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2BUBba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:31:30 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48344 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2BUBb2 (ORCPT
+	id S1752880Ab2BUBex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:34:53 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:60989 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab2BUBew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:31:28 -0500
-Date: Tue, 21 Feb 2012 12:31:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: linux-next: build failure after merge of the mfd tree
-Message-Id: <20120221123117.2301242c47d6c7265263129a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb"
+	Mon, 20 Feb 2012 20:34:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.229.77.15 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Tue, 21 Feb 2012 02:34:45 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>,
+        Milton Miller <miltonm@bga.com>
+Subject: Re: [v7 0/8] Reduce cross CPU IPI interference
+Message-ID: <20120221013443.GA13403@somewhere.redhat.com>
+References: <1327572121-13673-1-git-send-email-gilad@benyossef.com>
+ <1327591185.2446.102.camel@twins>
+ <CAOtvUMeAkPzcZtiPggacMQGa0EywTH5SzcXgWjMtssR6a5KFqA@mail.gmail.com>
+ <20120201170443.GE6731@somewhere.redhat.com>
+ <CAOtvUMc8L1nh2eGJez0x44UkfPCqd+xYQASsKOP76atopZi5mw@mail.gmail.com>
+ <4F2AAEB9.9070302@tilera.com>
+ <1328898816.25989.33.camel@laptop>
+ <4F3C28AF.9080005@tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F3C28AF.9080005@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 15, 2012 at 04:50:39PM -0500, Chris Metcalf wrote:
+> On 2/10/2012 1:33 PM, Peter Zijlstra wrote:
+> > On Thu, 2012-02-02 at 10:41 -0500, Chris Metcalf wrote:
+> >> At Tilera we have been supporting a "dataplane" mode (aka Zero Overhead
+> >> Linux - the marketing name).  This is configured on a per-cpu basis, and in
+> >> addition to setting isolcpus for those nodes, also suppresses various
+> >> things that might otherwise run (soft lockup detection, vmstat work,
+> >> etc.).  
+> > See that's wrong.. it starts being wrong by depending on cpuisol and
+> > goes from there.
+> >
+> >> The claim is that you need to specify these kinds of things
+> >> per-core since it's not always possible for the kernel to know that you
+> >> really don't want the scheduler or any other interrupt source to touch the
+> >> core, as opposed to the case where you just happen to have a single process
+> >> scheduled on the core and you don't mind occasional interrupts.
+> > Right, so that claim is proven false I think.
+> >
+> >> But
+> >> there's definitely appeal in having the kernel do it adaptively too,
+> >> particularly if it can be made to work just as well as configuring it
+> >> statically. 
+> > I see no reason why it shouldn't work as well or even better.
+> 
+> Thanks for the feedback.  To echo Gilad's guess in a later email, the code
+> as-is is not intended as a patch planned for a merge.  The code is in use
+> by our customers, who have found it useful, but what I'd really like to do
+> is to make sure to integrate all the functionality that's useful in our
+> "dataplane" mode into Frederic's ongoing work with nohz cpusets.
+> 
+> The goal of the work we've done is to provide a way for customers to ensure
+> they reliably have zero jitter on cpus that are trying to process real-time
+> or otherwise low-latency events.  A good example is 10 Gb network traffic,
+> where at min-packet sizes you have only 50-odd cpu cycles to dispatch the
+> packet to one of our 64 cores, and each core then has a budget of only a
+> few thousand cycles to deal with the core.  A kernel interrupt would mean
+> dropping packets on the floor.  Similarly, for something like
+> high-frequency trading, you'd want guaranteed low-latency response.
+> 
+> The Tilera dataplane code is available on the "dataplane" branch (off of
+> 3.3-rc3 at the moment):
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
+> 
+> I'm still looking at Frederic's git tree, but I'm assuming the following
+> are all true of tasks that are running on a nohz cpuset core:
+> 
+> - The core will not run the global scheduler to do work stealing, since
+> otherwise you can't guarantee that only tasks that care about userspace
+> nohz get to run there.  (I suppose you could loosen thus such that the core
+> would do work stealing as long as no task was pinned to that core by
+> affinity, at which point the pinned task would become the only runnable task.)
 
-Hi Samuel,
+A nohz cpuset doesn't really control that. It actually reacts to the scheduler
+actions. Like try to stop the tick if there is only one task on the runqueue,
+restart it when we have more.
 
-After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
-
-drivers/built-in.o: In function `twl6040_driver_init':
-twl6040-core.c:(.init.text+0xb147): undefined reference to `i2c_register_dr=
-iver'
-drivers/built-in.o: In function `twl6040_probe':
-twl6040-core.c:(.devinit.text+0x7f22): undefined reference to `regmap_init_=
-i2c'
-drivers/built-in.o: In function `twl6040_driver_exit':
-twl6040-core.c:(.exit.text+0x67a): undefined reference to `i2c_del_driver'
+Ensuring the CPU doesn't get distracted is rather the role of the user by
+setting the right cpusets to get the desired affinity. And if we still have
+noise with workqueues or something, this is something we need to look at
+and fix on a case by case basis.
 
 
-Caused by commit ded0df851077 ("mfd: Convert twl6040 to an i2c driver,
-and separate it from twl core").
+> - Kernel "background" tasks are disabled on that core, at least while
+> userspace nohz tasks are running: softlockup watchdog, slab reap timer,
+> vmstat thread, etc.
 
-I have used the mfd tree from next-20120220 for today.
+Yeah that's examples of "noisy" things. Those are in fact a seperate issues
+that nohz cpusets don't touch. nohz cpuset are really only about trying to
+shut down the periodic tick, or defer it for a far as possible in the future.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Now the nohz cpuset uses some user/kernel entry/exit hooks that we can extend
+to cover some of these cases. We may want to make some timers "user-deferrable",
+ie: deactivate, reactivate them on kernel entry and exit.
 
---Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPQvPlAAoJEECxmPOUX5FEh6IP/2ouTJejSruH9AIQgEfdqMm6
-6KOU5nh6d4MXcpIrOAEpAbVRn0vBTVnBOXeGiKcWCGZNi1BRhSTDPWPYAcXYT1Kw
-UDDXCOa2c1VGySdAWTD9kRQ+E9a1E9pP2QF+SfjJOnDKaCMDJWxNdK6EJY9VsVFB
-GDkYgbah76X/MSvCnFzZAcVA+4CfoljOIBULT9PmhN+UenYnYrY8LpITenJJTO6Q
-tt4sdRkcdGbvXrhBWBUAhjGQcqpQmeI5nNul28FdKcmzUq70Yy3J4lXRjE2aHx03
-zkRc2axfOX9Ule6f0+Mv89OgBctYvB0nGUoNUnc33V4j8AHr8fOZUlS0jmWU91Ub
-c7M919P3mMPZE2xxoPZyUoTGOuxe0weh7AwCU4bXIQhnBKvASNK+0qNd1sGbhHAd
-zD101red8VjOvg8OEdZq5eVj/wyzSbWda92GxrM5Ukum4y4ZapOMe4XBWRGq/A/F
-TlL/2m98lY1I00UfX1HwQK9mogQJ741PdDmReCTErQCV4h5kT7K4C4/U7sDtHQK9
-Am3P/BdYw2F7munIPrYpGiF6uX/Wzmh4iBnVSQzER2a5Qb4gLVhLWoaKJaOn0kn2
-zJiLYrOETuzoB4KMGAV/plSycuTtMh1KZdBGo3em7UMH/O3+zyM7Y7Qg8pSXZPWJ
-YwJv8bhEIgFAeo74K/ff
-=4J+9
------END PGP SIGNATURE-----
-
---Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb--
+That need some thinking though, this may not always be a win for every workload.
+But those that are userspace-mostly can profit.
