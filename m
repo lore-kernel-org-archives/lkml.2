@@ -1,93 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab2BUNJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 08:09:38 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56787 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab2BUNJh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 08:09:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of dongas86@gmail.com designates 10.236.123.109 as permitted sender) smtp.mail=dongas86@gmail.com; dkim=pass header.i=dongas86@gmail.com
+	id S1755282Ab2BUNLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 08:11:40 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:41875 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755197Ab2BUNLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 08:11:38 -0500
+Date: Tue, 21 Feb 2012 14:11:22 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memcg: fix page_referencies cgroup filter on global
+ reclaim
+Message-ID: <20120221131122.GC1676@cmpxchg.org>
+References: <20120215162830.13902.60256.stgit@zurg>
+ <20120221104622.GB1676@cmpxchg.org>
+ <4F43821C.7080001@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYK1epBfxPCu+cc3Edmd_9aZf4nvNyBx8O0sns5V+gNWw@mail.gmail.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-9-git-send-email-swarren@nvidia.com>
-	<CACRpkdYK1epBfxPCu+cc3Edmd_9aZf4nvNyBx8O0sns5V+gNWw@mail.gmail.com>
-Date: Tue, 21 Feb 2012 21:09:36 +0800
-Message-ID: <CAA+hA=Rpim0FLamFwL5u3Cw3f8nkpvjOb9Ci5VXmv3ULX1sG8A@mail.gmail.com>
-Subject: Re: [PATCH 08/20] pinctrl: Assume map table entries can't have a NULL
- name field
-From: Dong Aisheng <dongas86@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F43821C.7080001@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 5:42 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
->
->> pinctrl_register_mappings() already requires that every mapping table
->> entry have a non-NULL name field.
->>
->> Logically, this makes sense too; drivers should always request a specific
->> named state so they know what they're getting. Relying on getting the
->> first mentioned state in the mapping table is error-prone, and a nasty
->> special case to implement, given that a given the mapping table may define
->> multiple states for a device.
->>
->> Update a few places in the code and documentation that still allowed for
->> NULL name fields.
->>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->
-> This causes a regression on U300 and most certainly on the Sirf Prima II
-> as well. The U300 can be fixed up as per below:
->
-> diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-> index bb1034f..66555d7 100644
-> --- a/arch/arm/mach-u300/core.c
-> +++ b/arch/arm/mach-u300/core.c
-> @@ -1645,7 +1645,7 @@ static int __init u300_pinctrl_fetch(void)
->                struct pinctrl *p;
->                int ret;
->
-> -               p = pinctrl_get(u300_mux_hogs[i].dev, NULL);
-> +               p = pinctrl_get(u300_mux_hogs[i].dev, u300_mux_hogs[i].name);
->                if (IS_ERR(p)) {
->                        pr_err("u300: could not get pinmux hog %s\n",
->                               u300_mux_hogs[i].name);
->
->
-> The drivers/tty/serial/sirfsoc_uart.c asks for it's UART pinctrl like
-> this:
->
-> sirfport->p = pinctrl_get(&pdev->dev, NULL);
->
-> I don't know quite what to encode in there, if "deafult" is sensible
-> we might just
->
-> #define PIN_MAP_NAME_DEFAULT "default"
-> In <linux/pinctrl/consumer.h> and <linux/pinctrl/machine.h> alike,
-> maybe in some <linux/pinctrl/mapnames.h> that both of these
-> include?
->
-I feel a little strange to put such thing in common code.
-Personally i still like the original way you did.
+On Tue, Feb 21, 2012 at 03:38:04PM +0400, Konstantin Khlebnikov wrote:
+> Johannes Weiner wrote:
+> >On Wed, Feb 15, 2012 at 08:28:30PM +0400, Konstantin Khlebnikov wrote:
+> >>Global memory reclaimer should't skip referencies for any pages,
+> >>even if they are shared between different cgroups.
+> >
+> >Agreed: if we reclaim from one memcg because of its limit, we want to
+> >reclaim those pages that this group is not using.  If it's used by
+> >someone else, it should be evicted and refaulted by the group that
+> >needs it.
+> >
+> >If we reclaim globally, all references are "true" because we want to
+> >evict those pages that are not used by any cgroup.
+> >
+> >But if we reclaim a hierarchical subgroup, we don't want to evict
+> >pages that are shared among this hierarchy, either, even if the memcg
+> >that has the page charged to it is not using it.  Bouncing the page
+> >around the hierarchy is not sensible, because it does not solve the
+> >problem of the parent hitting its limit when the sibling group will
+> >refault it in a blink of an eye.  It should only be evicted if the
+> >memcg that's not using it nears its own limit, because only in that
+> >case would reclaiming the page remedy the situation.
+> >
+> >>This patch adds scan_control->current_mem_cgroup, which points to currently
+> >>shrinking sub-cgroup in hierarchy, at global reclaim it always NULL.
+> >
+> >So to be consistent, I'm wondering if we should pass
+> >sc->target_mem_cgroup - the limit-hitting hierarchy root - to
+> >page_referenced() and then have mm_match_cgroup() do a
+> >mem_cgroup_same_or_subtree() check to see if the vma is in the
+> >hierarchy rooted at sc->target_mem_cgroup.
+> >
+> >Global reclaim is handled automatically, because mm_match_cgroup() is
+> >not checked when the passed memcg is NULL, which sc->target_mem_cgroup
+> >is for global reclaim.
+> 
+> Also we can try to recharge page to other cgroup, if we found in rmap another its user
+> outsize of currently shrinking hierarchy, page there is isolated, so at the end we will
+> insert page directly to its lru.
 
-> the have the driver ask for:
->
-> sirfport->p = pinctrl_get(&pdev->dev, PIN_MAP_NAME_DEFAULT);
->
-> (Similar changes can be done for U300, naming all its map
-> "default".)
->
+Not sure if it's worth the trouble, but that could work.
 
-Regards
-Dong Aisheng
+> But the main purpose of this patch for me is killing mz->mem_cgroup dereference,
+> because I plan to replace mz with direct reference to lruvec, which will be memcg-free object.
+
+I like that plan.  How about this patch then?
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: mm: memcg: count pte references from every member of the reclaimed hierarchy
+
+The rmap walker checking page table references has historically
+ignored references from VMAs that were not part of the memcg that was
+being reclaimed during memcg hard limit reclaim.
+
+When transitioning global reclaim to memcg hierarchy reclaim, I missed
+that bit and now references from outside a memcg are ignored even
+during global reclaim.
+
+Reverting back to traditional behaviour - count all references during
+global reclaim and only mind references of the memcg being reclaimed
+during limit reclaim would be one option.
+
+However, the more generic idea is to ignore references exactly then
+when they are outside the hierarchy that is currently under reclaim;
+because only then will their reclamation be of any use to help the
+pressure situation.  It makes no sense to ignore references from a
+sibling memcg and then evict a page that will be immediately refaulted
+by that sibling which contributes to the same usage of the common
+ancestor under reclaim.
+
+The solution: make the rmap walker ignore references from VMAs that
+are not part of the hierarchy that is being reclaimed.
+
+Flat limit reclaim will stay the same, hierarchical limit reclaim will
+mind the references only to pages that the hierarchy owns.  Global
+reclaim, since it reclaims from all memcgs, will be fixed to regard
+all references.
+
+Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/memcontrol.h |    3 ++-
+ mm/memcontrol.c            |    2 +-
+ mm/vmscan.c                |    6 ++++--
+ 3 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 8537c5d..ba9455d 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_page(struct page *page);
+ extern void mem_cgroup_uncharge_cache_page(struct page *page);
+ 
+ extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
++bool mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
+ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
+ 
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+@@ -91,7 +92,7 @@ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+ 	rcu_read_unlock();
+-	return cgroup == memcg;
++	return mem_cgroup_same_or_subtree(cgroup, memcg);
+ }
+ 
+ extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e4be95a..f91d762 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1044,7 +1044,7 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+  * Checks whether given mem is same or in the root_mem_cgroup's
+  * hierarchy subtree
+  */
+-static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
++bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+ 		struct mem_cgroup *memcg)
+ {
+ 	if (root_memcg != memcg) {
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c631234..120646e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
+ 	int referenced_ptes, referenced_page;
+ 	unsigned long vm_flags;
+ 
+-	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
++	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
++					  &vm_flags);
+ 	referenced_page = TestClearPageReferenced(page);
+ 
+ 	/* Lumpy reclaim - ignore references */
+@@ -1710,7 +1711,8 @@ static void shrink_active_list(unsigned long nr_pages,
+ 			continue;
+ 		}
+ 
+-		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
++		if (page_referenced(page, 0, sc->target_mem_cgroup,
++				    &vm_flags)) {
+ 			nr_rotated += hpage_nr_pages(page);
+ 			/*
+ 			 * Identify referenced, file-backed active pages and
+-- 
+1.7.7.6
+
