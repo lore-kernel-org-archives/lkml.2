@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2BUS0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:26:52 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:60674 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab2BUS0v (ORCPT
+	id S1755317Ab2BUS2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:28:30 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33052 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab2BUS23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:26:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.14.193 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Tue, 21 Feb 2012 13:28:29 -0500
+Date: Tue, 21 Feb 2012 10:28:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH tip/core/rcu 3/4] rcu: stop spurious warnings from
+ synchronize_sched_expedited
+Message-ID: <20120221182804.GK2375@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120221175810.GA10708@linux.vnet.ibm.com>
+ <1329847110-10897-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1329847110-10897-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1329847217.2293.417.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <4F43DB69.9060509@zytor.com>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
- <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
- <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
- <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
- <4F43DB69.9060509@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 21 Feb 2012 10:26:30 -0800
-X-Google-Sender-Auth: eUc8S7MbZGphsdTuryGrsjM37SY
-Message-ID: <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329847217.2293.417.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022118-3352-0000-0000-000002CB6B55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 9:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> I don't know if unlazy_fpu() being out of line will cause a context
-> switch performance loss, though.
+On Tue, Feb 21, 2012 at 07:00:17PM +0100, Peter Zijlstra wrote:
+> On Tue, 2012-02-21 at 09:58 -0800, Paul E. McKenney wrote:
+> > From: Hugh Dickins <hughd@google.com>
+> > 
+> > synchronize_sched_expedited() is spamming CONFIG_DEBUG_PREEMPT=y
+> > users with an unintended warning from the cpu_is_offline() check:
+> > use raw_smp_processor_id() instead of smp_processor_id() there.
+> 
+> This fails to mention why it makes sense to test a random cpu for
+> offline-ness..
 
-unlazy_fpu() is no longer used for context switching - it's only used
-for unlazying the FPU.
+The check was already there, Hugh simply fixed it to use raw_.  The check
+itself was added in c0d6d01bf (Check for illegal use of RCU from offlined
+CPUs).  The purpose is to catch improper use of RCU from CPU_DYING
+notifiers and on the path from the CPU_DYING notifiers to the idle loop.
 
-Part of the whole FP mess is that there were all these *insane*
-dependencies where these things were used for different semantic
-issues. That's largely fixed now, and things have a single semantic
-use.
+							Thanx, Paul
 
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
->
-> Let me know if you'd prefer me to pull this into the -tip tree.
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index eacc10b..1050d6d 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -2014,7 +2014,7 @@ void synchronize_sched_expedited(void)
+> >  	/* Note that atomic_inc_return() implies full memory barrier. */
+> >  	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
+> >  	get_online_cpus();
+> > -	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
+> > +	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
+> >  
+> >  	/*
+> >  	 * Each pass through the following loop attempts to force a
+> 
 
-Yes, but I'll send you this with a proper commit log. I'll also send
-you another patch that splits "<asm/i387.h>" into two.
-
-Right now <asm/i387.h> has two different users: the first of which
-"normal kernel use" kind of things (ie kernel_fpu_begin() and friends)
-that really don't care about the internals very deeply. But the second
-class of user is the actual i387 internal implementation thing that is
-used by i387.c and xsave.c etc to actually implement the exposed
-interfaces.
-
-As a result, <asm/i387.h> is this mixture of exposed interfaces and
-"deep internal knowledge". And as a result, that deep internal
-knowledge kind of accidentally gets exposed to code that really
-shouldn't be exposed to it.
-
-I have a patch that fixes that. I'll send you a series of two patches
-with sign-offs and commentary asap.
-
-                   Linus
