@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2BUSBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:01:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43708 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab2BUSAs convert rfc822-to-8bit (ORCPT
+	id S1754573Ab2BUSFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:05:05 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:46422 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab2BUSFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:00:48 -0500
-Message-ID: <1329847217.2293.417.camel@twins>
-Subject: Re: [PATCH tip/core/rcu 3/4] rcu: stop spurious warnings from
- synchronize_sched_expedited
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        Hugh Dickins <hughd@google.com>
-Date: Tue, 21 Feb 2012 19:00:17 +0100
-In-Reply-To: <1329847110-10897-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20120221175810.GA10708@linux.vnet.ibm.com>
-	 <1329847110-10897-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1329847110-10897-3-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 21 Feb 2012 13:05:03 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6626"; a="162718773"
+Message-ID: <4F43DCBA.5070605@codeaurora.org>
+Date: Tue, 21 Feb 2012 10:04:42 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Yaniv Gardi <ygardi@codeaurora.org>
+CC: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org, axboe@kernel.dk,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] mmc: card: Adding support for Sanitize in eMMC
+ v4.5
+References: <1329832825-8844-1-git-send-email-ygardi@codeaurora.org> <1329832825-8844-3-git-send-email-ygardi@codeaurora.org>
+In-Reply-To: <1329832825-8844-3-git-send-email-ygardi@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 09:58 -0800, Paul E. McKenney wrote:
-> From: Hugh Dickins <hughd@google.com>
-> 
-> synchronize_sched_expedited() is spamming CONFIG_DEBUG_PREEMPT=y
-> users with an unintended warning from the cpu_is_offline() check:
-> use raw_smp_processor_id() instead of smp_processor_id() there.
-
-This fails to mention why it makes sense to test a random cpu for
-offline-ness..
-
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index eacc10b..1050d6d 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -2014,7 +2014,7 @@ void synchronize_sched_expedited(void)
->  	/* Note that atomic_inc_return() implies full memory barrier. */
->  	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
->  	get_online_cpus();
-> -	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-> +	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
+On 02/21/12 06:00, Yaniv Gardi wrote:
+> @@ -922,6 +918,44 @@ out:
+>  	return err ? 0 : 1;
+>  }
 >  
->  	/*
->  	 * Each pass through the following loop attempts to force a
+> +int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
+> +			       struct request *req)
+> +{
+> +	struct mmc_blk_data *md = mq->data;
+> +	struct mmc_card *card = md->queue.card;
+> +	int err = 0;
+> +
+> +	if (!(mmc_can_sanitize(card) && (mq->card->host->caps2 & MMC_CAP2_SANITIZE))) {
+> +		pr_err("%s: SANITIZE is not supported", __func__);
+> +		err = -EOPNOTSUPP;
+> +		goto out;
+> +	}
+> +
+> +	pr_info("%s: SANITIZE is supported", __func__);
+
+These look like debug printks. Please remove them.
+
+> +
+> +	mmc_sd_card_set_sanitize_in_progress(card);
+> +
+> +	pr_info("%s: issueing SANITIZE command...", __func__);
+> +
+> +	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +					 EXT_CSD_SANITIZE_START, 1, 0);
+> +
+> +	pr_info("%s: SANITIZE command returned...", __func__);
+> +
+> +	if (err)
+> +		pr_err("%s: mmcblk: mmc_switch() failed. err=%d\n",
+> +		       __func__, err);
+> +
+> +	mmc_sd_card_set_sanitize_completed(card);
+> +
+> +out:
+> +	spin_lock_irq(&md->lock);
+> +	__blk_end_request(req, err, blk_rq_bytes(req));
+> +	spin_unlock_irq(&md->lock);
+> +
+> +	return err ? 0 : 1;
+> +}
+> +
+>  static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
+>  {
+>  	struct mmc_blk_data *md = mq->data;
+> @@ -181,6 +186,11 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+>  	if (mmc_can_erase(card))
+>  		mmc_queue_setup_discard(mq->queue, card);
+>  
+> +	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
+> +		mmc_queue_setup_sanitize(mq->queue);
+> +	else
+> +		pr_info("%s - card doesn't support sanitize", __func__);
+
+debug printk again?
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
