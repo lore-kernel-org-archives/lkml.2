@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab2BUUNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:13:24 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39006 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab2BUUNW (ORCPT
+	id S1755001Ab2BUUQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:16:44 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53605 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab2BUUQm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 15:13:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.196.168 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 12:12:58 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
-In-Reply-To: <4F434300.3080001@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202211205280.1858@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 21 Feb 2012 15:16:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of airlied@gmail.com designates 10.236.174.106 as permitted sender) smtp.mail=airlied@gmail.com; dkim=pass header.i=airlied@gmail.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201202212112.26663.toralf.foerster@gmx.de>
+References: <201202212112.26663.toralf.foerster@gmx.de>
+Date: Tue, 21 Feb 2012 20:16:42 +0000
+Message-ID: <CAPM=9tynF-NiNdk=AyJYBz_=x3bQi_-T8i+LXYL+08rBE8XYDw@mail.gmail.com>
+Subject: Re: compile error in drivers/gpu/drm/radeon/radeon_state.o
+From: Dave Airlie <airlied@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
-> 
-> On lumpy/compaction isolate you do:
-> 
-> if (!PageLRU(page))
-> 	continue
-> 
-> __isolate_lru_page()
-> 
-> page_relock_rcu_vec()
-> 	rcu_read_lock()
-> 	rcu_dereference()...
-> 	spin_lock()...
-> 	rcu_read_unlock()
-> 
-> You protect page_relock_rcu_vec with switching pointers back to root.
-> 
-> I do:
-> 
-> catch_page_lru()
-> 	rcu_read_lock()
-> 	if (!PageLRU(page))
-> 		return false
-> 	rcu_dereference()...
-> 	spin_lock()...
-> 	rcu_read_unlock()
-> 	if (PageLRU())
-> 		return true
-> if true
-> 	__isolate_lru_page()
-> 
-> I protect my catch_page_lruvec() with PageLRU() under single rcu-interval
-> with locking.
-> Thus my code is better, because it not requires switching pointers back to
-> root memcg.
+2012/2/21 Toralf Förster <toralf.foerster@gmx.de>:
+>
+> Hello,
+>
+> the build of latest git (.config attached) failed, make ends with :
+> ...
+>  CC [M]  drivers/gpu/drm/radeon/radeon_cp.o
+>  CC [M]  drivers/gpu/drm/radeon/radeon_state.o
+> In file included from /home/tfoerste/devel/linux/arch/x86/include/asm/uaccess.h:573:0,
+>                 from include/drm/drmP.h:64,
+>                 from drivers/gpu/drm/radeon/radeon_state.c:30:
+> In function 'copy_from_user',
+>    inlined from 'radeon_cp_clear' at drivers/gpu/drm/radeon/radeon_state.c:2171:6:
+> /home/tfoerste/devel/linux/arch/x86/include/asm/uaccess_32.h:211:26: error: call to 'copy_from_user_overflow' declared with attribute error:
+> copy_from_user() buffer size is not provably correct
+> make[4]: *** [drivers/gpu/drm/radeon/radeon_state.o] Error 1
+> make[3]: *** [drivers/gpu/drm/radeon] Error 2
+> make[2]: *** [drivers/gpu/drm] Error 2
+> make[1]: *** [drivers/gpu] Error 2
+> make: *** [drivers] Error 2
+>
+turn off CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
 
-That sounds much better, yes - if it does work reliably.
+Its a bug in gcc's checks code.
 
-I'll have to come back to think about your locking later too;
-or maybe that's exactly where I need to look, when investigating
-the mm_inline.h:41 BUG.
-
-But at first sight, I have to say I'm very suspicious: I've never found
-PageLRU a good enough test for whether we need such a lock, because of
-races with those pages on percpu lruvec about to be put on the lru.
-
-But maybe once I look closer, I'll find that's handled by your changes
-away from lruvec; though I'd have thought the same issue exists,
-independent of whether the pending pages are in vector or list.
-
-Hugh
-
-> 
-> Meanwhile after seeing your patches, I realized that this rcu-protection is
-> required only for lock-by-pfn in lumpy/compaction isolation.
-> Thus my locking should be simplified and optimized.
+Dave.
