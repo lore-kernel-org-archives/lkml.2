@@ -1,140 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab2BUR5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 12:57:07 -0500
-Received: from www17.your-server.de ([213.133.104.17]:45756 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2BUR5E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 12:57:04 -0500
-Message-ID: <1329847015.5133.4.camel@localhost.localdomain>
-Subject: Re: NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jcliburn@gmail.com, chris.snook@gmail.com,
-        netdev <netdev@vger.kernel.org>, Josh Boyer <jwboyer@gmail.com>
-Date: Tue, 21 Feb 2012 18:56:55 +0100
-In-Reply-To: <1329366846.5646.1.camel@edumazet-laptop>
-References: <1329063403.1449.14.camel@localhost.localdomain>
-	 <CA+5PVA52+0vOMF6+tvMPkgzhdTKJRQnrjD4FfVmBZs0TMDJ5cg@mail.gmail.com>
-	 <1329204997.24837.15.camel@edumazet-laptop>
-	 <1329366846.5646.1.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1754578Ab2BUR5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 12:57:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752129Ab2BUR52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 12:57:28 -0500
+From: David Howells <dhowells@redhat.com>
+Subject: [RFC][PATCH 00/73] Union Mount [ver #2]
+To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        valerie.aurora@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 21 Feb 2012 17:57:22 +0000
+Message-ID: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 16.02.2012, 05:34 +0100 schrieb Eric Dumazet:
-> Le mardi 14 février 2012 à 08:36 +0100, Eric Dumazet a écrit :
-> > Le lundi 13 février 2012 à 16:00 -0500, Josh Boyer a écrit :
-> > > On Sun, Feb 12, 2012 at 11:16 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> > > > abrt_version:   2.0.7
-> > > > cmdline:        BOOT_IMAGE=/vmlinuz-3.2.3 root=/dev/sda2 rootfstype=ext4 rootflags=data=writeback ro quiet rhgb
-> > > > kernel:         3.2.3
-> > > > reason:         WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-> > > > time:           Sa 04 Feb 2012 15:31:22 CET
-> > > >
-> > > > backtrace:
-> > > > :WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-> > > > :Hardware name: Aspire 1810T
-> > > > :NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-> > > > :Modules linked in: vfat fat fuse bluetooth nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep uvcvideo snd_seq arc4 videodev usb_storage snd_seq_device v4l2_compat_ioctl32 snd_pcm snd_timer acer_wmi iwlwifi snd mac80211 sparse_keymap cfg80211 rfkill soundcore snd_page_alloc joydev wmi acerhdf pcspkr virtio_net virtio atl1c virtio_ring kvm_intel kvm uinput ipv6 [last unloaded: scsi_wait_scan]
-> > > > :Pid: 0, comm: swapper Not tainted 3.2.3 #5
-> > > > :Call Trace:
-> > > > : <IRQ>  [<ffffffff810322ca>] warn_slowpath_common+0x7a/0xb0
-> > > > : [<ffffffff81018a18>] ? lapic_next_event+0x18/0x20
-> > > > : [<ffffffff810323a1>] warn_slowpath_fmt+0x41/0x50
-> > > > : [<ffffffff8104e9be>] ? hrtimer_interrupt+0xfe/0x1f0
-> > > > : [<ffffffff8102c350>] ? wake_up_process+0x10/0x20
-> > > > : [<ffffffff813e9397>] dev_watchdog+0x1e7/0x1f0
-> > > > : [<ffffffff8103cfcf>] run_timer_softirq+0xef/0x210
-> > > > : [<ffffffff813e91b0>] ? qdisc_reset+0x50/0x50
-> > > > : [<ffffffff81037827>] __do_softirq+0x87/0x110
-> > > > : [<ffffffff814945fa>] call_softirq+0x1a/0x30
-> > > > : [<ffffffff810038bd>] do_softirq+0x4d/0x80
-> > > > : [<ffffffff81037a8e>] irq_exit+0x7e/0xa0
-> > > > : [<ffffffff8100375b>] do_IRQ+0x5b/0xd0
-> > > > : [<ffffffff8148de29>] common_interrupt+0x69/0x69
-> > > > : <EOI>  [<ffffffff8124e115>] ? acpi_idle_enter_bm+0x1c0/0x1ff
-> > > > : [<ffffffff8124e110>] ? acpi_idle_enter_bm+0x1bb/0x1ff
-> > > > : [<ffffffff813a24b4>] ? menu_select+0xd4/0x390
-> > > > : [<ffffffff813a150b>] cpuidle_idle_call+0x8b/0xe0
-> > > > : [<ffffffff810011ed>] cpu_idle+0x9d/0xe0
-> > > > : [<ffffffff8147d08e>] rest_init+0x62/0x64
-> > > > : [<ffffffff81699b54>] start_kernel+0x358/0x363
-> > > > : [<ffffffff81699322>] x86_64_start_reservations+0x132/0x136
-> > > > : [<ffffffff81699416>] x86_64_start_kernel+0xf0/0xf7
-> > > > : [<ffffffff81017e70>] ? acpi_suspend_lowlevel+0x1b0/0x1b0
-> > > 
-> > > We've seen this in Fedora for a long time now.  As far as I know, nobody
-> > > really knows what is going on.
-> > > 
-> > > https://bugzilla.redhat.com/show_bug.cgi?id=717211
-> > > 
-> > > (Also, you probably should have sent this to netdev.)
-> > 
-> > CC netdev, Jay Cliburn <jcliburn@gmail.com>, 
-> > 
-> > It seems this driver has partial support for two TX rings.
-> > 
-> > (TX completion only drains the first ring)
-> > 
-> > Please try following patch.
-> > 
-> > diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > index b859124..1ff3c6d 100644
-> > --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-> > @@ -2244,10 +2244,6 @@ static netdev_tx_t atl1c_xmit_frame(struct sk_buff *skb,
-> >  			dev_info(&adapter->pdev->dev, "tx locked\n");
-> >  		return NETDEV_TX_LOCKED;
-> >  	}
-> > -	if (skb->mark == 0x01)
-> > -		type = atl1c_trans_high;
-> > -	else
-> > -		type = atl1c_trans_normal;
-> >  
-> >  	if (atl1c_tpd_avail(adapter, type) < tpd_req) {
-> >  		/* no enough descriptor, just stop queue */
-> > 
-> 
-> 
-> Thomas, have you had the chance to test this patch ?
-> 
 
-Bad news. Just did hit the issue again, with above patch applied.
 
-abrt_version:   2.0.7
-cmdline:        BOOT_IMAGE=/vmlinuz-3.2.6 root=/dev/sda2 rootfstype=ext4 rootflags=data=writeback ro quiet rhgb
-kernel:         3.2.6
-reason:         [177799.342250] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-time:           Di 21 Feb 2012 18:09:16 CET
+Here's the current state of the unionmount patches.
 
-backtrace:
-:[177799.342250] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x1e7/0x1f0()
-:[177799.342254] Hardware name: Aspire 1810T
-:[177799.342256] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-:[177799.342259] Modules linked in: vfat fat fuse bluetooth nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq arc4 snd_seq_device snd_pcm iwlwifi uvcvideo mac80211 snd_timer videodev cfg80211 snd usb_storage v4l2_compat_ioctl32 atl1c acer_wmi soundcore sparse_keymap snd_page_alloc rfkill wmi joydev acerhdf pcspkr virtio_net virtio virtio_ring kvm_intel kvm uinput ipv6 [last unloaded: scsi_wait_scan]
-:[177799.342303] Pid: 4980, comm: alsa-sink Not tainted 3.2.6 #7
-:[177799.342306] Call Trace:
-:[177799.342309]  <IRQ>  [<ffffffff810322ca>] warn_slowpath_common+0x7a/0xb0
-:[177799.342320]  [<ffffffff810323a1>] warn_slowpath_fmt+0x41/0x50
-:[177799.342325]  [<ffffffff8100375b>] ? do_IRQ+0x5b/0xd0
-:[177799.342330]  [<ffffffff813e94b7>] dev_watchdog+0x1e7/0x1f0
-:[177799.342336]  [<ffffffff8103cfcf>] run_timer_softirq+0xef/0x210
-:[177799.342341]  [<ffffffff813e92d0>] ? qdisc_reset+0x50/0x50
-:[177799.342345]  [<ffffffff81037827>] __do_softirq+0x87/0x110
-:[177799.342350]  [<ffffffff8149483a>] call_softirq+0x1a/0x30
-:[177799.342354]  [<ffffffff810038bd>] do_softirq+0x4d/0x80
-:[177799.342358]  [<ffffffff81037a8e>] irq_exit+0x7e/0xa0
-:[177799.342363]  [<ffffffff8101903a>] smp_apic_timer_interrupt+0x5a/0x90
-:[177799.342368]  [<ffffffff814942a9>] apic_timer_interrupt+0x69/0x70
-:[177799.342371]  <EOI>  [<ffffffff814948d7>] ? sysenter_dispatch+0x7/0x26
+Significant changes made include:
 
-END:
+ (1) Brought up to date with the current changes in the VFS (eg. RCU pathwalk,
+     mount/vfsmount struct split).
+
+ (2) Moved the copy-up for namei metadata syscalls that modify an inode
+     (eg. link(), utimes(), setxattr()) into pathwalk.  These syscalls now
+     merely need to provide LOOKUP_COPY_UP to pathwalk and the copy up is done
+     there.
+
+     One thing I'm not certain of is that this (and the original patches)
+     would do the copy up, even if the caller didn't have permission to alter
+     the inode and the system call failed the permission check after the copy
+     up had taken place.
+
+     Truncate and open-write don't suffer that issue.
+
+ (3) Merged the in-development ext2 patches in and completed them - at least I
+     think I did, one of them didn't say what it did.
+
+ (4) Added some code to override the credentials around upper inode creation
+     to make sure the inode gets the right UID/GID.  This doesn't help if the
+     lower inode has some sort of foreign user identifier.
+
+     Also, I'm not sure whether the LSM xattrs should be blindly copied up.
+     Should the LSM policies applicable to the lower fs's apply to the upper
+     fs too?
+
+ (5) Added a marker flag for mounts on the lower fs.  There is the possibility
+     of having a file mounted over a file on the upperfs.  I suspect some of
+     the logic will malfunction in such a case as the previous component will
+     be seen to be on the upperfs and the current component not on a unioned
+     fs - and may trigger a copyup attempt.
+
+ (6) Added a patch to pass the mount flags to sget() and thence to the compare
+     routine.  sget() installs them in the superblock before returning it.
+
+ (7) Added a patch to combine the multiple chown syscalls.
+
+ (8) Moved the xattr copyup code earlier so that it can be used for directories
+     too (it is called there, but isn't introduced till a later patch).
+
+ (9) Added a patch to have a second lock class for use by unionmounts for
+     i_mutex and i_dir_mutex to stop complaints when a union is made of two
+     filesystems of the same type.
+
+     Unionmount over a unionmount will need special handling, and possibly
+     rejecting.  It should just work, however if the two upper filesystems are
+     the same type, lockdep will incorrectly moan a lot.
+
+Some issues:
+
+ (1) Need to handle automount points and managed directories.  Probably simply
+     ignoring them is best.
+
+ (2) Need to better handle mountpoints.  Currently it just calls
+     follow_mount(), which is probably wrong.
+
+ (3) do_lookup() needs to come up with the correct inode after
+     needs_lookup_union() is called.  I think I have this right, but it could
+     do with checking.
+
+ (4) Should d_revalidate() be called on the lower fs objects under some
+     circumstances.  I assume not, since we don't want to see the lower fs
+     changing.
+
+David
+---
+David Howells (21):
+      fallthru: ext2 support for lookup of d_type/d_ino in fallthrus
+      ext2: Add whiteout and opaque directory support
+      ext2: Remove target inode pointer from ext2_add_entry()
+      union-mount: Implement union-aware truncate()
+      union-mount: Implement union-aware rename()
+      union-mount: Make various syscalls aware (link, chmod, chown, utimes & setxattr)
+      unionmount: Override creds when copying up a file to correctly set ownership
+      unionmount: Add LOOKUP_COPY_UP
+      union-mount: In-kernel file copyup routines
+      union-mount: Add wrapper for lookup_union_locked() and RCU hook
+      union-mount: Implement union mount
+      union-mount: Duplicate the i_{,dir_}mutex lock classes and use for upper layer
+      unionmount: Mark lower layers in union
+      union-mount: Add union_create_topmost_dir()
+      whiteout: Add vfs_whiteout() and whiteout inode operation
+      VFS: Split inode_permission()
+      VFS: Pass mount flags to sget()
+      VFS: Make lookup_hash() return a struct path
+      VFS: Comment mount following code
+      VFS: Make clone_mnt()/copy_tree()/collect_mounts() return errors
+      VFS: Make chown() and lchown() call fchownat()
+
+Felix Fietkau (2):
+      jffs2: Add fallthru support
+      jffs2: Add whiteout support
+
+Jan Blunck (6):
+      union-mount: Create IS_MNT_UNION()
+      union-mount: Free union stack on removal of topmost dentry from dcache
+      union-mount: Introduce MNT_UNION and MS_UNION flags
+      tmpfs: Add whiteout support
+      whiteout: Allow removal of a directory with whiteouts
+      whiteout/NFSD: Don't return information about whiteouts to userspace
+
+Valerie Aurora (44):
+      fallthru: jffs2 support for lookup of d_type/d_ino in fallthrus
+      ext2: Add fallthru support
+      ext2: Split ext2_add_entry() from ext2_add_link()
+      ext2: Add ext2_dirent_in_use()
+      union-mount: Implement union-aware writable open()
+      union-mount: Implement union-aware access()/faccessat()
+      VFS: Create user_path_nd() to lookup both parent and target
+      fallthru: tmpfs support for lookup of d_type/d_ino in fallthrus
+      union-mount: Add generic_readdir_fallthru() helper
+      union-mount: Copy up directory entries on first readdir()
+      union-mount: Set opaque flag on new directories in unioned file systems
+      union-mount: Create whiteout on rmdir()
+      union-mount: Create whiteout on unlink()
+      union-mount: Call union lookup functions in lookup path
+      union-mount: Add lookup_union_locked()
+      union-mount: Follow mount in __lookup_union()
+      union-mount: Build union stack in __lookup_union()
+      union-mount: Return files found in lower layers in __lookup_union()
+      union-mount: Process negative dentries in __lookup_union()
+      union-mount: Basic infrastructure of __lookup_union()
+      union-mount: Temporarily disable some syscalls
+      union-mount: Prevent bind mounts of union mounts
+      union-mount: Prevent topmost file system from being mounted elsewhere
+      union-mount: Prevent improper union-related remounts
+      union-mount: Create prepare_mnt_union() and cleanup_mnt_union()
+      union-mount: Create build_root_union()
+      union-mount: Add clone_union_tree() and put_union_sb()
+      union-mount: Create check_topmost_union_mnt()
+      union-mount: Create needs_lookup_union()
+      union-mount: Create union_add_dir()
+      union-mount: Create d_free_unions()
+      union-mount: Add union_find_dir()
+      union-mount: Add union_alloc()
+      union-mount: Add two superblock fields for union mounts
+      union-mount: Create union_stack structure
+      union-mount: Add CONFIG_UNION_MOUNT option
+      union-mount: Union mounts documentation
+      tmpfs: Add fallthru support
+      VFS: Basic fallthru definitions
+      whiteout: Define flags and operations for opaque inodes
+      VFS: Add CL_MAKE_HARD_READONLY flag to clone_mnt()/copy_tree()
+      VFS: Add CL_NO_SLAVE flag to clone_mnt()/copy_tree()
+      VFS: Add CL_NO_SHARED flag to clone_mnt()/copy_tree()
+      VFS: Add hard read-only users count to superblock
+
+
+ Documentation/filesystems/union-mounts.txt |  712 ++++++++++++++++++++++
+ Documentation/filesystems/vfs.txt          |   16 
+ drivers/mtd/mtdsuper.c                     |    4 
+ fs/9p/vfs_super.c                          |    4 
+ fs/Kconfig                                 |   12 
+ fs/Makefile                                |    1 
+ fs/afs/super.c                             |    3 
+ fs/btrfs/super.c                           |    4 
+ fs/ceph/super.c                            |    2 
+ fs/cifs/cifsfs.c                           |    9 
+ fs/compat.c                                |    9 
+ fs/dcache.c                                |   28 +
+ fs/devpts/inode.c                          |    6 
+ fs/ecryptfs/main.c                         |    3 
+ fs/ext2/dir.c                              |  181 +++++-
+ fs/ext2/ext2.h                             |    3 
+ fs/ext2/inode.c                            |   11 
+ fs/ext2/namei.c                            |   73 ++
+ fs/ext2/super.c                            |    6 
+ fs/gfs2/ops_fstype.c                       |    5 
+ fs/inode.c                                 |   48 +
+ fs/internal.h                              |    5 
+ fs/jffs2/dir.c                             |  117 +++-
+ fs/jffs2/fs.c                              |    4 
+ fs/jffs2/super.c                           |    2 
+ fs/libfs.c                                 |   25 +
+ fs/logfs/super.c                           |    3 
+ fs/namei.c                                 |  906 +++++++++++++++++++++++++---
+ fs/namespace.c                             |  391 ++++++++++--
+ fs/nfs/super.c                             |   10 
+ fs/nfsd/nfs3xdr.c                          |    5 
+ fs/nfsd/nfs4xdr.c                          |    5 
+ fs/nfsd/nfsxdr.c                           |    4 
+ fs/nilfs2/super.c                          |    4 
+ fs/open.c                                  |  131 +++-
+ fs/pnode.c                                 |    5 
+ fs/pnode.h                                 |    4 
+ fs/proc/root.c                             |    3 
+ fs/proc_namespace.c                        |    1 
+ fs/readdir.c                               |   18 +
+ fs/reiserfs/procfs.c                       |    2 
+ fs/super.c                                 |   42 +
+ fs/sysfs/mount.c                           |    3 
+ fs/ubifs/super.c                           |    3 
+ fs/union.c                                 |  721 ++++++++++++++++++++++
+ fs/union.h                                 |  189 ++++++
+ fs/utimes.c                                |    2 
+ fs/xattr.c                                 |   10 
+ include/linux/dcache.h                     |   40 +
+ include/linux/ext2_fs.h                    |    8 
+ include/linux/fs.h                         |   47 +
+ include/linux/jffs2.h                      |    8 
+ include/linux/mount.h                      |    5 
+ include/linux/namei.h                      |    3 
+ kernel/audit_tree.c                        |   10 
+ kernel/cgroup.c                            |    2 
+ mm/shmem.c                                 |  192 ++++++
+ 57 files changed, 3750 insertions(+), 320 deletions(-)
+ create mode 100644 Documentation/filesystems/union-mounts.txt
+ create mode 100644 fs/union.c
+ create mode 100644 fs/union.h
 
