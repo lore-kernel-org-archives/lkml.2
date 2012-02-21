@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2BUOoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:44:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab2BUOoP convert rfc822-to-8bit (ORCPT
+	id S1755430Ab2BUOsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:48:22 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31815 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab2BUOsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:44:15 -0500
-Message-ID: <1329835436.12079.10.camel@springer.wildebeest.org>
-Subject: Re: [PATCH] x86-64: Fix CFI data for common_interrupt
-From: Mark Wielaard <mjw@redhat.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: "Frederic Weisbecker (commit_signer:4/25=16%)" <fweisbec@gmail.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        "Thomas Gleixner (maintainer:X86 ARCHITECTURE...)" 
-	<tglx@linutronix.de>,
-        "Andi Kleen (commit_signer:5/25=20%)" <ak@linux.intel.com>,
-        "commit_signer:11/25=44%) Ingo Molnar (maintainer:X86 ARCHITECTURE..." 
-	<mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "commit_signer:4/25=16%) H. Peter Anvin (maintainer:X86 "
-	 "ARCHITECTURE..." <hpa@zytor.com>
-Date: Tue, 21 Feb 2012 15:43:56 +0100
-In-Reply-To: <4F43B78D020000780007435B@nat28.tlf.novell.com>
-References: <1329833177-13030-1-git-send-email-mjw@redhat.com>
-	 <4F43B78D020000780007435B@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Feb 2012 09:48:21 -0500
+X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=3ODyh8mAtCyeJL9BtQsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329835698.25686.60.camel@gandalf.stny.rr.com>
+Subject: Re: RAS trace event proto
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Tony Luck <tony.luck@intel.com>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Feb 2012 09:48:18 -0500
+In-Reply-To: <20120221141231.GA15515@aftab>
+References: <20120220145920.GB5728@aftab> <4F438CE9.7080807@redhat.com>
+	 <20120221141231.GA15515@aftab>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 14:26 +0000, Jan Beulich wrote:
-> >>> On 21.02.12 at 15:06, Mark Wielaard <mjw@redhat.com> wrote:
-> > Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
-> > a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
-> > the CFA using a simple register+offset rule both register and offset
-> > need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
-> > undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
-> > common_interrupt.
+On Tue, 2012-02-21 at 15:12 +0100, Borislav Petkov wrote:
+
+> > Also, folding everything into just one string prevents (or make hard) the usage of
+> > the perf filters, for example, to filter only the errors at the memory controller 1.
 > 
-> NAK, unless you can prove a path via which the offset will remain
-> unset until hitting a CFI_DEF_CFA_REGISTER. And if you indeed
-> found such a path, the entry point of the path is where the problem
-> ought to be fixed.
+> Huh, because you can't grep through the trace anymore...?
 > 
-> Are you perhaps thinking that .cfi_def_cfa_register invalidates
-> the offset in any way? That, to my knowledge, isn't the case, it
-> just replaces the CFA register with the one specified, leaving the
-> offset unchanged.
 
-DW_CFA_def_cfa_expression invalidates the offset (and register). Used
-through the interrupt macro for do_IRQ which uses the SAVE_ARGS_IRQ to
-define common_interrupt. So after using DW_CFA_def_cfa_expression we get
-a CFI_DEF_REGISTER and the CFI for common_interrupt looks like:
+I believe Mauro is talking about the tracing filters used by both perf
+and ftrace that lets you ignore trace events when the contents of the
+event does not match the filter. This is filtering out events before
+they go to the buffer.
 
- [  6e30] FDE length=148 cie=[  6e18]
-   CIE_pointer:              28184
-   initial_location:         0xffffffff815e8d00 <common_interrupt>
-   address_range:            0x1ba
+-- Steve
 
-   Program:
-[...]
-     advance_loc 1 to 0x69
-     def_cfa_expression 6
-          [   0] breg7 0
-          [   2] deref
-          [   3] const1u 136
-          [   5] plus
-     advance_loc 22 to 0x7f
-     def_cfa_register r4 (rsi)
-[...]
 
-For DW_CFA_def_register DWARF4 explicitly says so: "This operation is
-valid only if the current CFA rule is defined to use a register and
-offset." So one needs to use CFI_DEF_CFA with both a register and an
-offset here after the def_cfa_expression.
-
-Thanks,
-
-Mark
