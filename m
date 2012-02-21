@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab2BUTyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:54:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19005 "EHLO mx1.redhat.com"
+	id S1756010Ab2BUT5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:57:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48423 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755096Ab2BUTx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:53:56 -0500
+	id S1754623Ab2BUTyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:54:03 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 32/73] union-mount: Add clone_union_tree() and put_union_sb()
- [ver #2]
+Subject: [PATCH 04/73] VFS: Make lookup_hash() return a struct path [ver #2]
 To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
         valerie.aurora@gmail.com
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Tue, 21 Feb 2012 18:01:32 +0000
-Message-ID: <20120221180132.25235.71617.stgit@warthog.procyon.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Jan Blunck <jblunck@suse.de> (Original author),
+        Valerie Aurora <vaurora@redhat.com>,
+        David Howells <dhowells@redhat.com> (Forward porting)
+Date: Tue, 21 Feb 2012 17:57:52 +0000
+Message-ID: <20120221175752.25235.8473.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,117 +30,317 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valerie Aurora <vaurora@redhat.com>
-
-A union mount clones the vfsmount tree of all of the read-only layers
-of the union and keeps a reference to it in the vfsmount of the
-topmost layer of the union.
-
-clone_union_tree() takes the path of the proposed union mountpoint and
-attempts to clones every vfsmount mounted at that same pathname, as
-well as their submounts.  All these mounts must be read-only, not
-slave, and not shared.
-
-put_union_sb() unwinds everything clone_union_tree() does.  It is
-called when the superblock is deactivated.  Thus, you can lazy unmount
-a union mount and when the last reference goes away, the union will be
-torn down.
-
-Original-author: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Jan Blunck <jblunck@suse.de> (Original author)
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com> (Forward porting)
 ---
 
- fs/namespace.c        |   67 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mount.h |    2 +
- 2 files changed, 69 insertions(+), 0 deletions(-)
+ fs/namei.c |  121 +++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 62 insertions(+), 59 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index bed9ccd..5fbe3b0 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1450,6 +1450,73 @@ static int check_topmost_union_mnt(struct vfsmount *topmost_mnt, int mnt_flags)
- #endif
+diff --git a/fs/namei.c b/fs/namei.c
+index 4dc0e1d..2d983f7 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1766,9 +1766,20 @@ static struct dentry *__lookup_hash(struct qstr *name,
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
+  */
+-static struct dentry *lookup_hash(struct nameidata *nd)
++static int lookup_hash(struct nameidata *nd, struct qstr *name,
++		       struct path *path)
+ {
+-	return __lookup_hash(&nd->last, nd->path.dentry, nd);
++	struct dentry *result;
++
++	result = __lookup_hash(name, nd->path.dentry, nd);
++	if (IS_ERR(result)) {
++		path->mnt = NULL;
++		path->dentry = NULL;
++		return PTR_ERR(result);
++	}
++	path->mnt = nd->path.mnt;
++	path->dentry = result;
++	return 0;
  }
  
-+void put_union_sb(struct super_block *sb)
-+{
-+	if (unlikely(sb->s_union_lower_mnts)) {
-+		struct mount *mnt = real_mount(sb->s_union_lower_mnts);
-+		LIST_HEAD(umount_list);
-+
-+		br_write_lock(vfsmount_lock);
-+		umount_tree(mnt, 0, &umount_list);
-+		br_write_unlock(vfsmount_lock);
-+		release_mounts(&umount_list);
-+		sb->s_union_lower_mnts = NULL;
-+		sb->s_union_count = 0;
-+	}
-+}
-+
-+/**
-+ * clone_union_tree - Clone all union-able mounts at this mountpoint
-+ * @topmost: vfsmount of topmost layer
-+ * @mntpnt: target of union mount
-+ *
-+ * Given the target mountpoint of a union mount, clone all the mounts at that
-+ * mountpoint (well, pathname) that qualify as a union lower layer.  Increment
-+ * the hard readonly count of the lower layer superblocks.
-+ *
-+ * Returns error if any of the mounts or submounts mounted on or below this
-+ * pathname are unsuitable for union mounting.  This means you can't construct
-+ * a union mount at the root of an existing mount without unioning it.
-+ *
-+ * XXX - Maybe should take # of layers to go down as an argument. But how to
-+ * pass this in through mount options?  All solutions look ugly.  Currently you
-+ * express your intention through mounting file systems on the same mountpoint,
-+ * which is pretty elegant.
-+ */
-+static int clone_union_tree(struct mount *topmost, struct path *mntpnt)
-+{
-+	struct mount *mnt, *cloned_tree;
-+
-+	if (!IS_ROOT(mntpnt->dentry)) {
-+		printk(KERN_INFO "union mount: mount point must be a root dir\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Look for the "lowest" layer to union. */
-+	mnt = real_mount(mntpnt->mnt);
-+	while (mnt->mnt_parent->mnt.mnt_root == mnt->mnt_mountpoint) {
-+		/* Got root (mnt)? */
-+		if (mnt->mnt_parent == mnt)
-+			break;
-+		mnt = mnt->mnt_parent;
-+	}
-+
-+	/* Clone all the read-only mounts and submounts, only if they
-+	 * are not shared or slave, and increment the hard read-only
-+	 * users count on each one.  If this can't be done for every
-+	 * mount and submount below this one, fail.
-+	 */
-+	cloned_tree = copy_tree(mnt, mnt->mnt.mnt_root,
-+				CL_COPY_ALL | CL_PRIVATE |
-+				CL_NO_SHARED | CL_NO_SLAVE |
-+				CL_MAKE_HARD_READONLY);
-+	if (IS_ERR(cloned_tree))
-+		return PTR_ERR(cloned_tree);
-+
-+	topmost->mnt.mnt_sb->s_union_lower_mnts = &cloned_tree->mnt;
-+	return 0;
-+}
-+
- /*
-  *  @source_mnt : mount tree to be attached
-  *  @nd         : place the mount tree @source_mnt is attached
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 0ba1def..67f46fa 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -78,4 +78,6 @@ extern void mark_mounts_for_expiry(struct list_head *mounts);
+ /**
+@@ -2098,7 +2109,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			    const struct open_flags *op, const char *pathname)
+ {
+ 	struct dentry *dir = nd->path.dentry;
+-	struct dentry *dentry;
+ 	int open_flag = op->open_flag;
+ 	int will_truncate = open_flag & O_TRUNC;
+ 	int want_write = 0;
+@@ -2178,18 +2188,14 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
  
- extern dev_t name_to_dev_t(char *name);
+ 	mutex_lock(&dir->d_inode->i_mutex);
  
-+extern void put_union_sb(struct super_block *sb);
-+
- #endif /* _LINUX_MOUNT_H */
+-	dentry = lookup_hash(nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry)) {
++	error = lookup_hash(nd, &nd->last, path);
++	if (error) {
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		goto exit;
+ 	}
+ 
+-	path->dentry = dentry;
+-	path->mnt = nd->path.mnt;
+-
+ 	/* Negative dentry, just create the file */
+-	if (!dentry->d_inode) {
++	if (!path->dentry->d_inode) {
+ 		umode_t mode = op->mode;
+ 		if (!IS_POSIXACL(dir->d_inode))
+ 			mode &= ~current_umask();
+@@ -2208,15 +2214,15 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 		open_flag &= ~O_TRUNC;
+ 		will_truncate = 0;
+ 		acc_mode = MAY_OPEN;
+-		error = security_path_mknod(&nd->path, dentry, mode, 0);
++		error = security_path_mknod(&nd->path, path->dentry, mode, 0);
+ 		if (error)
+ 			goto exit_mutex_unlock;
+-		error = vfs_create(dir->d_inode, dentry, mode, nd);
++		error = vfs_create(dir->d_inode, path->dentry, mode, nd);
+ 		if (error)
+ 			goto exit_mutex_unlock;
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		dput(nd->path.dentry);
+-		nd->path.dentry = dentry;
++		nd->path.dentry = path->dentry;
+ 		goto common;
+ 	}
+ 
+@@ -2395,8 +2401,8 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 
+ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
+ {
+-	struct dentry *dentry = ERR_PTR(-EEXIST);
+ 	struct nameidata nd;
++	struct path new_path;
+ 	int error = do_path_lookup(dfd, pathname, LOOKUP_PARENT, &nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+@@ -2405,6 +2411,7 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
+ 	 * Yucky last component or no last component at all?
+ 	 * (foo/., foo/.., /////)
+ 	 */
++	error = -EEXIST;
+ 	if (nd.last_type != LAST_NORM)
+ 		goto out;
+ 	nd.flags &= ~LOOKUP_PARENT;
+@@ -2415,11 +2422,11 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
+ 	 * Do the final lookup.
+ 	 */
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &new_path);
++	if (error)
+ 		goto fail;
+ 
+-	if (dentry->d_inode)
++	if (new_path.dentry->d_inode)
+ 		goto eexist;
+ 	/*
+ 	 * Special case - lookup gave negative, but... we had foo/bar/
+@@ -2428,20 +2435,20 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
+ 	 * been asking for (non-existent) directory. -ENOENT for you.
+ 	 */
+ 	if (unlikely(!is_dir && nd.last.name[nd.last.len])) {
+-		dput(dentry);
+-		dentry = ERR_PTR(-ENOENT);
+-		goto fail;
++		error = -ENOENT;
++		goto fail_do_put;
+ 	}
+ 	*path = nd.path;
+-	return dentry;
++	return new_path.dentry;
+ eexist:
+-	dput(dentry);
+-	dentry = ERR_PTR(-EEXIST);
++	error = -EEXIST;
++fail_do_put:
++	dput(new_path.dentry);
+ fail:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ out:
+ 	path_put(&nd.path);
+-	return dentry;
++	return ERR_PTR(error);
+ }
+ EXPORT_SYMBOL(kern_path_create);
+ 
+@@ -2673,7 +2680,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+ 	char * name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 
+ 	error = user_path_parent(dfd, pathname, &nd, &name);
+@@ -2695,25 +2702,24 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (error)
+ 		goto exit2;
+-	if (!dentry->d_inode) {
++	if (!path.dentry->d_inode) {
+ 		error = -ENOENT;
+ 		goto exit3;
+ 	}
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
++	error = security_path_rmdir(&nd.path, path.dentry);
+ 	if (error)
+ 		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
+ exit4:
+ 	mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++	path_put_conditional(&path, &nd);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+@@ -2769,7 +2775,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ {
+ 	int error;
+ 	char *name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+@@ -2784,27 +2790,26 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (!IS_ERR(dentry)) {
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (!error) {
+ 		/* Why not before? Because we want correct error value */
+ 		if (nd.last.name[nd.last.len])
+ 			goto slashes;
+-		inode = dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 		if (!inode)
+ 			goto slashes;
+ 		ihold(inode);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-		error = security_path_unlink(&nd.path, dentry);
++		error = security_path_unlink(&nd.path, path.dentry);
+ 		if (error)
+ 			goto exit3;
+-		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
+ exit3:
+ 		mnt_drop_write(nd.path.mnt);
+ 	exit2:
+-		dput(dentry);
++		path_put_conditional(&path, &nd);
+ 	}
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+@@ -2815,8 +2820,8 @@ exit1:
+ 	return error;
+ 
+ slashes:
+-	error = !dentry->d_inode ? -ENOENT :
+-		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
++	error = !path.dentry->d_inode ? -ENOENT :
++		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
+ 	goto exit2;
+ }
+ 
+@@ -3156,7 +3161,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
+ {
+ 	struct dentry *old_dir, *new_dir;
+-	struct dentry *old_dentry, *new_dentry;
++	struct path old, new;
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -3190,16 +3195,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 
+ 	trap = lock_rename(new_dir, old_dir);
+ 
+-	old_dentry = lookup_hash(&oldnd);
+-	error = PTR_ERR(old_dentry);
+-	if (IS_ERR(old_dentry))
++	error = lookup_hash(&oldnd, &oldnd.last, &old);
++	if (error)
+ 		goto exit3;
+ 	/* source must exist */
+ 	error = -ENOENT;
+-	if (!old_dentry->d_inode)
++	if (!old.dentry->d_inode)
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
++	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+@@ -3208,32 +3212,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	}
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+-	if (old_dentry == trap)
++	if (old.dentry == trap)
+ 		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
++	error = lookup_hash(&newnd, &newnd.last, &new);
++	if (error)
+ 		goto exit4;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+-	if (new_dentry == trap)
++	if (new.dentry == trap)
+ 		goto exit5;
+ 
+ 	error = mnt_want_write(oldnd.path.mnt);
+ 	if (error)
+ 		goto exit5;
+-	error = security_path_rename(&oldnd.path, old_dentry,
+-				     &newnd.path, new_dentry);
++	error = security_path_rename(&oldnd.path, old.dentry,
++				     &newnd.path, new.dentry);
+ 	if (error)
+ 		goto exit6;
+-	error = vfs_rename(old_dir->d_inode, old_dentry,
+-				   new_dir->d_inode, new_dentry);
++	error = vfs_rename(old_dir->d_inode, old.dentry,
++				   new_dir->d_inode, new.dentry);
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+-	dput(new_dentry);
++	path_put_conditional(&new, &newnd);
+ exit4:
+-	dput(old_dentry);
++	path_put_conditional(&old, &oldnd);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ exit2:
 
