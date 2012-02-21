@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2BUQfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 11:35:33 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:32852 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab2BUQfc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 11:35:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of djkurtz@google.com designates 10.229.78.204 as permitted sender) smtp.mail=djkurtz@google.com; dkim=pass header.i=djkurtz@google.com
+	id S1752624Ab2BUQhC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 11:37:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1485 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751719Ab2BUQhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 11:37:00 -0500
+Message-ID: <4F43C825.1040501@redhat.com>
+Date: Tue, 21 Feb 2012 10:36:53 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1329836858-9369-1-git-send-email-cywang@chromium.org>
-References: <1329836858-9369-1-git-send-email-cywang@chromium.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 22 Feb 2012 00:35:09 +0800
-X-Google-Sender-Auth: 40DkgIkfph5h9YJZ1q9lduvKWKY
-Message-ID: <CAGS+omAK-dWjJjjDDXtwM90bTx--ngEL6KTtxzdcQGtd-xEPEQ@mail.gmail.com>
-Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
- low z values
-To: Chung-yih Wang <cywang@chromium.org>
-Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Xi Wang <xi.wang@gmail.com>
+CC: Haogang Chen <haogangchen@gmail.com>, Theodore Tso <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] FS: ext4: fix integer overflow in alloc_flex_gd()
+References: <1329777684-18396-1-git-send-email-haogangchen@gmail.com> <4F42DBA0.4090502@redhat.com> <0E72E3B2-DAA7-45F4-845D-AF4E76174A33@gmail.com>
+In-Reply-To: <0E72E3B2-DAA7-45F4-845D-AF4E76174A33@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:07 PM, Chung-yih Wang <cywang@chromium.org> wrote:
-> The single touch path imposes a minimum z value (with hysterisis) before
-> registering BTN_TOUCH. Apply the same (hard coded) threshold when
-> deciding how many fingers to report in the semi-mt path.
->
-> This patch improves performance of the Google Cr-48 chromebook's
-> extremely sensitive Synaptics profile sensor touchpad by filtering out
-> touch events for hovering fingers.
->
-> Note: We continue to use the same hard coded threshold value used in the
-> single touch case as it appears this works just as well on these
-> multitouch profile sensor pads as on whatever pads it was originally
-> discovered.
->
-> Signed-off-by: Chung-Yih Wang <cywang@chromium.org>
+On 02/21/2012 07:55 AM, Xi Wang wrote:
+> On Feb 20, 2012, at 6:47 PM, Eric Sandeen wrote:
+>> Hm this raises a few questions I think.
+>>
+>> On the one hand, making sure the kmalloc arg doesn't overflow here is
+>> certainly a good thing and probably the right thing to do in the short term.
+>>
+>> So I guess:
+>>
+>> Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+>>
+>> for that, to close the hole.
+> 
+> Another possibility is to wait for knalloc/kmalloc_array in the -mm
+> tree, which is basically the non-zeroing version of kcalloc that
+> performs overflow checking.
+> 
+>> Doesn't this also mean that a valid s_log_groups_per_flex (i.e. 31)
+>> will fail in this resize code?  That would be an unexpected outcome.
+>> 2^31 groups per flex is a little crazy, but still technically valid
+>> according to the limits in the code.
+> 
+> Or we could limit s_log_groups_per_flex/groups_per_flex to a
+> reasonable upper bound in ext4_fill_flex_info(), right?
 
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Depends on the "flex_bg" design intent, I guess.
 
-> ---
->  drivers/input/mouse/synaptics.c |   12 +++++++++---
->  1 files changed, 9 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index 8081a0a..7936a1a 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -568,17 +568,22 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
->        }
->  }
->
-> +static bool finger_touched(const struct synaptics_hw_state *hw)
-> +{
-> +       return (hw->z > 30);
-> +}
-> +
->  static void synaptics_report_semi_mt_data(struct input_dev *dev,
->                                          const struct synaptics_hw_state *a,
->                                          const struct synaptics_hw_state *b,
->                                          int num_fingers)
->  {
-> -       if (num_fingers >= 2) {
-> +       if ((num_fingers >= 2) && finger_touched(a) && finger_touched(b)) {
->                synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
->                                              min(a->y, b->y));
->                synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
->                                              max(a->y, b->y));
-> -       } else if (num_fingers == 1) {
-> +       } else if ((num_fingers == 1) && finger_touched(a)) {
->                synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
->                synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
->        } else {
-> @@ -1040,7 +1045,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
->         * BTN_TOUCH has to be first as mousedev relies on it when doing
->         * absolute -> relative conversion
->         */
-> -       if (hw.z > 30) input_report_key(dev, BTN_TOUCH, 1);
-> +       if (finger_touched(&hw))
-> +               input_report_key(dev, BTN_TOUCH, 1);
->        if (hw.z < 25) input_report_key(dev, BTN_TOUCH, 0);
->
->        if (num_fingers > 0) {
-> --
-> 1.7.7.3
->
+I don't know if the 2^31 was an intended design limit, or just a
+mathematical limit that based on container sizes etc...
+
+I'd have to look at the resize code more carefully but I can't imagine
+that it's imperative to allocate this stuff all at once.
+
+-Eric
+
+> - xi
+> 
+
