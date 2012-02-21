@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab2BUBYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:24:10 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46853 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab2BUBYH (ORCPT
+	id S1752775Ab2BUBba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:31:30 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48344 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2BUBb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:24:07 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] PCI: fix memleak when ACPI _CRS is not used.
-Date: Mon, 20 Feb 2012 17:23:47 -0800
-Message-Id: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F42F235.0010,ss=1,re=0.000,fgs=0
+	Mon, 20 Feb 2012 20:31:28 -0500
+Date: Tue, 21 Feb 2012 12:31:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20120221123117.2301242c47d6c7265263129a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-got warning:
-unreferenced object 0xffff8801f6914200 (size 512):
-  comm "swapper/0", pid 1, jiffies 4294893643 (age 2664.644s)
-  hex dump (first 32 bytes):
-    00 00 c0 fe 00 00 00 00 ff ff ff ff 00 00 00 00  ................
-    60 58 2f f6 03 88 ff ff 00 02 00 00 00 00 00 00  `X/.............
-  backtrace:
-    [<ffffffff81c2408c>] kmemleak_alloc+0x26/0x43
-    [<ffffffff8113764f>] __kmalloc+0x121/0x183
-    [<ffffffff81ca8d93>] get_current_resources+0x5a/0xc6
-    [<ffffffff81c5bedd>] pci_acpi_scan_root+0x13c/0x21c
-    [<ffffffff81c2a745>] acpi_pci_root_add+0x1e1/0x421
-    [<ffffffff81408f50>] acpi_device_probe+0x50/0x190
-    [<ffffffff8149edc7>] really_probe+0x99/0x126
-    [<ffffffff8149ef83>] driver_probe_device+0x3b/0x56
-    [<ffffffff8149effd>] __driver_attach+0x5f/0x82
-    [<ffffffff8149d860>] bus_for_each_dev+0x5c/0x88
-    [<ffffffff8149eb87>] driver_attach+0x1e/0x20
-    [<ffffffff8149e7cc>] bus_add_driver+0xca/0x21d
-    [<ffffffff8149f47b>] driver_register+0x91/0xfe
-    [<ffffffff81409d09>] acpi_bus_register_driver+0x43/0x45
-    [<ffffffff8278bdc9>] acpi_pci_root_init+0x20/0x28
-    [<ffffffff810001e7>] do_one_initcall+0x57/0x134
+--Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The system have _CRS for root buses, but they are not used because is old...
+Hi Samuel,
 
-Try free those not used resource array and name.
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+drivers/built-in.o: In function `twl6040_driver_init':
+twl6040-core.c:(.init.text+0xb147): undefined reference to `i2c_register_dr=
+iver'
+drivers/built-in.o: In function `twl6040_probe':
+twl6040-core.c:(.devinit.text+0x7f22): undefined reference to `regmap_init_=
+i2c'
+drivers/built-in.o: In function `twl6040_driver_exit':
+twl6040-core.c:(.exit.text+0x67a): undefined reference to `i2c_del_driver'
 
----
- arch/x86/pci/acpi.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Index: linux-2.6/arch/x86/pci/acpi.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/acpi.c
-+++ linux-2.6/arch/x86/pci/acpi.c
-@@ -282,9 +282,6 @@ static void add_resources(struct pci_roo
- 	int i;
- 	struct resource *res, *root, *conflict;
- 
--	if (!pci_use_crs)
--		return;
--
- 	coalesce_windows(info, IORESOURCE_MEM);
- 	coalesce_windows(info, IORESOURCE_IO);
- 
-@@ -336,8 +333,13 @@ get_current_resources(struct acpi_device
- 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
- 				&info);
- 
--	add_resources(&info);
--	return;
-+	if (pci_use_crs) {
-+		add_resources(&info);
-+
-+		return;
-+	}
-+
-+	kfree(info.name);
- 
- name_alloc_fail:
- 	kfree(info.res);
+Caused by commit ded0df851077 ("mfd: Convert twl6040 to an i2c driver,
+and separate it from twl core").
+
+I have used the mfd tree from next-20120220 for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPQvPlAAoJEECxmPOUX5FEh6IP/2ouTJejSruH9AIQgEfdqMm6
+6KOU5nh6d4MXcpIrOAEpAbVRn0vBTVnBOXeGiKcWCGZNi1BRhSTDPWPYAcXYT1Kw
+UDDXCOa2c1VGySdAWTD9kRQ+E9a1E9pP2QF+SfjJOnDKaCMDJWxNdK6EJY9VsVFB
+GDkYgbah76X/MSvCnFzZAcVA+4CfoljOIBULT9PmhN+UenYnYrY8LpITenJJTO6Q
+tt4sdRkcdGbvXrhBWBUAhjGQcqpQmeI5nNul28FdKcmzUq70Yy3J4lXRjE2aHx03
+zkRc2axfOX9Ule6f0+Mv89OgBctYvB0nGUoNUnc33V4j8AHr8fOZUlS0jmWU91Ub
+c7M919P3mMPZE2xxoPZyUoTGOuxe0weh7AwCU4bXIQhnBKvASNK+0qNd1sGbhHAd
+zD101red8VjOvg8OEdZq5eVj/wyzSbWda92GxrM5Ukum4y4ZapOMe4XBWRGq/A/F
+TlL/2m98lY1I00UfX1HwQK9mogQJ741PdDmReCTErQCV4h5kT7K4C4/U7sDtHQK9
+Am3P/BdYw2F7munIPrYpGiF6uX/Wzmh4iBnVSQzER2a5Qb4gLVhLWoaKJaOn0kn2
+zJiLYrOETuzoB4KMGAV/plSycuTtMh1KZdBGo3em7UMH/O3+zyM7Y7Qg8pSXZPWJ
+YwJv8bhEIgFAeo74K/ff
+=4J+9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Feb_2012_12_31_17_+1100_0xExhL/ushYzmwsb--
