@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab2BURTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 12:19:30 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:61929 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab2BURT2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 12:19:28 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=Ro8QOmc0aMDfanRtxUddlQ8SbE2D0zCZP8MBHZpYE5w= c=1 sm=1
- a=J2Ua47Pol9cA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=20KFwNOVAAAA:8 a=djgv1nuAL7Q0X9VIRB8A:9
- a=S9rzkV5WvgoupuEqJdYA:7 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10
- a=FWcywsxhj2wL1CuH:21 a=8C0jU4gtb4bQqD6I:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] FS: ext4: fix integer overflow in alloc_flex_gd()
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <4F43C825.1040501@redhat.com>
-Date: Tue, 21 Feb 2012 10:19:25 -0700
-Cc: Xi Wang <xi.wang@gmail.com>, Haogang Chen <haogangchen@gmail.com>,
-        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F06E948D-CB59-4222-977A-EEE18BC02038@dilger.ca>
-References: <1329777684-18396-1-git-send-email-haogangchen@gmail.com> <4F42DBA0.4090502@redhat.com> <0E72E3B2-DAA7-45F4-845D-AF4E76174A33@gmail.com> <4F43C825.1040501@redhat.com>
-To: Eric Sandeen <sandeen@redhat.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1752766Ab2BURWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 12:22:22 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:40294 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab2BURWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 12:22:21 -0500
+Date: Tue, 21 Feb 2012 09:22:13 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Danny Kukawka <dkukawka@suse.de>, "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] br_device: unify return value of
+ .ndo_set_mac_address if address is invalid
+Message-ID: <20120221092213.12015034@nehalam.linuxnetplumber.net>
+In-Reply-To: <1329826072-14689-5-git-send-email-danny.kukawka@bisect.de>
+References: <1329826072-14689-1-git-send-email-danny.kukawka@bisect.de>
+	<1329826072-14689-5-git-send-email-danny.kukawka@bisect.de>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-02-21, at 9:36 AM, Eric Sandeen wrote:
-> On 02/21/2012 07:55 AM, Xi Wang wrote:
->> On Feb 20, 2012, at 6:47 PM, Eric Sandeen wrote:
->>> Hm this raises a few questions I think.
->>> 
->>> On the one hand, making sure the kmalloc arg doesn't overflow here is
->>> certainly a good thing and probably the right thing to do in the short term.
->>> 
->>> So I guess:
->>> 
->>> Reviewed-by: Eric Sandeen <sandeen@redhat.com>
->>> 
->>> for that, to close the hole.
->> 
->> Another possibility is to wait for knalloc/kmalloc_array in the -mm
->> tree, which is basically the non-zeroing version of kcalloc that
->> performs overflow checking.
->> 
->>> Doesn't this also mean that a valid s_log_groups_per_flex (i.e. 31)
->>> will fail in this resize code?  That would be an unexpected outcome.
->>> 2^31 groups per flex is a little crazy, but still technically valid
->>> according to the limits in the code.
->> 
->> Or we could limit s_log_groups_per_flex/groups_per_flex to a
->> reasonable upper bound in ext4_fill_flex_info(), right?
+On Tue, 21 Feb 2012 13:07:52 +0100
+Danny Kukawka <danny.kukawka@bisect.de> wrote:
+
+> Unify return value of .ndo_set_mac_address if the given address
+> isn't valid. Return -EADDRNOTAVAIL as eth_mac_addr() already does
+> if is_valid_ether_addr() fails.
 > 
-> Depends on the "flex_bg" design intent, I guess.
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  net/bridge/br_device.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> I don't know if the 2^31 was an intended design limit, or just a
-> mathematical limit that based on container sizes etc...
-> 
-> I'd have to look at the resize code more carefully but I can't imagine
-> that it's imperative to allocate this stuff all at once.
+> diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
+> index a157bf8..ba829de 100644
+> --- a/net/bridge/br_device.c
+> +++ b/net/bridge/br_device.c
+> @@ -167,7 +167,7 @@ static int br_set_mac_address(struct net_device *dev, void *p)
+>  	struct sockaddr *addr = p;
+>  
+>  	if (!is_valid_ether_addr(addr->sa_data))
+> -		return -EINVAL;
+> +		return -EADDRNOTAVAIL;
+>  
+>  	spin_lock_bh(&br->lock);
+>  	if (compare_ether_addr(dev->dev_addr, addr->sa_data)) {
 
-We previously tried to use a large flex_bg size to put all metadata into a
-single group so it could easily be allocated on a separate SSD device, but
-that didn't work very well.  Once the number of bitmaps in group 0 is more
-than the number of free blocks in that group (below 16k groups, due to group
-descriptors) then they need to overflow into group 1 and collide with the
-group descriptors there.  Then mke2fs chokes, AFAIR.
-
-It may be different with bigalloc, since the number of blocks in a group can
-be very large, I haven't tried that.
-
-In any case, I don't think anyone expects vmalloc(2^32 * struct size) to work,
-but I wouldn't sweat fixing this until there is some real reason to do so.
-
-Cheers, Andreas
-
-
-
-
-
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
