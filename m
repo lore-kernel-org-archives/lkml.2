@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2BUWId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:08:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab2BUWIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:08:32 -0500
-Date: Tue, 21 Feb 2012 23:08:10 +0100
-From: Mark Wielaard <mjw@redhat.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: "Frederic Weisbecker (commit_signer:4/25=16%)" <fweisbec@gmail.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        "Thomas Gleixner(maintainer:X86 ARCHITECTURE...)" 
-	<tglx@linutronix.de>,
-        "Andi Kleen(commit_signer:5/25=20%)" <ak@linux.intel.com>,
-        "commit_signer:11/25=44%)Ingo Molnar (maintainer:X86 ARCHITECTURE..." 
-	<mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "commit_signer:4/25=16%) H. Peter Anvin(maintainer:X86 ARCHITECTURE..." 
-	<hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: Fix CFI data for common_interrupt
-Message-ID: <20120221220810.GE2590@toonder.wildebeest.org>
-References: <1329833177-13030-1-git-send-email-mjw@redhat.com>
- <4F43B78D020000780007435B@nat28.tlf.novell.com>
- <1329835436.12079.10.camel@springer.wildebeest.org>
- <4F43C5B60200007800074392@nat28.tlf.novell.com>
+	id S932075Ab2BUWIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:08:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46182 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab2BUWIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:08:44 -0500
+Date: Tue, 21 Feb 2012 14:08:01 -0800
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-a38449ef596b345e13a8f9b7d5cd9fedb8fcf921@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, torvalds@linux-foundation.org,
+        srostedt@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de
+In-Reply-To: <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
+References: <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86:
+  Specify a size for the cmp in the NMI handler
+Git-Commit-ID: a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="RnlQjJ0d97Da+TV1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4F43C5B60200007800074392@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Feb 2012 14:08:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
+Gitweb:     http://git.kernel.org/tip/a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Mon, 20 Feb 2012 15:29:34 -0500
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 20 Feb 2012 19:45:26 -0500
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+x86: Specify a size for the cmp in the NMI handler
 
-On Tue, Feb 21, 2012 at 03:26:30PM +0000, Jan Beulich wrote:
-> >>> On 21.02.12 at 15:43, Mark Wielaard <mjw@redhat.com> wrote:
-> > For DW_CFA_def_register DWARF4 explicitly says so: "This operation is
-> > valid only if the current CFA rule is defined to use a register and
-> > offset." So one needs to use CFI_DEF_CFA with both a register and an
-> > offset here after the def_cfa_expression.
-> 
-> Hmm, that's in contrast to the gas implementation (but I'd certainly
-> give the specification preference if it explicitly states so, so gas
-> should at least emit a warning here rather than considering this
-> valid).
+Linus noticed that the cmp used to check if the code segment is
+__KERNEL_CS or not did not specify a size. Perhaps it does not matter
+as H. Peter Anvin noted that user space can not set the bottom two
+bits of the %cs register. But it's best not to let the assembly choose
+and change things between different versions of gas, but instead just
+pick the size.
 
-I am afraid gas cannot help us here. Since like you pointed out in your
-patch:
+Four bytes are used to compare the saved code segment against
+__KERNEL_CS. Perhaps this might mess up Xen, but we can fix that when
+the time comes.
 
-    This requires the use of .cfi_escape (allowing arbitrary byte
-    streams to be emitted into .eh_frame), as there is no
-    .cfi_def_cfa_expression (which also cannot reasonably be
-    expected, as it would require a full expression parser).
+Also I noticed that there was another non-specified cmp that checks
+the special stack variable if it is 1 or 0. This too probably doesn't
+matter what cmp is used, but this patch uses cmpl just to make it non
+ambiguous.
 
-So we are on our own here.
+Link: http://lkml.kernel.org/r/CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com
 
-> But provided the specification mandates this, I'm okay with the change
-> in principle. Just that specifying an offset of 0 doesn't look right then.
-
-Yeah, I dunno what I was thinking. The offset should be set to the offset
-that was there before when rsi was pushed. The attached patch does that
-by using the same value as was used at the start of common_interrupt.
-Does that look OK?
-
-Thanks,
-
-Mark
-
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-x86-64-Fix-CFI-data-for-common_interrupt.patch"
-
->From 5b48b64319463a4ccab560304ce3cf72c71d081d Mon Sep 17 00:00:00 2001
-From: Mark Wielaard <mjw@redhat.com>
-Date: Tue, 21 Feb 2012 14:45:52 +0100
-Subject: [PATCH] x86-64: Fix CFI data for common_interrupt
-
-Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
-a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
-the CFA using a simple register+offset rule both register and offset
-need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
-undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
-common_interrupt.
-
-Signed-off-by: Mark Wielaard <mjw@redhat.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/entry_64.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/entry_64.S |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 3fe8239..308b604 100644
+index debd851..1333d98 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -813,7 +813,7 @@ ret_from_intr:
+@@ -1535,14 +1535,14 @@ ENTRY(nmi)
+ 	 * If %cs was not the kernel segment, then the NMI triggered in user
+ 	 * space, which means it is definitely not nested.
+ 	 */
+-	cmp $__KERNEL_CS, 16(%rsp)
++	cmpl $__KERNEL_CS, 16(%rsp)
+ 	jne first_nmi
  
- 	/* Restore saved previous stack */
- 	popq %rsi
--	CFI_DEF_CFA_REGISTER	rsi
-+	CFI_DEF_CFA rsi,16+SS-RBP	/* reg/off reset after def_cfa_expr */
- 	leaq ARGOFFSET-RBP(%rsi), %rsp
- 	CFI_DEF_CFA_REGISTER	rsp
- 	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
--- 
-1.7.7.6
-
-
---RnlQjJ0d97Da+TV1--
+ 	/*
+ 	 * Check the special variable on the stack to see if NMIs are
+ 	 * executing.
+ 	 */
+-	cmp $1, -8(%rsp)
++	cmpl $1, -8(%rsp)
+ 	je nested_nmi
+ 
+ 	/*
