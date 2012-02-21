@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab2BULgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 06:36:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755076Ab2BULgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 06:36:04 -0500
-Message-ID: <4F43818E.4010407@redhat.com>
-Date: Tue, 21 Feb 2012 12:35:42 +0100
-From: Igor Mammedov <imammedo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1754798Ab2BULiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 06:38:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38893 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab2BULiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 06:38:08 -0500
+Message-ID: <4F43821C.7080001@openvz.org>
+Date: Tue, 21 Feb 2012 15:38:04 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, riel@redhat.com, amit shah <amit.shah@redhat.com>,
-        mtosatti@redhat.com, xen-devel@lists.xensource.com,
-        Ian.Campbell@citrix.com
-Subject: Re: [PATCH] BUG in pv_clock when overflow condition is detected
-References: <28a9ca8a-4696-4c9c-bd15-f2fa5558740e@zmail16.collab.prod.int.phx2.redhat.com> <4F3D0CB1.5070707@redhat.com> <4F3E7150.7000804@redhat.com> <20120220152855.GA25535@phenom.dumpdata.com>
-In-Reply-To: <20120220152855.GA25535@phenom.dumpdata.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memcg: fix page_referencies cgroup filter on global
+ reclaim
+References: <20120215162830.13902.60256.stgit@zurg> <20120221104622.GB1676@cmpxchg.org>
+In-Reply-To: <20120221104622.GB1676@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2012 04:28 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Feb 17, 2012 at 04:25:04PM +0100, Igor Mammedov wrote:
->> On 02/16/2012 03:03 PM, Avi Kivity wrote:
->>> On 02/15/2012 07:18 PM, Igor Mammedov wrote:
->>>>> On 02/15/2012 01:23 PM, Igor Mammedov wrote:
->>>>>>>>    static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time
->>>>>>>> *shadow)
->>>>>>>>    {
->>>>>>>> -    u64 delta = native_read_tsc() - shadow->tsc_timestamp;
->>>>>>>> +    u64 delta;
->>>>>>>> +    u64 tsc = native_read_tsc();
->>>>>>>> +    BUG_ON(tsc<    shadow->tsc_timestamp);
->>>>>>>> +    delta = tsc - shadow->tsc_timestamp;
->>>>>>>>        return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
->>>>>>>>                       shadow->tsc_shift);
->>>>>>>
->>>>>>> Maybe a WARN_ON_ONCE()?  Otherwise a relatively minor hypervisor
->>>>>>> bug can
->>>>>>> kill the guest.
->>>>>>
->>>>>>
->>>>>> An attempt to print from this place is not perfect since it often
->>>>>> leads
->>>>>> to recursive calling to this very function and it hang there
->>>>>> anyway.
->>>>>> But if you insist I'll re-post it with WARN_ON_ONCE,
->>>>>> It won't make much difference because guest will hang/stall due
->>>>>> overflow
->>>>>> anyway.
->>>>>
->>>>> Won't a BUG_ON() also result in a printk?
->>>> Yes, it will. But stack will still keep failure point and poking
->>>> with crash/gdb at core will always show where it's BUGged.
->>>>
->>>> In case it manages to print dump somehow (saw it couple times from ~
->>>> 30 test cycles), logs from console or from kernel message buffer
->>>> (again poking with gdb) will show where it was called from.
->>>>
->>>> If WARN* is used, it will still totaly screwup clock and
->>>> "last value" and system will become unusable, requiring looking with
->>>> gdb/crash at the core any way.
->>>>
->>>> So I've just used more stable failure point that will leave trace
->>>> everywhere it manages (maybe in console log, but for sure in stack)
->>>> in case of WARN it might leave trace on console or not and probably
->>>> won't reflect failure point in stack either leaving only kernel
->>>> message buffer for clue.
->>>>
->>>
->>> Makes sense.  But do get an ack from the Xen people to ensure this
->>> doesn't break for them.
->>>
->> Konrad, Ian
->>
->> Could you please review patch form point of view of xen?
->> Whole thread could be found here https://lkml.org/lkml/2012/2/13/286
+Johannes Weiner wrote:
+> On Wed, Feb 15, 2012 at 08:28:30PM +0400, Konstantin Khlebnikov wrote:
+>> Global memory reclaimer should't skip referencies for any pages,
+>> even if they are shared between different cgroups.
 >
-> What are the conditions under which this happens?
-> You should probably include that in the git description as well?
-This happens on cpu hot-plug in kvm guest:
-https://lkml.org/lkml/2012/2/7/222
-
-It probably doesn't affect xen pv guest but issue might affect hvm one.
-I'm certainly not xen expert to say it for sure after a cursory look
-at the code. If you can confirm that it affects xen hvm I will write
-early_percpu_clock_init patch for it as well.
-
-> Is this something that happens often?
-Very seldom and unlikely.
-
-> Hm, so are you asking for review for this patch
-I was asking for review of subj patch
-   "BUG in pv_clock when overflow condition is detected"
-I'll update patch description and re-spin it.
-
->  If there is an overflow can you synthesize a value instead of
-> crashing the guest?
-> or for http://www.spinics.net/lists/kvm/msg68440.html ?
-Probably could, but there was argument that it is fixing the symptoms
-and not the root cause. It seems that you've already found patch that
-proposes this "pvclock: Make pv_clock more robust and fixup it if overflow happens"
-
+> Agreed: if we reclaim from one memcg because of its limit, we want to
+> reclaim those pages that this group is not using.  If it's used by
+> someone else, it should be evicted and refaulted by the group that
+> needs it.
 >
-> (which would also entail a early_percpu_clock_init implementation
-> in the Xen code naturally).
+> If we reclaim globally, all references are "true" because we want to
+> evict those pages that are not used by any cgroup.
 >
+> But if we reclaim a hierarchical subgroup, we don't want to evict
+> pages that are shared among this hierarchy, either, even if the memcg
+> that has the page charged to it is not using it.  Bouncing the page
+> around the hierarchy is not sensible, because it does not solve the
+> problem of the parent hitting its limit when the sibling group will
+> refault it in a blink of an eye.  It should only be evicted if the
+> memcg that's not using it nears its own limit, because only in that
+> case would reclaiming the page remedy the situation.
+>
+>> This patch adds scan_control->current_mem_cgroup, which points to currently
+>> shrinking sub-cgroup in hierarchy, at global reclaim it always NULL.
+>
+> So to be consistent, I'm wondering if we should pass
+> sc->target_mem_cgroup - the limit-hitting hierarchy root - to
+> page_referenced() and then have mm_match_cgroup() do a
+> mem_cgroup_same_or_subtree() check to see if the vma is in the
+> hierarchy rooted at sc->target_mem_cgroup.
+>
+> Global reclaim is handled automatically, because mm_match_cgroup() is
+> not checked when the passed memcg is NULL, which sc->target_mem_cgroup
+> is for global reclaim.
 
--- 
-Thanks,
-  Igor
+Also we can try to recharge page to other cgroup, if we found in rmap another its user
+outsize of currently shrinking hierarchy, page there is isolated, so at the end we will
+insert page directly to its lru.
+
+But the main purpose of this patch for me is killing mz->mem_cgroup dereference,
+because I plan to replace mz with direct reference to lruvec, which will be memcg-free object.
