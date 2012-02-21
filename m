@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575Ab2BUUjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:39:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11969 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab2BUUjH (ORCPT
+	id S1755606Ab2BUUk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:40:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56561 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab2BUUk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 15:39:07 -0500
-X-Authority-Analysis: v=2.0 cv=Vp2h8pKn c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=_aPKG9hbZygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=STz4tmehYUBYlxcU_wsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329856745.25686.72.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
- + docs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        mathieu.desnoyers@efficios.com, davem@davemloft.net,
-        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Feb 2012 15:39:05 -0500
-In-Reply-To: <20120221202019.GB2381@redhat.com>
-References: <cover.1329851692.git.jbaron@redhat.com>
-	 <4F43F9F0.4000605@zytor.com> <20120221202019.GB2381@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 21 Feb 2012 15:40:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.128.132 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F440154.7010403@openvz.org>
+Date: Wed, 22 Feb 2012 00:40:52 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <4F4331BC.70205@openvz.org> <alpine.LSU.2.00.1202211117340.1858@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1202211117340.1858@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 15:20 -0500, Jason Baron wrote:
+Hugh Dickins wrote:
+> On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
+>>
+>> But just one question: how appears uncharged pages in mem-cg lru lists?
+>
+> One way is swapin readahead pages, which cannot be charged to a memcg
+> until they're "claimed"; but we do need them visible on lru, otherwise
+> memory pressure couldn't reclaim them when necessary.
 
-> I'm not really too hung up on the naming, but I did think that
-> very_[un]likely were an interesting possibility.
+Ok, this is really reasonable.
 
-The problem comes from what Peter said. They are too similar to
-"likely()" and "unlikely()", and can become confusing.
+>
+> Another way is simply that uncharging has not historically removed the
+> page from lru list if it's on.  I usually assume that's an optimization:
+> why bother to get lru locks and take it off (and put it on the root lru?
+> if we don't, we're assuming it's will be freed very shortly - I'm not
+> sure that's always a good assumption), if freeing the page will usually
+> do that for us (without having to change lrus).
+>
+> If I thought for longer, I might come up with other scenarios.
+>
+>> Maybe we can forbid this case and uncharge these pages right in
+>> __page_cache_release() and release_pages() at final removing from LRU.
+>> This is how my old mem-controller works. There pages in lru are always
+>> charged.
+>
+> As things stand, that would mean lock_page_cgroup() has to disable irqs
+> everywhere.  I'm not sure of the further ramifications of moving uncharge
+> to __page_cache_release() and release_pages().  I don't think a change
+> like that is out of the question, but it's certainly a bigger change
+> than I'd like to consider in this series.
 
-Maybe "static_likely()" and "static_unlikely()" as the word "static" can
-imply something strange about these. Or perhaps a "const_likely()"?
+Ok. I have another big question: Why we remove pages from lru at last put_page()?
 
-Maybe "dynamic_branch_true()" and "dynamic_branch_false()". This may be
-the most descriptive.
+Logically we can remove them in truncate_inode_pages_range() for file
+and in free_pages_and_swap_cache() or something at last unmap for anon.
+Pages are unreachable after that, they never become alive again.
+Reclaimer also cannot reclaim them in this state, so there no reasons for keeping them in lru.
+Into those two functions pages come in large batches, so we can remove them more effectively,
+currently they are likely to be removed right in this place, just because release_pages() drops
+last references, but we can do this lru remove unconditionally.
+Plus it never happens in irq context, so lru_lock can be converted to irq-unsafe in some distant future.
 
--- Steve
-
-
+>
+> Hugh
 
