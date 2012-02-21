@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab2BUTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:45:28 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:59842 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab2BUTp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:45:26 -0500
-Date: Tue, 21 Feb 2012 14:44:17 -0500 (EST)
-Message-Id: <20120221.144417.1445117001833888214.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-02-20
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120221151435.GA19354@tuxdriver.com>
-References: <20120220203740.GD6740@tuxdriver.com>
-	<20120220.192324.498901675497866305.davem@davemloft.net>
-	<20120221151435.GA19354@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753323Ab2BUTtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:49:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45133 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752611Ab2BUTtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:49:51 -0500
+Message-ID: <4F43F54D.50201@zytor.com>
+Date: Tue, 21 Feb 2012 11:49:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Andrew Lutomirski <luto@mit.edu>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, hjl.tools@gmail.com
+Subject: Re: [PATCH 30/30] x32: Add x32 VDSO support
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <1329696488-16970-31-git-send-email-hpa@zytor.com> <4F42E171.9080005@mit.edu> <4F431665.3010004@zytor.com> <CAObL_7Hy8Y0PWrcZdRSGRcEt+aoma7ax4XU44f-gdHEGoWBzTg@mail.gmail.com> <4F43D98D.1020406@zytor.com> <CAObL_7GqT-CSB6uBoDvKymodEzUi3tY0DJv0U=xzYbaJS7A1nA@mail.gmail.com> <4F43EA83.6020203@zytor.com> <CAObL_7GLnDFkb61jAZEj+9gGTr4FA=8ZFVMxd9Tus4LVVmKjKw@mail.gmail.com> <4F43F25E.3030004@zytor.com> <CAObL_7H=M7-wxobKkj+K2fcrpEv0Nfp8=6gV2yvdb2hqxCTAGg@mail.gmail.com>
+In-Reply-To: <CAObL_7H=M7-wxobKkj+K2fcrpEv0Nfp8=6gV2yvdb2hqxCTAGg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Feb 2012 11:44:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 21 Feb 2012 10:14:36 -0500
-
-> On Mon, Feb 20, 2012 at 07:23:24PM -0500, David Miller wrote:
->> From: "John W. Linville" <linville@tuxdriver.com>
->> Date: Mon, 20 Feb 2012 15:37:40 -0500
->> 
->> > Here is another batch of fixes intended for 3.3.  Most of the fixes
->> > this time are for Bluetooth.
->> 
->> Pulled, but please read the bluetooth changes more carefully in the
->> future, there were a lot of coding style errors introduced this
->> time around.
+On 02/21/2012 11:40 AM, Andrew Lutomirski wrote:
+>>
+>> I was having delusions that we could have a task-owned PDT in negative
+>> space, but that would require unsharing the third level, too, which is
+>> just way too messy.
 > 
-> I pinged Johan about this, and he tells me that he spoke to Marcel
-> as well.  They were a bit unsure about the issue.  Is your concern
-> primarily about some excessive tabbing for indentation of parameters
-> and such?
+> I'd like to do that, too, and I'd also like to have a per-cpu
+> kernel-only page in there, but that's even worse.  If we had a
+> separate cr3-like register for negative addresses, life would be good
+> :)
+> 
 
-So you actually looked at the changes you pushed to me and you are
-telling me you personally can't find anything that looks like garbage?
+No, that wouldn't help.  The situation is actually quite similar to the
+current situation where we have an unshared fourth level, but since the
+fourth entries are 512G per entry, we would have to push unsharing of
+the kernel address space at least one more level (1G), possibly two
+(2M).  Painful.
 
-Really?  Do I really have to point out such obvious stuff like this?
-Are you serious?
+The main advantage of a separate cr3 would be that we wouldn't need the
+unshared top level for the kernel side.
 
-Look at ca0d6c7ece0e78268cd7c5c378d6b1b610625085 ("Bluetooth: Add
-missing QUIRK_NO_RESET test to hci_dev_do_close")
-
-You tell me what the heck you think of this thing.
-
--	if (!test_bit(HCI_RAW, &hdev->flags)) {
-+	if (!test_bit(HCI_RAW, &hdev->flags) &&
-+				test_bit(HCI_QUIRK_NO_RESET, &hdev->quirks)) {
-
-That's disgusting, it jumps off the screen and says "Hello, I am ugly
-as sin".  How in the world can you miss something like this?  Four
-TABs on the second line?  Why?  I can't believe we even have to discuss
-something like this, seriously.
-
-Commit 6e1da683f79a22fafaada62d547138daaa9e3456 ("Bluetooth: l2cap_set_timer
-needs jiffies as timeout value"):
-
--		__set_chan_timer(chan, L2CAP_DISC_REJ_TIMEOUT);
-+		__set_chan_timer(chan,
-+				msecs_to_jiffies(L2CAP_DISC_REJ_TIMEOUT));
-
-You can't see that mis-tabbed thing on the second new line?  Really?
-
-The list goes on and on, just walk through the bluetooth commits from
-the other day, stuff like this is all over the place.
+	-hpa
