@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab2BUKkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:40:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49457 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab2BUKkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:40:15 -0500
-Date: Tue, 21 Feb 2012 11:40:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] x86: Move per cpu cpu_llc_id to a field in struct
- cpuinfo_x86
-Message-ID: <20120221104020.GB2486@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kevin Winchester <kjwinchester@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	linux-kernel@vger.kernel.org
-References: <20120217115627.GA25601@elte.hu>
- <1329789966-693-1-git-send-email-kjwinchester@gmail.com>
- <1329789966-693-3-git-send-email-kjwinchester@gmail.com>
+	id S1754501Ab2BUKle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:41:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48172 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab2BUKlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 05:41:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.169.9 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1329789966-693-3-git-send-email-kjwinchester@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120220073941.GC22562@n2100.arm.linux.org.uk>
+References: <1329719263-18971-1-git-send-email-swarren@nvidia.com>
+	<20120220073941.GC22562@n2100.arm.linux.org.uk>
+Date: Tue, 21 Feb 2012 11:41:31 +0100
+Message-ID: <CACRpkdbMFN3=XTSg1oE310eTHecrs6XaMz+DCNYJzwOg8JEEiQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Documentation/gpio.txt: Explain expected pinctrl interaction
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 10:06:03PM -0400, Kevin Winchester wrote:
-> This simplifies the various code paths using this field as it
-> groups the per-cpu data together.
-> 
-> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
-> ---
->  arch/x86/include/asm/processor.h      |    2 ++
->  arch/x86/include/asm/smp.h            |    2 --
->  arch/x86/kernel/apic/apic_numachip.c  |    2 +-
->  arch/x86/kernel/cpu/amd.c             |   14 ++++----------
->  arch/x86/kernel/cpu/common.c          |    1 +
->  arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
->  arch/x86/kernel/smpboot.c             |   18 ++++++++----------
->  7 files changed, 18 insertions(+), 32 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 0c8b574..2d4eb6f 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -111,6 +111,8 @@ struct cpuinfo_x86 {
->  	u16			cpu_index;
->  	u32			microcode;
->  	cpumask_t		llc_shared_map;
-> +	/* cpus sharing the last level cache: */
+On Mon, Feb 20, 2012 at 8:39 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Feb 19, 2012 at 11:27:42PM -0700, Stephen Warren wrote:
+>> Update gpio.txt based on recent discussions regarding interaction with the
+>> pinctrl subsystem.
+>>
+>> Previously, gpio_request() was described as explicitly not performing any
+>> required mux setup operations etc.
+>>
+>> Now, gpio_request() is explicitly as explicitly performing any required mux
+>> setup operations where possible. In the case it isn't, platform code is
+>> required to have set up any required muxing or other configuration prior to
+>> gpio_request() being called, in order to maintain the same semantics.
+>
+> So what if you need to have the pin as a GPIO, manipulate it as a GPIO,
+> and then hand it off to a special function, and then take it back as
+> a GPIO before you shut the special function down ?
 
-Just a minor nitpick which I forgot: we spell "CPUs" in the comments as
-in the next patch you're adding a comment about the sibling_map.
+I remember this case very well and we designed for it, so it should be handled
+by pin control and GPIO thusly:
 
-Thanks.
+Example: use pins 1,2 as I2C, then convert them to GPIO for a while
+then back again:
 
--- 
-Regards/Gruss,
-Boris.
+// This call looks up a map containing pins 1,2 and reserve them
+p = pinctrl_get(dev, "i2c");
+if (IS_ERR(p))
+  ...
+pinctrl_enable(p);
+pinctrl_disable(p);
+// This will free up the pins again
+pinctrl_put(p);
+// So now we can do this...
+// NB: the GPIO driver calls pinctr_request_gpio() to check
+// that it can take these pins
+gpio_request(1, "gpio1"):
+gpio_request(2, "gpio2");
+// This will trigger a reset or something
+gpio_direction_output(1, 1);
+gpio_direction_output(2, 1);
+// Release pins again
+gpio_free(1);
+gpio_free(2);
+// Take them back for this function
+p = pinctrl_get(dev, "i2c");
+
+It's a bit kludgy but works and makes sure the pins are only used
+for one thing at a time.
+
+BTW: Russell, which specific platform and driver was it that had this
+usecase? I'd like to have a look at the code to educate myself.
+
+Yours,
+Linus Walleij
