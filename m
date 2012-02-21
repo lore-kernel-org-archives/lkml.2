@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2BUR6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 12:58:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab2BUR6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 12:58:23 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 07/73] VFS: Add hard read-only users count to superblock [ver
- #2]
-To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        valerie.aurora@gmail.com
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Tue, 21 Feb 2012 17:58:17 +0000
-Message-ID: <20120221175817.25235.36726.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1754696Ab2BUR6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 12:58:49 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36693 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2BUR6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 12:58:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of brgerst@gmail.com designates 10.236.154.232 as permitted sender) smtp.mail=brgerst@gmail.com; dkim=pass header.i=brgerst@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F43AA37.5050004@gmail.com>
+References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
+	<CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com>
+	<4F411373.50304@gmail.com>
+	<CAOe6JY3yM24CGYOpPc98QfjRYah5U+L9DB46WH60LVrxN9=eRQ@mail.gmail.com>
+	<4F4262A4.9000204@gmail.com>
+	<CAOe6JY1_dYGCK2=+EHARz5mTm=KCgWynnJjA9SuEHfj+Z0xjwA@mail.gmail.com>
+	<4F43AA37.5050004@gmail.com>
+Date: Tue, 21 Feb 2012 12:58:47 -0500
+Message-ID: <CAMzpN2gnOgZWZFTVHnL8ySQSXCykc9ZpoDYMUvHGPVpy4OVWOw@mail.gmail.com>
+Subject: Re: A problem with percpu variable cpu_number
+From: Brian Gerst <brgerst@gmail.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Tao Jiang <jiangtao.jit@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valerie Aurora <vaurora@redhat.com>
+On Tue, Feb 21, 2012 at 9:29 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> On 02/21/2012 08:41 PM, Tao Jiang wrote:
+>>
+>> Hi Cong Wang:
+>>
+>> I read the file vmlinux.lds.S in arch/x86/kernel
+>> section .data..percpu is between .init.data and .init.end
+>> Is that means these percpu variables will be freed after init?
+>
+>
+> % grep -e __init_begin -e __init_end -e __per_cpu_start -e __per_cpu_end
+> /boot/System.map
+> 0000000000000000 D __per_cpu_start
+> 0000000000014bc0 D __per_cpu_end
+> ffffffff81cf3000 D __init_begin
+> ffffffff81dfc000 R __init_end
+> % objdump -d -j .data..percpu vmlinux | grep cpu_number
+> 000000000000dc38 <cpu_number>:
 
-While we can check if a file system is currently read-only, we can't
-guarantee that it will stay read-only.  The file system can be mounted
-or remounted read-write at any time.  This is a problem for union
-mounts, which require the underlying file system be read-only for the
-entire duration of the union mount.
+The .data..percpu section is placed in the init section, but x86-64 is
+a special case as noted below.  The boot cpu is pointed to the init
+percpu section until setup_per_cpu_areas() is called, when it switches
+to the regular percpu area.  The init percpu data is then freed with
+all other init data.
 
-Add a hard read-only users count to the superblock.  When this count
-is non-zero, don't allow any read-write mounts of this super, or any
-read-write remounts of existing mounts.
+The reason the percpu symbols start at virtual address 0 on x86-64 is
+because of the requirement that gs_base must be a canonical address
+(it cannot be a simple offset like x86-32).  But, the data is still
+loaded in the init section in memory.  See
+arch/x86/kernel/vmlinux.lds.S for the explanation of how the linker
+changes the program headers to set the virtual address to zero but
+keeps the load address in the init section.
 
-Original-author: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+To answer the original question. in the case of cpu_number, it is set
+to zero in the init section because it doesn't have an explicit
+initializer.  Therefore the boot cpu will always read zero for the
+cpu_number, even before setup_per_cpu_areas() is called.
 
- fs/super.c         |   11 +++++++++++
- include/linux/fs.h |    6 ++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index f343eda..732e19b 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -202,6 +202,7 @@ static inline void destroy_super(struct super_block *s)
- #ifdef CONFIG_SMP
- 	free_percpu(s->s_files);
- #endif
-+	BUG_ON(s->s_hard_readonly_users);
- 	security_sb_free(s);
- 	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
-@@ -758,6 +759,9 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 		}
- 	}
- 
-+	if (!(flags & MS_RDONLY) && sb->s_hard_readonly_users)
-+		return -EROFS;
-+
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
- 		if (retval) {
-@@ -1150,9 +1154,16 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
- 	WARN((sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
- 		"negative value (%lld)\n", type->name, sb->s_maxbytes);
- 
-+	if (!(flags & MS_RDONLY) && sb->s_hard_readonly_users)
-+		goto out_sb_is_hard_ro;
-+
- 	up_write(&sb->s_umount);
- 	free_secdata(secdata);
- 	return root;
-+
-+out_sb_is_hard_ro:
-+	up_write(&sb->s_umount);
-+	error = -EROFS;
- out_sb:
- 	dput(root);
- 	deactivate_locked_super(sb);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index d851be9..b8276c0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1496,6 +1496,12 @@ struct super_block {
- 
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
-+
-+	/* Number of mounts requiring that the underlying file system never
-+	 * transition to read-write.  Protected by s_umount.  Decremented by
-+	 * free_vfsmnt() if MNT_HARD_READONLY is set.
-+	 */
-+	int s_hard_readonly_users;
- };
- 
- /* superblock cache pruning functions */
-
+--
+Brian Gerst
