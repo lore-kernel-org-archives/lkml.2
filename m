@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab2BUKhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:37:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35927 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab2BUKhd convert rfc822-to-8bit (ORCPT
+	id S1754261Ab2BUKih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:38:37 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:46160 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab2BUKig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:37:33 -0500
-Message-ID: <1329820643.2293.386.camel@twins>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Tue, 21 Feb 2012 11:37:23 +0100
-In-Reply-To: <1329816093.7333.49.camel@marge.simpson.net>
-References: <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1329748861.2293.345.camel@twins>
-	 <1329761661.6276.146.camel@marge.simpson.net>
-	 <1329764866.2293.376.camel@twins>
-	 <1329802998.7333.1.camel@marge.simpson.net>
-	 <20120221083241.GC5156@linux.vnet.ibm.com>
-	 <1329816093.7333.49.camel@marge.simpson.net>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 21 Feb 2012 05:38:36 -0500
+Date: Tue, 21 Feb 2012 21:38:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: build failure in Linus' tree with gcc 4.4.3
+Message-Id: <20120221213818.34410cc74de633cda0169819@canb.auug.org.au>
+In-Reply-To: <1329818517.3639.29.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <20120220133936.936bff0d5817ac609a5211e0@canb.auug.org.au>
+	<20120220142208.ab97f13b9ade345402d054fb@canb.auug.org.au>
+	<1329731019.3639.20.camel@mfleming-mobl1.ger.corp.intel.com>
+	<1329818517.3639.29.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__21_Feb_2012_21_38_18_+1100_kFpHEhE4JPYLu8dH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 10:21 +0100, Mike Galbraith wrote:
+--Signature=_Tue__21_Feb_2012_21_38_18_+1100_kFpHEhE4JPYLu8dH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I use vmark, find it _somewhat_ useful.  Not a lovely benchmark, but it
-> is highly affinity sensitive, and switches heftily.  I don't put much
-> value on it though, too extreme for me, but it is a ~decent indicator.
-> 
-> There are no doubt _lots_ better than vmark for java stuff.
-> 
-> I toss a variety pack at the box in obsessive-compulsive man mode when
-> testing.  Which benchmarks doesn't matter much, just need to be wide
-> spectrum and consistent.
+Hi Matt,
 
-http://www.volano.com/benchmarks.html
+On Tue, 21 Feb 2012 10:01:57 +0000 Matt Fleming <matt.fleming@intel.com> wr=
+ote:
+>
+> Looks like the segfault is caused by an unaligned access? How does this
+> patch look?
 
-> No, I use Ingo's pipe-test, but that to measure fastpath overhead.
+I didn't try it, but it won't work.  PowerPC is big endian, the data you
+are copying is little endian ....
 
-http://people.redhat.com/mingo/cfs-scheduler/tools/pipe-test.c
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Also I think it lives as: perf bench sched pipe
+--Signature=_Tue__21_Feb_2012_21_38_18_+1100_kFpHEhE4JPYLu8dH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPQ3QaAAoJEECxmPOUX5FEnIYP/jZ1hFHV1etAYvDGG4yJ6eLO
+UkdTDxZ+uU7CCIkUHn3Dhr0pSFIePqPc94KLlLXYnYeh7z0TrO75/v8I/stryw14
+1Ic/XiGrqXqqcp2DKZCh+/k3ohHbkhBD6p4mRZ+iQPHNacMJ6kFqKM7hvOQx8P/+
+eSjo52VaNXqddBJ5r8/cduo0AmAhM9ZWhMS/mjU4c9qy2NSawY1pnrH0Ezi3h5vp
+rXvXTm430EXkCRHKrWVaXEya3QqbHuGbQQQ/WjXa9QFvn0J36ScIkQjP6V79BX+r
+ItSoUQXm6DUcw2yn6p1dPYphDsbRurnSRW284s4Ov7rPkE2jPi1pWDxW6WL5q87z
+/rA+fbNykqul98tYIychBVr5SCBnaxiHxcQRpxcSV1dEw5LHAJqpOZTT+/TKLWws
+i2LUb19Yg6UdpwfR+NySawAwWOuyux4mm2XKdDV78/zlBH2L3w9nTZfURIl7Cyb9
+smGsD7f2J3cqbRm8iD1JveHv820Wr0J+xE8x+PGIjvj/Ok24gqKi/Sb0UxhGZbuM
+Vtq27uyzGY83iFfP8yrnnqvZ4b9znrDQ8uZn7eGNRLtXELV6TwVMPib5y0/x0Wo6
++zmlS702XkiRnYBLtKa34p8bCRqWVpb+isB7G5PjUBFp5GzovY0Taj5tTb91eiEr
+pO462zihNxoY3Bt0coTv
+=kYsJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__21_Feb_2012_21_38_18_+1100_kFpHEhE4JPYLu8dH--
