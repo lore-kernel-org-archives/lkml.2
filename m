@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab2BUVjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 16:39:52 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35677 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab2BUVjv (ORCPT
+	id S1755126Ab2BUVkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 16:40:09 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35626 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755384Ab2BUVkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 16:39:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-Date: Tue, 21 Feb 2012 13:39:42 -0800 (PST)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-X-X-Sender: torvalds@i5.linux-foundation.org
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/2] i387: FP state interface cleanups
-In-Reply-To: <4F440945.1020904@zytor.com>
-Message-ID: <alpine.LFD.2.02.1202211338420.5354@i5.linux-foundation.org>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
- <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com>
- <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com> <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com> <4F440945.1020904@zytor.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 21 Feb 2012 16:40:06 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+Date: Tue, 21 Feb 2012 22:43:52 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org
+References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org> <201202210013.02397.rjw@sisk.pl> <1329786806.1511.54.camel@rui.sh.intel.com>
+In-Reply-To: <1329786806.1511.54.camel@rui.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202212243.52788.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, February 21, 2012, Zhang Rui wrote:
+> On 二, 2012-02-21 at 00:13 +0100, Rafael J. Wysocki wrote:
+> > > So how to handle this case, say, for a device in the generic PM domain
+> > > that supports 2 different low power state, D1 and D2.
+> > > D2 is deeper than D1, and it is kind of cold power off with remote
+> > > wakeup disabled. If the driver needs to runtime suspend the device with
+> > > remote wakeup enabled, it should set the device to D1, but it can not
+> > > set the RPM_SUSPEND?
+> > 
+> > The device is regarded as "suspended" if its bus type's (or PM domain's)
+> > .runtime_suspend() callback has been executed and has returned 0 (success).
+> > What the callback has actually done is not of any interest to the core.
+> > 
+> right.
+> 
+> > Now, the D1 and D2 case has to be handled by the bus (PM domain) and
+> > driver.  In both cases the device will be regarded as "suspended" and the
+> > core doesn't track the actual device state.
+> > 
+> 
+> 
+> > I think the problem here is that the PCI bus type's runtime PM callbacks
+> > aren't very sophisticated (they just choose the lowest possible low-power
+> > state and attempt to put the device into it) and I can see two possible
+> > ways to address that.
+> > 
+> > First, you can modify pci_pm_runtime_suspend/_resume() to handle multiple
+> > states (for example, to choose the target low-power state more intelligently
+> > than they do right now).  Second, you can add a PM domain that will do what
+> > you want from pci_pm_runtime_suspend/_resume() for a specific set of devices.
+> > 
+> But RPM_SUSPENDED is set by PM core after .runtime_suspend() being
+> invoked, even if device is in D1 instead of D2, right?
+> 
+> So the problem is that, if a device in a generic power domain supports
+> two low power state, one is compatible with generic power domain power
+> off and another is not, how can the device driver pass this information
+> to the generic power domain, i.e. how to runtime suspend a device while
+> keep the generic power domain always on?
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 21 Feb 2012 13:32:49 -0800
-Subject: [PATCH 0/2] i387: FP state interface cleanups
+There are two "low-power" levels in the generic PM domains framework.  The
+first one is the per-device low-power in which devices are put into their
+individual (programmable) low-power states by the domain .dev_ops->stop()
+callback.  The second one is when .stop() has been called for all devices,
+so presumably all of them are in programmable low-power states and it's
+possible to switch the entire domain off.  This is done by the domain
+.power_off() callback.
 
-This cleans up some of our FP-state mess.  The aim is to expose much
-less of the internal interfaces and implementation to various users that
-really don't care. 
+It seems that the trick might be to make .dev_ops->stop() avoid turning off
+power resources for the last suspending device in the domain and leave that
+to domain .power_off().
 
-We shouldn't export our internal 'fpu_owner_task' tracking to modules,
-and we shouldn't expose all the low-level FP state save/restore code to
-code that simply must never use it anyway.
-
-This passed allmodconfig on x86-32 and -64.
-
-              Linus
-
-Linus Torvalds (2):
-  i387: uninline the generic FP helpers that we expose to kernel
-    modules
-  i387: split up <asm/i387.h> into exported and internal interfaces
-
- arch/x86/ia32/ia32_signal.c         |    1 +
- arch/x86/include/asm/fpu-internal.h |  520 ++++++++++++++++++++++++++++++
- arch/x86/include/asm/i387.h         |  590 +----------------------------------
- arch/x86/kernel/cpu/common.c        |    3 +-
- arch/x86/kernel/i387.c              |   83 +++++-
- arch/x86/kernel/process.c           |    1 +
- arch/x86/kernel/process_32.c        |    1 +
- arch/x86/kernel/process_64.c        |    1 +
- arch/x86/kernel/ptrace.c            |    1 +
- arch/x86/kernel/signal.c            |    1 +
- arch/x86/kernel/traps.c             |    1 +
- arch/x86/kernel/xsave.c             |    1 +
- arch/x86/kvm/vmx.c                  |    2 +-
- arch/x86/kvm/x86.c                  |    1 +
- arch/x86/power/cpu.c                |    1 +
- 15 files changed, 624 insertions(+), 584 deletions(-)
- create mode 100644 arch/x86/include/asm/fpu-internal.h
-
--- 
-1.7.9.188.g12766.dirty
-
+Thanks,
+Rafael
