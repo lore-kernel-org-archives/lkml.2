@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab2BUMmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 07:42:46 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:47972 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab2BUMmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 07:42:44 -0500
-Date: Tue, 21 Feb 2012 07:42:40 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Bob Tracy <rct@gherkin.frus.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 3.3.0-rcX: kjournald
-Message-ID: <20120221124240.GB5134@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Bob Tracy <rct@gherkin.frus.com>, linux-kernel@vger.kernel.org
-References: <20120221054159.GA1919@gherkin.frus.com>
+	id S1754493Ab2BUMok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 07:44:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33911 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab2BUMoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 07:44:39 -0500
+Date: Tue, 21 Feb 2012 12:44:09 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Documentation/gpio.txt: Explain expected pinctrl
+	interaction
+Message-ID: <20120221124409.GL22562@n2100.arm.linux.org.uk>
+References: <1329719263-18971-1-git-send-email-swarren@nvidia.com> <20120220073941.GC22562@n2100.arm.linux.org.uk> <CACRpkdbMFN3=XTSg1oE310eTHecrs6XaMz+DCNYJzwOg8JEEiQ@mail.gmail.com> <20120221110618.GJ22562@n2100.arm.linux.org.uk> <CACRpkdYzRu4VPKPgxuttuvSDCpfHjvBGGq1rFEDExv1PsoLG=w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120221054159.GA1919@gherkin.frus.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CACRpkdYzRu4VPKPgxuttuvSDCpfHjvBGGq1rFEDExv1PsoLG=w@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 11:41:59PM -0600, Bob Tracy wrote:
-> I'm not sure if I caught a complete instance of this in "syslog", but
-> here's what I've been seeing with 3.3.0-rc[1-3] kernels.  Shortly after
-> booting multi-user, logging in, and attempting a package build, the
-> "fun" starts: the following message scrolls repeatedly (possibly with
-> different details) across the console.  To date, I've had to hit the
-> reset switch to recover, which is why I'm not sure whether I caught a
-> complete syslog entry.
+On Tue, Feb 21, 2012 at 01:40:05PM +0100, Linus Walleij wrote:
+> Of course it assumes the SA1100 being converted to use pin control,
+> I looked at it a bit and it seems simple enough since the GAFR
+> register is a single "GPIO or something else"-switch for the GPIOs.
+> (It'd probably need the SA1100 to be a bit more strict in using
+> gpiolib in place for the direct assignments though, else the
+> abstractions get a bit pointless anyway.)
 
-Hmm..  I've taken a quick look at fs/jbd/commit.c, and I don't see
-anything obvious.  Can you try compiling with LOCKDEP compiled and see
-if you can reproduce it, so we can see what spin lock is being held?
+That's mostly happened through my recent set of 100 or so patches.
+There's a few areas where that's not quite as easy as it should be,
+but on the whole, it's mostly complete.
 
-Thanks,
+The other thing I forgot to mention, and I suspect it's particular to
+SA11x0, is that the GPDR must be set correctly according to the special
+function as well as GAFR.  So, if a special function involves driving
+a pin, the pin must be set as an output in GPDR.  Conversely, if the
+special function involves input only, the pin must be set as an input
+in GPDR.
 
-						- Ted
+So, on SA11x0, gpio and pin configuration are intimately linked.
