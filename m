@@ -1,494 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab2BUOHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:07:46 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49334 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456Ab2BUOHi (ORCPT
+	id S1755451Ab2BUOMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:12:44 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33154 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2BUOMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:07:38 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of robherring2@gmail.com designates 10.236.132.167 as permitted sender) smtp.mail=robherring2@gmail.com; dkim=pass header.i=robherring2@gmail.com
-Message-ID: <4F43A51B.9030107@gmail.com>
-Date: Tue, 21 Feb 2012 08:07:23 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	Tue, 21 Feb 2012 09:12:43 -0500
+Date: Tue, 21 Feb 2012 15:12:31 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@intel.com>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: RAS trace event proto
+Message-ID: <20120221141231.GA15515@aftab>
+References: <20120220145920.GB5728@aftab>
+ <4F438CE9.7080807@redhat.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de,
-        avictor.za@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: AIC and GPIO IRQ device tree initilization
-References: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com> <1329470878-14635-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1329470878-14635-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F438CE9.7080807@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2012 03:27 AM, Nicolas Ferre wrote:
-> Both AIC and GPIO controllers are now using the standard of_irq_init()
-> function to initialize IRQs in case of DT use.
-> The DT specific initialization functions are now separated from the
-> non-DT case and are now using "linear" irq domains.
-> The .map() irqdomain operation is responsible for positioning the IRQ
-> handlers. In AIC case, the Linux IRQ number is directly programmed in
-> the hardware to avoid an additional reverse mapping operation.
-> The AIC position its irq domain as the "default" irq domain.
+On Tue, Feb 21, 2012 at 10:24:09AM -0200, Mauro Carvalho Chehab wrote:
+> The idea of having a separate ring buffer for the hardware errors seem
+
+Not a separate ring buffer - ras_printk buffers the string before its
+being sent through the tracepoint, i.e. once the string is done, we do:
+
+	trace_mce_record(decoded_err_str, m);
+
+in amd_decode_mce(). The tracepoint can be invoked in the same manner
+from other places.
+
+> to be interesting (the code there at ras.c seems incomplete on this dirty
+> patch - at least I couldn't see how userspace would retrieve the messages,
+> if the has agent is enabled).
+
+The normal way you retrieve an ftrace trace.
+
+> I prefer to code it arch-agnostic since the beginning, as there's nothing
+> there that it is arch-specific.
+
+Let me quote my last email:
+
+"* Which brings me to it: ras_printk() is x86-only and it could probably
+be moved to an arch-agnostic place for the other arches. I'd leave it
+x86-only for now, for testing purposes, and then later the other arches
+could consider using it (this is wrt non-x86 EDAC drivers)."
+
+> It is not clear from this patch how errors are supposed to be reported,
+> on your proposal, as, currently, you're using trace_mce_record() to report 
+> just the MCE error, without any parsing,  using an empty string for the
+> error description.
+
+Let me quote my last email:
+
+"* So there are two RAS tracepoints: trace_mce_record which dumps the
+MCE-related errors + their decoded info and trace_hw_error which simply
+carries a string to userspace. The second one can be used for non-MCA
+errors."
+
+> I _think_ you're planning to move trace_mce_record() to happen inside
+> the driver (or at the edac core), for the cases where the error is
+> parsed inside amd64_edac.
+
+No.
+
+> You're using ras_printk() to report not only RAS errors, but also errors
+> that happened inside the amd64_edac driver, like:
+
+Not the amd64_edac driver - this is the routine that decodes LS MCEs.
+
 > 
-> For DT case, the priority is not yet filled in the SMR. It will be the
-> subject of another patch.
+> +		ras_printk(PR_EMERG, "You shouldn't be seeing an LS MCE on this"
+> +				     " cpu family, please report on LKML.\n");
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi,
+> That sounds confusing.
+
+No, that's ok since we're carrying a string of a decoded MCE to
+userspace - if, instead, we have _another_ string saying that we don't
+decode LS MCEs for a CPU family, it's still a string so we're fine. We
+could do additional mappings like "DECODE_ERROR" in front of it so that
+the userspace tools don't choke on it.
+
+> It also should be noticed that the amd64_edac driver reports error on a
+> different way than other drivers. Except for amd64_edac, the other drivers
+> prepare an error string on some internal buffer, and then they call the
+> RAS core (edac) to present that error to userspace. For example:
+
+This is what I do too - ras_printk() buffers the string internally
+before sendint it out through the tracepoint.
+
 > 
-> This patch goes on top of previous series:
-> "[PATCH 0/9] ARM: at91: irqdomain and device tree for AIC and GPIO"
-> (which goes on top of Grant's "irq_domain generalization and rework").
+> static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
+> 					struct i5000_error_info *info,
+> 					int handle_errors)
+> {
+> ...
+> /* Only 1 bit will be on */
+> 	switch (allErrors) {
+> 	case FERR_FAT_M1ERR:
+> 		specific = "Alert on non-redundant retry or fast "
+> 				"reset timeout";
+> 		break;
+> ...
+> 		/* Form out message */
+> 		snprintf(msg, sizeof(msg),
+> 			 "(Branch=%d DRAM-Bank=%d RDWR=%s RAS=%d "
+> 			 "CAS=%d, UE Err=0x%x (%s))",
+> 			 branch >> 1, bank, rdwr ? "Write" : "Read", ras, cas,
+> 			 ue_errors, specific);
 > 
-> It should address all advices by Rob Herring and I hope it is the best
-> way to deal with irq domains in all DT/non-DT cases.
-> 
-> A simple concern is that the IRQ latency may be bigger because of the
-> irq_create_mapping() call in .to_irq(). This is called in the hot path
-> of GPIO IRQ handler...
-
-
-Why are you not using irq_find_mapping?
-
-> Best regards,
+> 		/* Call the helper to output message */
+> 		edac_mc_handle_fbd_ue(mci, rank, channel, channel + 1, msg);
 > 
 > 
->  arch/arm/mach-at91/board-dt.c |   11 +++-
->  arch/arm/mach-at91/generic.h  |    6 ++
->  arch/arm/mach-at91/gpio.c     |  124 +++++++++++++++++++++++++++++++----------
->  arch/arm/mach-at91/irq.c      |   92 ++++++++++++++++++++-----------
->  4 files changed, 171 insertions(+), 62 deletions(-)
+> So, the "msg" buffer will contain the entire error message, and the core call
+> will increment the error counters, will identify the silkscreen label associated
+> with the memory location and output the error.
 > 
-> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
-> index 6120978..e0df4e5 100644
-> --- a/arch/arm/mach-at91/board-dt.c
-> +++ b/arch/arm/mach-at91/board-dt.c
-> @@ -15,6 +15,8 @@
->  #include <linux/init.h>
->  #include <linux/module.h>
->  #include <linux/gpio.h>
-> +#include <linux/of.h>
-> +#include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  
->  #include <mach/hardware.h>
-> @@ -86,9 +88,16 @@ static void __init ek_add_device_nand(void)
->  	at91_add_device_nand(&ek_nand_data);
->  }
->  
-> +static const struct of_device_id irq_of_match[] __initconst = {
-> +
-> +	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
-> +	{ .compatible = "atmel,at91rm9200-gpio", .data = at91_gpio_of_irq_setup },
-> +	{ /*sentinel*/ }
-> +};
-> +
->  static void __init at91_dt_init_irq(void)
->  {
-> -	at91_init_irq_default();
-> +	of_irq_init(irq_of_match);
->  }
->  
->  static void __init at91_dt_device_init(void)
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index 78cd605..c5d16e5 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -9,6 +9,7 @@
->   */
->  
->  #include <linux/clkdev.h>
-> +#include <linux/of.h>
->  
->   /* Map io */
->  extern void __init at91_map_io(void);
-> @@ -25,6 +26,9 @@ extern void __init at91_init_irq_default(void);
->  extern void __init at91_init_interrupts(unsigned int priority[]);
->  extern void __init at91x40_init_interrupts(unsigned int priority[]);
->  extern void __init at91_aic_init(unsigned int priority[]);
-> +extern int  __init at91_aic_of_init(struct device_node *node,
-> +				    struct device_node *parent);
-> +
->  
->   /* Timer */
->  struct sys_timer;
-> @@ -75,5 +79,7 @@ struct at91_gpio_bank {
->  };
->  extern void __init at91_gpio_init(struct at91_gpio_bank *, int nr_banks);
->  extern void __init at91_gpio_irq_setup(void);
-> +extern int  __init at91_gpio_of_irq_setup(struct device_node *node,
-> +					  struct device_node *parent);
->  
->  extern int at91_extern_irq;
-> diff --git a/arch/arm/mach-at91/gpio.c b/arch/arm/mach-at91/gpio.c
-> index fbcb47e..64395a5 100644
-> --- a/arch/arm/mach-at91/gpio.c
-> +++ b/arch/arm/mach-at91/gpio.c
-> @@ -27,6 +27,7 @@
->  #include <linux/irqdomain.h>
->  #include <linux/of_address.h>
->  #include <linux/of_irq.h>
-> +#include <linux/of_gpio.h>
->  
->  #include <mach/hardware.h>
->  #include <mach/at91_pio.h>
-> @@ -37,6 +38,7 @@ struct at91_gpio_chip {
->  	struct gpio_chip	chip;
->  	struct at91_gpio_chip	*next;		/* Bank sharing same clock */
->  	int			pioc_hwirq;	/* PIO bank interrupt identifier on AIC */
-> +	int			pioc_virq;	/* PIO bank Linux virtual interrupt */
->  	int			pioc_idx;	/* PIO bank index */
->  	void __iomem		*regbase;	/* PIO bank virtual address */
->  	struct clk		*clock;		/* associated clock */
-> @@ -295,7 +297,7 @@ static int gpio_irq_set_wake(struct irq_data *d, unsigned state)
->  	else
->  		wakeups[bank] &= ~mask;
->  
-> -	irq_set_irq_wake(gpio_chip[bank].pioc_hwirq, state);
-> +	irq_set_irq_wake(at91_gpio->pioc_virq, state);
->  
->  	return 0;
->  }
-> @@ -397,12 +399,12 @@ static struct irq_chip gpio_irqchip = {
->  
->  static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
->  {
-> -	unsigned	virq;
->  	struct irq_data *idata = irq_desc_get_irq_data(desc);
->  	struct irq_chip *chip = irq_data_get_irq_chip(idata);
->  	struct at91_gpio_chip *at91_gpio = irq_data_get_irq_chip_data(idata);
->  	void __iomem	*pio = at91_gpio->regbase;
-> -	u32		isr;
-> +	unsigned long	isr;
-> +	int		n;
->  
->  	/* temporarily mask (level sensitive) parent IRQ */
->  	chip->irq_ack(idata);
-> @@ -420,13 +422,10 @@ static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
->  			continue;
->  		}
->  
-> -		virq = gpio_to_irq(at91_gpio->chip.base);
-> -
-> -		while (isr) {
-> -			if (isr & 1)
-> -				generic_handle_irq(virq);
-> -			virq++;
-> -			isr >>= 1;
-> +		n = find_first_bit(&isr, BITS_PER_LONG);
-> +		while (n < BITS_PER_LONG) {
-> +			generic_handle_irq(at91_gpiolib_to_irq(&at91_gpio->chip, n));
-> +			n = find_next_bit(&isr, BITS_PER_LONG, n + 1);
->  		}
->  	}
->  	chip->irq_unmask(idata);
-> @@ -496,23 +495,91 @@ postcore_initcall(at91_gpio_debugfs_init);
->  /*--------------------------------------------------------------------------*/
->  
->  /*
-> + * This lock class tells lockdep that GPIO irqs are in a different
-> + * category than their parents, so it won't report false recursion.
-> + */
-> +static struct lock_class_key gpio_lock_class;
-> +
-> +#if defined(CONFIG_OF)
-> +static int at91_gpio_irq_map(struct irq_domain *h, unsigned int virq,
-> +							irq_hw_number_t hw)
-> +{
-> +	struct at91_gpio_chip	*at91_gpio = h->host_data;
-> +
-> +	irq_set_lockdep_class(virq, &gpio_lock_class);
-> +
-> +	/*
-> +	 * Can use the "simple" and not "edge" handler since it's
-> +	 * shorter, and the AIC handles interrupts sanely.
-> +	 */
-> +	irq_set_chip_and_handler(virq, &gpio_irqchip,
-> +				 handle_simple_irq);
-> +	set_irq_flags(virq, IRQF_VALID);
-> +	irq_set_chip_data(virq, at91_gpio);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct irq_domain_ops at91_gpio_ops = {
-> +	.map	= at91_gpio_irq_map,
-> +	.xlate	= irq_domain_xlate_twocell,
-> +};
-> +
-> +int __init at91_gpio_of_irq_setup(struct device_node *node,
-> +				     struct device_node *parent)
-> +{
-> +	struct at91_gpio_chip	*prev = NULL;
-> +	int			alias_idx = of_alias_get_id(node, "gpio");
-> +	struct at91_gpio_chip	*at91_gpio = &gpio_chip[alias_idx];
-> +
-> +	/* Disable irqs of this PIO controller */
-> +	__raw_writel(~0, at91_gpio->regbase + PIO_IDR);
-> +
-> +	/* Setup irq domain */
-> +	at91_gpio->domain = irq_domain_add_linear(node, at91_gpio->chip.ngpio,
-> +						&at91_gpio_ops, at91_gpio);
-> +	if (!at91_gpio->domain)
-> +		panic("at91_gpio.%d: couldn't allocate irq domain (DT).\n",
-> +			at91_gpio->pioc_idx);
-> +
-> +	/* Setup chained handler */
-> +	if (at91_gpio->pioc_idx)
-> +		prev = &gpio_chip[at91_gpio->pioc_idx - 1];
-> +
-> +	/* The toplevel handler handles one bank of GPIOs, except
-> +	 * on some SoC it can handles up to three...
-> +	 * We only set up the handler for the first of the list.
-> +	 */
-> +	if (prev && prev->next == at91_gpio)
-> +		return 0;
-> +
-> +	at91_gpio->pioc_virq = irq_create_mapping(irq_find_host(parent),
-> +							at91_gpio->pioc_hwirq);
-> +	irq_set_chip_data(at91_gpio->pioc_virq, at91_gpio);
-> +	irq_set_chained_handler(at91_gpio->pioc_virq, gpio_irq_handler);
-> +
-> +	return 0;
-> +}
-> +#else
-> +int __init at91_gpio_of_irq_setup(struct device_node *node,
-> +				     struct device_node *parent)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
-> +
-> +/*
->   * irqdomain initialization: pile up irqdomains on top of AIC range
->   */
->  static void __init at91_gpio_irqdomain(struct at91_gpio_chip *at91_gpio)
->  {
->  	int irq_base;
-> -#if defined(CONFIG_OF)
-> -	struct device_node *of_node = at91_gpio->chip.of_node;
-> -#else
-> -	struct device_node *of_node = NULL;
-> -#endif
->  
->  	irq_base = irq_alloc_descs(-1, 0, at91_gpio->chip.ngpio, 0);
->  	if (irq_base < 0)
->  		panic("at91_gpio.%d: error %d: couldn't allocate IRQ numbers.\n",
->  			at91_gpio->pioc_idx, irq_base);
-> -	at91_gpio->domain = irq_domain_add_legacy(of_node,
-> -						  at91_gpio->chip.ngpio,
-> +	at91_gpio->domain = irq_domain_add_legacy(NULL, at91_gpio->chip.ngpio,
->  						  irq_base, 0,
->  						  &irq_domain_simple_ops, NULL);
->  	if (!at91_gpio->domain)
-> @@ -521,12 +588,6 @@ static void __init at91_gpio_irqdomain(struct at91_gpio_chip *at91_gpio)
->  }
->  
->  /*
-> - * This lock class tells lockdep that GPIO irqs are in a different
-> - * category than their parents, so it won't report false recursion.
-> - */
-> -static struct lock_class_key gpio_lock_class;
-> -
-> -/*
->   * Called from the processor-specific init to enable GPIO interrupt support.
->   */
->  void __init at91_gpio_irq_setup(void)
-> @@ -538,8 +599,7 @@ void __init at91_gpio_irq_setup(void)
->  	for (pioc = 0, this = gpio_chip, prev = NULL;
->  			pioc++ < gpio_banks;
->  			prev = this, this++) {
-> -		unsigned	pioc_hwirq = this->pioc_hwirq;
-> -		int		offset;
-> +		int offset;
->  
->  		__raw_writel(~0, this->regbase + PIO_IDR);
->  
-> @@ -547,7 +607,7 @@ void __init at91_gpio_irq_setup(void)
->  		at91_gpio_irqdomain(this);
->  
->  		for (offset = 0; offset < this->chip.ngpio; offset++) {
-> -			unsigned int virq = irq_find_mapping(this->domain, offset);
-> +			unsigned int virq = irq_create_mapping(this->domain, offset);
+> In the case of amd64_edac, the error message is generated using KERN_COUNT, e. g.
+> instead of storing it into some buffer and then doing just one call to output it,
+> it calls pr_count() several times (or, after your patch, ras_printk).
 
-This should get done by irq_domain_add_legacy.
+I think you're confusing amd64_edac with <drivers/edac/mce_amd.c> which
+contains the code that decodes _ALL_ MCEs and not only DRAM ECC errors
+which amd64_edac decodes.
 
+> 
+> As the idea is to generate just one event for one hardware error, the better is
+> to change the logic inside amd64_edac to use driver-specific buffer for the
+> error message, and then call the RAS core error handler to output it, and let
+> the core to generate the trace event, as this simplifies the logic on all
+> drivers, as it removes redundancy, as reporting an error requires several
+> operations, like:
+> 	- incrementing error counts;
+> 	- retrieving the motherboard silkscreen labels;
+> 	- printing the error at dmesg and/or generating a trace event.
 
->  			irq_set_lockdep_class(virq, &gpio_lock_class);
->  
->  			/*
-> @@ -569,8 +629,9 @@ void __init at91_gpio_irq_setup(void)
->  		if (prev && prev->next == this)
->  			continue;
->  
-> -		irq_set_chip_data(pioc_hwirq, this);
-> -		irq_set_chained_handler(pioc_hwirq, gpio_irq_handler);
-> +		this->pioc_virq = irq_create_mapping(NULL, this->pioc_hwirq);
-> +		irq_set_chip_data(this->pioc_virq, this);
-> +		irq_set_chained_handler(this->pioc_virq, gpio_irq_handler);
->  	}
->  	pr_info("AT91: %d gpio irqs in %d banks\n", gpio_irqnbr, gpio_banks);
->  }
-> @@ -648,7 +709,12 @@ static void at91_gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
->  static int at91_gpiolib_to_irq(struct gpio_chip *chip, unsigned offset)
->  {
->  	struct at91_gpio_chip *at91_gpio = to_at91_gpio_chip(chip);
-> -	int virq = irq_find_mapping(at91_gpio->domain, offset);
-> +	int virq;
-> +
-> +	if (offset < chip->ngpio)
-> +		virq = irq_create_mapping(at91_gpio->domain, offset);
-> +	else
-> +		virq = -ENXIO;
->  
->  	dev_dbg(chip->dev, "%s: request IRQ for GPIO %d, return %d\n",
->  				chip->label, offset + chip->base, virq);
-> diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
-> index 46682fa..2e4ee09 100644
-> --- a/arch/arm/mach-at91/irq.c
-> +++ b/arch/arm/mach-at91/irq.c
-> @@ -135,27 +135,72 @@ static struct irq_chip at91_aic_chip = {
->  	.irq_set_wake	= at91_aic_set_wake,
->  };
->  
-> +static void __init at91_aic_hw_init(unsigned int spu_vector)
-> +{
-> +	int i;
-> +
-> +	/*
-> +	 * Perform 8 End Of Interrupt Command to make sure AIC
-> +	 * will not Lock out nIRQ
-> +	 */
-> +	for (i = 0; i < 8; i++)
-> +		at91_aic_write(AT91_AIC_EOICR, 0);
-> +
-> +	/*
-> +	 * Spurious Interrupt ID in Spurious Vector Register.
-> +	 * When there is no current interrupt, the IRQ Vector Register
-> +	 * reads the value stored in AIC_SPU
-> +	 */
-> +	at91_aic_write(AT91_AIC_SPU, spu_vector);
-> +
-> +	/* No debugging in AIC: Debug (Protect) Control Register */
-> +	at91_aic_write(AT91_AIC_DCR, 0);
-> +
-> +	/* Disable and clear all interrupts initially */
-> +	at91_aic_write(AT91_AIC_IDCR, 0xFFFFFFFF);
-> +	at91_aic_write(AT91_AIC_ICCR, 0xFFFFFFFF);
-> +}
-> +
-> +
-> +
+This is what the code does already.
 
-Remove extra blank lines.
+> 
+> <snip/>
+> 
+> >  TRACE_EVENT(mce_record,
+> >  
+> > -	TP_PROTO(struct mce *m),
+> > +	TP_PROTO(const char *msg, struct mce *m),
+> 
+> That doesn't sound good on my eyes. It is basically preserving all MCE register
+> values as-is (u32/u64 values), and folding all parsed information into just
+> one string field. I fail to understand why it is more important to store in
+> binary format the content of MCE registers than the other datat here.
 
->  #if defined(CONFIG_OF)
-> -static int __init __at91_aic_of_init(struct device_node *node,
-> -				     struct device_node *parent)
-> +static int at91_aic_irq_map(struct irq_domain *h, unsigned int virq,
-> +							irq_hw_number_t hw)
->  {
-> -	at91_aic_base = of_iomap(node, 0);
-> -	at91_aic_np = node;
-> +	/* Put virq number in Source Vector Register */
-> +	at91_aic_write(AT91_AIC_SVR(hw), virq);
-> +
-> +	/* Active Low interrupt, without priority */
-> +	at91_aic_write(AT91_AIC_SMR(hw), AT91_AIC_SRCTYPE_LOW);
-> +
-> +	irq_set_chip_and_handler(virq, &at91_aic_chip, handle_level_irq);
-> +	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
->  
->  	return 0;
->  }
->  
-> -static const struct of_device_id aic_ids[] __initconst = {
-> -	{ .compatible = "atmel,at91rm9200-aic", .data = __at91_aic_of_init },
-> -	{ /*sentinel*/ }
-> +static struct irq_domain_ops at91_aic_irq_ops = {
-> +	.map	= at91_aic_irq_map,
-> +	.xlate	= irq_domain_xlate_twocell,
->  };
->  
-> -static void __init at91_aic_of_init(void)
-> +int __init at91_aic_of_init(struct device_node *node,
-> +				     struct device_node *parent)
->  {
-> -	of_irq_init(aic_ids);
-> +	at91_aic_base = of_iomap(node, 0);
-> +	at91_aic_np = node;
-> +
-> +	at91_aic_domain = irq_domain_add_linear(at91_aic_np, NR_AIC_IRQS,
-> +						&at91_aic_irq_ops, NULL);
-> +	if (!at91_aic_domain)
-> +		panic("Unable to add AIC irq domain (DT)\n");
-> +
-> +	irq_set_default_host(at91_aic_domain);
+The msg arg is the decoded string and not the MCE register values. We
+carry the register values to userspace just in case, say, a RAS daemon
+would like to look at them too. This makes sense in cases where a RAS
+daemon, for example, wants to count how many errors have happened per
+rank and at which address, etc...
 
-Is this really necessary? I don't think it should be.
+> Also, folding everything into just one string prevents (or make hard) the usage of
+> the perf filters, for example, to filter only the errors at the memory controller 1.
 
-> +
-> +	at91_aic_hw_init(NR_AIC_IRQS);
-> +
-> +	return 0;
->  }
-> -#else
-> -static void __init at91_aic_of_init(void) {}
->  #endif
->  
->  /*
-> @@ -166,11 +211,7 @@ void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
->  	unsigned int i;
->  	int irq_base;
->  
-> -	if (of_have_populated_dt())
-> -		at91_aic_of_init();
-> -	else
-> -		at91_aic_base = ioremap(AT91_AIC, 512);
-> -
-> +	at91_aic_base = ioremap(AT91_AIC, 512);
->  	if (!at91_aic_base)
->  		panic("Unable to ioremap AIC registers\n");
->  
-> @@ -187,6 +228,8 @@ void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
->  	if (!at91_aic_domain)
->  		panic("Unable to add AIC irq domain\n");
->  
-> +	irq_set_default_host(at91_aic_domain);
-> +
->  	/*
->  	 * The IVR is used by macro get_irqnr_and_base to read and verify.
->  	 * The irq number is NR_AIC_IRQS when a spurious interrupt has occurred.
-> @@ -199,22 +242,7 @@ void __init at91_aic_init(unsigned int priority[NR_AIC_IRQS])
->  
->  		irq_set_chip_and_handler(i, &at91_aic_chip, handle_level_irq);
->  		set_irq_flags(i, IRQF_VALID | IRQF_PROBE);
-> -
-> -		/* Perform 8 End Of Interrupt Command to make sure AIC will not Lock out nIRQ */
-> -		if (i < 8)
-> -			at91_aic_write(AT91_AIC_EOICR, 0);
->  	}
->  
-> -	/*
-> -	 * Spurious Interrupt ID in Spurious Vector Register is NR_AIC_IRQS
-> -	 * When there is no current interrupt, the IRQ Vector Register reads the value stored in AIC_SPU
-> -	 */
-> -	at91_aic_write(AT91_AIC_SPU, NR_AIC_IRQS);
-> -
-> -	/* No debugging in AIC: Debug (Protect) Control Register */
-> -	at91_aic_write(AT91_AIC_DCR, 0);
-> -
-> -	/* Disable and clear all interrupts initially */
-> -	at91_aic_write(AT91_AIC_IDCR, 0xFFFFFFFF);
-> -	at91_aic_write(AT91_AIC_ICCR, 0xFFFFFFFF);
-> +	at91_aic_hw_init(NR_AIC_IRQS);
->  }
+Huh, because you can't grep through the trace anymore...?
 
+> It also requires that a RAS software to parse the messages in order to
+> detect, for example, where the memory silkscreen label is inside it.
+> This can be very tricky, as each driver could fill it with a different
+> way, making very hard for RAS userspace developers to write a code
+> that would be generic.
+
+We can add an additional arg called char *silkscreen in case it is
+needed.
+
+> My proposal is to have more fields there than just one message. On my patches,
+> the proposal is to use, instead:
+> 
+> TRACE_EVENT(mc_error_mce,
+> 
+> 	TP_PROTO(const unsigned int err_type,
+> 		 const unsigned int mc_index,
+> 		 const char *msg,
+> 		 const char *label,
+> 		 const char *location,
+> 		 const char *detail,
+> 		 const char *driver_detail,
+> 		 const struct mce *m),
+
+Hehe, so basically instead of one string you have a bunch of strings in
+addition to some unneeded fields. I fail to see the difference.
+
+The greatest common denominator between hw errors is a single string
+containing the whole error message, that's it! The moment you start
+implementing an arch-agnostic solution, a single string is all you can
+use. And adding a tracepoint for each error type is a no-go too, as I've
+explained it to you already.
+
+> Where:
+> 
+> 	err_type - identifies if the error is corrected, uncorrected, fatal;
+> 	mc_index - identifies the memory controller instance;
+> 	msg - the error cause, like "read error" , "write error", etc;
+> 	label - The silkscreen label of the affected component(s);
+> 	location - the memory hierarchy location of the error (csrow/channel or
+> 		   branch/channel/dimm, depending on the memory hierarchy);
+> 	detail - contains the error page, offset, grain and syndrome.
+> 	driver_detail - contains additional driver-specific details about
+> 		 the error (other data that the driver error parser may get).
+> 			    
+> With the above, all possible usecases are covered. The normal usecase
+
+As I've already explained it to you multiple times, this does NOT cover
+all possible cases - this covers only DRAM errors and adds unnecessarily
+too much info. If you start adding tracepoints for all the other error
+types hw can report, you're going to enter Bloatland very quickly.
+
+> where the user just needs to know if there were memory corruption, and what
+> memory needs to be replaced is covered by "err_type", "msg" and "label".
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
