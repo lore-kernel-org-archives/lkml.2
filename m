@@ -1,200 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2BUIaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:30:05 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43946 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab2BUIaD (ORCPT
+	id S1753051Ab2BUIcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:32:54 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36893 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab2BUIcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:30:03 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4F43561F.2020905@jp.fujitsu.com>
-Date: Tue, 21 Feb 2012 17:30:23 +0900
-From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Tue, 21 Feb 2012 03:32:53 -0500
+Date: Tue, 21 Feb 2012 14:02:41 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120221083241.GC5156@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1321495153.5100.7.camel@marge.simson.net>
+ <1321544313.6308.25.camel@marge.simson.net>
+ <1321545376.2495.1.camel@laptop>
+ <1321547917.6308.48.camel@marge.simson.net>
+ <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+ <1321629267.7080.13.camel@marge.simson.net>
+ <1329748861.2293.345.camel@twins>
+ <1329761661.6276.146.camel@marge.simpson.net>
+ <1329764866.2293.376.camel@twins>
+ <1329802998.7333.1.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH] mm: mmap() sometimes succeeds even if the region to map
- is invalid.
-References: <4F3E1319.6050304@jp.fujitsu.com> <alpine.LSU.2.00.1202171703260.24948@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202171703260.24948@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1329802998.7333.1.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022022-0260-0000-0000-0000009248EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+* Mike Galbraith <efault@gmx.de> [2012-02-21 06:43:18]:
 
-> 1. Should a negative offset necessarily return -EINVAL?  At present I
->     can mmap() /dev/kmem on x86_64 and see what's at 0xffff880000000000:
->     why should that say -EINVAL?  (I admit that my example wanted to say
->     0xffffffff81000000, where /proc/kallsyms locates _text, but that did
->     disappoint me with -EINVAL, because mmap_kmem() only understands the
->     direct map, not the further layouts which architectures may use.)
->
-> 2. We will have bugs if you manage to mmap an area crossing from pgoff
->     -1 to pgoff 0, but I thought the existing checks prevented that.
+> On Mon, 2012-02-20 at 20:07 +0100, Peter Zijlstra wrote: 
+> > On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
+> > > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
+> > > Maybe that has changed, but I doubt it.
+> > 
+> > Right, I through I remembered some such, you could see it on wakeup
+> > heavy things like pipe-bench and that java msg passing thing, right?
+> 
+> Yeah, it beat up switch heavy buddies pretty bad.
 
->> -       if ((pgoff + (len>>  PAGE_SHIFT))<  pgoff)
->> +       if ((off + len)<  off)
->>                  return -EOVERFLOW;
->
-> I think you are taking away the 32-bit kernel's ability to mmap() files
-> up to MAX_LFS_FILESIZE.
+Do you have pointer to the java benchmark? Also is pipe-bench the same
+as the one described below?
 
-Thanks, I see. I drop this patch.
+http://freecode.com/projects/pipebench
 
-BTW, I think the current error check of EOVERFLOW is meaningless, isn't it?
-
-mm/mmap.c
-===================================================================
-unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
-                         unsigned long len, unsigned long prot,
-                         unsigned long flags, unsigned long pgoff)
-{
-...
-        /* offset overflow? */
-         if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-                return -EOVERFLOW;
-...
-===================================================================
-
-Thanks,
-Naotaka Hamaguchi
-
-(2012/02/18 11:00), Hugh Dickins wrote:
-> On Fri, 17 Feb 2012, Naotaka Hamaguchi wrote:
->> This patch fixes two bugs of mmap():
->>   1. mmap() succeeds even if "offset" argument is a negative value, although
->>      it should return EINVAL in such case. Currently I have only checked
->>      it on x86_64 because (a) x86 seems to OK to accept a negative offset
->>      for mapping 2GB-4GB regions, and (b) I don't know about other
->>      architectures at all (I'll make it if needed).
->>
->>   2. mmap() would succeed if "offset" + "length" get overflow, although
->>      it should return EOVERFLOW.
->
-> I'm not convinced that either of these is a problem.  Do you see an
-> actual bug arising from these, or is it just that you think the Linux
-> mmap() permits more than you expect from your reading of POSIX?
->
-> 1. Should a negative offset necessarily return -EINVAL?  At present I
->     can mmap() /dev/kmem on x86_64 and see what's at 0xffff880000000000:
->     why should that say -EINVAL?  (I admit that my example wanted to say
->     0xffffffff81000000, where /proc/kallsyms locates _text, but that did
->     disappoint me with -EINVAL, because mmap_kmem() only understands the
->     direct map, not the further layouts which architectures may use.)
->
-> 2. We will have bugs if you manage to mmap an area crossing from pgoff
->     -1 to pgoff 0, but I thought the existing checks prevented that.
->
-> mmap() should be permitting as far as it safely can; but it's a bug
-> if a fault on an offset beyond (page-rounded-up) end-of-file does not
-> then give SIGBUS.
->
->>
->> The detail of these problems is as follows:
->>
->> 1. mmap() succeeds even if "offset" argument is a negative value, although
->>     it should return EINVAL in such case.
->>
->> POSIX says the type of the argument "off" is "off_t", which
->> is equivalent to "long" for all architecture, so it is allowed to
->> give a negative "off" to mmap().
->>
->> In such case, it is actually regarded as big positive value
->> because the type of "off" is "unsigned long" in the kernel.
->> For example, off=-4096 (-0x1000) is regarded as
->> off = 0xfffffffffffff000 (x86_64) and as off = 0xfffff000 (x86).
->> It results in mapping too big offset region.
->>
->> 2. mmap() would succeed if "offset" + "length" get overflow, although
->>     it should return EOVERFLOW.
->>
->> The overflow check of mmap() almost doesn't work.
->>
->> In do_mmap_pgoff(file, addr, len, prot, flags, pgoff),
->> the existing overflow check logic is as follows.
->>
->> ------------------------------------------------------------------------
->> do_mmap_pgoff(struct file *file, unsigned long addr,
->> 		unsigned long len, unsigned long prot,
->> 		unsigned long flags, unsigned long pgoff)
->> {
->> 	if ((pgoff + (len>>  PAGE_SHIFT))<  pgoff)
->> 		return -EOVERFLOW;
->> }
->> ------------------------------------------------------------------------
->>
->> However, for example on x86_64, if we give off=0x1000 and
->> len=0xfffffffffffff000, but EOVERFLOW is not returned.
->> It is because the checking is based on the page offset,
->> not on the byte offset.
->>
->> To fix this bug, I convert this overflow check from page
->> offset base to byte offset base.
->>
->> Signed-off-by: Naotaka Hamaguchi<n.hamaguchi@jp.fujitsu.com>
->> ---
->>   arch/x86/kernel/sys_x86_64.c |    3 +++
->>   mm/mmap.c                    |    3 ++-
->>   2 files changed, 5 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
->> index 0514890..ddefd6c 100644
->> --- a/arch/x86/kernel/sys_x86_64.c
->> +++ b/arch/x86/kernel/sys_x86_64.c
->> @@ -90,6 +90,9 @@ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
->>          if (off&  ~PAGE_MASK)
->>                  goto out;
->>
->> +       if ((off_t) off<  0)
->> +               goto out;
->> +
->>          error = sys_mmap_pgoff(addr, len, prot, flags, fd, off>>  PAGE_SHIFT);
->>   out:
->>          return error;
->> diff --git a/mm/mmap.c b/mm/mmap.c
->> index 3f758c7..2fa99cd 100644
->> --- a/mm/mmap.c
->> +++ b/mm/mmap.c
->> @@ -948,6 +948,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
->>          vm_flags_t vm_flags;
->>          int error;
->>          unsigned long reqprot = prot;
->> +       unsigned long off = pgoff<<  PAGE_SHIFT;
->>
->>          /*
->>           * Does the application expect PROT_READ to imply PROT_EXEC?
->> @@ -971,7 +972,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
->>                  return -ENOMEM;
->>
->>          /* offset overflow? */
->> -       if ((pgoff + (len>>  PAGE_SHIFT))<  pgoff)
->> +       if ((off + len)<  off)
->>                  return -EOVERFLOW;
->
-> I think you are taking away the 32-bit kernel's ability to mmap() files
-> up to MAX_LFS_FILESIZE.
->
-> Hugh
->
->>
->>          /* Too many mappings? */
->> --
->> 1.7.7.4
->>
->> Best Regards,
->> Naotaka Hamaguchi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
-
+- vatsa
 
