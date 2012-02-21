@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2BUWnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:43:39 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53433 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2BUWnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:43:35 -0500
+	id S1756235Ab2BUWod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:44:33 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:45542 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753374Ab2BUWob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:44:31 -0500
+Date: Tue, 21 Feb 2012 14:41:28 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org
+Subject: Re: [PATCH v10 06/11] seccomp: add SECCOMP_RET_ERRNO
+Message-ID: <20120221224128.GJ3990@outflux.net>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+ <1329845435-2313-6-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
- <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 21 Feb 2012 14:43:14 -0800
-X-Google-Sender-Auth: 0vo5crqX0paqdDR5FLvi94gdxdo
-Message-ID: <CA+55aFxkbsZN3yG6d9DPGiXmiuX-wOURJcC0hAUN3Qbykv1UhQ@mail.gmail.com>
-Subject: Re: Linux 3.3-rc4
-To: Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016e6d62584175c0304b9812410
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329845435-2313-6-git-send-email-wad@chromium.org>
+Organization: Ubuntu
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d62584175c0304b9812410
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Feb 21, 2012 at 11:30:30AM -0600, Will Drewry wrote:
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index 0043b7e..23f1844 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -136,22 +136,18 @@ static void *bpf_load(const void *nr, int off, unsigned int size, void *buf)
+>  static u32 seccomp_run_filters(int syscall)
+>  {
+>  	struct seccomp_filter *f;
+> -	u32 ret = SECCOMP_RET_KILL;
+>  	static const struct bpf_load_fn fns = {
+>  		bpf_load,
+>  		sizeof(struct seccomp_data),
+>  	};
+> +	u32 ret = SECCOMP_RET_ALLOW;
+>  	const void *sc_ptr = (const void *)(uintptr_t)syscall;
+> -
+>  	/*
+>  	 * All filters are evaluated in order of youngest to oldest. The lowest
+>  	 * BPF return value always takes priority.
+>  	 */
+> -	for (f = current->seccomp.filter; f; f = f->prev) {
+> -		ret = bpf_run_filter(sc_ptr, f->insns, &fns);
+> -		if (ret != SECCOMP_RET_ALLOW)
+> -			break;
+> -	}
+> +	for (f = current->seccomp.filter; f; f = f->prev)
+> +		ret = min_t(u32, ret, bpf_run_filter(sc_ptr, f->insns, &fns));
+>  	return ret;
+>  }
 
-On Sun, Feb 19, 2012 at 5:42 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
->
-> 2.) while debugging above issue: I did find an minor bug in sys_poll() - nobody did take care of my proposed patch: https://lkml.org/lkml/2011/9/24/35
+I'd like to see this fail closed in the (theoretically impossible, but
+why risk it) case of there being no filters at all. Could do something
+like this:
 
-Ok, so I started out forward-porting that patch to current -git
-(trivial: it's just that the system call tables are differently
-generated now), but the more I look at it, the more I suspect that we
-should perhaps just globally fix "sys_poll()" to have the timeout
-argument be 'int'.
+	u32 ret = current->seccomp.filter ? SECCOMP_RET_ALLOW : SECCOMP_RET_KILL;
 
-Because that *is* the standard user interface (just do "man 2 poll"),
-and while all of the git history (and all of the BK history) we've had
-it as "long", I suspect we should just fix it.
+Or, just this, to catch the misbehavior:
 
-So I suspect the correct patch is just as attached instead: make
-sys_poll() just take an "int timeout". Any user who tried to use a
-long value would already have got truncated by glibc - I just checked.
+	if (unlikely(current->seccomp.filter == NULL))
+		return SECCOMP_RET_KILL;
 
-Of course, there is a remote possibility that somebody might not use
-glibc, and have used "poll()" with the raw system call interface, and
-depended on using a 64-bit "long timeout" on 64-bit architectures.
+-Kees
 
-But quite frankly, that sounds rather unlikely in the extreme.
-
-Comments? If we do this, and somebody actually reports that they use a
-64-bit timeout, we could always go back to the broken 'long' argument,
-and take your patch to fix the compat case.
-
-                  Linus
-
---0016e6d62584175c0304b9812410
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gyxismw70
-
-IGFyY2gvczM5MC9rZXJuZWwvY29tcGF0X3dyYXBwZXIuUyB8ICAgIDIgKy0KIGZzL3NlbGVjdC5j
-ICAgICAgICAgICAgICAgICAgICAgICB8ICAgIDIgKy0KIGluY2x1ZGUvbGludXgvc3lzY2FsbHMu
-aCAgICAgICAgICB8ICAgIDIgKy0KIDMgZmlsZXMgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAz
-IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gvczM5MC9rZXJuZWwvY29tcGF0X3dyYXBw
-ZXIuUyBiL2FyY2gvczM5MC9rZXJuZWwvY29tcGF0X3dyYXBwZXIuUwppbmRleCAxOGM1MWRmOWZl
-MDYuLmZmNjA1YTM5Y2Y0MyAxMDA2NDQKLS0tIGEvYXJjaC9zMzkwL2tlcm5lbC9jb21wYXRfd3Jh
-cHBlci5TCisrKyBiL2FyY2gvczM5MC9rZXJuZWwvY29tcGF0X3dyYXBwZXIuUwpAQCAtNjYyLDcg
-KzY2Miw3IEBAIEVOVFJZKHN5czMyX2dldHJlc3VpZDE2X3dyYXBwZXIpCiBFTlRSWShzeXMzMl9w
-b2xsX3dyYXBwZXIpCiAJbGxndHIJJXIyLCVyMgkJCSMgc3RydWN0IHBvbGxmZCAqCiAJbGxnZnIJ
-JXIzLCVyMwkJCSMgdW5zaWduZWQgaW50Ci0JbGdmcgklcjQsJXI0CQkJIyBsb25nCisJbGdmcgkl
-cjQsJXI0CQkJIyBpbnQKIAlqZwlzeXNfcG9sbAkJIyBicmFuY2ggdG8gc3lzdGVtIGNhbGwKIAog
-RU5UUlkoc3lzMzJfc2V0cmVzZ2lkMTZfd3JhcHBlcikKZGlmZiAtLWdpdCBhL2ZzL3NlbGVjdC5j
-IGIvZnMvc2VsZWN0LmMKaW5kZXggZDMzNDE4ZmRjODU4Li5lNzgyMjU4ZDBkZTMgMTAwNjQ0Ci0t
-LSBhL2ZzL3NlbGVjdC5jCisrKyBiL2ZzL3NlbGVjdC5jCkBAIC05MTIsNyArOTEyLDcgQEAgc3Rh
-dGljIGxvbmcgZG9fcmVzdGFydF9wb2xsKHN0cnVjdCByZXN0YXJ0X2Jsb2NrICpyZXN0YXJ0X2Js
-b2NrKQogfQogCiBTWVNDQUxMX0RFRklORTMocG9sbCwgc3RydWN0IHBvbGxmZCBfX3VzZXIgKiwg
-dWZkcywgdW5zaWduZWQgaW50LCBuZmRzLAotCQlsb25nLCB0aW1lb3V0X21zZWNzKQorCQlpbnQs
-IHRpbWVvdXRfbXNlY3MpCiB7CiAJc3RydWN0IHRpbWVzcGVjIGVuZF90aW1lLCAqdG8gPSBOVUxM
-OwogCWludCByZXQ7CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3N5c2NhbGxzLmggYi9pbmNs
-dWRlL2xpbnV4L3N5c2NhbGxzLmgKaW5kZXggNTE1NjY5ZmEzYzFkLi44ZWMxMTUzZmY1N2IgMTAw
-NjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvc3lzY2FsbHMuaAorKysgYi9pbmNsdWRlL2xpbnV4L3N5
-c2NhbGxzLmgKQEAgLTYyNCw3ICs2MjQsNyBAQCBhc21saW5rYWdlIGxvbmcgc3lzX3NvY2tldHBh
-aXIoaW50LCBpbnQsIGludCwgaW50IF9fdXNlciAqKTsKIGFzbWxpbmthZ2UgbG9uZyBzeXNfc29j
-a2V0Y2FsbChpbnQgY2FsbCwgdW5zaWduZWQgbG9uZyBfX3VzZXIgKmFyZ3MpOwogYXNtbGlua2Fn
-ZSBsb25nIHN5c19saXN0ZW4oaW50LCBpbnQpOwogYXNtbGlua2FnZSBsb25nIHN5c19wb2xsKHN0
-cnVjdCBwb2xsZmQgX191c2VyICp1ZmRzLCB1bnNpZ25lZCBpbnQgbmZkcywKLQkJCQlsb25nIHRp
-bWVvdXQpOworCQkJCWludCB0aW1lb3V0KTsKIGFzbWxpbmthZ2UgbG9uZyBzeXNfc2VsZWN0KGlu
-dCBuLCBmZF9zZXQgX191c2VyICppbnAsIGZkX3NldCBfX3VzZXIgKm91dHAsCiAJCQlmZF9zZXQg
-X191c2VyICpleHAsIHN0cnVjdCB0aW1ldmFsIF9fdXNlciAqdHZwKTsKIGFzbWxpbmthZ2UgbG9u
-ZyBzeXNfb2xkX3NlbGVjdChzdHJ1Y3Qgc2VsX2FyZ19zdHJ1Y3QgX191c2VyICphcmcpOwo=
---0016e6d62584175c0304b9812410--
+-- 
+Kees Cook
+ChromeOS Security
