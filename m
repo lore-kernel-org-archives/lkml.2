@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2BUFnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 00:43:24 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:39166 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751800Ab2BUFnW (ORCPT
+	id S1751955Ab2BUFvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 00:51:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:45053 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733Ab2BUFvk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 00:43:22 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18ab6Y7N30a94CiQEohpb6aRIjHKDQ2SreCzMWE6F
-	NG4BZubdL4MoRr
-Message-ID: <1329802998.7333.1.camel@marge.simpson.net>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Date: Tue, 21 Feb 2012 06:43:18 +0100
-In-Reply-To: <1329764866.2293.376.camel@twins>
-References: <1321350377.1421.55.camel@twins>
-	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
-	 <1321435455.5072.64.camel@marge.simson.net>
-	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1329748861.2293.345.camel@twins>
-	 <1329761661.6276.146.camel@marge.simpson.net>
-	 <1329764866.2293.376.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Tue, 21 Feb 2012 00:51:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108823105"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Thread-Topic: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Thread-Index: AQHM7zOZqETlTTaR00eoPTQ1GukvM5ZG0aeQ
+Date: Tue, 21 Feb 2012 05:49:58 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120217142909.GA29110@phenom.dumpdata.com>
+ <20120217144742.GA29454@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
+ <20120219182339.GA11882@phenom.dumpdata.com>
+In-Reply-To: <20120219182339.GA11882@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 20:07 +0100, Peter Zijlstra wrote: 
-> On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
-> > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
-> > Maybe that has changed, but I doubt it.
+Konrad Rzeszutek Wilk wrote:
+>>>>> +struct pv_pad_ops {
+>>>>> +	int (*acpi_pad_init)(void);
+>>>>> +	void (*acpi_pad_exit)(void);
+>>>>> +};
+>>>>> +
+>>> 
+>>> Looking at this a bit closer I am not sure why you choose the
+>>> paravirt interface for this? There is another one - the x86 that
+>>> could have been choosen. Or introduce a new one that is specific to
+>>> ACPI. 
+>>> 
+>>> I am curious - what was the reason for using the paravirt interface?
+>>> I understand it does get the job done, but it seems a bit overkill
+>>> when something simple could have been used?
+>>> 
+>> 
+>> It uses paravirt interface to avoid some code like 'xen_...' in
+>> native code path (acpi_pad.c). 
+>> I'm not quite sure what does 'x86' here mean? Adding 2 fields
+>> (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops?
+>> seems it's much simpler.  
 > 
-> Right, I through I remembered some such, you could see it on wakeup
-> heavy things like pipe-bench and that java msg passing thing, right?
+> arch/x86/include/asm/x86_init.h
+> 
+> But before you go that way let me ask you another question - can ACPI
+> PAD 
+> be used on ARM or IA64? If so, wouldn't this fail compilation as this
+> pvops structure is not defined on IA64?
 
-Yeah, it beat up switch heavy buddies pretty bad.
+Ideally ACPI PAD is not bound to some arch, so IMO it could be used at least on IA64 (through currently no real PAD on IA64 platform as far as I know).
+However, in native acpi_pad implementation, it indeed depends on X86 for reason like mwait.
+So for xen acpi_pad, I think it's OK to choose x86, defining an acpi_pad_ops at x86_init.c which would be overwritten when xen init.
 
--Mike
+Another choice is to define config ACPI_PROCESSOR_AGGREGATOR as 'bool', which would disable native acpi_pad module.
 
+Your opinion?
+
+Thanks,
+Jinsong
+
+> 
+> The other thing I am not comfortable about is that the pvops structure
+> are used for low-level code. Not for higher up, like ACPI. For that
+> another structure seems more prudent. Perhaps something like the x86
+> one, but specific to ACPI?
 
