@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab2BUPIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 10:08:06 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:34148 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab2BUPIE (ORCPT
+	id S1755534Ab2BUPQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 10:16:53 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37704 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab2BUPQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 10:08:04 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cywang@google.com designates 10.236.145.135 as permitted sender) smtp.mail=cywang@google.com
+	Tue, 21 Feb 2012 10:16:51 -0500
+Date: Tue, 21 Feb 2012 10:14:36 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-02-20
+Message-ID: <20120221151435.GA19354@tuxdriver.com>
+References: <20120220203740.GD6740@tuxdriver.com>
+ <20120220.192324.498901675497866305.davem@davemloft.net>
 MIME-Version: 1.0
-From: Chung-yih Wang <cywang@chromium.org>
-To: Alessandro Rubini <rubini@cvml.unipv.it>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
-        Chung-yih Wang <cywang@chromium.org>
-Subject: [PATCH] CHROMIUM: Input: synaptics - filter out the events with low z values
-Date: Tue, 21 Feb 2012 23:07:38 +0800
-Message-Id: <1329836858-9369-1-git-send-email-cywang@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120220.192324.498901675497866305.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The single touch path imposes a minimum z value (with hysterisis) before
-registering BTN_TOUCH. Apply the same (hard coded) threshold when
-deciding how many fingers to report in the semi-mt path.
+On Mon, Feb 20, 2012 at 07:23:24PM -0500, David Miller wrote:
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Mon, 20 Feb 2012 15:37:40 -0500
+> 
+> > Here is another batch of fixes intended for 3.3.  Most of the fixes
+> > this time are for Bluetooth.
+> 
+> Pulled, but please read the bluetooth changes more carefully in the
+> future, there were a lot of coding style errors introduced this
+> time around.
 
-This patch improves performance of the Google Cr-48 chromebook's
-extremely sensitive Synaptics profile sensor touchpad by filtering out
-touch events for hovering fingers.
+I pinged Johan about this, and he tells me that he spoke to Marcel
+as well.  They were a bit unsure about the issue.  Is your concern
+primarily about some excessive tabbing for indentation of parameters
+and such?
 
-Note: We continue to use the same hard coded threshold value used in the
-single touch case as it appears this works just as well on these
-multitouch profile sensor pads as on whatever pads it was originally
-discovered.
-
-Signed-off-by: Chung-Yih Wang <cywang@chromium.org>
----
- drivers/input/mouse/synaptics.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 8081a0a..7936a1a 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -568,17 +568,22 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
- 	}
- }
- 
-+static bool finger_touched(const struct synaptics_hw_state *hw)
-+{
-+	return (hw->z > 30);
-+}
-+
- static void synaptics_report_semi_mt_data(struct input_dev *dev,
- 					  const struct synaptics_hw_state *a,
- 					  const struct synaptics_hw_state *b,
- 					  int num_fingers)
- {
--	if (num_fingers >= 2) {
-+	if ((num_fingers >= 2) && finger_touched(a) && finger_touched(b)) {
- 		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
- 					      min(a->y, b->y));
- 		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
- 					      max(a->y, b->y));
--	} else if (num_fingers == 1) {
-+	} else if ((num_fingers == 1) && finger_touched(a)) {
- 		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
- 		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
- 	} else {
-@@ -1040,7 +1045,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
- 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
- 	 * absolute -> relative conversion
- 	 */
--	if (hw.z > 30) input_report_key(dev, BTN_TOUCH, 1);
-+	if (finger_touched(&hw))
-+		input_report_key(dev, BTN_TOUCH, 1);
- 	if (hw.z < 25) input_report_key(dev, BTN_TOUCH, 0);
- 
- 	if (num_fingers > 0) {
+John
 -- 
-1.7.7.3
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
