@@ -1,58 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab2BUF1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 00:27:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40505 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab2BUF1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 00:27:40 -0500
-Message-ID: <4F432B27.4000708@zytor.com>
-Date: Mon, 20 Feb 2012 21:27:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1751912Ab2BUF2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 00:28:21 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56691 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab2BUF2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 00:28:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.92.229 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
-        thomas@m3y3r.de, linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.3-rc4
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com> <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de> <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com> <20120219.144947.660678318380307878.davem@davemloft.net> <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com> <1329794974.2226.11.camel@perseus.themaw.net> <CA+55aFxDXcgOHRk5aPV5aGEDT3chXgcq_ktHKutk7OcyRjDUUw@mail.gmail.com> <1329796956.2226.20.camel@perseus.themaw.net> <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com> <1329799959.2226.32.camel@perseus.themaw.net> <CA+55aFwBD7pbOcSUVguF+vFAs85JhNpjJgZtDKjEJA0PVXrhkw@mail.gmail.com> <CA+55aFzcWjPrK4csbThuGimt6bHC+bcgFhj-r8d3M1MxhN_HKg@mail.gmail.com>
-In-Reply-To: <CA+55aFzcWjPrK4csbThuGimt6bHC+bcgFhj-r8d3M1MxhN_HKg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F42FE08.5020309@zytor.com>
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
+ <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
+ <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 20 Feb 2012 21:27:56 -0800
+X-Google-Sender-Auth: yu1yV_DSjU_qxC51cCKETPxyWFg
+Message-ID: <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=f46d043c094e92862f04b972ad2f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2012 09:21 PM, Linus Torvalds wrote:
-> On Mon, Feb 20, 2012 at 9:06 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+--f46d043c094e92862f04b972ad2f
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Mon, Feb 20, 2012 at 6:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/20/2012 06:10 PM, Linus Torvalds wrote:
 >>
->> So it really is limited to only x86.
-> 
-> Oh, and if people really are using "uname()" to figure out that they
-> are running a 64-bit kernel, then we should probably make uname() use
-> "is_compat_task()" instead of checking the PER_LINUX32 personality.
-> 
-> So we already do have support for returning a different machine-name
-> to 32-bit binaries, but it uses the "personality" thing that nobody
-> cares about, rather than the compat layer. Looks like purely
-> historical reasons.
-> 
+>> Although I do wonder if we should just make kernel_fpu_begin() be a
+>> real function instead of inlining it. I'm not sure it makes sense to
+>> inline that thing, and it might be better to export that one instead.
+>> Comments?
+>
+> I would agree with that.
 
-No, it serves a real function.  I use both directions of this to deal
-with various compatibility things.  PER_LINUX32 lets you run, say, an
-installer as if it was on a 32-bit program, even if it is written in a
-scripting language (and hence running a native 64-bit interpreter).
-Similarly, a 32-bit legacy binary can still function as part of a bigger
-64-bit system.
+So I have a patch that does that, but it's noticeably bigger.
 
-So let's not change that just because someone did something idiotic.
+It uninlines a fair amount of i387.h, and moves it into i387.c. I do
+think it's probably the right thing to do, though.
 
-	-hpa
+I did a "make allmodconfig" with this on x86-64, but it's quite
+possible that x86-32 does additional cases. Does this patch work for
+people?
 
+(This is *on*top*of* the quick "let's just get it to work" patch that
+just exports the new percpu variable. I already committed that and
+pushed it out, since I wanted a quick fix so that people wouldn't be
+held up by this)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+IOW, if you can try this on top of current -git, that would be lovely.
 
+                         Linus
+
+--f46d043c094e92862f04b972ad2f
+Content-Type: text/x-patch; charset=US-ASCII; name="uninline-i387.diff"
+Content-Disposition: attachment; filename="uninline-i387.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gywhsksl0
+
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL2kzODcuaCAgfCAgIDc4ICsrLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0KIGFyY2gveDg2L2tlcm5lbC9jcHUvY29tbW9uLmMgfCAgICAy
+IC0KIGFyY2gveDg2L2tlcm5lbC9pMzg3LmMgICAgICAgfCAgIDgwICsrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKwogMyBmaWxlcyBjaGFuZ2VkLCA4NCBpbnNlcnRpb25z
+KCspLCA3NiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9p
+Mzg3LmggYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9pMzg3LmgKaW5kZXggMjQ3OTA0OTQ1ZDNmLi4w
+YzEwMzFkMzU0ZjIgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL2kzODcuaAorKysg
+Yi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9pMzg3LmgKQEAgLTQxOSw3MCArNDE5LDkgQEAgc3RhdGlj
+IGlubGluZSB2b2lkIF9fY2xlYXJfZnB1KHN0cnVjdCB0YXNrX3N0cnVjdCAqdHNrKQogCX0KIH0K
+IAotLyoKLSAqIFdlcmUgd2UgaW4gYW4gaW50ZXJydXB0IHRoYXQgaW50ZXJydXB0ZWQga2VybmVs
+IG1vZGU/Ci0gKgotICogV2UgY2FuIGRvIGEga2VybmVsX2ZwdV9iZWdpbi9lbmQoKSBwYWlyICpP
+TkxZKiBpZiB0aGF0Ci0gKiBwYWlyIGRvZXMgbm90aGluZyBhdCBhbGw6IHRoZSB0aHJlYWQgbXVz
+dCBub3QgaGF2ZSBmcHUgKHNvCi0gKiB0aGF0IHdlIGRvbid0IHRyeSB0byBzYXZlIHRoZSBGUFUg
+c3RhdGUpLCBhbmQgVFMgbXVzdAotICogYmUgc2V0IChzbyB0aGF0IHRoZSBjbHRzL3N0dHMgcGFp
+ciBkb2VzIG5vdGhpbmcgdGhhdCBpcwotICogdmlzaWJsZSBpbiB0aGUgaW50ZXJydXB0ZWQga2Vy
+bmVsIHRocmVhZCkuCi0gKi8KLXN0YXRpYyBpbmxpbmUgYm9vbCBpbnRlcnJ1cHRlZF9rZXJuZWxf
+ZnB1X2lkbGUodm9pZCkKLXsKLQlyZXR1cm4gIV9fdGhyZWFkX2hhc19mcHUoY3VycmVudCkgJiYK
+LQkJKHJlYWRfY3IwKCkgJiBYODZfQ1IwX1RTKTsKLX0KLQotLyoKLSAqIFdlcmUgd2UgaW4gdXNl
+ciBtb2RlIChvciB2bTg2IG1vZGUpIHdoZW4gd2Ugd2VyZQotICogaW50ZXJydXB0ZWQ/Ci0gKgot
+ICogRG9pbmcga2VybmVsX2ZwdV9iZWdpbi9lbmQoKSBpcyBvayBpZiB3ZSBhcmUgcnVubmluZwot
+ICogaW4gYW4gaW50ZXJydXB0IGNvbnRleHQgZnJvbSB1c2VyIG1vZGUgLSB3ZSdsbCBqdXN0Ci0g
+KiBzYXZlIHRoZSBGUFUgc3RhdGUgYXMgcmVxdWlyZWQuCi0gKi8KLXN0YXRpYyBpbmxpbmUgYm9v
+bCBpbnRlcnJ1cHRlZF91c2VyX21vZGUodm9pZCkKLXsKLQlzdHJ1Y3QgcHRfcmVncyAqcmVncyA9
+IGdldF9pcnFfcmVncygpOwotCXJldHVybiByZWdzICYmIHVzZXJfbW9kZV92bShyZWdzKTsKLX0K
+LQotLyoKLSAqIENhbiB3ZSB1c2UgdGhlIEZQVSBpbiBrZXJuZWwgbW9kZSB3aXRoIHRoZQotICog
+d2hvbGUgImtlcm5lbF9mcHVfYmVnaW4vZW5kKCkiIHNlcXVlbmNlPwotICoKLSAqIEl0J3MgYWx3
+YXlzIG9rIGluIHByb2Nlc3MgY29udGV4dCAoaWUgIm5vdCBpbnRlcnJ1cHQiKQotICogYnV0IGl0
+IGlzIHNvbWV0aW1lcyBvayBldmVuIGZyb20gYW4gaXJxLgotICovCi1zdGF0aWMgaW5saW5lIGJv
+b2wgaXJxX2ZwdV91c2FibGUodm9pZCkKLXsKLQlyZXR1cm4gIWluX2ludGVycnVwdCgpIHx8Ci0J
+CWludGVycnVwdGVkX3VzZXJfbW9kZSgpIHx8Ci0JCWludGVycnVwdGVkX2tlcm5lbF9mcHVfaWRs
+ZSgpOwotfQotCi1zdGF0aWMgaW5saW5lIHZvaWQga2VybmVsX2ZwdV9iZWdpbih2b2lkKQotewot
+CXN0cnVjdCB0YXNrX3N0cnVjdCAqbWUgPSBjdXJyZW50OwotCi0JV0FSTl9PTl9PTkNFKCFpcnFf
+ZnB1X3VzYWJsZSgpKTsKLQlwcmVlbXB0X2Rpc2FibGUoKTsKLQlpZiAoX190aHJlYWRfaGFzX2Zw
+dShtZSkpIHsKLQkJX19zYXZlX2luaXRfZnB1KG1lKTsKLQkJX190aHJlYWRfY2xlYXJfaGFzX2Zw
+dShtZSk7Ci0JCS8qIFdlIGRvICdzdHRzKCknIGluIGtlcm5lbF9mcHVfZW5kKCkgKi8KLQl9IGVs
+c2UgewotCQlwZXJjcHVfd3JpdGUoZnB1X293bmVyX3Rhc2ssIE5VTEwpOwotCQljbHRzKCk7Ci0J
+fQotfQotCi1zdGF0aWMgaW5saW5lIHZvaWQga2VybmVsX2ZwdV9lbmQodm9pZCkKLXsKLQlzdHRz
+KCk7Ci0JcHJlZW1wdF9lbmFibGUoKTsKLX0KK2V4dGVybiBib29sIGlycV9mcHVfdXNhYmxlKHZv
+aWQpOworZXh0ZXJuIHZvaWQga2VybmVsX2ZwdV9iZWdpbih2b2lkKTsKK2V4dGVybiB2b2lkIGtl
+cm5lbF9mcHVfZW5kKHZvaWQpOwogCiAvKgogICogU29tZSBpbnN0cnVjdGlvbnMgbGlrZSBWSUEn
+cyBwYWRsb2NrIGluc3RydWN0aW9ucyBnZW5lcmF0ZSBhIHNwdXJpb3VzCkBAIC01NjYsMTYgKzUw
+NSw3IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBzYXZlX2luaXRfZnB1KHN0cnVjdCB0YXNrX3N0cnVj
+dCAqdHNrKQogCXByZWVtcHRfZW5hYmxlKCk7CiB9CiAKLXN0YXRpYyBpbmxpbmUgdm9pZCB1bmxh
+enlfZnB1KHN0cnVjdCB0YXNrX3N0cnVjdCAqdHNrKQotewotCXByZWVtcHRfZGlzYWJsZSgpOwot
+CWlmIChfX3RocmVhZF9oYXNfZnB1KHRzaykpIHsKLQkJX19zYXZlX2luaXRfZnB1KHRzayk7Ci0J
+CV9fdGhyZWFkX2ZwdV9lbmQodHNrKTsKLQl9IGVsc2UKLQkJdHNrLT5mcHVfY291bnRlciA9IDA7
+Ci0JcHJlZW1wdF9lbmFibGUoKTsKLX0KK2V4dGVybiB2b2lkIHVubGF6eV9mcHUoc3RydWN0IHRh
+c2tfc3RydWN0ICp0c2spOwogCiBzdGF0aWMgaW5saW5lIHZvaWQgY2xlYXJfZnB1KHN0cnVjdCB0
+YXNrX3N0cnVjdCAqdHNrKQogewpkaWZmIC0tZ2l0IGEvYXJjaC94ODYva2VybmVsL2NwdS9jb21t
+b24uYyBiL2FyY2gveDg2L2tlcm5lbC9jcHUvY29tbW9uLmMKaW5kZXggYzBmN2Q2OGQzMThmLi5j
+YjcxYjAxYWI2NmUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tlcm5lbC9jcHUvY29tbW9uLmMKKysr
+IGIvYXJjaC94ODYva2VybmVsL2NwdS9jb21tb24uYwpAQCAtMTA0NSw3ICsxMDQ1LDYgQEAgREVG
+SU5FX1BFUl9DUFUoY2hhciAqLCBpcnFfc3RhY2tfcHRyKSA9CiBERUZJTkVfUEVSX0NQVSh1bnNp
+Z25lZCBpbnQsIGlycV9jb3VudCkgPSAtMTsKIAogREVGSU5FX1BFUl9DUFUoc3RydWN0IHRhc2tf
+c3RydWN0ICosIGZwdV9vd25lcl90YXNrKTsKLUVYUE9SVF9QRVJfQ1BVX1NZTUJPTChmcHVfb3du
+ZXJfdGFzayk7CiAKIC8qCiAgKiBTcGVjaWFsIElTVCBzdGFja3Mgd2hpY2ggdGhlIENQVSBzd2l0
+Y2hlcyB0byB3aGVuIGl0IGNhbGxzCkBAIC0xMTE1LDcgKzExMTQsNiBAQCB2b2lkIGRlYnVnX3N0
+YWNrX3Jlc2V0KHZvaWQpCiBERUZJTkVfUEVSX0NQVShzdHJ1Y3QgdGFza19zdHJ1Y3QgKiwgY3Vy
+cmVudF90YXNrKSA9ICZpbml0X3Rhc2s7CiBFWFBPUlRfUEVSX0NQVV9TWU1CT0woY3VycmVudF90
+YXNrKTsKIERFRklORV9QRVJfQ1BVKHN0cnVjdCB0YXNrX3N0cnVjdCAqLCBmcHVfb3duZXJfdGFz
+ayk7Ci1FWFBPUlRfUEVSX0NQVV9TWU1CT0woZnB1X293bmVyX3Rhc2spOwogCiAjaWZkZWYgQ09O
+RklHX0NDX1NUQUNLUFJPVEVDVE9SCiBERUZJTkVfUEVSX0NQVV9BTElHTkVEKHN0cnVjdCBzdGFj
+a19jYW5hcnksIHN0YWNrX2NhbmFyeSk7CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvaTM4
+Ny5jIGIvYXJjaC94ODYva2VybmVsL2kzODcuYwppbmRleCA3MzlkODU5OGY3ODkuLjE3Yjc1NDlj
+NDEzNCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL2kzODcuYworKysgYi9hcmNoL3g4Ni9r
+ZXJuZWwvaTM4Ny5jCkBAIC0zMiw2ICszMiw4NiBAQAogIyBkZWZpbmUgdXNlcjMyX2Z4c3Jfc3Ry
+dWN0CXVzZXJfZnhzcl9zdHJ1Y3QKICNlbmRpZgogCisvKgorICogV2VyZSB3ZSBpbiBhbiBpbnRl
+cnJ1cHQgdGhhdCBpbnRlcnJ1cHRlZCBrZXJuZWwgbW9kZT8KKyAqCisgKiBXZSBjYW4gZG8gYSBr
+ZXJuZWxfZnB1X2JlZ2luL2VuZCgpIHBhaXIgKk9OTFkqIGlmIHRoYXQKKyAqIHBhaXIgZG9lcyBu
+b3RoaW5nIGF0IGFsbDogdGhlIHRocmVhZCBtdXN0IG5vdCBoYXZlIGZwdSAoc28KKyAqIHRoYXQg
+d2UgZG9uJ3QgdHJ5IHRvIHNhdmUgdGhlIEZQVSBzdGF0ZSksIGFuZCBUUyBtdXN0CisgKiBiZSBz
+ZXQgKHNvIHRoYXQgdGhlIGNsdHMvc3R0cyBwYWlyIGRvZXMgbm90aGluZyB0aGF0IGlzCisgKiB2
+aXNpYmxlIGluIHRoZSBpbnRlcnJ1cHRlZCBrZXJuZWwgdGhyZWFkKS4KKyAqLworc3RhdGljIGlu
+bGluZSBib29sIGludGVycnVwdGVkX2tlcm5lbF9mcHVfaWRsZSh2b2lkKQoreworCXJldHVybiAh
+X190aHJlYWRfaGFzX2ZwdShjdXJyZW50KSAmJgorCQkocmVhZF9jcjAoKSAmIFg4Nl9DUjBfVFMp
+OworfQorCisvKgorICogV2VyZSB3ZSBpbiB1c2VyIG1vZGUgKG9yIHZtODYgbW9kZSkgd2hlbiB3
+ZSB3ZXJlCisgKiBpbnRlcnJ1cHRlZD8KKyAqCisgKiBEb2luZyBrZXJuZWxfZnB1X2JlZ2luL2Vu
+ZCgpIGlzIG9rIGlmIHdlIGFyZSBydW5uaW5nCisgKiBpbiBhbiBpbnRlcnJ1cHQgY29udGV4dCBm
+cm9tIHVzZXIgbW9kZSAtIHdlJ2xsIGp1c3QKKyAqIHNhdmUgdGhlIEZQVSBzdGF0ZSBhcyByZXF1
+aXJlZC4KKyAqLworc3RhdGljIGlubGluZSBib29sIGludGVycnVwdGVkX3VzZXJfbW9kZSh2b2lk
+KQoreworCXN0cnVjdCBwdF9yZWdzICpyZWdzID0gZ2V0X2lycV9yZWdzKCk7CisJcmV0dXJuIHJl
+Z3MgJiYgdXNlcl9tb2RlX3ZtKHJlZ3MpOworfQorCisvKgorICogQ2FuIHdlIHVzZSB0aGUgRlBV
+IGluIGtlcm5lbCBtb2RlIHdpdGggdGhlCisgKiB3aG9sZSAia2VybmVsX2ZwdV9iZWdpbi9lbmQo
+KSIgc2VxdWVuY2U/CisgKgorICogSXQncyBhbHdheXMgb2sgaW4gcHJvY2VzcyBjb250ZXh0IChp
+ZSAibm90IGludGVycnVwdCIpCisgKiBidXQgaXQgaXMgc29tZXRpbWVzIG9rIGV2ZW4gZnJvbSBh
+biBpcnEuCisgKi8KK2Jvb2wgaXJxX2ZwdV91c2FibGUodm9pZCkKK3sKKwlyZXR1cm4gIWluX2lu
+dGVycnVwdCgpIHx8CisJCWludGVycnVwdGVkX3VzZXJfbW9kZSgpIHx8CisJCWludGVycnVwdGVk
+X2tlcm5lbF9mcHVfaWRsZSgpOworfQorRVhQT1JUX1NZTUJPTChpcnFfZnB1X3VzYWJsZSk7CisK
+K3ZvaWQga2VybmVsX2ZwdV9iZWdpbih2b2lkKQoreworCXN0cnVjdCB0YXNrX3N0cnVjdCAqbWUg
+PSBjdXJyZW50OworCisJV0FSTl9PTl9PTkNFKCFpcnFfZnB1X3VzYWJsZSgpKTsKKwlwcmVlbXB0
+X2Rpc2FibGUoKTsKKwlpZiAoX190aHJlYWRfaGFzX2ZwdShtZSkpIHsKKwkJX19zYXZlX2luaXRf
+ZnB1KG1lKTsKKwkJX190aHJlYWRfY2xlYXJfaGFzX2ZwdShtZSk7CisJCS8qIFdlIGRvICdzdHRz
+KCknIGluIGtlcm5lbF9mcHVfZW5kKCkgKi8KKwl9IGVsc2UgeworCQlwZXJjcHVfd3JpdGUoZnB1
+X293bmVyX3Rhc2ssIE5VTEwpOworCQljbHRzKCk7CisJfQorfQorRVhQT1JUX1NZTUJPTChrZXJu
+ZWxfZnB1X2JlZ2luKTsKKwordm9pZCBrZXJuZWxfZnB1X2VuZCh2b2lkKQoreworCXN0dHMoKTsK
+KwlwcmVlbXB0X2VuYWJsZSgpOworfQorRVhQT1JUX1NZTUJPTChrZXJuZWxfZnB1X2VuZCk7CisK
+K3ZvaWQgdW5sYXp5X2ZwdShzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaykKK3sKKwlwcmVlbXB0X2Rp
+c2FibGUoKTsKKwlpZiAoX190aHJlYWRfaGFzX2ZwdSh0c2spKSB7CisJCV9fc2F2ZV9pbml0X2Zw
+dSh0c2spOworCQlfX3RocmVhZF9mcHVfZW5kKHRzayk7CisJfSBlbHNlCisJCXRzay0+ZnB1X2Nv
+dW50ZXIgPSAwOworCXByZWVtcHRfZW5hYmxlKCk7Cit9CitFWFBPUlRfU1lNQk9MKHVubGF6eV9m
+cHUpOworCiAjaWZkZWYgQ09ORklHX01BVEhfRU1VTEFUSU9OCiAjIGRlZmluZSBIQVZFX0hXRlAJ
+CShib290X2NwdV9kYXRhLmhhcmRfbWF0aCkKICNlbHNlCg==
+--f46d043c094e92862f04b972ad2f--
