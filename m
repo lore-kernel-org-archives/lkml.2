@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab2BUWsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:48:10 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55942 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752245Ab2BUWsI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:48:08 -0500
+	id S932122Ab2BUXDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 18:03:00 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35715 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755070Ab2BUXC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 18:02:59 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Marcos Paulo de Souza <marcos.mage@gmail.com>
+Subject: Re: [PATCH] PM/Freezer: Remove references to TIF_FREEZE in comments
+Date: Wed, 22 Feb 2012 00:06:55 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: len.brown@intel.com, pavel@ucw.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+References: <1329860115-2130-1-git-send-email-marcos.mage@gmail.com>
+In-Reply-To: <1329860115-2130-1-git-send-email-marcos.mage@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120221224128.GJ3990@outflux.net>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-	<1329845435-2313-6-git-send-email-wad@chromium.org>
-	<20120221224128.GJ3990@outflux.net>
-Date: Tue, 21 Feb 2012 16:48:05 -0600
-Message-ID: <CABqD9hburo_4Yz+figsSOExun3ckft3UrZpOZTw+aywmCKy-rg@mail.gmail.com>
-Subject: Re: [PATCH v10 06/11] seccomp: add SECCOMP_RET_ERRNO
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202220006.56033.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 4:41 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Feb 21, 2012 at 11:30:30AM -0600, Will Drewry wrote:
->> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
->> index 0043b7e..23f1844 100644
->> --- a/kernel/seccomp.c
->> +++ b/kernel/seccomp.c
->> @@ -136,22 +136,18 @@ static void *bpf_load(const void *nr, int off, unsigned int size, void *buf)
->>  static u32 seccomp_run_filters(int syscall)
->>  {
->>       struct seccomp_filter *f;
->> -     u32 ret = SECCOMP_RET_KILL;
->>       static const struct bpf_load_fn fns = {
->>               bpf_load,
->>               sizeof(struct seccomp_data),
->>       };
->> +     u32 ret = SECCOMP_RET_ALLOW;
->>       const void *sc_ptr = (const void *)(uintptr_t)syscall;
->> -
->>       /*
->>        * All filters are evaluated in order of youngest to oldest. The lowest
->>        * BPF return value always takes priority.
->>        */
->> -     for (f = current->seccomp.filter; f; f = f->prev) {
->> -             ret = bpf_run_filter(sc_ptr, f->insns, &fns);
->> -             if (ret != SECCOMP_RET_ALLOW)
->> -                     break;
->> -     }
->> +     for (f = current->seccomp.filter; f; f = f->prev)
->> +             ret = min_t(u32, ret, bpf_run_filter(sc_ptr, f->insns, &fns));
->>       return ret;
->>  }
->
-> I'd like to see this fail closed in the (theoretically impossible, but
-> why risk it) case of there being no filters at all. Could do something
-> like this:
->
->        u32 ret = current->seccomp.filter ? SECCOMP_RET_ALLOW : SECCOMP_RET_KILL;
->
-> Or, just this, to catch the misbehavior:
->
->        if (unlikely(current->seccomp.filter == NULL))
->                return SECCOMP_RET_KILL;
+On Tuesday, February 21, 2012, Marcos Paulo de Souza wrote:
+> This patch removes all the references in the code about TIF_FREEZE(flag removed by
+> the commit a3201227f803ad7fd43180c5195dbe5a2bf998aa).
+> 
+> Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
 
-I think the last one makes the most sense to me.  I'll add it and rev the patch.
+Applied.
 
-thanks!
+Thanks,
+Rafael
+
+
+> ---
+> 
+> Sent again to put lkml and linux-pm int cc'ing... Sorry for it...
+> 
+> 
+> Still there are some references to TIF_FREEZE in 
+> Documentation/power/freezing-of-tasks.txt, but it looks like that documentation
+> needs a more thorough work to reflect how the new freezer works, and hence merely
+> removing the references to TIF_FREEZE won't really help. So I have not touched that
+> part in this patch.
+> 
+>  kernel/exit.c          |    2 +-
+>  kernel/freezer.c       |    6 +++---
+>  kernel/power/process.c |    8 +++-----
+>  3 files changed, 7 insertions(+), 9 deletions(-)
+> 
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 4b4042f..8e6b0e6 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -424,7 +424,7 @@ void daemonize(const char *name, ...)
+>  	 */
+>  	exit_mm(current);
+>  	/*
+> -	 * We don't want to have TIF_FREEZE set if the system-wide hibernation
+> +	 * We don't want to get frozen, in case system-wide hibernation
+>  	 * or suspend transition begins right now.
+>  	 */
+>  	current->flags |= (PF_NOFREEZE | PF_KTHREAD);
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index 9815b8d..11f82a4 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -99,9 +99,9 @@ static void fake_signal_wake_up(struct task_struct *p)
+>   * freeze_task - send a freeze request to given task
+>   * @p: task to send the request to
+>   *
+> - * If @p is freezing, the freeze request is sent by setting %TIF_FREEZE
+> - * flag and either sending a fake signal to it or waking it up, depending
+> - * on whether it has %PF_FREEZER_NOSIG set.
+> + * If @p is freezing, the freeze request is sent either by sending a fake
+> + * signal (if it's not a kernel thread) or waking it up (if it's a kernel
+> + * thread).
+>   *
+>   * RETURNS:
+>   * %false, if @p is not freezing or already frozen; %true, otherwise
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index 7e42645..ccb8088 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -53,11 +53,9 @@ static int try_to_freeze_tasks(bool user_only)
+>  			 * It is "frozen enough".  If the task does wake
+>  			 * up, it will immediately call try_to_freeze.
+>  			 *
+> -			 * Because freeze_task() goes through p's
+> -			 * scheduler lock after setting TIF_FREEZE, it's
+> -			 * guaranteed that either we see TASK_RUNNING or
+> -			 * try_to_stop() after schedule() in ptrace/signal
+> -			 * stop sees TIF_FREEZE.
+> +			 * Because freeze_task() goes through p's scheduler lock, it's
+> +			 * guaranteed that TASK_STOPPED/TRACED -> TASK_RUNNING
+> +			 * transition can't race with task state testing here.
+>  			 */
+>  			if (!task_is_stopped_or_traced(p) &&
+>  			    !freezer_should_skip(p))
+> 
+
