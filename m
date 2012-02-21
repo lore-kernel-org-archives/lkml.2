@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2BUTFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:05:49 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36828 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770Ab2BUTFr (ORCPT
+	id S1755843Ab2BUTHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:07:01 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46458 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755770Ab2BUTG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:05:47 -0500
-Date: Tue, 21 Feb 2012 17:05:25 -0200
+	Tue, 21 Feb 2012 14:06:59 -0500
+Date: Tue, 21 Feb 2012 17:06:54 -0200
 From: Gustavo Padovan <padovan@profusion.mobi>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, hjl.tools@gmail.com,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 10/30] compat: Use COMPAT_USE_64BIT_TIME in the Bluetooth
- subsystem
-Message-ID: <20120221190419.GA2914@joana>
-Mail-Followup-To: "H. Peter Anvin" <hpa@zytor.com>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-	mingo@kernel.org, tglx@linutronix.de, torvalds@linux-foundation.org,
-	akpm@linux-foundation.org, hjl.tools@gmail.com,
+To: Keng-Yu Lin <kengyu@canonical.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Bluetooth: Add AR30XX device ID on Asus laptops
+Message-ID: <20120221190654.GB2914@joana>
+Mail-Followup-To: Keng-Yu Lin <kengyu@canonical.com>,
 	Marcel Holtmann <marcel@holtmann.org>,
-	"David S. Miller" <davem@davemloft.net>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
- <1329696488-16970-11-git-send-email-hpa@zytor.com>
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1321422409.15441.510.camel@aeonflux>
+ <1322649157-20479-1-git-send-email-kengyu@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329696488-16970-11-git-send-email-hpa@zytor.com>
+In-Reply-To: <1322649157-20479-1-git-send-email-kengyu@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Keng,
 
-* H. Peter Anvin <hpa@zytor.com> [2012-02-19 16:07:48 -0800]:
+* Keng-Yu Lin <kengyu@canonical.com> [2011-11-30 18:32:37 +0800]:
 
-> From: "H. J. Lu" <hjl.tools@gmail.com>
+> The ID is found on Asus K54HR and K53U.
+> Blacklist the AR3011-based device ID [0489:e03d]
+> and add to ath3k.c for firmware loading.
 > 
-> Enable the Bluetooth subsystem to be used with a compat ABI with
-> 64-bit time.
+> Below is the output of usb-devices script:
 > 
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: Gustavo F. Padovan <padovan@profusion.mobi>
-> Cc: David S. Miller <davem@davemloft.net>
+> Before the fiwmware loading:
+> 
+> T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0489 ProdID=e03d Rev=00.01
+> C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> 
+> After the fiwmware loading:
+> 
+> T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12  MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0cf3 ProdID=3005 Rev=00.01
+> C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> 
+> Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
 > ---
->  net/bluetooth/hci_sock.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+>  drivers/bluetooth/ath3k.c |    1 +
+>  drivers/bluetooth/btusb.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
 
 Applied, thanks.
 
