@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab2BUXga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 18:36:30 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35797 "EHLO ogre.sisk.pl"
+	id S1756283Ab2BUXg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 18:36:28 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35786 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab2BUXfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751884Ab2BUXfZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Feb 2012 18:35:25 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take 2
-Date: Wed, 22 Feb 2012 00:31:45 +0100
+Subject: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while event queue is not empty
+Date: Wed, 22 Feb 2012 00:34:58 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -19,151 +20,167 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl>
-In-Reply-To: <201202070200.55505.rjw@sisk.pl>
+References: <201202070200.55505.rjw@sisk.pl> <201202220031.46219.rjw@sisk.pl>
+In-Reply-To: <201202220031.46219.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202220031.46219.rjw@sisk.pl>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201202220034.58836.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Arve Hjønnevåg <arve@android.com>
 
-After the feedback so far I've decided to follow up with a refreshed patchset.
-The first two patches from the previous one went to linux-pm/linux-next
-and I included the recent evdev patch from Arve (with some modifications)
-to this patchset for completness.
+Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
+an evdev client event queue, such that it will be active whenever the
+queue is not empty.  Then, all events in the queue will be regarded
+as wakeup events in progress and pm_get_wakeup_count() will block (or
+return false if woken up by a signal) until they are removed from the
+queue.  In consequence, if the checking of wakeup events is enabled
+(e.g. throught the /sys/power/wakeup_count interface), the system
+won't be able to go into a sleep state until the queue is empty.
 
-On Tuesday, February 07, 2012, Rafael J. Wysocki wrote:
-> Hi all,
-> 
-> This series tests the theory that the easiest way to sell a once rejected
-> feature is to advertise it under a different name.
-> 
-> Well, there actually are two different features, although they are closely
-> related to each other.  First, patch [6/8] introduces a feature that allows
-> the kernel to trigger system suspend (or more generally a transition into
-> a sleep state) whenever there are no active wakeup sources (no, they aren't
-> called wakelocks).  It is called "autosleep" here, but it was called a few
-> different names in the past ("opportunistic suspend" was probably the most
-> popular one).  Second, patch [8/8] introduces "wake locks" that are,
-> essentially, wakeup sources which may be created and manipulated by user
-> space.  Using them user space may control the autosleep feature introduced
-> earlier.
-> 
-> This also is a kind of a proof of concept for the people who wanted me to
-> show a kernel-based implementation of automatic suspend, so there you go.
-> Please note, however, that it is done so that the user space "wake locks"
-> interface is compatible with Android in support of its user space.  I don't
-> really like this interface, but since the Android's user space seems to rely
-> on it, I'm fine with using it as is.  YMMV.
-> 
-> Let me say a few words about every patch in the series individually.
-> 
-> [1/8] - This really is a bug fix, so it's v3.4 material.  Nobody has stepped
->   on this bug so far, but it should be fixed anyway.
-> 
-> [2/8] - This is a freezer cleanup, worth doing anyway IMO, so v3.4 material too.
+This allows user space processes to handle situations in which they
+want to do a select() on an evdev descriptor, so they go to sleep
+until there are some events to read from the device's queue, and then
+they don't want the system to go into a sleep state until all the
+events are read (presumably for further processing).  Of course, if
+they don't want the system to go into a sleep state _after_ all the
+events have been read from the queue, they have to use a separate
+mechanism that will prevent the system from doing that and it has
+to be activated before reading the first event (that also may be the
+last one).
 
-The above two are in linux-pm/linux-next now.  There are a few more fixes
-related to wakeup sources in there and the patches below are based on that
-branch.
+[rjw: Removed unnecessary checks, changed the names of the new ioctls
+ and the names of the functions that add/remove wakeup source objects
+ to/from evdev clients, modified the changelog.]
 
-> [3/8] - This is something we can do no problem, although completely optional
->   without the autosleep feature.  Rather necessary with it, though.
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/input/evdev.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/input.h |    3 ++
+ 2 files changed, 58 insertions(+)
 
-Now [1/7] - Look for wakeup events in later stages of device suspend.
-
-> [4/8] - This kind of reintroduces my original idea of using a wait queue for
->   waiting until there are no wakeup events in progress.  Alan convinced me that
->   it would be better to poll the counter to prevent wakeup_source_deactivate()
->   from having to call wake_up_all() occasionally (that may be costly in fast
->   paths), but then quite some people told me that the wait queue migh be
->   better.  I think that the polling will make much less sense with autosleep
->   and user space "wake locks".  Anyway, [4/8] is something we can do without
->   those things too.
-
-Now [2/7] - Use wait queue to signal "no wakeup events in progress"
-
-  With a couple of improvements suggested by Neil.
-
-> The patches above were given Sign-off-by tags, because I think they make some
-> sense regardless of the features introcuded by the remaining patches that in
-> turn are total RFC.
-
-This time all of the patches are signed-off and include the requisite
-documentation changes (hopefully, I haven't forgotten about anything).
-
-> [5/8] - This changes wakeup source statistics so that they are more similar to
->   the statistics collected for wakelocks on Android.  The file those statistics
->   may be read from is still located in debugfs, though (I don't think it
->   belongs to proc and its name is different from the analogous Android's file
->   name anyway).  It could be done without autosleep, but then it would be a bit
->   pointless.  BTW, this changes interfaces that _in_ _theory_ may be used by
->   someone, but I'm not aware of anyone using them.  If you are one, I'll be
->   pleased to learn about that, so please tell me who you are. :-)
-
-Now [3/7] - Change wakeup source statistics to follow Android.
-
-  Rebased and reworked in accordance with the Arve's feedback.
-
-[4/7] - Add ioctl to block suspend while event queue is not empty.
-
-  Originally posted by Arve as http://marc.info/?l=linux-pm&m=132711288825973&w=4
-  Reworked and with modified changelog (I wonder what Dmity thinks about this).
-
-  It has some minor problems (for example, in some situations the queue wakeup
-  source may be activated for events that are not coming from a wakeup device),
-  but I think it's simple enough, at least for illustration.  The ioctls
-  introduced here will be used by Android user space anyway, although perhaps
-  under different names, AFAICS.
-
-> [6/8] - Autosleep implementation.  I think the changelog explains the idea
->   quite well and the code is really nothing special.  It doesn't really add
->   anything new to the kernel in terms of infrastructure etc., it just uses
->   the existing stuff to implement an alternative method of triggering system
->   sleep transitions.  Note, though, that the interface here is different
->   from the Android's one, because Android actually modifies /sys/power/state
->   to trigger something called "early suspend" (that is never going to be
->   implemented in the "stock" kernel as long as I have any influence on it) and
->   we simply can't do that in the mainline.
-
-Now [5/7] - Implement opportunistic sleep
-
-  Rebased and simplified (most notably, I've dropped the "main" wakeup source,
-  since it wasn't really necessary).
-
-> [7/8] - This adds a wakeup source statistics that only makes sense with
->   autosleep and (I believe) is analogous to the Android's prevent_suspend_time
->   statistics.  Nothing really special, but I didn't want
->   wakeup_source_activate/deactivate() to take a common lock to avoid
->   congestion.
-
-Now [6/7] - Add "prevent autosleep time" statistics to wakeup sources.
-
-  Rebased.
-
-> [8/8] - This adds a user space interface to create, activate and deactivate
->   wakeup sources.  Since the files it consists of are called wake_lock and
->   wake_unlock, to follow Android, the objects the wakeup sources are wrapped
->   into are called "wakelocks" (for added confusion).  Since the interface
->   doesn't provide any means to destroy those "wakelocks", I added a garbage
->   collection mechanism to get rid of the unused ones, if any.  I also tought
->   it might be a good idea to put a limit on the number of those things that
->   user space can operate simultaneously, so I did that too.
-
-Now [7/7] - Add user space interface for manipulating wakeup sources.
-
-> All of the above has been tested very briefly on my test-bed Mackerel board
-> and it quite obviously requires more thorough testing, but first I need to know
-> if it makes sense to spend any more time on it.
-
-The above is still accurate, but I also verified that the patches don't break
-my PC test boxes (at least as long as the new features aren't used ;-)).
-
-Thanks,
-Rafael
+Index: linux/drivers/input/evdev.c
+===================================================================
+--- linux.orig/drivers/input/evdev.c
++++ linux/drivers/input/evdev.c
+@@ -43,6 +43,7 @@ struct evdev_client {
+ 	unsigned int tail;
+ 	unsigned int packet_head; /* [future] position of the first element of next packet */
+ 	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
++	struct wakeup_source *wakeup_source;
+ 	struct fasync_struct *fasync;
+ 	struct evdev *evdev;
+ 	struct list_head node;
+@@ -75,10 +76,12 @@ static void evdev_pass_event(struct evde
+ 		client->buffer[client->tail].value = 0;
+ 
+ 		client->packet_head = client->tail;
++		__pm_relax(client->wakeup_source);
+ 	}
+ 
+ 	if (event->type == EV_SYN && event->code == SYN_REPORT) {
+ 		client->packet_head = client->head;
++		__pm_stay_awake(client->wakeup_source);
+ 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
+ 	}
+ 
+@@ -255,6 +258,8 @@ static int evdev_release(struct inode *i
+ 	mutex_unlock(&evdev->mutex);
+ 
+ 	evdev_detach_client(evdev, client);
++	wakeup_source_unregister(client->wakeup_source);
++
+ 	kfree(client);
+ 
+ 	evdev_close_device(evdev);
+@@ -373,6 +378,8 @@ static int evdev_fetch_next_event(struct
+ 	if (have_event) {
+ 		*event = client->buffer[client->tail++];
+ 		client->tail &= client->bufsize - 1;
++		if (client->packet_head == client->tail)
++			__pm_relax(client->wakeup_source);
+ 	}
+ 
+ 	spin_unlock_irq(&client->buffer_lock);
+@@ -623,6 +630,45 @@ static int evdev_handle_set_keycode_v2(s
+ 	return input_set_keycode(dev, &ke);
+ }
+ 
++static int evdev_attach_wakeup_source(struct evdev *evdev,
++				      struct evdev_client *client)
++{
++	struct wakeup_source *ws;
++	char name[28];
++
++	if (client->wakeup_source)
++		return 0;
++
++	snprintf(name, sizeof(name), "%s-%d",
++		 dev_name(&evdev->dev), task_tgid_vnr(current));
++
++	ws = wakeup_source_register(name);
++	if (!ws)
++		return -ENOMEM;
++
++	spin_lock_irq(&client->buffer_lock);
++	client->wakeup_source = ws;
++	if (client->packet_head != client->tail)
++		__pm_stay_awake(client->wakeup_source);
++	spin_unlock_irq(&client->buffer_lock);
++	return 0;
++}
++
++static int evdev_detach_wakeup_source(struct evdev *evdev,
++				      struct evdev_client *client)
++{
++	struct wakeup_source *ws;
++
++	spin_lock_irq(&client->buffer_lock);
++	ws = client->wakeup_source;
++	client->wakeup_source = NULL;
++	spin_unlock_irq(&client->buffer_lock);
++
++	wakeup_source_unregister(ws);
++
++	return 0;
++}
++
+ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 			   void __user *p, int compat_mode)
+ {
+@@ -696,6 +742,15 @@ static long evdev_do_ioctl(struct file *
+ 
+ 	case EVIOCSKEYCODE_V2:
+ 		return evdev_handle_set_keycode_v2(dev, p);
++
++	case EVIOCGWAKEUPSRC:
++		return put_user(!!client->wakeup_source, ip);
++
++	case EVIOCSWAKEUPSRC:
++		if (p)
++			return evdev_attach_wakeup_source(evdev, client);
++		else
++			return evdev_detach_wakeup_source(evdev, client);
+ 	}
+ 
+ 	size = _IOC_SIZE(cmd);
+Index: linux/include/linux/input.h
+===================================================================
+--- linux.orig/include/linux/input.h
++++ linux/include/linux/input.h
+@@ -129,6 +129,9 @@ struct input_keymap_entry {
+ 
+ #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
+ 
++#define EVIOCGWAKEUPSRC	_IOR('E', 0x91, int)	/* Check if wakeup handling is enabled */
++#define EVIOCSWAKEUPSRC	_IOW('E', 0x91, int)	/* Enable/disable wakeup handling */
++
+ /*
+  * Device properties and quirks
+  */
 
