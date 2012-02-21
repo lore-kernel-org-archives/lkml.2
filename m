@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2BULUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 06:20:54 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60732 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab2BULUx (ORCPT
+	id S1754777Ab2BUL0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 06:26:03 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43796 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab2BUL0A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 06:20:53 -0500
-Date: Tue, 21 Feb 2012 12:20:42 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Steffen Persvold <sp@numascale.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] x86: Remove wrong error message in
- x86_default_fixup_cpu_id
-Message-ID: <20120221112042.GE14274@aftab>
-References: <20120220171705.GA17069@alberich.amd.com>
- <20120221102725.GC14274@aftab>
- <4F437A71.6000402@numascale-asia.com>
+	Tue, 21 Feb 2012 06:26:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hrs.shimamoto@gmail.com designates 10.236.174.106 as permitted sender) smtp.mail=hrs.shimamoto@gmail.com; dkim=pass header.i=hrs.shimamoto@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F437A71.6000402@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F4347DF.2050002@ct.jp.nec.com>
+References: <4F3C9995.3010800@ct.jp.nec.com>
+	<1329744653.2293.342.camel@twins>
+	<4F4347DF.2050002@ct.jp.nec.com>
+Date: Tue, 21 Feb 2012 20:25:59 +0900
+X-Google-Sender-Auth: qQjYiETdxfW9J7-yPGR_lAOF63I
+Message-ID: <CANgE6yT9oYW8fBmWk2SO2j77ts136tD=cV8RSRXkui6p1AJDVg@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: Make initial SCHED_RR timeslace RR_TIMESLICE
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:05:21AM +0000, Daniel J Blueman wrote:
-> The check and fixup wasn't needed in the Intel path thus far, so
-> wasn't added.
-> 
-> We could specialise the 'if (c->phys_proc_id != node)' test to check
-> for x86_cpuinit.fixup_cpu_id being NULL and drop the default
-> override, if that is preferred?
+2012/2/21 Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>:
+> (2012/02/20 22:30), Peter Zijlstra wrote:
+>> On Thu, 2012-02-16 at 14:52 +0900, Hiroshi Shimamoto wrote:
+>>> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>>>
+>>> Current the initial SCHED_RR timeslice of init_task is HZ, which means
+>>> 1s, and is not same as the default SCHED_RR timeslice DEF_TIMESLICE.
+>>>
+>>> Change that initial timeslice to the DEF_TIMESLICE.
+>>>
+>>> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>>
+>> No real objection, should we take the opportunity to rename to
+>> RR_TIMESLICE or somesuch?
+>>
+>
+> sounds reasonable.
 
-Before that, why do you need that check in the AMD path at all? Please
-give a more detailed explanation as to why is it needed on the AMD path
-at all.
+Oops, the below patch is wrong.
+Definitely I missed something.
 
-Thanks.
+Will resend, sorry about that.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+>
+> ===
+> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+>
+> Current the initial SCHED_RR timeslice of init_task is HZ, which means
+> 1s, and is not same as the default SCHED_RR timeslice DEF_TIMESLICE.
+>
+> Change the initial timeslice to the RR_TIMESLICE, which is renamed from
+> DEF_TIMESLICE to clarify it's for SCHED_RR.
+>
+> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  include/linux/init_task.h |    2 +-
+>  include/linux/sched.h     |    6 ++++++
+>  kernel/sched/sched.h      |    4 ----
+>  3 files changed, 7 insertions(+), 5 deletions(-)
+>
+> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> index 9c66b1a..f994d51 100644
+> --- a/include/linux/init_task.h
+> +++ b/include/linux/init_task.h
+> @@ -149,7 +149,7 @@ extern struct cred init_cred;
+>        },                                                              \
+>        .rt             = {                                             \
+>                .run_list       = LIST_HEAD_INIT(tsk.rt.run_list),      \
+> -               .time_slice     = HZ,                                   \
+> +               .time_slice     = RR_TIMESLICE,                         \
+>                .nr_cpus_allowed = NR_CPUS,                             \
+>        },                                                              \
+>        .tasks          = LIST_HEAD_INIT(tsk.tasks),                    \
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 2df7646..ee882cb 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1234,6 +1234,12 @@ struct sched_rt_entity {
+>  #endif
+>  };
+>
+> +/*
+> + * default timeslice is 100 msecs (used only for SCHED_RR tasks).
+> + * Timeslices get refilled after they expire.
+> + */
+> +#define RR_TIMESLICE           (100 * HZ / 1000)
+> +
+>  struct rcu_node;
+>
+>  enum perf_event_task_context {
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 8a2c768..c0660a1 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -36,11 +36,7 @@ extern __read_mostly int scheduler_running;
+>
+>  /*
+>  * These are the 'tuning knobs' of the scheduler:
+> - *
+> - * default timeslice is 100 msecs (used only for SCHED_RR tasks).
+> - * Timeslices get refilled after they expire.
+>  */
+> -#define DEF_TIMESLICE          (100 * HZ / 1000)
+>
+>  /*
+>  * single value that denotes runtime == period, ie unlimited time.
+> --
+> 1.7.7.6
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
