@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab2BUOgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:36:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753255Ab2BUOgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:36:04 -0500
-Date: Tue, 21 Feb 2012 09:35:38 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, rostedt@goodmis.org,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu, davem@davemloft.net,
-        ddaney.cavm@gmail.com, pjt@google.com, rth@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4][RFC] jump label: introduce default true branch
-Message-ID: <20120221143538.GA2381@redhat.com>
-References: <cover.1324493360.git.jbaron@redhat.com>
- <4F42CD93.2030605@zytor.com>
- <1329778301.2293.379.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329778301.2293.379.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755462Ab2BUOiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:38:13 -0500
+Received: from wildebeest.demon.nl ([80.101.103.228]:40518 "EHLO
+	gnu.wildebeest.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2BUOiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 09:38:12 -0500
+X-Greylist: delayed 1861 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 09:38:12 EST
+From: Mark Wielaard <mjw@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Wielaard <mjw@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de> (maintainer:X86
+	ARCHITECTURE...),
+        Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE... 
+	,commit_signer:11/25=44%),
+        "H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE... 
+	,commit_signer:4/25=16%),
+        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
+        Andi Kleen <ak@linux.intel.com> (commit_signer:5/25=20%),
+        Jan Beulich <jbeulich@suse.com> (commit_signer:5/25=20%),
+        Frederic Weisbecker <fweisbec@gmail.com> (commit_signer:4/25=16%)
+Subject: [PATCH] x86-64: Fix CFI data for common_interrupt
+Date: Tue, 21 Feb 2012 15:06:13 +0100
+Message-Id: <1329833177-13030-1-git-send-email-mjw@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 11:51:41PM +0100, Peter Zijlstra wrote:
-> On Mon, 2012-02-20 at 14:47 -0800, H. Peter Anvin wrote:
-> > On 12/21/2011 11:09 AM, Jason Baron wrote:
-> > > Hi Peter,
-> > > 
-> > > I've introduced a new static_branch_def_true() construct, such that the straight
-> > > line path is the true branch, and we patch a jump to get to the false branch.
-> > > In order to make jump_label_inc()/dec() work as 'make true'/'make false' with
-> > > counting, I've had to update some of the core jump label code. This patchset also
-> > > introduces: JUMP_LABEL_INIT_TRUE/FALSE, so that keys should be initialized as:
-> > > 
-> > > struct jump_label_key true_key = JUMP_LABEL_INIT_TRUE;
-> > > 
-> > >            or
-> > > 
-> > > struct jump_label_key false_key = JUMP_LABEL_INIT_FALSE;
-> > > 
-> > > I think this patch series should address the issues that came up with sched_feat()
-> > > implementation.
-> > > 
-> > 
-> > Hi,
-> > 
-> > Did this ever get addressed?
-> 
-> I actually tried to push that stuff to Ingo, he figured it all should
-> have different names. Jason and Ingo went back and forth for a while and
-> afaik settled on something. Jason then went off to implement, but I
-> haven't yet seen a new version.
-> 
-> 
+Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
+a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
+the CFA using a simple register+offset rule both register and offset
+need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
+undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
+common_interrupt.
 
-I'll post a patch series later today.
+Signed-off-by: Mark Wielaard <mjw@redhat.com>
+---
+ arch/x86/kernel/entry_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 3fe8239..e00ef55 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -813,7 +813,7 @@ ret_from_intr:
+ 
+ 	/* Restore saved previous stack */
+ 	popq %rsi
+-	CFI_DEF_CFA_REGISTER	rsi
++	CFI_DEF_CFA rsi,0	/* needed after def_cfa_expression */
+ 	leaq ARGOFFSET-RBP(%rsi), %rsp
+ 	CFI_DEF_CFA_REGISTER	rsp
+ 	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+-- 
+1.7.7.6
 
--Jason
