@@ -1,41 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab2BUO3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:29:21 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48640 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab2BUO3T (ORCPT
+	id S1755410Ab2BUOa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:30:56 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24245 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab2BUOay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:29:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of xiyou.wangcong@gmail.com designates 10.68.222.194 as permitted sender) smtp.mail=xiyou.wangcong@gmail.com; dkim=pass header.i=xiyou.wangcong@gmail.com
-Message-ID: <4F43AA37.5050004@gmail.com>
-Date: Tue, 21 Feb 2012 22:29:11 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	Tue, 21 Feb 2012 09:30:54 -0500
+Date: Tue, 21 Feb 2012 09:27:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>, lenb@kernel.org,
+        len.brown@intel.com
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Message-ID: <20120221142724.GB5652@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120217142909.GA29110@phenom.dumpdata.com>
+ <20120217144742.GA29454@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
+ <20120219182339.GA11882@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Tao Jiang <jiangtao.jit@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: A problem with percpu variable cpu_number
-References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com> <CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com> <4F411373.50304@gmail.com> <CAOe6JY3yM24CGYOpPc98QfjRYah5U+L9DB46WH60LVrxN9=eRQ@mail.gmail.com> <4F4262A4.9000204@gmail.com> <CAOe6JY1_dYGCK2=+EHARz5mTm=KCgWynnJjA9SuEHfj+Z0xjwA@mail.gmail.com>
-In-Reply-To: <CAOe6JY1_dYGCK2=+EHARz5mTm=KCgWynnJjA9SuEHfj+Z0xjwA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4F43AA92.0110,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 08:41 PM, Tao Jiang wrote:
-> Hi Cong Wang:
->
-> I read the file vmlinux.lds.S in arch/x86/kernel
-> section .data..percpu is between .init.data and .init.end
-> Is that means these percpu variables will be freed after init?
+On Tue, Feb 21, 2012 at 05:49:58AM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> >>>>> +struct pv_pad_ops {
+> >>>>> +	int (*acpi_pad_init)(void);
+> >>>>> +	void (*acpi_pad_exit)(void);
+> >>>>> +};
+> >>>>> +
+> >>> 
+> >>> Looking at this a bit closer I am not sure why you choose the
+> >>> paravirt interface for this? There is another one - the x86 that
+> >>> could have been choosen. Or introduce a new one that is specific to
+> >>> ACPI. 
+> >>> 
+> >>> I am curious - what was the reason for using the paravirt interface?
+> >>> I understand it does get the job done, but it seems a bit overkill
+> >>> when something simple could have been used?
+> >>> 
+> >> 
+> >> It uses paravirt interface to avoid some code like 'xen_...' in
+> >> native code path (acpi_pad.c). 
+> >> I'm not quite sure what does 'x86' here mean? Adding 2 fields
+> >> (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops?
+> >> seems it's much simpler.  
+> > 
+> > arch/x86/include/asm/x86_init.h
+> > 
+> > But before you go that way let me ask you another question - can ACPI
+> > PAD 
+> > be used on ARM or IA64? If so, wouldn't this fail compilation as this
+> > pvops structure is not defined on IA64?
+> 
+> Ideally ACPI PAD is not bound to some arch, so IMO it could be used at least on IA64 (through currently no real PAD on IA64 platform as far as I know).
+> However, in native acpi_pad implementation, it indeed depends on X86 for reason like mwait.
+> So for xen acpi_pad, I think it's OK to choose x86, defining an acpi_pad_ops at x86_init.c which would be overwritten when xen init.
 
-% grep -e __init_begin -e __init_end -e __per_cpu_start -e __per_cpu_end 
-/boot/System.map
-0000000000000000 D __per_cpu_start
-0000000000014bc0 D __per_cpu_end
-ffffffff81cf3000 D __init_begin
-ffffffff81dfc000 R __init_end
-% objdump -d -j .data..percpu vmlinux | grep cpu_number
-000000000000dc38 <cpu_number>:
+OK, or in osl.c. We need Len to chime in here as I can see this expanding in the future.
+> 
+> Another choice is to define config ACPI_PROCESSOR_AGGREGATOR as 'bool', which would disable native acpi_pad module.
+
+Ewww. No.
+> 
+> Your opinion?
+> 
+> Thanks,
+> Jinsong
+> 
+> > 
+> > The other thing I am not comfortable about is that the pvops structure
+> > are used for low-level code. Not for higher up, like ACPI. For that
+> > another structure seems more prudent. Perhaps something like the x86
+> > one, but specific to ACPI?
