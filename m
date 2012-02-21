@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab2BUCOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 21:14:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39633 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab2BUCOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 21:14:46 -0500
-Message-ID: <4F42FE08.5020309@zytor.com>
-Date: Mon, 20 Feb 2012 18:14:32 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
-In-Reply-To: <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1755138Ab2BUCPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 21:15:06 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50588 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab2BUCPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 21:15:04 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.225.231 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1329790495.5422.1.camel@phoenix>
+Subject: [PATCH] regulator: Fix module desciption for tps65910 regulator
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 21 Feb 2012 10:14:55 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2012 06:10 PM, Linus Torvalds wrote:
-> On Mon, Feb 20, 2012 at 5:50 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->>
->> I haven't tried really figuring this out yet, but building the Fedora kernel
->> on x86_64 with your latest tree results in:
->>
->> ERROR: "fpu_owner_task" [lib/raid6/raid6_pq.ko] undefined!
-> 
-> Ugh. My dislike of modules on my machines strikes again, and
-> apparently nobody else tested the patches I sent out.
-> 
-> The attached trivial patch fixes it, I bet.
-> 
-> Although I do wonder if we should just make kernel_fpu_begin() be a
-> real function instead of inlining it. I'm not sure it makes sense to
-> inline that thing, and it might be better to export that one instead.
-> Comments?
-> 
+Fix the module desciption and also update Kconfig to include supporting
+tps65911 chip.
 
-I would agree with that.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/Kconfig              |    4 ++--
+ drivers/regulator/tps65910-regulator.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-	-hpa
-
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 376824b..edcd9e2 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -344,10 +344,10 @@ config REGULATOR_TPS6524X
+ 	  port controller.
+ 
+ config REGULATOR_TPS65910
+-	tristate "TI TPS65910 Power Regulator"
++	tristate "TI TPS65910/TPS65911 Power Regulators"
+ 	depends on MFD_TPS65910
+ 	help
+-	  This driver supports TPS65910 voltage regulator chips.
++	  This driver supports TPS65910/TPS65911 voltage regulator chips.
+ 
+ config REGULATOR_TPS62360
+ 	tristate "TI TPS62360 Power Regulator"
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index a9bb6d4..15b5f1e 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -1235,6 +1235,6 @@ static void __exit tps65910_cleanup(void)
+ module_exit(tps65910_cleanup);
+ 
+ MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
+-MODULE_DESCRIPTION("TPS6507x voltage regulator driver");
++MODULE_DESCRIPTION("TPS65910/TPS65911 voltage regulator driver");
+ MODULE_LICENSE("GPL v2");
+ MODULE_ALIAS("platform:tps65910-pmic");
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.5.4
+
+
 
