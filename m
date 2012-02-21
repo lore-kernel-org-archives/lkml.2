@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab2BUBOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:14:32 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19612 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab2BUBOa (ORCPT
+	id S1755084Ab2BUBQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:16:01 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47632 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab2BUBQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:14:30 -0500
-X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=DJDFx9YhIQoErPJ5c-cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329786868.25686.50.camel@gandalf.stny.rr.com>
-Subject: Re: RAS trace event proto
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Tony Luck <tony.luck@intel.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 20 Feb 2012 20:14:28 -0500
-In-Reply-To: <20120220145920.GB5728@aftab>
-References: <20120220145920.GB5728@aftab>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 20 Feb 2012 20:16:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.218.161 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Mon, 20 Feb 2012 17:15:52 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [RFC] block: fix __blkdev_get and add_disk race condition
+Message-ID: <20120221011552.GB15898@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120218172609.GA11478@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120218172609.GA11478@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 15:59 +0100, Borislav Petkov wrote:
+Hello,
 
-> * I'd like to have conditional printk-ing in trace_mce_record depending
-> on the TP args, Steve probably knows what can be done:
+Nice catch.
 
-/me is confused :-)
+On Sat, Feb 18, 2012 at 06:26:13PM +0100, Stanislaw Gruszka wrote:
+> As drawback, I do not teardown on sysfs file create error, because I do
+> not know how to nullify disk->ev (since it can be used).
 
-> 
-> @Steven:
-> 
-> I'd like to do the following:
-> 
-> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", str1, arg1, arg2)
-> 
-> and have it print only the first arg, i.e. the string and drop the rest
-> of the args while still doing the TP_fast_assign into the ring buffer
-> and carrying the stuff to its consumers. Background is that I want to
-> dump the decoded string of a hardware error, if it is decoded, but carry
-> the MCE info to userspace and only dump the fields of the MCE if I
-> haven't managed to decode it, i.e. str1 == "".
-> 
-> So, my question is, can I do something like:
-> 
-> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", __print_conditional(str1, arg1, arg2))
+add_disk() error handling is mostly non-existent and the error
+behavior should be acceptable (no sysfs files created but everything
+else behaves the same).
 
-You want to affect the output of ftrace?
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 
-perf and even trace-cmd do the parsing later and can be overridden.
-Well, perf can be when we finally get it to use the updated trace-cmd
-parser.
+Acked-by: Tejun Heo <tj@kernel.org>
 
--- Steve
+Thank you.
 
-> 
-> where __print_conditional is a vararg macro which calls a
-> ftrace_print_cond() which prints only str1 if strlen(str1) > 0 and
-> otherwise calls a vsnprintf() variant to deal with the va_args?
-> 
-
-
+-- 
+tejun
