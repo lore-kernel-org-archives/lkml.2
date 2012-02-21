@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab2BUNgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 08:36:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39101 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab2BUNgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 08:36:52 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.43.51.135 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	id S1755335Ab2BUNqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 08:46:01 -0500
+Received: from co202.xi-lite.net ([149.6.83.202]:40820 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752647Ab2BUNqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 08:46:00 -0500
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 08:46:00 EST
+Message-ID: <4F439E17.8090507@parrot.com>
+Date: Tue, 21 Feb 2012 14:37:27 +0100
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1329720360-23227-11-git-send-email-swarren@nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-11-git-send-email-swarren@nvidia.com>
-Date: Tue, 21 Feb 2012 14:36:52 +0100
-Message-ID: <CACRpkdbR54cF27hU1WvGOGVZjj_S7hr014+FFD=jQEAf_QahwQ@mail.gmail.com>
-Subject: Re: [PATCH 10/20] pinctrl: Assume map table entries can't have a NULL
- ctrl_dev_name field
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Egmont Koblinger <egmont@gmail.com>, Alan Cox <alan@redhat.com>
+Subject: re : PROBLEM: Data corruption when pasting large data to terminal
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
+Hi,
 
-> These are already disallowed. Clean up some code that doesn't assume this.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> - I couldn't reproduce with cat-like applications, I have a feeling
+> perhaps the bug only occurs in raw terminal mode, but I'm really not
+> sure about this.
 
-Thanks, applied!
+We saw in our case a possible data corruption in the tty layer :
+in n_tty the n_tty_receive_buf can drop characters if it can't copy all of them
+in the tty circular buffer.
 
-Yours,
-Linus Walleij
+A fix should be to remove tty->receive_room and make n_tty_receive_buf  return
+the number of bytes copied.
+
+A patch to correct this was done in b1c43f82c5aa265442f82dba31ce985ebb7aa71c,
+but it was reverted because it was buggy.
+
+May be you should check that this is not your problem.
+
+
+Matthieu
