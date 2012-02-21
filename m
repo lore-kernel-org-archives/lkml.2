@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab2BUOV3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:21:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49885 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab2BUOV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:21:28 -0500
-Date: Tue, 21 Feb 2012 15:21:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] x86: Move per cpu cpu_core_map to a field in struct
- cpuinfo_x86
-Message-ID: <20120221142131.GD2486@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kevin Winchester <kjwinchester@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	linux-kernel@vger.kernel.org
-References: <20120217115627.GA25601@elte.hu>
- <1329789966-693-1-git-send-email-kjwinchester@gmail.com>
- <1329789966-693-5-git-send-email-kjwinchester@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755465Ab2BUO0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:26:12 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:26685 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab2BUO0K convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Tue, 21 Feb 2012 09:26:10 -0500
+Message-Id: <4F43B78D020000780007435B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 21 Feb 2012 14:26:05 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Mark Wielaard" <mjw@redhat.com>
+Cc: "Frederic Weisbecker (commit_signer:4/25=16%)" <fweisbec@gmail.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        "Thomas Gleixner (maintainer:X86 ARCHITECTURE...)" 
+	<tglx@linutronix.de>,
+        "Andi Kleen (commit_signer:5/25=20%)" <ak@linux.intel.com>,
+        "commit_signer:11/25=44%) Ingo Molnar (maintainer:X86 ARCHITECTURE..." 
+	<mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>,
+        "commit_signer:4/25=16%) H. Peter Anvin (maintainer:X86 ARCHITECTURE..." 
+	<hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: Fix CFI data for common_interrupt
+References: <1329833177-13030-1-git-send-email-mjw@redhat.com>
+In-Reply-To: <1329833177-13030-1-git-send-email-mjw@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1329789966-693-5-git-send-email-kjwinchester@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 10:06:05PM -0400, Kevin Winchester wrote:
-> This simplifies the various code paths using this field as it
-> groups the per-cpu data together.
-> 
-> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+>>> On 21.02.12 at 15:06, Mark Wielaard <mjw@redhat.com> wrote:
+> Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
+> a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
+> the CFA using a simple register+offset rule both register and offset
+> need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
+> undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
+> common_interrupt.
+
+NAK, unless you can prove a path via which the offset will remain
+unset until hitting a CFI_DEF_CFA_REGISTER. And if you indeed
+found such a path, the entry point of the path is where the problem
+ought to be fixed.
+
+Are you perhaps thinking that .cfi_def_cfa_register invalidates
+the offset in any way? That, to my knowledge, isn't the case, it
+just replaces the CFA register with the one specified, leaving the
+offset unchanged.
+
+Jan
+
+> Signed-off-by: Mark Wielaard <mjw@redhat.com>
 > ---
->  arch/x86/include/asm/processor.h |    2 ++
->  arch/x86/include/asm/smp.h       |    6 ------
->  arch/x86/include/asm/topology.h  |    4 ++--
->  arch/x86/kernel/cpu/proc.c       |    3 +--
->  arch/x86/kernel/smpboot.c        |   35 ++++++++++++++---------------------
->  arch/x86/xen/smp.c               |    4 ----
->  drivers/cpufreq/acpi-cpufreq.c   |    2 +-
->  drivers/cpufreq/powernow-k8.c    |   13 +++----------
->  8 files changed, 23 insertions(+), 46 deletions(-)
+>  arch/x86/kernel/entry_64.S |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 38de3aa..53f7a8c 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -115,6 +115,8 @@ struct cpuinfo_x86 {
->  	u16			llc_id;
->  	/* representing HT siblings of each logical CPU */
->  	cpumask_t		sibling_map;
-> +	/* representing HT and core siblings of each logical CPU */
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index 3fe8239..e00ef55 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -813,7 +813,7 @@ ret_from_intr:
+>  
+>  	/* Restore saved previous stack */
+>  	popq %rsi
+> -	CFI_DEF_CFA_REGISTER	rsi
+> +	CFI_DEF_CFA rsi,0	/* needed after def_cfa_expression */
+>  	leaq ARGOFFSET-RBP(%rsi), %rsp
+>  	CFI_DEF_CFA_REGISTER	rsp
+>  	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+> -- 
+> 1.7.7.6
 
-Let's change that to be more clear:
 
-	"representing all execution threads on a logical CPU, i.e. per physical
-	socket"
 
-or if someone has an even better formulation...
-
-other than that:
-
-Acked-by: Borislav Petkov <bp@alien8.de>
-
--- 
-Regards/Gruss,
-Boris.
