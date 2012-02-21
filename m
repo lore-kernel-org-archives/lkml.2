@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2BUIRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:17:08 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44491 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab2BUIRH (ORCPT
+	id S1753167Ab2BUIWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:22:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39290 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab2BUIWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:17:07 -0500
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 03:17:07 EST
-Message-ID: <1329811621.17703.5.camel@chamonix>
-Subject: Re: [PATCH 0/10] af_unix: add multicast and filtering features to
- AF_UNIX
-From: Rodrigo Moya <rodrigo.moya@collabora.co.uk>
-To: Colin Walters <walters@verbum.org>
-Cc: Javier Martinez Canillas <javier@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        Bart Cerneels <bart.cerneels@collabora.co.uk>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Feb 2012 09:07:01 +0100
-In-Reply-To: <1329765252.22425.3.camel@lenny>
-References: <1329753455-1106-1-git-send-email-javier@collabora.co.uk>
-	 <1329765252.22425.3.camel@lenny>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 03:22:14 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 21 Feb 2012 17:20:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/10] mm/memcg: apply add/del_page to lruvec
+Message-Id: <20120221172042.20f407fe.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1202201530530.23274@eggly.anvils>
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils>
+	<alpine.LSU.2.00.1202201530530.23274@eggly.anvils>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 14:13 -0500, Colin Walters wrote:
-> On Mon, 2012-02-20 at 16:57 +0100, Javier Martinez Canillas wrote:
-> > This patch-set add multicast support to Unix domain socket familiy for datagram
-> > and seqpacket sockets. This work was made by Alban Crequy as a result of a
-> > research we have been doing to improve the performance of the D-bus IPC system.
-> 
-> Do you have links to any modifications to userspace dbus to take
-> advantage of this?
+On Mon, 20 Feb 2012 15:32:06 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-we have a work in progress at
-http://cgit.collabora.com/git/user/rodrigo/dbus.git/ in the
-unix-sockets-multicast branch
+> Go further: pass lruvec instead of zone to add_page_to_lru_list() and
+> del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec down
+> to its target functions.
+> 
+> This cleanup eliminates a swathe of cruft in memcontrol.c,
+> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> mem_cgroup_lru_move_lists(), which never actually touched the lists.
+> 
+> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> previously a side-effect of add, and mem_cgroup_update_lru_size()
+> to maintain the lru_size stats.
+> 
+> Whilst these are simplifications in their own right, the goal is to
+> bring the evaluation of lruvec next to the spin_locking of the lrus,
+> in preparation for the next patch.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+
+
+Hmm.. a nitpick.
+
+You do 
+  lruvec = mem_cgroup_page_lruvec(page, zone);
+
+What is the difference from
+
+  lruvec = mem_cgroup_page_lruvec(page, page_zone(page)) 
+
+?
+
+If we have a function
+  lruvec = mem_cgroup_page_lruvec(page)
+
+Do we need 
+  lruvec = mem_cgroup_page_lruvec_zone(page, zone) 
+
+?
+
+Thanks,
+-Kame
 
