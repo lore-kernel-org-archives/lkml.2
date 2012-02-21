@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab2BUS0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:26:08 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:48005 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab2BUS0F (ORCPT
+	id S1755429Ab2BUS0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:26:52 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60674 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab2BUS0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:26:05 -0500
-Date: Tue, 21 Feb 2012 19:26:02 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, thomas@m3y3r.de, raven@themaw.net,
-        linux-kernel@vger.kernel.org
-Subject: Use gcc to check exported files [Was: Linux 3.3-rc4]
-Message-ID: <20120221182602.GA23831@merkur.ravnborg.org>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com> <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de> <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com> <20120219.144947.660678318380307878.davem@davemloft.net> <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com> <4F431BE8.1030201@zytor.com> <20120221130345.5c96ce60@pyramind.ukuu.org.uk>
+	Tue, 21 Feb 2012 13:26:51 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.14.193 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120221130345.5c96ce60@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4F43DB69.9060509@zytor.com>
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
+ <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
+ <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
+ <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com>
+ <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com>
+ <4F43DB69.9060509@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 21 Feb 2012 10:26:30 -0800
+X-Google-Sender-Auth: eUc8S7MbZGphsdTuryGrsjM37SY
+Message-ID: <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 01:03:45PM +0000, Alan Cox wrote:
-> > I'm starting to think we should compile the kernel with -Wpadded by
-> > default (currently it's only done at "warning level 3", which I doubt
-> > anyone ever uses, especially since that also includes -Wpacked which is
-> > an actively toxic warning) and force people to add explicit padding
-> > where it needs to go, if necessary.  Unfortunately even that doesn't
-> > guarantee compatibility with userspace, but it's at least something.
-> 
-> We generate a set of believed correct export headers and check them these
-> days as an option. Can that work not be turned to do this. Ie create a
-> temporary .c file that includes all the user visible header data (without
-> KERNEL being defined) and runs it through -Wpacked etc
+On Tue, Feb 21, 2012 at 9:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I don't know if unlazy_fpu() being out of line will cause a context
+> switch performance loss, though.
 
-Hi Alan.
+unlazy_fpu() is no longer used for context switching - it's only used
+for unlazying the FPU.
 
-If we require every exported file to be buildable on thier own
-then it is simple to run gcc on every exported file.
+Part of the whole FP mess is that there were all these *insane*
+dependencies where these things were used for different semantic
+issues. That's largely fixed now, and things have a single semantic
+use.
 
-We have before discussed that our header files should include everything
-they need - and at least forcing this for our user-space headers would not be bad.
+> Acked-by: H. Peter Anvin <hpa@zytor.com>
+>
+> Let me know if you'd prefer me to pull this into the -tip tree.
 
-Simple hack I cooked up (will not work if you use O=...):
+Yes, but I'll send you this with a proper commit log. I'll also send
+you another patch that splits "<asm/i387.h>" into two.
 
-diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
-index 7957e7a..b479575 100644
---- a/scripts/headers_check.pl
-+++ b/scripts/headers_check.pl
-@@ -27,12 +27,16 @@ my $line;
- my $lineno = 0;
- my $filename;
- 
-+my $gcc_options = "-Wall -Wpadded";
-+my $gcc_include = "-I usr/include";
-+
- foreach my $file (@files) {
- 	$filename = $file;
- 
- 	open(my $fh, '<', $filename)
- 		or die "$filename: $!\n";
- 	$lineno = 0;
-+	&check_build();
- 	while ($line = <$fh>) {
- 		$lineno++;
- 		&check_include();
-@@ -45,6 +49,13 @@ foreach my $file (@files) {
- }
- exit $ret;
- 
-+# Check that the header-file can build
-+# All exported headers are assumed to include what they need
-+sub check_build
-+{
-+	system("gcc -xc -c $gcc_include $gcc_options $filename")
-+}
-+
- sub check_include
- {
- 	if ($line =~ m/^\s*#\s*include\s+<((asm|linux).*)>/) {
+Right now <asm/i387.h> has two different users: the first of which
+"normal kernel use" kind of things (ie kernel_fpu_begin() and friends)
+that really don't care about the internals very deeply. But the second
+class of user is the actual i387 internal implementation thing that is
+used by i387.c and xsave.c etc to actually implement the exposed
+interfaces.
 
+As a result, <asm/i387.h> is this mixture of exposed interfaces and
+"deep internal knowledge". And as a result, that deep internal
+knowledge kind of accidentally gets exposed to code that really
+shouldn't be exposed to it.
 
-Now we just need someone to fix up the headers....
-I counted around 870 errors in 160 files.
-But 99% looked trivial to fix...
+I have a patch that fixes that. I'll send you a series of two patches
+with sign-offs and commentary asap.
 
-Almost all is a matter of adding one or a few missing includes.
-
-	Sam
-
+                   Linus
