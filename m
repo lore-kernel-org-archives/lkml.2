@@ -1,128 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2BUH6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 02:58:12 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:50184 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2BUH6K (ORCPT
+	id S1752451Ab2BUIEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:04:45 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45347 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab2BUIEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 02:58:10 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Don Zickus <dzickus@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
-        kexec@lists.infradead.org, vgoyal@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-References: <m1zkcmyjyd.fsf@fess.ebiederm.org>
-	<CAE9FiQVj12UCGbOe4wZfx-L8tdab-1si-RA=vBnNeZ7cUNqyyg@mail.gmail.com>
-	<CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
-	<20120216172735.GX9751@redhat.com>
-	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
-	<20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org>
-	<m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com>
-	<m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com>
-Date: Tue, 21 Feb 2012 00:01:07 -0800
-In-Reply-To: <20120220151419.GU9751@redhat.com> (Don Zickus's message of "Mon,
-	20 Feb 2012 10:14:19 -0500")
-Message-ID: <m1obss39a4.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18lEEhfqVF9mKHjUA5GPhgT0FlnuPqRx78=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.2 SARE_LWSHORTT BODY: SARE_LWSHORTT
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_XMDrugObfuBody_04 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Don Zickus <dzickus@redhat.com>
-X-Spam-Relay-Country: **
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in crash path
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Tue, 21 Feb 2012 03:04:44 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 21 Feb 2012 17:03:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/10] mm/memcg: scanning_global_lru means
+ mem_cgroup_disabled
+Message-Id: <20120221170306.3fd147b9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1202201526540.23274@eggly.anvils>
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils>
+	<alpine.LSU.2.00.1202201526540.23274@eggly.anvils>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don Zickus <dzickus@redhat.com> writes:
+On Mon, 20 Feb 2012 15:28:21 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-2> On Fri, Feb 17, 2012 at 07:21:52PM -0800, Eric W. Biederman wrote:
->> Don Zickus <dzickus@redhat.com> writes:
->> 
->> > On Fri, Feb 17, 2012 at 04:41:01AM -0800, Eric W. Biederman wrote:
->> >> 
->> >> The fix with a guarantee of no more scope creep is to just disable the
->> >> nmi watchdog on the kexec on panic path.
->> >> 
->> >> Don if you have time please figure out is needed to ignore nmi's and
->> >> possible record and/or report them while we boot, otherwise please cook
->> >> up a patch that just disables the nmi watchdog wherever we are sending
->> >> it from (the local apic or the ioapic).
->> >
->> > Can I keep things even simpler?  The original problem was the deadlock
->> > with the ioapic lock.  We fixed that by removing the call to
->> > disable_IO_APIC().  Can we just leave the disable_local_APIC calls in
->> > there for now?  Is there any real harm?
->> 
->> > All this rewrite is going to take time which will delay fixing a current
->> > problem with kexec on panic, the ioapic deadlock.
->> 
->> Hmm.
->> 
->> My apologies I just realized that we can not disable the nmi watchdog
->> safely in all cases.  To avoid the deadlock we fundamentally can not
->> write to the io_apic, because the locks are the io_apic write path.
->> The nmi watchdog can be sourced from either the local apics or the
->> io_apics.  To disable the nmi_watchdog we need at least potentially
->> to write io_apic.
->
-> I am curious where you see the nmi watchdog being sourced from the ioapic?
-> I thought I removed that code 3 or 4 releases ago.
+> Although one has to admire the skill with which it has been concealed,
+> scanning_global_lru(mz) is actually just an interesting way to test
+> mem_cgroup_disabled().  Too many developer hours have been wasted on
+> confusing it with global_reclaim(): just use mem_cgroup_disabled().
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-In my memory, and in references to the code in comments in various apic
-related code.  I couldn't figure out what the current code was doing and
-assumed the implementation was equivalent.  It does look like you
-removed the code that used the io_apic.  I still haven't figured
-out just how the new implementation works yet.
+Ah, ok. Now we have global_reclaim() and scanning_global_lru() but
+scanning_global_lru() is obsolete now.
 
-So maybe in the short term we can safely just stomp the timer that
-triggers the nmi watchdog in the local apic.  Over the long term that
-feels like it is just asking for trouble.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I wonder if the reason that we have an hpet stomp in that code is
-for a similar reason.  Did we ever source nmi's from the hpet timer?
 
->> So it appears to me that the only reasonable and robust thing we can
->> do is to ignore nmis in the kexec on panic path.
->> 
->> So it looks to me that the only path forward at this point is to fix
->> the other bug where an unexpected nmi will kill the kexec on panic boot.
->> 
->> I just took a look at the code in /sbin/kexec and that code does not in
->> fact change the idt except when we switch to 16bit mode, which we
->> definitely do not do in the kexec on panic case.  So it appears that we
->> don't need to coordinate an /sbin/kexec release with a kernel release to
->> ignore nmis.
->> 
->> In fact it looks like we only need to fix the interrupt descriptors
->> loaded in machine_kexec_64.c and head64.c to ignore nmis.
->> 
->> At which point we will have fixed two bugs and have a much more reliable
->> kexec on panic implementation.
->
-> Ok.  I'll talk with Vivek about how the can be implemented.
-
-Thanks.  It really doesn't look very hard.  Just a tiny idt with
-an nmi entry that says iret.
-
-Eric
