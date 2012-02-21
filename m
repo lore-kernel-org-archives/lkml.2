@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2BUO74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:59:56 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33390 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab2BUO7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:59:54 -0500
-Date: Tue, 21 Feb 2012 15:59:43 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Tony Luck <tony.luck@intel.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RAS trace event proto
-Message-ID: <20120221145943.GB15515@aftab>
-References: <20120220145920.GB5728@aftab>
- <4F438CE9.7080807@redhat.com>
- <20120221141231.GA15515@aftab>
- <1329835698.25686.60.camel@gandalf.stny.rr.com>
+	id S1755491Ab2BUPBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 10:01:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43234 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab2BUPBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 10:01:40 -0500
+Date: Tue, 21 Feb 2012 16:01:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Subject: Re: [PATCH v2] HID: use generic driver for Logitech Unifying receivers
+ if CONFIG_HID_LOGITECH_DJ=n
+In-Reply-To: <20120213101303.8665.76516.stgit@zurg>
+Message-ID: <alpine.LNX.2.00.1202211600420.31150@pobox.suse.cz>
+References: <20120213080644.6105.54221.stgit@zurg> <20120213101303.8665.76516.stgit@zurg>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329835698.25686.60.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 09:48:18AM -0500, Steven Rostedt wrote:
-> On Tue, 2012-02-21 at 15:12 +0100, Borislav Petkov wrote:
-> 
-> > > Also, folding everything into just one string prevents (or make hard) the usage of
-> > > the perf filters, for example, to filter only the errors at the memory controller 1.
-> > 
-> > Huh, because you can't grep through the trace anymore...?
-> > 
-> 
-> I believe Mauro is talking about the tracing filters used by both perf
-> and ftrace that lets you ignore trace events when the contents of the
-> event does not match the filter. This is filtering out events before
-> they go to the buffer.
+On Mon, 13 Feb 2012, Konstantin Khlebnikov wrote:
 
-Oh ok, in that case we could filter the errors - if needed - before they
-get even reported. I say "if needed" because normally we want to collect
-all hw errors in the trace, IMHO.
+> Before commit 534a7b8e1 "HID: Add full support for Logitech Unifying receivers"
+> Logitech Unifying receiver can work as generic device without special driver,
+> after that commit these devices does not works without special driver.
+> 
+> After this patch they will use generic driver if special driver is disabled.
+> 
+
+Okay, I haven't originally fully realized that this device works 
+flawlessly in "single" case without the driver.
+
+I like to avoid polluting the have_special_driver[] with ifdefs, but in 
+this particular case it seems to make sense. So I am queuing this.
+
+Thanks.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Jiri Kosina
+SUSE Labs
