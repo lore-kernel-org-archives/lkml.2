@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2BUT3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:29:23 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:32805 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752600Ab2BUT3V convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:29:21 -0500
+	id S1755146Ab2BUTaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:30:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45013 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752472Ab2BUTaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:30:19 -0500
+Message-ID: <4F43F0C0.5050104@zytor.com>
+Date: Tue, 21 Feb 2012 11:30:08 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <4F43EA83.6020203@zytor.com>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
- <1329696488-16970-31-git-send-email-hpa@zytor.com> <4F42E171.9080005@mit.edu>
- <4F431665.3010004@zytor.com> <CAObL_7Hy8Y0PWrcZdRSGRcEt+aoma7ax4XU44f-gdHEGoWBzTg@mail.gmail.com>
- <4F43D98D.1020406@zytor.com> <CAObL_7GqT-CSB6uBoDvKymodEzUi3tY0DJv0U=xzYbaJS7A1nA@mail.gmail.com>
- <4F43EA83.6020203@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 21 Feb 2012 11:29:00 -0800
-X-Google-Sender-Auth: M9d8TY9nVF72GNUOINuYqZJW3f8
-Message-ID: <CAObL_7GLnDFkb61jAZEj+9gGTr4FA=8ZFVMxd9Tus4LVVmKjKw@mail.gmail.com>
-Subject: Re: [PATCH 30/30] x32: Add x32 VDSO support
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, hjl.tools@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Do the x86 kernel entry points need an xabort on TSX cpus?
+References: <CALCETrVWBdp2yyuZ54osq_QQ0a8NKUfOk8stxtuiFWq76FO7JQ@mail.gmail.com> <4F35517F.9070904@linux.intel.com> <CALCETrVHpfW5=paX8XjGNBg3Q7sjeLptMBG6bW=iQpXk0Uo+PA@mail.gmail.com>
+In-Reply-To: <CALCETrVHpfW5=paX8XjGNBg3Q7sjeLptMBG6bW=iQpXk0Uo+PA@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:03 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/21/2012 10:54 AM, Andrew Lutomirski wrote:
->>
->> uclibc hardcodes a call to the vsyscall gettimeofday implementation in
->> its locking primitives, which probably gives terrible performance, but
->> that's a separate issue.  I think do_emulate_vsyscall should send a
->> segfault if called by an x32 task -- there's some security benefit to
->> doing so, and there's unlikely to be any downside.
->>
->
-> The vsyscall page shouldn't be mapped for x32 tasks...
+On 02/10/2012 09:24 AM, Andy Lutomirski wrote:
+> 
+> Is that architecturally guaranteed?  (My manual suggests that it's 
+> specifically *not* guaranteed, which is surprising.)
+> 
 
-How is that possible?  It lives in the fixmap and is presumably
-visible from any 64-bit code.
+I asked internally for a statement, and got the following:
 
-Admittedly, x32 tasks are probably somewhat difficult to trick into
-calling addresses with high bits set, but it's not necessarily
-impossible.
+"Intel does not expect operating systems to require XABORT at the entry
+points.  Intel takes system security extremely seriously and that any
+functionality added is scrutinized for security implications."
 
---Andy
+	-hpa
+
