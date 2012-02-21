@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab2BUUk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:40:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56561 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab2BUUk6 (ORCPT
+	id S1755684Ab2BUUmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:42:06 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60468 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535Ab2BUUmE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 15:40:58 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.128.132 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F440154.7010403@openvz.org>
-Date: Wed, 22 Feb 2012 00:40:52 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <4F4331BC.70205@openvz.org> <alpine.LSU.2.00.1202211117340.1858@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202211117340.1858@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 15:42:04 -0500
+Date: Tue, 21 Feb 2012 15:40:53 -0500 (EST)
+Message-Id: <20120221.154053.2103818562080068513.davem@davemloft.net>
+To: andrei.emeltchenko.news@gmail.com
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-02-20
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	<20120221.144417.1445117001833888214.davem@davemloft.net>
+	<CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 21 Feb 2012 12:40:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+Date: Tue, 21 Feb 2012 22:38:16 +0200
+
+> Hi David,
+> 
+> On Tue, Feb 21, 2012 at 9:44 PM, David Miller <davem@davemloft.net> wrote:
+>> From: "John W. Linville" <linville@tuxdriver.com>
+>> Date: Tue, 21 Feb 2012 10:14:36 -0500
 >>
->> But just one question: how appears uncharged pages in mem-cg lru lists?
->
-> One way is swapin readahead pages, which cannot be charged to a memcg
-> until they're "claimed"; but we do need them visible on lru, otherwise
-> memory pressure couldn't reclaim them when necessary.
+>>> On Mon, Feb 20, 2012 at 07:23:24PM -0500, David Miller wrote:
+>>>> From: "John W. Linville" <linville@tuxdriver.com>
+>>>> Date: Mon, 20 Feb 2012 15:37:40 -0500
+>>>>
+>>>> > Here is another batch of fixes intended for 3.3.  Most of the fixes
+>>>> > this time are for Bluetooth.
+>>>>
+>>>> Pulled, but please read the bluetooth changes more carefully in the
+>>>> future, there were a lot of coding style errors introduced this
+>>>> time around.
+>>>
+>>> I pinged Johan about this, and he tells me that he spoke to Marcel
+>>> as well.  They were a bit unsure about the issue.  Is your concern
+>>> primarily about some excessive tabbing for indentation of parameters
+>>> and such?
+>>
+>> So you actually looked at the changes you pushed to me and you are
+>> telling me you personally can't find anything that looks like garbage?
+>>
+>> Really?  Do I really have to point out such obvious stuff like this?
+>> Are you serious?
+>>
+>> Look at ca0d6c7ece0e78268cd7c5c378d6b1b610625085 ("Bluetooth: Add
+>> missing QUIRK_NO_RESET test to hci_dev_do_close")
+>>
+>> You tell me what the heck you think of this thing.
+>>
+>> -       if (!test_bit(HCI_RAW, &hdev->flags)) {
+>> +       if (!test_bit(HCI_RAW, &hdev->flags) &&
+>> +                               test_bit(HCI_QUIRK_NO_RESET, &hdev->quirks)) {
+>>
+>> That's disgusting, it jumps off the screen and says "Hello, I am ugly
+>> as sin".  How in the world can you miss something like this?  Four
+>> TABs on the second line?  Why?  I can't believe we even have to discuss
+>> something like this, seriously.
+> 
+> Sorry did we understand wrong text of Linux coding style? Or do we need
+> right interpretation of it?
 
-Ok, this is really reasonable.
-
->
-> Another way is simply that uncharging has not historically removed the
-> page from lru list if it's on.  I usually assume that's an optimization:
-> why bother to get lru locks and take it off (and put it on the root lru?
-> if we don't, we're assuming it's will be freed very shortly - I'm not
-> sure that's always a good assumption), if freeing the page will usually
-> do that for us (without having to change lrus).
->
-> If I thought for longer, I might come up with other scenarios.
->
->> Maybe we can forbid this case and uncharge these pages right in
->> __page_cache_release() and release_pages() at final removing from LRU.
->> This is how my old mem-controller works. There pages in lru are always
->> charged.
->
-> As things stand, that would mean lock_page_cgroup() has to disable irqs
-> everywhere.  I'm not sure of the further ramifications of moving uncharge
-> to __page_cache_release() and release_pages().  I don't think a change
-> like that is out of the question, but it's certainly a bigger change
-> than I'd like to consider in this series.
-
-Ok. I have another big question: Why we remove pages from lru at last put_page()?
-
-Logically we can remove them in truncate_inode_pages_range() for file
-and in free_pages_and_swap_cache() or something at last unmap for anon.
-Pages are unreachable after that, they never become alive again.
-Reclaimer also cannot reclaim them in this state, so there no reasons for keeping them in lru.
-Into those two functions pages come in large batches, so we can remove them more effectively,
-currently they are likely to be removed right in this place, just because release_pages() drops
-last references, but we can do this lru remove unconditionally.
-Plus it never happens in irq context, so lru_lock can be converted to irq-unsafe in some distant future.
-
->
-> Hugh
-
+I'm not engaging in this conversation any more, I don't care what CodingStyle
+says, the quoted code is garbage.
