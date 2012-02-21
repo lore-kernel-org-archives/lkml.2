@@ -1,89 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab2BUBuZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:50:25 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46455 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab2BUBuX convert rfc822-to-8bit (ORCPT
+	id S1753813Ab2BUBuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:50:51 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33310 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab2BUBut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:50:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jwboyer@gmail.com designates 10.180.80.8 as permitted sender) smtp.mail=jwboyer@gmail.com; dkim=pass header.i=jwboyer@gmail.com
+	Mon, 20 Feb 2012 20:50:49 -0500
+Date: Mon, 20 Feb 2012 17:50:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu] rcu: direct algorithmic SRCU
+ implementation
+Message-ID: <20120221015037.GE2384@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120213020951.GA12138@linux.vnet.ibm.com>
+ <4F41F315.1040900@cn.fujitsu.com>
+ <20120220174418.GI2470@linux.vnet.ibm.com>
+ <4F42EF53.6060400@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
-	<alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
-	<alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
-	<alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
-	<alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
-Date: Mon, 20 Feb 2012 20:50:22 -0500
-Message-ID: <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-From: Josh Boyer <jwboyer@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F42EF53.6060400@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022101-7282-0000-0000-000006B231E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 2:48 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Sun, 19 Feb 2012 13:27:00 -0800
-> Subject: [PATCH v2 3/3] i387: support lazy restore of FPU state
->
-> This makes us recognize when we try to restore FPU state that matches
-> what we already have in the FPU on this CPU, and avoids the restore
-> entirely if so.
->
-> To do this, we add two new data fields:
->
->  - a percpu 'fpu_owner_task' variable that gets written any time we
->   update the "has_fpu" field, and thus acts as a kind of back-pointer
->   to the task that owns the CPU.  The exception is when we save the FPU
->   state as part of a context switch - if the save can keep the FPU
->   state around, we leave the 'fpu_owner_task' variable pointing at the
->   task whose FP state still remains on the CPU.
->
->  - a per-thread 'last_cpu' field, that indicates which CPU that thread
->   used its FPU on last.  We update this on every context switch
->   (writing an invalid CPU number if the last context switch didn't
->   leave the FPU in a lazily usable state), so we know that *that*
->   thread has done nothing else with the FPU since.
->
-> These two fields together can be used when next switching back to the
-> task to see if the CPU still matches: if 'fpu_owner_task' matches the
-> task we are switching to, we know that no other task (or kernel FPU
-> usage) touched the FPU on this CPU in the meantime, and if the current
-> CPU number matches the 'last_cpu' field, we know that this thread did no
-> other FP work on any other CPU, so the FPU state on the CPU must match
-> what was saved on last context switch.
->
-> In that case, we can avoid the 'f[x]rstor' entirely, and just clear the
-> CR0.TS bit.
->
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+On Tue, Feb 21, 2012 at 09:11:47AM +0800, Lai Jiangshan wrote:
+> On 02/21/2012 01:44 AM, Paul E. McKenney wrote:
+> 
+> > 
+> >> My conclusion, we can just remove the check-and-return path to reduce
+> >> the complexity since we will introduce call_srcu().
+> > 
+> > If I actually submit the above upstream, that would be quite reasonable.
+> > My thought is that patch remains RFC and the upstream version has
+> > call_srcu().
+> 
+> Does the work of call_srcu() is started or drafted?
 
-I haven't tried really figuring this out yet, but building the Fedora kernel
-on x86_64 with your latest tree results in:
+I do have a draft design, and am currently beating it into shape.
+No actual code yet, though.  The general idea at the moment is as follows:
 
-ERROR: "fpu_owner_task" [lib/raid6/raid6_pq.ko] undefined!
-ERROR: "fpu_owner_task" [arch/x86/kvm/kvm.ko] undefined!
-ERROR: "fpu_owner_task" [arch/x86/crypto/sha1-ssse3.ko] undefined!
-ERROR: "fpu_owner_task" [arch/x86/crypto/serpent-sse2-x86_64.ko] undefined!
-ERROR: "fpu_owner_task" [arch/x86/crypto/ghash-clmulni-intel.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-+ exit 1
+o	The state machine must be preemptible.	I recently received
+	a bug report about 200-microsecond latency spikes on a system
+	with more than a thousand CPUs, so the summation of the per-CPU
+	counters and subsequent recheck cannot be in a preempt-disable
+	region.  I am therefore currently thinking in terms of a kthread.
 
-Since this patch went in as 7e16838d94b566a1, I'm guessing it's at least
-related.
+o	At the moment, having a per-srcu_struct kthread seems excessive.
+	I am planning on a single kthread to do the counter summation
+	and checking.  Further parallelism might be useful in the future,
+	but I would want to see someone run into problems before adding
+	more complexity.
 
-I'm building again with more verbose output but I thought I'd send this out
-quickly.
+o	There needs to be a linked list of srcu_struct structures so
+	that they can be traversed by the state-machine kthread.
 
-josh
+o	If there are expedited SRCU callbacks anywhere, the kthread
+	would scan through the list of srcu_struct structures quickly
+	(perhaps pausing a few microseconds between).  If there are no
+	expedited SRCU callbacks, the kthread would wait a jiffy or so
+	between scans.
+
+o	If a given srcu_struct structure has been scanned too many times
+	(say, more than ten times) while waiting for the counters to go
+	to zero, it loses expeditedness.  It makes no sense for the kthread
+	to go CPU-bound just because some SRCU reader somewhere is blocked
+	in its SRCU read-side critical section.
+
+o	Expedited SRCU callbacks cannot be delayed by normal SRCU
+	callbacks, but neither can expedited callbacks be allowed to
+	starve normal callbacks.  I am thinking in terms of invoking these
+	from softirq context, with a pair of multi-tailed callback queues
+	per CPU, stored in the same structure as the per-CPU counters.
+
+o	There are enough srcu_struct structures in the Linux that
+	it does not make sense to force softirq to dig through them all
+	any time any one of them has callbacks ready to invoke.  One way
+	to deal with this is to have a per-CPU set of linked lists of
+	of srcu_struct_array structures, so that the kthread enqueues
+	a given structure when it transitions to having callbacks ready
+	to invoke, and softirq dequeues it.  This can be done locklessly
+	given that there is only one producer and one consumer.
+
+o	We can no longer use the trick of pushing callbacks to another
+	CPU from the CPU_DYING notifier because it is likely that CPU
+	hotplug will stop using stop_cpus().  I am therefore thinking
+	in terms of a set of orphanages (two for normal, two more for
+	expedited -- one set of each for callbacks ready to invoke,
+	the other for still-waiting callbacks).
+
+o	There will need to be an srcu_barrier() that can be called
+	before cleanup_srcu_struct().  Otherwise, someone will end up
+	freeing up an srcu_struct that still has callbacks outstanding.
+
+But what did you have in mind?
+
+> >> This new srcu is very great, especially the SRCU_USAGE_COUNT for every
+> >> lock/unlock witch forces any increment/decrement pair changes the counter
+> >> for me.
+> > 
+> > Glad you like it!  ;-)
+> > 
+> > And thank you for your review and feedback!
+> 
+> Could you add my Reviewed-by when this patch is last submitted?
+> 
+> 
+> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+Will do, thank you!
+
+							Thanx, Paul
+
