@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab2BUWTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:19:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39312 "EHLO mga02.intel.com"
+	id S1755844Ab2BUWVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:21:25 -0500
+Received: from xes-mad.com ([216.165.139.218]:56065 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab2BUWTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:19:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="110548125"
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 14:19:35 -0800
-In-Reply-To: <CA+55aFzSKR76rVAXQWjKmjmSPVu8XeULh5g864hbOgq6WA4foQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
-	 <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
-	 <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
-	 <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
-	 <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
-	 <1329861273.29790.261.camel@sbsiddha-desk.sc.intel.com>
-	 <CA+55aFzSKR76rVAXQWjKmjmSPVu8XeULh5g864hbOgq6WA4foQ@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1752611Ab2BUWVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:21:24 -0500
+Date: Tue, 21 Feb 2012 16:21:12 -0600 (CST)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter@roeck-us.net>, Peter Tyser <ptyser@xes-inc.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3 v4] mfd: Add LPC driver for Intel ICH chipsets
+Message-ID: <14262b0b-3937-45c0-bc01-93de9e2b4113@zimbra>
+In-Reply-To: <20120221152853.054855fe@endymion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1329862775.29790.268.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+MIME-Version: 1.0
+X-Originating-IP: [10.52.0.65]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC15 (Linux)/7.1.3_GA_3346)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 13:57 -0800, Linus Torvalds wrote:
-> On Tue, Feb 21, 2012 at 1:54 PM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
-> >
-> > Reviewing this code, I think we need to set the 'last_cpu' to an invalid
-> > number in the fpu_alloc too. Appended is the patch.
+> On Mon, 20 Feb 2012 14:36:27 -0600 (CST), Aaron Sierra wrote:
+> > > > +	}
+> > > > +
+> > > > +	/* Enable LPC ACPI space */
+> > > > +	pci_read_config_byte(dev, ACPICTRL, &reg_save);
+> > > > +	pci_write_config_byte(dev, ACPICTRL, reg_save | 0x10);
+> > > > +	lpc_ich_acpi_save = reg_save;
+> > > > +
+> > > > +pm_done:
+> > > > +	/* Setup GPIO base register */
+> > > > +	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
+> > > > +	base_addr = base_addr_cfg & 0x0000ff80;
+> > > > +	if (!base_addr) {
+> > > > +		dev_err(&dev->dev, "I/O space for GPIO uninitialized\n");
+> > > > +		/* GPIO in power-management space may still be available */
+> > > > +		goto gpio_reg;
+> > > > +	}
+> > > > +
+> > > > +	gpio_ich_res[ICH_RES_GPIO].start = base_addr;
+> > > > +	gpio_ich_res[ICH_RES_GPIO].end = base_addr + GPIOBASE_IO_SIZE
+> > > > -
+> > > > 1;
+> > > > +	ret =
+> > > > acpi_check_resource_conflict(&gpio_ich_res[ICH_RES_GPIO]);
+> > > > +	if (ret) {
+> > > > +		/* this isn't necessarily fatal for the GPIO */
+> > > > +		gpio_ich_res[ICH_RES_GPIO].start = 0;
+> > > > +		gpio_ich_res[ICH_RES_GPIO].end = 0;
+> > > 
+> > > I don't quite get how this can be non-fatal, given that the
+> > > gpio-ich driver's probe function will return -ENODEV in this
+> > > case. So if this resource is mandatory, let's make it exactly
+> > > that.
+> > 
+> > The necessity for the ICH_RES_GPIO resource to exist is an issue I
+> > thought better left to the gpio-ich driver. The way that driver is
+> > currently written it is mandatory, but it doesn't *have* to be
+> > written that way. For chipsets that have GPE0 and GPIO space, only
+> > one needs to be present to have some usable GPIO.
 > 
-> I cleared fpu_counter in copy_thread() instead.
+> Ah, OK, I had misunderstood this, I thought GPIO was always
+> mandatory.
+> 
+> We're only talking about the ICH6 and 3100, right? I find it
+> questionable that you even attempt to request and enable the GPE0
+> space on all other chips then. This could cause error messages
+> that are not relevant at all.
 
-Hmm, didn't pay attention to that patch. Too many patches ;(
+You'll see in the V5 patch that I followed your suggestion and now
+treat the GPIO space as mandatory. The local version I have
+prepared for V6 only looks for GPE0 space for ICH6 and i3100
+devices.
 
-> Doing this in fpu_alloc() isn't necessarily a bad idea, though.
+> > Otherwise, the only optimization (fix) I see is that
+> > ACPIBASE_GPE0_BASE should be 0x28, not 0x20 and gpe0_sts_ofs
+> > in gpio-ich should be removed. Currently, that portion of
+> > gpio-ich appears to be broken.
+> 
+> If you only need the I/O port at offset 0x28, then indeed it might
+> make sense to only request that one to limit the risk of resource
+> conflicts.
 
-yes, I think we should do this in fpu_alloc() or bit more explicitly by
-updating 'last_cpu' in copy_thread().
+I addressed this with V5.
 
-Someone experimenting with removing fpu pre-load may not realize this
-subtle issue.
+> > > > +	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_GPIO], id);
+> > > > +	ret = mfd_add_devices(&dev->dev, 0, &lpc_ich_cells[LPC_GPIO],
+> > > > +				1, NULL, 0);
+> > > > +	if (!ret)
+> > > > +		cell_added = true;
+> > > > +
+> > > > +	if (acpi_conflict)
+> > > > +		dev_info(&dev->dev, "ACPI resource conflicts found; "
+> > > > +				"consider using acpi_enforce_resources=lax?\n");
+> > > 
+> > > I'm not sure if it really makes sense to report this. ACPI
+> > > resource
+> > > conflicts are already reported quite loudly by the acpi core. And
+> > > passing acpi_enforce_resources=lax blindly isn't quite
+> > > recommended,
+> > > so I'm not sure if we really want to mention it here, it might do
+> > > more
+> > > harm than help.
+> > 
+> > So the question mark doesn't imply strongly enough that it's not an
+> > action that should definitely be taken. Would you prefer a warning
+> > summarizing which drivers are affected by the detected resource
+> > conflicts or no additional warning at all?
+> 
+> I wouldn't put any additional warning at all. But maybe that's just
+> me.
 
-thanks,
-suresh
+In V5, I added warnings indicating which drivers are affected by
+conflicts, since it was trivial with the way that I compartmentalized
+gpio and watchdog mfd cell creation in that version.
 
-
-
-
+-Aaron S.
