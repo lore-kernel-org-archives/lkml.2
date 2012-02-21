@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab2BUTC1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:02:27 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17601 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab2BUTCZ (ORCPT
+	id S1755821Ab2BUTCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:02:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62921 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab2BUTCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:02:25 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6626"; a="162737688"
-Message-ID: <baeb19a6436a63fd4f97782a6e22b7a6.squirrel@www.codeaurora.org>
-In-Reply-To: <000401ccf05a$9032c130$b0984390$%jun@samsung.com>
-References: <000b01ccdc0a$0336abc0$09a40340$%jun@samsung.com>
-    <e62a9b49ee1778129ef1b0adf2e14fc7.squirrel@www.codeaurora.org>
-    <000401ccf05a$9032c130$b0984390$%jun@samsung.com>
-Date: Tue, 21 Feb 2012 11:02:25 -0800 (PST)
-Subject: RE: [PATCH v4 2/2] mmc: core: Support packed command for eMMC4.5 
-     device
-From: merez@codeaurora.org
-To: "Seungwon Jeon" <tgih.jun@samsung.com>
-Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Tue, 21 Feb 2012 14:02:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH v11 03/11] asm/syscall.h: add syscall_get_arch
+Date: Tue, 21 Feb 2012 13:01:58 -0600
+Message-Id: <1329850918-4899-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <CAB=4xhp6y7Pq7mTF228TdyA-_z2j5z1yEnFrNQrFr7M9BZQ1Fg@mail.gmail.com>
+References: <CAB=4xhp6y7Pq7mTF228TdyA-_z2j5z1yEnFrNQrFr7M9BZQ1Fg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maya Erez <merez@codeaurora.org> wrote:
->> > @@ -1262,21 +1608,32 @@ static int mmc_blk_issue_rw_rq(struct
->> mmc_queue
->> > *mq, struct request *rqc)
->> >  	int ret = 1, disable_multi = 0, retry = 0, type;
->> >  	enum mmc_blk_status status;
->> >  	struct mmc_queue_req *mq_rq;
->> > -	struct request *req;
->> > +	struct request *req, *prq;
->> >  	struct mmc_async_req *areq;
->> > +	u8 reqs = 0;
->> >
->> >  	if (!rqc && !mq->mqrq_prev->req)
->> >  		return 0;
->> >
->> > +	if (rqc)
->> > +		reqs = mmc_blk_prep_packed_list(mq, rqc);
->> > +
->> >  	do {
->> >  		if (rqc) {
->> > -			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->> > +			if (reqs >= card->host->packed_min)
->> In case host->packed_min will be set to a value bigger than 2 you will
->> loose all the requests that were added to the packed list. If you want
->> to
->> support dynamic number of min packed requests you need to move the
->> packed
->> list preparation to queue.c where you can issue the fetched requests one
->> after another, when (reqs < card->host->packed_min).
->
-> That's a good point.
-> The requests added to the packed list will be remained
-> if current number of packed request is less than packed_min.
-> In such a case, requests should be put back to request_queue from packed
-> list.
-> I think it's a additional and unnecessary work due to packed_min.
-> It's not interesting. So I want to revert this regulation of packed_min.
->
-> And we have discussed the location of mmc_blk_prep_packed_list(block.c or
-> queue.c) several times.
-> Packed command is valid only if request type is read/write,
-> so it may be a good location to decide in mmc_blk_issue_rw_rq in block.c.
-> I guess you want this function to be located in mmc_queue_thread in
-> queue.c, right?
-> Is it advantageous? Could you explain for this?
->
-> Thanks,
-> Seungwon Jeon
-Regarding moving the code to queue.c, I think that if we decide to keep
-packed_min it will be more efficient to send the fetched requests one
-after another instead of requeueing them and fetch them again next time
-(which can lead to long fetch->requeue sequences).
-I agree we can remove the packed_min and use a constant of 2 instead. It
-will make the code much more complex and I don't see a real need for it.
->> > +				mmc_blk_packed_hdr_wrq_prep(mq->mqrq_cur, card, mq, reqs);
->> > +			else
->> > +				mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->>
->> Thanks,
->> Maya Erez
->> Consultant for Qualcomm Innovation Center, Inc.
->> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Adds a stub for a function that will return the AUDIT_ARCH_*
+value appropriate to the supplied task based on the system
+call convention.
 
+For audit's use, the value can generally be hard-coded at the
+audit-site.  However, for other functionality not inlined into
+syscall entry/exit, this makes that information available.
+seccomp_filter is the first planned consumer and, as such,
+the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
+is probably an unneeded detail.
+
+Suggested-by: Roland McGrath <mcgrathr@chromium.org>
+Signed-off-by: Will Drewry <wad@chromium.org>
+
+v11: fixed improper return type
+v10: introduced
+---
+ include/asm-generic/syscall.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
+index 5c122ae..a2c13dc 100644
+--- a/include/asm-generic/syscall.h
++++ b/include/asm-generic/syscall.h
+@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
+ 			   unsigned int i, unsigned int n,
+ 			   const unsigned long *args);
+ 
++/**
++ * syscall_get_arch - return the AUDIT_ARCH for the current system call
++ * @task:	task of interest, must be in system call entry tracing
++ * @regs:	task_pt_regs() of @task
++ *
++ * Returns the AUDIT_ARCH_* based on the system call convention in use.
++ *
++ * It's only valid to call this when @task is stopped on entry to a system
++ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
++ *
++ * Note, at present this function is only required with
++ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
++ */
++int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
+ #endif	/* _ASM_SYSCALL_H */
+-- 
+1.7.5.4
 
