@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab2BUUAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:00:35 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50247 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756084Ab2BUUAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756092Ab2BUUAd (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 21 Feb 2012 15:00:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.239.229 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 12:00:08 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
-In-Reply-To: <4F433418.3010401@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202211140330.1858@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <4F433418.3010401@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+Received: from mx1.redhat.com ([209.132.183.28]:26913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754975Ab2BUTxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:53:55 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 64/73] union-mount: Implement union-aware truncate() [ver #2]
+To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        valerie.aurora@gmail.com
+Cc: linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com> (Further development)
+Date: Tue, 21 Feb 2012 18:05:31 +0000
+Message-ID: <20120221180531.25235.60819.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
-> > 
-> > Be particularly careful in compaction's isolate_migratepages() and
-> > vmscan's lumpy handling in isolate_lru_pages(): those approach the
-> > page by its physical location, and so can encounter pages which
-> > would not be found by any logical lookup.  For those cases we have
-> > to change __isolate_lru_page() slightly: it must leave ClearPageLRU
-> > to the caller, because compaction and lumpy cannot safely interfere
-> > with a page until they have first isolated it and then locked lruvec.
-> 
-> Yeah, this is most complicated part.
+Original-author: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com> (Further development)
+---
 
-Yes, I found myself leaving this patch until last when commenting.
+ fs/open.c |   44 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 38 insertions(+), 6 deletions(-)
 
-And was not entirely convinced by what I then said of move_account().
-Indeed, I wondered if it might be improved and simplified by taking
-lruvec locks itself, in the manner that commit_charge lrucare ends
-up doing.
+diff --git a/fs/open.c b/fs/open.c
+index bce645b..f61183b 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -65,14 +65,17 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ {
+ 	struct path path;
++	struct nameidata nd;
++	struct vfsmount *mnt;
+ 	struct inode *inode;
++	char *tmp;
+ 	int error;
+ 
+ 	error = -EINVAL;
+ 	if (length < 0)	/* sorry, but loff_t says... */
+ 		goto out;
+ 
+-	error = user_path(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
+ 	if (error)
+ 		goto out;
+ 	inode = path.dentry->d_inode;
+@@ -86,18 +89,45 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (!S_ISREG(inode->i_mode))
+ 		goto dput_and_out;
+ 
+-	error = mnt_want_write(path.mnt);
++	/* If we're looking at the lower layer of a union mount, then we need
++	 * to create the file on the upperfs and truncate that.
++	 */
++	if (IS_MNT_LOWER(path.mnt))
++		mnt = nd.path.mnt;
++	else
++		mnt = path.mnt;
++
++	error = mnt_want_write(mnt);
+ 	if (error)
+ 		goto dput_and_out;
+ 
+-	error = inode_permission(inode, MAY_WRITE);
+-	if (error)
+-		goto mnt_drop_write_and_out;
++	if (unlikely(IS_MNT_UNION(mnt))) {
++		/* We have to be able to write to the upperfs. */
++		error = -EROFS;
++		if (mnt->mnt_sb->s_flags & MS_RDONLY)
++			goto mnt_drop_write_and_out;
++
++		/* But the lowerfs inode must offer write permission - if the
++		 * lowerfs was mounted writably. */
++		error = __inode_permission(inode, MAY_WRITE);
++		if (error)
++			goto mnt_drop_write_and_out;
++	} else {
++		error = inode_permission(inode, MAY_WRITE);
++		if (error)
++			goto mnt_drop_write_and_out;
++	}
+ 
+ 	error = -EPERM;
+ 	if (IS_APPEND(inode))
+ 		goto mnt_drop_write_and_out;
+ 
++	error = union_copyup_len(&nd, &path, length);
++	if (error)
++		goto mnt_drop_write_and_out;
++
++	/* path may have changed after copyup */
++	inode = path.dentry->d_inode;
+ 	error = get_write_access(inode);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+@@ -119,9 +149,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ put_write_and_out:
+ 	put_write_access(inode);
+ mnt_drop_write_and_out:
+-	mnt_drop_write(path.mnt);
++	mnt_drop_write(mnt);
+ dput_and_out:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
+ out:
+ 	return error;
+ }
 
-> I found one race here, see below.
-
-Thank you!
-
-> > @@ -386,10 +364,24 @@ static isolate_migrate_t isolate_migrate
-> >                          continue;
-> > 
-> >                  page_relock_lruvec(page,&lruvec);
-> 
-> Here race with mem_cgroup_move_account() we hold lock for old lruvec,
-> while move_account() recharge page and put page back into other lruvec.
-> Thus we see PageLRU(), but below we isolate page from wrong lruvec.
-
-I expect you'll prove right on that, but I'm going to think about it
-more later.
-
-> 
-> In my patch-set this is fixed with __wait_lru_unlock() [ spin_unlock_wait() ]
-> in mem_cgroup_move_account()
-
-Right now, after finishing mail, I want to concentrate on getting your
-series working under my swapping load.
-
-It's possible that I screwed up rediffing it to my slightly later
-base (though the only parts that appeared to need fixing up were as
-expected, near update_isolated_counts and move_active_pages_to_lru);
-but if so I'd expect that to show up differently.
-
-At present, although it runs fine with cgroup_disable=memory, with memcg
-two machines very soon hit that BUG at include/linux/mm_inline.h:41!
-when the lru_size or pages_count wraps around; on another it hit that
-precisely when I stopped the test.
-
-In all cases it's in release_pages from free_pages_and_swap_cache from
-tlb_flush_mmu from tlb_finish_mmu from exit_mmap from mmput from exit_mm
-from do_exit (but different processes exiting).
-
-Hugh
