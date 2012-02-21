@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2BUEsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 23:48:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61019 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab2BUEsm (ORCPT
+	id S1754196Ab2BUEwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 23:52:45 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37912 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752666Ab2BUEwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 23:48:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.68.221.9 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, feng.tang@intel.com, dvhart@linux.intel.com,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH] misc/pch_phub: Change UART clock setting 192MHz
-Date: Tue, 21 Feb 2012 13:48:09 +0900
-Message-Id: <1329799689-3868-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Mon, 20 Feb 2012 23:52:44 -0500
+X-Sasl-enc: BPvLOfDEcAoxvd4O/yyNdQvVYAPOqhfyV9/43Th9ytIB5dUj0WQQrCKx4A 1329799963
+Message-ID: <1329799959.2226.32.camel@perseus.themaw.net>
+Subject: Re: Linux 3.3-rc4
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, thomas@m3y3r.de,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 21 Feb 2012 12:52:39 +0800
+In-Reply-To: <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com>
+References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
+	 <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
+	 <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
+	 <20120219.144947.660678318380307878.davem@davemloft.net>
+	 <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com>
+	 <1329794974.2226.11.camel@perseus.themaw.net>
+	 <CA+55aFxDXcgOHRk5aPV5aGEDT3chXgcq_ktHKutk7OcyRjDUUw@mail.gmail.com>
+	 <1329796956.2226.20.camel@perseus.themaw.net>
+	 <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, PCH_UART uses UART_CLK(provided by external) as default clock.
-So, according to user environment, users need to care both clock
-setting and baud rate.
+On Mon, 2012-02-20 at 20:17 -0800, Linus Torvalds wrote:
+> On Mon, Feb 20, 2012 at 8:02 PM, Ian Kent <raven@themaw.net> wrote:
+> >
+> > It doesn't but changing it for exiting binaries will break existing
+> > binaries that use a workaround.
+> 
+> What existing binaries?
 
-This patch uses internal clock (USB 48MHz) as base of UART clock.
-Using this clock, users don't have to care clock setting.
-Additionally, the clock multiplied 4, namely the clock is 192MHz,
-the clock can cover almost UART range.
+My bad, autofs for one, but obviously when running in compat mode.
+And any other user space users, such as the auto_dir package, but I
+don't know if that is maintained any more.
 
-This setting is the same as quirk for CM-iTC board.
-So, delete the quirk.
+> 
+> > I'm proposing this because the systemd folks were happy to do it this
+> > way. But if you would like any other existing user space users to change
+> > to using a correctly sized packet then, yes, it isn't what you want to
+> > happen.
+> 
+> Existing binaries *do* use the correct size packet - it's the correct
+> size for native x86-32!
+> 
+> It's our x86-64 compat layer that is wrong. It's a clear bug. Nothing else.
+> 
+> We don't start making up new interfaces because we have clear bugs: we
+> fix the damn bugs.
+> 
+> How could you even sanely do "workarounds"? A x86-32 binary shouldn't
+> even be able to *tell* that the kernel is 64-bit. And if it does that
+> somehow, we should fix that too!
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/misc/pch_phub.c |   35 ++++++++++++++++++++++++++---------
- 1 files changed, 26 insertions(+), 9 deletions(-)
+Sure, not an acceptable excuse I know, but it was too late when I
+realized my mistake.
 
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index 10fc478..4ef9285 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -55,7 +55,7 @@
- #define CLKCFG_CANCLK_MASK 0xFF000000
- #define CLKCFG_UART_MASK			0xFFFFFF
- 
--/* CM-iTC */
-+/* 192MHz Clock configuration. USB_48MHz * 8 / 2 = 192 */
- #define CLKCFG_UART_48MHZ			(1 << 16)
- #define CLKCFG_BAUDDIV				(2 << 20)
- #define CLKCFG_PLL2VCO				(8 << 9)
-@@ -731,14 +731,11 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 					       CLKCFG_CAN_50MHZ,
- 					       CLKCFG_CANCLK_MASK);
- 
--		/* quirk for CM-iTC board */
--		board_name = dmi_get_system_info(DMI_BOARD_NAME);
--		if (board_name && strstr(board_name, "CM-iTC"))
--			pch_phub_read_modify_write_reg(chip,
--						(unsigned int)CLKCFG_REG_OFFSET,
--						CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
--						CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
--						CLKCFG_UART_MASK);
-+		pch_phub_read_modify_write_reg(chip,
-+					(unsigned int)CLKCFG_REG_OFFSET,
-+					CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-+					CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-+					CLKCFG_UART_MASK);
- 
- 		/* set the prefech value */
- 		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
-@@ -750,6 +747,13 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
- 		if (retval)
- 			goto err_sysfs_create;
-+
-+		pch_phub_read_modify_write_reg(chip,
-+			(unsigned int)CLKCFG_REG_OFFSET,
-+			CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-+			CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-+			CLKCFG_UART_MASK);
-+
- 		/* set the prefech value
- 		 * Device2(USB OHCI #1/ USB EHCI #1/ USB Device):a
- 		 * Device4(SDIO #0,1,2):f
-@@ -777,6 +781,13 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
- 		if (retval)
- 			goto exit_bin_attr;
-+
-+		pch_phub_read_modify_write_reg(chip,
-+					(unsigned int)CLKCFG_REG_OFFSET,
-+					CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-+					CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-+					CLKCFG_UART_MASK);
-+
- 		/* set the prefech value
- 		 * Device2(USB OHCI #0,1,2,3/ USB EHCI #0):a
- 		 * Device4(SDIO #0,1):f
-@@ -796,6 +807,12 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 		if (retval)
- 			goto exit_bin_attr;
- 
-+		pch_phub_read_modify_write_reg(chip,
-+					(unsigned int)CLKCFG_REG_OFFSET,
-+					CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV |
-+					CLKCFG_PLL2VCO | CLKCFG_UARTCLKSEL,
-+					CLKCFG_UART_MASK);
-+
- 		/* set the prefech value */
- 		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
- 		/* set the interrupt delay value */
--- 
-1.7.7.6
+So, as you say, let's fix the bug.
+
+autofs is by far the biggest user and I can manage the change for it and
+I can at least post to the auto_dir list (if it still exists) and Thomas
+can feedback to the systemd folks.
+
+Then there is the question of how it should be done.
+
+I think the patch attached to your original post needs a little work if
+that is to be used. Correct me if I'm wrong but AFAICT there are more
+architectures that use 8-byte alignment than just x86-64, such as alpha,
+ia64 and ppc64 and I believe they may also be used in a compat mode.
+
+Is there a better way to do this change, anyone?
+
+Ian
 
