@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab2BUKqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:46:32 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:41818 "EHLO zene.cmpxchg.org"
+	id S1754588Ab2BUKuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:50:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33956 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab2BUKqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:46:30 -0500
-Date: Tue, 21 Feb 2012 11:46:22 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memcg: fix page_referencies cgroup filter on global
- reclaim
-Message-ID: <20120221104622.GB1676@cmpxchg.org>
-References: <20120215162830.13902.60256.stgit@zurg>
+	id S1753487Ab2BUKui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 05:50:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119616450"
+Date: Tue, 21 Feb 2012 11:50:34 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.3] mfd: Test for jack detection when deciding if wm8994
+ should suspend
+Message-ID: <20120221105034.GR5387@sortiz-mobl>
+References: <1329773552-22271-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120215162830.13902.60256.stgit@zurg>
+In-Reply-To: <1329773552-22271-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 15, 2012 at 08:28:30PM +0400, Konstantin Khlebnikov wrote:
-> Global memory reclaimer should't skip referencies for any pages,
-> even if they are shared between different cgroups.
+Hi Mark,
 
-Agreed: if we reclaim from one memcg because of its limit, we want to
-reclaim those pages that this group is not using.  If it's used by
-someone else, it should be evicted and refaulted by the group that
-needs it.
+On Mon, Feb 20, 2012 at 09:32:32PM +0000, Mark Brown wrote:
+> The jack detection on WM1811 is often required during system suspend, add
+> it as another check when deciding if we should suspend.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+> Samuel, could you please add this to your for-linus branch?  It's been
+> sitting around unloved for some considerable time now...
+Sure. For some reason I misunderstood that you already pushed it.
+Applied to my for-linus branch now.
 
-If we reclaim globally, all references are "true" because we want to
-evict those pages that are not used by any cgroup.
+Cheers,
+Samuel.
 
-But if we reclaim a hierarchical subgroup, we don't want to evict
-pages that are shared among this hierarchy, either, even if the memcg
-that has the page charged to it is not using it.  Bouncing the page
-around the hierarchy is not sensible, because it does not solve the
-problem of the parent hitting its limit when the sibling group will
-refault it in a blink of an eye.  It should only be evicted if the
-memcg that's not using it nears its own limit, because only in that
-case would reclaiming the page remedy the situation.
-
-> This patch adds scan_control->current_mem_cgroup, which points to currently
-> shrinking sub-cgroup in hierarchy, at global reclaim it always NULL.
-
-So to be consistent, I'm wondering if we should pass
-sc->target_mem_cgroup - the limit-hitting hierarchy root - to
-page_referenced() and then have mm_match_cgroup() do a
-mem_cgroup_same_or_subtree() check to see if the vma is in the
-hierarchy rooted at sc->target_mem_cgroup.
-
-Global reclaim is handled automatically, because mm_match_cgroup() is
-not checked when the passed memcg is NULL, which sc->target_mem_cgroup
-is for global reclaim.
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
