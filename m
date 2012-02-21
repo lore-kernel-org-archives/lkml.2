@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab2BUM7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 07:59:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39715 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753717Ab2BUM7c (ORCPT
+	id S1755030Ab2BUNBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 08:01:21 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:49262 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab2BUNBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 07:59:32 -0500
-Date: Tue, 21 Feb 2012 12:59:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
-        gg@slimlogic.co.u, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2] mfd: tps65910: use regmap for device register access.
-Message-ID: <20120221125929.GA1494@opensource.wolfsonmicro.com>
-References: <1329828694-2955-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
-Content-Disposition: inline
-In-Reply-To: <1329828694-2955-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 Feb 2012 08:01:20 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 21 Feb 2012 14:01:03 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/2] Driver: firewire: Use the macro DMA_BIT_MASK().
+Message-ID: <20120221140103.773d0962@stein>
+In-Reply-To: <1329818893-8276-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1329818893-8276-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Feb 21 santosh nayak wrote:
+> Use the macro DMA_BIT_MASK instead of the constant  0xffffffff
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+>  drivers/firewire/nosy.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/firewire/nosy.c b/drivers/firewire/nosy.c
+> index 763626b..a7c4422 100644
+> --- a/drivers/firewire/nosy.c
+> +++ b/drivers/firewire/nosy.c
+> @@ -36,7 +36,7 @@
+>  #include <linux/timex.h>
+>  #include <linux/uaccess.h>
+>  #include <linux/wait.h>
+> -
+> +#include <linux/dma-mapping.h>
+>  #include <linux/atomic.h>
+>  #include <asm/byteorder.h>
+>  
+> @@ -536,7 +536,7 @@ add_card(struct pci_dev *dev, const struct pci_device_id *unused)
+>  	u32 p, end;
+>  	int ret, i;
+>  
+> -	if (pci_set_dma_mask(dev, 0xffffffff)) {
+> +	if (pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
+>  		dev_err(&dev->dev,
+>  		    "DMA address limits not supported for PCILynx hardware\n");
+>  		return -ENXIO;
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Feb 21, 2012 at 06:21:34PM +0530, Laxman Dewangan wrote:
-> Using regmap apis for accessing the device registers and
-> using RBTREE caching mechanims for caching registers.
-
-Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPQ5UqAAoJEBus8iNuMP3dmngQAIisS8h1hDbG4Fi15z9zmwwb
-21v8wXdLhK/kho7cS5ExckyYf0s17SwoNyGSHUFtR0R5XBEnVAMkNtdlaNvhOg2y
-3V9+UW/I5eyGTfFjgPDrIIJU9QRm03lirGFOcuhn7fwSKdwG0bju0u1gAvlIBl3Q
-PLsbhfUgdM3ZYHNERT2gt3Aa8Nkwcm5E+uLbk8bpOdUhqS4GObZ5xUNGnWwnMMPA
-bUT8lMH1K2PxPwQIJXq22U5FdH1eRJgRRiSfCkP4R5w8d7SCAnR3UgejyxodsyWU
-sxAaI3g6/oyF1rU0YJUYq4hnhIfQhvAeHKUcszCFkk5IY02hwCj+ed2dc6KgrPE+
-C8nKO6ogY2dtM+Z+veA373pHHrryufz4V12pyuh/1836ssEpWQyFCWaa4Fbi4Eha
-D4AYhV/mcgAtCOy2N9Iel9CNlw/qN6ZB9kgkHRpXl+Qx9yi2u78tSlpWsTVPDigQ
-NIAt4h2buarsT2N0UACLe+xD2RK/oDzvcBNyWLnV5QXeIaqdc31YLrhvsoSvZTop
-xnG4TOLcxBqmEaeYiV0QUfTBovqlWhzrxKDkyaxrrgx9Xh6mE6eiNamrjtMJ0hEy
-HQEHYHWVST/v0ipriUmYCMY93D06+IE5J74bV/RfT2whCcGhCpqXXNXgQUk2hldj
-RkyYZdDQi5ebq6RMhbhM
-=ojTO
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
+Thanks, I will commit it to linux1394.git soon.
+-- 
+Stefan Richter
+-=====-===-- --=- =-=-=
+http://arcgraph.de/sr/
