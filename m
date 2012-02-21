@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab2BUVPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 16:15:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45906 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab2BUVPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 16:15:06 -0500
-Message-ID: <4F440945.1020904@zytor.com>
-Date: Tue, 21 Feb 2012 13:14:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1754468Ab2BUVQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 16:16:24 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:48709 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752424Ab2BUVQX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 16:16:23 -0500
+Date: Tue, 21 Feb 2012 16:16:17 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, davem@davemloft.net,
+        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
+	+ docs
+Message-ID: <20120221211617.GB15210@Krystal>
+References: <cover.1329851692.git.jbaron@redhat.com> <4F43F9F0.4000605@zytor.com> <20120221202019.GB2381@redhat.com> <1329856745.25686.72.camel@gandalf.stny.rr.com> <4F440857.6010907@zytor.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <4F42FE08.5020309@zytor.com> <CA+55aFxKLvHXRkx-x+zOkHJk__uTJc90Z0i+00W-hqDaQb_HCQ@mail.gmail.com> <4F43DB69.9060509@zytor.com> <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
-In-Reply-To: <CA+55aFxap0zAAJOCcz0f+DKBuG6VQa7kq1j2JD1S4ysgmb62aA@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F440857.6010907@zytor.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:13:14 up 455 days,  2:16,  2 users,  load average: 0.02, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 10:26 AM, Linus Torvalds wrote:
+* H. Peter Anvin (hpa@zytor.com) wrote:
+> On 02/21/2012 12:39 PM, Steven Rostedt wrote:
+> > On Tue, 2012-02-21 at 15:20 -0500, Jason Baron wrote:
+> > 
+> >> I'm not really too hung up on the naming, but I did think that
+> >> very_[un]likely were an interesting possibility.
+> > 
+> > The problem comes from what Peter said. They are too similar to
+> > "likely()" and "unlikely()", and can become confusing.
+> > 
+> > Maybe "static_likely()" and "static_unlikely()" as the word "static" can
+> > imply something strange about these. Or perhaps a "const_likely()"?
+> > 
+> > Maybe "dynamic_branch_true()" and "dynamic_branch_false()". This may be
+> > the most descriptive.
+> > 
 > 
-> Yes, but I'll send you this with a proper commit log. I'll also send
-> you another patch that splits "<asm/i387.h>" into two.
+> I thought about this some more, and the very_[un]likely() naming is even
+> worse than I originally thought: the jump label stuff isn't about the
+> bias level, but rather if a static decision (on the order or once per
+> boot) can be made to go one way or the other.
 > 
-> Right now <asm/i387.h> has two different users: the first of which
-> "normal kernel use" kind of things (ie kernel_fpu_begin() and friends)
-> that really don't care about the internals very deeply. But the second
-> class of user is the actual i387 internal implementation thing that is
-> used by i387.c and xsave.c etc to actually implement the exposed
-> interfaces.
-> 
-> As a result, <asm/i387.h> is this mixture of exposed interfaces and
-> "deep internal knowledge". And as a result, that deep internal
-> knowledge kind of accidentally gets exposed to code that really
-> shouldn't be exposed to it.
-> 
-> I have a patch that fixes that. I'll send you a series of two patches
-> with sign-offs and commentary asap.
-> 
+> 	-hpa
 
-Thanks!
+I agree that this decision is taken typically once at boot time, so
+claiming it is only a strong compiler bias hint for block placement
+would be a lie. However, I think the fact that the fall-through is for
+either true or false branch seems to be an implicit bias. Therefore, I
+start to like the static_likely()/static_unlikely(), which conveys both
+the static nature of the branch, as well as the bias.
 
-	-hpa
+Thanks,
 
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
