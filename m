@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab2BUFkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 00:40:40 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17192 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab2BUFkj (ORCPT
+	id S1752804Ab2BUFnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 00:43:24 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:39166 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751800Ab2BUFnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 00:40:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 20 Feb 2012 21:40:39 -0800
-Message-ID: <4F432DC4.1060508@nvidia.com>
-Date: Tue, 21 Feb 2012 11:08:12 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V1] mfd: tps65910: Initialize irq platform data properly
-References: <1326898156-11293-1-git-send-email-ldewangan@nvidia.com> <20120220164506.GZ5387@sortiz-mobl>
-In-Reply-To: <20120220164506.GZ5387@sortiz-mobl>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 21 Feb 2012 00:43:22 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18ab6Y7N30a94CiQEohpb6aRIjHKDQ2SreCzMWE6F
+	NG4BZubdL4MoRr
+Message-ID: <1329802998.7333.1.camel@marge.simpson.net>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Date: Tue, 21 Feb 2012 06:43:18 +0100
+In-Reply-To: <1329764866.2293.376.camel@twins>
+References: <1321350377.1421.55.camel@twins>
+	 <1321406062.16760.60.camel@sbsiddha-desk.sc.intel.com>
+	 <1321435455.5072.64.camel@marge.simson.net>
+	 <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
+	 <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1329748861.2293.345.camel@twins>
+	 <1329761661.6276.146.camel@marge.simpson.net>
+	 <1329764866.2293.376.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Samuel for taking care.
+On Mon, 2012-02-20 at 20:07 +0100, Peter Zijlstra wrote: 
+> On Mon, 2012-02-20 at 19:14 +0100, Mike Galbraith wrote:
+> > Enabling SD_BALANCE_WAKE used to be decidedly too expensive to consider.
+> > Maybe that has changed, but I doubt it.
+> 
+> Right, I through I remembered some such, you could see it on wakeup
+> heavy things like pipe-bench and that java msg passing thing, right?
 
-On Monday 20 February 2012 10:15 PM, Samuel Ortiz wrote:
-> Hi Laxman,
->
-> On Wed, Jan 18, 2012 at 08:19:16PM +0530, Laxman Dewangan wrote:
->> irq_base of the tps65910 irq platform data should be
->> initialized with the board provided irq_base data.
-> Thanks, patch applied to both my for-next and for-linus branches.
->
-> Cheers,
-> Samuel.
->
+Yeah, it beat up switch heavy buddies pretty bad.
+
+-Mike
+
 
