@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2BUUWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:22:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26251 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab2BUUWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 15:22:02 -0500
-X-Authority-Analysis: v=2.0 cv=Vp2h8pKn c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=_aPKG9hbZygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=FUJvpTi5rhPIj8ZZCYMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329855719.25686.67.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
- + docs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        mathieu.desnoyers@efficios.com, davem@davemloft.net,
-        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 Feb 2012 15:21:59 -0500
-In-Reply-To: <4F43F9F0.4000605@zytor.com>
-References: <cover.1329851692.git.jbaron@redhat.com>
-	 <4F43F9F0.4000605@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755555Ab2BUUiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:38:20 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55950 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753424Ab2BUUiS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 15:38:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120221.144417.1445117001833888214.davem@davemloft.net>
+References: <20120220203740.GD6740@tuxdriver.com>
+	<20120220.192324.498901675497866305.davem@davemloft.net>
+	<20120221151435.GA19354@tuxdriver.com>
+	<20120221.144417.1445117001833888214.davem@davemloft.net>
+Date: Tue, 21 Feb 2012 22:38:16 +0200
+Message-ID: <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+Subject: Re: pull request: wireless 2012-02-20
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 12:09 -0800, H. Peter Anvin wrote:
-> On 02/21/2012 12:02 PM, Jason Baron wrote:
-> > Hi,
-> > 
-> > Renames 'static_branch()' -> very_unlikely(), hopefully, to be more intuitive
-> > as to what jump labels is about. I'm also introducing 'very_likely()', as
-> > the analogue to very_unlikely(). Patch is against the -tip perf branch.
-> > 
-> 
-> Erk... I'm not happy about this.  very_unlikely() makes it sound like it
-> operates like unlikely(), which really is not the case.  There is a huge
-> difference in mechanism here as well as usage.
+Hi David,
 
-I agree with Peter.
+On Tue, Feb 21, 2012 at 9:44 PM, David Miller <davem@davemloft.net> wrote:
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Tue, 21 Feb 2012 10:14:36 -0500
+>
+>> On Mon, Feb 20, 2012 at 07:23:24PM -0500, David Miller wrote:
+>>> From: "John W. Linville" <linville@tuxdriver.com>
+>>> Date: Mon, 20 Feb 2012 15:37:40 -0500
+>>>
+>>> > Here is another batch of fixes intended for 3.3.  Most of the fixes
+>>> > this time are for Bluetooth.
+>>>
+>>> Pulled, but please read the bluetooth changes more carefully in the
+>>> future, there were a lot of coding style errors introduced this
+>>> time around.
+>>
+>> I pinged Johan about this, and he tells me that he spoke to Marcel
+>> as well.  They were a bit unsure about the issue.  Is your concern
+>> primarily about some excessive tabbing for indentation of parameters
+>> and such?
+>
+> So you actually looked at the changes you pushed to me and you are
+> telling me you personally can't find anything that looks like garbage?
+>
+> Really?  Do I really have to point out such obvious stuff like this?
+> Are you serious?
+>
+> Look at ca0d6c7ece0e78268cd7c5c378d6b1b610625085 ("Bluetooth: Add
+> missing QUIRK_NO_RESET test to hci_dev_do_close")
+>
+> You tell me what the heck you think of this thing.
+>
+> -       if (!test_bit(HCI_RAW, &hdev->flags)) {
+> +       if (!test_bit(HCI_RAW, &hdev->flags) &&
+> +                               test_bit(HCI_QUIRK_NO_RESET, &hdev->quirks)) {
+>
+> That's disgusting, it jumps off the screen and says "Hello, I am ugly
+> as sin".  How in the world can you miss something like this?  Four
+> TABs on the second line?  Why?  I can't believe we even have to discuss
+> something like this, seriously.
 
-What about static_branch_true() and static_branch_false().
+Sorry did we understand wrong text of Linux coding style? Or do we need
+right interpretation of it?
 
-Or remove the "_branch" part and have static_true() and static_false()?
+http://www.kernel.org/doc/Documentation/CodingStyle
 
--- Steve
+Statements longer than 80 columns will be broken into sensible chunks.
+Descendants are always substantially shorter than the parent and are placed
+substantially to the right. The same applies to function headers with a long
+argument list. Long strings are as well broken into shorter strings. The
+only exception to this is where exceeding 80 columns significantly increases
+readability and does not hide information.
 
+void fun(int a, int b, int c)
+{
+	if (condition)
+		printk(KERN_WARNING "Warning this is a long printk with "
+						"3 parameters a: %u b: %u "
+						"c: %u \n", a, b, c);
+	else
+		next_statement;
+}
 
+>
+> Commit 6e1da683f79a22fafaada62d547138daaa9e3456 ("Bluetooth: l2cap_set_timer
+> needs jiffies as timeout value"):
+>
+> -               __set_chan_timer(chan, L2CAP_DISC_REJ_TIMEOUT);
+> +               __set_chan_timer(chan,
+> +                               msecs_to_jiffies(L2CAP_DISC_REJ_TIMEOUT));
+>
+> You can't see that mis-tabbed thing on the second new line?  Really?
+
+Are those lines longer then 80 characters?
+Otherwise same applies here.
+
+Regards,
+Andrei
