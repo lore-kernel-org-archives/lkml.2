@@ -1,92 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab2BUWIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:08:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46182 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab2BUWIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:08:44 -0500
-Date: Tue, 21 Feb 2012 14:08:01 -0800
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-a38449ef596b345e13a8f9b7d5cd9fedb8fcf921@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, torvalds@linux-foundation.org,
-        srostedt@redhat.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rostedt@goodmis.org,
-        srostedt@redhat.com, tglx@linutronix.de
-In-Reply-To: <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
-References: <CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  Specify a size for the cmp in the NMI handler
-Git-Commit-ID: a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1755931Ab2BUWJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:09:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38721 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998Ab2BUWJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:09:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119834911"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
+        Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "andrei.emeltchenko.news@gmail.com" 
+	<andrei.emeltchenko.news@gmail.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQA
+Date: Tue, 21 Feb 2012 22:09:09 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	 <20120221.144417.1445117001833888214.davem@davemloft.net>
+	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+	 <20120221.154053.2103818562080068513.davem@davemloft.net>
+ <1329857959.5143.11.camel@joe2Laptop>
+In-Reply-To: <1329857959.5143.11.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 21 Feb 2012 14:08:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1LM9OSJ021136
 
-Commit-ID:  a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
-Gitweb:     http://git.kernel.org/tip/a38449ef596b345e13a8f9b7d5cd9fedb8fcf921
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Mon, 20 Feb 2012 15:29:34 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 20 Feb 2012 19:45:26 -0500
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Joe Perches
+> Sent: Tuesday, February 21, 2012 12:59 PM
+> To: David Miller; Andy Whitcroft; Andrew Morton
+> Cc: andrei.emeltchenko.news@gmail.com; linville@tuxdriver.com; linux-
+> wireless@vger.kernel.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] checkpatch: Add some --strict coding style checks
+> 
+> Argument alignment across multiple lines should
+> match the open parenthesis.
+> 
+> Logical continuations should be at the end of
+> the previous line, not the start of a new line.
+> 
+> These are not required by CodingStyle so make the
+> tests active only when using --strict.
+> 
+> Tested with:
+> int foo(void)
+> {
+> 	if (foo &&
+> 	    bar())
+> 		baz();
+> 
+> 	if (foo &&
+> 	     bar())
+> 		baz();
+> 
+> 	foo_some_long_function(bar,
+> 			       baz);
+> 
+> 	foo_some_long_function(bar,
+> 		baz);
+> 
+> 	return 0;
+> }
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl |   22 ++++++++++++++++++++++
+>  1 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index a3b9782..629944e 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1783,6 +1783,28 @@ sub process {
+>  			     "please, no space before tabs\n" . $herevet);
+>  		}
+> 
+> +# check for && or || at the start of a line
+> +		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
+> +			CHK("LOGICAL_CONTINUATIONS",
+> +			    "Logical continuations should be on the previous
+> line\n" . $hereprev);
+> +		}
+> +
+> +# check multi-line statement indentation matches previous line
+> +		if ($prevline =~ /^\+(\t*)(if
+> \(|$Ident\().*(\&\&|\|\||,)\s*$/ && $rawline =~ /^\+([ \t]*)/) {
+> +			$prevline =~ /^\+(\t*)(if
+> \(|$Ident\().*(\&\&|\|\||,)\s*$/;
+> +			my $oldindent = $1;
+> +			my $if_or_func = $2;
+> +			$rawline =~ /^\+([ \t]*)/;
+> +			my $newindent = $1;
+> +			my $goodindent = $oldindent .
+> +					 "\t" x (length($if_or_func) / 8) .
+> +					 " "  x (length($if_or_func) % 8);
+> +			if ($newindent ne "$goodindent") {
+> +				CHK("PARENTHESIS_ALIGNMENT",
+> +				    "Alignment should match open
+> parenthesis\n" . $hereprev);
+> +			}
+> +		}
+> +
+>  # check for spaces at the beginning of a line.
+>  # Exceptions:
+>  #  1) within comments
 
-x86: Specify a size for the cmp in the NMI handler
+This appears to falsely complain about parenthesis alignment in conditional statements with multiple opening parentheses.  For example, these will report a check condition:
 
-Linus noticed that the cmp used to check if the code segment is
-__KERNEL_CS or not did not specify a size. Perhaps it does not matter
-as H. Peter Anvin noted that user space can not set the bottom two
-bits of the %cs register. But it's best not to let the assembly choose
-and change things between different versions of gas, but instead just
-pick the size.
+	if (test_and_set_bit(nr,
+				   addr))
+		baz();
 
-Four bytes are used to compare the saved code segment against
-__KERNEL_CS. Perhaps this might mess up Xen, but we can fix that when
-the time comes.
+	if (!(func_a(x) &&
+		func_b(y)))
+		baz();
 
-Also I noticed that there was another non-specified cmp that checks
-the special stack variable if it is 1 or 0. This too probably doesn't
-matter what cmp is used, but this patch uses cmpl just to make it non
-ambiguous.
+Assuming my stupid mailer will screw up the indentation above, the 'a' in addr in the first example is meant to be immediately below the 'n' in nr, and the two 'f's in func_* are meant to be vertically lined up in the second example.
 
-Link: http://lkml.kernel.org/r/CA+55aFxfAn9MWRgS3O5k2tqN5ys1XrhSFVO5_9ZAoZKDVgNfGA@mail.gmail.com
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/entry_64.S |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index debd851..1333d98 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1535,14 +1535,14 @@ ENTRY(nmi)
- 	 * If %cs was not the kernel segment, then the NMI triggered in user
- 	 * space, which means it is definitely not nested.
- 	 */
--	cmp $__KERNEL_CS, 16(%rsp)
-+	cmpl $__KERNEL_CS, 16(%rsp)
- 	jne first_nmi
- 
- 	/*
- 	 * Check the special variable on the stack to see if NMIs are
- 	 * executing.
- 	 */
--	cmp $1, -8(%rsp)
-+	cmpl $1, -8(%rsp)
- 	je nested_nmi
- 
- 	/*
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
