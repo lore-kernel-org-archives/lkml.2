@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2BUEwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 23:52:45 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:37912 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752666Ab2BUEwo (ORCPT
+	id S1752503Ab2BUE4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 23:56:05 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65389 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab2BUE4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 23:52:44 -0500
-X-Sasl-enc: BPvLOfDEcAoxvd4O/yyNdQvVYAPOqhfyV9/43Th9ytIB5dUj0WQQrCKx4A 1329799963
-Message-ID: <1329799959.2226.32.camel@perseus.themaw.net>
-Subject: Re: Linux 3.3-rc4
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, thomas@m3y3r.de,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 21 Feb 2012 12:52:39 +0800
-In-Reply-To: <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
-	 <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-	 <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
-	 <20120219.144947.660678318380307878.davem@davemloft.net>
-	 <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com>
-	 <1329794974.2226.11.camel@perseus.themaw.net>
-	 <CA+55aFxDXcgOHRk5aPV5aGEDT3chXgcq_ktHKutk7OcyRjDUUw@mail.gmail.com>
-	 <1329796956.2226.20.camel@perseus.themaw.net>
-	 <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 20 Feb 2012 23:56:02 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, feng.tang@intel.com, dvhart@linux.intel.com,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH] pch_uart: Change default UART clock setting 192MHz
+Date: Tue, 21 Feb 2012 13:55:40 +0900
+Message-Id: <1329800140-4279-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-02-20 at 20:17 -0800, Linus Torvalds wrote:
-> On Mon, Feb 20, 2012 at 8:02 PM, Ian Kent <raven@themaw.net> wrote:
-> >
-> > It doesn't but changing it for exiting binaries will break existing
-> > binaries that use a workaround.
-> 
-> What existing binaries?
+Currently, PCH_UART uses 1843200Hz as default clock.
+However, in case of using high baud rate, users need to modify
+clock setting.
 
-My bad, autofs for one, but obviously when running in compat mode.
-And any other user space users, such as the auto_dir package, but I
-don't know if that is maintained any more.
+This patch uses 192MHz setting as default UART clock setting.
+Using this clock, users can use almost high baud rate without modifying
+clock settings.
 
-> 
-> > I'm proposing this because the systemd folks were happy to do it this
-> > way. But if you would like any other existing user space users to change
-> > to using a correctly sized packet then, yes, it isn't what you want to
-> > happen.
-> 
-> Existing binaries *do* use the correct size packet - it's the correct
-> size for native x86-32!
-> 
-> It's our x86-64 compat layer that is wrong. It's a clear bug. Nothing else.
-> 
-> We don't start making up new interfaces because we have clear bugs: we
-> fix the damn bugs.
-> 
-> How could you even sanely do "workarounds"? A x86-32 binary shouldn't
-> even be able to *tell* that the kernel is 64-bit. And if it does that
-> somehow, we should fix that too!
+This setting is the same as quirk for CM-iTC board.
+So, delete the quirk.
 
-Sure, not an acceptable excuse I know, but it was too late when I
-realized my mistake.
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+Related patch is 
+http://marc.info/?l=linux-kernel&m=132979974907774&w=2
+---
+ drivers/tty/serial/pch_uart.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
-So, as you say, let's fix the bug.
-
-autofs is by far the biggest user and I can manage the change for it and
-I can at least post to the auto_dir list (if it still exists) and Thomas
-can feedback to the systemd folks.
-
-Then there is the question of how it should be done.
-
-I think the patch attached to your original post needs a little work if
-that is to be used. Correct me if I'm wrong but AFAICT there are more
-architectures that use 8-byte alignment than just x86-64, such as alpha,
-ia64 and ppc64 and I believe they may also be used in a compat mode.
-
-Is there a better way to do this change, anyone?
-
-Ian
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 17ae657..d068c34 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -203,7 +203,7 @@ enum {
+ 
+ #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+ 
+-#define DEFAULT_BAUD_RATE 1843200 /* 1.8432MHz */
++#define DEFAULT_UART_CLOCK 192000000 /* 192.0MHz */
+ 
+ struct pch_uart_buffer {
+ 	unsigned char *buf;
+@@ -287,6 +287,7 @@ static struct pch_uart_driver_data drv_dat[] = {
+ static struct eg20t_port *pch_uart_ports[PCH_UART_NR];
+ #endif
+ static unsigned int default_baud = 9600;
++static unsigned int clock_param;
+ static const int trigger_level_256[4] = { 1, 64, 128, 224 };
+ static const int trigger_level_64[4] = { 1, 16, 32, 56 };
+ static const int trigger_level_16[4] = { 1, 4, 8, 14 };
+@@ -1507,7 +1508,7 @@ static int __init pch_console_setup(struct console *co, char *options)
+ 		return -ENODEV;
+ 
+ 	/* setup uartclock */
+-	port->uartclk = DEFAULT_BAUD_RATE;
++	port->uartclk = clock_param ? clock_param : DEFAULT_UART_CLOCK;
+ 
+ 	if (options)
+ 		uart_parse_options(options, &baud, &parity, &bits, &flow);
+@@ -1553,7 +1554,6 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	int fifosize, base_baud;
+ 	int port_type;
+ 	struct pch_uart_driver_data *board;
+-	const char *board_name;
+ 
+ 	board = &drv_dat[id->driver_data];
+ 	port_type = board->port_type;
+@@ -1566,12 +1566,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	if (!rxbuf)
+ 		goto init_port_free_txbuf;
+ 
+-	base_baud = DEFAULT_BAUD_RATE;
+-
+-	/* quirk for CM-iTC board */
+-	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (board_name && strstr(board_name, "CM-iTC"))
+-		base_baud = 192000000; /* 192.0MHz */
++	/* The module parameter overrides default. */
++	base_baud = clock_param ? clock_param : DEFAULT_UART_CLOCK;
+ 
+ 	switch (port_type) {
+ 	case PORT_UNKNOWN:
+@@ -1785,3 +1781,4 @@ module_exit(pch_uart_module_exit);
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("Intel EG20T PCH UART PCI Driver");
+ module_param(default_baud, uint, S_IRUGO);
++module_param(clock_param, uint, (S_IRUSR | S_IWUSR));
+-- 
+1.7.7.6
 
