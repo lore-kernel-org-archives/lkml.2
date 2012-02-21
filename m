@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2BUOsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:48:22 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31815 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab2BUOsV (ORCPT
+	id S1755479Ab2BUOwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:52:15 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62801 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab2BUOwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:48:21 -0500
-X-Authority-Analysis: v=2.0 cv=HeuWv148 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=3ODyh8mAtCyeJL9BtQsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329835698.25686.60.camel@gandalf.stny.rr.com>
-Subject: Re: RAS trace event proto
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Tony Luck <tony.luck@intel.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 09:48:18 -0500
-In-Reply-To: <20120221141231.GA15515@aftab>
-References: <20120220145920.GB5728@aftab> <4F438CE9.7080807@redhat.com>
-	 <20120221141231.GA15515@aftab>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 21 Feb 2012 09:52:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of festevam@gmail.com designates 10.236.145.2 as permitted sender) smtp.mail=festevam@gmail.com; dkim=pass header.i=festevam@gmail.com
+From: Fabio Estevam <festevam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] dma: dmaengine: Distinguish between 'dmaengine: failed to get' messages
+Date: Tue, 21 Feb 2012 12:51:59 -0200
+Message-Id: <1329835919-18425-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 15:12 +0100, Borislav Petkov wrote:
+The message "dmaengine: failed to get" can come from two possible locations within dmaengine.c.
 
-> > Also, folding everything into just one string prevents (or make hard) the usage of
-> > the perf filters, for example, to filter only the errors at the memory controller 1.
-> 
-> Huh, because you can't grep through the trace anymore...?
-> 
+In order to distinguish between them, replace "dmaengine" with __func__ string so that the
+source function of the error message can be easily identified.
 
-I believe Mauro is talking about the tracing filters used by both perf
-and ftrace that lets you ignore trace events when the contents of the
-event does not match the filter. This is filtering out events before
-they go to the buffer.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/dma/dmaengine.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
--- Steve
-
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index a6c6051..ac10325 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -510,8 +510,8 @@ struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, v
+ 					 dma_chan_name(chan));
+ 				list_del_rcu(&device->global_node);
+ 			} else if (err)
+-				pr_debug("dmaengine: failed to get %s: (%d)\n",
+-					 dma_chan_name(chan), err);
++				pr_debug("%s: failed to get %s: (%d)\n",
++					__func__, dma_chan_name(chan), err);
+ 			else
+ 				break;
+ 			if (--device->privatecnt == 0)
+@@ -564,8 +564,8 @@ void dmaengine_get(void)
+ 				list_del_rcu(&device->global_node);
+ 				break;
+ 			} else if (err)
+-				pr_err("dmaengine: failed to get %s: (%d)\n",
+-				       dma_chan_name(chan), err);
++				pr_err("%s: failed to get %s: (%d)\n",
++					__func__, dma_chan_name(chan), err);
+ 		}
+ 	}
+ 
+-- 
+1.7.1
 
