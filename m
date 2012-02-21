@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2BUPxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 10:53:12 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:29968 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752134Ab2BUPxK (ORCPT
+	id S1752395Ab2BUPzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 10:55:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3728 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab2BUPzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 10:53:10 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Np3.S7gVM1lSE1rll096cV3ibE6DmzIsmq9n1ypJOQOMiDb
- JYdiLbO0JaYqWoXjO.tqVb1LyCH8jtcVhrqTXuILriK07_Vn8Ha25MQ3HGE0
- zKWIhgYa1YtKUHovNHbPTwYjtAnAJzCe3BhVi_UrQ6qjjx5hu.Bs3XQPn9sn
- aSFakSY3ErjXkOvTy3jsDvCnDA0ma_ey8gMrxWsKMlVq8TkYMe9yp2LL7l0.
- IIvk2OS2m0KXx3497oXuW9C802BcPZSpnABJ8z7lh1qVQy1ISgsIpjPXct_I
- DwSsyuWb4ykV_sHIWQn4TM5MUmBFZeiBLkes3.lQwJRaxVY4CnoIyMrY1n2q
- caVqCla9T9zFUIGdmozwO90wJ1U0t3GusJZ__UJzq1qZdXmiiTc5Ypaz3P_f
- 0HheuFjL4bUQnsyJgZuatmyNMJcW1FktzGdw-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 21 Feb 2012 09:53:08 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] percpu: fix generic definition of
- __this_cpu_add_and_return()
-In-Reply-To: <20120219142911.12300.7497.stgit@zurg>
-Message-ID: <alpine.DEB.2.00.1202210952510.10145@router.home>
-References: <20120219142911.12300.7497.stgit@zurg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Feb 2012 10:55:11 -0500
+X-Authority-Analysis: v=2.0 cv=fNy7LOme c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CvlS4R1r7kYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=bNEnXefycaPkDHUF5vwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329839709.25686.63.camel@gandalf.stny.rr.com>
+Subject: Re: ftrace_enabled set to 1 on bootup, slow downs with
+ CONFIG_FUNCTION_TRACER in virt environments?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Date: Tue, 21 Feb 2012 10:55:09 -0500
+In-Reply-To: <20120221153827.GA7529@phenom.dumpdata.com>
+References: <20120214152955.GA17671@phenom.dumpdata.com>
+	 <1329243722.7469.7.camel@acer.local.home>
+	 <20120221153827.GA7529@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 19 Feb 2012, Konstantin Khlebnikov wrote:
+On Tue, 2012-02-21 at 10:38 -0500, Konrad Rzeszutek Wilk wrote:
+>  
+> > You mean that we get a lot more functions because the compiler made them
+> > functions? Maybe we should add "notrace" to all paravirt functions? Then
+> > they wont have the calls or nops.
+> 
+> <nods> Do you remember the rational of why some have notrace but not all?
 
-> This patch adds missed "__" into function prefix.
-> Otherwise on all archectures (except x86) it expands to irq/preemtion-safe
-> variant: _this_cpu_generic_add_return(), which do extra irq-save/irq-restore.
-> Optimal generic implementation is __this_cpu_generic_add_return().
+They probably all should. Unless there's some reason people want to
+trace those functions. But if they are not traced on bare-metal, then it
+probably isn't worth tracing them on paravirt either.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+> 
+> > 
+> > > - Somehow the low-level para-virt (like the assembler ones) calls don't get
+> > >    patched over and still end up calling mcount? (but I really doubt that is the
+> > >    case - but you never know).
+> > 
+> > We only live patch code in a white list of sections. But with the latest
+> > scripts/recordmcount.c, as I stated above, the ones that don't get
+> > patched at boot up, should be patched at compile time. But that still
+> > keeps the nops there.
+> 
+> So the ideal_nop in the looks to be different from what the trace code
+> decides to patch during execution. Is that OK? I am not that familiar with the
+> variants of nops to know if some are just not ok on certain architectures?
+
+What gets patched at compile time isn't the ideal for the arch. But it's
+the "best" that can be done at that moment. But pretty much all of the
+non ideal nops are patched over .init sections that are called only once
+(at boot up). Even though they may not be the ideal nop for the running
+box, it shouldn't be any noticeable overhead.
+
+-- Steve
+
+
