@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2BUXD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 18:03:29 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41930 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab2BUXD2 (ORCPT
+	id S1756248Ab2BUXKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 18:10:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51380 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab2BUXKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 18:03:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.196.234 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 15:03:03 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
-In-Reply-To: <20120221181321.637556cd.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1202211437140.2012@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <20120221181321.637556cd.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 21 Feb 2012 18:10:54 -0500
+Message-ID: <1329865848.18384.64.camel@edumazet-laptop>
+Subject: Re: Linux 3.3-rc4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Date: Wed, 22 Feb 2012 00:10:48 +0100
+In-Reply-To: <CA+55aFxkbsZN3yG6d9DPGiXmiuX-wOURJcC0hAUN3Qbykv1UhQ@mail.gmail.com>
+References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
+	 <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
+	 <CA+55aFxkbsZN3yG6d9DPGiXmiuX-wOURJcC0hAUN3Qbykv1UhQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Feb 2012, KAMEZAWA Hiroyuki wrote:
-> On Mon, 20 Feb 2012 15:34:28 -0800 (PST)
-> Hugh Dickins <hughd@google.com> wrote:
-> 	return NULL;
-> >  
-> > +	lruvec = page_lock_lruvec(page);
-> >  	lock_page_cgroup(pc);
-> >  
+Le mardi 21 février 2012 à 14:43 -0800, Linus Torvalds a écrit :
+> On Sun, Feb 19, 2012 at 5:42 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> >
+> > 2.) while debugging above issue: I did find an minor bug in sys_poll() - nobody did take care of my proposed patch: https://lkml.org/lkml/2011/9/24/35
 > 
-> Do we need to take lrulock+irq disable per page in this very very hot path ?
-
-I'm sure we don't want to: I hope you were pleased to find it goes away
-(from most cases) a couple of patches later.
-
-I had lruvec lock nested inside page_cgroup lock in the rollup I sent in
-December, whereas you went for page_cgroup lock nested inside lruvec lock
-in your lrucare patch.
-
-I couldn't find an imperative reason why they should be one way round or
-the other, so I tried hard to stick with your ordering, and it did work
-(in this 6/10).  But then I couldn't work out how to get rid of the
-overheads added in doing it this way round, so swapped them back.
-
+> Ok, so I started out forward-porting that patch to current -git
+> (trivial: it's just that the system call tables are differently
+> generated now), but the more I look at it, the more I suspect that we
+> should perhaps just globally fix "sys_poll()" to have the timeout
+> argument be 'int'.
 > 
-> Hmm.... How about adding NR_ISOLATED counter into lruvec ?
+> Because that *is* the standard user interface (just do "man 2 poll"),
+> and while all of the git history (and all of the BK history) we've had
+> it as "long", I suspect we should just fix it.
 > 
-> Then, we can delay freeing lruvec until all conunters goes down to zero.
-> as...
+> So I suspect the correct patch is just as attached instead: make
+> sys_poll() just take an "int timeout". Any user who tried to use a
+> long value would already have got truncated by glibc - I just checked.
 > 
-> 	bool we_can_free_lruvec = true;
+> Of course, there is a remote possibility that somebody might not use
+> glibc, and have used "poll()" with the raw system call interface, and
+> depended on using a 64-bit "long timeout" on 64-bit architectures.
 > 
-> 	lock_lruvec(lruvec->lock);
-> 	for_each_lru_lruvec(lru)
-> 		if (!list_empty(&lruvec->lru[lru]))
-> 			we_can_free_lruvec = false;
-> 	if (lruvec->nr_isolated)
-> 		we_can_free_lruvec = false;
-> 	unlock_lruvec(lruvec)
-> 	if (we_can_free_lruvec)
-> 		kfree(lruvec);
+> But quite frankly, that sounds rather unlikely in the extreme.
 > 
-> If compaction, lumpy reclaim free a page taken from LRU,
-> it knows what it does and can decrement lruvec->nr_isolated properly
-> (it seems zone's NR_ISOLATED is decremented at putback.)
+> Comments? If we do this, and somebody actually reports that they use a
+> 64-bit timeout, we could always go back to the broken 'long' argument,
+> and take your patch to fix the compat case.
+> 
+>                   Linus
 
-At the moment I'm thinking that what we end up with by 9/10 is
-better than adding such a refcount.  But I'm not entirely happy with
-mem_cgroup_reset_uncharged_to_root (it adds a further page_cgroup
-lookup just after I got rid of some others), and need yet to think
-about the race which Konstantin posits, so all options remain open.
+Yep, this is what I thought, but when this was raised last september,
+both Andrew and Andi disagreed.
 
-Hugh
+https://lkml.org/lkml/2011/10/6/389
+
+
+
