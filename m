@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab2BUXg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 18:36:28 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35786 "EHLO ogre.sisk.pl"
+	id S1756327Ab2BUXhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 18:37:01 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35775 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab2BUXfZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 18:35:25 -0500
+	id S1751462Ab2BUXfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 18:35:23 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [RFC][PATCH 4/7] Input / PM: Add ioctl to block suspend while event queue is not empty
-Date: Wed, 22 Feb 2012 00:34:58 +0100
+Subject: [RFC][PATCH 2/7] PM / Sleep: Use wait queue to signal "no wakeup events in progress"
+Date: Wed, 22 Feb 2012 00:33:25 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         markgross@thegnar.org, Matthew Garrett <mjg@redhat.com>,
@@ -25,162 +24,88 @@ In-Reply-To: <201202220031.46219.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201202220034.58836.rjw@sisk.pl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202220033.25523.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arve Hjønnevåg <arve@android.com>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add a new ioctl, EVIOCSWAKEUPSRC, to attach a wakeup source object to
-an evdev client event queue, such that it will be active whenever the
-queue is not empty.  Then, all events in the queue will be regarded
-as wakeup events in progress and pm_get_wakeup_count() will block (or
-return false if woken up by a signal) until they are removed from the
-queue.  In consequence, if the checking of wakeup events is enabled
-(e.g. throught the /sys/power/wakeup_count interface), the system
-won't be able to go into a sleep state until the queue is empty.
+The current wakeup source deactivation code doesn't do anything when
+the counter of wakeup events in progress goes down to zero, which
+requires pm_get_wakeup_count() to poll that counter periodically.
+Although this reduces the average time it takes to deactivate a
+wakeup source, it also may lead to a substantial amount of unnecessary
+polling if there are extended periods of wakeup activity.  Thus it
+seems reasonable to use a wait queue for signaling the "no wakeup
+events in progress" condition and remove the polling.
 
-This allows user space processes to handle situations in which they
-want to do a select() on an evdev descriptor, so they go to sleep
-until there are some events to read from the device's queue, and then
-they don't want the system to go into a sleep state until all the
-events are read (presumably for further processing).  Of course, if
-they don't want the system to go into a sleep state _after_ all the
-events have been read from the queue, they have to use a separate
-mechanism that will prevent the system from doing that and it has
-to be activated before reading the first event (that also may be the
-last one).
-
-[rjw: Removed unnecessary checks, changed the names of the new ioctls
- and the names of the functions that add/remove wakeup source objects
- to/from evdev clients, modified the changelog.]
-
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/input/evdev.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/input.h |    3 ++
- 2 files changed, 58 insertions(+)
+ drivers/base/power/wakeup.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-Index: linux/drivers/input/evdev.c
+Index: linux/drivers/base/power/wakeup.c
 ===================================================================
---- linux.orig/drivers/input/evdev.c
-+++ linux/drivers/input/evdev.c
-@@ -43,6 +43,7 @@ struct evdev_client {
- 	unsigned int tail;
- 	unsigned int packet_head; /* [future] position of the first element of next packet */
- 	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-+	struct wakeup_source *wakeup_source;
- 	struct fasync_struct *fasync;
- 	struct evdev *evdev;
- 	struct list_head node;
-@@ -75,10 +76,12 @@ static void evdev_pass_event(struct evde
- 		client->buffer[client->tail].value = 0;
+--- linux.orig/drivers/base/power/wakeup.c
++++ linux/drivers/base/power/wakeup.c
+@@ -17,8 +17,6 @@
  
- 		client->packet_head = client->tail;
-+		__pm_relax(client->wakeup_source);
- 	}
+ #include "power.h"
  
- 	if (event->type == EV_SYN && event->code == SYN_REPORT) {
- 		client->packet_head = client->head;
-+		__pm_stay_awake(client->wakeup_source);
- 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
- 	}
+-#define TIMEOUT		100
+-
+ /*
+  * If set, the suspend/hibernate code will abort transitions to a sleep state
+  * if wakeup events are registered during or immediately before the transition.
+@@ -52,6 +50,8 @@ static void pm_wakeup_timer_fn(unsigned
  
-@@ -255,6 +258,8 @@ static int evdev_release(struct inode *i
- 	mutex_unlock(&evdev->mutex);
+ static LIST_HEAD(wakeup_sources);
  
- 	evdev_detach_client(evdev, client);
-+	wakeup_source_unregister(client->wakeup_source);
++static DECLARE_WAIT_QUEUE_HEAD(wakeup_count_wait_queue);
 +
- 	kfree(client);
+ /**
+  * wakeup_source_prepare - Prepare a new wakeup source for initialization.
+  * @ws: Wakeup source to prepare.
+@@ -442,6 +442,7 @@ EXPORT_SYMBOL_GPL(pm_stay_awake);
+  */
+ static void wakeup_source_deactivate(struct wakeup_source *ws)
+ {
++	unsigned int cnt, inpr;
+ 	ktime_t duration;
+ 	ktime_t now;
  
- 	evdev_close_device(evdev);
-@@ -373,6 +378,8 @@ static int evdev_fetch_next_event(struct
- 	if (have_event) {
- 		*event = client->buffer[client->tail++];
- 		client->tail &= client->bufsize - 1;
-+		if (client->packet_head == client->tail)
-+			__pm_relax(client->wakeup_source);
- 	}
- 
- 	spin_unlock_irq(&client->buffer_lock);
-@@ -623,6 +630,45 @@ static int evdev_handle_set_keycode_v2(s
- 	return input_set_keycode(dev, &ke);
+@@ -476,6 +477,10 @@ static void wakeup_source_deactivate(str
+ 	 * couter of wakeup events in progress simultaneously.
+ 	 */
+ 	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
++
++	split_counters(&cnt, &inpr);
++	if (!inpr && waitqueue_active(&wakeup_count_wait_queue))
++		wake_up(&wakeup_count_wait_queue);
  }
  
-+static int evdev_attach_wakeup_source(struct evdev *evdev,
-+				      struct evdev_client *client)
-+{
-+	struct wakeup_source *ws;
-+	char name[28];
-+
-+	if (client->wakeup_source)
-+		return 0;
-+
-+	snprintf(name, sizeof(name), "%s-%d",
-+		 dev_name(&evdev->dev), task_tgid_vnr(current));
-+
-+	ws = wakeup_source_register(name);
-+	if (!ws)
-+		return -ENOMEM;
-+
-+	spin_lock_irq(&client->buffer_lock);
-+	client->wakeup_source = ws;
-+	if (client->packet_head != client->tail)
-+		__pm_stay_awake(client->wakeup_source);
-+	spin_unlock_irq(&client->buffer_lock);
-+	return 0;
-+}
-+
-+static int evdev_detach_wakeup_source(struct evdev *evdev,
-+				      struct evdev_client *client)
-+{
-+	struct wakeup_source *ws;
-+
-+	spin_lock_irq(&client->buffer_lock);
-+	ws = client->wakeup_source;
-+	client->wakeup_source = NULL;
-+	spin_unlock_irq(&client->buffer_lock);
-+
-+	wakeup_source_unregister(ws);
-+
-+	return 0;
-+}
-+
- static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- 			   void __user *p, int compat_mode)
+ /**
+@@ -667,14 +672,19 @@ bool pm_wakeup_pending(void)
+ bool pm_get_wakeup_count(unsigned int *count)
  {
-@@ -696,6 +742,15 @@ static long evdev_do_ioctl(struct file *
+ 	unsigned int cnt, inpr;
++	DEFINE_WAIT(wait);
  
- 	case EVIOCSKEYCODE_V2:
- 		return evdev_handle_set_keycode_v2(dev, p);
+ 	for (;;) {
++		prepare_to_wait(&wakeup_count_wait_queue, &wait,
++				TASK_INTERRUPTIBLE);
+ 		split_counters(&cnt, &inpr);
+ 		if (inpr == 0 || signal_pending(current))
+ 			break;
+ 		pm_wakeup_update_hit_counts();
+-		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
 +
-+	case EVIOCGWAKEUPSRC:
-+		return put_user(!!client->wakeup_source, ip);
-+
-+	case EVIOCSWAKEUPSRC:
-+		if (p)
-+			return evdev_attach_wakeup_source(evdev, client);
-+		else
-+			return evdev_detach_wakeup_source(evdev, client);
++		schedule();
  	}
++	finish_wait(&wakeup_count_wait_queue, &wait);
  
- 	size = _IOC_SIZE(cmd);
-Index: linux/include/linux/input.h
-===================================================================
---- linux.orig/include/linux/input.h
-+++ linux/include/linux/input.h
-@@ -129,6 +129,9 @@ struct input_keymap_entry {
- 
- #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
- 
-+#define EVIOCGWAKEUPSRC	_IOR('E', 0x91, int)	/* Check if wakeup handling is enabled */
-+#define EVIOCSWAKEUPSRC	_IOW('E', 0x91, int)	/* Enable/disable wakeup handling */
-+
- /*
-  * Device properties and quirks
-  */
+ 	split_counters(&cnt, &inpr);
+ 	*count = cnt;
 
