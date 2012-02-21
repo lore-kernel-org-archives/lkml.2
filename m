@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab2BUCcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 21:32:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39740 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab2BUCcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 21:32:35 -0500
-Message-ID: <4F430230.1010505@zytor.com>
-Date: Mon, 20 Feb 2012 18:32:16 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1752033Ab2BUCeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 21:34:16 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56928 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab2BUCeP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 21:34:15 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of pjt@google.com designates 10.52.26.176 as permitted sender) smtp.mail=pjt@google.com; dkim=pass header.i=pjt@google.com
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Josh Boyer <jwboyer@gmail.com>, Jongman Heo <jongman.heo@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
-References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org> <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org> <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org> <CA+5PVA5Zkka6Q2kcvWbvA3xr9=5TZ+VWWsWzYcRQ1GpccpJHew@mail.gmail.com> <CA+55aFyqz-2ejsRpbRdYx7UHDBg3q=9nvmtrj2nLeuZonrkz1A@mail.gmail.com> <CA+55aFzottbJCxhh+qJnhk=yZ3Rjf=0ndn7vVvvcjWrBSthEYg@mail.gmail.com>
-In-Reply-To: <CA+55aFzottbJCxhh+qJnhk=yZ3Rjf=0ndn7vVvvcjWrBSthEYg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87aa4dq1tq.fsf@abhimanyu.in.ibm.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+ <87k43lde0r.fsf@linux.vnet.ibm.com> <CAPM31RLWpF0mO2faCfY+HOeThz0iW6_7D+S++pGHtJi6hhiAVQ@mail.gmail.com>
+ <87aa4dq1tq.fsf@abhimanyu.in.ibm.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 20 Feb 2012 18:33:44 -0800
+Message-ID: <CAPM31R+NXhsnjG6XoL9GT53XK29LxtgWM4uF39WWBmRmeeHGoA@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2012 06:18 PM, Linus Torvalds wrote:
-> 
->> Although I do wonder if we should just make kernel_fpu_begin() be a
->> real function instead of inlining it. I'm not sure it makes sense to
->> inline that thing, and it might be better to export that one instead.
-> 
-> I do think that would be better in the long run, but for now here's an
-> updated "trivial" patch to fix it.
-> 
+On Mon, Feb 20, 2012 at 1:41 AM, Nikunj A Dadhania
+<nikunj@linux.vnet.ibm.com> wrote:
+> On Fri, 17 Feb 2012 02:48:06 -0800, Paul Turner <pjt@google.com> wrote:
+>>
+>> This is almost certainly a result of me twiddling with the weight in
+>> calc_cfs_shares (using average instead of instantaneous weight) in
+>> this version -- see patch 11/14.  While this had some nice stability
+>> properties it was not hot for fairness so I've since reverted it
+>> (snippet attached below).
+>>
+> For my understanding, what do you mean by stability here?
 
-There is actually another very good reason for out-of-lining
-kernel_fpu_begin/_end: it will act as a compiler barrier i we ever do
-compiler-generated SSE or AVX code, which we may very well want to do.
+The result is stable; meaning repeating the experiment returns the same number.
 
-In fact, there may even be good reason for something like:
+>
+>>
+>> 24-core:
+>> Starting task group fair16...done
+>> Starting task group fair32...done
+>> Starting task group fair48...done
+>> Waiting for the task to run for 120 secs
+>> Interpreting the results. Please wait....
+>> Time consumed by fair16 cgroup:  12628615 Tasks: 96
+>> Time consumed by fair32 cgroup:  12562859 Tasks: 192
+>> Time consumed by fair48 cgroup:  12600364 Tasks: 288
+>>
+> "Tasks:" should be 16,32,48?
+>
 
-kernel_fpu_use(void (*func)(void *), void *arg);
+Ah, I ran your script multiple times (for stability) above, it must
+not have been killing itself properly (notice each of those numbers is
+the respective tasks per run times 6).
 
-... where the FPU-using stuff is actively embedded in the call.
+A correct first run on a 24-core looks like:
+Starting task group fair16...done
+Starting task group fair32...done
+Starting task group fair48...done
+Waiting for the task to run for 120 secs
+Interpreting the results. Please wait....
+Time consumed by fair16 cgroup:  1332211 Tasks: 16
+Time consumed by fair32 cgroup:  1227356 Tasks: 32
+Time consumed by fair48 cgroup:  1217174 Tasks: 48
 
-	-hpa
+The small boost to the tasks=16 case is almost certainly tied to our
+current handling of sleeper credit and entity placement -- since there
+are less tasks than cores, whenever a task moves to a core it has not
+been previously executing on it gets a vruntime boost.
+
+Thanks,
+
+- Paul
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+> Regards,
+> Nikunj
+>
