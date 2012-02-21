@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab2BUP0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 10:26:36 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55984 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2BUP0f convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Tue, 21 Feb 2012 10:26:35 -0500
-Message-Id: <4F43C5B60200007800074392@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 21 Feb 2012 15:26:30 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Mark Wielaard" <mjw@redhat.com>
-Cc: "Frederic Weisbecker (commit_signer:4/25=16%)" <fweisbec@gmail.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        "Thomas Gleixner(maintainer:X86 ARCHITECTURE...)" 
-	<tglx@linutronix.de>,
-        "Andi Kleen(commit_signer:5/25=20%)" <ak@linux.intel.com>,
-        "commit_signer:11/25=44%)Ingo Molnar (maintainer:X86 ARCHITECTURE..." 
-	<mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        "commit_signer:4/25=16%) H. Peter Anvin(maintainer:X86 ARCHITECTURE..." 
-	<hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: Fix CFI data for common_interrupt
-References: <1329833177-13030-1-git-send-email-mjw@redhat.com>
- <4F43B78D020000780007435B@nat28.tlf.novell.com>
- <1329835436.12079.10.camel@springer.wildebeest.org>
-In-Reply-To: <1329835436.12079.10.camel@springer.wildebeest.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752121Ab2BUPcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 10:32:04 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39487 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab2BUPcC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 10:32:02 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of dsahern@gmail.com designates 10.68.213.232 as permitted sender) smtp.mail=dsahern@gmail.com; dkim=pass header.i=dsahern@gmail.com
+Message-ID: <4F43B8EC.30400@gmail.com>
+Date: Tue, 21 Feb 2012 08:31:56 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, eric.dumazet@gmail.com
+Subject: Re: [PATCH] perf tools: fix broken perf record -a mode
+References: <20120221145424.GA6757@quad>
+In-Reply-To: <20120221145424.GA6757@quad>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.02.12 at 15:43, Mark Wielaard <mjw@redhat.com> wrote:
-> On Tue, 2012-02-21 at 14:26 +0000, Jan Beulich wrote:
->> >>> On 21.02.12 at 15:06, Mark Wielaard <mjw@redhat.com> wrote:
->> > Commit eab9e6 "x86-64: Fix CFI data for interrupt frames" introduced
->> > a DW_CFA_def_cfa_expression in the SAVE_ARGS_IRQ macro. To later define
->> > the CFA using a simple register+offset rule both register and offset
->> > need to be supplied. Just using CFI_DEF_CFA_REGISTER leaves the offset
->> > undefined. So use CFI_DEF_CFA with reg+off explicitly at the end of
->> > common_interrupt.
->> 
->> NAK, unless you can prove a path via which the offset will remain
->> unset until hitting a CFI_DEF_CFA_REGISTER. And if you indeed
->> found such a path, the entry point of the path is where the problem
->> ought to be fixed.
->> 
->> Are you perhaps thinking that .cfi_def_cfa_register invalidates
->> the offset in any way? That, to my knowledge, isn't the case, it
->> just replaces the CFA register with the one specified, leaving the
->> offset unchanged.
-> 
-> DW_CFA_def_cfa_expression invalidates the offset (and register). Used
-> through the interrupt macro for do_IRQ which uses the SAVE_ARGS_IRQ to
-> define common_interrupt. So after using DW_CFA_def_cfa_expression we get
-> a CFI_DEF_REGISTER and the CFI for common_interrupt looks like:
-> 
->  [  6e30] FDE length=148 cie=[  6e18]
->    CIE_pointer:              28184
->    initial_location:         0xffffffff815e8d00 <common_interrupt>
->    address_range:            0x1ba
-> 
->    Program:
-> [...]
->      advance_loc 1 to 0x69
->      def_cfa_expression 6
->           [   0] breg7 0
->           [   2] deref
->           [   3] const1u 136
->           [   5] plus
->      advance_loc 22 to 0x7f
->      def_cfa_register r4 (rsi)
-> [...]
-> 
-> For DW_CFA_def_register DWARF4 explicitly says so: "This operation is
-> valid only if the current CFA rule is defined to use a register and
-> offset." So one needs to use CFI_DEF_CFA with both a register and an
-> offset here after the def_cfa_expression.
+On 2/21/12 7:54 AM, Stephane Eranian wrote:
+>
+> The following commit:
+> b52956c perf tools: Allow multiple threads or processes in record, stat, top
+>
+> introduced a bug in the thread_map code which caused
+> perf record -a to not setup system-wide monitoring properly.
+>
+> $ taskset -c 1 noploop 1000&
+> $ perf record -a -C 1 sleep 10
+> $ perf report -D | tail -20
+> cycles stats:
+>             TOTAL events:       4413
+>              MMAP events:       4025
+>              COMM events:        340
+>            SAMPLE events:         48
+>
+> Here I was expecting about 10,000 samples and not 48.
+>
+> In system-wide mode, the PID passed to perf_event_open()
+> must be -1 and it was 0. That caused the kernel to setup
+> a per-process event on PID:0. Consequently, the number
+> of samples captured does not correspond to the requested
+> measurement.
+>
+> The following one-liner fixes the problem for me with or
+> without -C.
+>
+> I would also suggest to change the malloc() to something
+> that matches the struct definition. thread_map->map[] is
+> declared as int map[] and not pid_t map[]. If map[] can
+> only contain pids, then change the struct definition.
+>
+> Signed-off-by: Stephane Eranian<eranian@google.com>
+> ---
+>
+> diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+> index e15983c..84d9bd78 100644
+> --- a/tools/perf/util/thread_map.c
+> +++ b/tools/perf/util/thread_map.c
+> @@ -229,7 +229,7 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+>   	if (!tid_str) {
+>   		threads = malloc(sizeof(*threads) + sizeof(pid_t));
+>   		if (threads != NULL) {
+> -			threads->map[1] = -1;
+> +			threads->map[0] = -1;
+>   			threads->nr	= 1;
+>   		}
+>   		return threads;
 
-Hmm, that's in contrast to the gas implementation (but I'd certainly
-give the specification preference if it explicitly states so, so gas
-should at least emit a warning here rather than considering this
-valid).
+Damn. Hope you did not spend much time chasing it down.
 
-But provided the specification mandates this, I'm okay with the change
-in principle. Just that specifying an offset of 0 doesn't look right then.
-
-Jan
-
+Acked-by: David Ahern <dsahern@gmail.com>
