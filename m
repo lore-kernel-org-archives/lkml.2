@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2BUBNR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:13:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26122 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab2BUBNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:13:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119495682"
-Message-ID: <1329786806.1511.54.camel@rui.sh.intel.com>
-Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
-From: Zhang Rui <rui.zhang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Tue, 21 Feb 2012 09:13:26 +0800
-In-Reply-To: <201202210013.02397.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
-	 <201202180054.49284.rjw@sisk.pl>
-	 <1329708181.1511.18.camel@rui.sh.intel.com>
-	 <201202210013.02397.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
+	id S1755121Ab2BUBOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:14:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19612 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab2BUBOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 Feb 2012 20:14:30 -0500
+X-Authority-Analysis: v=2.0 cv=MaXuSuDf c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=DJDFx9YhIQoErPJ5c-cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329786868.25686.50.camel@gandalf.stny.rr.com>
+Subject: Re: RAS trace event proto
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Tony Luck <tony.luck@intel.com>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 20 Feb 2012 20:14:28 -0500
+In-Reply-To: <20120220145920.GB5728@aftab>
+References: <20120220145920.GB5728@aftab>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 二, 2012-02-21 at 00:13 +0100, Rafael J. Wysocki wrote:
-> > So how to handle this case, say, for a device in the generic PM domain
-> > that supports 2 different low power state, D1 and D2.
-> > D2 is deeper than D1, and it is kind of cold power off with remote
-> > wakeup disabled. If the driver needs to runtime suspend the device with
-> > remote wakeup enabled, it should set the device to D1, but it can not
-> > set the RPM_SUSPEND?
-> 
-> The device is regarded as "suspended" if its bus type's (or PM domain's)
-> .runtime_suspend() callback has been executed and has returned 0 (success).
-> What the callback has actually done is not of any interest to the core.
-> 
-right.
+On Mon, 2012-02-20 at 15:59 +0100, Borislav Petkov wrote:
 
-> Now, the D1 and D2 case has to be handled by the bus (PM domain) and
-> driver.  In both cases the device will be regarded as "suspended" and the
-> core doesn't track the actual device state.
+> * I'd like to have conditional printk-ing in trace_mce_record depending
+> on the TP args, Steve probably knows what can be done:
+
+/me is confused :-)
+
+> 
+> @Steven:
+> 
+> I'd like to do the following:
+> 
+> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", str1, arg1, arg2)
+> 
+> and have it print only the first arg, i.e. the string and drop the rest
+> of the args while still doing the TP_fast_assign into the ring buffer
+> and carrying the stuff to its consumers. Background is that I want to
+> dump the decoded string of a hardware error, if it is decoded, but carry
+> the MCE info to userspace and only dump the fields of the MCE if I
+> haven't managed to decode it, i.e. str1 == "".
+> 
+> So, my question is, can I do something like:
+> 
+> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", __print_conditional(str1, arg1, arg2))
+
+You want to affect the output of ftrace?
+
+perf and even trace-cmd do the parsing later and can be overridden.
+Well, perf can be when we finally get it to use the updated trace-cmd
+parser.
+
+-- Steve
+
+> 
+> where __print_conditional is a vararg macro which calls a
+> ftrace_print_cond() which prints only str1 if strlen(str1) > 0 and
+> otherwise calls a vsnprintf() variant to deal with the va_args?
 > 
 
-
-> I think the problem here is that the PCI bus type's runtime PM callbacks
-> aren't very sophisticated (they just choose the lowest possible low-power
-> state and attempt to put the device into it) and I can see two possible
-> ways to address that.
-> 
-> First, you can modify pci_pm_runtime_suspend/_resume() to handle multiple
-> states (for example, to choose the target low-power state more intelligently
-> than they do right now).  Second, you can add a PM domain that will do what
-> you want from pci_pm_runtime_suspend/_resume() for a specific set of devices.
-> 
-But RPM_SUSPENDED is set by PM core after .runtime_suspend() being
-invoked, even if device is in D1 instead of D2, right?
-
-So the problem is that, if a device in a generic power domain supports
-two low power state, one is compatible with generic power domain power
-off and another is not, how can the device driver pass this information
-to the generic power domain, i.e. how to runtime suspend a device while
-keep the generic power domain always on?
-
-thanks,
-rui
 
