@@ -1,212 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2BUMYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 07:24:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235Ab2BUMYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 07:24:34 -0500
-Message-ID: <4F438CE9.7080807@redhat.com>
-Date: Tue, 21 Feb 2012 10:24:09 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1754195Ab2BUMkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 07:40:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57294 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab2BUMkF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 07:40:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.179.8 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Tony Luck <tony.luck@intel.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RAS trace event proto
-References: <20120220145920.GB5728@aftab>
-In-Reply-To: <20120220145920.GB5728@aftab>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <20120221110618.GJ22562@n2100.arm.linux.org.uk>
+References: <1329719263-18971-1-git-send-email-swarren@nvidia.com>
+	<20120220073941.GC22562@n2100.arm.linux.org.uk>
+	<CACRpkdbMFN3=XTSg1oE310eTHecrs6XaMz+DCNYJzwOg8JEEiQ@mail.gmail.com>
+	<20120221110618.GJ22562@n2100.arm.linux.org.uk>
+Date: Tue, 21 Feb 2012 13:40:05 +0100
+Message-ID: <CACRpkdYzRu4VPKPgxuttuvSDCpfHjvBGGq1rFEDExv1PsoLG=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Documentation/gpio.txt: Explain expected pinctrl interaction
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 20-02-2012 12:59, Borislav Petkov escreveu:
-> Hi all,
-> 
-> here's a dirty patch which should hopefully show what I have in mind wrt
-> using tracepoints for RAS events. The code compiles and should only give
-> an initial idea, it is subject to significant changes until it reaches
-> its final form thus it is only exemplary and not final in any case.
-> 
-> Notes:
-> 
-> * So there are two RAS tracepoints: trace_mce_record which dumps the
-> MCE-related errors + their decoded info and trace_hw_error which simply
-> carries a string to userspace. The second one can be used for non-MCA
-> errors.
-> 
-> * When prepping the string for the tracepoint, we cache the string by
-> calling ras_printk which buffers the so-far done string internally,
-> so everything that wants to dump into it needs to be converted to use
-> ras_printk.
-> 
-> * Which brings me to it: ras_printk() is x86-only and it could probably
-> be moved to an arch-agnostic place for the other arches. I'd leave it
-> x86-only for now, for testing purposes, and then later the other arches
-> could consider using it (this is wrt non-x86 EDAC drivers).
-> 
-> * When writing a 1 into /sys/devices/system/ras/agent, we enable the
-> string buffering functionality - this could be done by the RAS daemon or
-> whatever agent is requesting putting hw errors info into tracing.
-> 
-> * I'd like to have conditional printk-ing in trace_mce_record depending
-> on the TP args, Steve probably knows what can be done:
-> 
-> @Steven:
-> 
-> I'd like to do the following:
-> 
-> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", str1, arg1, arg2)
-> 
-> and have it print only the first arg, i.e. the string and drop the rest
-> of the args while still doing the TP_fast_assign into the ring buffer
-> and carrying the stuff to its consumers. Background is that I want to
-> dump the decoded string of a hardware error, if it is decoded, but carry
-> the MCE info to userspace and only dump the fields of the MCE if I
-> haven't managed to decode it, i.e. str1 == "".
-> 
-> So, my question is, can I do something like:
-> 
-> 	TP_printk("%s, ARG1: %d, ARG2: %c ...", __print_conditional(str1, arg1, arg2))
-> 
-> where __print_conditional is a vararg macro which calls a
-> ftrace_print_cond() which prints only str1 if strlen(str1) > 0 and
-> otherwise calls a vsnprintf() variant to deal with the va_args?
-> 
-> As always, all comments are welcome.
+On Tue, Feb 21, 2012 at 12:06 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-Boris,
+>> It's a bit kludgy but works and makes sure the pins are only used
+>> for one thing at a time.
+>
+> No.  The case which I'm thinking of is for the Assabet audio, where
+> we have the following situation.
 
-The idea of having a separate ring buffer for the hardware errors seem
-to be interesting (the code there at ras.c seems incomplete on this dirty
-patch - at least I couldn't see how userspace would retrieve the messages,
-if the has agent is enabled).
+OK... (thanks for the explanation!)
 
-I prefer to code it arch-agnostic since the beginning, as there's nothing
-there that it is arch-specific.
+> The solution is to wait for SSP to finish, and while SSP is still enabled,
+> switch the pins from the SSP block to the GPIO block and toggle the SFRM
+> signal to flip the WS output before removing power.  When starting up,
+> with the pins under control of GPIO, power up and them toggle hte SFRM
+> signal to restore the WS state before giving it back to the SSP block.
+>
+> However, here's the thing: SSP must be enabled at the point in time when
+> the pins are given or taken away from it, otherwise SFRM is indeterminant.
+> We can't allow gpio_request() to fail at the points where we toggle this
+> pin - failure is not really an option where causing hardware stress is
+> involved.  We can't allow the GPIO block to have the state of these pins
+> change state while the pins are given back to the GPIO block before the
+> GPIOs have been requested (glitches on the SFRM line will cause the state
+> of the FIFO to change.)
 
-It is not clear from this patch how errors are supposed to be reported,
-on your proposal, as, currently, you're using trace_mce_record() to report 
-just the MCE error, without any parsing,  using an empty string for the
-error description.
+This can probably be done, mainly I'd say that control over the pins
+need not mean that they are decoupled from some specific hardware, or
+that the hardware is disabled or so, the semantics of doing say
+pinctrl_get/enable/disable/put aren't set in stone, it's just callbacks into
+the device driver so it could avoid doing anything in this case, keep
+the pins muxed for the SSP if the transition goes from SSP->GPIO
+and back.
 
-I _think_ you're planning to move trace_mce_record() to happen inside the
-driver (or at the edac core), for the cases where the error is parsed 
-inside amd64_edac.
+However I guess it would be conceptually closer if say the pins could
+be used for a device and GPIO at the *same time*.
 
-You're using ras_printk() to report not only RAS errors, but also errors
-that happened inside the amd64_edac driver, like:
+I had this similar example where a pin on U300 could be in GPIO mode
+and "spy" on the peripheral using that pin, by just sampling the value
+or triggering on edge transitions.
 
-+		ras_printk(PR_EMERG, "You shouldn't be seeing an LS MCE on this"
-+				     " cpu family, please report on LKML.\n");
+Since each pin has a pin descriptor, we could solve this by marking
+pins as "gpio dualmode", i.e. add some bool dualmode to the
+descriptor and augment the core to allow pins with this property to be in
+GPIO and "for device X" mode at the same time. So in
+pin_request() in pinmux.c we check for this property and allow
+dual-mode on a case-by-case basis (assuming this will be pretty rare,
+so the default is not to use it).
 
-That sounds confusing.
+Of course it assumes the SA1100 being converted to use pin control,
+I looked at it a bit and it seems simple enough since the GAFR
+register is a single "GPIO or something else"-switch for the GPIOs.
+(It'd probably need the SA1100 to be a bit more strict in using
+gpiolib in place for the direct assignments though, else the
+abstractions get a bit pointless anyway.)
 
-It also should be noticed that the amd64_edac driver reports error on a
-different way than other drivers. Except for amd64_edac, the other drivers
-prepare an error string on some internal buffer, and then they call the
-RAS core (edac) to present that error to userspace. For example:
+> Another case where this kind of run-time switching needs to occur is the
+> PXA IrDA driver, where the pins need to be switched between their FIR and
+> SIR modes.
 
-static void i5000_process_fatal_error_info(struct mem_ctl_info *mci,
-					struct i5000_error_info *info,
-					int handle_errors)
-{
-...
-/* Only 1 bit will be on */
-	switch (allErrors) {
-	case FERR_FAT_M1ERR:
-		specific = "Alert on non-redundant retry or fast "
-				"reset timeout";
-		break;
-...
-		/* Form out message */
-		snprintf(msg, sizeof(msg),
-			 "(Branch=%d DRAM-Bank=%d RDWR=%s RAS=%d "
-			 "CAS=%d, UE Err=0x%x (%s))",
-			 branch >> 1, bank, rdwr ? "Write" : "Read", ras, cas,
-			 ue_errors, specific);
+This sounds more mutually exclusive and should be possible to support
+with a get/enable/disable/put sequence AFAICT.
 
-		/* Call the helper to output message */
-		edac_mc_handle_fbd_ue(mci, rank, channel, channel + 1, msg);
-
-
-So, the "msg" buffer will contain the entire error message, and the core call
-will increment the error counters, will identify the silkscreen label associated
-with the memory location and output the error.
-
-In the case of amd64_edac, the error message is generated using KERN_COUNT, e. g.
-instead of storing it into some buffer and then doing just one call to output it,
-it calls pr_count() several times (or, after your patch, ras_printk).
-
-As the idea is to generate just one event for one hardware error, the better is
-to change the logic inside amd64_edac to use driver-specific buffer for the
-error message, and then call the RAS core error handler to output it, and let
-the core to generate the trace event, as this simplifies the logic on all
-drivers, as it removes redundancy, as reporting an error requires several
-operations, like:
-	- incrementing error counts;
-	- retrieving the motherboard silkscreen labels;
-	- printing the error at dmesg and/or generating a trace event.
-
-<snip/>
-
->  TRACE_EVENT(mce_record,
->  
-> -	TP_PROTO(struct mce *m),
-> +	TP_PROTO(const char *msg, struct mce *m),
-
-That doesn't sound good on my eyes. It is basically preserving all MCE register
-values as-is (u32/u64 values), and folding all parsed information into just
-one string field. I fail to understand why it is more important to store in
-binary format the content of MCE registers than the other datat here. 
-
-Also, folding everything into just one string prevents (or make hard) the usage of
-the perf filters, for example, to filter only the errors at the memory controller 1.
-
-It also requires that a RAS software to parse the messages in order to detect, 
-for example, where the memory silkscreen label is inside it. This can be very tricky, 
-as each driver could fill it with a different way, making very hard for RAS userspace
-developers to write a code that would be generic.
-
-My proposal is to have more fields there than just one message. On my patches,
-the proposal is to use, instead:
-
-TRACE_EVENT(mc_error_mce,
-
-	TP_PROTO(const unsigned int err_type,
-		 const unsigned int mc_index,
-		 const char *msg,
-		 const char *label,
-		 const char *location,
-		 const char *detail,
-		 const char *driver_detail,
-		 const struct mce *m),
-
-Where:
-
-	err_type - identifies if the error is corrected, uncorrected, fatal;
-	mc_index - identifies the memory controller instance;
-	msg - the error cause, like "read error" , "write error", etc;
-	label - The silkscreen label of the affected component(s);
-	location - the memory hierarchy location of the error (csrow/channel or
-		   branch/channel/dimm, depending on the memory hierarchy);
-	detail - contains the error page, offset, grain and syndrome.
-	driver_detail - contains additional driver-specific details about
-		 the error (other data that the driver error parser may get).
-			    
-With the above, all possible usecases are covered. The normal usecase
-where the user just needs to know if there were memory corruption, and what
-memory needs to be replaced is covered by "err_type", "msg" and "label".
-
-If more information is required, the other fields will provide him enough
-detail to either replace the bad DRAM chip or to provide enough data for 
-the user to discuss the issues with the hardware vendor.
-
-Regards,
-Mauro
+Yours,
+Linus Walleij
