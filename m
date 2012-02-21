@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab2BUKhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:37:20 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59354 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077Ab2BUKhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:37:19 -0500
-Date: Tue, 21 Feb 2012 11:37:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] x86: Move per cpu cpu_llc_id to a field in struct
- cpuinfo_x86
-Message-ID: <20120221103721.GA2486@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Kevin Winchester <kjwinchester@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	linux-kernel@vger.kernel.org
-References: <20120217115627.GA25601@elte.hu>
- <1329789966-693-1-git-send-email-kjwinchester@gmail.com>
- <1329789966-693-3-git-send-email-kjwinchester@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1329789966-693-3-git-send-email-kjwinchester@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754475Ab2BUKhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:37:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35927 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab2BUKhd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 05:37:33 -0500
+Message-ID: <1329820643.2293.386.camel@twins>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Date: Tue, 21 Feb 2012 11:37:23 +0100
+In-Reply-To: <1329816093.7333.49.camel@marge.simpson.net>
+References: <1321495153.5100.7.camel@marge.simson.net>
+	 <1321544313.6308.25.camel@marge.simson.net>
+	 <1321545376.2495.1.camel@laptop>
+	 <1321547917.6308.48.camel@marge.simson.net>
+	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+	 <1321629267.7080.13.camel@marge.simson.net>
+	 <1329748861.2293.345.camel@twins>
+	 <1329761661.6276.146.camel@marge.simpson.net>
+	 <1329764866.2293.376.camel@twins>
+	 <1329802998.7333.1.camel@marge.simpson.net>
+	 <20120221083241.GC5156@linux.vnet.ibm.com>
+	 <1329816093.7333.49.camel@marge.simpson.net>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 10:06:03PM -0400, Kevin Winchester wrote:
-> This simplifies the various code paths using this field as it
-> groups the per-cpu data together.
+On Tue, 2012-02-21 at 10:21 +0100, Mike Galbraith wrote:
+
+> I use vmark, find it _somewhat_ useful.  Not a lovely benchmark, but it
+> is highly affinity sensitive, and switches heftily.  I don't put much
+> value on it though, too extreme for me, but it is a ~decent indicator.
 > 
-> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
-> ---
->  arch/x86/include/asm/processor.h      |    2 ++
->  arch/x86/include/asm/smp.h            |    2 --
->  arch/x86/kernel/apic/apic_numachip.c  |    2 +-
->  arch/x86/kernel/cpu/amd.c             |   14 ++++----------
->  arch/x86/kernel/cpu/common.c          |    1 +
->  arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
->  arch/x86/kernel/smpboot.c             |   18 ++++++++----------
->  7 files changed, 18 insertions(+), 32 deletions(-)
+> There are no doubt _lots_ better than vmark for java stuff.
+> 
+> I toss a variety pack at the box in obsessive-compulsive man mode when
+> testing.  Which benchmarks doesn't matter much, just need to be wide
+> spectrum and consistent.
 
-This actually makes the code even a bit easier on the eyes.
+http://www.volano.com/benchmarks.html
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+> No, I use Ingo's pipe-test, but that to measure fastpath overhead.
 
--- 
-Regards/Gruss,
-Boris.
+http://people.redhat.com/mingo/cfs-scheduler/tools/pipe-test.c
+
+Also I think it lives as: perf bench sched pipe
