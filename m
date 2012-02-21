@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab2BURen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 12:34:43 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42505 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753410Ab2BURbZ (ORCPT
+	id S1754164Ab2BURfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 12:35:44 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36643 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab2BURfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 12:31:25 -0500
-MIME-Version: 1.0
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org,
-        Will Drewry <wad@chromium.org>
-Subject: [PATCH v10 03/11] asm/syscall.h: add syscall_get_arch
-Date: Tue, 21 Feb 2012 11:30:27 -0600
-Message-Id: <1329845435-2313-3-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1329845435-2313-1-git-send-email-wad@chromium.org>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	Tue, 21 Feb 2012 12:35:43 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/3] perf tools: Allow expressions in __print_symbolic() fields
+Date: Tue, 21 Feb 2012 15:35:25 -0200
+Message-Id: <1329845727-21512-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.123.g65da0
+In-Reply-To: <1329845727-21512-1-git-send-email-acme@infradead.org>
+References: <1329845727-21512-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a stub for a function that will return the AUDIT_ARCH_*
-value appropriate to the supplied task based on the system
-call convention.
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 
-For audit's use, the value can generally be hard-coded at the
-audit-site.  However, for other functionality not inlined into
-syscall entry/exit, this makes that information available.
-seccomp_filter is the first planned consumer and, as such,
-the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
-is probably an unneeded detail.
+The __print_symbolic() function takes a sequence of key-value pairs for
+pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
+expression:
 
-Suggested-by: Roland McGrath <mcgrathr@chromium.org>
-Signed-off-by: Will Drewry <wad@chromium.org>
+  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
+
+Currently only atoms are supported and this print fmt fails to parse.
+This patch adds support for expressions instead of just atoms so that
+0x040 + 1 is parsed successfully.  Also add arg_num_eval() support for
+the '+' operator.
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1315148939-14313-1-git-send-email-stefanha@linux.vnet.ibm.com
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/asm-generic/syscall.h |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ tools/perf/util/trace-event-parse.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
-index 5c122ae..13edfa2 100644
---- a/include/asm-generic/syscall.h
-+++ b/include/asm-generic/syscall.h
-@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
- 			   unsigned int i, unsigned int n,
- 			   const unsigned long *args);
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index e0a4f65..a4088ce 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1423,6 +1423,11 @@ static long long arg_num_eval(struct print_arg *arg)
+ 				die("unknown op '%s'", arg->op.op);
+ 			}
+ 			break;
++		case '+':
++			left = arg_num_eval(arg->op.left);
++			right = arg_num_eval(arg->op.right);
++			val = left + right;
++			break;
+ 		default:
+ 			die("unknown op '%s'", arg->op.op);
+ 		}
+@@ -1483,6 +1488,13 @@ process_fields(struct event *event, struct print_flag_sym **list, char **tok)
  
-+/**
-+ * syscall_get_arch - return the AUDIT_ARCH for the current system call
-+ * @task:	task of interest, must be in system call entry tracing
-+ * @regs:	task_pt_regs() of @task
-+ *
-+ * Returns the AUDIT_ARCH_* based on the system call convention in use.
-+ *
-+ * It's only valid to call this when @task is stopped on entry to a system
-+ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
-+ *
-+ * Note, at present this function is only required with
-+ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
-+ */
-+void syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
- #endif	/* _ASM_SYSCALL_H */
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
++
++		if (type == EVENT_OP)
++			type = process_op(event, arg, &token);
++
++		if (type == EVENT_ERROR)
++			goto out_free;
++
+ 		if (test_type_token(type, token, EVENT_DELIM, ","))
+ 			goto out_free;
+ 
 -- 
-1.7.5.4
+1.7.9.123.g65da0
 
