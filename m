@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab2BUFcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 00:32:31 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48847 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab2BUFca (ORCPT
+	id S1752108Ab2BUFfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 00:35:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:20053 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2BUFfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 00:32:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.107.67 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F432B76.4070302@zytor.com>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
- <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de> <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
- <20120219.144947.660678318380307878.davem@davemloft.net> <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com>
- <1329794974.2226.11.camel@perseus.themaw.net> <CA+55aFxDXcgOHRk5aPV5aGEDT3chXgcq_ktHKutk7OcyRjDUUw@mail.gmail.com>
- <1329796956.2226.20.camel@perseus.themaw.net> <CA+55aFzVyr_U0-2Df2bqcX7G6DvkEGp=1N+ck4=EHuq=NY0Wkw@mail.gmail.com>
- <1329799959.2226.32.camel@perseus.themaw.net> <CA+55aFwBD7pbOcSUVguF+vFAs85JhNpjJgZtDKjEJA0PVXrhkw@mail.gmail.com>
- <4F432B76.4070302@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 20 Feb 2012 21:32:09 -0800
-X-Google-Sender-Auth: MX72g7nBWoxYVBwfO-nvlhgs4ms
-Message-ID: <CA+55aFxJAMhhnD6qZWCGjh+zaa-OOLQmP7=shi71vYxTw2CFnw@mail.gmail.com>
-Subject: Re: Linux 3.3-rc4
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
-        thomas@m3y3r.de, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 Feb 2012 00:35:06 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-c5-4f432d088969
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: merez@codeaurora.org
+Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+References: <000b01ccdc0a$0336abc0$09a40340$%jun@samsung.com>
+ <e62a9b49ee1778129ef1b0adf2e14fc7.squirrel@www.codeaurora.org>
+In-reply-to: <e62a9b49ee1778129ef1b0adf2e14fc7.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH v4 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Tue, 21 Feb 2012 14:35:03 +0900
+Message-id: <000401ccf05a$9032c130$b0984390$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczwFdcPIN1cEJJYQE+cLyLUJDIblgANyLnw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 9:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Holes are highly undesirable for another reason: they create security
-> holes where kernel information leaks out.
+Maya Erez <merez@codeaurora.org> wrote:
+> > @@ -1262,21 +1608,32 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+> > *mq, struct request *rqc)
+> >  	int ret = 1, disable_multi = 0, retry = 0, type;
+> >  	enum mmc_blk_status status;
+> >  	struct mmc_queue_req *mq_rq;
+> > -	struct request *req;
+> > +	struct request *req, *prq;
+> >  	struct mmc_async_req *areq;
+> > +	u8 reqs = 0;
+> >
+> >  	if (!rqc && !mq->mqrq_prev->req)
+> >  		return 0;
+> >
+> > +	if (rqc)
+> > +		reqs = mmc_blk_prep_packed_list(mq, rqc);
+> > +
+> >  	do {
+> >  		if (rqc) {
+> > -			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
+> > +			if (reqs >= card->host->packed_min)
+> In case host->packed_min will be set to a value bigger than 2 you will
+> loose all the requests that were added to the packed list. If you want to
+> support dynamic number of min packed requests you need to move the packed
+> list preparation to queue.c where you can issue the fetched requests one
+> after another, when (reqs < card->host->packed_min).
 
-.. however, this is not an argument for adding a *new* interface.
+That's a good point.
+The requests added to the packed list will be remained
+if current number of packed request is less than packed_min.
+In such a case, requests should be put back to request_queue from packed list.
+I think it's a additional and unnecessary work due to packed_min.
+It's not interesting. So I want to revert this regulation of packed_min.
 
-You are still stuck handling the old one, so adding a new interface
-without holes doesn't help *anything*. It's just a bad idea.
+And we have discussed the location of mmc_blk_prep_packed_list(block.c or queue.c) several times.
+Packed command is valid only if request type is read/write,
+so it may be a good location to decide in mmc_blk_issue_rw_rq in block.c.
+I guess you want this function to be located in mmc_queue_thread in queue.c, right?
+Is it advantageous? Could you explain for this?
 
-So we're stuck with the interfaces we have. Don't say "let's fix the
-problems by adding new ones". It doesn't work, it doesn't solve
-anything, and all it results in is even *more* interfaces to maintain
-and find bugs in.
+Thanks,
+Seungwon Jeon
+> > +				mmc_blk_packed_hdr_wrq_prep(mq->mqrq_cur, card, mq, reqs);
+> > +			else
+> > +				mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
+> 
+> Thanks,
+> Maya Erez
+> Consultant for Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-It's also a major pain for testing, since different people will
-invariably use different interfaces. So a person running an older
-distro will see a bug that the maintainer cannot reproduce, because
-they maintainer has in the meantime updated to all the new and
-"improved" interfaces.
-
-So "new and improved" is just bad. Fix the existing ones, instead of
-saying "oops, that was a bad interface so let's make a new one".
-Always.
-
-                      Linus
