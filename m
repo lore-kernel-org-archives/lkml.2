@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab2BUNqB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 08:46:01 -0500
-Received: from co202.xi-lite.net ([149.6.83.202]:40820 "EHLO co202.xi-lite.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647Ab2BUNqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 08:46:00 -0500
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 08:46:00 EST
-Message-ID: <4F439E17.8090507@parrot.com>
-Date: Tue, 21 Feb 2012 14:37:27 +0100
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+	id S1755316Ab2BUNv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 08:51:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44287 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab2BUNv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 08:51:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.179.8 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Egmont Koblinger <egmont@gmail.com>, Alan Cox <alan@redhat.com>
-Subject: re : PROBLEM: Data corruption when pasting large data to terminal
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1329720360-23227-12-git-send-email-swarren@nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+	<1329720360-23227-12-git-send-email-swarren@nvidia.com>
+Date: Tue, 21 Feb 2012 14:51:55 +0100
+Message-ID: <CACRpkdbpBZqUUwxwF8o8P1P9yknY7SRSzGmYsa3kQ1JH=QNJ7A@mail.gmail.com>
+Subject: Re: [PATCH 11/20] pinctrl: Downgrade pinctrl_get warning when no maps
+ are found
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com,
+        linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> - I couldn't reproduce with cat-like applications, I have a feeling
-> perhaps the bug only occurs in raw terminal mode, but I'm really not
-> sure about this.
+> This may be perfectly legitimate. An IP block may get re-used
+> across SoCs. Not all of those SoCs may need pinmux settings for the
+> IP block, e.g. if one SoC dedicates pins to that function but
+> another doesn't. The driver won't know this, and will always
+> attempt to set up the pinmux. The mapping table defines whether any
+> HW programming is actually needed.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-We saw in our case a possible data corruption in the tty layer :
-in n_tty the n_tty_receive_buf can drop characters if it can't copy all of them
-in the tty circular buffer.
+This is equivalent to providing dummy pincontrollers as was on my
+TODO for a while admittedly.
 
-A fix should be to remove tty->receive_room and make n_tty_receive_buf  return
-the number of bytes copied.
+For consistency with regulators it would maybe be better to have
+optional dummy pin controllers but after thinking a bit about it
+I think this is more helpful, so I applied it anyway.
 
-A patch to correct this was done in b1c43f82c5aa265442f82dba31ce985ebb7aa71c,
-but it was reverted because it was buggy.
+However I would invite more opinions...
 
-May be you should check that this is not your problem.
-
-
-Matthieu
+Yours,
+Linus Walleij
