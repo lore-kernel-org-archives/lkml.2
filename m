@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2BUKRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:17:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35676 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab2BUKRj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:17:39 -0500
-Message-ID: <1329819437.2293.382.camel@twins>
-Subject: Re: [PATCH 0/2 x86] fix some page faults in nmi if kmemcheck is
- enabled
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net
-Date: Tue, 21 Feb 2012 11:17:17 +0100
-In-Reply-To: <1329788560.3448.45.camel@ThinkPad-T61>
-References: <1329717665.3448.28.camel@ThinkPad-T61>
-	 <1329735648.2293.307.camel@twins> <1329788560.3448.45.camel@ThinkPad-T61>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754087Ab2BUKSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:18:45 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:41804 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752285Ab2BUKSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 05:18:43 -0500
+Date: Tue, 21 Feb 2012 11:18:26 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: rework inactive_ratio logic
+Message-ID: <20120221101825.GA1676@cmpxchg.org>
+References: <20120215162442.13588.21790.stgit@zurg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120215162442.13588.21790.stgit@zurg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 09:42 +0800, Li Zhong wrote:
-
-> > Hell no, these are some of the ugliest patches I've seen in a while. Not
-> > to mention that their changelogs are utter crap since they don't even
-> > explain why they're doing what they're doing.
-> > 
-> Hi Peter, 
+On Wed, Feb 15, 2012 at 08:24:42PM +0400, Konstantin Khlebnikov wrote:
+> This patch adds mem_cgroup->inactive_ratio calculated from hierarchical memory limit.
+> It updated at each limit change before shrinking cgroup to this new limit.
+> Ratios for all child cgroups are updated too, because parent limit can affect them.
+> Update precedure can be greatly optimized if its performance becomes the problem.
+> Inactive ratio for unlimited or huge limit does not matter, because we'll never hit it.
 > 
-> I agree that the fix is ugly. I'm willing to change if there are some
-> better ways. 
+> At global reclaim always use global ratio from zone->inactive_ratio.
+> At mem-cgroup reclaim use inactive_ratio from target memory cgroup,
+> this is cgroup which hit its limit and cause this reclaimer invocation.
+> 
+> Thus, global memory reclaimer will try to keep ratio for all lru lists in zone
+> above one mark, this guarantee that total ratio in this zone will be above too.
+> Meanwhile mem-cgroup will do the same thing for its lru lists in all zones, and
+> for all lru lists in all sub-cgroups in hierarchy.
+> 
+> Also this patch removes some redundant code.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  include/linux/memcontrol.h |   16 ++------
+>  mm/memcontrol.c            |   85 ++++++++++++++++++++++++--------------------
+>  mm/vmscan.c                |   82 +++++++++++++++++++++++-------------------
+>  3 files changed, 93 insertions(+), 90 deletions(-)
 
-There are always better ways..
+> @@ -3373,6 +3341,32 @@ void mem_cgroup_print_bad_page(struct page *page)
+>  
+>  static DEFINE_MUTEX(set_limit_mutex);
+>  
+> +/*
+> + * Update inactive_ratio accoring to new memory limit
+> + */
+> +static void mem_cgroup_update_inactive_ratio(struct mem_cgroup *memcg,
+> +					     unsigned long long target)
+> +{
+> +	unsigned long long mem_limit, memsw_limit, gb;
+> +	struct mem_cgroup *iter;
+> +
+> +	for_each_mem_cgroup_tree(iter, memcg) {
+> +		memcg_get_hierarchical_limit(iter, &mem_limit, &memsw_limit);
+> +		mem_limit = min(mem_limit, target);
+> +
+> +		gb = mem_limit >> 30;
+> +		if (gb && 10 * gb < INT_MAX)
+> +			iter->inactive_ratio = int_sqrt(10 * gb);
+> +		else
+> +			iter->inactive_ratio = 1;
+> +	}
+> +}
 
-> The problem here is: 
-> 1. It seems x86 doesn't allow page faults in nmi, and there are checks
-> in the code, like WARN_ON_ONCE(in_nmi()).
+The memcg could have two pages on one zone and a gazillion pages on
+another zone.  Why would you want to enforce the same ratios on both
+LRU list pairs?
 
-I bet that's not x86 only..
+> @@ -1818,29 +1809,33 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+>  	if (!total_swap_pages)
+>  		return 0;
+>  
+> -	if (!scanning_global_lru(mz))
+> -		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
+> -						       mz->zone);
+> +	if (global_reclaim(sc))
+> +		ratio = mz->zone->inactive_ratio;
+> +	else
+> +		ratio = mem_cgroup_inactive_ratio(sc->target_mem_cgroup);
 
-> 2. If CONFIG_KMEMCHECK is enabled, the pages allocated through slab will
-> be marked as non-present, to capture uninitialized memory access. More
-> information in Documentation/kmemcheck.txt .
+I don't think we should take the zone ratio when we then proceed to
+scan a bunch of LRU lists that could individually be much smaller than
+the zone.  Especially since the ratio function is not a linear one.
 
-So then kmemcheck is buggy, since the nmiaction structure is initialized
-in register_nmi_handler(), so it should most definitely not be marked
-non-present.
+Otherwise the target ratios can be way too big for small lists, see
+the comment above mm/page_alloc.c::calculate_zone_inactive_ratio().
 
-> 3. From the log, there are some memories accessed in nmi, which are in
-> pages marked as non-present by kmemcheck, as they are allocated by
-> something like kmalloc(). 
+Consequently, I also disagree on using sc->target_mem_cgroup.
 
-So figure out why and fix that instead of writing ugly ass patches that
-seemingly work around the problem without actually thinking about it.
+This whole mechanism is about balancing one specific pair of inactive
+vs. an active list according their size.  We shouldn't derive policy
+from numbers that are not correlated to this size.
