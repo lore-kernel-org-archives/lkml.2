@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab2BUGhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 01:37:20 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56940 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750804Ab2BUGhS (ORCPT
+	id S1752084Ab2BUGlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 01:41:32 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23260 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2BUGlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 01:37:18 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19/DCQnK91/LHI9PcDAAlocWrRasrFJ5HE5yG6y7J
-	Pwo5+7jLDNsi8m
-Message-ID: <1329806234.7333.16.camel@marge.simpson.net>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-From: Mike Galbraith <efault@gmx.de>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Date: Tue, 21 Feb 2012 07:37:14 +0100
-In-Reply-To: <20120221000622.GH2350@linux.vnet.ibm.com>
-References: <1321468646.11680.2.camel@sbsiddha-desk.sc.intel.com>
-	 <1321495153.5100.7.camel@marge.simson.net>
-	 <1321544313.6308.25.camel@marge.simson.net>
-	 <1321545376.2495.1.camel@laptop>
-	 <1321547917.6308.48.camel@marge.simson.net>
-	 <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
-	 <1321629267.7080.13.camel@marge.simson.net>
-	 <1329748861.2293.345.camel@twins>
-	 <20120220150348.GC2350@linux.vnet.ibm.com>
-	 <1329762343.6276.156.camel@marge.simpson.net>
-	 <20120221000622.GH2350@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Tue, 21 Feb 2012 01:41:31 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6626"; a="162555551"
+Message-ID: <4F433C9A.5080503@codeaurora.org>
+Date: Mon, 20 Feb 2012 22:41:30 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Clean up debugfs error handling a bit
+References: <1329772500-20577-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1329772500-20577-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 05:36 +0530, Srivatsa Vaddagiri wrote:
+On 2/20/2012 1:15 PM, Mark Brown wrote:
+> Use IS_ERR_OR_NULL() rather than open coding it and ignore errors from
+> failure to create the supply map.
 
-> fwiw the patch I had sent does a wakeup balance within prev_cpu's
-> cache_domain (and not outside).
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Yeah, the testing I did was turn on the flag, and measure.  With single
-domain scans, maybe select_idle_sibling() could just go away.  It ain't
-free either.
+>
+> Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
 
--Mike
+>
+> @@ -3231,14 +3231,13 @@ static int __init regulator_init(void)
+>
+>   #ifdef CONFIG_DEBUG_FS
+>   	debugfs_root = debugfs_create_dir("regulator", NULL);
+> -	if (IS_ERR(debugfs_root) || !debugfs_root) {
+> +	if (IS_ERR_OR_NULL(debugfs_root)) {
+>   		pr_warn("regulator: Failed to create debugfs directory\n");
+>   		debugfs_root = NULL;
+>   	}
+>
+> -	if (IS_ERR(debugfs_create_file("supply_map", 0444, debugfs_root,
+> -				       NULL,&supply_map_fops)))
+> -		pr_warn("regulator: Failed to create supplies debugfs\n");
+> +	debugfs_create_file("supply_map", 0444, debugfs_root, NULL,
+> +			&supply_map_fops);
 
+Do you want an else here so that if the regulator directory fails we 
+don't accidentally create a supply_map file in the root of debugfs? How 
+ever unlikely that sounds.
