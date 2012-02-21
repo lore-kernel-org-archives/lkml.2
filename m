@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2BULGu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 06:06:50 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46570 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab2BULGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 06:06:49 -0500
-Date: Tue, 21 Feb 2012 11:06:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>, linux-doc@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] Documentation/gpio.txt: Explain expected pinctrl
-	interaction
-Message-ID: <20120221110618.GJ22562@n2100.arm.linux.org.uk>
-References: <1329719263-18971-1-git-send-email-swarren@nvidia.com> <20120220073941.GC22562@n2100.arm.linux.org.uk> <CACRpkdbMFN3=XTSg1oE310eTHecrs6XaMz+DCNYJzwOg8JEEiQ@mail.gmail.com>
+	id S1755082Ab2BULJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 06:09:25 -0500
+Received: from trent.utfs.org ([94.185.90.103]:46895 "EHLO trent.utfs.org"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752754Ab2BULJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 06:09:24 -0500
+X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 06:09:24 EST
+Date: Tue, 21 Feb 2012 03:00:16 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Jens Axboe <axboe@kernel.dk>
+Subject: WARNING: at block/genhd.c:1465
+Message-ID: <alpine.DEB.2.01.1202210246400.4930@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbMFN3=XTSg1oE310eTHecrs6XaMz+DCNYJzwOg8JEEiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:41:31AM +0100, Linus Walleij wrote:
-> I remember this case very well and we designed for it, so it should
-> be handled by pin control and GPIO thusly:
-> 
-> Example: use pins 1,2 as I2C, then convert them to GPIO for a while
-> then back again:
-> 
-> // This call looks up a map containing pins 1,2 and reserve them
-> p = pinctrl_get(dev, "i2c");
-> if (IS_ERR(p))
->   ...
-> pinctrl_enable(p);
-> pinctrl_disable(p);
-> // This will free up the pins again
-> pinctrl_put(p);
-> // So now we can do this...
-> // NB: the GPIO driver calls pinctr_request_gpio() to check
-> // that it can take these pins
-> gpio_request(1, "gpio1"):
-> gpio_request(2, "gpio2");
-> // This will trigger a reset or something
-> gpio_direction_output(1, 1);
-> gpio_direction_output(2, 1);
-> // Release pins again
-> gpio_free(1);
-> gpio_free(2);
-> // Take them back for this function
-> p = pinctrl_get(dev, "i2c");
-> 
-> It's a bit kludgy but works and makes sure the pins are only used
-> for one thing at a time.
+During bootup of 3.3.0-rc4 on this PowerPC machine (G4, 32bit), the 
+WARNING below is printed. This did not happen with -rc2, and I skipped 
+-rc3, so I don't know if it happend there.
 
-No.  The case which I'm thinking of is for the Assabet audio, where
-we have the following situation.
+According to the gitlog, there haven't been any changes to block/genhd.c 
+lateley, and that's the place where "__disk_unblock_events" appears. But 
+"blkdev_get" shows up in block/ioctl.c, where a few changes have been 
+made.
 
-We have the SSP bus [TXD,RXD,SFRM,SCLK] which is handled by the SSP core.
-This is connected through a FPGA to a UDA1341 codec.  The UDA1341 codec
-has DI,DO,WS,BCLK signals.  WS (which is effectively the LRCK and therefore
-identifies the left and right channels) is connected through a flip-flop
-in the FPGA which toggles at every SFRM pulse.
+Full dmesg & .config: http://nerdbynature.de/bits/3.3.0-rc4/
 
-WS is held high for the left sample.  This is the default setting.
-Unfortunately, some FPGA builds out there do not tristate the WS output
-when the codec is powered off.
+Is this something to worry about?
 
-This leads to a high leakage current from the FPGA, into the UDA1341 codec
-and into other devices.
+Thanks,
+C.
 
-The solution is to wait for SSP to finish, and while SSP is still enabled,
-switch the pins from the SSP block to the GPIO block and toggle the SFRM
-signal to flip the WS output before removing power.  When starting up,
-with the pins under control of GPIO, power up and them toggle hte SFRM
-signal to restore the WS state before giving it back to the SSP block.
+ ------------[ cut here ]------------
+ WARNING: at /usr/local/src/linux-2.6-git/block/genhd.c:1465
+ Modules linked in: firewire_sbp2 arc4 sd_mod i2c_powermac b43 mac80211 cfg80211 usb_storage scsi_mod
+ NIP: c02f96fc LR: c02f95c0 CTR: f10611f0
+ REGS: eed59c60 TRAP: 0700   Not tainted  (3.3.0-rc4)
+ MSR: 00021032 <ME,IR,DR,RI>  CR: 28042482  XER: 00000000
+ TASK = eec91700[804] 'fsck' THREAD: eed58000
+ GPR00: 00000001 eed59d10 eec91700 00009032 ffffffff c071eb90 15300000 00000000 
+ GPR08: 00000000 c0bf148c c0976a14 0000000a 28042488 1001e828 00000000 00000830 
+ GPR16: 0ffeb778 0ffeb760 0ffefeb4 0ffeb748 00000000 ffffffe9 0ffeb5e4 bfa506b0 
+ GPR24: eed59d38 00000000 0000001d 00000000 eed64800 eec1dc00 00009032 eec1dc0c 
+ NIP [c02f96fc] __disk_unblock_events+0x174/0x18c
+ LR [c02f95c0] __disk_unblock_events+0x38/0x18c
+ Call Trace:
+ [eed59d10] [c02f95c0] __disk_unblock_events+0x38/0x18c (unreliable)
+ [eed59d30] [c0110154] __blkdev_get+0x1e0/0x3dc
+ [eed59d70] [c01103b4] blkdev_get+0x64/0x38c
+ [eed59dd0] [c00d3698] __dentry_open+0x268/0x35c
+ [eed59df0] [c00e6630] do_last+0x140/0x78c
+ [eed59e30] [c00e6d68] path_openat+0xec/0x410
+ [eed59e90] [c00e71ac] do_filp_open+0x44/0xb0
+ [eed59f10] [c00d3324] do_sys_open+0x104/0x1e8
+ [eed59f40] [c00127a0] ret_from_syscall+0x0/0x38
+ --- Exception: c01 at 0xfef4d58
+     LR = 0xfef4d08
+ Instruction dump:
+ 8361000c 7c0803a6 83810010 83a10014 83c10018 83e1001c 38210020 4e800020 
+ 3d20c0bf 3929148c 88090404 68000001 <0f000000> 2f800000 419eff10 38000001 
+ ---[ end trace 85b35f260c2a2e44 ]---
 
-However, here's the thing: SSP must be enabled at the point in time when
-the pins are given or taken away from it, otherwise SFRM is indeterminant.
-We can't allow gpio_request() to fail at the points where we toggle this
-pin - failure is not really an option where causing hardware stress is
-involved.  We can't allow the GPIO block to have the state of these pins
-change state while the pins are given back to the GPIO block before the
-GPIOs have been requested (glitches on the SFRM line will cause the state
-of the FIFO to change.)
 
-Another case where this kind of run-time switching needs to occur is the
-PXA IrDA driver, where the pins need to be switched between their FIR and
-SIR modes.
+-- 
+BOFH excuse #328:
+
+Fiber optics caused gas main leak
