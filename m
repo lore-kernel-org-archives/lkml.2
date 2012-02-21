@@ -1,58 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab2BUIKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:10:05 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36883 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2BUIKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:10:03 -0500
-Date: Tue, 21 Feb 2012 13:39:54 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120221080954.GJ2350@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1321544313.6308.25.camel@marge.simson.net>
- <1321545376.2495.1.camel@laptop>
- <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <20120220150348.GC2350@linux.vnet.ibm.com>
- <1329762343.6276.156.camel@marge.simpson.net>
- <20120221000622.GH2350@linux.vnet.ibm.com>
- <1329806234.7333.16.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1329806234.7333.16.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12022022-1618-0000-0000-000000DAC44D
+	id S1752682Ab2BUIM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:12:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25107 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab2BUIMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 03:12:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="112689857"
+Subject: Re: ahci: sata hotplug doesn't work after suspend
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Holger Macht <holger@homac.de>, Jiri Slaby <jirislaby@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F42420E.2010301@suse.cz>
+References: <4F415775.7060003@suse.cz>
+	 <20120219211709.GA30809@homac.suse.de> <1329726646.3368.2.camel@minggr>
+	 <4F42420E.2010301@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 Feb 2012 16:12:52 +0800
+Message-ID: <1329811972.3368.11.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith <efault@gmx.de> [2012-02-21 07:37:14]:
-
-> On Tue, 2012-02-21 at 05:36 +0530, Srivatsa Vaddagiri wrote:
+On Mon, 2012-02-20 at 13:52 +0100, Jiri Slaby wrote:
+> On 02/20/2012 09:30 AM, Lin Ming wrote:
+> > On Sun, 2012-02-19 at 22:17 +0100, Holger Macht wrote:
+> >> On So 19. Feb - 21:11:33, Jiri Slaby wrote:
+> >>> Hi,
+> >>>
+> >>> ahci hotplug stopped working here. It always worked (-next-20111206 is
+> >>> the last known working for sure). I'm using -next and after plugging a
+> >>> sata disk in, nothing happens. I don't *think* (in the traffic, it's
+> >>> hard to tell for sure) an interrupt is generated either. I also *think*
+> >>> that it works before suspend/resume, but not after. (Or maybe uptime
+> >>> matters?)
+> >>>
+> >>> This happens before suspend on plug-in:
+> >>> ata3: exception Emask 0x50 SAct 0x0 SErr 0x40d0800 action 0xe frozen
+> >>> ata3: irq_stat 0x00000040, connection status changed
+> >>> ata3: SError: { HostInt PHYRdyChg CommWake 10B8B DevExch }
+> >>> ata3: hard resetting link
+> >>> ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> >>> ata3.00: ATA-8: ST31000528AS, CC38, max UDMA/133
+> >>> ata3.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+> >>> ata3.00: configured for UDMA/133
+> >>> ata3: EH complete
+> >>> scsi 2:0:0:0: Direct-Access     ATA      ST31000528AS     CC38 PQ: 0 ANSI: 5
+> >>> sd 2:0:0:0: [sdc] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
+> >>> sd 2:0:0:0: [sdc] Write Protect is off
+> >>> sd 2:0:0:0: [sdc] Mode Sense: 00 3a 00 00
+> >>> sd 2:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn't
+> >>> support DPO or FUA
+> >>>  sdc: sdc1 sdc2
+> >>> sd 2:0:0:0: [sdc] Attached SCSI disk
+> >>>
+> >>> After suspend/resume and plug-in, nothing appears in dmesg. Storing "- -
+> >>> -" to /sys/class/scsi_host/host*/scan doesn't help. It looks like the
+> >>> line is completely dead, because only ata1 and ata2 say "hard resetting
+> >>> link" after this (and another two disks are connected there).
+> >>>
+> >>> I tried 'echo adapter >host_reset', but I get 'write error: Invalid
+> >>> argument'.
+> >>>
+> >>> 00:1f.2 SATA controller [0106]: Intel Corporation 82801IR/IO/IH
+> >>> (ICH9R/DO/DH) 6 port SATA Controller [AHCI mode] [8086:2922] (rev 02)
+> >>> (prog-if 01 [AHCI 1.0])
+> >>>         Subsystem: Intel Corporation 82801IR/IO/IH (ICH9R/DO/DH) 6 port
+> >>> SATA Controller [AHCI mode] [8086:2922]
+> >>>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> >>> ParErr- Stepping- SERR- FastB2B- DisINTx+
+> >>>         Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort-
+> >>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+> >>>         Latency: 0
+> >>>         Interrupt: pin B routed to IRQ 43
+> >>>         Region 0: I/O ports at cc00 [size=8]
+> >>>         Region 1: I/O ports at c880 [size=4]
+> >>>         Region 2: I/O ports at c800 [size=8]
+> >>>         Region 3: I/O ports at c480 [size=4]
+> >>>         Region 4: I/O ports at c400 [size=32]
+> >>>         Region 5: Memory at feb7c800 (32-bit, non-prefetchable) [size=2K]
+> >>>         Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
+> >>>                 Address: fee0100c  Data: 4171
+> >>>         Capabilities: [70] Power Management version 3
+> >>>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+> >>> PME(D0-,D1-,D2-,D3hot+,D3cold-)
+> >>>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+> >>>         Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
+> >>>         Capabilities: [b0] Vendor Specific Information: Len=06 <?>
+> >>>         Kernel driver in use: ahci
+> >>>
+> >>> Any ideas what that could be?
+> >>
+> >> I suspect this is caused by commit
+> >> 9ee4f3933930abf5cc34f8e9d69fe0e08c18f602. Maybe you could verify? I
+> >> bisected this a couple of days ago but didn't have time to look into it
+> >> further. Maybe Lin can help here if this is the problematic commit.
+> > 
+> > I'll try to re-produce this issue first.
 > 
-> > fwiw the patch I had sent does a wakeup balance within prev_cpu's
-> > cache_domain (and not outside).
+> Ok, just a few more information. Suspend/resume cycle is needed to see
+> the issue. Reverting of 9ee4f3933930 helps when this is applied too (I
+> haven't tried one or the other alone):
+
+I saw the issue after suspend/resume.
+Hotplug doesn't work because the port is runtime suspended.
+
+I'll fix it.
+
+Thanks,
+Lin Ming
+
 > 
-> Yeah, the testing I did was turn on the flag, and measure.  With single
-> domain scans, maybe select_idle_sibling() could just go away.
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -5305,25 +5305,16 @@ static int ata_port_suspend_common(struct device
+> *dev, pm_message_t mesg)
+> 
+>  static int ata_port_suspend(struct device *dev)
+>  {
+> -       if (pm_runtime_suspended(dev))
+> -               return 0;
+> -
+>         return ata_port_suspend_common(dev, PMSG_SUSPEND);
+>  }
+> 
+>  static int ata_port_do_freeze(struct device *dev)
+>  {
+> -       if (pm_runtime_suspended(dev))
+> -               pm_runtime_resume(dev);
+> -
+>         return ata_port_suspend_common(dev, PMSG_FREEZE);
+>  }
+> 
+>  static int ata_port_poweroff(struct device *dev)
+>  {
+> -       if (pm_runtime_suspended(dev))
+> -               return 0;
+> -
+>         return ata_port_suspend_common(dev, PMSG_HIBERNATE);
+>  }
+> 
+> @@ -5339,16 +5330,7 @@ static int ata_port_resume_common(struct device *dev)
+> 
+>  static int ata_port_resume(struct device *dev)
+>  {
+> -       int rc;
+> -
+> -       rc = ata_port_resume_common(dev);
+> -       if (!rc) {
+> -               pm_runtime_disable(dev);
+> -               pm_runtime_set_active(dev);
+> -               pm_runtime_enable(dev);
+> -       }
+> -
+> -       return rc;
+> +       return ata_port_resume_common(dev);
+>  }
+> 
+>  static const struct dev_pm_ops ata_port_pm_ops = {
+> 
+> 
+> 
 
-Yeah that's what I was thinking. Essentially find_idlest_group/cpu
-should accomplish that job pretty much for us ...
-
-> It ain't free either.
-
-Will find out how much difference it makes ..
-
-- vatsa
 
