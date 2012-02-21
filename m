@@ -1,293 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab2BUTL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:11:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25006 "EHLO mx1.redhat.com"
+	id S932081Ab2BUTLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 14:11:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755819Ab2BUTLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:11:24 -0500
-Message-ID: <4F43D44C.4020903@redhat.com>
-Date: Tue, 21 Feb 2012 15:28:44 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755819Ab2BUTLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 14:11:30 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 69/73] ext2: Add fallthru support [ver #2]
+To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        valerie.aurora@gmail.com
+Cc: linux-kernel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+        Jan Blunck <jblunck@suse.de>, David Howells <dhowells@redhat.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
+Date: Tue, 21 Feb 2012 18:06:11 +0000
+Message-ID: <20120221180611.25235.63025.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Tony Luck <tony.luck@intel.com>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RAS trace event proto
-References: <20120220145920.GB5728@aftab> <4F438CE9.7080807@redhat.com> <20120221141231.GA15515@aftab>
-In-Reply-To: <20120221141231.GA15515@aftab>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 21-02-2012 12:12, Borislav Petkov escreveu:
-> On Tue, Feb 21, 2012 at 10:24:09AM -0200, Mauro Carvalho Chehab wrote:
->> The idea of having a separate ring buffer for the hardware errors seem
-> 
-> Not a separate ring buffer - ras_printk buffers the string before its
-> being sent through the tracepoint, i.e. once the string is done, we do:
-> 
-> 	trace_mce_record(decoded_err_str, m);
-> in amd_decode_mce(). The tracepoint can be invoked in the same manner
-> from other places.
+From: Valerie Aurora <vaurora@redhat.com>
 
-Ah, ok. I missed this call for trace_mce_record() on my first review.
+Add support for fallthru directory entries to ext2.
 
-The ras.c seems to be a way to help your amd64 mce parser. After reviewing
-how errors are output on the other drivers, I don't think that these
-routines would help the other drivers, as, on all other places, there is
-a driver buffer that does the same.
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org
+---
 
-Also, it doesn't sound a good idea to have this hunk:
+ fs/ext2/dir.c           |   49 +++++++++++++++++++++++++++++++++++++++++------
+ fs/ext2/ext2.h          |    1 +
+ fs/ext2/namei.c         |   22 +++++++++++++++++++++
+ fs/ext2/super.c         |    2 ++
+ include/linux/ext2_fs.h |    4 ++++
+ 5 files changed, 72 insertions(+), 6 deletions(-)
 
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -701,7 +703,11 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
- 		return;
- 	}
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index df4d6b1..5fd6bbe 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -220,7 +220,9 @@ fail:
  
--	if (edac_mc_get_log_ce())
-+	if (edac_mc_get_log_ce()) {
-+		if (ras_agent)
-+			ras_printk(PR_CONT, "row: %d, channel: %d\n",
-+				   row, channel);
+ static inline int ext2_dirent_in_use(struct ext2_dir_entry_2 *de)
+ {
+-	return de->inode != 0 || de->file_type == EXT2_FT_WHT;
++	return de->inode != 0 ||
++		de->file_type == EXT2_FT_WHT ||
++		de->file_type == EXT2_FT_FALLTHRU;
+ }
+ 
+ /*
+@@ -270,6 +272,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+ 	[EXT2_FT_SOCK]		= DT_SOCK,
+ 	[EXT2_FT_SYMLINK]	= DT_LNK,
+ 	[EXT2_FT_WHT]		= DT_WHT,
++	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
+ };
+ 
+ #define S_SHIFT 12
+@@ -355,8 +358,20 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
+ 
+ 				offset = (char *)de - kaddr;
+ 				over = filldir(dirent, de->name, de->name_len,
+-						(n<<PAGE_CACHE_SHIFT) | offset,
+-						le32_to_cpu(de->inode), d_type);
++					       (n << PAGE_CACHE_SHIFT) | offset,
++					       le32_to_cpu(de->inode), d_type);
++				if (over) {
++					ext2_put_page(page);
++					return 0;
++				}
++			} else if (de->file_type == EXT2_FT_FALLTHRU) {
++				int over;
 +
- 		/* FIXME - put in DIMM location */
- 		edac_mc_printk(mci, KERN_WARNING,
- 			"CE page 0x%lx, offset 0x%lx, grain %d, syndrome "
++				offset = (char *)de - kaddr;
++				/* XXX placeholder until generic_readdir_fallthru() arrives */
++				over = filldir(dirent, de->name, de->name_len,
++					       (n<<PAGE_CACHE_SHIFT) | offset,
++					       1, DT_UNKNOWN); /* XXX */
+ 				if (over) {
+ 					ext2_put_page(page);
+ 					return 0;
+@@ -487,6 +502,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
+ 			spin_lock(&dentry->d_lock);
+ 			dentry->d_flags |= DCACHE_WHITEOUT;
+ 			spin_unlock(&dentry->d_lock);
++		} else if (!res && de->file_type == EXT2_FT_FALLTHRU) {
++			spin_lock(&dentry->d_lock);
++			dentry->d_flags |= DCACHE_FALLTHRU;
++			spin_unlock(&dentry->d_lock);
+ 		}
+ 		ext2_put_page(page);
+ 	}
+@@ -580,7 +599,9 @@ int ext2_add_entry(struct dentry *dentry, ino_t ino, umode_t mode,
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (ext2_match(namelen, name, de)) {
+ 				err = -EEXIST;
+-				/* XXX handle whiteouts and fallthroughs here */
++				/* XXX handle whiteouts here too */
++				if (de->file_type != EXT2_FT_FALLTHRU)
++					goto out_unlock;
+ 				printk("%s: found existing de\n", dentry->d_name.name);
+ 				goto got_it;
+ 			}
+@@ -619,9 +640,17 @@ got_it:
+ 	err = -EEXIST;
+ 	if (ext2_match(namelen, name, de)) {
+ 		switch (de->file_type) {
++		case EXT2_FT_FALLTHRU:
++			if (new_file_type == EXT2_FT_FALLTHRU) {
++				WARN(1, "Ext2: Can't turn fallthru into fallthru: %s\n",
++				     dentry->d_name.name);
++				goto out_unlock;
++			}
++			break;
+ 		case EXT2_FT_WHT:
+-			if (new_file_type == EXT2_FT_WHT) {
+-				WARN(1, "Ext2: Can't turn whiteout into whiteout: %s\n",
++			if (new_file_type == EXT2_FT_WHT ||
++			    new_file_type == EXT2_FT_FALLTHRU) {
++				WARN(1, "Ext2: Can't turn whiteout into fallthru/whiteout: %s\n",
+ 				     dentry->d_name.name);
+ 				goto out_unlock;
+ 			}
+@@ -675,6 +704,14 @@ int ext2_whiteout_entry(struct dentry *dentry)
+ }
+ 
+ /*
++ * Create a fallthru entry.
++ */
++int ext2_fallthru_entry(struct dentry *dentry)
++{
++	return ext2_add_entry(dentry, 0, 0, EXT2_FT_FALLTHRU);
++}
++
++/*
+  * ext2_delete_entry deletes a directory entry by merging it with the
+  * previous entry. Page is up-to-date. Releases the page.
+  */
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index b285d9a..dd82bc6 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -107,6 +107,7 @@ extern int ext2_make_empty(struct inode *, struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *, struct page **);
+ extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
+ extern int ext2_whiteout_entry(struct dentry *);
++extern int ext2_fallthru_entry(struct dentry *);
+ extern int ext2_empty_dir (struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+ extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 8227267..957c4b9 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -331,6 +331,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
+ 		goto out;
+ 
+ 	spin_lock(&new_dentry->d_lock);
++	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
+ 	new_dentry->d_flags |= DCACHE_WHITEOUT;
+ 	spin_unlock(&new_dentry->d_lock);
+ 	d_add(new_dentry, NULL);
+@@ -349,6 +350,26 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Create a fallthru entry.
++ */
++static int ext2_fallthru(struct inode *dir, struct dentry *dentry)
++{
++	int err;
++
++	dquot_initialize(dir);
++
++	err = ext2_fallthru_entry(dentry);
++	if (err)
++		return err;
++
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	d_instantiate(dentry, NULL);
++	return 0;
++}
++
+ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct inode * new_dir,	struct dentry * new_dentry )
+ {
+@@ -447,6 +468,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+ 	.rmdir		= ext2_rmdir,
+ 	.mknod		= ext2_mknod,
+ 	.whiteout	= ext2_whiteout,
++	.fallthru	= ext2_fallthru,
+ 	.rename		= ext2_rename,
+ #ifdef CONFIG_EXT2_FS_XATTR
+ 	.setxattr	= generic_setxattr,
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 8869794..bafd421 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1100,6 +1100,8 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_WHITEOUT))
+ 		sb->s_flags |= MS_WHITEOUT;
++	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_FALLTHRU))
++		sb->s_flags |= MS_FALLTHRU;
+ 
+ 	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
+ 		sb->s_flags |= MS_RDONLY;
+diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+index 2202faa..cd6d533 100644
+--- a/include/linux/ext2_fs.h
++++ b/include/linux/ext2_fs.h
+@@ -506,11 +506,14 @@ struct ext2_super_block {
+ #define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
+ #define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
+ #define EXT2_FEATURE_INCOMPAT_WHITEOUT		0x0020
++/* ext3/4 incompat flags take up the intervening constants */
++#define EXT2_FEATURE_INCOMPAT_FALLTHRU		0x2000
+ #define EXT2_FEATURE_INCOMPAT_ANY		0xffffffff
+ 
+ #define EXT2_FEATURE_COMPAT_SUPP	EXT2_FEATURE_COMPAT_EXT_ATTR
+ #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT2_FEATURE_INCOMPAT_FILETYPE| \
+ 					 EXT2_FEATURE_INCOMPAT_WHITEOUT| \
++					 EXT2_FEATURE_INCOMPAT_FALLTHRU| \
+ 					 EXT2_FEATURE_INCOMPAT_META_BG)
+ #define EXT2_FEATURE_RO_COMPAT_SUPP	(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER| \
+ 					 EXT2_FEATURE_RO_COMPAT_LARGE_FILE| \
+@@ -578,6 +581,7 @@ enum {
+ 	EXT2_FT_SOCK		= 6,
+ 	EXT2_FT_SYMLINK		= 7,
+ 	EXT2_FT_WHT		= 8,
++	EXT2_FT_FALLTHRU	= 9,
+ 	EXT2_FT_MAX
+ };
+ 
 
-The routine that handles the error should be generating the trace, and not
-filling a buffer for the trace to happen on some other place.
-
->> to be interesting (the code there at ras.c seems incomplete on this dirty
->> patch - at least I couldn't see how userspace would retrieve the messages,
->> if the has agent is enabled).
-> 
-> The normal way you retrieve an ftrace trace.
-> 
->> I prefer to code it arch-agnostic since the beginning, as there's nothing
->> there that it is arch-specific.
-> 
-> Let me quote my last email:
-> 
-> "* Which brings me to it: ras_printk() is x86-only and it could probably
-> be moved to an arch-agnostic place for the other arches. I'd leave it
-> x86-only for now, for testing purposes, and then later the other arches
-> could consider using it (this is wrt non-x86 EDAC drivers)."
-
-The ras_printk() seems to be mce_amd only.
-
->> It is not clear from this patch how errors are supposed to be reported,
->> on your proposal, as, currently, you're using trace_mce_record() to report 
->> just the MCE error, without any parsing,  using an empty string for the
->> error description.
-> 
-> Let me quote my last email:
-> 
-> "* So there are two RAS tracepoints: trace_mce_record which dumps the
-> MCE-related errors + their decoded info and trace_hw_error which simply
-> carries a string to userspace. The second one can be used for non-MCA
-> errors."
-> 
->> I _think_ you're planning to move trace_mce_record() to happen inside
->> the driver (or at the edac core), for the cases where the error is
->> parsed inside amd64_edac.
-> 
-> No.
-
-The main purpose of edac_mc_handle_ce() & friends is to report the
-error to userspace and increment the error counters. Not having the trace
-call there is a failure on doing that.
-
-> 
->> You're using ras_printk() to report not only RAS errors, but also errors
->> that happened inside the amd64_edac driver, like:
-> 
-> Not the amd64_edac driver - this is the routine that decodes LS MCEs.
-
-Ok.
-
-> 
->>
->> +		ras_printk(PR_EMERG, "You shouldn't be seeing an LS MCE on this"
->> +				     " cpu family, please report on LKML.\n");
->>
->> That sounds confusing.
-> 
-> No, that's ok since we're carrying a string of a decoded MCE to
-> userspace - if, instead, we have _another_ string saying that we don't
-> decode LS MCEs for a CPU family, it's still a string so we're fine. We
-> could do additional mappings like "DECODE_ERROR" in front of it so that
-> the userspace tools don't choke on it.
-> 
->> It also should be noticed that the amd64_edac driver reports error on a
->> different way than other drivers. Except for amd64_edac, the other drivers
->> prepare an error string on some internal buffer, and then they call the
->> RAS core (edac) to present that error to userspace. For example:
-> 
-> This is what I do too - ras_printk() buffers the string internally
-> before sendint it out through the tracepoint.
-
-So, it is your way to implement an amd64_edac/mce_amd string buffer.
-I don't see any value of changing the other drivers to do it, as, on
-all other drivers, a simple char * buffer would produce the same result.
-
-<snip/>
-
->>>  TRACE_EVENT(mce_record,
->>>  
->>> -	TP_PROTO(struct mce *m),
->>> +	TP_PROTO(const char *msg, struct mce *m),
->>
->> That doesn't sound good on my eyes. It is basically preserving all MCE register
->> values as-is (u32/u64 values), and folding all parsed information into just
->> one string field. I fail to understand why it is more important to store in
->> binary format the content of MCE registers than the other datat here.
-> 
-> The msg arg is the decoded string and not the MCE register values. We
-> carry the register values to userspace just in case, say, a RAS daemon
-> would like to look at them too. This makes sense in cases where a RAS
-> daemon, for example, wants to count how many errors have happened per
-> rank and at which address, etc...
-
-The rank information may not be there! On Sandy Bridge, the rank is the
-result of a complex decoding logic that _doesn't_ use the MCE registers.
-In a matter of fact, the only thing that it is provided at the MCE registers
-on Sandy Bridge is the address and the error type. All the other information
-is parsed by using non-MCE registers: memory controller, channel, rank, dimm.
-So, exporting struct mce to userspace doesn't help a RAS daemon for Sandy
-Bridge.
-
-On the other hand, the "location" field on my proposal will always have
-the error location (csrow/dimm or branch/channel/slot, depending on the
-memory architecture). This makes much more sense to have there than the
-raw MCE register values.
-
-On the other hand, on Nehalem, the MCE registers contains the memory location.
-So, a RAS daemon could use them, or could equally use the location field.
-
-<snip/>
-> 
->> It also requires that a RAS software to parse the messages in order to
->> detect, for example, where the memory silkscreen label is inside it.
->> This can be very tricky, as each driver could fill it with a different
->> way, making very hard for RAS userspace developers to write a code
->> that would be generic.
-> 
-> We can add an additional arg called char *silkscreen in case it is
-> needed.
-
-It is not just the silkscreen label. See my patch series, if you want to
-see the dirty details on all drivers, or try to convert the other drivers
-to use your proposal, and you'll see what I'm talking about.
-
->> My proposal is to have more fields there than just one message. On my patches,
->> the proposal is to use, instead:
->>
->> TRACE_EVENT(mc_error_mce,
->>
->> 	TP_PROTO(const unsigned int err_type,
->> 		 const unsigned int mc_index,
->> 		 const char *msg,
->> 		 const char *label,
->> 		 const char *location,
->> 		 const char *detail,
->> 		 const char *driver_detail,
->> 		 const struct mce *m),
-> 
-> Hehe, so basically instead of one string you have a bunch of strings in
-> addition to some unneeded fields. I fail to see the difference.
-
-Some of them could be, instead, integers or some other way to represent
-the error details. For example, the location could be, instead:
-
-	u32 layer0_pos, u32 layer1_pos, u32 layer2_pos
-
-to represent the memory location (csrow/channel, branch/channel/slot or
-channel/slot, depending on how the location is defined on the memory
-hierarchy.
-
-The bad thing of using this way is that, when just 2 layers are filled,
-layer2_pos will be meaningless.
-
-The detail could be, instead:
-	u32 page, u32 offset, u32 grain, u32 syndrome
-or even:
-	u64 address, u32 grain, u32 syndrome
-
-The other fields are, per their nature, strings (error message, DIMM label,
-extra driver-specific details).
-
-I'm not entirely convinced to use strings there. Comments are welcome.
-
-> The greatest common denominator between hw errors is a single string
-> containing the whole error message, that's it!
-
-If you use this argument, the MCE fields should also be converted to
-string, as less than 10% of the existing drivers have it.
-
-> The moment you start
-> implementing an arch-agnostic solution, a single string is all you can
-> use. And adding a tracepoint for each error type is a no-go too, as I've
-> explained it to you already.
-
-This trace can easily be generalized to cover any type of error, like:
-
-	TP_PROTO(const unsigned int error_severity,
-		 const unsigned int error_type,
-		 const unsigned int instance,
-		 const char *error_msg,
-		 const char *silkscreen_label,
-		 const char *location,
-		 const char *detail,
-		 const char *driver_detail,
- 		 const struct mce *m),
-
-as there's nothing there that it is really memory specific:
-
-	- error_severity: corrected, uncorrected, fatal, ...;
-	- error_type: memory error, PCI error, bus error, ...;
-	- instance: an instance number to uniquelly identify the affected resource;
-	- silkscreen_label: can be a memory slot, a bus slot, a cpu slot, ...,
-			    depending on the error type;
-	- location: "csrow 1 channel 0" for MC; "07:05.0" for PCI, 
-		    "Bus 003 Device 001" for USB, ...
-	- detail: some additional error_type-specific detail handled by the core;
-	- driver_detail: some additional error_type-specific detail handled by the driver.
-
-By having several fields, RAS software can group errors by location, by label, etc.
-
-> 
->> Where:
->>
->> 	err_type - identifies if the error is corrected, uncorrected, fatal;
->> 	mc_index - identifies the memory controller instance;
->> 	msg - the error cause, like "read error" , "write error", etc;
->> 	label - The silkscreen label of the affected component(s);
->> 	location - the memory hierarchy location of the error (csrow/channel or
->> 		   branch/channel/dimm, depending on the memory hierarchy);
->> 	detail - contains the error page, offset, grain and syndrome.
->> 	driver_detail - contains additional driver-specific details about
->> 		 the error (other data that the driver error parser may get).
->> 			    
->> With the above, all possible usecases are covered. The normal usecase
-> 
-> As I've already explained it to you multiple times, this does NOT cover
-> all possible cases - this covers only DRAM errors and adds unnecessarily
-> too much info. If you start adding tracepoints for all the other error
-> types hw can report, you're going to enter Bloatland very quickly.
-
-I fail to see it. Most cases will fail on the above trace.
-
->> where the user just needs to know if there were memory corruption, and what
->> memory needs to be replaced is covered by "err_type", "msg" and "label".
-> 
-
-Regards,
-Mauro
