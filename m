@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2BUO7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 09:59:00 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:46431 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755456Ab2BUO67 (ORCPT
+	id S1755505Ab2BUO74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 09:59:56 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:33390 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab2BUO7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 09:58:59 -0500
-Date: Tue, 21 Feb 2012 20:28:08 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
-Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
-Message-ID: <20120221145808.GC9289@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <1321547917.6308.48.camel@marge.simson.net>
- <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
- <1321629267.7080.13.camel@marge.simson.net>
- <1329748861.2293.345.camel@twins>
- <1329761661.6276.146.camel@marge.simpson.net>
- <1329764866.2293.376.camel@twins>
- <1329802998.7333.1.camel@marge.simpson.net>
- <20120221083241.GC5156@linux.vnet.ibm.com>
- <1329816093.7333.49.camel@marge.simpson.net>
- <1329820643.2293.386.camel@twins>
+	Tue, 21 Feb 2012 09:59:54 -0500
+Date: Tue, 21 Feb 2012 15:59:43 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Tony Luck <tony.luck@intel.com>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: RAS trace event proto
+Message-ID: <20120221145943.GB15515@aftab>
+References: <20120220145920.GB5728@aftab>
+ <4F438CE9.7080807@redhat.com>
+ <20120221141231.GA15515@aftab>
+ <1329835698.25686.60.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329820643.2293.386.camel@twins>
+In-Reply-To: <1329835698.25686.60.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12022114-3864-0000-0000-0000017B619B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-02-21 11:37:23]:
+On Tue, Feb 21, 2012 at 09:48:18AM -0500, Steven Rostedt wrote:
+> On Tue, 2012-02-21 at 15:12 +0100, Borislav Petkov wrote:
+> 
+> > > Also, folding everything into just one string prevents (or make hard) the usage of
+> > > the perf filters, for example, to filter only the errors at the memory controller 1.
+> > 
+> > Huh, because you can't grep through the trace anymore...?
+> > 
+> 
+> I believe Mauro is talking about the tracing filters used by both perf
+> and ftrace that lets you ignore trace events when the contents of the
+> event does not match the filter. This is filtering out events before
+> they go to the buffer.
 
-> http://www.volano.com/benchmarks.html
+Oh ok, in that case we could filter the errors - if needed - before they
+get even reported. I say "if needed" because normally we want to collect
+all hw errors in the trace, IMHO.
 
-For some reason, volanomark stops working (client hangs waiting for data
-to arrive on socket) in 3rd iteration when run on latest tip. I don't see that 
-with 2.6.32 based kernel though. Checking which commit may have caused
-this ..
+-- 
+Regards/Gruss,
+Boris.
 
-- vatsa
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
