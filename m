@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab2BUSII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:08:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36748 "EHLO mx1.redhat.com"
+	id S1755240Ab2BUSIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:08:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19943 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab2BUSIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:08:06 -0500
+	id S1753981Ab2BUSIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 13:08:19 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 11/73] whiteout/NFSD: Don't return information about whiteouts
- to userspace [ver #2]
+Subject: [PATCH 66/73] ext2: Split ext2_add_entry() from ext2_add_link() [ver
+ #2]
 To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
         valerie.aurora@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jan Blunck <jblunck@suse.de>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Valerie Aurora <vaurora@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>, linux-nfs@vger.kernel.org,
-        Neil Brown <neilb@suse.de>
-Date: Tue, 21 Feb 2012 17:58:48 +0000
-Message-ID: <20120221175848.25235.54294.stgit@warthog.procyon.org.uk>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jan Kara <jack@suse.cz>, linux-ext4@kernel.org
+Date: Tue, 21 Feb 2012 18:05:46 +0000
+Message-ID: <20120221180546.25235.50961.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -33,140 +29,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+From: Valerie Aurora <vaurora@redhat.com>
 
-Userspace isn't ready for handling another file type, so silently drop
-whiteout directory entries before they leave the kernel.
+Allow future code to use the guts of ext2_add_link().
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Original-author: Valerie Aurora <vaurora@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: J. Bruce Fields <bfields@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: Neil Brown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@kernel.org
 ---
 
- fs/compat.c       |    9 +++++++++
- fs/nfsd/nfs3xdr.c |    5 +++++
- fs/nfsd/nfs4xdr.c |    5 +++++
- fs/nfsd/nfsxdr.c  |    4 ++++
- fs/readdir.c      |    9 +++++++++
- 5 files changed, 32 insertions(+), 0 deletions(-)
+ fs/ext2/dir.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 07880ba..9ed826e 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -842,6 +842,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
- 	struct compat_old_linux_dirent __user *dirent;
- 	compat_ulong_t d_ino;
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 89015f1..d8382dc 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -489,10 +489,7 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
+ 	mark_inode_dirty(dir);
+ }
  
-+	if (d_type == DT_WHT)
-+		return 0;
+-/*
+- *	Parent is locked.
+- */
+-int ext2_add_link (struct dentry *dentry, struct inode *inode)
++int ext2_add_entry(struct dentry *dentry, struct inode *inode)
+ {
+ 	struct inode *dir = dentry->d_parent->d_inode;
+ 	const char *name = dentry->d_name.name;
+@@ -588,6 +585,11 @@ out_unlock:
+ 	goto out_put;
+ }
+ 
++int ext2_add_link(struct dentry *dentry, struct inode *inode)
++{
++	return ext2_add_entry(dentry, inode);
++}
 +
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -914,6 +917,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
- 	int reclen = ALIGN(offsetof(struct compat_linux_dirent, d_name) +
- 		namlen + 2, sizeof(compat_long_t));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -1003,6 +1009,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
- 		sizeof(u64));
- 	u64 off;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 08c6e36..69a60b6 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -887,6 +887,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
- 	int		elen;		/* estimated entry length in words */
- 	int		num_entry_words = 0;	/* actual number of words */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset) {
- 		u64 offset64 = offset;
- 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 0ec5a1b..6124f78 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2553,6 +2553,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
- 		return 0;
- 	}
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset)
- 		xdr_encode_hyper(cd->offset, (u64) offset);
- 
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index 65ec595..2af74b2 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
- 			namlen, name, offset, ino);
- 	 */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
- 	if (offset > ~((u32) 0)) {
- 		cd->common.err = nfserr_fbig;
- 		return -EINVAL;
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 356f715..de703d6 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 	struct old_linux_dirent __user * dirent;
- 	unsigned long d_ino;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -155,6 +158,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
- 	int reclen = ALIGN(offsetof(struct linux_dirent, d_name) + namlen + 2,
- 		sizeof(long));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -241,6 +247,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
- 	int reclen = ALIGN(offsetof(struct linux_dirent64, d_name) + namlen + 1,
- 		sizeof(u64));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
+ /*
+  * ext2_delete_entry deletes a directory entry by merging it with the
+  * previous entry. Page is up-to-date. Releases the page.
 
