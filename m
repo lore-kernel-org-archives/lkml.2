@@ -1,187 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2BUGup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 01:50:45 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:23359 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2BUGuo (ORCPT
+	id S1752459Ab2BUHIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 02:08:32 -0500
+Received: from nm22-vm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.179]:21268
+	"HELO nm22-vm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750808Ab2BUHIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 01:50:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6626"; a="162556987"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: Simplify debugfs code
-Date: Mon, 20 Feb 2012 22:50:42 -0800
-Message-Id: <1329807042-19090-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.1.244.gb0d66b
-In-Reply-To: <Message-Id: <1329772500-20577-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <Message-Id: <1329772500-20577-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Tue, 21 Feb 2012 02:08:31 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 681916.2988.bm@omp1014.access.mail.sp2.yahoo.com
+X-YMail-OSG: qFjEhGwVM1nTU_6N.zSbVHc0q6Q_VYe40ZzOorxCYmlniV_
+ i9EggtCw3Af4PYZOQqPLvlKbGxYGh.VPMtH4dCcBv1qeSpbAU46Ql7v1Sz0c
+ pRgrW8rpVRTzHdH_GFSbCMQoTzh75ibkacsQ1gr9j_wzS3_D.WhIr8GMP6vQ
+ TuonGzmB9jzzGrtHUIReIqou57YqhYMQ0lo0ojdk4puYFdg4Y0x9LQrbpFA0
+ yD_PDGpX9nsvG.sCyva8mxJQSN85RYbjdRCKcXMnKQFDVzLYuZcZTKOz0thz
+ JHLRINFUtSsktbujY6V4DeIqY3KRTKKY8FLRctg1uvDbuNJMPhYstZ_pGNFZ
+ dmajrv.27e9u2th3vQtLpmiYYejk7_g9aDSb2GYpu_x7tAGeaKMtnfs_lnMH
+ j2wHnk7pgn9v0sjcIbuNiVFEyyjc0bJYnCl.7hlDB9FrpNqstx6scrxbApg-
+ -
+X-RocketYMMF: webmz1
+X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.116.338427
+Message-ID: <1329808111.92277.YahooMailClassic@web1110.biz.mail.sk1.yahoo.com>
+Date: Mon, 20 Feb 2012 23:08:31 -0800 (PST)
+From: Dr DAVID GREEN <drdavidgreen2020@gmail.com>
+Reply-To: drdavidgreen_1@hotmail.com
+Subject: RE
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="0-1769085637-1329808111=:92277"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_DEBUG_FS=y debugfs functions will never return an
-ERR_PTR. Instead they'll return NULL. The intent is to remove
-ifdefs in calling code.
+--0-1769085637-1329808111=:92277
+Content-Type: text/plain; charset=us-ascii
 
-Update the code to reflect this. We gain an extra dentry pointer
-per struct regulator and struct regulator_dev but that should be
-ok because most distros have debugfs compiled in anyway.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+--0-1769085637-1329808111=:92277
+Content-Type: application/msword; name="Dr. DAVID GREEN.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Dr. DAVID GREEN.rtf"
 
-> Personally I'd be happy to do that, the only reason I put the ifdefs in
-> there was that it appears to be idiomatic to do so but I'm not really a
-> big fan of it.  Then again I never build kernls without debugfs support
-> in them myself...
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZyb21hblxmY2hhcnNldDAgVGltZXMgTmV3IFJvbWFuO317
+XGYxXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5lcmF0b3Ig
+TXNmdGVkaXQgNS40MS4xNS4xNTA3O31cdmlld2tpbmQ0XHVjMVx0cm93ZFx0
+cmdhcGgxMFx0cmxlZnQtMTBcdHJicmRydFxicmRyZGJcYnJkcnc1IFx0cmJy
+ZHJiXGJyZHJkYlxicmRydzUgXHRycGFkZGwxMFx0cnBhZGRyMTBcdHJwYWRk
+ZmwzXHRycGFkZGZyMw0KXGNsdmVydGFsY1xjZWxseDkzNTBccGFyZFxpbnRi
+bFxzYjEwMFxzYTEwMFxmMFxmczI0IEZyb206IERyLiBEQVZJRCBHUkVFTiBc
+cGFyDQpFbWFpbDogZHJkYXZpZGdyZWVuODBAZ21haWwuY29tXHBhcg0KQWRk
+cmVzczogNzUyIFJpdm9uaWEgUm9hZCBTYW5kdG9uIENpdHkgSm9oYW5uZXNi
+dXJnIC4gXHBhcg0KQ09ORklERU5USUFMIElOVkVTVE1FTlQgUFJPUE9TQUwg
+XHBhcg0KRGVhciBTaXIvTWFkYW0gXHBhcg0KSSdtIERyLiBEQVZJRCBHUkVF
+TiBhIGZpbmFuY2lhbCBjb25zdWx0YW50IGJhc2VkIGluIFNhbmR0b24gQ2l0
+eSBKb2hhbm5lc2J1cmcgU291dGggQWZyaWNhIC5JIGhhdmUgYSBjbGllbnQg
+KGEgd2lkb3cpIHNoZSBoYXMgKFVTRE0xNSwwMDAsMDAwLjAwICkgRmlmdGVl
+biBNaWxsaW9uIFVuaXRlZCBTdGF0ZXMgRG9sbGFycyB3aXRoIGEgUHJpdmF0
+ZSBFcXVpdHkgSW52ZXN0bWVudCBUcnVzdCBDb21wYW55IGZvciBzYWZlIGtl
+ZXBpbmcgb25seS4gXHBhcg0KU2hlIHdpc2hlcyB0byBpbnZlc3QgaW4gYSBz
+dGFibGUgZWNvbm9teSBvdXRzaWRlIEFmcmljYSBhbmQgaGVyIGludGVyZXN0
+IGlzIGluIGNvbXBhbmllcyB3aXRoIHBvdGVudGlhbHMgZm9yIHJhcGlkIGdy
+b3d0aCBpbiBsb25nIHRlcm1zLiBNeSBjbGllbnQgaXMgaW50ZXJlc3RlZCBp
+biBwbGFjaW5nIHBhcnQgb2YgaGVyIGZ1bmRzIGludG8geW91ciBjb21wYW55
+IG9yIHByaXZhdGUgYnVzaW5lc3NlcywgaWYgeW91ciBjb3VudHJ5J3MgYmkt
+bGF3cyBhbGxvdyBmb3JlaWduIEludmVzdG9ycy8gaW52ZXN0bWVudC4gWW91
+IGNhbiBjb250YWN0IG1lIGZvciBtb3JlIGRldGFpbHMgdmlhIG15IG1vYmls
+ZSBQaG9uZSBvciBlLW1haWwgd2l0aCB5b3VyIHJlZmVyZW5jZS4gUGxlYXNl
+IG9uIHRoZSByZXBseSBvZiB0aGlzIExldHRlciBmb3IgY29uZmlkZW50aWFs
+aXR5IGkgd2lsbCBraW5kbHkgYWR2aWNlIHRoYXQgeW91IHJlcGx5IG1lIHRo
+cm91Z2ggbXkgb2ZmaWNlIG51bWJlciBhYm92ZSBhbmQgY29uZmlybSBieSBl
+bWFpbDogZHJkYXZpZGdyZWVuODBAZ21haWwuY29tXHBhcg0KTm90ZTogVGhl
+IGZ1bmQgaXMgZnJlZSBmcm9tIGRydWcgYW5kIGxhdW5kZXJpbmcgcmVsYXRl
+ZCBvZmZlbmNlcy4gXHBhcg0KWW91cnMgZmFpdGhmdWxseSwgXHBhcg0KRHIu
+IERBVklEIEdSRUVOIFxwYXINCk5COiBNeSBjbGllbnQncyBkaXJlY3QgbW9i
+aWxlIG51bWJlciBpcyAwMCAyNyA3MTgxNSA2ODc3IChNYWRhbSBNZXJjaWEg
+Sm9obnNvbikgXGNlbGxccm93XHBhcmRcc2IxMDBcc2ExMDBccGFyDQpccGFy
+ZFxmMVxmczIwXHBhcg0KfQ0KAA==
 
-Here's the patch on top of your patch in case you want it. My compiler 
-seems to be clever enough to remove the supply_map_fops when debugfs isn't
-enabled.
-
- drivers/regulator/core.c         |   28 ++++++----------------------
- include/linux/regulator/driver.h |    2 --
- 2 files changed, 6 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 6b63159..32ba89b 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -54,9 +54,7 @@ static LIST_HEAD(regulator_map_list);
- static bool has_full_constraints;
- static bool board_wants_dummy_regulator;
- 
--#ifdef CONFIG_DEBUG_FS
- static struct dentry *debugfs_root;
--#endif
- 
- /*
-  * struct regulator_map
-@@ -84,9 +82,7 @@ struct regulator {
- 	char *supply_name;
- 	struct device_attribute dev_attr;
- 	struct regulator_dev *rdev;
--#ifdef CONFIG_DEBUG_FS
- 	struct dentry *debugfs;
--#endif
- };
- 
- static int _regulator_is_enabled(struct regulator_dev *rdev);
-@@ -1142,12 +1138,10 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 			goto attr_err;
- 	}
- 
--#ifdef CONFIG_DEBUG_FS
- 	regulator->debugfs = debugfs_create_dir(regulator->supply_name,
- 						rdev->debugfs);
--	if (IS_ERR_OR_NULL(regulator->debugfs)) {
-+	if (!regulator->debugfs) {
- 		rdev_warn(rdev, "Failed to create debugfs directory\n");
--		regulator->debugfs = NULL;
- 	} else {
- 		debugfs_create_u32("uA_load", 0444, regulator->debugfs,
- 				   &regulator->uA_load);
-@@ -1156,7 +1150,6 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 		debugfs_create_u32("max_uV", 0444, regulator->debugfs,
- 				   &regulator->max_uV);
- 	}
--#endif
- 
- 	mutex_unlock(&rdev->mutex);
- 	return regulator;
-@@ -1365,9 +1358,7 @@ void regulator_put(struct regulator *regulator)
- 	mutex_lock(&regulator_list_mutex);
- 	rdev = regulator->rdev;
- 
--#ifdef CONFIG_DEBUG_FS
- 	debugfs_remove_recursive(regulator->debugfs);
--#endif
- 
- 	/* remove any sysfs entries */
- 	if (regulator->dev) {
-@@ -2710,11 +2701,9 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
- 
- static void rdev_init_debugfs(struct regulator_dev *rdev)
- {
--#ifdef CONFIG_DEBUG_FS
- 	rdev->debugfs = debugfs_create_dir(rdev_get_name(rdev), debugfs_root);
--	if (IS_ERR_OR_NULL(rdev->debugfs)) {
-+	if (!rdev->debugfs) {
- 		rdev_warn(rdev, "Failed to create debugfs directory\n");
--		rdev->debugfs = NULL;
- 		return;
- 	}
- 
-@@ -2722,7 +2711,6 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
- 			   &rdev->use_count);
- 	debugfs_create_u32("open_count", 0444, rdev->debugfs,
- 			   &rdev->open_count);
--#endif
- }
- 
- /**
-@@ -2902,9 +2890,7 @@ void regulator_unregister(struct regulator_dev *rdev)
- 		return;
- 
- 	mutex_lock(&regulator_list_mutex);
--#ifdef CONFIG_DEBUG_FS
- 	debugfs_remove_recursive(rdev->debugfs);
--#endif
- 	flush_work_sync(&rdev->disable_work.work);
- 	WARN_ON(rdev->open_count);
- 	unset_regulator_supplies(rdev);
-@@ -3114,12 +3100,14 @@ static ssize_t supply_map_read_file(struct file *file, char __user *user_buf,
- 
- 	return ret;
- }
-+#endif
- 
- static const struct file_operations supply_map_fops = {
-+#ifdef CONFIG_DEBUG_FS
- 	.read = supply_map_read_file,
- 	.llseek = default_llseek,
--};
- #endif
-+};
- 
- static int __init regulator_init(void)
- {
-@@ -3127,16 +3115,12 @@ static int __init regulator_init(void)
- 
- 	ret = class_register(&regulator_class);
- 
--#ifdef CONFIG_DEBUG_FS
- 	debugfs_root = debugfs_create_dir("regulator", NULL);
--	if (IS_ERR_OR_NULL(debugfs_root)) {
-+	if (!debugfs_root)
- 		pr_warn("regulator: Failed to create debugfs directory\n");
--		debugfs_root = NULL;
--	}
- 
- 	debugfs_create_file("supply_map", 0444, debugfs_root, NULL,
- 			    &supply_map_fops);
--#endif
- 
- 	regulator_dummy_init();
- 
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 4214b9a..c5dcada 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -207,9 +207,7 @@ struct regulator_dev {
- 
- 	void *reg_data;		/* regulator_dev data */
- 
--#ifdef CONFIG_DEBUG_FS
- 	struct dentry *debugfs;
--#endif
- };
- 
- struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+--0-1769085637-1329808111=:92277--
