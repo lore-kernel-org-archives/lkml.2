@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2BUIJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:09:36 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55351 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2BUIJf (ORCPT
+	id S1752824Ab2BUIKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:10:05 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36883 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2BUIKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:09:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 21 Feb 2012 17:08:07 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/10] mm/memcg: add zone pointer into lruvec
-Message-Id: <20120221170807.a5b961db.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LSU.2.00.1202201529450.23274@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils>
-	<alpine.LSU.2.00.1202201529450.23274@eggly.anvils>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 03:10:03 -0500
+Date: Tue, 21 Feb 2012 13:39:54 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>
+Subject: Re: sched: Avoid SMT siblings in select_idle_sibling() if possible
+Message-ID: <20120221080954.GJ2350@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1321544313.6308.25.camel@marge.simson.net>
+ <1321545376.2495.1.camel@laptop>
+ <1321547917.6308.48.camel@marge.simson.net>
+ <1321551381.15339.21.camel@sbsiddha-desk.sc.intel.com>
+ <1321629267.7080.13.camel@marge.simson.net>
+ <1329748861.2293.345.camel@twins>
+ <20120220150348.GC2350@linux.vnet.ibm.com>
+ <1329762343.6276.156.camel@marge.simpson.net>
+ <20120221000622.GH2350@linux.vnet.ibm.com>
+ <1329806234.7333.16.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1329806234.7333.16.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12022022-1618-0000-0000-000000DAC44D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Feb 2012 15:30:45 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+* Mike Galbraith <efault@gmx.de> [2012-02-21 07:37:14]:
 
-> The lruvec is looking rather useful: if we just add a zone pointer
-> into the lruvec, then we can pass the lruvec pointer around and save
-> some superfluous arguments and recomputations in various places.
+> On Tue, 2012-02-21 at 05:36 +0530, Srivatsa Vaddagiri wrote:
 > 
-> Just occasionally we do want mem_cgroup_from_lruvec() to get back from
-> lruvec to memcg; but then we can remove all uses of vmscan.c's private
-> mem_cgroup_zone *mz, passing the lruvec pointer instead.
+> > fwiw the patch I had sent does a wakeup balance within prev_cpu's
+> > cache_domain (and not outside).
 > 
-> And while we're there, get_scan_count() can call vmscan_swappiness()
-> once, instead of twice in a row.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
+> Yeah, the testing I did was turn on the flag, and measure.  With single
+> domain scans, maybe select_idle_sibling() could just go away.
 
-I like this cleanup
+Yeah that's what I was thinking. Essentially find_idlest_group/cpu
+should accomplish that job pretty much for us ...
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> It ain't free either.
+
+Will find out how much difference it makes ..
+
+- vatsa
 
