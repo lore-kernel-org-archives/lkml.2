@@ -1,97 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab2BUMsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 07:48:32 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:39403 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753973Ab2BUMsb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 07:48:31 -0500
-X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 07:48:30 EST
-Subject: Re: [PATCH RFC 0/4] Scheduler idle notifiers and users
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1329318063.2293.136.camel@twins>
-Date: Tue, 21 Feb 2012 14:38:28 +0200
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Saravana Kannan <skannan@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
-        linaro-kernel@lists.linaro.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Oleg Nesterov <oleg@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Chan <mike@android.com>, Dave Jones <davej@redhat.com>,
-        Todd Poynor <toddpoynor@google.com>, kernel-team@android.com,
-        linux-arm-kernel@lists.infradead.org,
-        Arjan Van De Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <69B0D95C-2A80-41A9-97E1-86F5840B84CF@antoniou-consulting.com>
-References: <20120208013959.GA24535@panacea> <1328670355.2482.68.camel@laptop> <20120208202314.GA28290@redhat.com> <1328736834.2903.33.camel@pasglop> <20120209075106.GB18387@elte.hu> <4F35DD3E.4020406@codeaurora.org> <20120211144530.GA497@elte.hu> <4F3AEC4E.9000303@codeaurora.org> <1329313085.2293.106.camel@twins> <20120215140245.GB27825@n2100.arm.linux.org.uk> <1329318063.2293.136.camel@twins>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-X-Mailer: Apple Mail (2.1084)
+	id S1754924Ab2BUMyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 07:54:13 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2890 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab2BUMyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 07:54:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 21 Feb 2012 04:54:12 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: sameo@linux.intel.com, jedu@slimlogic.co.uk, lrg@slimlogic.co.uk,
+        broonie@opensource.wolfsonmicro.com, gg@slimlogic.co.u
+Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        ldewangan@nvidia.com
+Subject: [PATCH V2] mfd: tps65910: use regmap for device register access.
+Date: Tue, 21 Feb 2012 18:21:34 +0530
+Message-Id: <1329828694-2955-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Using regmap apis for accessing the device registers and
+using RBTREE caching mechanims for caching registers.
 
-On Feb 15, 2012, at 5:01 PM, Peter Zijlstra wrote:
+Enabling caching of the registers which is used for voltage
+controls. By doing this, the modify_bits operation is faster as
+it does not involve the i2c register read from device, just read
+from cache. This results faster set voltage operation.
 
-> On Wed, 2012-02-15 at 14:02 +0000, Russell King - ARM Linux wrote:
-> 
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+The orginal change was pushed into two patches
+[PATCH V1 1/2] mfd: tps65910: use regmap for device register access.
+[PATCH V1 2/2] regulator: tps65910: Enable register caching of voltage controls.
+where it was suggested to enable caching in mfd core driver only and so
+it does not require second patch.
+Changes from V1:
+- Enable caching in the core driver itself.
+- Remove changes from regulator driver.
 
-<snip>
-> 
-> I guess that all will depend on the hardware.. there'll still be some
-> sort of governor in between taking the per-cpu/task load-tracking data
-> and scheduler events and using that to compute some volt/freq setting.
-> 
-> From what I've heard there's a number of different classes of hardware
-> out there, some like race to idle, some can power gate more than others
-> etc.. I'm not particularly bothered by those details, I'm sure there's
-> people who are.
-> 
-> All I really want is to consolidate all the various statistics we have
-> across cpufreq/cpuidle/sched and provide cpufreq with scheduler
-> callbacks because they've been telling me their current polling stuff
-> sucks rocks.
-> 
-> Also the current state of affairs is that the cpufreq stuff is trying to
-> guess what the scheduler is doing, and people are feeding that back into
-> the scheduler. This I need to stop from happening ;-)
+ drivers/mfd/Kconfig          |    1 +
+ drivers/mfd/tps65910.c       |  123 ++++++++++++++++--------------------------
+ include/linux/mfd/tps65910.h |    1 +
+ 3 files changed, 48 insertions(+), 77 deletions(-)
 
-If I may interject one more point here.
-
-If we go to all the trouble of integrating cpufreq/cpuidle/sched into scheduler
-callbacks, we should place hooks into the thermal framework/PM as well.
-
-It will pretty common to have per core temperature readings, on most
-modern SoCs. 
-
-It is quite conceivable to have a case with a multi-core CPU where due
-to load imbalance, one (or more) of the cores is running at full speed
-while the rest are mostly idle. What you want do, for best performance
-and conceivably better power consumption, is not to throttle either 
-frequency or lowers voltage to the overloaded CPU but to migrate the
-load to one of the cooler CPUs.
-
-This affects CPU capacity immediately, i.e. you shouldn't schedule more
-load on a CPU that its too hot, since you'll only end up triggering thermal 
-shutdown. The ideal solution would be to round robin
-the load from the hot CPU to the cooler ones, but not so fast that we lose
-due to the migration of state from one CPU to the other.
-
-In a nutshell, the processing capacity of a core is not static, i.e. it
-might degrade over time due to the increase of temperature caused by the
-previous load.
-
-What do you think?
-
-Regards
-
--- Pantelis
-  
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index cd13e9f..0e066cd 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -162,6 +162,7 @@ config MFD_TPS65910
+ 	depends on I2C=y && GPIOLIB
+ 	select MFD_CORE
+ 	select GPIO_TPS65910
++	select REGMAP_I2C
+ 	help
+ 	  if you say yes here you get support for the TPS65910 series of
+ 	  Power Management chips.
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 4392f6b..1c4f53e 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -16,10 +16,12 @@
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/init.h>
++#include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
+ #include <linux/gpio.h>
+ #include <linux/mfd/core.h>
++#include <linux/regmap.h>
+ #include <linux/mfd/tps65910.h>
+ 
+ static struct mfd_cell tps65910s[] = {
+@@ -38,99 +40,56 @@ static struct mfd_cell tps65910s[] = {
+ static int tps65910_i2c_read(struct tps65910 *tps65910, u8 reg,
+ 				  int bytes, void *dest)
+ {
+-	struct i2c_client *i2c = tps65910->i2c_client;
+-	struct i2c_msg xfer[2];
+-	int ret;
+-
+-	/* Write register */
+-	xfer[0].addr = i2c->addr;
+-	xfer[0].flags = 0;
+-	xfer[0].len = 1;
+-	xfer[0].buf = &reg;
+-
+-	/* Read data */
+-	xfer[1].addr = i2c->addr;
+-	xfer[1].flags = I2C_M_RD;
+-	xfer[1].len = bytes;
+-	xfer[1].buf = dest;
+-
+-	ret = i2c_transfer(i2c->adapter, xfer, 2);
+-	if (ret == 2)
+-		ret = 0;
+-	else if (ret >= 0)
+-		ret = -EIO;
+-
+-	return ret;
++	return regmap_bulk_read(tps65910->regmap, reg, dest, bytes);
+ }
+ 
+ static int tps65910_i2c_write(struct tps65910 *tps65910, u8 reg,
+-				   int bytes, void *src)
++				  int bytes, void *src)
+ {
+-	struct i2c_client *i2c = tps65910->i2c_client;
+-	/* we add 1 byte for device register */
+-	u8 msg[TPS65910_MAX_REGISTER + 1];
+-	int ret;
+-
+-	if (bytes > TPS65910_MAX_REGISTER)
+-		return -EINVAL;
+-
+-	msg[0] = reg;
+-	memcpy(&msg[1], src, bytes);
+-
+-	ret = i2c_master_send(i2c, msg, bytes + 1);
+-	if (ret < 0)
+-		return ret;
+-	if (ret != bytes + 1)
+-		return -EIO;
+-	return 0;
++	return regmap_bulk_write(tps65910->regmap, reg, src, bytes);
+ }
+ 
+ int tps65910_set_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
+ {
+-	u8 data;
+-	int err;
+-
+-	mutex_lock(&tps65910->io_mutex);
+-	err = tps65910_i2c_read(tps65910, reg, 1, &data);
+-	if (err) {
+-		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
+-		goto out;
+-	}
+-
+-	data |= mask;
+-	err = tps65910_i2c_write(tps65910, reg, 1, &data);
+-	if (err)
+-		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps65910->io_mutex);
+-	return err;
++	return regmap_update_bits(tps65910->regmap, reg, mask, mask);
+ }
+ EXPORT_SYMBOL_GPL(tps65910_set_bits);
+ 
+ int tps65910_clear_bits(struct tps65910 *tps65910, u8 reg, u8 mask)
+ {
+-	u8 data;
+-	int err;
+-
+-	mutex_lock(&tps65910->io_mutex);
+-	err = tps65910_i2c_read(tps65910, reg, 1, &data);
+-	if (err) {
+-		dev_err(tps65910->dev, "read from reg %x failed\n", reg);
+-		goto out;
+-	}
+-
+-	data &= ~mask;
+-	err = tps65910_i2c_write(tps65910, reg, 1, &data);
+-	if (err)
+-		dev_err(tps65910->dev, "write to reg %x failed\n", reg);
+-
+-out:
+-	mutex_unlock(&tps65910->io_mutex);
+-	return err;
++	return regmap_update_bits(tps65910->regmap, reg, mask, 0);
+ }
+ EXPORT_SYMBOL_GPL(tps65910_clear_bits);
+ 
++static bool is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	struct tps65910 *tps65910 = dev_get_drvdata(dev);
++
++	/*
++	 * Caching all regulator registers.
++	 * All regualator register address range is same for
++	 * TPS65910 and TPS65911
++	 */
++	if ((reg >= TPS65910_VIO) && (reg <= TPS65910_VDAC)) {
++		/* Check for non-existing register */
++		if (tps65910_chip_id(tps65910) == TPS65910)
++			if ((reg == TPS65911_VDDCTRL_OP) ||
++				(reg == TPS65911_VDDCTRL_SR))
++				return true;
++		return false;
++	}
++	return true;
++}
++
++static const struct regmap_config rc5t583_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.volatile_reg = is_volatile_reg,
++	.max_register = TPS65910_MAX_REGISTER,
++	.num_reg_defaults_raw = TPS65910_MAX_REGISTER,
++	.cache_type = REGCACHE_RBTREE,
++};
++
+ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+@@ -161,6 +120,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	tps65910->write = tps65910_i2c_write;
+ 	mutex_init(&tps65910->io_mutex);
+ 
++	tps65910->regmap = regmap_init_i2c(i2c, &rc5t583_regmap_config);
++	if (IS_ERR(tps65910->regmap)) {
++		ret = PTR_ERR(tps65910->regmap);
++		dev_err(&i2c->dev, "regmap initialization failed: %d\n", ret);
++		goto regmap_err;
++	}
++
+ 	ret = mfd_add_devices(tps65910->dev, -1,
+ 			      tps65910s, ARRAY_SIZE(tps65910s),
+ 			      NULL, 0);
+@@ -178,6 +144,8 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ 
+ err:
++	regmap_exit(tps65910->regmap);
++regmap_err:
+ 	kfree(tps65910);
+ 	kfree(init_data);
+ 	return ret;
+@@ -189,6 +157,7 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
+ 
+ 	tps65910_irq_exit(tps65910);
+ 	mfd_remove_devices(tps65910->dev);
++	regmap_exit(tps65910->regmap);
+ 	kfree(tps65910);
+ 
+ 	return 0;
+diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
+index 5c76b96..9b24dcb 100644
+--- a/include/linux/mfd/tps65910.h
++++ b/include/linux/mfd/tps65910.h
+@@ -805,6 +805,7 @@ struct tps65910_board {
+ struct tps65910 {
+ 	struct device *dev;
+ 	struct i2c_client *i2c_client;
++	struct regmap *regmap;
+ 	struct mutex io_mutex;
+ 	unsigned int id;
+ 	int (*read)(struct tps65910 *tps65910, u8 reg, int size, void *dest);
+-- 
+1.7.1.1
 
