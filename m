@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab2BUS6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:58:43 -0500
-Received: from www17.your-server.de ([213.133.104.17]:52676 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab2BUS6l (ORCPT
+	id S1755754Ab2BUS7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:59:44 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.25]:40015 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab2BUS7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:58:41 -0500
-Message-ID: <1329850714.1419.2.camel@localhost.localdomain>
-Subject: Re: Linux 3.3-rc4
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ian Kent <raven@themaw.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 19:58:34 +0100
-In-Reply-To: <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
-References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com>
-	 <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de>
-	 <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 13:59:43 -0500
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 13:59:42 EST
+References: <1329666184-7336-1-git-send-email-michael@thalmeier.at>
+Message-ID: <cone.1329850153.907493.1598.1000@zopiie>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Michael Thalmeier <michael@thalmeier.at>, Matthew Garrett <mjg@redhat.com>,
+        akpm@linux-foundation.org
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] acerhdf: add support for Acer Aspire 1810T BIOS v1.3314
+Date: Tue, 21 Feb 2012 19:49:13 +0100
 Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 19.02.2012, 10:45 -0800 schrieb Linus Torvalds:
-> On Sun, Feb 19, 2012 at 5:42 AM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> >
-> > 1.) autofs4 interface is broken between x86 and x86_64. as systemd uses autofs, this bug hangs the boot process as e.g. binfmt is mounted via autofs. see also http://lists.freedesktop.org/archives/systemd-devel/2011-September/003396.html
-> 
-> Duh.
-> 
-> That is just broken.
-> 
-> The code even *talks* about how the packet layout is the same on
-> 32-bit and 64-bit architectures, and that's largely true.
-> 
-> However, while true, x86-64 has 8-byte alignment for 'long', and
-> x86-32 has 4-byte alignment. Which means that even though the
-> structure layout is exactly the same, on x86-64 the *alignment* issue
-> will push it out to 304 bytes.
-> 
-> That's just stupid. We've had that problem before. It's easy to
-> overlook, but that packet is just mis-designed.
-> 
-> The attached patch isn't pretty, but this is definitely a kernel bug.
-> Binary compatibility is *important*, dammit.
-> 
-> Does this fix it?
+Hi Michael,
 
-yes, it does!
-
-thanks.
+Michael Thalmeier writes:
+ 
+> b06862b: acerhdf: add support for Aspire 1810TZ BIOS v1.3314
+> 
+> Acer Aspire 1810T also supports Bios v1.3314.
+> 
+> Signed-off-by: Michael Thalmeier <michael@thalmeier.at>
 
 
+Thanks for sending the patch, but the hardware is already included in one 
+of the three patches waiting since about 4 months to be applied by Matthew. 
+I've got no clue, why he doesn't apply them, although Andrew already added 
+his signed-off-by and sent the patches about 4 times...
 
+kind regards,
+--peter;
