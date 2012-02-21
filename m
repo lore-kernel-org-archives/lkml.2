@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab2BUCG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 21:06:29 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63257 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab2BUCGX (ORCPT
+	id S1755081Ab2BUCGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 21:06:47 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:38803 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab2BUCGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 21:06:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.229.111.141 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
+	Mon, 20 Feb 2012 21:06:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.229.137.66 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
 From: Kevin Winchester <kjwinchester@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Kevin Winchester <kjwinchester@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
         Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
-Date: Mon, 20 Feb 2012 22:06:02 -0400
-Message-Id: <1329789966-693-2-git-send-email-kjwinchester@gmail.com>
+Subject: [PATCH 5/5] x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings into common.c
+Date: Mon, 20 Feb 2012 22:06:06 -0400
+Message-Id: <1329789966-693-6-git-send-email-kjwinchester@gmail.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329789966-693-1-git-send-email-kjwinchester@gmail.com>
 References: <20120217115627.GA25601@elte.hu>
@@ -25,194 +25,293 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-'struct cpuinfo_x86'") caused the compilation error:
+smp_num_siblings was defined in arch/x86/kernel/smpboot.c, making it
+necessary to wrap any UP relevant code referencing it with #ifdef
+CONFIG_SMP.
 
-mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
-
-by removing an #ifdef CONFIG_SMP around a block containing a reference
-to cpu_llc_shared_map.  Rather than replace the #ifdef, move
-cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
-struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
-
-The size effects on various kernels are as follows:
-
-   text	   data	    bss	    dec	    hex	filename
-5281572	 513296	1044480	6839348	 685c34	vmlinux.up
-5281572	 513296	1044480	6839348	 685c34	vmlinux.up.patched
-5548860	 516792	1110016	7175668	 6d7df4	vmlinux.smp.2
-5548837	 516792	1110016	7175645	 6d7ddd	vmlinux.smp.2.patched
-5595965	 706840	1310720	7613525	 742c55	vmlinux.smp.max
-5595876	 707880	1310720	7614476	 74300c	vmlinux.smp.max.patched
-
-It can be seen that this change has no effect on UP, a minor effect for
-SMP with Max 2 CPUs, and a more substantial but still not overly large
-effect for MAXSMP.
+Instead, move the definition to arch/x86/kernel/cpu/common.c, thus
+making it available always.
 
 Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
 ---
- arch/x86/include/asm/processor.h      |    1 +
- arch/x86/include/asm/smp.h            |    6 ------
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++--
- arch/x86/kernel/cpu/mcheck/mce_amd.c  |    7 ++++---
- arch/x86/kernel/smpboot.c             |   15 ++++++---------
- arch/x86/xen/smp.c                    |    1 -
- 6 files changed, 13 insertions(+), 21 deletions(-)
+ arch/x86/include/asm/perf_event_p4.h |    9 +++------
+ arch/x86/include/asm/smp.h           |    6 +-----
+ arch/x86/include/asm/topology.h      |    4 +---
+ arch/x86/kernel/cpu/amd.c            |    4 ----
+ arch/x86/kernel/cpu/common.c         |    6 ++++--
+ arch/x86/kernel/cpu/proc.c           |    5 ++---
+ arch/x86/kernel/cpu/topology.c       |    2 --
+ arch/x86/kernel/process.c            |    3 +--
+ arch/x86/kernel/smpboot.c            |    4 ----
+ arch/x86/oprofile/nmi_int.c          |    6 ------
+ arch/x86/oprofile/op_model_p4.c      |    6 ------
+ 11 files changed, 12 insertions(+), 43 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 4b81258..0c8b574 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -110,6 +110,7 @@ struct cpuinfo_x86 {
- 	/* Index into per_cpu list: */
- 	u16			cpu_index;
- 	u32			microcode;
-+	cpumask_t		llc_shared_map;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index 29a65c2..0d50f33 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -8,6 +8,8 @@
+ #include <linux/cpu.h>
+ #include <linux/bitops.h>
  
- #define X86_VENDOR_INTEL	0
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 0434c40..f7599d0 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -34,7 +34,6 @@ static inline bool cpu_has_ht_siblings(void)
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
- /* cpus sharing the last level cache: */
--DECLARE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
- DECLARE_PER_CPU(u16, cpu_llc_id);
- DECLARE_PER_CPU(int, cpu_number);
++#include <asm/smp.h>
++
+ /*
+  * NetBurst has performance MSRs shared between
+  * threads if HT is turned on, ie for both logical
+@@ -179,18 +181,13 @@ static inline u64 p4_clear_ht_bit(u64 config)
  
-@@ -48,11 +47,6 @@ static inline struct cpumask *cpu_core_mask(int cpu)
- 	return per_cpu(cpu_core_map, cpu);
+ static inline int p4_ht_active(void)
+ {
+-#ifdef CONFIG_SMP
+ 	return smp_num_siblings > 1;
+-#endif
+-	return 0;
  }
  
--static inline struct cpumask *cpu_llc_shared_mask(int cpu)
--{
--	return per_cpu(cpu_llc_shared_map, cpu);
--}
--
- DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
- DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
- #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86_32)
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 73d08ed..a9cd551 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -734,11 +734,11 @@ static int __cpuinit cache_shared_amd_cpu_map_setup(unsigned int cpu, int index)
- 	ret = 0;
- 	if (index == 3) {
- 		ret = 1;
--		for_each_cpu(i, cpu_llc_shared_mask(cpu)) {
-+		for_each_cpu(i, &c->llc_shared_map) {
- 			if (!per_cpu(ici_cpuid4_info, i))
- 				continue;
- 			this_leaf = CPUID4_INFO_IDX(i, index);
--			for_each_cpu(sibling, cpu_llc_shared_mask(cpu)) {
-+			for_each_cpu(sibling, &c->llc_shared_map) {
- 				if (!cpu_online(sibling))
- 					continue;
- 				set_bit(sibling, this_leaf->shared_cpu_map);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 786e76a..5e0ec2c 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -525,11 +525,12 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 	struct threshold_bank *b = NULL;
- 	struct device *dev = mce_device[cpu];
- 	char name[32];
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
+ static inline int p4_ht_thread(int cpu)
+ {
+-#ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2)
+-		return cpu != cpumask_first(&cpu_data(cpu).sibling_map));
+-#endif
++		return cpu != cpumask_first(&cpu_data(cpu).sibling_map);
+ 	return 0;
+ }
  
- 	sprintf(name, "threshold_bank%i", bank);
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 75aea4d..787127e 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -24,11 +24,7 @@ extern unsigned int num_processors;
  
--	if (cpu_data(cpu).cpu_core_id && shared_bank[bank]) {	/* symlink */
--		i = cpumask_first(cpu_llc_shared_mask(cpu));
-+	if (c->cpu_core_id && shared_bank[bank]) {	/* symlink */
-+		i = cpumask_first(&c->llc_shared_map);
+ static inline bool cpu_has_ht_siblings(void)
+ {
+-	bool has_siblings = false;
+-#ifdef CONFIG_SMP
+-	has_siblings = cpu_has_ht && smp_num_siblings > 1;
+-#endif
+-	return has_siblings;
++	return cpu_has_ht && smp_num_siblings > 1;
+ }
  
- 		/* first core not up yet */
- 		if (cpu_data(i).cpu_core_id)
-@@ -548,7 +549,7 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		if (err)
- 			goto out;
+ DECLARE_PER_CPU(int, cpu_number);
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index 58438a1b..7250ad1 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -174,11 +174,9 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
+ struct pci_bus;
+ void x86_pci_root_bus_resources(int bus, struct list_head *resources);
  
--		cpumask_copy(b->cpus, cpu_llc_shared_mask(cpu));
-+		cpumask_copy(b->cpus, &c->llc_shared_map);
- 		per_cpu(threshold_banks, cpu)[bank] = b;
+-#ifdef CONFIG_SMP
+ #define mc_capable()	((boot_cpu_data.x86_max_cores > 1) && \
+ 			(cpumask_weight(&boot_cpu_data.core_map) != nr_cpu_ids))
+-#define smt_capable()			(smp_num_siblings > 1)
+-#endif
++#define smt_capable()	(smp_num_siblings > 1)
  
- 		goto out;
+ #ifdef CONFIG_NUMA
+ extern int get_mp_bus_to_node(int busnum);
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 1cd9d51..a8b46df 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -263,7 +263,6 @@ static int __cpuinit nearby_node(int apicid)
+  *     Assumption: Number of cores in each internal node is the same.
+  * (2) AMD processors supporting compute units
+  */
+-#ifdef CONFIG_X86_HT
+ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ {
+ 	u32 nodes, cores_per_cu = 1;
+@@ -307,7 +306,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+ 		c->compute_unit_id %= cus_per_node;
+ 	}
+ }
+-#endif
+ 
+ /*
+  * On a AMD dual core setup the lower bits of the APIC id distingush the cores.
+@@ -315,7 +313,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+  */
+ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_X86_HT
+ 	unsigned bits;
+ 
+ 	bits = c->x86_coreid_bits;
+@@ -326,7 +323,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+ 	/* use socket ID also for last level cache */
+ 	c->llc_id = c->phys_proc_id;
+ 	amd_get_topology(c);
+-#endif
+ }
+ 
+ int amd_get_nb_id(int cpu)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 7052410..b2c6e3e 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -47,6 +47,10 @@ cpumask_var_t cpu_initialized_mask;
+ cpumask_var_t cpu_callout_mask;
+ cpumask_var_t cpu_callin_mask;
+ 
++/* Number of siblings per CPU package */
++int smp_num_siblings = 1;
++EXPORT_SYMBOL(smp_num_siblings);
++
+ /* representing cpus for which sibling maps can be computed */
+ cpumask_var_t cpu_sibling_setup_mask;
+ 
+@@ -452,7 +456,6 @@ void __cpuinit cpu_detect_cache_sizes(struct cpuinfo_x86 *c)
+ 
+ void __cpuinit detect_ht(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_X86_HT
+ 	u32 eax, ebx, ecx, edx;
+ 	int index_msb, core_bits;
+ 	static bool printed;
+@@ -498,7 +501,6 @@ out:
+ 		       c->cpu_core_id);
+ 		printed = 1;
+ 	}
+-#endif
+ }
+ 
+ static void __cpuinit get_cpu_vendor(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index e6e07c2..aef8b27 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -1,16 +1,16 @@
+-#include <linux/smp.h>
+ #include <linux/timex.h>
+ #include <linux/string.h>
+ #include <linux/seq_file.h>
+ #include <linux/cpufreq.h>
+ 
++#include <asm/smp.h>
++
+ /*
+  *	Get CPU information for use by the procfs.
+  */
+ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
+ 			      unsigned int cpu)
+ {
+-#ifdef CONFIG_SMP
+ 	if (c->x86_max_cores * smp_num_siblings > 1) {
+ 		seq_printf(m, "physical id\t: %d\n", c->phys_proc_id);
+ 		seq_printf(m, "siblings\t: %d\n", cpumask_weight(&c->core_map));
+@@ -19,7 +19,6 @@ static void show_cpuinfo_core(struct seq_file *m, struct cpuinfo_x86 *c,
+ 		seq_printf(m, "apicid\t\t: %d\n", c->apicid);
+ 		seq_printf(m, "initial apicid\t: %d\n", c->initial_apicid);
+ 	}
+-#endif
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/kernel/cpu/topology.c b/arch/x86/kernel/cpu/topology.c
+index 4397e98..d4ee471 100644
+--- a/arch/x86/kernel/cpu/topology.c
++++ b/arch/x86/kernel/cpu/topology.c
+@@ -28,7 +28,6 @@
+  */
+ void __cpuinit detect_extended_topology(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	unsigned int eax, ebx, ecx, edx, sub_index;
+ 	unsigned int ht_mask_width, core_plus_mask_width;
+ 	unsigned int core_select_mask, core_level_siblings;
+@@ -95,5 +94,4 @@ void __cpuinit detect_extended_topology(struct cpuinfo_x86 *c)
+ 		printed = 1;
+ 	}
+ 	return;
+-#endif
+ }
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 44eefde..d531cd2 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -586,12 +586,11 @@ static void amd_e400_idle(void)
+ 
+ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_SMP
+ 	if (pm_idle == poll_idle && smp_num_siblings > 1) {
+ 		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
+ 			" performance may degrade.\n");
+ 	}
+-#endif
++
+ 	if (pm_idle)
+ 		return;
+ 
 diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 257049d..1c20aa2 100644
+index de23378..a0a6b01 100644
 --- a/arch/x86/kernel/smpboot.c
 +++ b/arch/x86/kernel/smpboot.c
-@@ -127,8 +127,6 @@ EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
- DEFINE_PER_CPU(cpumask_var_t, cpu_core_map);
- EXPORT_PER_CPU_SYMBOL(cpu_core_map);
+@@ -112,10 +112,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
+ #define set_idle_for_cpu(x, p)   (idle_thread_array[(x)] = (p))
+ #endif
  
--DEFINE_PER_CPU(cpumask_var_t, cpu_llc_shared_map);
+-/* Number of siblings per CPU package */
+-int smp_num_siblings = 1;
+-EXPORT_SYMBOL(smp_num_siblings);
 -
  /* Per CPU bogomips and other parameters */
  DEFINE_PER_CPU_SHARED_ALIGNED(struct cpuinfo_x86, cpu_info);
  EXPORT_PER_CPU_SYMBOL(cpu_info);
-@@ -337,8 +335,8 @@ static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
- 	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
- 	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
- 	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
--	cpumask_set_cpu(cpu1, cpu_llc_shared_mask(cpu2));
--	cpumask_set_cpu(cpu2, cpu_llc_shared_mask(cpu1));
-+	cpumask_set_cpu(cpu1, &cpu_data(cpu2).llc_shared_map);
-+	cpumask_set_cpu(cpu2, &cpu_data(cpu1).llc_shared_map);
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 26b8a85..346e7ac 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -572,11 +572,6 @@ static int __init p4_init(char **cpu_type)
+ 	if (cpu_model > 6 || cpu_model == 5)
+ 		return 0;
+ 
+-#ifndef CONFIG_SMP
+-	*cpu_type = "i386/p4";
+-	model = &op_p4_spec;
+-	return 1;
+-#else
+ 	switch (smp_num_siblings) {
+ 	case 1:
+ 		*cpu_type = "i386/p4";
+@@ -588,7 +583,6 @@ static int __init p4_init(char **cpu_type)
+ 		model = &op_p4_ht2_spec;
+ 		return 1;
+ 	}
+-#endif
+ 
+ 	printk(KERN_INFO "oprofile: P4 HyperThreading detected with > 2 threads\n");
+ 	printk(KERN_INFO "oprofile: Reverting to timer mode.\n");
+diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
+index ae3503e..c6bcb22 100644
+--- a/arch/x86/oprofile/op_model_p4.c
++++ b/arch/x86/oprofile/op_model_p4.c
+@@ -42,21 +42,15 @@ static unsigned int num_controls = NUM_CONTROLS_NON_HT;
+    kernel boot-time. */
+ static inline void setup_num_counters(void)
+ {
+-#ifdef CONFIG_SMP
+ 	if (smp_num_siblings == 2) {
+ 		num_counters = NUM_COUNTERS_HT2;
+ 		num_controls = NUM_CONTROLS_HT2;
+ 	}
+-#endif
  }
  
- 
-@@ -367,7 +365,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 		cpumask_set_cpu(cpu, cpu_sibling_mask(cpu));
- 	}
- 
--	cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
-+	cpumask_set_cpu(cpu, &c->llc_shared_map);
- 
- 	if (__this_cpu_read(cpu_info.x86_max_cores) == 1) {
- 		cpumask_copy(cpu_core_mask(cpu), cpu_sibling_mask(cpu));
-@@ -378,8 +376,8 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
- 		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
- 		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
--			cpumask_set_cpu(i, cpu_llc_shared_mask(cpu));
--			cpumask_set_cpu(cpu, cpu_llc_shared_mask(i));
-+			cpumask_set_cpu(i, &c->llc_shared_map);
-+			cpumask_set_cpu(cpu, &cpu_data(i).llc_shared_map);
- 		}
- 		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
-@@ -418,7 +416,7 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
- 	    !(cpu_has(c, X86_FEATURE_AMD_DCM)))
- 		return cpu_core_mask(cpu);
- 	else
--		return cpu_llc_shared_mask(cpu);
-+		return &c->llc_shared_map;
+ static inline int addr_increment(void)
+ {
+-#ifdef CONFIG_SMP
+ 	return smp_num_siblings == 2 ? 2 : 1;
+-#else
+-	return 1;
+-#endif
  }
  
- static void impress_friends(void)
-@@ -1054,7 +1052,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
- 	for_each_possible_cpu(i) {
- 		zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
- 		zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
--		zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
- 	}
- 	set_cpu_sibling_map(0);
- 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 501d4e0..b9f7a86 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -225,7 +225,6 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- 	for_each_possible_cpu(i) {
- 		zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
- 		zalloc_cpumask_var(&per_cpu(cpu_core_map, i), GFP_KERNEL);
--		zalloc_cpumask_var(&per_cpu(cpu_llc_shared_map, i), GFP_KERNEL);
- 	}
- 	set_cpu_sibling_map(0);
  
 -- 
 1.7.9
