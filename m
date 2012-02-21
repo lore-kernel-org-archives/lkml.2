@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2BUVfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 16:35:31 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45627 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab2BUVfa (ORCPT
+	id S1755338Ab2BUVif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 16:38:35 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57259 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab2BUVie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 16:35:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.205.132.138 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
-Message-ID: <4F440E1D.7050004@openvz.org>
-Date: Wed, 22 Feb 2012 01:35:25 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20120201 Iceape/2.0.14
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org> <alpine.LSU.2.00.1202211205280.1858@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1202211205280.1858@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 16:38:34 -0500
+From: Marcos Paulo de Souza <marcos.mage@gmail.com>
+To: len.brown@intel.com
+Cc: pavel@ucw.cz, rjw@sisk.pl, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>
+Subject: [PATCH] PM/Freezer: Remove references to TIF_FREEZE in comments
+Date: Tue, 21 Feb 2012 19:35:15 -0200
+Message-Id: <1329860115-2130-1-git-send-email-marcos.mage@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
->>
->> On lumpy/compaction isolate you do:
->>
->> if (!PageLRU(page))
->> 	continue
->>
->> __isolate_lru_page()
->>
->> page_relock_rcu_vec()
->> 	rcu_read_lock()
->> 	rcu_dereference()...
->> 	spin_lock()...
->> 	rcu_read_unlock()
->>
->> You protect page_relock_rcu_vec with switching pointers back to root.
->>
->> I do:
->>
->> catch_page_lru()
->> 	rcu_read_lock()
->> 	if (!PageLRU(page))
->> 		return false
->> 	rcu_dereference()...
->> 	spin_lock()...
->> 	rcu_read_unlock()
->> 	if (PageLRU())
->> 		return true
->> if true
->> 	__isolate_lru_page()
->>
->> I protect my catch_page_lruvec() with PageLRU() under single rcu-interval
->> with locking.
->> Thus my code is better, because it not requires switching pointers back to
->> root memcg.
->
-> That sounds much better, yes - if it does work reliably.
->
-> I'll have to come back to think about your locking later too;
-> or maybe that's exactly where I need to look, when investigating
-> the mm_inline.h:41 BUG.
+This patch removes all the references in the code about TIF_FREEZE(flag removed by
+the commit a3201227f803ad7fd43180c5195dbe5a2bf998aa).
 
-pages_count[] updates looks correct.
-This really may be bug in locking, and this VM_BUG_ON catch it before list-debug.
+Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
+---
 
->
-> But at first sight, I have to say I'm very suspicious: I've never found
-> PageLRU a good enough test for whether we need such a lock, because of
-> races with those pages on percpu lruvec about to be put on the lru.
->
-> But maybe once I look closer, I'll find that's handled by your changes
-> away from lruvec; though I'd have thought the same issue exists,
-> independent of whether the pending pages are in vector or list.
+Sent again to put lkml and linux-pm int cc'ing... Sorry for it...
 
-Are you talking about my per-cpu page-lists for lru-adding?
-This is just an unnecessary patch, I don't know why I include it into v2 set.
-It does not protect anything.
 
->
-> Hugh
->
->>
->> Meanwhile after seeing your patches, I realized that this rcu-protection is
->> required only for lock-by-pfn in lumpy/compaction isolation.
->> Thus my locking should be simplified and optimized.
+Still there are some references to TIF_FREEZE in 
+Documentation/power/freezing-of-tasks.txt, but it looks like that documentation
+needs a more thorough work to reflect how the new freezer works, and hence merely
+removing the references to TIF_FREEZE won't really help. So I have not touched that
+part in this patch.
+
+ kernel/exit.c          |    2 +-
+ kernel/freezer.c       |    6 +++---
+ kernel/power/process.c |    8 +++-----
+ 3 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 4b4042f..8e6b0e6 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -424,7 +424,7 @@ void daemonize(const char *name, ...)
+ 	 */
+ 	exit_mm(current);
+ 	/*
+-	 * We don't want to have TIF_FREEZE set if the system-wide hibernation
++	 * We don't want to get frozen, in case system-wide hibernation
+ 	 * or suspend transition begins right now.
+ 	 */
+ 	current->flags |= (PF_NOFREEZE | PF_KTHREAD);
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 9815b8d..11f82a4 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -99,9 +99,9 @@ static void fake_signal_wake_up(struct task_struct *p)
+  * freeze_task - send a freeze request to given task
+  * @p: task to send the request to
+  *
+- * If @p is freezing, the freeze request is sent by setting %TIF_FREEZE
+- * flag and either sending a fake signal to it or waking it up, depending
+- * on whether it has %PF_FREEZER_NOSIG set.
++ * If @p is freezing, the freeze request is sent either by sending a fake
++ * signal (if it's not a kernel thread) or waking it up (if it's a kernel
++ * thread).
+  *
+  * RETURNS:
+  * %false, if @p is not freezing or already frozen; %true, otherwise
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 7e42645..ccb8088 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -53,11 +53,9 @@ static int try_to_freeze_tasks(bool user_only)
+ 			 * It is "frozen enough".  If the task does wake
+ 			 * up, it will immediately call try_to_freeze.
+ 			 *
+-			 * Because freeze_task() goes through p's
+-			 * scheduler lock after setting TIF_FREEZE, it's
+-			 * guaranteed that either we see TASK_RUNNING or
+-			 * try_to_stop() after schedule() in ptrace/signal
+-			 * stop sees TIF_FREEZE.
++			 * Because freeze_task() goes through p's scheduler lock, it's
++			 * guaranteed that TASK_STOPPED/TRACED -> TASK_RUNNING
++			 * transition can't race with task state testing here.
+ 			 */
+ 			if (!task_is_stopped_or_traced(p) &&
+ 			    !freezer_should_skip(p))
+-- 
+1.7.7.6
 
