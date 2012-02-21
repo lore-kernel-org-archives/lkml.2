@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2BUUGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:06:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44220 "EHLO mx1.redhat.com"
+	id S1755988Ab2BUUGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:06:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56830 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753374Ab2BUTww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753386Ab2BUTww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 Feb 2012 14:52:52 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 41/73] union-mount: Temporarily disable some syscalls [ver #2]
+Subject: [PATCH 30/73] union-mount: Create needs_lookup_union() [ver #2]
 To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
         valerie.aurora@gmail.com
 Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Tue, 21 Feb 2012 18:02:39 +0000
-Message-ID: <20120221180238.25235.15885.stgit@warthog.procyon.org.uk>
+Date: Tue, 21 Feb 2012 18:01:18 +0000
+Message-ID: <20120221180118.25235.36997.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,65 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Valerie Aurora <vaurora@redhat.com>
 
-After some of the following patches in this series, a few system calls
-will crash the kernel if called on union-mounted file systems.
-Temporarily disable rename(), unlink(), and rmdir() on unioned file
-systems until they are correctly implemented by later patches.
+needs_lookup_union() tests if a path could possibly require a union
+lookup.
 
 Original-author: Valerie Aurora <vaurora@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/namei.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ fs/union.h             |   25 +++++++++++++++++++++++++
+ include/linux/dcache.h |    2 ++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 991a32c..f53c0bc 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -38,6 +38,7 @@
+diff --git a/fs/union.h b/fs/union.h
+index 990dd16..757f28c 100644
+--- a/fs/union.h
++++ b/fs/union.h
+@@ -73,6 +73,26 @@ struct path *union_find_dir(struct dentry *dentry, unsigned int layer)
+ 	return &dentry->d_union_stack->u_dirs[layer];
+ }
  
- #include "internal.h"
- #include "mount.h"
-+#include "union.h"
- 
- /* [Feb-1997 T. Schoebel-Theuer]
-  * Fundamental changes in the pathname lookup mechanisms (namei)
-@@ -2891,6 +2892,11 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	if (error)
- 		return error;
- 
-+	/* rmdir() on union mounts not implemented yet */
-+	error = -EINVAL;
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		goto exit1;
++/*
++ * Determine whether we need to perform unionmount traversal or the copyup of a
++ * dentry.
++ */
++static inline
++bool needs_lookup_union(struct path *parent_path, struct path *path)
++{
++	if (!IS_DIR_UNIONED(parent_path->dentry))
++		return false;
 +
- 	switch(nd.last_type) {
- 	case LAST_DOTDOT:
- 		error = -ENOTEMPTY;
-@@ -2991,6 +2997,11 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	if (nd.last_type != LAST_NORM)
- 		goto exit1;
- 
-+	/* unlink() on union mounts not implemented yet */
-+	error = -EINVAL;
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		goto exit1;
++	/* Either already built or crossed a mountpoint to not-unioned mnt */
++	/* XXX are bind mounts root? think not */
++	if (IS_ROOT(path->dentry))
++		return false;
 +
- 	nd.flags &= ~LOOKUP_PARENT;
- 
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
-@@ -3384,6 +3395,12 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	if (oldnd.path.mnt != newnd.path.mnt)
- 		goto exit2;
- 
-+	/* rename() on union mounts not implemented yet */
-+	error = -EXDEV;
-+	if (IS_DIR_UNIONED(oldnd.path.dentry) ||
-+	    IS_DIR_UNIONED(newnd.path.dentry))
-+		goto exit2;
++	/* It's okay not to have the lock; will recheck in lookup_union() */
++	/* XXX set for root dentry at mount? */
++	return !(path->dentry->d_flags & DCACHE_UNION_LOOKUP_DONE);
++}
 +
- 	old_dir = oldnd.path.dentry;
- 	error = -EBUSY;
- 	if (oldnd.last_type != LAST_NORM)
+ #else /* CONFIG_UNION_MOUNT */
+ 
+ static inline
+@@ -100,4 +120,9 @@ static inline int union_create_topmost_dir(struct path *parent, struct qstr *nam
+ 	return 0;
+ }
+ 
++static inline bool needs_lookup_union(struct path *parent_path, struct path *path)
++{
++	return false;
++}
++
+ #endif	/* CONFIG_UNION_MOUNT */
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index e2d44e1..79833ae 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -245,6 +245,8 @@ struct dentry_operations {
+ #define DCACHE_MANAGED_DENTRY \
+ 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
+ 
++#define DCACHE_UNION_LOOKUP_DONE 0x100000 /* Union lookup was called on this dentry */
++
+ extern seqlock_t rename_lock;
+ 
+ static inline int dname_external(struct dentry *dentry)
 
