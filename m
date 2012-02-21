@@ -1,119 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab2BUIeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:34:37 -0500
-Received: from uucp.gnuu.de ([83.246.114.63]:2783 "EHLO uucp.gnuu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752274Ab2BUIeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:34:36 -0500
-Date: Tue, 21 Feb 2012 09:32:13 +0100
-From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
-To: Alexander Graf <agraf@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Current kernel fails to compile with KVM on PowerPC
-Message-ID: <20120221083213.GA19059@alea.gnuu.de>
-References: <20111107194838.GA23558@alea.gnuu.de>
- <20111122200414.GA28205@alea.gnuu.de>
- <E687C074-57CC-41AD-BA0E-0C957679E900@suse.de>
- <20120220173844.GA2546@alea.gnuu.de>
- <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de>
+	id S1753314Ab2BUIgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 03:36:32 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:43588 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab2BUIgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 03:36:31 -0500
+X-AuditID: b753bd60-9fe84ba000000655-52-4f43578c2ede
+X-AuditID: b753bd60-9fe84ba000000655-52-4f43578c2ede
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH v2 -tip] [BUGFIX] x86/kprobes: Fix to recover instructions on
+ optimized path
+To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Cc: yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Date: Tue, 21 Feb 2012 17:36:21 +0900
+Message-ID: <20120221083621.11350.4716.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
-Content-Disposition: inline
-In-Reply-To: <8F6910F4-7F2E-44FE-B0C2-1A2FF95888D2@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Current probed-instruction recovery expects that only breakpoint
+instruction modifies instruction. However, since kprobes jump
+optimization can replace original instructions with a jump,
+that expectation is not enough. And it may cause instruction
+decoding failure on the function where an optimized probe
+already exists.
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This bug can reproduce easily as below.
 
-Alexander Graf hat am Mon 20. Feb, 22:27 (+0100) geschrieben:
-> On 20.02.2012, at 18:38, J=C3=B6rg Sommer wrote:
-> > Alexander Graf hat am Tue 22. Nov, 22:29 (+0100) geschrieben:
-> >> On 22.11.2011, at 21:04, J=C3=B6rg Sommer wrote:
-> >>> [1] =C2=BBkernel BUG at include/linux/kvm_host.h:603!=C2=AB
-> >>> http://www.mail-archive.com/kvm@vger.kernel.org/msg61433.html
-> >>=20
-> >> This is unfortunately still there. It's because of preemption being
-> >> enabled. Please just use CONFIG_PREEMPT_NONE for the time being
-> >=20
-> > This doesn't help. I've build with CONFIG_PREEMPT_NONE, but I'm getting
-> > this Oops, when I start qemu.
->=20
-> Could you please try git://git.kernel.org/pub/scm/virt/kvm/kvm.git? I
-> fixed a bunch of things with preemption since then and it definitely
-> worked for me. If it still fails in that tree, I can try again to
-> reproduce it :).
+1) find a target function address (any kprobe-able function is OK)
+ $ grep __secure_computing /proc/kallsyms
+ffffffff810c19d0 T __secure_computing
 
-This kernel (e9badff4b38a3f8b2c20aa8a30db210caf85a497) fails to build:
+2) decode the function
+ $ objdump -d vmlinux --start-address=0xffffffff810c19d0 --stop-address=0xffffffff810c19eb
 
-  CC [M]  arch/powerpc/kvm/book3s_pr.o
-arch/powerpc/kvm/book3s_pr.c: In function =E2=80=98kvm_vcpu_ioctl_get_one_r=
-eg=E2=80=99:
-arch/powerpc/kvm/book3s_pr.c:883:45: error: cast to pointer from integer of=
- different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:80: error: cast to pointer from integer of=
- different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:284: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:327: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:459: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:748: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:1112: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:1476: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:883:1867: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c: In function =E2=80=98kvm_vcpu_ioctl_set_one_r=
-eg=E2=80=99:
-arch/powerpc/kvm/book3s_pr.c:898:79: error: cast to pointer from integer of=
- different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:114: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:319: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:364: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:502: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:591: error: cast to pointer from integer o=
-f different size [-Werror=3Dint-to-pointer-cast]
-arch/powerpc/kvm/book3s_pr.c:898:2061: error: cast to pointer from integer =
-of different size [-Werror=3Dint-to-pointer-cast]
-cc1: all warnings being treated as errors
-make[3]: *** [arch/powerpc/kvm/book3s_pr.o] Fehler 1
-make[2]: *** [arch/powerpc/kvm] Fehler 2
-make[2]: *** Warte auf noch nicht beendete Prozesse...
+vmlinux:     file format elf64-x86-64
 
-Sch=C3=B6ne Gr=C3=BC=C3=9Fe, J=C3=B6rg.
---=20
-Manchmal denke ich, das sicherste Indiz daf=C3=BCr, da=C3=9F anderswo im Un=
-iversum
-intelligentes Leben existiert, ist, da=C3=9F niemand versucht hat, mit uns
-Kontakt aufzunehmen.                           (Calvin und Hobbes)
 
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
+Disassembly of section .text:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ffffffff810c19d0 <__secure_computing>:
+ffffffff810c19d0:       55                      push   %rbp
+ffffffff810c19d1:       48 89 e5                mov    %rsp,%rbp
+ffffffff810c19d4:       e8 67 8f 72 00          callq  ffffffff817ea940 <mcount>
+ffffffff810c19d9:       65 48 8b 04 25 40 b8    mov    %gs:0xb840,%rax
+ffffffff810c19e0:       00 00
+ffffffff810c19e2:       83 b8 88 05 00 00 01    cmpl   $0x1,0x588(%rax)
+ffffffff810c19e9:       74 05                   je     ffffffff810c19f0 <__secure_computing+0x20>
 
-iEYEARECAAYFAk9DVo0ACgkQwe0mZwH1VIBv/wCeJkq9IgjWhW6sH4/0HQnij6NU
-aZwAn1F4fPDoQCfx6PgybJc02B7+0sNu
-=7oUy
------END PGP SIGNATURE-----
+3) put a kprobe-event at an optimize-able place, where no
+ call/jump places within the 5 bytes.
+ $ su -
+ # cd /sys/kernel/debug/tracing
+ # echo p __secure_computing+0x9 > kprobe_events
 
---RnlQjJ0d97Da+TV1--
+4) enable it and check it is optimized.
+ # echo 1 > events/kprobes/p___secure_computing_9/enable
+ # cat ../kprobes/list
+ffffffff810c19d9  k  __secure_computing+0x9    [OPTIMIZED]
+
+5) put another kprobe on an instruction after previous probe in
+  the same function.
+ # echo p __secure_computing+0x12 >> kprobe_events
+bash: echo: write error: Invalid argument
+ # dmesg | tail -n 1
+[ 1666.500016] Probing address(0xffffffff810c19e2) is not an instruction boundary.
+
+6) however, if the kprobes optimization is disabled, it works.
+ # echo 0 > /proc/sys/debug/kprobes-optimization
+ # cat ../kprobes/list
+ffffffff810c19d9  k  __secure_computing+0x9
+ # echo p __secure_computing+0x12 >> kprobe_events
+(no error)
+
+This is because kprobes doesn't recover the instruction
+which is overwritten with a relative jump by another kprobe
+when finding instruction boundary.
+It only recovers the breakpoint instruction.
+
+This patch fixes kprobes to recover such instructions.
+
+With this fix:
+
+ # echo p __secure_computing+0x9 > kprobe_events
+ # echo 1 > events/kprobes/p___secure_computing_9/enable
+ # cat ../kprobes/list
+ffffffff810c1aa9  k  __secure_computing+0x9    [OPTIMIZED]
+ # echo p __secure_computing+0x12 >> kprobe_events
+ # cat ../kprobes/list
+ffffffff810c1aa9  k  __secure_computing+0x9    [OPTIMIZED]
+ffffffff810c1ab2  k  __secure_computing+0x12    [DISABLED]
+
+
+Changes in v2:
+ - Fix a bug to recover original instruction address in
+   RIP-relative instruction fixup.
+ - Moved on tip/master.
+
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
+
+ arch/x86/kernel/kprobes.c |  115 +++++++++++++++++++++++++++------------------
+ include/linux/kprobes.h   |    6 ++
+ kernel/kprobes.c          |    2 -
+ 3 files changed, 77 insertions(+), 46 deletions(-)
+
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index 7da647d..e91aa75 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -207,13 +207,29 @@ retry:
+ 	}
+ }
+ 
+-/* Recover the probed instruction at addr for further analysis. */
+-static int recover_probed_instruction(kprobe_opcode_t *buf, unsigned long addr)
++/*
++ * Recover the probed instruction at addr for further analysis.
++ * Caller must lock kprobes by kprobe_mutex, or disable preemption
++ * for preventing to release referencing kprobes.
++ */
++static unsigned long recover_probed_instruction(kprobe_opcode_t *buf,
++						unsigned long addr)
+ {
+ 	struct kprobe *kp;
+-	kp = get_kprobe((void *)addr);
+-	if (!kp)
+-		return -EINVAL;
++	int i;
++
++	for (i = 0; i < RELATIVEJUMP_SIZE; i++) {
++		kp = get_kprobe((void *)addr - i);
++		if (kp)
++			goto found;
++	}
++
++	/* There is no probes, return original address */
++	return addr;
++
++found:
++	if (i != 0 && !kprobe_optready(kp))
++		return addr;	/* this probe doesn't affect the instruction */
+ 
+ 	/*
+ 	 *  Basically, kp->ainsn.insn has an original instruction.
+@@ -229,15 +245,33 @@ static int recover_probed_instruction(kprobe_opcode_t *buf, unsigned long addr)
+ 	 *  from it and kp->opcode.
+ 	 */
+ 	memcpy(buf, kp->addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
+-	buf[0] = kp->opcode;
+-	return 0;
++	if (i == 0)
++		buf[0] = kp->opcode;
++
++	if (kprobe_optready(kp)) {
++		/*
++		 * If the kprobe can be optimized, original bytes which
++		 * can be overwritten by jump destination address. In this
++		 * case, original bytes must be recovered from
++		 * op->optinsn.copied_insn buffer.
++		 */
++		struct optimized_kprobe *op;
++		op = container_of(kp, struct optimized_kprobe, kp);
++		if (i == 0)
++			memcpy(buf + 1, op->optinsn.copied_insn,
++			       RELATIVE_ADDR_SIZE);
++		else
++			memcpy(buf, op->optinsn.copied_insn + i - 1,
++			       RELATIVE_ADDR_SIZE - i + 1);
++	}
++
++	return (unsigned long)buf;
+ }
+ 
+ /* Check if paddr is at an instruction boundary */
+ static int __kprobes can_probe(unsigned long paddr)
+ {
+-	int ret;
+-	unsigned long addr, offset = 0;
++	unsigned long addr, __addr, offset = 0;
+ 	struct insn insn;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
+ 
+@@ -247,26 +281,24 @@ static int __kprobes can_probe(unsigned long paddr)
+ 	/* Decode instructions */
+ 	addr = paddr - offset;
+ 	while (addr < paddr) {
+-		kernel_insn_init(&insn, (void *)addr);
+-		insn_get_opcode(&insn);
+-
+ 		/*
+ 		 * Check if the instruction has been modified by another
+ 		 * kprobe, in which case we replace the breakpoint by the
+ 		 * original instruction in our buffer.
++		 * Also, jump optimization will change the breakpoint to
++		 * relative-jump. Since the relative-jump itself is
++		 * normally used, we just go through if there is no kprobe.
+ 		 */
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf, addr);
+-			if (ret)
+-				/*
+-				 * Another debugging subsystem might insert
+-				 * this breakpoint. In that case, we can't
+-				 * recover it.
+-				 */
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
++		__addr = recover_probed_instruction(buf, addr);
++		kernel_insn_init(&insn, (void *)__addr);
+ 		insn_get_length(&insn);
++		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++			/*
++			 * Another debugging subsystem might insert
++			 * this breakpoint. In that case, we can't
++			 * recover it.
++			 */
++			return 0;
+ 		addr += insn.length;
+ 	}
+ 
+@@ -302,21 +334,17 @@ static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
+ static int __kprobes __copy_instruction(u8 *dest, u8 *src, int recover)
+ {
+ 	struct insn insn;
+-	int ret;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
++	u8 *orig_src = src;	/* Backup original src for RIP calculation */
++
++	if (recover)
++		src = (u8 *)recover_probed_instruction(buf, (unsigned long)src);
+ 
+ 	kernel_insn_init(&insn, src);
+-	if (recover) {
+-		insn_get_opcode(&insn);
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf,
+-							 (unsigned long)src);
+-			if (ret)
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
+-	}
+ 	insn_get_length(&insn);
++	/* Another subsystem puts a breakpoint, failed to recover */
++	if (recover && insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++		return 0;
+ 	memcpy(dest, insn.kaddr, insn.length);
+ 
+ #ifdef CONFIG_X86_64
+@@ -337,7 +365,7 @@ static int __kprobes __copy_instruction(u8 *dest, u8 *src, int recover)
+ 		 * extension of the original signed 32-bit displacement would
+ 		 * have given.
+ 		 */
+-		newdisp = (u8 *) src + (s64) insn.displacement.value -
++		newdisp = (u8 *) orig_src + (s64) insn.displacement.value -
+ 			  (u8 *) dest;
+ 		BUG_ON((s64) (s32) newdisp != newdisp); /* Sanity check.  */
+ 		disp = (u8 *) dest + insn_offset_displacement(&insn);
+@@ -1271,8 +1299,7 @@ static int insn_jump_into_range(struct insn *insn, unsigned long start, int len)
+ /* Decode whole function to ensure any instructions don't jump into target */
+ static int __kprobes can_optimize(unsigned long paddr)
+ {
+-	int ret;
+-	unsigned long addr, size = 0, offset = 0;
++	unsigned long addr, __addr, size = 0, offset = 0;
+ 	struct insn insn;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
+ 
+@@ -1301,15 +1328,12 @@ static int __kprobes can_optimize(unsigned long paddr)
+ 			 * we can't optimize kprobe in this function.
+ 			 */
+ 			return 0;
+-		kernel_insn_init(&insn, (void *)addr);
+-		insn_get_opcode(&insn);
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf, addr);
+-			if (ret)
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
++		__addr = recover_probed_instruction(buf, addr);
++		kernel_insn_init(&insn, (void *)__addr);
+ 		insn_get_length(&insn);
++		/* Another subsystem puts a breakpoint */
++		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++			return 0;
+ 		/* Recover address */
+ 		insn.kaddr = (void *)addr;
+ 		insn.next_byte = (void *)(addr + insn.length);
+@@ -1366,6 +1390,7 @@ void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
+ /*
+  * Copy replacing target instructions
+  * Target instructions MUST be relocatable (checked inside)
++ * This is called when new aggr(opt)probe is allocated or reused.
+  */
+ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+ {
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index dce6e4d..6abec49 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -293,6 +293,12 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
+ 					     size_t *length, loff_t *ppos);
+ #endif
+ 
++extern int kprobe_optready(struct kprobe *p);
++#else /* CONFIG_OPTPROBES */
++static inline int kprobe_optready(struct kprobe *p)
++{
++	return 0;
++}
+ #endif /* CONFIG_OPTPROBES */
+ 
+ /* Get the kprobe at this addr (if any) - called with preemption disabled */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 9788c0e..c52c68b 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -403,7 +403,7 @@ static __kprobes void free_aggr_kprobe(struct kprobe *p)
+ }
+ 
+ /* Return true(!0) if the kprobe is ready for optimization. */
+-static inline int kprobe_optready(struct kprobe *p)
++int kprobe_optready(struct kprobe *p)
+ {
+ 	struct optimized_kprobe *op;
+ 
+
