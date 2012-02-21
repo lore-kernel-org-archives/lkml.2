@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab2BUSYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:24:55 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54014 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab2BUSYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:24:54 -0500
-Subject: Re: hugetlbfs lockdep spew revisited.
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Josh Boyer <jwboyer@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 13:21:15 -0500
-In-Reply-To: <20120217034211.GA24135@boyd>
-References: <20120217000856.GA13112@redhat.com>
-	 <20120217001634.GH23550@zod.bos.redhat.com> <20120217003848.GB20071@boyd>
-	 <20120217004922.GN23916@ZenIV.linux.org.uk> <20120217034211.GA24135@boyd>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1329848490.2186.62.camel@falcor>
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022118-9360-0000-0000-000003CF84C4
+	id S1755369Ab2BUS0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:26:08 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:48005 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab2BUS0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 13:26:05 -0500
+Date: Tue, 21 Feb 2012 19:26:02 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, thomas@m3y3r.de, raven@themaw.net,
+        linux-kernel@vger.kernel.org
+Subject: Use gcc to check exported files [Was: Linux 3.3-rc4]
+Message-ID: <20120221182602.GA23831@merkur.ravnborg.org>
+References: <CA+55aFy2pnoNhpTstAMTs+dtm5iRaGCGKLwW6ScCLhEkWtHXGw@mail.gmail.com> <FE1DCD87-0055-4C3E-B06A-251055E1492F@m3y3r.de> <CA+55aFzUWDEuj85sOKjwk8ufy+1rbS7hgstw0cCWpjTgu=7B4A@mail.gmail.com> <20120219.144947.660678318380307878.davem@davemloft.net> <CA+55aFwqChUmmDfoYX7HRUUZg5s7nBOh834=g+7avj=yc42gGg@mail.gmail.com> <4F431BE8.1030201@zytor.com> <20120221130345.5c96ce60@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120221130345.5c96ce60@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-02-16 at 21:42 -0600, Tyler Hicks wrote:
-> On 2012-02-17 00:49:22, Al Viro wrote:
-> > On Thu, Feb 16, 2012 at 06:38:49PM -0600, Tyler Hicks wrote:
-> > > On 2012-02-16 19:16:34, Josh Boyer wrote:
-> > > > On Thu, Feb 16, 2012 at 07:08:57PM -0500, Dave Jones wrote:
-> > > > > Remember this ? https://lkml.org/lkml/2011/4/15/272
-> > > > > Josh took a stab at fixing it in e096d0c7e2e4e5893792db865dd065ac73cf1f00,
-> > > > > but it seems to still be there.
-> > > > 
-> > > > I think Tyler Hicks actually noticed this a while ago, but his patch has
-> > > > been waiting on comment from Al and Christoph:
-> > > > 
-> > > > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
-> > > > 
-> > > > I've been hesitant to comment because I obviously screwed up once
-> > > > already.  We could try this patch in Fedora for a while if Al and
-> > > > company don't speak up soon.
-> > > 
-> > > I'm pretty confident that my patch that Josh linked to would "fix" the
-> > > lockdep warning below. According to the backtrace, it is barking about a
-> > > directory inode and a regular inode having a circular locking
-> > > dependency, so deadlock is not possible in this case.
-> > 
-> > Sigh...  That patch is correct, but it has nothing to do with the locking
-> > order violation that really *is* there.  The only benefit would be to
-> > get rid of the "deadlock is not possible" nonsense, since you would see
-> > read/write vs. mmap instead of readdir vs. mmap in the traces.  Locking
-> > order is the *same* for directories and nondirectories; both can have
-> > pagefaults under ->i_mutex on their respective inodes.  And while mmap
-> > cannot happen for directories, it certainly can happen for regular files,
-> > so taking ->i_mutex in ->mmap() is a plain and simple bug.  Should never
-> > be done; in particular, hugetlbfs has ->i_mutex held in read() around
-> > pagefaults, which gives you an obvious deadlock with its ->mmap().
-> > 
-> > Folks, this is not a false positive and it has nothing to do with misannotation
-> > for directories.  Deadlock is real; I have no idea WTF do we what ->i_mutex
-> > held over that area in hugetlbfs ->mmap(), but doing that is really, really
-> > wrong, whatever the reason.
+On Tue, Feb 21, 2012 at 01:03:45PM +0000, Alan Cox wrote:
+> > I'm starting to think we should compile the kernel with -Wpadded by
+> > default (currently it's only done at "warning level 3", which I doubt
+> > anyone ever uses, especially since that also includes -Wpacked which is
+> > an actively toxic warning) and force people to add explicit padding
+> > where it needs to go, if necessary.  Unfortunately even that doesn't
+> > guarantee compatibility with userspace, but it's at least something.
 > 
-> Thanks for clearing that up, Al. I only knew that the inodes were being
-> incorrectly annotated, but I wasn't sure about the correct locking order.
-> 
-> Tyler
+> We generate a set of believed correct export headers and check them these
+> days as an option. Can that work not be turned to do this. Ie create a
+> temporary .c file that includes all the user visible header data (without
+> KERNEL being defined) and runs it through -Wpacked etc
 
-Al, thanks for the clarification.  An i_mutex/mmap_sem lockdep exists
-for IMA as well.  https://lkml.org/lkml/2012/1/24/246 resolves the
-lockdep by moving ima_file_mmap() before the mmap_sem is taken.  Do you
-see any problems with this patch?
+Hi Alan.
 
-thanks,
+If we require every exported file to be buildable on thier own
+then it is simple to run gcc on every exported file.
 
-Mimi
+We have before discussed that our header files should include everything
+they need - and at least forcing this for our user-space headers would not be bad.
+
+Simple hack I cooked up (will not work if you use O=...):
+
+diff --git a/scripts/headers_check.pl b/scripts/headers_check.pl
+index 7957e7a..b479575 100644
+--- a/scripts/headers_check.pl
++++ b/scripts/headers_check.pl
+@@ -27,12 +27,16 @@ my $line;
+ my $lineno = 0;
+ my $filename;
+ 
++my $gcc_options = "-Wall -Wpadded";
++my $gcc_include = "-I usr/include";
++
+ foreach my $file (@files) {
+ 	$filename = $file;
+ 
+ 	open(my $fh, '<', $filename)
+ 		or die "$filename: $!\n";
+ 	$lineno = 0;
++	&check_build();
+ 	while ($line = <$fh>) {
+ 		$lineno++;
+ 		&check_include();
+@@ -45,6 +49,13 @@ foreach my $file (@files) {
+ }
+ exit $ret;
+ 
++# Check that the header-file can build
++# All exported headers are assumed to include what they need
++sub check_build
++{
++	system("gcc -xc -c $gcc_include $gcc_options $filename")
++}
++
+ sub check_include
+ {
+ 	if ($line =~ m/^\s*#\s*include\s+<((asm|linux).*)>/) {
+
+
+Now we just need someone to fix up the headers....
+I counted around 870 errors in 160 files.
+But 99% looked trivial to fix...
+
+Almost all is a matter of adding one or a few missing includes.
+
+	Sam
 
