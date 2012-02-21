@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2BUBQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 Feb 2012 20:16:01 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47632 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab2BUBQA (ORCPT
+	id S1753556Ab2BUBSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 Feb 2012 20:18:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20737 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab2BUBSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 Feb 2012 20:16:00 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.218.161 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Mon, 20 Feb 2012 17:15:52 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: Re: [RFC] block: fix __blkdev_get and add_disk race condition
-Message-ID: <20120221011552.GB15898@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120218172609.GA11478@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120218172609.GA11478@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 20 Feb 2012 20:18:39 -0500
+X-Authority-Analysis: v=2.0 cv=Vp2h8pKn c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=axnUGrQYtO0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=M9ckvtkEzx909E5hjAoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329787118.25686.52.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] Re: [PATCH] trace: don't print an extra separator of
+ flags
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 20 Feb 2012 20:18:38 -0500
+In-Reply-To: <1329770610-703006-1-git-send-email-avagin@openvz.org>
+References: <1329767276.25686.40.camel@gandalf.stny.rr.com>
+	 <1329770610-703006-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 2012-02-20 at 23:43 +0300, Andrew Vagin wrote:
+> > Could you send me that patch. Or a change to the kernel that shows the
+> > problemi.
+> 
+> Without my patch:
+>     event-sample-1731  [000] ...1 546886.253576: foo_bar: foo hello 3 |A B
+>     event-sample-1731  [000] ...1 546887.253677: foo_bar: foo hello 4 |A B
+> 
+> With my patch:
+>     event-sample-1731  [000] ...1 546886.253576: foo_bar: foo hello 3 A B
+>     event-sample-1731  [000] ...1 546887.253677: foo_bar: foo hello 4 A B
 
-Nice catch.
+Ah, nevermind. This bug actually does show up in another tracepoint
+somewhere (I  don't remember which). But I've been meaning to fix it.
 
-On Sat, Feb 18, 2012 at 06:26:13PM +0100, Stanislaw Gruszka wrote:
-> As drawback, I do not teardown on sysfs file create error, because I do
-> not know how to nullify disk->ev (since it can be used).
+Thanks! I'll take your patch. But since it is such a minor bug. I'll put
+it into the v3.4 queue.
 
-add_disk() error handling is mostly non-existent and the error
-behavior should be acceptable (no sysfs files created but everything
-else behaves the same).
+-- Steve
 
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 
-Acked-by: Tejun Heo <tj@kernel.org>
-
-Thank you.
-
--- 
-tejun
