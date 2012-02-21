@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2BUSIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:08:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53565 "EHLO mx1.redhat.com"
+	id S1755325Ab2BUSJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:09:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755113Ab2BUSHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:07:55 -0500
+	id S1755001Ab2BUSHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 13:07:53 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 19/73] union-mount: Introduce MNT_UNION and MS_UNION flags
- [ver #2]
+Subject: [PATCH 06/73] VFS: Split inode_permission() [ver #2]
 To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
         valerie.aurora@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jan Blunck <jblunck@suse.de>,
-        Valerie Aurora <vaurora@redhat.com>,
-        David Howells <dhowells@redhat.com>
-Date: Tue, 21 Feb 2012 17:59:55 +0000
-Message-ID: <20120221175955.25235.29086.stgit@warthog.procyon.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com> (Further development)
+Date: Tue, 21 Feb 2012 17:58:10 +0000
+Message-ID: <20120221175810.25235.53821.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -30,76 +28,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Split inode_permission() into inode- and superblock-dependent parts.
 
-Add per mountpoint flag for Union Mount support.  You need additional patches
-to util-linux for that to work - see:
+This is aimed at unionmounts where the superblock from the upper layer has to
+be checked rather than the superblock from the lower layer as the upper layer
+may be writable, thus allowing an unwritable file from the lower layer to be
+copied up and modified.
 
-git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Original-author: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com> (Further development)
 ---
 
- fs/namespace.c        |    4 +++-
- fs/proc_namespace.c   |    1 +
- include/linux/fs.h    |    1 +
- include/linux/mount.h |    1 +
- 4 files changed, 6 insertions(+), 1 deletions(-)
+ fs/internal.h |    5 ++++
+ fs/namei.c    |   66 ++++++++++++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 54 insertions(+), 17 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index c01aff2..33aa310 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2214,10 +2214,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
- 	if (flags & MS_RDONLY)
- 		mnt_flags |= MNT_READONLY;
-+	if (flags & MS_UNION)
-+		mnt_flags |= MNT_UNION;
+diff --git a/fs/internal.h b/fs/internal.h
+index 9962c59..043a937 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -42,6 +42,11 @@ static inline int __sync_blockdev(struct block_device *bdev, int wait)
+ extern void __init chrdev_init(void);
  
- 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
- 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
--		   MS_STRICTATIME);
-+		   MS_STRICTATIME | MS_UNION);
+ /*
++ * namei.c
++ */
++extern int __inode_permission(struct inode *, int);
++
++/*
+  * namespace.c
+  */
+ extern int copy_mount_options(const void __user *, unsigned long *);
+diff --git a/fs/namei.c b/fs/namei.c
+index 2d983f7..7f9df02 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -328,31 +328,22 @@ static inline int do_inode_permission(struct inode *inode, int mask)
+ }
  
- 	if (flags & MS_REMOUNT)
- 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
-diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
-index 1241285..4609740 100644
---- a/fs/proc_namespace.c
-+++ b/fs/proc_namespace.c
-@@ -65,6 +65,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
- 		{ MNT_NOATIME, ",noatime" },
- 		{ MNT_NODIRATIME, ",nodiratime" },
- 		{ MNT_RELATIME, ",relatime" },
-+		{ MNT_UNION, ",union" },
- 		{ 0, NULL }
- 	};
- 	const struct proc_fs_info *fs_infop;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b5e6658..a014f0f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -193,6 +193,7 @@ struct inodes_stat_t {
- #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
- #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
- #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
-+#define MS_UNION	256	/* Merge namespace with FS mounted below */
- #define MS_NOATIME	1024	/* Do not update access times. */
- #define MS_NODIRATIME	2048	/* Do not update directory access times */
- #define MS_BIND		4096
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 41c7c84..0ba1def 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -47,6 +47,7 @@ struct mnt_namespace;
+ /**
+- * inode_permission  -  check for access rights to a given inode
+- * @inode:	inode to check permission on
+- * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC, ...)
++ * __inode_permission - Check for access rights to a given inode
++ * @inode: Inode to check permission on
++ * @mask: Right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
+  *
+- * Used to check for read/write/execute permissions on an inode.
+- * We use "fsuid" for this, letting us set arbitrary permissions
+- * for filesystem access without changing the "normal" uids which
+- * are used for other things.
++ * Check for read/write/execute permissions on an inode.
+  *
+  * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
++ *
++ * This does not check for a read-only file system.  You probably want
++ * inode_permission().
+  */
+-int inode_permission(struct inode *inode, int mask)
++int __inode_permission(struct inode *inode, int mask)
+ {
+ 	int retval;
  
- #define MNT_INTERNAL	0x4000
- #define MNT_HARD_READONLY	0x8000	/* has a hard read-only ref on the sb */
-+#define MNT_UNION	0x10000		/* top layer of a union mount */
+ 	if (unlikely(mask & MAY_WRITE)) {
+-		umode_t mode = inode->i_mode;
+-
+-		/*
+-		 * Nobody gets write access to a read-only fs.
+-		 */
+-		if (IS_RDONLY(inode) &&
+-		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+-			return -EROFS;
+-
+ 		/*
+ 		 * Nobody gets write access to an immutable file.
+ 		 */
+@@ -372,6 +363,47 @@ int inode_permission(struct inode *inode, int mask)
+ }
  
- struct vfsmount {
- 	struct dentry *mnt_root;	/* root of the mounted tree */
+ /**
++ * sb_permission - Check superblock-level permissions
++ * @sb: Superblock of inode to check permission on
++ * @mask: Right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ *
++ * Separate out file-system wide checks from inode-specific permission checks.
++ */
++static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
++{
++	if (unlikely(mask & MAY_WRITE)) {
++		umode_t mode = inode->i_mode;
++
++		/* Nobody gets write access to a read-only fs. */
++		if ((sb->s_flags & MS_RDONLY) &&
++		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
++			return -EROFS;
++	}
++	return 0;
++}
++
++/**
++ * inode_permission - Check for access rights to a given inode
++ * @inode: Inode to check permission on
++ * @mask: Right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ *
++ * Check for read/write/execute permissions on an inode.  We use fs[ug]id for
++ * this, letting us set arbitrary permissions for filesystem access without
++ * changing the "normal" UIDs which are used for other things.
++ *
++ * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
++ */
++int inode_permission(struct inode *inode, int mask)
++{
++	int retval;
++
++	retval = sb_permission(inode->i_sb, inode, mask);
++	if (retval)
++		return retval;
++	return __inode_permission(inode, mask);
++}
++
++/**
+  * path_get - get a reference to a path
+  * @path: path to get the reference to
+  *
 
