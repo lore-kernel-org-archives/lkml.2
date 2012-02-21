@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab2BUS2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:28:30 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33052 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab2BUS23 (ORCPT
+	id S1755461Ab2BUSdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:33:47 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10832 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754676Ab2BUSdq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:28:29 -0500
-Date: Tue, 21 Feb 2012 10:28:04 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH tip/core/rcu 3/4] rcu: stop spurious warnings from
- synchronize_sched_expedited
-Message-ID: <20120221182804.GK2375@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120221175810.GA10708@linux.vnet.ibm.com>
- <1329847110-10897-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1329847110-10897-3-git-send-email-paulmck@linux.vnet.ibm.com>
- <1329847217.2293.417.camel@twins>
+	Tue, 21 Feb 2012 13:33:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 21 Feb 2012 10:33:38 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Tue, 21 Feb 2012 10:33:34 -0800
+Subject: RE: [PATCH] pinctrl: spawn U300 pinctrl from the COH901 GPIO
+Thread-Topic: [PATCH] pinctrl: spawn U300 pinctrl from the COH901 GPIO
+Thread-Index: AczwnaAXhjsOSnbETlGlrhpQ5tdIYgAKKiiw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC368@HQMAIL01.nvidia.com>
+References: <1329831275-21769-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1329831275-21769-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329847217.2293.417.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022118-3352-0000-0000-000002CB6B55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 07:00:17PM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-02-21 at 09:58 -0800, Paul E. McKenney wrote:
-> > From: Hugh Dickins <hughd@google.com>
-> > 
-> > synchronize_sched_expedited() is spamming CONFIG_DEBUG_PREEMPT=y
-> > users with an unintended warning from the cpu_is_offline() check:
-> > use raw_smp_processor_id() instead of smp_processor_id() there.
+Linus Walleij wrote at Tuesday, February 21, 2012 6:35 AM:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> This fails to mention why it makes sense to test a random cpu for
-> offline-ness..
-
-The check was already there, Hugh simply fixed it to use raw_.  The check
-itself was added in c0d6d01bf (Check for illegal use of RCU from offlined
-CPUs).  The purpose is to catch improper use of RCU from CPU_DYING
-notifiers and on the path from the CPU_DYING notifiers to the idle loop.
-
-							Thanx, Paul
-
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index eacc10b..1050d6d 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -2014,7 +2014,7 @@ void synchronize_sched_expedited(void)
-> >  	/* Note that atomic_inc_return() implies full memory barrier. */
-> >  	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
-> >  	get_online_cpus();
-> > -	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
-> > +	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
-> >  
-> >  	/*
-> >  	 * Each pass through the following loop attempts to force a
+> This solves the riddle on how the U300 pin controller shall be
+> able to reference the struct gpio_chip even though these are
+> two separate drivers: spawn the pinctrl child from the GPIO
+> driver and pass in the struct gpio_chip as platform data.
+> In the process we rename the U300 "pinmux-u300" to
+> "pinctrl-u300" so as not to confuse.
 > 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+
+That's quite a neat solution, but it's not going to work very well with
+device tree, if U300 is being converted to it. The reason is that the
+two (GPIO, pinctrl) platform devices would be instantiated directly from
+DT by the core DT code. I guess your DT board file does have the option
+to explicitly override the platform data passed to your devices to
+achieve the same effect, but perhaps there's a different way of making
+this work, that doesn't require platform data...
+
+I'd thought about doing the following for Tegra, where we're cheating a
+little with the gpio range base value:
+
+When GPIO driver is probed, call a function in the pinctrl driver to
+tell it what the "struct gpio_chip *" value is.
+
+When pinctrl is probed, if that call has happened, go ahead and register
+the GPIO range, else don't.
+
+In the call from GPIO to pinctrl, if the pinctrl driver has already
+probed, register the GPIO range, else just save the gpio_chip value for
+later use in the pinctrl driver's probe.
+
+This way, the communication is explicit in code in the drivers, works
+whichever order the drivers probe, etc.
+
+Does that sound like a reasonable solution?
+
+It's plausible that with deferred probe, this could be reworked to use
+that, but this way might still be better for this case?
+
+-- 
+nvpublic
+
 
