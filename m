@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab2BUT7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 14:59:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017Ab2BUTxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 14:53:55 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 57/73] VFS: Create user_path_nd() to lookup both parent and
- target [ver #2]
-To: linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        valerie.aurora@gmail.com
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Date: Tue, 21 Feb 2012 18:04:38 +0000
-Message-ID: <20120221180437.25235.70261.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-References: <20120221175721.25235.8901.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756161Ab2BUUAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:00:35 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50247 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084Ab2BUUAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 15:00:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.239.229 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Tue, 21 Feb 2012 12:00:08 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
+In-Reply-To: <4F433418.3010401@openvz.org>
+Message-ID: <alpine.LSU.2.00.1202211140330.1858@eggly.anvils>
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201533260.23274@eggly.anvils> <4F433418.3010401@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valerie Aurora <vaurora@redhat.com>
+On Tue, 21 Feb 2012, Konstantin Khlebnikov wrote:
+> > 
+> > Be particularly careful in compaction's isolate_migratepages() and
+> > vmscan's lumpy handling in isolate_lru_pages(): those approach the
+> > page by its physical location, and so can encounter pages which
+> > would not be found by any logical lookup.  For those cases we have
+> > to change __isolate_lru_page() slightly: it must leave ClearPageLRU
+> > to the caller, because compaction and lumpy cannot safely interfere
+> > with a page until they have first isolated it and then locked lruvec.
+> 
+> Yeah, this is most complicated part.
 
-Proof-of-concept implementation of user_path_nd().  Lookup both the
-parent and the target of a user-supplied filename, to supply later to
-union copyup routines.
+Yes, I found myself leaving this patch until last when commenting.
 
-XXX - Inefficient, racy, gets the parent of the symlink instead of the
-parent of the target.  Al Viro would like to see something more like
-this:
+And was not entirely convinced by what I then said of move_account().
+Indeed, I wondered if it might be improved and simplified by taking
+lruvec locks itself, in the manner that commit_charge lrucare ends
+up doing.
 
-user_path_mumble() looks up and returns:
+> I found one race here, see below.
 
-parent nameidata
-positive topmost dentry of target
-negative dentry of target from the topmost layer (if it doesn't exist on top)
+Thank you!
 
-Both the positive lower dentry and negative topmost dentry are passed
-to the following code, like do_chown().  The tests for permissions and
-such-like are performed on the positive lower dentry.  When it comes
-time to actually modify the target, we call union_copyup() with both
-positive and negative dentries (and the parent nameidata).
+> > @@ -386,10 +364,24 @@ static isolate_migrate_t isolate_migrate
+> >                          continue;
+> > 
+> >                  page_relock_lruvec(page,&lruvec);
+> 
+> Here race with mem_cgroup_move_account() we hold lock for old lruvec,
+> while move_account() recharge page and put page back into other lruvec.
+> Thus we see PageLRU(), but below we isolate page from wrong lruvec.
 
-Original-author: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I expect you'll prove right on that, but I'm going to think about it
+more later.
 
- fs/namei.c            |   31 +++++++++++++++++++++++++++++++
- include/linux/namei.h |    2 ++
- 2 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> In my patch-set this is fixed with __wait_lru_unlock() [ spin_unlock_wait() ]
+> in mem_cgroup_move_account()
 
-diff --git a/fs/namei.c b/fs/namei.c
-index d52377d..be505cd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2239,6 +2239,37 @@ static int user_path_parent(int dfd, const char __user *path,
- 	return error;
- }
- 
-+int user_path_nd(int dfd, const char __user *filename,
-+			 unsigned flags, struct nameidata *parent_nd,
-+			 struct path *child, char **tmp)
-+{
-+	struct nameidata child_nd;
-+	char *s = getname(filename);
-+	int error;
-+
-+	if (IS_ERR(s))
-+		return PTR_ERR(s);
-+
-+	/* Lookup parent */
-+	error = do_path_lookup(dfd, s, LOOKUP_PARENT, parent_nd);
-+	if (error)
-+		goto out_putname;
-+
-+	/* Lookup child - XXX optimize, racy */
-+	error = do_path_lookup(dfd, s, flags, &child_nd);
-+	if (error)
-+		goto out_path_put;
-+	*child = child_nd.path;
-+	*tmp = s;
-+	return 0;
-+
-+out_path_put:
-+	path_put(&parent_nd->path);
-+out_putname:
-+	putname(s);
-+	return error;
-+}
-+
- /*
-  * It's inline, so penalty for filesystems that don't use sticky bit is
-  * minimal.
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index ffc0213..e273639 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -68,6 +68,8 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- 
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
- extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
-+extern int user_path_nd(int, const char __user *, unsigned,
-+			struct nameidata *, struct path *, char **);
- 
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+Right now, after finishing mail, I want to concentrate on getting your
+series working under my swapping load.
 
+It's possible that I screwed up rediffing it to my slightly later
+base (though the only parts that appeared to need fixing up were as
+expected, near update_isolated_counts and move_active_pages_to_lru);
+but if so I'd expect that to show up differently.
+
+At present, although it runs fine with cgroup_disable=memory, with memcg
+two machines very soon hit that BUG at include/linux/mm_inline.h:41!
+when the lru_size or pages_count wraps around; on another it hit that
+precisely when I stopped the test.
+
+In all cases it's in release_pages from free_pages_and_swap_cache from
+tlb_flush_mmu from tlb_finish_mmu from exit_mmap from mmput from exit_mm
+from do_exit (but different processes exiting).
+
+Hugh
