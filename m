@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab2BUSyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 13:54:23 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14329 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab2BUSyW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 13:54:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 21 Feb 2012 10:54:13 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Colin Cross <ccross@android.com>,
-        Chris Ball <cjb@laptop.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 10:54:12 -0800
-Subject: RE: [PATCH 2/2] gpio: tegra: Delete tegra_gpio_enable/disable()
-Thread-Topic: [PATCH 2/2] gpio: tegra: Delete tegra_gpio_enable/disable()
-Thread-Index: Aczwhc5XeWjEe+1QSS6+Xig+qIs9rgARDntg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC383@HQMAIL01.nvidia.com>
-References: <1329719263-18971-1-git-send-email-swarren@nvidia.com>
-	<1329719263-18971-2-git-send-email-swarren@nvidia.com>
- <CACRpkdYDVU9TAVAAw=uBp84puED0kGkdSW8goAJRG1Nc=6xCaQ@mail.gmail.com>
-In-Reply-To: <CACRpkdYDVU9TAVAAw=uBp84puED0kGkdSW8goAJRG1Nc=6xCaQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755714Ab2BUSyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 13:54:54 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49099 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753562Ab2BUSyw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 13:54:52 -0500
 MIME-Version: 1.0
+In-Reply-To: <4F43D98D.1020406@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+ <1329696488-16970-31-git-send-email-hpa@zytor.com> <4F42E171.9080005@mit.edu>
+ <4F431665.3010004@zytor.com> <CAObL_7Hy8Y0PWrcZdRSGRcEt+aoma7ax4XU44f-gdHEGoWBzTg@mail.gmail.com>
+ <4F43D98D.1020406@zytor.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 21 Feb 2012 10:54:32 -0800
+X-Google-Sender-Auth: 4OTaURbFMeGsCGtkHYNrlMvU5pI
+Message-ID: <CAObL_7GqT-CSB6uBoDvKymodEzUi3tY0DJv0U=xzYbaJS7A1nA@mail.gmail.com>
+Subject: Re: [PATCH 30/30] x32: Add x32 VDSO support
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, hjl.tools@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Tuesday, February 21, 2012 3:45 AM:
-> On Mon, Feb 20, 2012 at 7:27 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> 
-> > Recent pinctrl discussions concluded that gpio_request() and other gpiolib
-> > APIs should in fact do whatever is required to mux a GPIO onto pins, by
-> > calling pinctrl APIs if required. This change implements this for the
-> > Tegra GPIO driver, and removes the old Tegra-specific APIs which did this.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> > I don't believe this depends on other patches.
-> >
-> > There may be some slight context dependencies; this patch was generated
-> > against next-20120217, with my recently posted "gpio: tegra: Fix build
-> > issue due to irq_domain rework." applied on top.
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Since it mainly touches mach-tegra stuff I think it's best to take
-> this through the Tegra tree, Olof can you queue it?
+On Tue, Feb 21, 2012 at 9:51 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/21/2012 08:52 AM, Andrew Lutomirski wrote:
+>>>
+>>>
+>>> What about non-glibc?
+>>
+>>
+>> IMO non-glibc users should just call __vdso_clock_gettime, etc.
+>> Currently, code like:
+>>
+>> if (clock_gettime(whatever) == -1)
+>>   handle_the_error();
+>>
+>> is correct when linked against glibc but incorrect when linked
+>> directly against the vdso.
+>>
+>
+> The issue is what uclibc, Bionic, etc. actually do.
 
-That makes sense to me, but just to be clear for Olof, best to defer
-applying this until the discussion for patch 1 in the series is resolved;
-this patch might need rework depending on the decisions there.
+AFAICS Bionic only works on x86-32 and calls clock_gettime via
+hardcoded int 0x80, written in assembly (!).  uclibc calls
+__vdso_getcpu and does not seem to use the other vdso calls.  On a
+cursory inspection, klibc uses neither the vsyscall page nor the vdso.
 
--- 
-nvpublic
+I doubt that there's any existing libc replacement that uses the
+non-prefixed vdso entries and that already works on x32 -- that would
+be impressive.  I'm not suggesting changing anything in the x86-64
+vdso.
 
+uclibc hardcodes a call to the vsyscall gettimeofday implementation in
+its locking primitives, which probably gives terrible performance, but
+that's a separate issue.  I think do_emulate_vsyscall should send a
+segfault if called by an x32 task -- there's some security benefit to
+doing so, and there's unlikely to be any downside.
+
+--Andy
