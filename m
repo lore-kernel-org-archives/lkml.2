@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab2BUKRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 05:17:22 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57323 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab2BUKRV (ORCPT
+	id S1754111Ab2BUKRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 05:17:35 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:55530 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752285Ab2BUKRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 05:17:21 -0500
-Date: Tue, 21 Feb 2012 10:16:30 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de,
-        plagnioj@jcrosoft.com, avictor.za@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: AIC and GPIO IRQ device tree initilization
-Message-ID: <20120221101630.GI22562@n2100.arm.linux.org.uk>
-References: <1329144189-4535-1-git-send-email-nicolas.ferre@atmel.com> <1329470878-14635-1-git-send-email-nicolas.ferre@atmel.com> <4F436C95.2040508@atmel.com>
+	Tue, 21 Feb 2012 05:17:33 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of lisarden@gmail.com designates 10.112.24.196 as permitted sender) smtp.mail=lisarden@gmail.com; dkim=pass header.i=lisarden@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F436C95.2040508@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Tue, 21 Feb 2012 13:17:32 +0300
+Message-ID: <CAP3+TEq76h=Bbb37Jj8_RRZDw=NhVAxPCLt1ZGdxQH1vnLM+Aw@mail.gmail.com>
+Subject: ks8851 speed regression
+From: Maxim Podbereznyy <lisarden@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:06:13AM +0100, Nicolas Ferre wrote:
-> Grant, Rob,
-> 
-> I would like to have some feedback from you so that we will be able to
-> build our DT related work on top of this series.
-> 
-> If you agree with this work, we may need to send it through arm-soc git
-> tree. This will require to establish a dependency with Grant's irqdomain
-> branch: do you think that it is stable enough?
+Hi!
 
-That depends whether Grant has fixed the x86 regression with
-drivers/mfd/twl-core.c yet.
+I noticed the regression in speed for ks8851 driver (Micrel
+KSZ8851-SNL). I used this part with kernel 2.6.32 and the speed was
+1MB/s. Then the driver code was changed and for current Linux version
+linux-3.0.17-r115c the speed is 745kB/s. 25% speed reduce is indeed
+noticeable.
+
+I use Angstrom Linux built in OE environment.
+Target board is Beagleboard C4.
+
+regards,
+Max
