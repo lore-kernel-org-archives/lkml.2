@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab2BUUQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 15:16:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53605 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab2BUUQm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 15:16:42 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of airlied@gmail.com designates 10.236.174.106 as permitted sender) smtp.mail=airlied@gmail.com; dkim=pass header.i=airlied@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <201202212112.26663.toralf.foerster@gmx.de>
-References: <201202212112.26663.toralf.foerster@gmx.de>
-Date: Tue, 21 Feb 2012 20:16:42 +0000
-Message-ID: <CAPM=9tynF-NiNdk=AyJYBz_=x3bQi_-T8i+LXYL+08rBE8XYDw@mail.gmail.com>
-Subject: Re: compile error in drivers/gpu/drm/radeon/radeon_state.o
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755541Ab2BUURy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 15:17:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639Ab2BUURx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 15:17:53 -0500
+Date: Tue, 21 Feb 2012 15:03:25 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu
+Cc: rostedt@goodmis.org, mathieu.desnoyers@efficios.com, hpa@zytor.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        eric.dumazet@gmail.com, glommer@parallels.com,
+        linux-kernel@vger.kernel.org
+Message-Id: <d74d3ccf5ed8598525ade00b572381e42c9d433a.1329851692.git.jbaron@redhat.com>
+In-Reply-To: <cover.1329851692.git.jbaron@redhat.com>
+References: <cover.1329851692.git.jbaron@redhat.com>
+Subject: [PATCH 09/10] net: update to use very_unlikely()
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/21 Toralf Förster <toralf.foerster@gmx.de>:
->
-> Hello,
->
-> the build of latest git (.config attached) failed, make ends with :
-> ...
->  CC [M]  drivers/gpu/drm/radeon/radeon_cp.o
->  CC [M]  drivers/gpu/drm/radeon/radeon_state.o
-> In file included from /home/tfoerste/devel/linux/arch/x86/include/asm/uaccess.h:573:0,
->                 from include/drm/drmP.h:64,
->                 from drivers/gpu/drm/radeon/radeon_state.c:30:
-> In function 'copy_from_user',
->    inlined from 'radeon_cp_clear' at drivers/gpu/drm/radeon/radeon_state.c:2171:6:
-> /home/tfoerste/devel/linux/arch/x86/include/asm/uaccess_32.h:211:26: error: call to 'copy_from_user_overflow' declared with attribute error:
-> copy_from_user() buffer size is not provably correct
-> make[4]: *** [drivers/gpu/drm/radeon/radeon_state.o] Error 1
-> make[3]: *** [drivers/gpu/drm/radeon] Error 2
-> make[2]: *** [drivers/gpu/drm] Error 2
-> make[1]: *** [drivers/gpu] Error 2
-> make: *** [drivers] Error 2
->
-turn off CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+Update networking with api change: static_branch() -> very_unlikely().
 
-Its a bug in gcc's checks code.
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ include/linux/netfilter.h |    2 +-
+ include/net/sock.h        |    2 +-
+ net/core/dev.c            |    8 ++++----
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-Dave.
+diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
+index b809265..43d0cc0 100644
+--- a/include/linux/netfilter.h
++++ b/include/linux/netfilter.h
+@@ -169,7 +169,7 @@ static inline bool nf_hooks_active(u_int8_t pf, unsigned int hook)
+ {
+ 	if (__builtin_constant_p(pf) &&
+ 	    __builtin_constant_p(hook))
+-		return static_branch(&nf_hooks_needed[pf][hook]);
++		return very_unlikely(&nf_hooks_needed[pf][hook]);
+ 
+ 	return !list_empty(&nf_hooks[pf][hook]);
+ }
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 91c1c8b..1d16574 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -930,7 +930,7 @@ static inline struct cg_proto *parent_cg_proto(struct proto *proto,
+ {
+ 	return proto->proto_cgroup(parent_mem_cgroup(cg_proto->memcg));
+ }
+-#define mem_cgroup_sockets_enabled static_branch(&memcg_socket_limit_enabled)
++#define mem_cgroup_sockets_enabled very_unlikely(&memcg_socket_limit_enabled)
+ #else
+ #define mem_cgroup_sockets_enabled 0
+ static inline struct cg_proto *parent_cg_proto(struct proto *proto,
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 115dee1..6503c14 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1481,12 +1481,12 @@ EXPORT_SYMBOL(net_disable_timestamp);
+ static inline void net_timestamp_set(struct sk_buff *skb)
+ {
+ 	skb->tstamp.tv64 = 0;
+-	if (static_branch(&netstamp_needed))
++	if (very_unlikely(&netstamp_needed))
+ 		__net_timestamp(skb);
+ }
+ 
+ #define net_timestamp_check(COND, SKB)			\
+-	if (static_branch(&netstamp_needed)) {		\
++	if (very_unlikely(&netstamp_needed)) {		\
+ 		if ((COND) && !(SKB)->tstamp.tv64)	\
+ 			__net_timestamp(SKB);		\
+ 	}						\
+@@ -2945,7 +2945,7 @@ int netif_rx(struct sk_buff *skb)
+ 
+ 	trace_netif_rx(skb);
+ #ifdef CONFIG_RPS
+-	if (static_branch(&rps_needed))	{
++	if (very_unlikely(&rps_needed)) {
+ 		struct rps_dev_flow voidflow, *rflow = &voidflow;
+ 		int cpu;
+ 
+@@ -3309,7 +3309,7 @@ int netif_receive_skb(struct sk_buff *skb)
+ 		return NET_RX_SUCCESS;
+ 
+ #ifdef CONFIG_RPS
+-	if (static_branch(&rps_needed)) {
++	if (very_unlikely(&rps_needed)) {
+ 		struct rps_dev_flow voidflow, *rflow = &voidflow;
+ 		int cpu, ret;
+ 
+-- 
+1.7.7.5
+
