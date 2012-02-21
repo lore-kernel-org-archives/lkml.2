@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2BUR6t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 12:58:49 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36693 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2BUR6r (ORCPT
+	id S1754736Ab2BUR7G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 12:59:06 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55220 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2BUR7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 12:58:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of brgerst@gmail.com designates 10.236.154.232 as permitted sender) smtp.mail=brgerst@gmail.com; dkim=pass header.i=brgerst@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <4F43AA37.5050004@gmail.com>
-References: <CAOe6JY2fQ7UcnVprer9tXPxz0FDEv5h1j6txP576-EKXc9v5PA@mail.gmail.com>
-	<CAOe6JY2W8H2FMbMUsUp=72gH6y_SXPvjwZ0fqOwXWUdknr=7yQ@mail.gmail.com>
-	<4F411373.50304@gmail.com>
-	<CAOe6JY3yM24CGYOpPc98QfjRYah5U+L9DB46WH60LVrxN9=eRQ@mail.gmail.com>
-	<4F4262A4.9000204@gmail.com>
-	<CAOe6JY1_dYGCK2=+EHARz5mTm=KCgWynnJjA9SuEHfj+Z0xjwA@mail.gmail.com>
-	<4F43AA37.5050004@gmail.com>
-Date: Tue, 21 Feb 2012 12:58:47 -0500
-Message-ID: <CAMzpN2gnOgZWZFTVHnL8ySQSXCykc9ZpoDYMUvHGPVpy4OVWOw@mail.gmail.com>
-Subject: Re: A problem with percpu variable cpu_number
-From: Brian Gerst <brgerst@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tao Jiang <jiangtao.jit@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 Feb 2012 12:59:03 -0500
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/4] rcu: Eliminate softirq-mediated RCU_FAST_NO_HZ idle-entry loop
+Date: Tue, 21 Feb 2012 09:58:26 -0800
+Message-Id: <1329847110-10897-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <20120221175810.GA10708@linux.vnet.ibm.com>
+References: <20120221175810.GA10708@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022117-3352-0000-0000-000002CB3C6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 9:29 AM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
-> On 02/21/2012 08:41 PM, Tao Jiang wrote:
->>
->> Hi Cong Wang:
->>
->> I read the file vmlinux.lds.S in arch/x86/kernel
->> section .data..percpu is between .init.data and .init.end
->> Is that means these percpu variables will be freed after init?
->
->
-> % grep -e __init_begin -e __init_end -e __per_cpu_start -e __per_cpu_end
-> /boot/System.map
-> 0000000000000000 D __per_cpu_start
-> 0000000000014bc0 D __per_cpu_end
-> ffffffff81cf3000 D __init_begin
-> ffffffff81dfc000 R __init_end
-> % objdump -d -j .data..percpu vmlinux | grep cpu_number
-> 000000000000dc38 <cpu_number>:
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-The .data..percpu section is placed in the init section, but x86-64 is
-a special case as noted below.  The boot cpu is pointed to the init
-percpu section until setup_per_cpu_areas() is called, when it switches
-to the regular percpu area.  The init percpu data is then freed with
-all other init data.
+If a softirq is pending, the current CPU has RCU callbacks pending,
+and RCU does not immediately need anything from this CPU, then the
+current code resets the RCU_FAST_NO_HZ state machine.  This means that
+upon exit from the subsequent softirq handler, RCU_FAST_NO_HZ will
+try really hard to force RCU into dyntick-idle mode.  And if the same
+conditions hold after a few tries (determined by RCU_IDLE_OPT_FLUSHES),
+the same situation can repeat, possibly endlessly.  This scenario is
+not particularly good for battery lifetime.
 
-The reason the percpu symbols start at virtual address 0 on x86-64 is
-because of the requirement that gs_base must be a canonical address
-(it cannot be a simple offset like x86-32).  But, the data is still
-loaded in the init section in memory.  See
-arch/x86/kernel/vmlinux.lds.S for the explanation of how the linker
-changes the program headers to set the virtual address to zero but
-keeps the load address in the init section.
+This commit therefore suppresses the early exit from the RCU_FAST_NO_HZ
+state machine in the case where there is a softirq pending.  This change
+forces the state machine to retain its memory, and to enter holdoff if
+this condition persists.
 
-To answer the original question. in the case of cpu_number, it is set
-to zero in the init section because it doesn't have an explicit
-initializer.  Therefore the boot cpu will always read zero for the
-cpu_number, even before setup_per_cpu_areas() is called.
+Reported-by: "Abou Gazala, Neven M" <neven.m.abou.gazala@intel.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree_plugin.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index f7ceadf..392a651 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2133,7 +2133,8 @@ static void rcu_prepare_for_idle(int cpu)
+ 		/* First time through, initialize the counter. */
+ 		per_cpu(rcu_dyntick_drain, cpu) = RCU_IDLE_FLUSHES;
+ 	} else if (per_cpu(rcu_dyntick_drain, cpu) <= RCU_IDLE_OPT_FLUSHES &&
+-		   !rcu_pending(cpu)) {
++		   !rcu_pending(cpu) &&
++		   !local_softirq_pending()) {
+ 		/* Can we go dyntick-idle despite still having callbacks? */
+ 		trace_rcu_prep_idle("Dyntick with callbacks");
+ 		per_cpu(rcu_dyntick_drain, cpu) = 0;
+-- 
+1.7.8
 
---
-Brian Gerst
