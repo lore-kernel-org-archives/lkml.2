@@ -1,67 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab2BUI6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 03:58:34 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38672 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2BUI6c (ORCPT
+	id S1753463Ab2BUJPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 04:15:09 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39439 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146Ab2BUJPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 03:58:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of geunsik.lim@gmail.com designates 10.68.196.168 as permitted sender) smtp.mail=geunsik.lim@gmail.com; dkim=pass header.i=geunsik.lim@gmail.com
-From: Geunsik Lim <geunsik.lim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: [PATCH, v2] Fix potentially derefencing uninitialized 'r'.
-Date: Tue, 21 Feb 2012 17:58:23 +0900
-Message-Id: <1329814703-14398-1-git-send-email-geunsik.lim@gmail.com>
-X-Mailer: git-send-email 1.7.8.1
+	Tue, 21 Feb 2012 04:15:06 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 21 Feb 2012 18:13:21 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/10] mm/memcg: take care over pc->mem_cgroup
+Message-Id: <20120221181321.637556cd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1202201533260.23274@eggly.anvils>
+References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils>
+	<alpine.LSU.2.00.1202201533260.23274@eggly.anvils>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geunsik Lim <geunsik.lim@samsung.com>
+On Mon, 20 Feb 2012 15:34:28 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
+	return NULL;
+>  
+> +	lruvec = page_lock_lruvec(page);
+>  	lock_page_cgroup(pc);
+>  
 
-v2: reorganize the code with better way to avoid compilation warning
-via the comment of Andrew Morton.
+Do we need to take lrulock+irq disable per page in this very very hot path ?
 
-v1: struct memblock_region 'r' will not be initialized potentially
-because of while() condition in __next_mem_pfn_range()function.
-Solve the compilation warning related problem by initializing
-r data structure.
+Hmm.... How about adding NR_ISOLATED counter into lruvec ?
 
-Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
----
- mm/memblock.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+Then, we can delay freeing lruvec until all conunters goes down to zero.
+as...
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 77b5f22..b8c40c5 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -673,14 +673,18 @@ void __init_memblock __next_mem_pfn_range(int *idx, int nid,
- 	struct memblock_type *type = &memblock.memory;
- 	struct memblock_region *r;
- 
--	while (++*idx < type->cnt) {
-+	do {
- 		r = &type->regions[*idx];
- 
-+	   if (++*idx < type->cnt) {
- 		if (PFN_UP(r->base) >= PFN_DOWN(r->base + r->size))
- 			continue;
- 		if (nid == MAX_NUMNODES || nid == r->nid)
- 			break;
--	}
-+	   } else
-+		break;
-+	} while (1);
-+
- 	if (*idx >= type->cnt) {
- 		*idx = -1;
- 		return;
--- 
-1.7.8.1
+	bool we_can_free_lruvec = true;
+
+	lock_lruvec(lruvec->lock);
+	for_each_lru_lruvec(lru)
+		if (!list_empty(&lruvec->lru[lru]))
+			we_can_free_lruvec = false;
+	if (lruvec->nr_isolated)
+		we_can_free_lruvec = false;
+	unlock_lruvec(lruvec)
+	if (we_can_free_lruvec)
+		kfree(lruvec);
+
+If compaction, lumpy reclaim free a page taken from LRU,
+it knows what it does and can decrement lruvec->nr_isolated properly
+(it seems zone's NR_ISOLATED is decremented at putback.)
+
+
+Thanks,
+-Kame
+
+>  	memcg = pc->mem_cgroup;
+> @@ -2915,14 +2944,17 @@ __mem_cgroup_uncharge_common(struct page
+>  	mem_cgroup_charge_statistics(memcg, anon, -nr_pages);
+>  
+>  	ClearPageCgroupUsed(pc);
+> +
+>  	/*
+> -	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
+> -	 * freed from LRU. This is safe because uncharged page is expected not
+> -	 * to be reused (freed soon). Exception is SwapCache, it's handled by
+> -	 * special functions.
+> +	 * Once an uncharged page is isolated from the mem_cgroup's lru,
+> +	 * it no longer protects that mem_cgroup from rmdir: reset to root.
+>  	 */
+> +	if (!PageLRU(page) && pc->mem_cgroup != root_mem_cgroup)
+> +		pc->mem_cgroup = root_mem_cgroup;
+>  
+>  	unlock_page_cgroup(pc);
+> +	unlock_lruvec(lruvec);
+> +
+>  	/*
+>  	 * even after unlock, we have memcg->res.usage here and this memcg
+>  	 * will never be freed.
+> @@ -2939,6 +2971,7 @@ __mem_cgroup_uncharge_common(struct page
+>  
+>  unlock_out:
+>  	unlock_page_cgroup(pc);
+> +	unlock_lruvec(lruvec);
+>  	return NULL;
+>  }
+>  
+> @@ -3327,7 +3360,9 @@ static struct page_cgroup *lookup_page_c
+>  	 * the first time, i.e. during boot or memory hotplug;
+>  	 * or when mem_cgroup_disabled().
+>  	 */
+> -	if (likely(pc) && PageCgroupUsed(pc))
+> +	if (!pc || PageCgroupUsed(pc))
+> +		return pc;
+> +	if (pc->mem_cgroup && pc->mem_cgroup != root_mem_cgroup)
+>  		return pc;
+>  	return NULL;
+>  }
+> --- mmotm.orig/mm/swap.c	2012-02-18 11:57:42.679524592 -0800
+> +++ mmotm/mm/swap.c	2012-02-18 11:57:49.107524745 -0800
+> @@ -52,6 +52,7 @@ static void __page_cache_release(struct
+>  		lruvec = page_lock_lruvec(page);
+>  		VM_BUG_ON(!PageLRU(page));
+>  		__ClearPageLRU(page);
+> +		mem_cgroup_reset_uncharged_to_root(page);
+>  		del_page_from_lru_list(page, lruvec, page_off_lru(page));
+>  		unlock_lruvec(lruvec);
+>  	}
+> @@ -583,6 +584,7 @@ void release_pages(struct page **pages,
+>  			page_relock_lruvec(page, &lruvec);
+>  			VM_BUG_ON(!PageLRU(page));
+>  			__ClearPageLRU(page);
+> +			mem_cgroup_reset_uncharged_to_root(page);
+>  			del_page_from_lru_list(page, lruvec, page_off_lru(page));
+>  		}
+>  
+> --- mmotm.orig/mm/vmscan.c	2012-02-18 11:57:42.679524592 -0800
+> +++ mmotm/mm/vmscan.c	2012-02-18 11:57:49.107524745 -0800
+> @@ -1087,11 +1087,11 @@ int __isolate_lru_page(struct page *page
+>  
+>  	if (likely(get_page_unless_zero(page))) {
+>  		/*
+> -		 * Be careful not to clear PageLRU until after we're
+> -		 * sure the page is not being freed elsewhere -- the
+> -		 * page release code relies on it.
+> +		 * Beware of interface change: now leave ClearPageLRU(page)
+> +		 * to the caller, because memcg's lumpy and compaction
+> +		 * cases (approaching the page by its physical location)
+> +		 * may not have the right lru_lock yet.
+>  		 */
+> -		ClearPageLRU(page);
+>  		ret = 0;
+>  	}
+>  
+> @@ -1154,7 +1154,16 @@ static unsigned long isolate_lru_pages(u
+>  
+>  		switch (__isolate_lru_page(page, mode, file)) {
+>  		case 0:
+> +#ifdef CONFIG_DEBUG_VM
+> +			/* check lock on page is lock we already got */
+> +			page_relock_lruvec(page, &lruvec);
+> +			BUG_ON(lruvec != home_lruvec);
+> +			BUG_ON(page != lru_to_page(src));
+> +			BUG_ON(page_lru(page) != lru);
+> +#endif
+> +			ClearPageLRU(page);
+>  			isolated_pages = hpage_nr_pages(page);
+> +			mem_cgroup_reset_uncharged_to_root(page);
+>  			mem_cgroup_update_lru_size(lruvec, lru, -isolated_pages);
+>  			list_move(&page->lru, dst);
+>  			nr_taken += isolated_pages;
+> @@ -1211,21 +1220,7 @@ static unsigned long isolate_lru_pages(u
+>  			    !PageSwapCache(cursor_page))
+>  				break;
+>  
+> -			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> -				mem_cgroup_page_relock_lruvec(cursor_page,
+> -								&lruvec);
+> -				isolated_pages = hpage_nr_pages(cursor_page);
+> -				mem_cgroup_update_lru_size(lruvec,
+> -					page_lru(cursor_page), -isolated_pages);
+> -				list_move(&cursor_page->lru, dst);
+> -
+> -				nr_taken += isolated_pages;
+> -				nr_lumpy_taken += isolated_pages;
+> -				if (PageDirty(cursor_page))
+> -					nr_lumpy_dirty += isolated_pages;
+> -				scan++;
+> -				pfn += isolated_pages - 1;
+> -			} else {
+> +			if (__isolate_lru_page(cursor_page, mode, file) != 0) {
+>  				/*
+>  				 * Check if the page is freed already.
+>  				 *
+> @@ -1243,13 +1238,50 @@ static unsigned long isolate_lru_pages(u
+>  					continue;
+>  				break;
+>  			}
+> +
+> +			/*
+> +			 * This locking call is a no-op in the non-memcg
+> +			 * case, since we already hold the right lru_lock;
+> +			 * but it may change the lock in the memcg case.
+> +			 * It is then vital to recheck PageLRU (but not
+> +			 * necessary to recheck isolation mode).
+> +			 */
+> +			mem_cgroup_page_relock_lruvec(cursor_page, &lruvec);
+> +
+> +			if (PageLRU(cursor_page) &&
+> +			    !PageUnevictable(cursor_page)) {
+> +				ClearPageLRU(cursor_page);
+> +				isolated_pages = hpage_nr_pages(cursor_page);
+> +				mem_cgroup_reset_uncharged_to_root(cursor_page);
+> +				mem_cgroup_update_lru_size(lruvec,
+> +					page_lru(cursor_page), -isolated_pages);
+> +				list_move(&cursor_page->lru, dst);
+> +
+> +				nr_taken += isolated_pages;
+> +				nr_lumpy_taken += isolated_pages;
+> +				if (PageDirty(cursor_page))
+> +					nr_lumpy_dirty += isolated_pages;
+> +				scan++;
+> +				pfn += isolated_pages - 1;
+> +			} else {
+> +				/* Cannot hold lru_lock while freeing page */
+> +				unlock_lruvec(lruvec);
+> +				lruvec = NULL;
+> +				put_page(cursor_page);
+> +				break;
+> +			}
+>  		}
+>  
+>  		/* If we break out of the loop above, lumpy reclaim failed */
+>  		if (pfn < end_pfn)
+>  			nr_lumpy_failed++;
+>  
+> -		lruvec = home_lruvec;
+> +		if (lruvec != home_lruvec) {
+> +			if (lruvec)
+> +				unlock_lruvec(lruvec);
+> +			lruvec = home_lruvec;
+> +			lock_lruvec(lruvec);
+> +		}
+>  	}
+>  
+>  	*nr_scanned = scan;
+> @@ -1301,6 +1333,7 @@ int isolate_lru_page(struct page *page)
+>  			int lru = page_lru(page);
+>  			get_page(page);
+>  			ClearPageLRU(page);
+> +			mem_cgroup_reset_uncharged_to_root(page);
+>  			del_page_from_lru_list(page, lruvec, lru);
+>  			ret = 0;
+>  		}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
