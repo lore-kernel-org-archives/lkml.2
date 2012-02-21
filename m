@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2BUWNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 17:13:24 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60859 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab2BUWNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 17:13:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.74.97 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 14:12:58 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
-In-Reply-To: <4F440E1D.7050004@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202211406030.2012@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org> <alpine.LSU.2.00.1202211205280.1858@eggly.anvils> <4F440E1D.7050004@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755889Ab2BUWTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 17:19:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39312 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab2BUWTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 17:19:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="110548125"
+Subject: Re: [PATCH v2 3/3] i387: support lazy restore of FPU state
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Feb 2012 14:19:35 -0800
+In-Reply-To: <CA+55aFzSKR76rVAXQWjKmjmSPVu8XeULh5g864hbOgq6WA4foQ@mail.gmail.com>
+References: <alpine.LFD.2.02.1202191412060.3898@i5.linux-foundation.org>
+	 <alpine.LFD.2.02.1202201145130.4237@i5.linux-foundation.org>
+	 <alpine.LFD.2.02.1202201146450.4237@i5.linux-foundation.org>
+	 <alpine.LFD.2.02.1202201147350.4237@i5.linux-foundation.org>
+	 <alpine.LFD.2.02.1202201148100.4237@i5.linux-foundation.org>
+	 <1329861273.29790.261.camel@sbsiddha-desk.sc.intel.com>
+	 <CA+55aFzSKR76rVAXQWjKmjmSPVu8XeULh5g864hbOgq6WA4foQ@mail.gmail.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1329862775.29790.268.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
-> Hugh Dickins wrote:
-> > 
-> > I'll have to come back to think about your locking later too;
-> > or maybe that's exactly where I need to look, when investigating
-> > the mm_inline.h:41 BUG.
+On Tue, 2012-02-21 at 13:57 -0800, Linus Torvalds wrote:
+> On Tue, Feb 21, 2012 at 1:54 PM, Suresh Siddha
+> <suresh.b.siddha@intel.com> wrote:
+> >
+> > Reviewing this code, I think we need to set the 'last_cpu' to an invalid
+> > number in the fpu_alloc too. Appended is the patch.
 > 
-> pages_count[] updates looks correct.
-> This really may be bug in locking, and this VM_BUG_ON catch it before
-> list-debug.
+> I cleared fpu_counter in copy_thread() instead.
 
-I've still not got into looking at it yet.
+Hmm, didn't pay attention to that patch. Too many patches ;(
 
-You're right to mention DEBUG_LIST: I have that on some of the machines,
-and I would expect that to be the first to catch a mislocking issue.
+> Doing this in fpu_alloc() isn't necessarily a bad idea, though.
 
-In the past my problems with that BUG (well, the spur to introduce it)
-came from hugepages.
+yes, I think we should do this in fpu_alloc() or bit more explicitly by
+updating 'last_cpu' in copy_thread().
 
-> > 
-> > But at first sight, I have to say I'm very suspicious: I've never found
-> > PageLRU a good enough test for whether we need such a lock, because of
-> > races with those pages on percpu lruvec about to be put on the lru.
-> > 
-> > But maybe once I look closer, I'll find that's handled by your changes
-> > away from lruvec; though I'd have thought the same issue exists,
-> > independent of whether the pending pages are in vector or list.
-> 
-> Are you talking about my per-cpu page-lists for lru-adding?
+Someone experimenting with removing fpu pre-load may not realize this
+subtle issue.
 
-Yes.
+thanks,
+suresh
 
-> This is just an unnecessary patch, I don't know why I include it into v2 set.
-> It does not protect anything.
 
-Okay.
 
-Hugh
+
