@@ -1,71 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab2BVBdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:33:00 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49878 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab2BVBc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:32:58 -0500
-Date: Tue, 21 Feb 2012 17:32:52 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-Message-ID: <20120222013252.GZ2375@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120222011652.GE23186@zod.bos.redhat.com>
+	id S1754150Ab2BVBdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:33:41 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:38965 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab2BVBdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:33:39 -0500
+Date: Tue, 21 Feb 2012 17:21:03 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: [PATCH] fs: hardlink creation restriction cleanup
+Message-ID: <20120222012103.GA13295@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120222011652.GE23186@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022201-7282-0000-0000-000006BA4F8E
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 08:16:53PM -0500, Josh Boyer wrote:
-> Hi Paul,
-> 
-> Over in Fedora land, I applied your patch from this thread:
-> 
-> https://lkml.org/lkml/2012/1/24/441
-> 
-> to our 3.3-rc3/rc4 based rawhide kernels.  The intention was to solve an
-> RCU issue that was very similar to what Eric originally reported, and
-> the RCU splat did indeed go away[1].
-> 
-> However, we then got a few reports of kernels containing that patch
-> being extremely slow.  When the patch was dropped, the slowness goes
-> away according to one reporter.  The details can be found in this bug:
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=795050
-> 
-> The slowness doesn't seem to hit everyone, and in my local testing
-> things seem to be working just fine.  The reporters have widely varying
-> hardware as well, so it doesn't seem machine specific.
-> 
-> Perhaps I misdiagnosed the original issue, or perhaps I missed something
-> else that needs to be applied prior to this but I thought I would point
-> this out in case you had any ideas.
+Clean-up of hardlink restriction logic, as suggested by Andrew Morton.
 
-This patch has been obsoleted by patches #45-47 in this series:
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 41 insertions(+), 18 deletions(-)
 
-	https://lkml.org/lkml/2012/2/3/459
-
-And patch #47 in that series has been obsoleted by another series
-from Steven Rostedt:
-
-	https://lkml.org/lkml/2012/2/7/231
-
-Hopefully these fix both splats and slowness.
-
-							Thanx, Paul
-
-> josh
-> 
-> [1] https://bugzilla.redhat.com/show_bug.cgi?id=789641
-> 
+diff --git a/fs/namei.c b/fs/namei.c
+index 8ed4e00..a4a21a5 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -693,46 +693,69 @@ static inline int may_follow_link(struct path *link)
+ }
+ 
+ /**
++ * safe_hardlink_source - Check for safe hardlink conditions
++ * @inode: the source inode to hardlink from
++ *
++ * Return false if at least one of the following conditions:
++ *    - inode is not a regular file
++ *    - inode is setuid
++ *    - inode is setgid and group-exec
++ *    - access failure for read and write
++ *
++ * Otherwise returns true.
++ */
++static bool safe_hardlink_source(struct inode *inode)
++{
++	mode_t mode = inode->i_mode;
++
++	/* Special files should not get pinned to the filesystem. */
++	if (!S_ISREG(mode))
++		return false;
++	/* Setuid files should not get pinned to the filesystem. */
++	if (mode & S_ISUID)
++		return false;
++	/* Executable setgid files should not get pinned to the filesystem. */
++	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
++		return false;
++	/* Hardlinking to unreadable or unwritable sources is dangerous. */
++	if (inode_permission(inode, MAY_READ | MAY_WRITE))
++		return false;
++
++	return true;
++}
++
++/**
+  * may_linkat - Check permissions for creating a hardlink
+  * @link: the source to hardlink from
+  *
+  * Block hardlink when all of:
+  *  - sysctl_protected_hardlinks enabled
+  *  - fsuid does not match inode
+- *  - at least one of:
+- *    - inode is not a regular file
+- *    - inode is setuid
+- *    - inode is setgid and group-exec
+- *    - access failure for read and write
++ *  - hardlink source is unsafe (see safe_hardlink_source() above)
+  *  - not CAP_FOWNER
+  *
+  * Returns 0 if successful, -ve on error.
+  */
+ static int may_linkat(struct path *link)
+ {
+-	int error = 0;
+ 	const struct cred *cred;
+ 	struct inode *inode;
+-	int mode;
+ 
+ 	if (!sysctl_protected_hardlinks)
+ 		return 0;
+ 
+ 	cred = current_cred();
+ 	inode = link->dentry->d_inode;
+-	mode = inode->i_mode;
+ 
+-	if (cred->fsuid != inode->i_uid &&
+-	    (!S_ISREG(mode) || (mode & S_ISUID) ||
+-	     ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP)) ||
+-	     (inode_permission(inode, MAY_READ | MAY_WRITE))) &&
+-	    !capable(CAP_FOWNER))
+-		error = -EPERM;
+-
+-	if (error)
+-		audit_log_link_denied("linkat", link);
++	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
++	 * otherwise, it must be a safe source.
++	 */
++	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
++	    capable(CAP_FOWNER))
++		return 0;
+ 
+-	return error;
++	audit_log_link_denied("linkat", link);
++	return -EPERM;
+ }
+ #else
+ static inline int may_follow_link(struct path *link)
+-- 
+1.7.0.4
 
