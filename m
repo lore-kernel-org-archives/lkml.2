@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2BVIBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 03:01:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48874 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2BVIBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 03:01:40 -0500
-References: <cover.1329851692.git.jbaron@redhat.com> <4F43F9F0.4000605@zytor.com> <20120221202019.GB2381@redhat.com> <1329856745.25686.72.camel@gandalf.stny.rr.com> <20120222073251.GB17291@elte.hu> <20120222075334.GA25053@elte.hu>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120222075334.GA25053@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups + docs
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 22 Feb 2012 00:01:03 -0800
-To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
-        mathieu.desnoyers@efficios.com, davem@davemloft.net,
-        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Message-ID: <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
+	id S1753792Ab2BVIDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 03:03:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:30545 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab2BVIDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 03:03:33 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-ff-4f44a153fccc
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Dave Jones <davej@redhat.com>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: [RFC PATCH 1/2] CPUfreq ondemand: update sampling rate without waiting
+ for next sampling
+Date: Wed, 22 Feb 2012 17:03:34 +0900
+Message-id: <1329897815-15871-2-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1329897815-15871-1-git-send-email-myungjoo.ham@samsung.com>
+References: <CAJ0PZbSODSJvV-_Gje9Hm9Ek22Z9m+PAcsf071OCmAOtsnKzyg@mail.gmail.com>
+ <1329897815-15871-1-git-send-email-myungjoo.ham@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stupid thought... do we have cases that matter where the bias and default don't agree?
+When a new sampling rate is shorter than the current one, (e.g., 1 sec
+--> 10 ms) regardless how short the new one is, the current ondemand
+mechanism wait for the previously set timer to be expired.
 
-Ingo Molnar <mingo@elte.hu> wrote:
+For example, if the user has just expressed that the sampling rate
+should be 10 ms from now and the previous was 1000 ms, the new rate may
+become effective 999 ms later, which could be not acceptable for the
+user if the user has intended to speed up sampling because the system is
+expected to react to CPU load fluctuation quickly from __now__.
 
->
->* Ingo Molnar <mingo@elte.hu> wrote:
->
->> But it is fundamentally mixing execution and *data type* and 
->> it is not conveying the build time bias properly.
->> 
->> So the best high level naming would be something like:
->> 
->> 	struct static_condition static_flag = STATIC_COND_FALSE;
->> 
->> 
->> 	if (very_unlikely(&static_flag)) {
->> 		...
->> 	}
->> 
->> 	...
->> 
->> 	static_cond_inc(&static_flag);
->> 	...
->> 	static_cond_dec(&static_flag);
->
->Btw., I think the modification path could also carry the high 
->cost of modification (stopping all cpus, modifying code, etc.).
->
->This could be done via:
->
->	static_cond_slow_inc(&static_flag);
->	...
->	static_cond_slow_dec(&static_flag);
->
->And if a developer does not notice that 'slow' implies a 
->performance cost, then he probably would have doubly missed this 
->aspect of jump_label_inc()/jump_label_dec().
->
->Thanks,
->
->	Ingo
+In order to address this issue, we need to cancel the previously set
+timer (schedule_delayed_work) and reset the timer if resetting timer is
+expected to trigger the delayed_work ealier.
 
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/cpufreq/cpufreq_ondemand.c |   58 +++++++++++++++++++++++++++++++++++-
+ 1 files changed, 57 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index c3e0652..2d66649 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -257,6 +257,62 @@ show_one(sampling_down_factor, sampling_down_factor);
+ show_one(ignore_nice_load, ignore_nice);
+ show_one(powersave_bias, powersave_bias);
+ 
++/**
++ * update_sampling_rate - update sampling rate effective immediately if needed.
++ * @new_rate: new sampling rate
++ *
++ * If new rate is smaller than the old, simply updaing
++ * dbs_tuners_int.sampling_rate might not be appropriate. For example,
++ * if the original sampling_rate was 1 second and the requested new sampling
++ * rate is 10 ms because the user needs immediate reaction from ondemand
++ * governor, but not sure if higher frequency will be required or not,
++ * then, the governor may change the sampling rate too late; up to 1 second
++ * later. Thus, if we are reducing the sampling rate, we need to make the
++ * new value effective immediately.
++ */
++static void update_sampling_rate(unsigned int new_rate)
++{
++	int cpu;
++
++	dbs_tuners_ins.sampling_rate = new_rate
++				     = max(new_rate, min_sampling_rate);
++
++	for_each_online_cpu(cpu) {
++		struct cpufreq_policy *policy;
++		struct cpu_dbs_info_s *dbs_info;
++		struct timer_list *timer;
++		unsigned long appointed_at;
++
++		policy = cpufreq_cpu_get(cpu);
++		if (!policy)
++			continue;
++		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
++		cpufreq_cpu_put(policy);
++
++		mutex_lock(&dbs_info->timer_mutex);
++
++		if (!delayed_work_pending(&dbs_info->work))
++			goto next;
++
++		timer = &dbs_info->work.timer;
++		appointed_at = timer->expires;
++
++		if (time_before(jiffies + usecs_to_jiffies(new_rate),
++				appointed_at)) {
++
++			mutex_unlock(&dbs_info->timer_mutex);
++			cancel_delayed_work_sync(&dbs_info->work);
++			mutex_lock(&dbs_info->timer_mutex);
++
++			schedule_delayed_work_on(dbs_info->cpu, &dbs_info->work,
++						 usecs_to_jiffies(new_rate));
++
++		}
++next:
++		mutex_unlock(&dbs_info->timer_mutex);
++	}
++}
++
+ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+ 				   const char *buf, size_t count)
+ {
+@@ -265,7 +321,7 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
+ 	ret = sscanf(buf, "%u", &input);
+ 	if (ret != 1)
+ 		return -EINVAL;
+-	dbs_tuners_ins.sampling_rate = max(input, min_sampling_rate);
++	update_sampling_rate(input);
+ 	return count;
+ }
+ 
 -- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+1.7.4.1
+
