@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2BVC3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 21:29:45 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:33410 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753346Ab2BVC3o (ORCPT
+	id S1755574Ab2BVCch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 21:32:37 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:47034 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab2BVCcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 21:29:44 -0500
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 Feb 2012 21:29:44 EST
-Subject: [PATCH] x86, tsc: Skip refined tsc calibration on systems with
-	reliable TSC.
-From: Alok Kataria <akataria@vmware.com>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>, dirk.brandewie@gmail.com,
-        alan@linux.intel.com, stable@kernel.org, Dan Hecht <dhecht@vmware.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1329876964.10380.28.camel@ank32.eng.vmware.com>
-References: <1329876964.10380.28.camel@ank32.eng.vmware.com>
-Content-Type: text/plain
-Date: Tue, 21 Feb 2012 18:19:55 -0800
-Message-Id: <1329877195.10380.33.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 Feb 2012 21:32:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <012701ccf108$67a1ef80$36e5ce80$%kim@samsung.com>
+References: <20120222124915.9414928ca50d8b181820c733@canb.auug.org.au>
+	<012701ccf108$67a1ef80$36e5ce80$%kim@samsung.com>
+Date: Wed, 22 Feb 2012 11:32:34 +0900
+X-Google-Sender-Auth: gtcik-KgVSfs65JSMWdbaFdZcCo
+Message-ID: <CAH9JG2UUznpqWyO-obQVTvTovBe1xBXNrFjSgnu9DH6xdecToA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the mmc tree with the s5p tree
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Chris Ball <cjb@laptop.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Oops forgot to copy LKML, now it is, sorry for the duplicates]
+Hi,
 
-While running the latest Linux as guest under VMware in highly
-over-committed situations, we have seen cases when the refined TSC
-algorithm fails to get a valid tsc_start value in
-tsc_refine_calibration_work from multiple attempts. As a result the
-kernel keeps on scheduling the tsc_irqwork task for later. Subsequently
-after several attempts when it gets a valid start value it goes through
-the refined calibration and either bails out or uses the new results.
-Given that the kernel originally read the TSC frequency from the
-platform, which is the best it can get, I don't think there is much
-value in refining it. 
+I'm really disappointed with samsung sdhci merge. we sent several
+patches, one month or two month ago. e.g., simple patch adding caps2
+overrides feature.
 
-So IMO, for systems which get the TSC frequency from the platform we
-should skip the refined tsc algorithm.
-        
-We can use the TSC_RELIABLE cpu cap flag to detect this, right now it is
-set only on VMware and for Moorestown Penwell both of which have there
-own TSC calibration methods.
-        
-Thanks,
-Alok
+To resolve these issue fianlly. can you move all mmc related things to
+include/linux/platform_da
+ta/ and controlled by mmc maintainer?
 
---
+I hope no more dependency with arch codes and drivers codes.
 
-From: Alok N Kataria <akataria@vmware.com>
+Thank you,
+Kyungmin Park
 
-For systems which get the TSC frequency directly from the platform
-and don't go through the native TSC calibration algorithm, we should
-trust those values and not try to refine those.
-
-This patch is applicable for kernel from v2.6.38 to current mainline.
-
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: stable@kernel.org
-
-
-Index: linux-2.6/arch/x86/kernel/tsc.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/tsc.c	2012-02-21 17:31:01.000000000 -0800
-+++ linux-2.6/arch/x86/kernel/tsc.c	2012-02-21 17:39:05.000000000 -0800
-@@ -874,6 +874,13 @@ static void tsc_refine_calibration_work(
- 		goto out;
- 
- 	/*
-+	 * Trust the results of the earlier calibration on systems
-+	 * exporting a reliable TSC.
-+	 */
-+	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
-+		goto out;
-+
-+	/*
- 	 * Since the work is started early in boot, we may be
- 	 * delayed the first time we expire. So set the workqueue
- 	 * again once we know timers are working.
-
-
+On 2/22/12, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Stephen Rothwell wrote:
+>>
+>> Hi Chris,
+>>
+> Hi Stephen,
+>
+>> Today's linux-next merge of the mmc tree got a conflict in
+>> drivers/mmc/host/sdhci-s3c.c between commit bd0955ed6b1b ("mmc:
+>> sdhci-s3c: add platform data for the second capability") from the s5p
+>> tree and commit 7880741a0625 ("mmc: sdhci-s3c: derive transfer width host
+>> capability from max_width in platform data") from the mmc tree.
+>>
+>> Just context changes.  I fixed it up (see below) and can carry the fix as
+>> necessary.
+>
+> Look ok to me, and let me carry following when it is required.
+>
+> Thanks.
+>
+> Best regards,
+> Kgene.
+> --
+> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+> SW Solution Development Team, Samsung Electronics Co., Ltd.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
