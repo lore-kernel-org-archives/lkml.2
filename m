@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2BVWGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:06:36 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37780 "EHLO ogre.sisk.pl"
+	id S1755917Ab2BVWGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:06:55 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37792 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755647Ab2BVWGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:06:35 -0500
+	id S1755744Ab2BVWGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 17:06:54 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
-Date: Wed, 22 Feb 2012 23:10:21 +0100
+Subject: Re: [RFC][PATCH 5/7] PM / Sleep: Implement opportunistic sleep
+Date: Wed, 22 Feb 2012 23:10:47 +0100
 User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
         Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
         Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
         Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
         Alan Stern <stern@rowland.harvard.edu>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <1329886179.2229.2.camel@js-netbook> <4F44AB09.9000606@linux.vnet.ibm.com>
-In-Reply-To: <4F44AB09.9000606@linux.vnet.ibm.com>
+References: <201202070200.55505.rjw@sisk.pl> <201202220035.48033.rjw@sisk.pl> <4F44AB34.9030704@linux.vnet.ibm.com>
+In-Reply-To: <4F44AB34.9030704@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Message-Id: <201202222310.21627.rjw@sisk.pl>
-X-Length: 15392
+Message-Id: <201202222310.47278.rjw@sisk.pl>
+X-Length: 42855
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
@@ -33,60 +33,184 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
-> On 02/22/2012 10:19 AM, John Stultz wrote:
+> On 02/22/2012 05:05 AM, Rafael J. Wysocki wrote:
 > 
-> > On Wed, 2012-02-22 at 00:31 +0100, Rafael J. Wysocki wrote:
-> >> Hi all,
-> >>
-> >> After the feedback so far I've decided to follow up with a refreshed patchset.
-> >> The first two patches from the previous one went to linux-pm/linux-next
-> >> and I included the recent evdev patch from Arve (with some modifications)
-> >> to this patchset for completness.
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
 > > 
-> > Hey Rafael, 
-> > 	Thanks again for posting this! I've started playing around with it in a
-> > kvm environment, and got the following warning after echoing off >
-> > autosleep:
-> > ...
-> > PM: resume of devices complete after 185.615 msecs
-> > PM: Finishing wakeup.
-> > Restarting tasks ... done.
-> > PM: Syncing filesystems ... done.
-> > PM: Preparing system for mem sleep
-> > Freezing user space processes ... 
-> > Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
-> > bash            D ffff880015714010 
+> > Introduce a mechanism by which the kernel can trigger global
+> > transitions to a sleep state chosen by user space if there are no
+> > active wakeup sources.
+> > 
+> > It consists of a new sysfs attribute, /sys/power/autosleep, that
+> > can be written one of the strings returned by reads from
+> > /sys/power/state, an ordered workqueue and a work item carrying out
+> > the "suspend" operations.  If a string representing the system's
+> > sleep state is written to /sys/power/autosleep, the work item
+> > triggering transitions to that state is queued up and it requeues
+> > itself after every execution until user space writes "off" to
+> > /sys/power/autosleep.
+> > 
+> > That work item enables the detection of wakeup events using the
+> > functions already defined in drivers/base/power/wakeup.c (with one
+> > small modification) and calls either pm_suspend(), or hibernate() to
+> > put the system into a sleep state.  If a wakeup event is reported
+> > while the transition is in progress, it will abort the transition and
+> > the "system suspend" work item will be queued up again.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  Documentation/ABI/testing/sysfs-power |   17 +++++
+> >  drivers/base/power/wakeup.c           |   38 ++++++-----
+> >  include/linux/suspend.h               |   13 +++-
+> >  kernel/power/Kconfig                  |    8 ++
+> >  kernel/power/Makefile                 |    1 
+> >  kernel/power/autosleep.c              |   98 ++++++++++++++++++++++++++++++
+> >  kernel/power/main.c                   |  108 ++++++++++++++++++++++++++++------
+> >  kernel/power/power.h                  |   18 +++++
+> >  8 files changed, 266 insertions(+), 35 deletions(-)
+> > 
+> > Index: linux/kernel/power/Makefile
+> > ===================================================================
+> > --- linux.orig/kernel/power/Makefile
+> > +++ linux/kernel/power/Makefile
+> > @@ -9,5 +9,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
+> >  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+> >  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+> >  				   block_io.o
+> > +obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
+> > 
+> >  obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+> > Index: linux/kernel/power/Kconfig
+> > ===================================================================
+> > --- linux.orig/kernel/power/Kconfig
+> > +++ linux/kernel/power/Kconfig
+> > @@ -103,6 +103,14 @@ config PM_SLEEP_SMP
+> >  	select HOTPLUG
+> >  	select HOTPLUG_CPU
+> > 
+> > +config PM_AUTOSLEEP
+> > +	bool "Opportunistic sleep"
+> > +	depends on PM_SLEEP
+> > +	default n
+> > +	---help---
+> > +	Allow the kernel to trigger a system transition into a global sleep
+> > +	state automatically whenever there are no active wakeup sources.
+> > +
+> >  config PM_RUNTIME
+> >  	bool "Run-time PM core functionality"
+> >  	depends on !IA64_HP_SIM
+> > Index: linux/kernel/power/power.h
+> > ===================================================================
+> > --- linux.orig/kernel/power/power.h
+> > +++ linux/kernel/power/power.h
+> > @@ -264,3 +264,21 @@ static inline void suspend_thaw_processe
+> >  {
+> >  }
+> >  #endif
+> > +
+> > +#ifdef CONFIG_PM_AUTOSLEEP
+> > +
+> > +/* kernel/power/autosleep.c */
+> > +extern int pm_autosleep_init(void);
+> > +extern void pm_autosleep_lock(void);
+> > +extern void pm_autosleep_unlock(void);
+> > +extern suspend_state_t pm_autosleep_state(void);
+> > +extern int pm_autosleep_set_state(suspend_state_t state);
+> > +
+> > +#else /* !CONFIG_PM_AUTOSLEEP */
+> > +
+> > +static inline int pm_autosleep_init(void) { return 0; }
+> > +static inline void pm_autosleep_lock(void) {}
+> > +static inline void pm_autosleep_unlock(void) {}
+> > +static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
+> > +
+> > +#endif /* !CONFIG_PM_AUTOSLEEP */
+> > Index: linux/include/linux/suspend.h
+> > ===================================================================
+> > --- linux.orig/include/linux/suspend.h
+> > +++ linux/include/linux/suspend.h
+> > @@ -356,7 +356,7 @@ extern int unregister_pm_notifier(struct
+> >  extern bool events_check_enabled;
+> > 
+> >  extern bool pm_wakeup_pending(void);
+> > -extern bool pm_get_wakeup_count(unsigned int *count);
+> > +extern bool pm_get_wakeup_count(unsigned int *count, bool block);
+> >  extern bool pm_save_wakeup_count(unsigned int count);
+> > 
+> >  static inline void lock_system_sleep(void)
+> > @@ -407,6 +407,17 @@ static inline void unlock_system_sleep(v
+> > 
+> >  #endif /* !CONFIG_PM_SLEEP */
+> > 
+> > +#ifdef CONFIG_PM_AUTOSLEEP
+> > +
+> > +/* kernel/power/autosleep.c */
+> > +void queue_up_suspend_work(void);
+> > +
+> > +#else /* !CONFIG_PM_AUTOSLEEP */
+> > +
+> > +static inline void queue_up_suspend_work(void) {}
+> > +
+> > +#endif /* !CONFIG_PM_AUTOSLEEP */
+> > +
+> >  #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
+> >  /*
+> >   * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
+> > Index: linux/kernel/power/autosleep.c
+> > ===================================================================
+> > --- /dev/null
+> > +++ linux/kernel/power/autosleep.c
+> > @@ -0,0 +1,98 @@
+> > +/*
+> > + * kernel/power/autosleep.c
+> > + *
+> > + * Opportunistic sleep support.
+> > + *
+> > + * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
+> > + */
+> > +
+> > +#include <linux/device.h>
+> > +#include <linux/mutex.h>
+> > +#include <linux/pm_wakeup.h>
+> > +
+> > +#include "power.h"
+> > +
+> > +static suspend_state_t autosleep_state;
+> > +static struct workqueue_struct *autosleep_wq;
+> > +static DEFINE_MUTEX(autosleep_lock);
+> > +
+> > +static void try_to_suspend(struct work_struct *work)
+> > +{
+> > +	unsigned int initial_count, final_count;
+> > +
+> > +	if (!pm_get_wakeup_count(&initial_count, true))
+> > +		goto out;
+> > +
+> > +	mutex_lock(&autosleep_lock);
+> > +
+> > +	if (!pm_save_wakeup_count(initial_count)) {
+> > +		mutex_unlock(&autosleep_lock);
+> > +		goto out;
+> > +	}
+> > +
+> > +	if (autosleep_state == PM_SUSPEND_ON) {
+> > +		mutex_unlock(&autosleep_lock);
+> > +		return;
+> > +	}
+> > +	if (autosleep_state >= PM_SUSPEND_MAX)
+> > +		hibernate();
+> > +	else
+> > +		pm_suspend(autosleep_state);
 > 
 > 
-> Ah.. I think I know what is the problem here..
-> 
-> The kernel was freezing userspace processes and meanwhile, you wrote "off"
-> to autosleep. So, as a result, this userspace process (bash) just now
-> entered kernel mode. Unfortunately, the autosleep_lock is held for too long,
-> that is, something like:
-> 
-> acquire autosleep_lock
-> modify autosleep_state
->                                <============== "A"
->  pm_suspend or hibernate()
-> 
-> release autosleep_lock
-> 
-> At point marked "A", we should have released the autosleep lock and only then
-> entered pm_suspend or hibernate(). Since the current code holds the lock and
-> enters suspend/hibernate, the userspace process that wrote "off" to autosleep
-> (or even userspace process that writes to /sys/power/state will end up waiting
-> on autosleep_lock, thus failing the freezing operation.)
-> 
-> So the solution is to always release the autosleep lock before entering
-> suspend/hibernation.
+> We are calling pm_suspend() or hibernate() directly here.
+> Won't this break build when CONFIG_SUSPEND or CONFIG_HIBERNATION is not set?
+> CONFIG_PM_AUTOSLEEP depends only on PM_SLEEP which means we could enable
+> either one of suspend or hibernation and yet come to this point, breaking
+> the option which was not enabled.
 
-Well, the autosleep lock is intentionally held around suspend/hibernation in
-try_to_suspend(), because otherwise it would be possible to trigger automatic
-suspend right after user space has disabled it.
-
-I think the solution is to make pm_autosleep_lock() do a _trylock() and
-return error code if already locked.
+Both pm_suspend() and hibernate() have appropriate static inline definitions
+for !CONFIG_SUSPEND and !CONFIG_HIBERNATION (in suspend.h), as far as I can say.
 
 Thanks,
 Rafael
