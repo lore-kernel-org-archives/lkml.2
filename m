@@ -1,239 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab2BVBrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:47:03 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39482 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab2BVBp5 (ORCPT
+	id S1752600Ab2BVBrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:47:12 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab2BVBrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:45:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.229.77.31 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/5] x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
-Date: Tue, 21 Feb 2012 21:45:41 -0400
-Message-Id: <1329875144-560-3-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329875144-560-1-git-send-email-kjwinchester@gmail.com>
-References: <20120221153935.GE2486@x1.osrc.amd.com>
- <1329875144-560-1-git-send-email-kjwinchester@gmail.com>
+	Tue, 21 Feb 2012 20:47:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.129.105 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCHSET] blkcg: accumulated blkcg updates
+Date: Tue, 21 Feb 2012 17:46:27 -0800
+Message-Id: <1329875223-5102-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the various code paths using this field as it
-groups the per-cpu data together.
+Hello, Jens.
 
-Acked-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- arch/x86/include/asm/processor.h      |    1 +
- arch/x86/include/asm/smp.h            |    1 -
- arch/x86/kernel/apic/apic_numachip.c  |    2 +-
- arch/x86/kernel/cpu/amd.c             |   14 ++++----------
- arch/x86/kernel/cpu/common.c          |    1 +
- arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
- arch/x86/kernel/smpboot.c             |   18 ++++++++----------
- 7 files changed, 17 insertions(+), 31 deletions(-)
+This is accumulation of the following three patchsets on top of
+block/for-linus - 621032ad6e "block: exit_io_context() should call
+elevator_exit_icq_fn()".
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 9642867..2ba6d0e 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -112,6 +112,7 @@ struct cpuinfo_x86 {
- 	u32			microcode;
- 	/* CPUs sharing the last level cache: */
- 	cpumask_t		llc_shared_map;
-+	u16			llc_id;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 61ebe324..40d1c96 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -33,7 +33,6 @@ static inline bool cpu_has_ht_siblings(void)
- 
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
--DECLARE_PER_CPU(u16, cpu_llc_id);
- DECLARE_PER_CPU(int, cpu_number);
- 
- static inline struct cpumask *cpu_sibling_mask(int cpu)
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 09d3d8c..73c46cf 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -202,7 +202,7 @@ static void __init map_csrs(void)
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
- 	c->phys_proc_id = node;
--	per_cpu(cpu_llc_id, smp_processor_id()) = node;
-+	c->llc_id = node;
- }
- 
- static int __init numachip_system_init(void)
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 0a44b90..1cd9d51 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -268,7 +268,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- {
- 	u32 nodes, cores_per_cu = 1;
- 	u8 node_id;
--	int cpu = smp_processor_id();
- 
- 	/* get information required for multi-node processors */
- 	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-@@ -301,7 +300,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- 		cus_per_node = cores_per_node / cores_per_cu;
- 
- 		/* store NodeID, use llc_shared_map to store sibling info */
--		per_cpu(cpu_llc_id, cpu) = node_id;
-+		c->llc_id = node_id;
- 
- 		/* core id has to be in the [0 .. cores_per_node - 1] range */
- 		c->cpu_core_id %= cores_per_node;
-@@ -318,7 +317,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- {
- #ifdef CONFIG_X86_HT
- 	unsigned bits;
--	int cpu = smp_processor_id();
- 
- 	bits = c->x86_coreid_bits;
- 	/* Low order bits define the core id (index of core in socket) */
-@@ -326,18 +324,14 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- 	/* Convert the initial APIC ID into the socket ID */
- 	c->phys_proc_id = c->initial_apicid >> bits;
- 	/* use socket ID also for last level cache */
--	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
-+	c->llc_id = c->phys_proc_id;
- 	amd_get_topology(c);
- #endif
- }
- 
- int amd_get_nb_id(int cpu)
- {
--	int id = 0;
--#ifdef CONFIG_SMP
--	id = per_cpu(cpu_llc_id, cpu);
--#endif
--	return id;
-+	return cpu_data(cpu).llc_id;
- }
- EXPORT_SYMBOL_GPL(amd_get_nb_id);
- 
-@@ -350,7 +344,7 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 
- 	node = numa_cpu_node(cpu);
- 	if (node == NUMA_NO_NODE)
--		node = per_cpu(cpu_llc_id, cpu);
-+		node = c->llc_id;
- 
- 	/*
- 	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 8b6a3bb..7052410 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -787,6 +787,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- 	c->x86_model_id[0] = '\0';  /* Unset */
- 	c->x86_max_cores = 1;
- 	c->x86_coreid_bits = 0;
-+	c->llc_id = BAD_APICID;
- #ifdef CONFIG_X86_64
- 	c->x86_clflush_size = 64;
- 	c->x86_phys_bits = 36;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index a9cd551..5ddd6ef 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -579,9 +579,6 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 	unsigned int new_l1d = 0, new_l1i = 0; /* Cache sizes from cpuid(4) */
- 	unsigned int new_l2 = 0, new_l3 = 0, i; /* Cache sizes from cpuid(4) */
- 	unsigned int l2_id = 0, l3_id = 0, num_threads_sharing, index_msb;
--#ifdef CONFIG_X86_HT
--	unsigned int cpu = c->cpu_index;
--#endif
- 
- 	if (c->cpuid_level > 3) {
- 		static int is_initialized;
-@@ -700,16 +697,12 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 
- 	if (new_l2) {
- 		l2 = new_l2;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l2_id;
--#endif
-+		c->llc_id = l2_id;
- 	}
- 
- 	if (new_l3) {
- 		l3 = new_l3;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l3_id;
--#endif
-+		c->llc_id = l3_id;
- 	}
- 
- 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 1c20aa2..fb2ef30 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -116,9 +116,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- int smp_num_siblings = 1;
- EXPORT_SYMBOL(smp_num_siblings);
- 
--/* Last level cache ID of each logical CPU */
--DEFINE_PER_CPU(u16, cpu_llc_id) = BAD_APICID;
--
- /* representing HT siblings of each logical CPU */
- DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
-@@ -353,7 +350,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 
- 			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
- 				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
-+				    c->llc_id == o->llc_id &&
- 				    c->compute_unit_id == o->compute_unit_id)
- 					link_thread_siblings(cpu, i);
- 			} else if (c->phys_proc_id == o->phys_proc_id &&
-@@ -374,12 +371,13 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
-+		struct cpuinfo_x86 *o = &cpu_data(i);
-+
-+		if (c->llc_id != BAD_APICID && c->llc_id == o->llc_id) {
- 			cpumask_set_cpu(i, &c->llc_shared_map);
--			cpumask_set_cpu(cpu, &cpu_data(i).llc_shared_map);
-+			cpumask_set_cpu(cpu, &o->llc_shared_map);
- 		}
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
-+		if (c->phys_proc_id == o->phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_core_mask(i));
- 			/*
-@@ -397,9 +395,9 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 				 * the other cpus in this package
- 				 */
- 				if (i != cpu)
--					cpu_data(i).booted_cores++;
-+					o->booted_cores++;
- 			} else if (i != cpu && !c->booted_cores)
--				c->booted_cores = cpu_data(i).booted_cores;
-+				c->booted_cores = o->booted_cores;
- 		}
- 	}
- }
--- 
-1.7.9
+[1] blkcg: kill policy node and blkg->dev, take#4
+[2] blkcg: unify blkgs for different policies
+[3] blkcg: update locking and fix stacking
 
+This patchset collects all three patchset into single series with all
+the updated versions of patches included.  There are also some minor
+changes for build fixes and typos.  Please refer to patch descriptions
+of each patchset for further details.
+
+This patchset contains the following 36 patches.
+
+  0001-block-blk-throttle-should-be-drained-regardless-of-q.patch
+  0002-blkcg-make-CONFIG_BLK_CGROUP-bool.patch
+  0003-cfq-don-t-register-propio-policy-if-CONFIG_CFQ_GROUP.patch
+  0004-elevator-clear-auxiliary-data-earlier-during-elevato.patch
+  0005-elevator-make-elevator_init_fn-return-0-errno.patch
+  0006-block-implement-blk_queue_bypass_start-end.patch
+  0007-block-extend-queue-bypassing-to-cover-blkcg-policies.patch
+  0008-blkcg-shoot-down-blkio_groups-on-elevator-switch.patch
+  0009-blkcg-move-rcu_read_lock-outside-of-blkio_group-get-.patch
+  0010-blkcg-update-blkg-get-functions-take-blkio_cgroup-as.patch
+  0011-blkcg-use-q-and-plid-instead-of-opaque-void-for-blki.patch
+  0012-blkcg-add-blkio_policy-array-and-allow-one-policy-pe.patch
+  0013-blkcg-use-the-usual-get-blkg-path-for-root-blkio_gro.patch
+  0014-blkcg-factor-out-blkio_group-creation.patch
+  0015-blkcg-don-t-allow-or-retain-configuration-of-missing.patch
+  0016-blkcg-kill-blkio_policy_node.patch
+  0017-blkcg-kill-the-mind-bending-blkg-dev.patch
+
+  0018-blkcg-let-blkio_group-point-to-blkio_cgroup-directly.patch
+  0019-blkcg-add-blkcg_-init-drain-exit-_queue.patch
+  0020-blkcg-clear-all-request_queues-on-blkcg-policy-un-re.patch
+  0021-blkcg-let-blkcg-core-handle-policy-private-data-allo.patch
+  0022-blkcg-move-refcnt-to-blkcg-core.patch
+  0023-blkcg-make-blkg-pd-an-array-and-move-configuration-a.patch
+  0024-blkcg-don-t-use-blkg-plid-in-stat-related-functions.patch
+  0025-blkcg-move-per-queue-blkg-list-heads-and-counters-to.patch
+  0026-blkcg-let-blkcg-core-manage-per-queue-blkg-list-and-.patch
+  0027-blkcg-unify-blkg-s-for-blkcg-policies.patch
+  0028-blkcg-use-double-locking-instead-of-RCU-for-blkg-syn.patch
+  0029-blkcg-drop-unnecessary-RCU-locking.patch
+
+  0030-block-restructure-get_request.patch
+  0031-block-interface-update-for-ioc-icq-creation-function.patch
+  0032-block-ioc_task_link-can-t-fail.patch
+  0033-block-add-io_context-active_ref.patch
+  0034-block-implement-bio_associate_current.patch
+  0035-block-make-block-cgroup-policies-follow-bio-task-ass.patch
+  0036-block-make-blk-throttle-preserve-the-issuing-task-on.patch
+
+0001-0017 kill policy node and blkg->dev and also available in the
+following git branch.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-kill-pn
+
+0018-0029 unify blkgs for different policies and update locking.  Note
+that 0028 and 0029 belonged to the third patchset in the original
+posting.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-unified-blkg
+
+0030-0036 fix stacking of blkcg policies.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-stacking
+
+Thank you.
+
+diffstat follows.
+
+ block/Kconfig.iosched     |    4 
+ block/blk-cgroup.c        | 1258 ++++++++++++++++++++++++----------------------
+ block/blk-cgroup.h        |  286 ++++++----
+ block/blk-core.c          |  179 ++++--
+ block/blk-ioc.c           |   58 +-
+ block/blk-sysfs.c         |    6 
+ block/blk-throttle.c      |  450 +++-------------
+ block/blk.h               |   32 -
+ block/cfq-iosched.c       |  509 +++++-------------
+ block/cfq.h               |  113 ++--
+ block/deadline-iosched.c  |    8 
+ block/elevator.c          |  123 +---
+ block/noop-iosched.c      |    8 
+ fs/bio.c                  |   61 ++
+ include/linux/bio.h       |    8 
+ include/linux/blk_types.h |   10 
+ include/linux/blkdev.h    |   12 
+ include/linux/elevator.h  |    8 
+ include/linux/iocontext.h |   32 -
+ init/Kconfig              |    2 
+ kernel/fork.c             |    5 
+ 21 files changed, 1521 insertions(+), 1651 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1247152
+[2] http://thread.gmane.org/gmane.linux.kernel/1247287
+[3] http://thread.gmane.org/gmane.linux.kernel/1254428
