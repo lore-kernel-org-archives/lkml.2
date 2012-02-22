@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab2BVByj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:54:39 -0500
+	id S1754856Ab2BVBy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:54:59 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab2BVBrV (ORCPT
+	with ESMTP id S1754697Ab2BVBrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:47:21 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.216.132 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Tue, 21 Feb 2012 20:47:17 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.220.71 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/36] block: implement blk_queue_bypass_start/end()
-Date: Tue, 21 Feb 2012 17:46:33 -0800
-Message-Id: <1329875223-5102-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/36] elevator: clear auxiliary data earlier during elevator switch
+Date: Tue, 21 Feb 2012 17:46:31 -0800
+Message-Id: <1329875223-5102-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
@@ -22,190 +22,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename and extend elv_queisce_start/end() to
-blk_queue_bypass_start/end() which are exported and supports nesting
-via @q->bypass_depth.  Also add blk_queue_bypass() to test bypass
-state.
+Elevator switch tries hard to keep as much as context until new
+elevator is ready so that it can revert to the original state if
+initializing the new elevator fails for some reason.  Unfortunately,
+with more auxiliary contexts to manage, this makes elevator init and
+exit paths too complex and fragile.
 
-This will be further extended and used for blkio_group management.
+This patch makes elevator_switch() unregister the current elevator and
+flush icq's before start initializing the new one.  As we still keep
+the old elevator itself, the only difference is that we lose icq's on
+rare occassions of switching failure, which isn't critical at all.
+
+Note that this makes explicit elevator parameter to
+elevator_init_queue() and __elv_register_queue() unnecessary as they
+always can use the current elevator.
+
+This patch enables block cgroup cleanups.
+
+-v2: blk_add_trace_msg() prints elevator name from @new_e instead of
+     @e->type as the local variable no longer exists.  This caused
+     build failure on CONFIG_BLK_DEV_IO_TRACE.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c       |   39 +++++++++++++++++++++++++++++++++++++--
- block/blk.h            |    6 ++----
- block/elevator.c       |   25 +++----------------------
- include/linux/blkdev.h |    5 ++++-
- 4 files changed, 46 insertions(+), 29 deletions(-)
+ block/elevator.c |   90 +++++++++++++++++++++++++++---------------------------
+ 1 files changed, 45 insertions(+), 45 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 7752ec2..bf6332c 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -410,6 +410,42 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- }
- 
- /**
-+ * blk_queue_bypass_start - enter queue bypass mode
-+ * @q: queue of interest
-+ *
-+ * In bypass mode, only the dispatch FIFO queue of @q is used.  This
-+ * function makes @q enter bypass mode and drains all requests which were
-+ * issued before.  On return, it's guaranteed that no request has ELVPRIV
-+ * set.
-+ */
-+void blk_queue_bypass_start(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->bypass_depth++;
-+	queue_flag_set(QUEUE_FLAG_BYPASS, q);
-+	spin_unlock_irq(q->queue_lock);
-+
-+	blk_drain_queue(q, false);
-+}
-+EXPORT_SYMBOL_GPL(blk_queue_bypass_start);
-+
-+/**
-+ * blk_queue_bypass_end - leave queue bypass mode
-+ * @q: queue of interest
-+ *
-+ * Leave bypass mode and restore the normal queueing behavior.
-+ */
-+void blk_queue_bypass_end(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!--q->bypass_depth)
-+		queue_flag_clear(QUEUE_FLAG_BYPASS, q);
-+	WARN_ON_ONCE(q->bypass_depth < 0);
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL_GPL(blk_queue_bypass_end);
-+
-+/**
-  * blk_cleanup_queue - shutdown a request queue
-  * @q: request queue to shutdown
-  *
-@@ -861,8 +897,7 @@ retry:
- 	 * Also, lookup icq while holding queue_lock.  If it doesn't exist,
- 	 * it will be created after releasing queue_lock.
- 	 */
--	if (blk_rq_should_init_elevator(bio) &&
--	    !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags)) {
-+	if (blk_rq_should_init_elevator(bio) && !blk_queue_bypass(q)) {
- 		rw_flags |= REQ_ELVPRIV;
- 		rl->elvpriv++;
- 		if (et->icq_cache && ioc)
-diff --git a/block/blk.h b/block/blk.h
-index 9c12f80..7422f31 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -23,7 +23,8 @@ void blk_rq_bio_prep(struct request_queue *q, struct request *rq,
- 			struct bio *bio);
- int blk_rq_append_bio(struct request_queue *q, struct request *rq,
- 		      struct bio *bio);
--void blk_drain_queue(struct request_queue *q, bool drain_all);
-+void blk_queue_bypass_start(struct request_queue *q);
-+void blk_queue_bypass_end(struct request_queue *q);
- void blk_dequeue_request(struct request *rq);
- void __blk_queue_free_tags(struct request_queue *q);
- bool __blk_end_bidi_request(struct request *rq, int error,
-@@ -144,9 +145,6 @@ void blk_queue_congestion_threshold(struct request_queue *q);
- 
- int blk_dev_init(void);
- 
--void elv_quiesce_start(struct request_queue *q);
--void elv_quiesce_end(struct request_queue *q);
--
- 
- /*
-  * Return the threshold (number of used requests) at which the queue is
 diff --git a/block/elevator.c b/block/elevator.c
-index f81c061..0bdea0e 100644
+index f016855..f8c08e1 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
-@@ -553,25 +553,6 @@ void elv_drain_elevator(struct request_queue *q)
- 	}
+@@ -121,11 +121,10 @@ static struct elevator_type *elevator_get(const char *name)
+ 	return e;
  }
  
--void elv_quiesce_start(struct request_queue *q)
--{
--	if (!q->elevator)
--		return;
--
--	spin_lock_irq(q->queue_lock);
--	queue_flag_set(QUEUE_FLAG_ELVSWITCH, q);
--	spin_unlock_irq(q->queue_lock);
--
--	blk_drain_queue(q, false);
--}
--
--void elv_quiesce_end(struct request_queue *q)
--{
--	spin_lock_irq(q->queue_lock);
--	queue_flag_clear(QUEUE_FLAG_ELVSWITCH, q);
--	spin_unlock_irq(q->queue_lock);
--}
--
- void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+-static int elevator_init_queue(struct request_queue *q,
+-			       struct elevator_queue *eq)
++static int elevator_init_queue(struct request_queue *q)
  {
- 	trace_block_rq_insert(q, rq);
-@@ -903,7 +884,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
- 	 * using INSERT_BACK.  All requests have SOFTBARRIER set and no
- 	 * merge happens either.
- 	 */
--	elv_quiesce_start(q);
-+	blk_queue_bypass_start(q);
- 
- 	/* unregister and clear all auxiliary data of the old elevator */
- 	if (registered)
-@@ -933,7 +914,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
- 
- 	/* done, kill the old one and finish */
- 	elevator_exit(old);
--	elv_quiesce_end(q);
-+	blk_queue_bypass_end(q);
- 
- 	blk_add_trace_msg(q, "elv switch: %s", new_e->elevator_name);
- 
-@@ -945,7 +926,7 @@ fail_init:
- 	/* switch failed, restore and re-register old elevator */
- 	q->elevator = old;
- 	elv_register_queue(q);
--	elv_quiesce_end(q);
-+	blk_queue_bypass_end(q);
- 
- 	return err;
+-	eq->elevator_data = eq->type->ops.elevator_init_fn(q);
+-	if (eq->elevator_data)
++	q->elevator->elevator_data = q->elevator->type->ops.elevator_init_fn(q);
++	if (q->elevator->elevator_data)
+ 		return 0;
+ 	return -ENOMEM;
  }
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 606cf33..315db1d 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -389,6 +389,8 @@ struct request_queue {
+@@ -188,7 +187,6 @@ static void elevator_release(struct kobject *kobj)
+ int elevator_init(struct request_queue *q, char *name)
+ {
+ 	struct elevator_type *e = NULL;
+-	struct elevator_queue *eq;
+ 	int err;
  
- 	struct mutex		sysfs_lock;
+ 	if (unlikely(q->elevator))
+@@ -222,17 +220,16 @@ int elevator_init(struct request_queue *q, char *name)
+ 		}
+ 	}
  
-+	int			bypass_depth;
+-	eq = elevator_alloc(q, e);
+-	if (!eq)
++	q->elevator = elevator_alloc(q, e);
++	if (!q->elevator)
+ 		return -ENOMEM;
+ 
+-	err = elevator_init_queue(q, eq);
++	err = elevator_init_queue(q);
+ 	if (err) {
+-		kobject_put(&eq->kobj);
++		kobject_put(&q->elevator->kobj);
+ 		return err;
+ 	}
+ 
+-	q->elevator = eq;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(elevator_init);
+@@ -801,8 +798,9 @@ static struct kobj_type elv_ktype = {
+ 	.release	= elevator_release,
+ };
+ 
+-int __elv_register_queue(struct request_queue *q, struct elevator_queue *e)
++int elv_register_queue(struct request_queue *q)
+ {
++	struct elevator_queue *e = q->elevator;
+ 	int error;
+ 
+ 	error = kobject_add(&e->kobj, &q->kobj, "%s", "iosched");
+@@ -820,11 +818,6 @@ int __elv_register_queue(struct request_queue *q, struct elevator_queue *e)
+ 	}
+ 	return error;
+ }
+-
+-int elv_register_queue(struct request_queue *q)
+-{
+-	return __elv_register_queue(q, q->elevator);
+-}
+ EXPORT_SYMBOL(elv_register_queue);
+ 
+ void elv_unregister_queue(struct request_queue *q)
+@@ -907,51 +900,58 @@ EXPORT_SYMBOL_GPL(elv_unregister);
+  */
+ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ {
+-	struct elevator_queue *old_elevator, *e;
++	struct elevator_queue *old = q->elevator;
++	bool registered = old->registered;
+ 	int err;
+ 
+-	/* allocate new elevator */
+-	e = elevator_alloc(q, new_e);
+-	if (!e)
+-		return -ENOMEM;
+-
+-	err = elevator_init_queue(q, e);
+-	if (err) {
+-		kobject_put(&e->kobj);
+-		return err;
+-	}
+-
+-	/* turn on BYPASS and drain all requests w/ elevator private data */
++	/*
++	 * Turn on BYPASS and drain all requests w/ elevator private data.
++	 * Block layer doesn't call into a quiesced elevator - all requests
++	 * are directly put on the dispatch list without elevator data
++	 * using INSERT_BACK.  All requests have SOFTBARRIER set and no
++	 * merge happens either.
++	 */
+ 	elv_quiesce_start(q);
+ 
+-	/* unregister old queue, register new one and kill old elevator */
+-	if (q->elevator->registered) {
++	/* unregister and clear all auxiliary data of the old elevator */
++	if (registered)
+ 		elv_unregister_queue(q);
+-		err = __elv_register_queue(q, e);
+-		if (err)
+-			goto fail_register;
+-	}
+ 
+-	/* done, clear io_cq's, switch elevators and turn off BYPASS */
+ 	spin_lock_irq(q->queue_lock);
+ 	ioc_clear_queue(q);
+-	old_elevator = q->elevator;
+-	q->elevator = e;
+ 	spin_unlock_irq(q->queue_lock);
+ 
+-	elevator_exit(old_elevator);
++	/* allocate, init and register new elevator */
++	err = -ENOMEM;
++	q->elevator = elevator_alloc(q, new_e);
++	if (!q->elevator)
++		goto fail_init;
 +
- #if defined(CONFIG_BLK_DEV_BSG)
- 	bsg_job_fn		*bsg_job_fn;
- 	int			bsg_job_size;
-@@ -406,7 +408,7 @@ struct request_queue {
- #define	QUEUE_FLAG_SYNCFULL	3	/* read queue has been filled */
- #define QUEUE_FLAG_ASYNCFULL	4	/* write queue has been filled */
- #define QUEUE_FLAG_DEAD		5	/* queue being torn down */
--#define QUEUE_FLAG_ELVSWITCH	6	/* don't use elevator, just do FIFO */
-+#define QUEUE_FLAG_BYPASS	6	/* act as dumb FIFO queue */
- #define QUEUE_FLAG_BIDI		7	/* queue supports bidi requests */
- #define QUEUE_FLAG_NOMERGES     8	/* disable merge attempts */
- #define QUEUE_FLAG_SAME_COMP	9	/* complete on same CPU-group */
-@@ -494,6 +496,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
- #define blk_queue_tagged(q)	test_bit(QUEUE_FLAG_QUEUED, &(q)->queue_flags)
- #define blk_queue_stopped(q)	test_bit(QUEUE_FLAG_STOPPED, &(q)->queue_flags)
- #define blk_queue_dead(q)	test_bit(QUEUE_FLAG_DEAD, &(q)->queue_flags)
-+#define blk_queue_bypass(q)	test_bit(QUEUE_FLAG_BYPASS, &(q)->queue_flags)
- #define blk_queue_nomerges(q)	test_bit(QUEUE_FLAG_NOMERGES, &(q)->queue_flags)
- #define blk_queue_noxmerges(q)	\
- 	test_bit(QUEUE_FLAG_NOXMERGES, &(q)->queue_flags)
++	err = elevator_init_queue(q);
++	if (err) {
++		kobject_put(&q->elevator->kobj);
++		goto fail_init;
++	}
++
++	if (registered) {
++		err = elv_register_queue(q);
++		if (err)
++			goto fail_register;
++	}
++
++	/* done, kill the old one and finish */
++	elevator_exit(old);
+ 	elv_quiesce_end(q);
+ 
+-	blk_add_trace_msg(q, "elv switch: %s", e->type->elevator_name);
++	blk_add_trace_msg(q, "elv switch: %s", new_e->elevator_name);
+ 
+ 	return 0;
+ 
+ fail_register:
+-	/*
+-	 * switch failed, exit the new io scheduler and reattach the old
+-	 * one again (along with re-adding the sysfs dir)
+-	 */
+-	elevator_exit(e);
++	elevator_exit(q->elevator);
++fail_init:
++	/* switch failed, restore and re-register old elevator */
++	q->elevator = old;
+ 	elv_register_queue(q);
+ 	elv_quiesce_end(q);
+ 
 -- 
 1.7.7.3
 
