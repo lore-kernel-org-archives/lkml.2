@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab2BVQMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:12:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51108 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2BVQMb (ORCPT
+	id S1753979Ab2BVQNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:13:11 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58214 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab2BVQNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:12:31 -0500
-Date: Wed, 22 Feb 2012 08:11:30 -0800
-From: "tip-bot for Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Message-ID: <tip-62f6536a630affe3176deb48554d27ee58b65077@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, nikunj@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, nikunj@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20120217030409.11748.12491.stgit@abhimanyu>
-References: <20120217030409.11748.12491.stgit@abhimanyu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Remove rcu_read_lock/unlock()
-  from select_idle_sibling()
-Git-Commit-ID: 62f6536a630affe3176deb48554d27ee58b65077
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Feb 2012 11:13:06 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:11:58 -0800 (PST)
+In-Reply-To: <1329903139.2193.66.camel@perseus.themaw.net>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net> <1329890027.2193.48.camel@perseus.themaw.net>
+ <1329890251.2193.50.camel@perseus.themaw.net> <1329903139.2193.66.camel@perseus.themaw.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 08:12:45 -0800
+X-Google-Sender-Auth: l4jD_pC8bXU_y3Y5oP6tI91X_cg
+Message-ID: <CA+55aFwkYkSC1O=fWtj1CBAeKDP-ogEL4Mai8U-dd2uCMArppw@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: Ian Kent <raven@themaw.net>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62f6536a630affe3176deb48554d27ee58b65077
-Gitweb:     http://git.kernel.org/tip/62f6536a630affe3176deb48554d27ee58b65077
-Author:     Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-AuthorDate: Fri, 17 Feb 2012 08:34:30 +0530
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 12:28:28 +0100
+On Wed, Feb 22, 2012 at 1:32 AM, Ian Kent <raven@themaw.net> wrote:
+>
+> Oh, DOH ...
+>
+> The process mounting the autofs mount is passing the pipe it will use
+> for communication via a mount option so we can do this right in
+> fill_super.
 
-sched: Remove rcu_read_lock/unlock() from select_idle_sibling()
+No, we really cannot.
 
-select_idle_sibling() is called from select_task_rq_fair(), which
-already has the RCU read lock held.
+The autofs "mount" is done by fork + execve("mount").
 
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120217030409.11748.12491.stgit@abhimanyu
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/fair.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+So fill_super doesn't actually see the *daemon*. It sees the mount binary.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4ab60a2..6ce9992 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2670,8 +2670,6 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	/*
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
--	rcu_read_lock();
--
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
- 	for_each_lower_domain(sd) {
- 		sg = sd->groups;
-@@ -2693,8 +2691,6 @@ next:
- 		} while (sg != sd->groups);
- 	}
- done:
--	rcu_read_unlock();
--
- 	return target;
- }
- 
+So if you have a 64-bit mount binary, and a 32-bit daemon, you're screwed again.
+
+                     Linus
