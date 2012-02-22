@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab2BVWEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:04:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37883 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2BVWEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:04:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.229.33 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Wed, 22 Feb 2012 14:04:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
-Message-ID: <20120222220404.GB22536@google.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <20120222193429.GA7635@redhat.com>
+	id S1755761Ab2BVWGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:06:36 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37780 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755647Ab2BVWGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 17:06:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 0/7] PM: Implement autosleep and "wake locks", take2
+Date: Wed, 22 Feb 2012 23:10:21 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: John Stultz <john.stultz@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+References: <201202070200.55505.rjw@sisk.pl> <1329886179.2229.2.camel@js-netbook> <4F44AB09.9000606@linux.vnet.ibm.com>
+In-Reply-To: <4F44AB09.9000606@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222193429.GA7635@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201202222310.21627.rjw@sisk.pl>
+X-Length: 15392
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Feb 22, 2012 at 02:34:29PM -0500, Vivek Goyal wrote:
-> This series looks good to me. We just need two more pieces which need
-> to be pushed along with this series.
->
-> - Do not cleanup all blkg upon policy change. Just reclaim policy
->   data/blkg which belong to policy.
+On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
+> On 02/22/2012 10:19 AM, John Stultz wrote:
 > 
-> - per cpu stat allocation from async context. 
+> > On Wed, 2012-02-22 at 00:31 +0100, Rafael J. Wysocki wrote:
+> >> Hi all,
+> >>
+> >> After the feedback so far I've decided to follow up with a refreshed patchset.
+> >> The first two patches from the previous one went to linux-pm/linux-next
+> >> and I included the recent evdev patch from Arve (with some modifications)
+> >> to this patchset for completness.
+> > 
+> > Hey Rafael, 
+> > 	Thanks again for posting this! I've started playing around with it in a
+> > kvm environment, and got the following warning after echoing off >
+> > autosleep:
+> > ...
+> > PM: resume of devices complete after 185.615 msecs
+> > PM: Finishing wakeup.
+> > Restarting tasks ... done.
+> > PM: Syncing filesystems ... done.
+> > PM: Preparing system for mem sleep
+> > Freezing user space processes ... 
+> > Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
+> > bash            D ffff880015714010 
+> 
+> 
+> Ah.. I think I know what is the problem here..
+> 
+> The kernel was freezing userspace processes and meanwhile, you wrote "off"
+> to autosleep. So, as a result, this userspace process (bash) just now
+> entered kernel mode. Unfortunately, the autosleep_lock is held for too long,
+> that is, something like:
+> 
+> acquire autosleep_lock
+> modify autosleep_state
+>                                <============== "A"
+>  pm_suspend or hibernate()
+> 
+> release autosleep_lock
+> 
+> At point marked "A", we should have released the autosleep lock and only then
+> entered pm_suspend or hibernate(). Since the current code holds the lock and
+> enters suspend/hibernate, the userspace process that wrote "off" to autosleep
+> (or even userspace process that writes to /sys/power/state will end up waiting
+> on autosleep_lock, thus failing the freezing operation.)
+> 
+> So the solution is to always release the autosleep lock before entering
+> suspend/hibernation.
 
-Yeah, I'm getting to this now.  Two more things I wanna do are
+Well, the autosleep lock is intentionally held around suspend/hibernation in
+try_to_suspend(), because otherwise it would be possible to trigger automatic
+suspend right after user space has disabled it.
 
-- Moving stats and configurations to blkg policies instead of putting
-  them in blk-cgroup.c and then pipe to cgroup policies.  This will
-  require updates to cgroup to allow live removal / addition of cgroup
-  files on existing cgroup directories.  Should be doable but I'm a
-  bit skeptical cgroup is implementing proper sever mechanism on files
-  and if not we're gonna have to implement that first.
+I think the solution is to make pm_autosleep_lock() do a _trylock() and
+return error code if already locked.
 
-- Make enabled policies per-queue.
-
-Thanks.
-
--- 
-tejun
+Thanks,
+Rafael
