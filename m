@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab2BVVHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:07:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35397 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab2BVVHB (ORCPT
+	id S1754655Ab2BVVUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:20:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46694 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab2BVVUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:07:01 -0500
-Date: Wed, 22 Feb 2012 13:06:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: hugetlb: bail out unmapping after serving reference
- page
-Message-Id: <20120222130659.d75b6f69.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBALNtedfq+PLPnGKd4i4D0mLiVPdW_7pWWopnSZNC_vqA@mail.gmail.com>
-References: <CAJd=RBALNtedfq+PLPnGKd4i4D0mLiVPdW_7pWWopnSZNC_vqA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Feb 2012 16:20:11 -0500
+Date: Wed, 22 Feb 2012 13:19:28 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: stable@vger.kernel.org, Raphael Prevost <raphael@buro.asia>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] i387: stable kernel backport
+Message-ID: <20120222211928.GA4448@kroah.com>
+References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012 20:35:34 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
-
-> When unmapping given VM range, we could bail out if a reference page is
-> supplied and it is unmapped, which is a minor optimization.
+On Wed, Feb 22, 2012 at 12:54:58PM -0800, Linus Torvalds wrote:
 > 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
+> This is a reasonably minimal backport of the i387 state save/restore bug.
 > 
-> --- a/mm/hugetlb.c	Wed Feb 22 19:34:12 2012
-> +++ b/mm/hugetlb.c	Wed Feb 22 19:50:26 2012
-> @@ -2280,6 +2280,9 @@ void __unmap_hugepage_range(struct vm_ar
->  		if (pte_dirty(pte))
->  			set_page_dirty(page);
->  		list_add(&page->lru, &page_list);
-> +
-> +		if (page == ref_page)
-> +			break;
->  	}
->  	spin_unlock(&mm->page_table_lock);
->  	flush_tlb_range(vma, start, end);
+> A few of the commits are just minimal "make it easier to backport" commits 
+> that don't necessarily fix anything on their own.  And a few of the others 
+> are combinations of what is two commits in the development tree, because 
+> it turned out to be easier and cleaner that way.
+> 
+> The last one is the one that fixes the x86-32 bug, but the preemption 
+> fixes are real fixes too, although they are probably not something that 
+> anybody has necessarily ever hit in reality because the race window is so 
+> small.  Even so, if the fix itself isn't that important, the "make it 
+> easier to backport the main one" would still be a big argument for it.
+> 
+> I *really* hope that the people who could reproduce this bug will test the 
+> back-port series too, since I never actually saw the bug personally to 
+> begin with. And again, big thanks to Raphael who helped pinpoint and debug 
+> this.
 
-Perhaps add a little comment to this explaining what's going on?
+Thanks for doing the backport.  Any ideas on how far back this problem
+goes?
 
+thanks,
 
-It would be sufficient to do
-
-	if (ref_page)
-		break;
-
-This is more efficient, and doesn't make people worry about whether
-this value of `page' is the same as the one which
-pte_page(huge_ptep_get()) earlier returned.
-
-Why do we evaluate `page' twice inside that loop anyway?  And why do we
-check for huge_pte_none() twice?  It looks all messed up.
-
-
-
+greg k-h
