@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2BVJo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:44:28 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:35167 "EHLO
+	id S1755528Ab2BVJo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:44:26 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39334 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2BVJkD (ORCPT
+	with ESMTP id S1754662Ab2BVJkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Feb 2012 04:40:03 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 04/19] ARM: at91: make ST (System Timer) soc independent
-Date: Wed, 22 Feb 2012 10:39:30 +0100
-Message-Id: <2e097094e21f7093c7019cbb8956eb15f84d7355.1329903206.git.nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk
+Subject: [PATCH v2 10/19] ARM: at91/pm_slowclock: add runtime detection of memory contoller
+Date: Wed, 22 Feb 2012 10:39:36 +0100
+Message-Id: <7784144620607f17628a0c65b8fa1f670ee75fd1.1329903206.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
@@ -25,280 +24,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
+This will allow to have all SoC in one kernel image.
+
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/at91rm9200.c              |    5 ++-
- arch/arm/mach-at91/at91rm9200_time.c         |   37 ++++++++++++++++----------
- arch/arm/mach-at91/generic.h                 |    1 +
- arch/arm/mach-at91/include/mach/at91_st.h    |   32 +++++++++++++++-------
- arch/arm/mach-at91/include/mach/at91rm9200.h |    2 +-
- drivers/watchdog/at91rm9200_wdt.c            |    8 +++---
- 6 files changed, 54 insertions(+), 31 deletions(-)
+ arch/arm/mach-at91/include/mach/at91_ramc.h |    9 ++--
+ arch/arm/mach-at91/pm.c                     |   15 +++++-
+ arch/arm/mach-at91/pm_slowclock.S           |   66 +++++++++++++++++++++------
+ 3 files changed, 68 insertions(+), 22 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index dd6e2de..ebe597b 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -303,8 +303,8 @@ static void at91rm9200_restart(char mode, const char *cmd)
- 	/*
- 	 * Perform a hardware reset with the use of the Watchdog timer.
- 	 */
--	at91_sys_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
--	at91_sys_write(AT91_ST_CR, AT91_ST_WDRST);
-+	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
-+	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
- }
- 
- /* --------------------------------------------------------------------
-@@ -319,6 +319,7 @@ static void __init at91rm9200_map_io(void)
- 
- static void __init at91rm9200_ioremap_registers(void)
- {
-+	at91rm9200_ioremap_st(AT91RM9200_BASE_ST);
- }
- 
- static void __init at91rm9200_initialize(void)
-diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/arch/arm/mach-at91/at91rm9200_time.c
-index a028cdf..0c1980c 100644
---- a/arch/arm/mach-at91/at91rm9200_time.c
-+++ b/arch/arm/mach-at91/at91rm9200_time.c
-@@ -43,9 +43,9 @@ static inline unsigned long read_CRTR(void)
- {
- 	unsigned long x1, x2;
- 
--	x1 = at91_sys_read(AT91_ST_CRTR);
-+	x1 = at91_st_read(AT91_ST_CRTR);
- 	do {
--		x2 = at91_sys_read(AT91_ST_CRTR);
-+		x2 = at91_st_read(AT91_ST_CRTR);
- 		if (x1 == x2)
- 			break;
- 		x1 = x2;
-@@ -58,7 +58,7 @@ static inline unsigned long read_CRTR(void)
-  */
- static irqreturn_t at91rm9200_timer_interrupt(int irq, void *dev_id)
- {
--	u32	sr = at91_sys_read(AT91_ST_SR) & irqmask;
-+	u32	sr = at91_st_read(AT91_ST_SR) & irqmask;
- 
- 	/*
- 	 * irqs should be disabled here, but as the irq is shared they are only
-@@ -110,22 +110,22 @@ static void
- clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
- {
- 	/* Disable and flush pending timer interrupts */
--	at91_sys_write(AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
--	(void) at91_sys_read(AT91_ST_SR);
-+	at91_st_write(AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
-+	(void) at91_st_read(AT91_ST_SR);
- 
- 	last_crtr = read_CRTR();
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		/* PIT for periodic irqs; fixed rate of 1/HZ */
- 		irqmask = AT91_ST_PITS;
--		at91_sys_write(AT91_ST_PIMR, RM9200_TIMER_LATCH);
-+		at91_st_write(AT91_ST_PIMR, RM9200_TIMER_LATCH);
- 		break;
- 	case CLOCK_EVT_MODE_ONESHOT:
- 		/* ALM for oneshot irqs, set by next_event()
- 		 * before 32 seconds have passed
- 		 */
- 		irqmask = AT91_ST_ALMS;
--		at91_sys_write(AT91_ST_RTAR, last_crtr);
-+		at91_st_write(AT91_ST_RTAR, last_crtr);
- 		break;
- 	case CLOCK_EVT_MODE_SHUTDOWN:
- 	case CLOCK_EVT_MODE_UNUSED:
-@@ -133,7 +133,7 @@ clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
- 		irqmask = 0;
- 		break;
- 	}
--	at91_sys_write(AT91_ST_IER, irqmask);
-+	at91_st_write(AT91_ST_IER, irqmask);
- }
- 
- static int
-@@ -156,12 +156,12 @@ clkevt32k_next_event(unsigned long delta, struct clock_event_device *dev)
- 	alm = read_CRTR();
- 
- 	/* Cancel any pending alarm; flush any pending IRQ */
--	at91_sys_write(AT91_ST_RTAR, alm);
--	(void) at91_sys_read(AT91_ST_SR);
-+	at91_st_write(AT91_ST_RTAR, alm);
-+	(void) at91_st_read(AT91_ST_SR);
- 
- 	/* Schedule alarm by writing RTAR. */
- 	alm += delta;
--	at91_sys_write(AT91_ST_RTAR, alm);
-+	at91_st_write(AT91_ST_RTAR, alm);
- 
- 	return status;
- }
-@@ -175,15 +175,24 @@ static struct clock_event_device clkevt = {
- 	.set_mode	= clkevt32k_mode,
- };
- 
-+void __iomem *at91_st_base;
-+
-+void __init at91rm9200_ioremap_st(u32 addr)
-+{
-+	at91_st_base = ioremap(addr, 256);
-+	if (!at91_st_base)
-+		panic("Impossible to ioremap ST\n");
-+}
-+
- /*
-  * ST (system timer) module supports both clockevents and clocksource.
-  */
- void __init at91rm9200_timer_init(void)
- {
- 	/* Disable all timer interrupts, and clear any pending ones */
--	at91_sys_write(AT91_ST_IDR,
-+	at91_st_write(AT91_ST_IDR,
- 		AT91_ST_PITS | AT91_ST_WDOVF | AT91_ST_RTTINC | AT91_ST_ALMS);
--	(void) at91_sys_read(AT91_ST_SR);
-+	(void) at91_st_read(AT91_ST_SR);
- 
- 	/* Make IRQs happen for the system timer */
- 	setup_irq(AT91_ID_SYS, &at91rm9200_timer_irq);
-@@ -192,7 +201,7 @@ void __init at91rm9200_timer_init(void)
- 	 * directly for the clocksource and all clockevents, after adjusting
- 	 * its prescaler from the 1 Hz default.
- 	 */
--	at91_sys_write(AT91_ST_RTMR, 1);
-+	at91_st_write(AT91_ST_RTMR, 1);
- 
- 	/* Setup timer clockevent, with minimum of two ticks (important!!) */
- 	clkevt.mult = div_sc(AT91_SLOW_CLOCK, NSEC_PER_SEC, clkevt.shift);
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index dc74ec0..aec7fd0 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -28,6 +28,7 @@ extern void __init at91_aic_init(unsigned int priority[]);
- 
-  /* Timer */
- struct sys_timer;
-+extern void at91rm9200_ioremap_st(u32 addr);
- extern struct sys_timer at91rm9200_timer;
- extern void at91sam926x_ioremap_pit(u32 addr);
- extern struct sys_timer at91sam926x_timer;
-diff --git a/arch/arm/mach-at91/include/mach/at91_st.h b/arch/arm/mach-at91/include/mach/at91_st.h
-index 8847173..969aac2 100644
---- a/arch/arm/mach-at91/include/mach/at91_st.h
-+++ b/arch/arm/mach-at91/include/mach/at91_st.h
-@@ -16,34 +16,46 @@
- #ifndef AT91_ST_H
- #define AT91_ST_H
- 
--#define	AT91_ST_CR		(AT91_ST + 0x00)	/* Control Register */
-+#ifndef __ASSEMBLY__
-+extern void __iomem *at91_st_base;
-+
-+#define at91_st_read(field) \
-+	__raw_readl(at91_st_base + field)
-+
-+#define at91_st_write(field, value) \
-+	__raw_writel(value, at91_st_base + field);
-+#else
-+.extern at91_st_base
-+#endif
-+
-+#define	AT91_ST_CR		0x00			/* Control Register */
- #define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
- 
--#define	AT91_ST_PIMR		(AT91_ST + 0x04)	/* Period Interval Mode Register */
-+#define	AT91_ST_PIMR		0x04			/* Period Interval Mode Register */
- #define		AT91_ST_PIV		(0xffff <<  0)		/* Period Interval Value */
- 
--#define	AT91_ST_WDMR		(AT91_ST + 0x08)	/* Watchdog Mode Register */
-+#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
- #define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
- #define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
- #define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
- 
--#define	AT91_ST_RTMR		(AT91_ST + 0x0c)	/* Real-time Mode Register */
-+#define	AT91_ST_RTMR		0x0c			/* Real-time Mode Register */
- #define		AT91_ST_RTPRES		(0xffff <<  0)		/* Real-time Prescalar Value */
- 
--#define	AT91_ST_SR		(AT91_ST + 0x10)	/* Status Register */
-+#define	AT91_ST_SR		0x10			/* Status Register */
- #define		AT91_ST_PITS		(1 << 0)		/* Period Interval Timer Status */
- #define		AT91_ST_WDOVF		(1 << 1) 		/* Watchdog Overflow */
- #define		AT91_ST_RTTINC		(1 << 2) 		/* Real-time Timer Increment */
- #define		AT91_ST_ALMS		(1 << 3) 		/* Alarm Status */
- 
--#define	AT91_ST_IER		(AT91_ST + 0x14)	/* Interrupt Enable Register */
--#define	AT91_ST_IDR		(AT91_ST + 0x18)	/* Interrupt Disable Register */
--#define	AT91_ST_IMR		(AT91_ST + 0x1c)	/* Interrupt Mask Register */
-+#define	AT91_ST_IER		0x14			/* Interrupt Enable Register */
-+#define	AT91_ST_IDR		0x18			/* Interrupt Disable Register */
-+#define	AT91_ST_IMR		0x1c			/* Interrupt Mask Register */
- 
--#define	AT91_ST_RTAR		(AT91_ST + 0x20)	/* Real-time Alarm Register */
-+#define	AT91_ST_RTAR		0x20			/* Real-time Alarm Register */
- #define		AT91_ST_ALMV		(0xfffff << 0)		/* Alarm Value */
- 
--#define	AT91_ST_CRTR		(AT91_ST + 0x24)	/* Current Real-time Register */
-+#define	AT91_ST_CRTR		0x24			/* Current Real-time Register */
- #define		AT91_ST_CRTV		(0xfffff << 0)		/* Current Real-Time Value */
- 
+diff --git a/arch/arm/mach-at91/include/mach/at91_ramc.h b/arch/arm/mach-at91/include/mach/at91_ramc.h
+index 3155499..d8aeb27 100644
+--- a/arch/arm/mach-at91/include/mach/at91_ramc.h
++++ b/arch/arm/mach-at91/include/mach/at91_ramc.h
+@@ -21,11 +21,12 @@ extern void __iomem *at91_ramc_base[];
+ .extern at91_ramc_base
  #endif
-diff --git a/arch/arm/mach-at91/include/mach/at91rm9200.h b/arch/arm/mach-at91/include/mach/at91rm9200.h
-index fbde306..0d0b9b3 100644
---- a/arch/arm/mach-at91/include/mach/at91rm9200.h
-+++ b/arch/arm/mach-at91/include/mach/at91rm9200.h
-@@ -80,7 +80,6 @@
-  * System Peripherals (offset from AT91_BASE_SYS)
-  */
- #define AT91_PMC	(0xfffffc00 - AT91_BASE_SYS)	/* Power Management Controller */
--#define AT91_ST		(0xfffffd00 - AT91_BASE_SYS)	/* System Timer */
- #define AT91_MC		(0xffffff00 - AT91_BASE_SYS)	/* Memory Controllers */
  
- #define AT91RM9200_BASE_DBGU	AT91_BASE_DBGU0	/* Debug Unit */
-@@ -88,6 +87,7 @@
- #define AT91RM9200_BASE_PIOB	0xfffff600	/* PIO Controller B */
- #define AT91RM9200_BASE_PIOC	0xfffff800	/* PIO Controller C */
- #define AT91RM9200_BASE_PIOD	0xfffffa00	/* PIO Controller D */
-+#define AT91RM9200_BASE_ST	0xfffffd00	/* System Timer */
- #define AT91RM9200_BASE_RTC	0xfffffe00	/* Real-Time Clock */
+-#ifdef CONFIG_ARCH_AT91RM9200
+-#include <mach/at91rm9200_mc.h>
+-#else
++#define AT91_MEMCTRL_MC		0
++#define AT91_MEMCTRL_SDRAMC	1
++#define AT91_MEMCTRL_DDRSDR	2
++
++#include <mach/at91rm9200_sdramc.h>
+ #include <mach/at91sam9_ddrsdr.h>
+ #include <mach/at91sam9_sdramc.h>
+-#endif
  
- #define AT91_USART0	AT91RM9200_BASE_US0
-diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
-index b3046dc..7ceefd2 100644
---- a/drivers/watchdog/at91rm9200_wdt.c
-+++ b/drivers/watchdog/at91rm9200_wdt.c
-@@ -51,7 +51,7 @@ static unsigned long at91wdt_busy;
-  */
- static inline void at91_wdt_stop(void)
- {
--	at91_sys_write(AT91_ST_WDMR, AT91_ST_EXTEN);
-+	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN);
- }
+ #endif /* __AT91_RAMC_H__ */
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 6a02ea2..83a0051 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -188,10 +188,12 @@ int at91_suspend_entering_slow_clock(void)
+ EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
+ 
+ 
+-static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
++static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
++			  void __iomem *ramc1, int memctrl);
+ 
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+-extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0, void __iomem *ramc1);
++extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
++			    void __iomem *ramc1, int memctrl);
+ extern u32 at91_slow_clock_sz;
+ #endif
+ 
+@@ -241,11 +243,18 @@ static int at91_pm_enter(suspend_state_t state)
+ 			 * turning off the main oscillator; reverse on wakeup.
+ 			 */
+ 			if (slow_clock) {
++				int memctrl = AT91_MEMCTRL_SDRAMC;
++
++				if (cpu_is_at91rm9200())
++					memctrl = AT91_MEMCTRL_MC;
++				else if (cpu_is_at91sam9g45())
++					memctrl = AT91_MEMCTRL_DDRSDR;
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+ 				/* copy slow_clock handler to SRAM, and call it */
+ 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+ #endif
+-				slow_clock(at91_pmc_base, at91_ramc_base[0], at91_ramc_base[1]);
++				slow_clock(at91_pmc_base, at91_ramc_base[0],
++					   at91_ramc_base[1], memctrl);
+ 				break;
+ 			} else {
+ 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 9c3117c..17f4d72 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -42,8 +42,9 @@
+ #define pmc	r0
+ #define sdramc	r1
+ #define ramc1	r2
+-#define tmp1	r3
+-#define tmp2	r4
++#define memctrl	r3
++#define tmp1	r4
++#define tmp2	r5
  
  /*
-@@ -59,9 +59,9 @@ static inline void at91_wdt_stop(void)
-  */
- static inline void at91_wdt_start(void)
- {
--	at91_sys_write(AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
-+	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
- 				(((65536 * wdt_time) >> 8) & AT91_ST_WDV));
--	at91_sys_write(AT91_ST_CR, AT91_ST_WDRST);
-+	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
- }
+  * Wait until master clock is ready (after switching master clock source)
+@@ -103,29 +104,44 @@
  
- /*
-@@ -69,7 +69,7 @@ static inline void at91_wdt_start(void)
-  */
- static inline void at91_wdt_reload(void)
- {
--	at91_sys_write(AT91_ST_CR, AT91_ST_WDRST);
-+	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
- }
+ 	.text
  
- /* ......................................................................... */
+-/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc, void __iomem *ramc1) */
++/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
++ *			void __iomem *ramc1, int memctrl)
++ */
+ ENTRY(at91_slow_clock)
+ 	/* Save registers on stack */
+-	stmfd	sp!, {r3 - r12, lr}
++	stmfd	sp!, {r4 - r12, lr}
+ 
+ 	/*
+ 	 * Register usage:
+ 	 *  R0 = Base address of AT91_PMC
+ 	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
+ 	 *  R2 = Base address of second RAM Controller or 0 if not present
+-	 *  R3 = temporary register
++	 *  R3 = Memory controller
+ 	 *  R4 = temporary register
++	 *  R5 = temporary register
+ 	 */
+ 
+ 	/* Drain write buffer */
+ 	mov	tmp1, #0
+ 	mcr	p15, 0, tmp1, c7, c10, 4
+ 
+-#ifdef CONFIG_ARCH_AT91RM9200
++	cmp	memctrl, #AT91_MEMCTRL_MC
++	bne	ddr_sr_enable
++
++	/*
++	 * at91rm9200 Memory controller
++	 */
+ 	/* Put SDRAM in self-refresh mode */
+ 	mov	tmp1, #1
+ 	str	tmp1, [sdramc, #AT91RM9200_SDRAMC_SRR]
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
++	b	sdr_sr_done
++
++	/*
++	 * DDRSDR Memory controller
++	 */
++ddr_sr_enable:
++	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
++	bne	sdr_sr_enable
+ 
+ 	/* prepare for DDRAM self-refresh mode */
+ 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+@@ -143,7 +159,13 @@ ENTRY(at91_slow_clock)
+ 	/* Enable DDRAM self-refresh mode */
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+ 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+-#else
++
++	b	sdr_sr_done
++
++	/*
++	 * SDRAMC Memory controller
++	 */
++sdr_sr_enable:
+ 	/* Enable SDRAM self-refresh mode */
+ 	ldr	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+ 	str	tmp1, .saved_sam9_lpr
+@@ -151,8 +173,8 @@ ENTRY(at91_slow_clock)
+ 	bic	tmp1, #AT91_SDRAMC_LPCB
+ 	orr	tmp1, #AT91_SDRAMC_LPCB_SELF_REFRESH
+ 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+-#endif
+ 
++sdr_sr_done:
+ 	/* Save Master clock setting */
+ 	ldr	tmp1, [pmc, #(AT91_PMC_MCKR - AT91_PMC)]
+ 	str	tmp1, .saved_mckr
+@@ -255,9 +277,18 @@ ENTRY(at91_slow_clock)
+ 
+ 	wait_mckrdy
+ 
+-#ifdef CONFIG_ARCH_AT91RM9200
+-	/* Do nothing - self-refresh is automatically disabled. */
+-#elif defined(CONFIG_ARCH_AT91SAM9G45)
++	/*
++	 * at91rm9200 Memory controller
++	 * Do nothing - self-refresh is automatically disabled.
++	 */
++	cmp	memctrl, #AT91_MEMCTRL_MC
++	beq	ram_restored
++
++	/*
++	 * DDRSDR Memory controller
++	 */
++	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
++	bne	sdr_en_restore
+ 	/* Restore LPR on AT91 with DDRAM */
+ 	ldr	tmp1, .saved_sam9_lpr
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+@@ -267,14 +298,19 @@ ENTRY(at91_slow_clock)
+ 	ldrne	tmp2, .saved_sam9_lpr1
+ 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ 
+-#else
++	b	ram_restored
++
++	/*
++	 * SDRAMC Memory controller
++	 */
++sdr_en_restore:
+ 	/* Restore LPR on AT91 with SDRAM */
+ 	ldr	tmp1, .saved_sam9_lpr
+ 	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
+-#endif
+ 
++ram_restored:
+ 	/* Restore registers, and return */
+-	ldmfd	sp!, {r3 - r12, pc}
++	ldmfd	sp!, {r4 - r12, pc}
+ 
+ 
+ .saved_mckr:
 -- 
 1.7.9
 
