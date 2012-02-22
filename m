@@ -1,100 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab2BVA5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 19:57:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:29237 "EHLO mga02.intel.com"
+	id S1752802Ab2BVA6k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 19:58:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:8950 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab2BVA5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 19:57:38 -0500
+	id S1750932Ab2BVA6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 19:58:39 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="110592968"
-Message-ID: <1329872267.1511.76.camel@rui.sh.intel.com>
-Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
-From: Zhang Rui <rui.zhang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
-        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Wed, 22 Feb 2012 08:57:47 +0800
-In-Reply-To: <201202212243.52788.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
-	 <201202210013.02397.rjw@sisk.pl>
-	 <1329786806.1511.54.camel@rui.sh.intel.com>
-	 <201202212243.52788.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="127956875"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= 
+	<niklas.soderlund@ericsson.com>
+Subject: RE: [PATCH] edac: i5100 ack error detection register after each read
+Thread-Topic: [PATCH] edac: i5100 ack error detection register after each
+ read
+Thread-Index: AQHM8INSwCxROf2v+kuzA5s27WGSMJZH5eHA
+Date: Wed, 22 Feb 2012 00:58:37 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F03DA5B@ORSMSX104.amr.corp.intel.com>
+References: <1323447135-25914-1-git-send-email-niklas.soderlund@ericsson.com>
+ <20111209162254.GB14900@aftab> <4F437164.5020408@ericsson.com>
+In-Reply-To: <4F437164.5020408@ericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1M0wjuh021737
 
-On äºŒ, 2012-02-21 at 22:43 +0100, Rafael J. Wysocki wrote:
-> On Tuesday, February 21, 2012, Zhang Rui wrote:
-> > On äºŒ, 2012-02-21 at 00:13 +0100, Rafael J. Wysocki wrote:
-> > > > So how to handle this case, say, for a device in the generic PM domain
-> > > > that supports 2 different low power state, D1 and D2.
-> > > > D2 is deeper than D1, and it is kind of cold power off with remote
-> > > > wakeup disabled. If the driver needs to runtime suspend the device with
-> > > > remote wakeup enabled, it should set the device to D1, but it can not
-> > > > set the RPM_SUSPEND?
-> > > 
-> > > The device is regarded as "suspended" if its bus type's (or PM domain's)
-> > > .runtime_suspend() callback has been executed and has returned 0 (success).
-> > > What the callback has actually done is not of any interest to the core.
-> > > 
-> > right.
-> > 
-> > > Now, the D1 and D2 case has to be handled by the bus (PM domain) and
-> > > driver.  In both cases the device will be regarded as "suspended" and the
-> > > core doesn't track the actual device state.
-> > > 
-> > 
-> > 
-> > > I think the problem here is that the PCI bus type's runtime PM callbacks
-> > > aren't very sophisticated (they just choose the lowest possible low-power
-> > > state and attempt to put the device into it) and I can see two possible
-> > > ways to address that.
-> > > 
-> > > First, you can modify pci_pm_runtime_suspend/_resume() to handle multiple
-> > > states (for example, to choose the target low-power state more intelligently
-> > > than they do right now).  Second, you can add a PM domain that will do what
-> > > you want from pci_pm_runtime_suspend/_resume() for a specific set of devices.
-> > > 
-> > But RPM_SUSPENDED is set by PM core after .runtime_suspend() being
-> > invoked, even if device is in D1 instead of D2, right?
-> > 
-> > So the problem is that, if a device in a generic power domain supports
-> > two low power state, one is compatible with generic power domain power
-> > off and another is not, how can the device driver pass this information
-> > to the generic power domain, i.e. how to runtime suspend a device while
-> > keep the generic power domain always on?
-> 
-> There are two "low-power" levels in the generic PM domains framework.  The
-> first one is the per-device low-power in which devices are put into their
-> individual (programmable) low-power states by the domain .dev_ops->stop()
-> callback.  The second one is when .stop() has been called for all devices,
-> so presumably all of them are in programmable low-power states and it's
-> possible to switch the entire domain off.  This is done by the domain
-> .power_off() callback.
-> 
-> It seems that the trick might be to make .dev_ops->stop() avoid turning off
-> power resources for the last suspending device in the domain and leave that
-> to domain .power_off().
-> 
-Yeah, that's a good idea.
-so how about this proposal for ZPODD.
-1. create an ACPI generic power domain for every device that has an _PR3
-   method, the SATA port in this case.
-2. add sr device to the generic power domain via genpd APIs.
-   this can be done either in ATA port driver or in sr driver.
-3. the .power_off callback of the generic power domain
-   a) checks if all the devices allows power off (for the trick above)
-   b) turns off the power resources in _PR3.
+Mauro: Since this has been tested, do you care that the documentation
+doesn't appear to describe this behavior?
 
-thanks,
-rui
+-Tony
 
+-----Original Message-----
+From: Niklas SÃ¶derlund [mailto:niklas.soderlund@ericsson.com] 
+Sent: Tuesday, February 21, 2012 2:27 AM
+To: Luck, Tony
+Cc: Borislav Petkov; lucas.demarchi@profusion.mobi; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] edac: i5100 ack error detection register after each read
+
+Hi Tony,
+
+Is there any interest in this patch?
+
+On 12/09/2011 05:22 PM, Borislav Petkov wrote:
+> Adding Tony.
+>
+> On Fri, Dec 09, 2011 at 05:12:15PM +0100, Niklas SÃ¶derlund wrote:
+>> If I only ack the detection register after a error have been detected
+>> I'm unable to reliably detect errors. I have verified this behavior
+>> using both an error injection DIMM and software to inject errors.
+>>
+>> I can't find any documentation supporting this behavior in Intel 5100
+>> Memory Controller Hub Chipset, see 1. So this is all based on
+>> experimentation.
+>>
+>> [1] IntelÂ® 5100 Memory Controller Hub Chipset
+>>      http://www.intel.com/content/dam/doc/datasheet/5100-
+>> 	memory-controller-hub-chipset-datasheet.pdf
+>>
+>> Signed-off-by: Niklas SÃ¶derlund<niklas.soderlund@ericsson.com>
+>> ---
+>>   drivers/edac/i5100_edac.c |   11 ++++-------
+>>   1 files changed, 4 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
+>> index bcbdeec..ec728e9 100644
+>> --- a/drivers/edac/i5100_edac.c
+>> +++ b/drivers/edac/i5100_edac.c
+>> @@ -535,23 +535,20 @@ static void i5100_read_log(struct mem_ctl_info *mci, int chan,
+>>   static void i5100_check_error(struct mem_ctl_info *mci)
+>>   {
+>>   	struct i5100_priv *priv = mci->pvt_info;
+>> -	u32 dw;
+>> -
+>> +	u32 dw, dw2;
+>>
+>>   	pci_read_config_dword(priv->mc, I5100_FERR_NF_MEM,&dw);
+>>   	if (i5100_ferr_nf_mem_any(dw)) {
+>> -		u32 dw2;
+>>
+>>   		pci_read_config_dword(priv->mc, I5100_NERR_NF_MEM,&dw2);
+>> -		if (dw2)
+>> -			pci_write_config_dword(priv->mc, I5100_NERR_NF_MEM,
+>> -					       dw2);
+>> -		pci_write_config_dword(priv->mc, I5100_FERR_NF_MEM, dw);
+>>
+>>   		i5100_read_log(mci, i5100_ferr_nf_mem_chan_indx(dw),
+>>   			       i5100_ferr_nf_mem_any(dw),
+>>   			       i5100_nerr_nf_mem_any(dw2));
+>> +
+>> +		pci_write_config_dword(priv->mc, I5100_NERR_NF_MEM, dw2);
+>>   	}
+>> +	pci_write_config_dword(priv->mc, I5100_FERR_NF_MEM, dw);
+>>   }
+>>
+>>   /* The i5100 chipset will scrub the entire memory once, then
+>> --
+>> 1.7.7.3
+>>
+>>
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
