@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2BVCAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 21:00:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:57171 "EHLO mga14.intel.com"
+	id S1755689Ab2BVCA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 21:00:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29216 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab2BVCAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 21:00:08 -0500
+	id S1755137Ab2BVCAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 21:00:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="68898213"
+   d="scan'208";a="119904458"
 From: Darren Hart <dvhart@linux.intel.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Feng Tang <feng.tang@intel.com>,
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 0/4] pch_uart: Cleanups, board quirks, and user uartclk parameter
-Date: Tue, 21 Feb 2012 17:59:24 -0800
-Message-Id: <cover.1329875301.git.dvhart@linux.intel.com>
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: [PATCH 1/4] pch_uart: Use uartclk instead of base_baud
+Date: Tue, 21 Feb 2012 17:59:30 -0800
+Message-Id: <26a433d1bdb5805cac69efb20d3e32dbf790339b.1329875301.git.dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <cover.1329875301.git.dvhart@linux.intel.com>
+References: <cover.1329875301.git.dvhart@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series does some minor clean-up to the pch_uart driver, adds support
-for the Fish River Island II UART clock, and introduces a user_uartclk
-parameter to aid in developing for early and changing hardware.
+The term "base baud" refers to the fastest baud rate the device can communicate
+at. This is clock/16. pch_uart is using base_baud as the clock itself. Rename
+the variables to be semantically correct.
 
-Note that this series is my proposed alternative solution to that provided
-by Tomoya MORNIAGA and Feng Tang which drops the board quirks and opts to
-assume a 192 MHz clock on all boards. The problem with this approach is
-that the CLKCFG register may have been set to something other than the
-192MHz configuration by the firmware. If so, then the pch_uart will send
-garbage between the time the boot console is disabled and the pch_phub
-sets the CLKCFG register again. In my case, the pch_phub PCI probe occurs
-after the pch_uart_console_setup. Even if it happened before, the output
-up until the PCI probing would be garbage.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Feng Tang <feng.tang@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Alan Cox <alan@linux.intel.com>
+CC: linux-serial@vger.kernel.org
+---
+ drivers/tty/serial/pch_uart.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-In order to support an early serial console, we cannot rely on the pch_phub
-probe function to setup the CFGCLK register. This series relies on the board
-quirks and doesn't force the setting of the CLKREG in the pch_phub code.
-Instead, it aligns with what is the default configuration (defined by firmware)
-for a given board. The user_uartclk provides a mechanism to force a specific
-uartclk if necessary.
-
---
-Darren
-
-The following changes since commit 27e74da9800289e69ba907777df1e2085231eff7:
-
-  i387: export 'fpu_owner_task' per-cpu variable (2012-02-20 19:34:10 -0800)
-
-are available in the git repository at:
-  git://git.infradead.org/users/dvhart/linux-2.6.git pch_uart
-  http://git.infradead.org/users/dvhart/linux-2.6.git/shortlog/refs/heads/pch_uart
-Darren Hart (4):
-  pch_uart: Use uartclk instead of base_baud
-  pch_uart: Add Fish River Island II uart clock quirks
-  pch_uart: Add user_uartclk parameter
-  pch_uart: Use existing default_baud in setup_console
-
- drivers/tty/serial/pch_uart.c |   52 +++++++++++++++++++++++++++++-----------
- 1 files changed, 37 insertions(+), 15 deletions(-)
-
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 17ae657..c565817 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -203,7 +203,7 @@ enum {
+ 
+ #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+ 
+-#define DEFAULT_BAUD_RATE 1843200 /* 1.8432MHz */
++#define DEFAULT_UARTCLK 1843200 /* 1.8432MHz */
+ 
+ struct pch_uart_buffer {
+ 	unsigned char *buf;
+@@ -218,7 +218,7 @@ struct eg20t_port {
+ 	unsigned int iobase;
+ 	struct pci_dev *pdev;
+ 	int fifo_size;
+-	int base_baud;
++	int uartclk;
+ 	int start_tx;
+ 	int start_rx;
+ 	int tx_empty;
+@@ -293,7 +293,7 @@ static const int trigger_level_16[4] = { 1, 4, 8, 14 };
+ static const int trigger_level_1[4] = { 1, 1, 1, 1 };
+ 
+ static void pch_uart_hal_request(struct pci_dev *pdev, int fifosize,
+-				 int base_baud)
++				 int uartclk)
+ {
+ 	struct eg20t_port *priv = pci_get_drvdata(pdev);
+ 
+@@ -332,7 +332,7 @@ static int pch_uart_hal_set_line(struct eg20t_port *priv, int baud,
+ 	unsigned int dll, dlm, lcr;
+ 	int div;
+ 
+-	div = DIV_ROUND_CLOSEST(priv->base_baud / 16, baud);
++	div = DIV_ROUND_CLOSEST(priv->uartclk / 16, baud);
+ 	if (div < 0 || USHRT_MAX <= div) {
+ 		dev_err(priv->port.dev, "Invalid Baud(div=0x%x)\n", div);
+ 		return -EINVAL;
+@@ -1153,9 +1153,9 @@ static int pch_uart_startup(struct uart_port *port)
+ 	priv->tx_empty = 1;
+ 
+ 	if (port->uartclk)
+-		priv->base_baud = port->uartclk;
++		priv->uartclk = port->uartclk;
+ 	else
+-		port->uartclk = priv->base_baud;
++		port->uartclk = priv->uartclk;
+ 
+ 	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_ALL_INT);
+ 	ret = pch_uart_hal_set_line(priv, default_baud,
+@@ -1507,7 +1507,7 @@ static int __init pch_console_setup(struct console *co, char *options)
+ 		return -ENODEV;
+ 
+ 	/* setup uartclock */
+-	port->uartclk = DEFAULT_BAUD_RATE;
++	port->uartclk = DEFAULT_UARTCLK;
+ 
+ 	if (options)
+ 		uart_parse_options(options, &baud, &parity, &bits, &flow);
+@@ -1550,7 +1550,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	unsigned int iobase;
+ 	unsigned int mapbase;
+ 	unsigned char *rxbuf;
+-	int fifosize, base_baud;
++	int fifosize, uartclk;
+ 	int port_type;
+ 	struct pch_uart_driver_data *board;
+ 	const char *board_name;
+@@ -1566,12 +1566,12 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	if (!rxbuf)
+ 		goto init_port_free_txbuf;
+ 
+-	base_baud = DEFAULT_BAUD_RATE;
++	uartclk = DEFAULT_UARTCLK;
+ 
+ 	/* quirk for CM-iTC board */
+ 	board_name = dmi_get_system_info(DMI_BOARD_NAME);
+ 	if (board_name && strstr(board_name, "CM-iTC"))
+-		base_baud = 192000000; /* 192.0MHz */
++		uartclk = 192000000; /* 192.0MHz */
+ 
+ 	switch (port_type) {
+ 	case PORT_UNKNOWN:
+@@ -1597,7 +1597,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	priv->rxbuf.size = PAGE_SIZE;
+ 
+ 	priv->fifo_size = fifosize;
+-	priv->base_baud = base_baud;
++	priv->uartclk = uartclk;
+ 	priv->port_type = PORT_MAX_8250 + port_type + 1;
+ 	priv->port.dev = &pdev->dev;
+ 	priv->port.iobase = iobase;
+@@ -1614,7 +1614,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+ 	spin_lock_init(&priv->port.lock);
+ 
+ 	pci_set_drvdata(pdev, priv);
+-	pch_uart_hal_request(pdev, fifosize, base_baud);
++	pch_uart_hal_request(pdev, fifosize, uartclk);
+ 
+ #ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
+ 	pch_uart_ports[board->line_no] = priv;
 -- 
 1.7.6.5
 
