@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab2BVMzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 07:55:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58018 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750975Ab2BVMzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 07:55:54 -0500
-Date: Wed, 22 Feb 2012 12:55:52 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] regmap: Add support for writing to regmap `registers'
-Message-ID: <20120222125551.GB7340@opensource.wolfsonmicro.com>
-References: <1329914630-17624-1-git-send-email-dp@opensource.wolfsonmicro.com>
+	id S1752121Ab2BVM6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 07:58:14 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:34176 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751186Ab2BVM6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 07:58:12 -0500
+Message-ID: <4F44E65E.8010604@imgtec.com>
+Date: Wed, 22 Feb 2012 12:58:06 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V0207lvV8h4k8FAm"
-Content-Disposition: inline
-In-Reply-To: <1329914630-17624-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Cookie: Just to have it is enough.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RESEND] rc/ir-raw: fix BUG_ON, using kfifo_rec_ptr_1 instead
+ of kfifo
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Feb 2012 12:58:06.0734 (UTC) FILETIME=[9EECC2E0:01CCF161]
+X-SEF-Processed: 7_3_0_01181__2012_02_22_12_58_07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Raw IR events are passed to the raw event thread through a kfifo. The
+size of the event struct is 12 bytes, and space for 512 events is
+reserved in the kfifo (6144 bytes), however this is rounded down to 4096
+bytes (the next power of 2) by __kfifo_alloc().
 
---V0207lvV8h4k8FAm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+4096 bytes is not divisible by 12 therefore if the fifo fills up, a
+third of a record will be written in the end of the kfifo by
+ir_raw_event_store() because the recsize of the fifo is 0 (it doesn't
+have records). When this is read by ir_raw_event_thread() a corrupted or
+partial record will be read, and in the case of a partial record the
+BUG_ON(retval != sizeof(ev)) gets hit too.
 
-On Wed, Feb 22, 2012 at 12:43:50PM +0000, Dimitris Papastamos wrote:
-> To enable writing to the regmap `registers' file, users will
-> need to modify the source directly and #define REGMAP_ALLOW_WRITE_DEBUGFS.
-> The reason for this is that it is dangerous to expose this
-> functionality in general where clients could potentially be PMICs.
+According to samples/kfifo/record-example.c struct kfifo_rec_ptr_1 can
+handle records of a length between 0 and 255 bytes, so change struct
+ir_raw_event_ctrl to use that instead of struct kfifo.
 
-Applied but...
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+ drivers/media/rc/rc-core-priv.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> +static ssize_t regmap_map_write_file(struct file *file, const char __user *user_buf,
-> +				    size_t count, loff_t *ppos)
+diff --git a/drivers/media/rc/rc-core-priv.h b/drivers/media/rc/rc-core-priv.h
+index c6ca870..989ea08 100644
+--- a/drivers/media/rc/rc-core-priv.h
++++ b/drivers/media/rc/rc-core-priv.h
+@@ -35,7 +35,7 @@ struct ir_raw_event_ctrl {
+ 	struct list_head		list;		/* to keep track of raw clients */
+ 	struct task_struct		*thread;
+ 	spinlock_t			lock;
+-	struct kfifo			kfifo;		/* fifo for the pulse/space durations */
++	struct kfifo_rec_ptr_1		kfifo;		/* fifo for the pulse/space durations */
+ 	ktime_t				last_event;	/* when last event occurred */
+ 	enum raw_event_type		last_type;	/* last event type */
+ 	struct rc_dev			*dev;		/* pointer to the parent rc_dev */
+-- 
+1.7.2.3
 
-...with this wrapped into 80 columns.
 
->  static const struct file_operations regmap_map_fops = {
->  	.open = regmap_open_file,
->  	.read = regmap_map_read_file,
-> +#ifdef REGMAP_ALLOW_WRITE_DEBUGFS
-> +	.write = regmap_map_write_file,
-> +#endif
-
-It's also a bit more idiomatic to have an #else #define function NULL in
-the main ifdef for stuff like this; I'll fix that up as well.
-
---V0207lvV8h4k8FAm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPROViAAoJEBus8iNuMP3dIcYP/0g7enJNeli4ZEqDQuNb07Au
-N+uKV2/z0IkFcioXQSjR1kvXIaokHS4i+NKOmCgy6+2nQKj6T9yEahQo1Ayv/XMR
-DQNluESidDkLaqMkOl1LQDPA+gndQVk/qkpaWmeEA0dI92fWiNNZY2/lnpYwKpWJ
-oJY9QpTYD32fFq3wcvK300i9gi7rge69YxlcmMfpHb5rt2zPxCc9RaVydwB+3PXl
-duc6YGLtWu6qf3pQNWUzrBHvKzmPG+tYpfS8ixRD8Gag/9K/2UGf0q060xx8zhiO
-3uCmFMRaRBOHdx26FfUQMoCzk9sc81uzv7NsLLFmCvOAqPuM7S1YTvgdq2QjBT9M
-J0rgl6lakizfTGI/5Z/pCNSrAUHxXfZUt2NStz9IjgjXa4eHK9+qUhnOjEi8J0+c
-Tcu7o36Vg8IJK3F4+T5cKtAlxyawpyAZmXdxVWl5gCUR4ItM5+jJWq2ZgflcGZXT
-I7tP+ethPr3Q+D5TIizss7b8vLNkXl2QwaFU3jD/C14um0bYVoNUE42l5QghETPg
-8aXVHHh0M7N6txp1DuVcMv5RdvzKXfvPKNGgEU15vxgZqi9gWdvhbaVH5RIWSs9u
-Tc6+YOfgaCa05NcsB5LLFPf39PYKY1Ud6ATvO5s8e8HLJWeL6uPyxoJfRVk94psc
-6ZKAT1y9/sTLPrbQ9Vlh
-=aHI4
------END PGP SIGNATURE-----
-
---V0207lvV8h4k8FAm--
