@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab2BVSSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:18:08 -0500
-Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:41997 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754811Ab2BVSSE (ORCPT
+	id S1755014Ab2BVSUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:20:06 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:32936 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab2BVSUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:18:04 -0500
-Date: Wed, 22 Feb 2012 19:02:38 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 12/19] ARM: at91/rtc-at91sam9: each SoC can select
- the RTT device to use
-Message-ID: <20120222180238.GH9407@game.jcrosoft.org>
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
- <201202221647.23430.arnd@arndb.de>
- <20120222170724.GF9407@game.jcrosoft.org>
- <201202221725.46150.arnd@arndb.de>
+	Wed, 22 Feb 2012 13:20:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201202221725.46150.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 3430054067987655428
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.500001/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <CA+55aFzKet5sASgrD==8iZ5m1+-FDpznfuqcNDS5ZyCocwzAbg@mail.gmail.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com>
+ <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
+ <4F4529D4.6070008@zytor.com> <CA+55aFzKet5sASgrD==8iZ5m1+-FDpznfuqcNDS5ZyCocwzAbg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 10:19:41 -0800
+X-Google-Sender-Auth: -Pe_gnixiQ-1IfRloIuQUUtFtnw
+Message-ID: <CA+55aFzGyA8QLmri=un4Wm_TnNavCHAMVoY1tfEoA+_UVxT5OA@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:25 Wed 22 Feb     , Arnd Bergmann wrote:
-> On Wednesday 22 February 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > But if you change the rtc driver to always bind to the existing
-> > > "at91_rtt" platform_device and fail the probe() function for the
-> > > case that you are on at91sam9263 probing the non-RTC device,
-> > > you should get the exact same result without any extra code
-> > > in the per-soc files.
-> >
-> > agreed but as on at91sam9263 you have 2 RTTs so you can have 2 drivers at the
-> > same time that use the RTT. So we can not do this except if we set the second
-> > RTT to an other device name.
-> 
-> Let me rephrase what I meant then:
-> 
-> The first driver should in its probe function do:
-> 
-> 	if (pdev->id != CONFIG_RTC_DRV_AT91SAM9_RTT)
-> 		return -ENODEV;
-> 
-> while the other driver does
-> 
-> 	if (pdev->id == CONFIG_RTC_DRV_AT91SAM9_RTT)
-> 		return -ENODEV;
-> 
-> This way, each driver binds to one device but not the other.
-> It should even work with an unmodified second driver, as long
-> as you guarantee that it's loaded after the first one.
-> 
-> Any reason why this won't work?
-just one other issue I need to pass the GPBR ressource to the RTC driver only
+On Wed, Feb 22, 2012 at 10:16 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Of course, right now autofs leaks kernel stack way more than that one
+> possible alignment word: the whole "name[NAME_MAX+1]" array is leaking
+> stuff after the name length (and final zero). So the padding is the
+> least of the leaking worries.
 
-Best Regards,
-J.
+Oh, we do have that "memset()" there, and it seems to have been there
+since the beginning.
+
+I take all that back. Fixing user space is actually possible.
+
+However, the whole "no regressions" part is that we shouldn't require
+updated user space, so we should fix the compat mess in the kernel
+regardless.  At which point "fixing user space" becomes irrelevant
+again, so ..
+
+                  Linus
