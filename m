@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab2BVQtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:49:12 -0500
+	id S1754430Ab2BVQtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:49:24 -0500
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:55254 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab2BVQtF (ORCPT
+	with ESMTP id S1753430Ab2BVQtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:49:05 -0500
-Date: Wed, 22 Feb 2012 17:48:45 +0100
+	Wed, 22 Feb 2012 11:49:13 -0500
+Date: Wed, 22 Feb 2012 17:48:55 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCHv23 04/16] mm: compaction: introduce isolate_freepages_range()
+Subject: [PATCHv23 14/16] X86: integrate CMA with DMA-mapping subsystem
 In-reply-to: <1329929337-16648-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -27,7 +27,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>,
         Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Message-id: <1329929337-16648-5-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1329929337-16648-15-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.9
 Content-type: TEXT/PLAIN
@@ -37,194 +37,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+This patch adds support for CMA to dma-mapping subsystem for x86
+architecture that uses common pci-dma/pci-nommu implementation. This
+allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
 
-This commit introduces isolate_freepages_range() function which
-generalises isolate_freepages_block() so that it can be used on
-arbitrary PFN ranges.
-
-isolate_freepages_block() is left with only minor changes.
-
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Tested-by: Rob Clark <rob.clark@linaro.org>
-Tested-by: Ohad Ben-Cohen <ohad@wizery.com>
-Tested-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Tested-by: Robert Nelson <robertcnelson@gmail.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Michal Nazarewicz <mina86@mina86.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- mm/compaction.c |  111 ++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 93 insertions(+), 18 deletions(-)
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/dma-contiguous.h |   13 +++++++++++++
+ arch/x86/include/asm/dma-mapping.h    |    4 ++++
+ arch/x86/kernel/pci-dma.c             |   18 ++++++++++++++++--
+ arch/x86/kernel/pci-nommu.c           |    8 +-------
+ arch/x86/kernel/setup.c               |    2 ++
+ 6 files changed, 37 insertions(+), 9 deletions(-)
+ create mode 100644 arch/x86/include/asm/dma-contiguous.h
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index d9d7b35..06b198f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -54,24 +54,20 @@ static unsigned long release_freepages(struct list_head *freelist)
- 	return count;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a61db6d..fea7f3a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -31,6 +31,7 @@ config X86
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select HAVE_DMA_ATTRS
++	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+diff --git a/arch/x86/include/asm/dma-contiguous.h b/arch/x86/include/asm/dma-contiguous.h
+new file mode 100644
+index 0000000..c092416
+--- /dev/null
++++ b/arch/x86/include/asm/dma-contiguous.h
+@@ -0,0 +1,13 @@
++#ifndef ASMX86_DMA_CONTIGUOUS_H
++#define ASMX86_DMA_CONTIGUOUS_H
++
++#ifdef __KERNEL__
++
++#include <linux/types.h>
++#include <asm-generic/dma-contiguous.h>
++
++static inline void
++dma_contiguous_early_fixup(phys_addr_t base, unsigned long size) { }
++
++#endif
++#endif
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index 4b4331d..8ca32d4 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -13,6 +13,7 @@
+ #include <asm/io.h>
+ #include <asm/swiotlb.h>
+ #include <asm-generic/dma-coherent.h>
++#include <linux/dma-contiguous.h>
  
--/* Isolate free pages onto a private freelist. Must hold zone->lock */
--static unsigned long isolate_freepages_block(struct zone *zone,
--				unsigned long blockpfn,
--				struct list_head *freelist)
-+/*
-+ * Isolate free pages onto a private freelist. Caller must hold zone->lock.
-+ * If @strict is true, will abort returning 0 on any invalid PFNs or non-free
-+ * pages inside of the pageblock (even though it may still end up isolating
-+ * some pages).
-+ */
-+static unsigned long isolate_freepages_block(unsigned long blockpfn,
-+				unsigned long end_pfn,
-+				struct list_head *freelist,
-+				bool strict)
+ #ifdef CONFIG_ISA
+ # define ISA_DMA_BIT_MASK DMA_BIT_MASK(24)
+@@ -62,6 +63,9 @@ extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 					dma_addr_t *dma_addr, gfp_t flag,
+ 					struct dma_attrs *attrs);
+ 
++extern void dma_generic_free_coherent(struct device *dev, size_t size,
++				      void *vaddr, dma_addr_t dma_addr);
++
+ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
  {
--	unsigned long zone_end_pfn, end_pfn;
- 	int nr_scanned = 0, total_isolated = 0;
- 	struct page *cursor;
+ 	if (!dev->dma_mask)
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index 75e1cc1..caba818 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -100,14 +100,18 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 				 struct dma_attrs *attrs)
+ {
+ 	unsigned long dma_mask;
+-	struct page *page;
++	struct page *page = NULL;
++	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+ 	dma_addr_t addr;
  
--	/* Get the last PFN we should scan for free pages at */
--	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
--	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
--
--	/* Find the first usable PFN in the block to initialse page cursor */
--	for (; blockpfn < end_pfn; blockpfn++) {
--		if (pfn_valid_within(blockpfn))
--			break;
--	}
- 	cursor = pfn_to_page(blockpfn);
+ 	dma_mask = dma_alloc_coherent_mask(dev, flag);
  
- 	/* Isolate free pages. This assumes the block is valid */
-@@ -79,15 +75,23 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 		int isolated, i;
- 		struct page *page = cursor;
+ 	flag |= __GFP_ZERO;
+ again:
+-	page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
++	if (!(flag & GFP_ATOMIC))
++		page = dma_alloc_from_contiguous(dev, count, get_order(size));
++	if (!page)
++		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
+ 	if (!page)
+ 		return NULL;
  
--		if (!pfn_valid_within(blockpfn))
-+		if (!pfn_valid_within(blockpfn)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 		nr_scanned++;
- 
--		if (!PageBuddy(page))
-+		if (!PageBuddy(page)) {
-+			if (strict)
-+				return 0;
- 			continue;
-+		}
- 
- 		/* Found a free page, break it into order-0 pages */
- 		isolated = split_free_page(page);
-+		if (!isolated && strict)
-+			return 0;
- 		total_isolated += isolated;
- 		for (i = 0; i < isolated; i++) {
- 			list_add(&page->lru, freelist);
-@@ -105,6 +109,73 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 	return total_isolated;
+@@ -127,6 +131,16 @@ again:
+ 	return page_address(page);
  }
  
-+/**
-+ * isolate_freepages_range() - isolate free pages.
-+ * @start_pfn: The first PFN to start isolating.
-+ * @end_pfn:   The one-past-last PFN.
-+ *
-+ * Non-free pages, invalid PFNs, or zone boundaries within the
-+ * [start_pfn, end_pfn) range are considered errors, cause function to
-+ * undo its actions and return zero.
-+ *
-+ * Otherwise, function returns one-past-the-last PFN of isolated page
-+ * (which may be greater then end_pfn if end fell in a middle of
-+ * a free page).
-+ */
-+static unsigned long
-+isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
++void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
++			       dma_addr_t dma_addr, struct dma_attrs *attrs)
 +{
-+	unsigned long isolated, pfn, block_end_pfn, flags;
-+	struct zone *zone = NULL;
-+	LIST_HEAD(freelist);
++	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	struct page *page = virt_to_page(vaddr);
 +
-+	if (pfn_valid(start_pfn))
-+		zone = page_zone(pfn_to_page(start_pfn));
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
-+			break;
-+
-+		/*
-+		 * On subsequent iterations ALIGN() is actually not needed,
-+		 * but we keep it that we not to complicate the code.
-+		 */
-+		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+		block_end_pfn = min(block_end_pfn, end_pfn);
-+
-+		spin_lock_irqsave(&zone->lock, flags);
-+		isolated = isolate_freepages_block(pfn, block_end_pfn,
-+						   &freelist, true);
-+		spin_unlock_irqrestore(&zone->lock, flags);
-+
-+		/*
-+		 * In strict mode, isolate_freepages_block() returns 0 if
-+		 * there are any holes in the block (ie. invalid PFNs or
-+		 * non-free pages).
-+		 */
-+		if (!isolated)
-+			break;
-+
-+		/*
-+		 * If we managed to isolate pages, it is always (1 << n) *
-+		 * pageblock_nr_pages for some non-negative n.  (Max order
-+		 * page may span two pageblocks).
-+		 */
-+	}
-+
-+	/* split_free_page does not map the pages */
-+	map_pages(&freelist);
-+
-+	if (pfn < end_pfn) {
-+		/* Loop terminated early, cleanup. */
-+		release_freepages(&freelist);
-+		return 0;
-+	}
-+
-+	/* We don't use freelists for anything. */
-+	return pfn;
++	if (!dma_release_from_contiguous(dev, page, count))
++		free_pages((unsigned long)vaddr, get_order(size));
 +}
 +
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
-@@ -145,7 +216,7 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn;
-+	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
- 	unsigned long flags;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
-@@ -165,6 +236,8 @@ static void isolate_freepages(struct zone *zone,
- 	 */
- 	high_pfn = min(low_pfn, pfn);
+ /*
+  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
+  * parameter documentation.
+diff --git a/arch/x86/kernel/pci-nommu.c b/arch/x86/kernel/pci-nommu.c
+index f960506..871be4a 100644
+--- a/arch/x86/kernel/pci-nommu.c
++++ b/arch/x86/kernel/pci-nommu.c
+@@ -74,12 +74,6 @@ static int nommu_map_sg(struct device *hwdev, struct scatterlist *sg,
+ 	return nents;
+ }
  
-+	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+
+-static void nommu_free_coherent(struct device *dev, size_t size, void *vaddr,
+-				dma_addr_t dma_addr, struct dma_attrs *attrs)
+-{
+-	free_pages((unsigned long)vaddr, get_order(size));
+-}
+-
+ static void nommu_sync_single_for_device(struct device *dev,
+ 			dma_addr_t addr, size_t size,
+ 			enum dma_data_direction dir)
+@@ -97,7 +91,7 @@ static void nommu_sync_sg_for_device(struct device *dev,
+ 
+ struct dma_map_ops nommu_dma_ops = {
+ 	.alloc			= dma_generic_alloc_coherent,
+-	.free			= nommu_free_coherent,
++	.free			= dma_generic_free_coherent,
+ 	.map_sg			= nommu_map_sg,
+ 	.map_page		= nommu_map_page,
+ 	.sync_single_for_device = nommu_sync_single_for_device,
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index e22bb08..d20ef5b 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -50,6 +50,7 @@
+ #include <asm/pci-direct.h>
+ #include <linux/init_ohci1394_dma.h>
+ #include <linux/kvm_para.h>
++#include <linux/dma-contiguous.h>
+ 
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -957,6 +958,7 @@ void __init setup_arch(char **cmdline_p)
+ 	}
+ #endif
+ 	memblock.current_limit = get_max_mapped();
++	dma_contiguous_reserve(0);
+ 
  	/*
- 	 * Isolate free pages until enough are available to migrate the
- 	 * pages on cc->migratepages. We stop searching if the migrate
-@@ -201,7 +274,9 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 		spin_lock_irqsave(&zone->lock, flags);
- 		if (suitable_migration_target(page)) {
--			isolated = isolate_freepages_block(zone, pfn, freelist);
-+			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-+			isolated = isolate_freepages_block(pfn, end_pfn,
-+							   freelist, false);
- 			nr_freepages += isolated;
- 		}
- 		spin_unlock_irqrestore(&zone->lock, flags);
+ 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
 -- 
 1.7.1.569.g6f426
 
