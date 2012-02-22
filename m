@@ -1,150 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab2BVGJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 01:09:41 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54082 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab2BVGJj (ORCPT
+	id S1752245Ab2BVGNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 01:13:07 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:26943 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750932Ab2BVGNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 01:09:39 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.68.136.198 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
-Date: Tue, 21 Feb 2012 22:09:08 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Wed, 22 Feb 2012 01:13:05 -0500
+X-SpamScore: -16
+X-BigFish: VS-16(zz9371I179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 22 Feb 2012 14:21:02 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Dong Aisheng <dongas86@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/10] mm/memcg: move lru_lock into lruvec
-In-Reply-To: <4F446458.8000107@openvz.org>
-Message-ID: <alpine.LSU.2.00.1202212148430.3515@eggly.anvils>
-References: <alpine.LSU.2.00.1202201518560.23274@eggly.anvils> <alpine.LSU.2.00.1202201537040.23274@eggly.anvils> <4F434300.3080001@openvz.org> <alpine.LSU.2.00.1202211205280.1858@eggly.anvils> <4F440E1D.7050004@openvz.org> <alpine.LSU.2.00.1202211406030.2012@eggly.anvils>
- <4F446458.8000107@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+Subject: Re: [PATCH 08/20] pinctrl: Assume map table entries can't have a
+ NULL name field
+Message-ID: <20120222062101.GA11087@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-9-git-send-email-swarren@nvidia.com>
+ <CAA+hA=THDSqCU-TBjEN=Rc5DkuVxu9kwvtv5w4G7dc3vDrasYg@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC31C@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC31C@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
-> Hugh Dickins wrote:
-> > On Wed, 22 Feb 2012, Konstantin Khlebnikov wrote:
-> > > Hugh Dickins wrote:
-> > > > 
-> > > > I'll have to come back to think about your locking later too;
-> > > > or maybe that's exactly where I need to look, when investigating
-> > > > the mm_inline.h:41 BUG.
-> > > 
-> > > pages_count[] updates looks correct.
-> > > This really may be bug in locking, and this VM_BUG_ON catch it before
-> > > list-debug.
-> > 
-> > I've still not got into looking at it yet.
-> > 
-> > You're right to mention DEBUG_LIST: I have that on some of the machines,
-> > and I would expect that to be the first to catch a mislocking issue.
-> > 
-> > In the past my problems with that BUG (well, the spur to introduce it)
-> > came from hugepages.
+On Tue, Feb 21, 2012 at 09:38:47AM -0800, Stephen Warren wrote:
+> Dong Aisheng wrote at Tuesday, February 21, 2012 6:08 AM:
+> > On Mon, Feb 20, 2012 at 2:45 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> > > pinctrl_register_mappings() already requires that every mapping table
+> > > entry have a non-NULL name field.
+> > >
+> > > Logically, this makes sense too; drivers should always request a specific
+> > > named state so they know what they're getting. Relying on getting the
+> >
+> > Hmm? It makes me a little confused.
+> > IIRC we allow the driver to request NULL map name in the linaro
+> > connect discussion.
+> > For those devices they do not want to support multi states, they
+> > really don't want to care about the state name.
+> > The original way is convenient for such a case.
 > 
-> My patchset hasn't your mem_cgroup_reset_uncharged_to_root protection,
-> or something to replace it. So, there exist race between cgroup remove and
-> isolated uncharged page put-back, but it shouldn't corrupt lru lists.
-> There something different.
+> With device tree, every state is always going to have /some/ name; the
+I remember the discussion is that pinctrl-name is optional and map name
+is always specified by pinctrl-name or automatically generated by the id
+of pinctrl property (e.g. for pinctrl-0, 0 is the name)
+However user may not want to care about it although there's a name.
 
-Yes, I'm not into removing cgroups yet.
+BTW my above comment may not right since i still have not read all you patches
+in the series and do not know if any difference on your implementation with
+the original proposal i will continue to read your patches.
 
-I've got it: your "can differ only on lumpy reclaim" belief, first
-commented in 17/22 but then assumed in 20/22, is wrong: those swapin
-readahead pages, for example, may shift from root_mem_cgroup to another
-mem_cgroup while the page is isolated by shrink_active or shrink_inactive.
+> binding we discussed didn't include any way to specify "no name" or
+> "default name" or "default state", so this will keeps things a little
+> more consistent.
+> 
+> I possibly could be persuaded to allow NULL state names in the mapping
+> table. However, if so, I think they should work a little differently to
+> the code currently in pinctrl: Right now, a NULL parameter to pinmux_get()
+> allows matching against /any/ state name in the table. If we changed this
+Yes it's /any/ state but it's always the first state.
 
-Patch below against the top of my version of your tree: probably won't
-quite apply to yours, since we used different bases here; but easy
-enough to correct yours from it.
+> to only allow matching against mapping table with a NULL name, that might
+> be OK, since it'd be very explicit what it matched. But, as I mentione
+If that how about many states with NULL name?
 
-Bisection was misleading: it appeared to be much easier to reproduce
-with 22/22 taken off, and led to 16/22, but that's because that one
-introduced a similar bug, which actually got fixed in 22/22:
+> above, migrating such a driver to device tree would require changing this
+I can see many changes, it looks just as the same as before (using first
+state as default state), did i understand right?
 
-relock_page_lruvec() and relock_page_lruvec_irq() in 16/22 onwards
-are wrong, in each case the if block needs an
-	} else
-		lruvec = page_lruvec(page);
+> so I'm not inclined to like that solution without strong requirements.
+> 
+> In other words, what we have right now is something like:
+> 
+> if name:
+>     match = !strcmp(name, map->name)
+> else:
+>     match = true
+> 
+> If we continue to allow NULL names, I think we should change that to:
+> 
+> if name:
+>     match = map->name && !strcmp(name, map->name)
+> else:
+>     match = !map->name
+As above many states name may be NULL.
+So here it becomes the first NULL name state.
 
-You'll want to fix that in 16/22, but here's the patch for the end state:
+Regards
+Dong Aisheng
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-but forget that, just quietly fold the fixes into yours!
----
- mm/vmscan.c |   20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
-
---- 3033K2.orig/mm/vmscan.c	2012-02-21 00:02:13.000000000 -0800
-+++ 3033K2/mm/vmscan.c	2012-02-21 21:23:25.768381375 -0800
-@@ -1342,7 +1342,6 @@ static int too_many_isolated(struct zone
-  */
- static noinline_for_stack struct lruvec *
- putback_inactive_pages(struct lruvec *lruvec,
--		       struct scan_control *sc,
- 		       struct list_head *page_list)
- {
- 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
-@@ -1364,11 +1363,8 @@ putback_inactive_pages(struct lruvec *lr
- 			continue;
- 		}
- 
--		/* can differ only on lumpy reclaim */
--		if (sc->order) {
--			lruvec = __relock_page_lruvec(lruvec, page);
--			reclaim_stat = &lruvec->reclaim_stat;
--		}
-+		lruvec = __relock_page_lruvec(lruvec, page);
-+		reclaim_stat = &lruvec->reclaim_stat;
- 
- 		SetPageLRU(page);
- 		lru = page_lru(page);
-@@ -1566,7 +1562,7 @@ shrink_inactive_list(unsigned long nr_to
- 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
- 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
--	lruvec = putback_inactive_pages(lruvec, sc, &page_list);
-+	lruvec = putback_inactive_pages(lruvec, &page_list);
- 
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
- 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
-@@ -1631,7 +1627,6 @@ shrink_inactive_list(unsigned long nr_to
- 
- static struct lruvec *
- move_active_pages_to_lru(struct lruvec *lruvec,
--			 struct scan_control *sc,
- 			 struct list_head *list,
- 			 struct list_head *pages_to_free,
- 			 enum lru_list lru)
-@@ -1643,10 +1638,7 @@ move_active_pages_to_lru(struct lruvec *
- 		int numpages;
- 
- 		page = lru_to_page(list);
--
--		/* can differ only on lumpy reclaim */
--		if (sc->order)
--			lruvec = __relock_page_lruvec(lruvec, page);
-+		lruvec = __relock_page_lruvec(lruvec, page);
- 
- 		VM_BUG_ON(PageLRU(page));
- 		SetPageLRU(page);
-@@ -1770,9 +1762,9 @@ static void shrink_active_list(unsigned
- 	 */
- 	reclaim_stat->recent_rotated[file] += nr_rotated;
- 
--	lruvec = move_active_pages_to_lru(lruvec, sc, &l_active, &l_hold,
-+	lruvec = move_active_pages_to_lru(lruvec, &l_active, &l_hold,
- 						LRU_ACTIVE + file * LRU_FILE);
--	lruvec = move_active_pages_to_lru(lruvec, sc, &l_inactive, &l_hold,
-+	lruvec = move_active_pages_to_lru(lruvec, &l_inactive, &l_hold,
- 						LRU_BASE   + file * LRU_FILE);
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
- 	unlock_lruvec_irq(lruvec);
