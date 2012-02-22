@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab2BVJnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:43:18 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:56180 "EHLO
+	id S1755139Ab2BVJnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:43:16 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:22246 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab2BVJkM (ORCPT
+	with ESMTP id S1754975Ab2BVJkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:40:12 -0500
+	Wed, 22 Feb 2012 04:40:14 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2 14/19] ARM: at91/rtc-at91sam9: pass the GPBR to use via resources
-Date: Wed, 22 Feb 2012 10:39:40 +0100
-Message-Id: <b4c95e5c04a0cb550a03bb7cbce29719389777ab.1329903206.git.nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk
+Subject: [PATCH v2 08/19] ARM: at91: move at91rm9200 sdramc defines to at91rm9200_sdramc.h
+Date: Wed, 22 Feb 2012 10:39:34 +0100
+Message-Id: <0224eba3c4d010d44784d304f1754d12c2421bb7.1329903206.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
@@ -25,486 +24,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-The GPBR registers are used for storing RTC values. The GPBR registers
-to use are now provided using standard resource entry. The array is
-filled in SoC specific code.
-rtc-at91sam9 RTT as RTC driver is modified to retrieve this information.
+This cleanup is done to allow to have multiple SoC in the same image.
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-[nicolas.ferre@atmel.com: rework resources assignment]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/at91sam9260_devices.c      |   19 +++++++++++++--
- arch/arm/mach-at91/at91sam9261_devices.c      |   17 ++++++++++++-
- arch/arm/mach-at91/at91sam9263_devices.c      |   30 ++++++++++++++++++++----
- arch/arm/mach-at91/at91sam9g45_devices.c      |   17 ++++++++++++-
- arch/arm/mach-at91/at91sam9rl_devices.c       |   17 ++++++++++++-
- arch/arm/mach-at91/include/mach/at91sam9260.h |    5 +--
- arch/arm/mach-at91/include/mach/at91sam9261.h |    5 +--
- arch/arm/mach-at91/include/mach/at91sam9263.h |    5 +--
- arch/arm/mach-at91/include/mach/at91sam9g45.h |    5 +--
- arch/arm/mach-at91/include/mach/at91sam9rl.h  |    2 +-
- drivers/rtc/rtc-at91sam9.c                    |   24 +++++++++++++++----
- 11 files changed, 114 insertions(+), 32 deletions(-)
+ arch/arm/mach-at91/include/mach/at91rm9200_mc.h    |   44 --------------
+ .../arm/mach-at91/include/mach/at91rm9200_sdramc.h |   63 ++++++++++++++++++++
+ arch/arm/mach-at91/pm.c                            |    2 +-
+ arch/arm/mach-at91/pm.h                            |    7 +-
+ arch/arm/mach-at91/pm_slowclock.S                  |    3 +-
+ 5 files changed, 70 insertions(+), 49 deletions(-)
+ create mode 100644 arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
 
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index 2071017..34d2f5a 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -718,14 +718,15 @@ static struct resource rtt_resources[] = {
- 		.start	= AT91SAM9260_BASE_RTT,
- 		.end	= AT91SAM9260_BASE_RTT + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
--	}
-+	}, {
-+		.flags	= IORESOURCE_MEM,
-+	},
- };
+diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
+index d34e4ed..0eb031b 100644
+--- a/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
++++ b/arch/arm/mach-at91/include/mach/at91rm9200_mc.h
+@@ -87,50 +87,6 @@
+ #define		AT91_SMC_RWHOLD		(7 << 28)		/* Read & Write Signal Hold Time */
+ #define			AT91_SMC_RWHOLD_(x)	((x) << 28)
  
- static struct platform_device at91sam9260_rtt_device = {
- 	.name		= "at91_rtt",
- 	.id		= 0,
- 	.resource	= rtt_resources,
--	.num_resources	= ARRAY_SIZE(rtt_resources),
- };
- 
- 
-@@ -733,9 +734,21 @@ static struct platform_device at91sam9260_rtt_device = {
- static void __init at91_add_device_rtt_rtc(void)
- {
- 	at91sam9260_rtt_device.name = "rtc-at91sam9";
-+	/*
-+	 * The second resource is needed:
-+	 * GPBR will serve as the storage for RTC time offset
-+	 */
-+	at91sam9260_rtt_device.num_resources = 2;
-+	rtt_resources[1].start = AT91SAM9260_BASE_GPBR +
-+				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-+	rtt_resources[1].end = rtt_resources[1].start + 3;
- }
- #else
--static void __init at91_add_device_rtt_rtc(void) {}
-+static void __init at91_add_device_rtt_rtc(void)
-+{
-+	/* Only one resource is needed: RTT not used as RTC */
-+	at91sam9260_rtt_device.num_resources = 1;
-+}
- #endif
- 
- static void __init at91_add_device_rtt(void)
-diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-index b3ceb97..b9c06c4 100644
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -604,6 +604,8 @@ static struct resource rtt_resources[] = {
- 		.start	= AT91SAM9261_BASE_RTT,
- 		.end	= AT91SAM9261_BASE_RTT + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.flags	= IORESOURCE_MEM,
- 	}
- };
- 
-@@ -611,16 +613,27 @@ static struct platform_device at91sam9261_rtt_device = {
- 	.name		= "at91_rtt",
- 	.id		= 0,
- 	.resource	= rtt_resources,
--	.num_resources	= ARRAY_SIZE(rtt_resources),
- };
- 
- #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
- static void __init at91_add_device_rtt_rtc(void)
- {
- 	at91sam9261_rtt_device.name = "rtc-at91sam9";
-+	/*
-+	 * The second resource is needed:
-+	 * GPBR will serve as the storage for RTC time offset
-+	 */
-+	at91sam9261_rtt_device.num_resources = 2;
-+	rtt_resources[1].start = AT91SAM9261_BASE_GPBR +
-+				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-+	rtt_resources[1].end = rtt_resources[1].start + 3;
- }
- #else
--static void __init at91_add_device_rtt_rtc(void) {}
-+static void __init at91_add_device_rtt_rtc(void)
-+{
-+	/* Only one resource is needed: RTT not used as RTC */
-+	at91sam9261_rtt_device.num_resources = 1;
-+}
- #endif
- 
- static void __init at91_add_device_rtt(void)
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index b4a6adb..a8ae6f5 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -967,6 +967,8 @@ static struct resource rtt0_resources[] = {
- 		.start	= AT91SAM9263_BASE_RTT0,
- 		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.flags	= IORESOURCE_MEM,
- 	}
- };
- 
-@@ -974,7 +976,6 @@ static struct platform_device at91sam9263_rtt0_device = {
- 	.name		= "at91_rtt",
- 	.id		= 0,
- 	.resource	= rtt0_resources,
--	.num_resources	= ARRAY_SIZE(rtt0_resources),
- };
- 
- static struct resource rtt1_resources[] = {
-@@ -982,6 +983,8 @@ static struct resource rtt1_resources[] = {
- 		.start	= AT91SAM9263_BASE_RTT1,
- 		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.flags	= IORESOURCE_MEM,
- 	}
- };
- 
-@@ -989,31 +992,48 @@ static struct platform_device at91sam9263_rtt1_device = {
- 	.name		= "at91_rtt",
- 	.id		= 1,
- 	.resource	= rtt1_resources,
--	.num_resources	= ARRAY_SIZE(rtt1_resources),
- };
- 
- #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
- static void __init at91_add_device_rtt_rtc(void)
- {
- 	struct platform_device *pdev;
-+	struct resource *r;
- 
- 	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
- 	case 0:
-+		/*
-+		 * The second resource is needed only for the chosen RTT:
-+		 * GPBR will serve as the storage for RTC time offset
-+		 */
-+		at91sam9263_rtt0_device.num_resources = 2;
-+		at91sam9263_rtt1_device.num_resources = 1;
- 		pdev = &at91sam9263_rtt0_device;
-+		r = rtt0_resources;
- 		break;
- 	case 1:
-+		at91sam9263_rtt0_device.num_resources = 1;
-+		at91sam9263_rtt1_device.num_resources = 2;
- 		pdev = &at91sam9263_rtt1_device;
-+		r = rtt1_resources;
- 		break;
- 	default:
--		pr_err("at91sam9263: support only 2 RTT (%d)\n",
--			 CONFIG_RTC_DRV_AT91SAM9_RTT);
-+		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
-+		       CONFIG_RTC_DRV_AT91SAM9_RTT);
- 		return;
- 	}
- 
- 	pdev->name = "rtc-at91sam9";
-+	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-+	r[1].end = r[1].start + 3;
- }
- #else
--static void __init at91_add_device_rtt_rtc(void) {}
-+static void __init at91_add_device_rtt_rtc(void)
-+{
-+	/* Only one resource is needed: RTT not used as RTC */
-+	at91sam9263_rtt0_device.num_resources = 1;
-+	at91sam9263_rtt1_device.num_resources = 1;
-+}
- #endif
- 
- static void __init at91_add_device_rtt(void)
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index 81d1adf..98e4041 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -1194,6 +1194,8 @@ static struct resource rtt_resources[] = {
- 		.start	= AT91SAM9G45_BASE_RTT,
- 		.end	= AT91SAM9G45_BASE_RTT + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.flags	= IORESOURCE_MEM,
- 	}
- };
- 
-@@ -1201,16 +1203,27 @@ static struct platform_device at91sam9g45_rtt_device = {
- 	.name		= "at91_rtt",
- 	.id		= 0,
- 	.resource	= rtt_resources,
--	.num_resources	= ARRAY_SIZE(rtt_resources),
- };
- 
- #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
- static void __init at91_add_device_rtt_rtc(void)
- {
- 	at91sam9g45_rtt_device.name = "rtc-at91sam9";
-+	/*
-+	 * The second resource is needed:
-+	 * GPBR will serve as the storage for RTC time offset
-+	 */
-+	at91sam9g45_rtt_device.num_resources = 2;
-+	rtt_resources[1].start = AT91SAM9G45_BASE_GPBR +
-+				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-+	rtt_resources[1].end = rtt_resources[1].start + 3;
- }
- #else
--static void __init at91_add_device_rtt_rtc(void) {}
-+static void __init at91_add_device_rtt_rtc(void)
-+{
-+	/* Only one resource is needed: RTT not used as RTC */
-+	at91sam9g45_rtt_device.num_resources = 1;
-+}
- #endif
- 
- static void __init at91_add_device_rtt(void)
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index dd248c8..342a6c5 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -683,6 +683,8 @@ static struct resource rtt_resources[] = {
- 		.start	= AT91SAM9RL_BASE_RTT,
- 		.end	= AT91SAM9RL_BASE_RTT + SZ_16 - 1,
- 		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.flags	= IORESOURCE_MEM,
- 	}
- };
- 
-@@ -690,16 +692,27 @@ static struct platform_device at91sam9rl_rtt_device = {
- 	.name		= "at91_rtt",
- 	.id		= 0,
- 	.resource	= rtt_resources,
--	.num_resources	= ARRAY_SIZE(rtt_resources),
- };
- 
- #if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
- static void __init at91_add_device_rtt_rtc(void)
- {
- 	at91sam9rl_rtt_device.name = "rtc-at91sam9";
-+	/*
-+	 * The second resource is needed:
-+	 * GPBR will serve as the storage for RTC time offset
-+	 */
-+	at91sam9rl_rtt_device.num_resources = 2;
-+	rtt_resources[1].start = AT91SAM9RL_BASE_GPBR +
-+				 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-+	rtt_resources[1].end = rtt_resources[1].start + 3;
- }
- #else
--static void __init at91_add_device_rtt_rtc(void) {}
-+static void __init at91_add_device_rtt_rtc(void)
-+{
-+	/* Only one resource is needed: RTT not used as RTC */
-+	at91sam9rl_rtt_device.num_resources = 1;
-+}
- #endif
- 
- static void __init at91_add_device_rtt(void)
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9260.h b/arch/arm/mach-at91/include/mach/at91sam9260.h
-index 1524e87..2e47b6d 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9260.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9260.h
-@@ -78,10 +78,8 @@
- #define AT91SAM9260_BASE_ADC		0xfffe0000
- 
- /*
-- * System Peripherals (offset from AT91_BASE_SYS)
-+ * System Peripherals
-  */
--#define AT91_GPBR	(0xfffffd50 - AT91_BASE_SYS)
+-/* SDRAM Controller registers */
+-#define AT91_SDRAMC_MR		(AT91_MC + 0x90)	/* Mode Register */
+-#define		AT91_SDRAMC_MODE	(0xf << 0)		/* Command Mode */
+-#define			AT91_SDRAMC_MODE_NORMAL		(0 << 0)
+-#define			AT91_SDRAMC_MODE_NOP		(1 << 0)
+-#define			AT91_SDRAMC_MODE_PRECHARGE	(2 << 0)
+-#define			AT91_SDRAMC_MODE_LMR		(3 << 0)
+-#define			AT91_SDRAMC_MODE_REFRESH	(4 << 0)
+-#define		AT91_SDRAMC_DBW		(1   << 4)		/* Data Bus Width */
+-#define			AT91_SDRAMC_DBW_32	(0 << 4)
+-#define			AT91_SDRAMC_DBW_16	(1 << 4)
 -
- #define AT91SAM9260_BASE_ECC	0xffffe800
- #define AT91SAM9260_BASE_SDRAMC	0xffffea00
- #define AT91SAM9260_BASE_SMC	0xffffec00
-@@ -95,6 +93,7 @@
- #define AT91SAM9260_BASE_RTT	0xfffffd20
- #define AT91SAM9260_BASE_PIT	0xfffffd30
- #define AT91SAM9260_BASE_WDT	0xfffffd40
-+#define AT91SAM9260_BASE_GPBR	0xfffffd50
- 
- #define AT91_USART0	AT91SAM9260_BASE_US0
- #define AT91_USART1	AT91SAM9260_BASE_US1
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9261.h b/arch/arm/mach-at91/include/mach/at91sam9261.h
-index a6a3c1d..44fbdc1 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9261.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9261.h
-@@ -63,10 +63,8 @@
- 
- 
- /*
-- * System Peripherals (offset from AT91_BASE_SYS)
-+ * System Peripherals
-  */
--#define AT91_GPBR	(0xfffffd50 - AT91_BASE_SYS)
+-#define AT91_SDRAMC_TR		(AT91_MC + 0x94)	/* Refresh Timer Register */
+-#define		AT91_SDRAMC_COUNT	(0xfff << 0)		/* Refresh Timer Count */
 -
- #define AT91SAM9261_BASE_SMC	0xffffec00
- #define AT91SAM9261_BASE_MATRIX	0xffffee00
- #define AT91SAM9261_BASE_SDRAMC	0xffffea00
-@@ -79,6 +77,7 @@
- #define AT91SAM9261_BASE_RTT	0xfffffd20
- #define AT91SAM9261_BASE_PIT	0xfffffd30
- #define AT91SAM9261_BASE_WDT	0xfffffd40
-+#define AT91SAM9261_BASE_GPBR	0xfffffd50
- 
- #define AT91_USART0	AT91SAM9261_BASE_US0
- #define AT91_USART1	AT91SAM9261_BASE_US1
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9263.h b/arch/arm/mach-at91/include/mach/at91sam9263.h
-index dda083d..d96cbb2 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9263.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9263.h
-@@ -72,10 +72,8 @@
- #define AT91SAM9263_BASE_2DGE		0xfffc8000
- 
- /*
-- * System Peripherals (offset from AT91_BASE_SYS)
-+ * System Peripherals
-  */
--#define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
+-#define AT91_SDRAMC_CR		(AT91_MC + 0x98)	/* Configuration Register */
+-#define		AT91_SDRAMC_NC		(3   <<  0)		/* Number of Column Bits */
+-#define			AT91_SDRAMC_NC_8	(0 << 0)
+-#define			AT91_SDRAMC_NC_9	(1 << 0)
+-#define			AT91_SDRAMC_NC_10	(2 << 0)
+-#define			AT91_SDRAMC_NC_11	(3 << 0)
+-#define		AT91_SDRAMC_NR		(3   <<  2)		/* Number of Row Bits */
+-#define			AT91_SDRAMC_NR_11	(0 << 2)
+-#define			AT91_SDRAMC_NR_12	(1 << 2)
+-#define			AT91_SDRAMC_NR_13	(2 << 2)
+-#define		AT91_SDRAMC_NB		(1   <<  4)		/* Number of Banks */
+-#define			AT91_SDRAMC_NB_2	(0 << 4)
+-#define			AT91_SDRAMC_NB_4	(1 << 4)
+-#define		AT91_SDRAMC_CAS		(3   <<  5)		/* CAS Latency */
+-#define			AT91_SDRAMC_CAS_2	(2 << 5)
+-#define		AT91_SDRAMC_TWR		(0xf <<  7)		/* Write Recovery Delay */
+-#define		AT91_SDRAMC_TRC		(0xf << 11)		/* Row Cycle Delay */
+-#define		AT91_SDRAMC_TRP		(0xf << 15)		/* Row Precharge Delay */
+-#define		AT91_SDRAMC_TRCD	(0xf << 19)		/* Row to Column Delay */
+-#define		AT91_SDRAMC_TRAS	(0xf << 23)		/* Active to Precharge Delay */
+-#define		AT91_SDRAMC_TXSR	(0xf << 27)		/* Exit Self Refresh to Active Delay */
 -
- #define AT91SAM9263_BASE_ECC0	0xffffe000
- #define AT91SAM9263_BASE_SDRAMC0 0xffffe200
- #define AT91SAM9263_BASE_SMC0	0xffffe400
-@@ -95,6 +93,7 @@
- #define AT91SAM9263_BASE_PIT	0xfffffd30
- #define AT91SAM9263_BASE_WDT	0xfffffd40
- #define AT91SAM9263_BASE_RTT1	0xfffffd50
-+#define AT91SAM9263_BASE_GPBR	0xfffffd60
- 
- #define AT91_USART0	AT91SAM9263_BASE_US0
- #define AT91_USART1	AT91SAM9263_BASE_US1
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9g45.h b/arch/arm/mach-at91/include/mach/at91sam9g45.h
-index a824e15..d052abc 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9g45.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9g45.h
-@@ -84,10 +84,8 @@
- #define AT91SAM9G45_BASE_TC5		0xfffd4080
- 
- /*
-- * System Peripherals (offset from AT91_BASE_SYS)
-+ * System Peripherals
-  */
--#define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
+-#define AT91_SDRAMC_SRR		(AT91_MC + 0x9c)	/* Self Refresh Register */
+-#define AT91_SDRAMC_LPR		(AT91_MC + 0xa0)	/* Low Power Register */
+-#define AT91_SDRAMC_IER		(AT91_MC + 0xa4)	/* Interrupt Enable Register */
+-#define AT91_SDRAMC_IDR		(AT91_MC + 0xa8)	/* Interrupt Disable Register */
+-#define AT91_SDRAMC_IMR		(AT91_MC + 0xac)	/* Interrupt Mask Register */
+-#define AT91_SDRAMC_ISR		(AT91_MC + 0xb0)	/* Interrupt Status Register */
 -
- #define AT91SAM9G45_BASE_ECC	0xffffe200
- #define AT91SAM9G45_BASE_DDRSDRC1 0xffffe400
- #define AT91SAM9G45_BASE_DDRSDRC0 0xffffe600
-@@ -106,6 +104,7 @@
- #define AT91SAM9G45_BASE_PIT	0xfffffd30
- #define AT91SAM9G45_BASE_WDT	0xfffffd40
- #define AT91SAM9G45_BASE_RTC	0xfffffdb0
-+#define AT91SAM9G45_BASE_GPBR	0xfffffd60
- 
- #define AT91_USART0	AT91SAM9G45_BASE_US0
- #define AT91_USART1	AT91SAM9G45_BASE_US1
-diff --git a/arch/arm/mach-at91/include/mach/at91sam9rl.h b/arch/arm/mach-at91/include/mach/at91sam9rl.h
-index 2d7176a..e0073eb 100644
---- a/arch/arm/mach-at91/include/mach/at91sam9rl.h
-+++ b/arch/arm/mach-at91/include/mach/at91sam9rl.h
-@@ -70,7 +70,6 @@
-  * System Peripherals (offset from AT91_BASE_SYS)
-  */
- #define AT91_SCKCR	(0xfffffd50 - AT91_BASE_SYS)
--#define AT91_GPBR	(0xfffffd60 - AT91_BASE_SYS)
- 
- #define AT91SAM9RL_BASE_DMA	0xffffe600
- #define AT91SAM9RL_BASE_ECC	0xffffe800
-@@ -87,6 +86,7 @@
- #define AT91SAM9RL_BASE_RTT	0xfffffd20
- #define AT91SAM9RL_BASE_PIT	0xfffffd30
- #define AT91SAM9RL_BASE_WDT	0xfffffd40
-+#define AT91SAM9RL_BASE_GPBR	0xfffffd60
- #define AT91SAM9RL_BASE_RTC	0xfffffe00
- 
- #define AT91_USART0	AT91SAM9RL_BASE_US0
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index 08b69fd..729fb84 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -57,6 +57,7 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
-+	void __iomem		*gpbr;
- };
- 
- #define rtt_readl(rtc, field) \
-@@ -65,9 +66,9 @@ struct sam9_rtc {
- 	__raw_writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
- #define gpbr_readl(rtc) \
--	at91_sys_read(AT91_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR)
-+	__raw_readl((rtc)->gpbr)
- #define gpbr_writel(rtc, val) \
--	at91_sys_write(AT91_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR, (val))
-+	__raw_writel((val), (rtc)->gpbr)
- 
- /*
-  * Read current time and date in RTC
-@@ -289,14 +290,17 @@ static const struct rtc_class_ops at91_rtc_ops = {
-  */
- static int __devinit at91_rtc_probe(struct platform_device *pdev)
- {
--	struct resource	*r;
-+	struct resource	*r, *r_gpbr;
- 	struct sam9_rtc	*rtc;
- 	int		ret;
- 	u32		mr;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!r)
-+	r_gpbr = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!r || !r_gpbr) {
-+		dev_err(&pdev->dev, "need 2 ressources\n");
- 		return -ENODEV;
-+	}
- 
- 	rtc = kzalloc(sizeof *rtc, GFP_KERNEL);
- 	if (!rtc)
-@@ -314,6 +318,13 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
- 		goto fail;
- 	}
- 
-+	rtc->gpbr = ioremap(r_gpbr->start, resource_size(r_gpbr));
-+	if (!rtc->gpbr) {
-+		dev_err(&pdev->dev, "failed to map gpbr registers, aborting.\n");
-+		ret = -ENOMEM;
-+		goto fail_gpbr;
-+	}
+ /* Burst Flash Controller register */
+ #define AT91_BFC_MR		(AT91_MC + 0xc0)	/* Mode Register */
+ #define		AT91_BFC_BFCOM		(3   <<  0)		/* Burst Flash Controller Operating Mode */
+diff --git a/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
+new file mode 100644
+index 0000000..7ad3597
+--- /dev/null
++++ b/arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
+@@ -0,0 +1,63 @@
++/*
++ * arch/arm/mach-at91/include/mach/at91rm9200_sdramc.h
++ *
++ * Copyright (C) 2005 Ivan Kokshaysky
++ * Copyright (C) SAN People
++ *
++ * Memory Controllers (SDRAMC only) - System peripherals registers.
++ * Based on AT91RM9200 datasheet revision E.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
- 	mr = rtt_readl(rtc, MR);
++#ifndef AT91RM9200_SDRAMC_H
++#define AT91RM9200_SDRAMC_H
++
++/* SDRAM Controller registers */
++#define AT91RM9200_SDRAMC_MR		(AT91_MC + 0x90)	/* Mode Register */
++#define		AT91RM9200_SDRAMC_MODE	(0xf << 0)		/* Command Mode */
++#define			AT91RM9200_SDRAMC_MODE_NORMAL		(0 << 0)
++#define			AT91RM9200_SDRAMC_MODE_NOP		(1 << 0)
++#define			AT91RM9200_SDRAMC_MODE_PRECHARGE	(2 << 0)
++#define			AT91RM9200_SDRAMC_MODE_LMR		(3 << 0)
++#define			AT91RM9200_SDRAMC_MODE_REFRESH	(4 << 0)
++#define		AT91RM9200_SDRAMC_DBW		(1   << 4)		/* Data Bus Width */
++#define			AT91RM9200_SDRAMC_DBW_32	(0 << 4)
++#define			AT91RM9200_SDRAMC_DBW_16	(1 << 4)
++
++#define AT91RM9200_SDRAMC_TR		(AT91_MC + 0x94)	/* Refresh Timer Register */
++#define		AT91RM9200_SDRAMC_COUNT	(0xfff << 0)		/* Refresh Timer Count */
++
++#define AT91RM9200_SDRAMC_CR		(AT91_MC + 0x98)	/* Configuration Register */
++#define		AT91RM9200_SDRAMC_NC		(3   <<  0)		/* Number of Column Bits */
++#define			AT91RM9200_SDRAMC_NC_8	(0 << 0)
++#define			AT91RM9200_SDRAMC_NC_9	(1 << 0)
++#define			AT91RM9200_SDRAMC_NC_10	(2 << 0)
++#define			AT91RM9200_SDRAMC_NC_11	(3 << 0)
++#define		AT91RM9200_SDRAMC_NR		(3   <<  2)		/* Number of Row Bits */
++#define			AT91RM9200_SDRAMC_NR_11	(0 << 2)
++#define			AT91RM9200_SDRAMC_NR_12	(1 << 2)
++#define			AT91RM9200_SDRAMC_NR_13	(2 << 2)
++#define		AT91RM9200_SDRAMC_NB		(1   <<  4)		/* Number of Banks */
++#define			AT91RM9200_SDRAMC_NB_2	(0 << 4)
++#define			AT91RM9200_SDRAMC_NB_4	(1 << 4)
++#define		AT91RM9200_SDRAMC_CAS		(3   <<  5)		/* CAS Latency */
++#define			AT91RM9200_SDRAMC_CAS_2	(2 << 5)
++#define		AT91RM9200_SDRAMC_TWR		(0xf <<  7)		/* Write Recovery Delay */
++#define		AT91RM9200_SDRAMC_TRC		(0xf << 11)		/* Row Cycle Delay */
++#define		AT91RM9200_SDRAMC_TRP		(0xf << 15)		/* Row Precharge Delay */
++#define		AT91RM9200_SDRAMC_TRCD	(0xf << 19)		/* Row to Column Delay */
++#define		AT91RM9200_SDRAMC_TRAS	(0xf << 23)		/* Active to Precharge Delay */
++#define		AT91RM9200_SDRAMC_TXSR	(0xf << 27)		/* Exit Self Refresh to Active Delay */
++
++#define AT91RM9200_SDRAMC_SRR		(AT91_MC + 0x9c)	/* Self Refresh Register */
++#define AT91RM9200_SDRAMC_LPR		(AT91_MC + 0xa0)	/* Low Power Register */
++#define AT91RM9200_SDRAMC_IER		(AT91_MC + 0xa4)	/* Interrupt Enable Register */
++#define AT91RM9200_SDRAMC_IDR		(AT91_MC + 0xa8)	/* Interrupt Disable Register */
++#define AT91RM9200_SDRAMC_IMR		(AT91_MC + 0xac)	/* Interrupt Mask Register */
++#define AT91RM9200_SDRAMC_ISR		(AT91_MC + 0xb0)	/* Interrupt Status Register */
++
++#endif
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index aac00ce..8046a50 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -315,7 +315,7 @@ static int __init at91_pm_init(void)
  
- 	/* unless RTT is counting at 1 Hz, re-initialize it */
-@@ -340,7 +351,7 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
- 	if (ret) {
- 		dev_dbg(&pdev->dev, "can't share IRQ %d?\n", AT91_ID_SYS);
- 		rtc_device_unregister(rtc->rtcdev);
--		goto fail;
-+		goto fail_register;
- 	}
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
+-	at91_sys_write(AT91_SDRAMC_LPR, 0);
++	at91_sys_write(AT91RM9200_SDRAMC_LPR, 0);
+ #endif
  
- 	/* NOTE:  sam9260 rev A silicon has a ROM bug which resets the
-@@ -356,6 +367,8 @@ static int __devinit at91_rtc_probe(struct platform_device *pdev)
- 	return 0;
+ 	suspend_set_ops(&at91_pm_ops);
+diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+index bba9ce1..41cdd2b 100644
+--- a/arch/arm/mach-at91/pm.h
++++ b/arch/arm/mach-at91/pm.h
+@@ -13,6 +13,7 @@
  
- fail_register:
-+	iounmap(rtc->gpbr);
-+fail_gpbr:
- 	iounmap(rtc->rtt);
- fail:
- 	platform_set_drvdata(pdev, NULL);
-@@ -377,6 +390,7 @@ static int __devexit at91_rtc_remove(struct platform_device *pdev)
+ #ifdef CONFIG_ARCH_AT91RM9200
+ #include <mach/at91rm9200_mc.h>
++#include <mach/at91rm9200_sdramc.h>
  
- 	rtc_device_unregister(rtc->rtcdev);
+ /*
+  * The AT91RM9200 goes into self-refresh mode with this command, and will
+@@ -26,7 +27,7 @@
  
-+	iounmap(rtc->gpbr);
- 	iounmap(rtc->rtt);
- 	platform_set_drvdata(pdev, NULL);
- 	kfree(rtc);
+ static inline void at91rm9200_standby(void)
+ {
+-	u32 lpr = at91_sys_read(AT91_SDRAMC_LPR);
++	u32 lpr = at91_sys_read(AT91RM9200_SDRAMC_LPR);
+ 
+ 	asm volatile(
+ 		"b    1f\n\t"
+@@ -37,8 +38,8 @@ static inline void at91rm9200_standby(void)
+ 		"    mcr    p15, 0, %0, c7, c0, 4\n\t"
+ 		"    str    %5, [%1, %2]"
+ 		:
+-		: "r" (0), "r" (AT91_BASE_SYS), "r" (AT91_SDRAMC_LPR),
+-		  "r" (1), "r" (AT91_SDRAMC_SRR),
++		: "r" (0), "r" (AT91_BASE_SYS), "r" (AT91RM9200_SDRAMC_LPR),
++		  "r" (1), "r" (AT91RM9200_SDRAMC_SRR),
+ 		  "r" (lpr));
+ }
+ 
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 33fc4a7..c2cc7d4 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -18,6 +18,7 @@
+ 
+ #if defined(CONFIG_ARCH_AT91RM9200)
+ #include <mach/at91rm9200_mc.h>
++#include <mach/at91rm9200_sdramc.h>
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ #include <mach/at91sam9_ddrsdr.h>
+ #else
+@@ -131,7 +132,7 @@ ENTRY(at91_slow_clock)
+ #ifdef CONFIG_ARCH_AT91RM9200
+ 	/* Put SDRAM in self-refresh mode */
+ 	mov	tmp1, #1
+-	str	tmp1, [sdramc, #AT91_SDRAMC_SRR]
++	str	tmp1, [sdramc, #AT91RM9200_SDRAMC_SRR]
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ 
+ 	/* prepare for DDRAM self-refresh mode */
 -- 
 1.7.9
 
