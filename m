@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab2BVA6w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 19:58:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:28386 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab2BVA6j convert rfc822-to-8bit (ORCPT
+	id S1752409Ab2BVBAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:00:21 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54537 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2BVBAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 19:58:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="68880160"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: RAS trace event proto
-Thread-Topic: RAS trace event proto
-Thread-Index: AQHM7+BCctoWvh/p/Eytj6bC0rxzbpZHzceAgAAeR4CAAAoAAIAAAzCA///wA6A=
-Date: Wed, 22 Feb 2012 00:58:37 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F03DA60@ORSMSX104.amr.corp.intel.com>
-References: <20120220145920.GB5728@aftab> <4F438CE9.7080807@redhat.com>
- <20120221141231.GA15515@aftab>
- <1329835698.25686.60.camel@gandalf.stny.rr.com>
- <20120221145943.GB15515@aftab>
-In-Reply-To: <20120221145943.GB15515@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 Feb 2012 20:00:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.130.233 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Tue, 21 Feb 2012 17:00:15 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
+ cgroup_enable_task_cg_list
+Message-ID: <20120222010015.GH12236@google.com>
+References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+ <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
+ <20120221222343.GU3090@google.com>
+ <20120222005525.GC13403@somewhere.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222005525.GC13403@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Also, folding everything into just one string prevents (or make hard) the usage of
-> > > > the perf filters, for example, to filter only the errors at the memory controller 1.
-> > > 
-> > > Huh, because you can't grep through the trace anymore...?
-> > > 
+On Wed, Feb 22, 2012 at 01:55:28AM +0100, Frederic Weisbecker wrote:
+> > > +	 * We need tasklist_lock because RCU is not safe against
+> > > +	 * while_each_thread(). Besides, a forking task that has passed
+> > > +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
+> > > +	 * is not guaranteed to have its child immediately visible in the
+> > > +	 * tasklist if we walk through it with RCU.
+> > > +	 */
 > > 
-> > I believe Mauro is talking about the tracing filters used by both perf
-> > and ftrace that lets you ignore trace events when the contents of the
-> > event does not match the filter. This is filtering out events before
-> > they go to the buffer.
->
-> Oh ok, in that case we could filter the errors - if needed - before they
-> get even reported. I say "if needed" because normally we want to collect
-> all hw errors in the trace, IMHO.
+> > Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
+> > is made rcu safe. On a large system, it could take a while to iterate
+> > over every thread in the system. Thats a long time to hold a spinlock.
+> > But it only happens once so probably not that big a deal.
+> 
+> I think that even if while_each_thread() was RCU safe, that wouldn't
+> work here.
 
-I'm also struggling to understand an end-user use case where you would
-want filtering.  Mauro - can you expand a bit on why someone would just
-want to see the errors from memory controller 1?
+Guys, this is one time thing.  It happens *once* after boot and we're
+already holding exclusive lock.  There's no reason to optimize this at
+all.  Let's just keep it simple.
 
-My mental model of the world is that large systems have some background
-noise - a trickle of corrected errors that happen in normal operation.
-User shouldn't care about these errors unless they breach some threshold.
+Thanks.
 
-When something goes wrong, you may see a storm of corrected errors, or
-some uncorrected errors. In either case you'd like to get as much information
-as possible to identify the component that is at fault. I'd definitely like
-to see some structure to the error reporting, so that mining for data patterns
-in a storm isn't hideously platform dependent.
-
-It might be easier to evaluate the competing ideas here with some sample
-output in addition to the code.
-
--Tony
-
+-- 
+tejun
