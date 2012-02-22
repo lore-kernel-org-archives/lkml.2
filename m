@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2BVQEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:04:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50954 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab2BVQE3 (ORCPT
+	id S1753668Ab2BVQFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:05:05 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:37326 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753532Ab2BVQFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:04:29 -0500
-Date: Wed, 22 Feb 2012 08:03:19 -0800
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-6b1bee9035d430c4b4f586df6df4b3f840e89b5b@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@redhat.com, eric.dumazet@gmail.com,
-        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, eric.dumazet@gmail.com,
-        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20120221145424.GA6757@quad>
-References: <20120221145424.GA6757@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: fix broken perf record -a mode
-Git-Commit-ID: 6b1bee9035d430c4b4f586df6df4b3f840e89b5b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Feb 2012 11:05:00 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Danny Kukawka <dkukawka@suse.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: [RESEND][PATCH 2/2] drivers/block/DAC960: fix -Wuninitialized warning
+Date: Wed, 22 Feb 2012 17:04:41 +0100
+Message-Id: <1329926681-6057-3-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1329926681-6057-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329926681-6057-1-git-send-email-danny.kukawka@bisect.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:03:40 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329926700;8b37ff75;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6b1bee9035d430c4b4f586df6df4b3f840e89b5b
-Gitweb:     http://git.kernel.org/tip/6b1bee9035d430c4b4f586df6df4b3f840e89b5b
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 21 Feb 2012 15:54:25 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 21 Feb 2012 15:05:43 -0200
+Set CommandMailbox with memset before use it. Fix for:
 
-perf tools: fix broken perf record -a mode
+drivers/block/DAC960.c: In function ‘DAC960_V1_EnableMemoryMailboxInterface’:
+arch/x86/include/asm/io.h:61:1: warning: ‘CommandMailbox.Bytes[12]’
+ may be used uninitialized in this function [-Wuninitialized]
+drivers/block/DAC960.c:1175:30: note: ‘CommandMailbox.Bytes[12]’
+ was declared here
 
-The following commit:
-b52956c perf tools: Allow multiple threads or processes in record, stat, top
-
-introduced a bug in the thread_map code which caused perf record -a to
-not setup system-wide monitoring properly.
-
-$ taskset -c 1 noploop 1000 &
-$ perf record -a -C 1 sleep 10
-$ perf report -D | tail -20
-cycles stats:
-           TOTAL events:       4413
-            MMAP events:       4025
-            COMM events:        340
-          SAMPLE events:         48
-
-Here I was expecting about 10,000 samples and not 48.
-
-In system-wide mode, the PID passed to perf_event_open() must be -1 and
-it was 0. That caused the kernel to setup a per-process event on PID:0.
-Consequently, the number of samples captured does not correspond to the
-requested measurement.
-
-The following one-liner fixes the problem for me with or without -C.
-
-I would also suggest to change the malloc() to something that matches
-the struct definition. thread_map->map[] is declared as int map[] and
-not pid_t map[]. If map[] can only contain pids, then change the struct
-definition.
-
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120221145424.GA6757@quad
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 ---
- tools/perf/util/thread_map.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/block/DAC960.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index e15983c..84d9bd78 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -229,7 +229,7 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
- 	if (!tid_str) {
- 		threads = malloc(sizeof(*threads) + sizeof(pid_t));
- 		if (threads != NULL) {
--			threads->map[1] = -1;
-+			threads->map[0] = -1;
- 			threads->nr	= 1;
- 		}
- 		return threads;
+diff --git a/drivers/block/DAC960.c b/drivers/block/DAC960.c
+index 487ce64..8db9089 100644
+--- a/drivers/block/DAC960.c
++++ b/drivers/block/DAC960.c
+@@ -1177,7 +1177,8 @@ static bool DAC960_V1_EnableMemoryMailboxInterface(DAC960_Controller_T
+   int TimeoutCounter;
+   int i;
+ 
+-  
++  memset(&CommandMailbox, 0, sizeof(DAC960_V1_CommandMailbox_T));
++
+   if (pci_set_dma_mask(Controller->PCIDevice, DMA_BIT_MASK(32)))
+ 	return DAC960_Failure(Controller, "DMA mask out of range");
+   Controller->BounceBufferLimit = DMA_BIT_MASK(32);
+-- 
+1.7.8.3
+
