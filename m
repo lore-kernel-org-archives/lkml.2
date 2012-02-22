@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab2BVQSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:18:13 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46290 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751042Ab2BVQSM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:18:12 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eranian@google.com designates 10.112.85.233 as permitted sender) smtp.mail=eranian@google.com; dkim=pass header.i=eranian@google.com
+	id S1754002Ab2BVQUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:20:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41968 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab2BVQUg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 11:20:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120222111501.GA23068@elte.hu>
-References: <1328826068-11713-1-git-send-email-eranian@google.com>
-	<1328826068-11713-14-git-send-email-eranian@google.com>
-	<20120222111501.GA23068@elte.hu>
-Date: Wed, 22 Feb 2012 17:18:10 +0100
-Message-ID: <CABPqkBQz0G6DQfAfzD2=1mCDvmVsaZhFjW0qEh4y+rNxtbLC4Q@mail.gmail.com>
-Subject: Re: [PATCH v6 13/18] perf: add support for taken branch sampling to
- perf report
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Roberto Agostino Vitillo <ravitillo@lbl.gov>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, acme@redhat.com, robert.richter@amd.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, asharma@fb.com,
-        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1329914744.2193.73.camel@perseus.themaw.net>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net> <1329890027.2193.48.camel@perseus.themaw.net>
+ <1329890251.2193.50.camel@perseus.themaw.net> <1329903139.2193.66.camel@perseus.themaw.net>
+ <1329912927.2193.68.camel@perseus.themaw.net> <1329914392.2193.71.camel@perseus.themaw.net>
+ <1329914744.2193.73.camel@perseus.themaw.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 08:20:15 -0800
+X-Google-Sender-Auth: daokr0uUF4yx0SONEUqtDmO71ec
+Message-ID: <CA+55aFzGc7UmDK5OG7Vog0cQDuuP1MWmX1Xn=7Y+M_k+9+zHFg@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: Ian Kent <raven@themaw.net>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 12:15 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
->>
->> This patch adds support for taken branch sampling, i.e, the
->> PERF_SAMPLE_BRANCH_STACK feature to perf report. In other
->> words, to display histograms based on taken branches rather
->> than executed instructions addresses.
->>
->> The new option is called -b and it takes no argument. To
->> generate meaningful output, the perf.data must have been
->> obtained using perf record -b xxx ... where xxx is a branch
->> filter option.
->>
->> The output shows symbols, modules, sorted by 'who branches
->> where' the most often. The percentages reported in the first
->> column refer to the total number of branches captured and
->> not the usual number of samples.
->>
->> Here is a quick example.
->> Here branchy is simple test program which looks as follows:
->>
->> void f2(void)
->> {}
->> void f3(void)
->> {}
->> void f1(unsigned long n)
->> {
->> Â  if (n & 1UL)
->> Â  Â  f2();
->> Â  else
->> Â  Â  f3();
->> }
->> int main(void)
->> {
->> Â  unsigned long i;
->>
->> Â  for (i=0; i < N; i++)
->> Â  Â f1(i);
->> Â  return 0;
->> }
->>
->> Here is the output captured on Nehalem, if we are
->> only interested in user level function calls.
->>
->> $ perf record -b any_call,u -e cycles:u branchy
->>
->> $ perf report -b --sort=symbol
->> Â  Â  52.34% Â [.] main Â  Â  Â  Â  Â  Â  Â  Â  Â  [.] f1
->> Â  Â  24.04% Â [.] f1 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  [.] f3
->> Â  Â  23.60% Â [.] f1 Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  [.] f2
->> Â  Â  Â 0.01% Â [k] _IO_new_file_xsputn Â  Â [k] _IO_file_overflow
->> Â  Â  Â 0.01% Â [k] _IO_vfprintf_internal Â [k] _IO_new_file_xsputn
->> Â  Â  Â 0.01% Â [k] _IO_vfprintf_internal Â [k] strchrnul
->> Â  Â  Â 0.01% Â [k] __printf Â  Â  Â  Â  Â  Â  Â  [k] _IO_vfprintf_internal
->> Â  Â  Â 0.01% Â [k] main Â  Â  Â  Â  Â  Â  Â  Â  Â  [k] __printf
->
-> Ok, nice feature.
->
-> One detail needs to be fixed though, if someone does:
->
-> Â perf record -b ...
->
-> then 'perf report' should *default* to the above branch stack
-> output style, without having to specify -b again.
->
-Fair enough.
+On Wed, Feb 22, 2012 at 4:45 AM, Ian Kent <raven@themaw.net> wrote:
+> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+> index 76741d8..85f1fcd 100644
+> --- a/fs/autofs4/dev-ioctl.c
+> +++ b/fs/autofs4/dev-ioctl.c
+> @@ -385,6 +385,7 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
+>                sbi->pipefd = pipefd;
+>                sbi->pipe = pipe;
+>                sbi->catatonic = 0;
+> +               sbi->compat_daemon = is_compat_task();
+>        }
+>  out:
+>        mutex_unlock(&sbi->wq_mutex);
 
-I'll check how we could do that. It's not so obvious as the code
-stands. I think we may need to add a new feature bit for that.
-It would avoid having to sniff either the cmdline, the event desc
-or worst the samples themselves.
+Yes, this part should do the reconnect correctly (assuming it's the
+daemon that does that itself, but I assume it is).
 
-> Having --branch/--no-branch present in perf report is fine if
-> someone wants to force either direction, but the default
-> absolutely must be picked up from the perf.data and should be
-> the obvious behavior.
->
-> Other than that it looks good to me, so if this detail is fixed
-> (can be a delta patch on top of the existing series) and there's
-> no problems with it I can pick it up for v3.4.
->
-It'll be a delta patch.
+But
+
+> diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+> index e16980b..06858d9 100644
+> --- a/fs/autofs4/inode.c
+> +++ b/fs/autofs4/inode.c
+> @@ -224,6 +225,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+>        set_autofs_type_indirect(&sbi->type);
+>        sbi->min_proto = 0;
+>        sbi->max_proto = 0;
+> +       sbi->compat_daemon = is_compat_task();
+>        mutex_init(&sbi->wq_mutex);
+>        mutex_init(&sbi->pipe_mutex);
+>        spin_lock_init(&sbi->fs_lock);
+
+the above really is wrong, at least for the autofs sources I looked at.
+
+Because autofs does "spawn()" to fork+exec the mount() system call,
+the is_compat_task() check really will be checking the wrong binary.
+
+Now, it's true that in *most* cases you'd hope that 'mount' and
+'autofs' both come from the same distro, and have been the compiled
+for the same model. So it probably works in practice, and might be
+good enough.
+
+But I could easily see somebody building their own 'autofs' tools (or
+building their own 'mount', although that sounds less likely to me)
+and if they started out with a 32-bit distro but are slowly  upgrading
+(like they've upgraded the kernel) the above would get that wrong.
+
+I could also imagine a 64-bit environment wanting to "cross" compile
+(and test) a 32-bit binary, and trying that. In fact, I suspect that
+is something that you could test yourself: I assume you build your own
+'autofs' daemon on a system where you don't build everything else, and
+just adding "-m32" to the build should do this and show the problem.
+
+                           Linus
