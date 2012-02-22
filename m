@@ -1,44 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab2BVTY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:24:28 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40882 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab2BVTY1 (ORCPT
+	id S1755415Ab2BVT2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 14:28:43 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:35545 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477Ab2BVT2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 14:24:27 -0500
-Message-ID: <4F4540E6.2020708@suse.cz>
-Date: Wed, 22 Feb 2012 20:24:22 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	Wed, 22 Feb 2012 14:28:41 -0500
+Message-ID: <4F4541E5.5040700@fb.com>
+Date: Wed, 22 Feb 2012 11:28:37 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: stable <stable@kernel.org>
-CC: mjg@redhat.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        "jirisl >> Jiri Slaby" <jirislaby@gmail.com>
-Subject: Lost ps/2 input in 3.2.5 (aka PCI: Rework ASPM disable code)
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+To: <netdev@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: route add default fails with ESRCH?
+References: <4F3F0158.2020406@fb.com>
+In-Reply-To: <4F3F0158.2020406@fb.com>
+Content-Type: multipart/mixed;
+	boundary="------------080105020208070309080000"
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
+ definitions=2012-02-22_05:2012-02-21,2012-02-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--------------080105020208070309080000
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-so I finally decided to commit 3.2.5 into the opensuse kernel. However
-it does not even work on my laptop.
+[ Expanded cc ]
 
-Both keyboard and touchpad are not detected. They are connected via PS/2.
+On 2/17/12 5:39 PM, Arun Sharma wrote:
+>
+> I've been trying to debug this strange problem with recent 3.2 kernels:
+>
+> # boot to single user mode
+> # service network start
+> # ifconfig eth0
+> eth0 Link encap:Ethernet HWaddr <blah>
+> inet addr:10.47.46.39 Bcast:10.47.46.255 Mask:255.255.255.0
+>
+> <Link is up>
+> # strace route add default gw 10.47.46.1
+> ioctl(3, SIOCADDRT, 0x7fff1fd4db80) = -1 ESRCH (No such process)
 
-I see
-PNP: PS/2 appears to have AUX port disabled, if this is incorrect please
-boot with i8042.nopnp
+I git bisected the problem to this commit:
 
-Without that patch this warning is gone and devices properly enumerated.
+commit 3630b7c050d9c3564f143d595339fc06b888d6f3
+Author: David S. Miller <davem@davemloft.net>
+Date: Tue Feb 1 15:15:39 2011 -0800
 
-thanks,
--- 
-js
-suse labs
+ipv4: Remove fib_hash.
+
+which came in via 2.6.39.
+
+ > If there are any semantic differences found in fib_trie, we should
+ > simply fix them.
+
+Looks like the problem I'm running into falls into this bucket (since it 
+goes away if I revert the commit).
+
+I changed the pr_debug() in fib_trie.c to pr_info() and got some debug 
+output (attached).
+
+Based on the debug info, I think it's this call that's failing with ESRCH:
+
+[   69.189627] Insert table=254 00000000/0
+
+/sbin/route -V
+net-tools 1.60
+route 1.98 (2001-04-15)
+
+# cat /proc/net/fib_trie
+Local:
+   +-- 0.0.0.0/1 1 0 0
+      +-- 10.47.46.0/24 1 0 0
+         +-- 10.47.46.0/26 1 0 0
+            |-- 10.47.46.0
+               /32 link BROADCAST
+            |-- 10.47.46.39
+               /32 host LOCAL
+         |-- 10.47.46.255
+            /32 link BROADCAST
+      +-- 127.0.0.0/8 1 0 0
+         +-- 127.0.0.0/31 1 0 0
+            |-- 127.0.0.0
+               /32 link BROADCAST
+               /8 host LOCAL
+            |-- 127.0.0.1
+               /32 host LOCAL
+         |-- 127.255.255.255
+            /32 link BROADCAST
+
+Please let me know if you have any suggestions.
+
+  -Arun
+
+--------------080105020208070309080000
+Content-Type: text/plain; name="fib_debug.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="fib_debug.txt"
+
+[   17.445984] Insert table=255 7f000001/32
+[   17.445993] AT ffff880213d0ae40 s=56 32
+[   17.445997] In tnode_resize ffff880213d0ae40 inflate_threshold=50 threshold=25
+[   17.446014] Insert table=255 7f000000/8
+[   17.446024] AT ffff880213d0ade0 s=56 32
+[   17.446026] In tnode_resize ffff880213d0ade0 inflate_threshold=50 threshold=25
+[   17.446030] Insert table=255 7f000000/32
+[   17.446035] Insert table=255 7fffffff/32
+[   17.446038] AT ffff880213d0ad20 s=56 32
+[   17.446040] In tnode_resize ffff880213d0ad20 inflate_threshold=50 threshold=25
+[   17.446941] Insert table=255 7f000001/32
+[   17.446944] Insert table=255 7f000000/8
+[   17.446946] Insert table=255 7f000000/32
+[   17.446948] Insert table=255 7fffffff/32
+[   37.708794] e1000e 0000:05:00.0: irq 66 for MSI/MSI-X
+[   37.761305] e1000e 0000:05:00.0: irq 66 for MSI/MSI-X
+[   37.763389] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   40.643385] e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: None
+[   40.644668] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[   44.040787] Insert table=255 0a2f2e27/32
+[   44.040798] AT ffff880213d45960 s=56 32
+[   44.040800] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.040807] Insert table=255 0affffff/32
+[   44.040811] AT ffff880213d45a20 s=56 32
+[   44.040813] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.040817] Insert table=254 0a000000/8
+[   44.040821] AT ffff880213d45840 s=56 32
+[   44.040823] In tnode_resize ffff880213d45840 inflate_threshold=50 threshold=25
+[   44.040827] Insert table=255 0a000000/32
+[   44.040830] AT ffff880213d457e0 s=56 32
+[   44.040831] In tnode_resize ffff880213d45a20 inflate_threshold=50 threshold=25
+[   44.040833] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.040837] Insert table=255 0affffff/32
+[   44.040886] Deleting 0a000000/8 tos=0 t=ffff880212b846a0
+[   44.040889] entering trie_leaf_remove(ffff880211585070)
+[   44.040891] Deleting 0affffff/32 tos=0 t=ffff880213d07d20
+[   44.040894] entering trie_leaf_remove(ffff880211585038)
+[   44.040895] In tnode_resize ffff880213d45a20 inflate_threshold=50 threshold=25
+[   44.040897] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.040900] Deleting 0a000000/32 tos=0 t=ffff880213d07d20
+[   44.040902] entering trie_leaf_remove(ffff8802115850a8)
+[   44.040904] In tnode_resize ffff880213d457e0 inflate_threshold=50 threshold=25
+[   44.040906] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.040908] Deleting 0a2f2e27/32 tos=0 t=ffff880213d07d20
+[   44.040910] entering trie_leaf_remove(ffff880211585000)
+[   44.040912] In tnode_resize ffff880213d45960 inflate_threshold=50 threshold=25
+[   44.041833] Insert table=255 0a2f2e27/32
+[   44.041835] AT ffff880213d45ae0 s=56 32
+[   44.041837] In tnode_resize ffff880213d45ae0 inflate_threshold=50 threshold=25
+[   44.041841] Insert table=255 0a2f2eff/32
+[   44.041844] AT ffff880213d45720 s=56 32
+[   44.041846] In tnode_resize ffff880213d45ae0 inflate_threshold=50 threshold=25
+[   44.041849] Insert table=254 0a2f2e00/24
+[   44.041852] AT ffff880213d45a80 s=56 32
+[   44.041854] In tnode_resize ffff880213d45a80 inflate_threshold=50 threshold=25
+[   44.041857] Insert table=255 0a2f2e00/32
+[   44.041860] AT ffff880213d456c0 s=56 32
+[   44.041862] In tnode_resize ffff880213d45720 inflate_threshold=50 threshold=25
+[   44.041864] In tnode_resize ffff880213d45ae0 inflate_threshold=50 threshold=25
+[   44.041868] Insert table=255 0a2f2eff/32
+[   44.050950] Insert table=254 00000000/0
+[   44.050961] AT ffff880213d0a5a0 s=56 32
+[   44.050963] In tnode_resize ffff880213d0a5a0 inflate_threshold=50 threshold=25
+[   44.351839] Deleting 00000000/0 tos=0 t=ffff880212b846a0
+[   44.351843] entering trie_leaf_remove(ffff880213d120e0)
+[   44.351846] In tnode_resize ffff880213d0a5a0 inflate_threshold=50 threshold=25
+[   44.351852] Deleting 0a2f2e00/24 tos=0 t=ffff880212b846a0
+[   44.351855] entering trie_leaf_remove(ffff880211585150)
+[   69.189627] Insert table=254 00000000/0
+
+--------------080105020208070309080000--
