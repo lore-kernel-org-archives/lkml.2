@@ -1,150 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab2BVPpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:45:14 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64412 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2BVPpK (ORCPT
+	id S1753426Ab2BVPqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:46:00 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:39779 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752023Ab2BVPp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:45:10 -0500
-Date: Wed, 22 Feb 2012 16:45:04 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        linux-kernel@vger.kernel.org, Paul Menage <paul@paulmenage.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120222154501.GA1693@somewhere.redhat.com>
-References: <20120221211938.GE12236@google.com>
+	Wed, 22 Feb 2012 10:45:59 -0500
+Date: Wed, 22 Feb 2012 17:45:47 +0200
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rob.lee@linaro.org
+Subject: Re: [linux-pm] [PATCH 0/4] thermal: Adding generic cpu cooling
+ devices
+Message-ID: <20120222154123.GA13675@besouro>
+Reply-To: eduardo.valentin@ti.com
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120221211938.GE12236@google.com>
+In-Reply-To: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 01:19:38PM -0800, Tejun Heo wrote:
-> Hello, guys.
-> 
-> I've been thinking about multiple hierarchy support in cgroup for a
-> while, especially after Frederic's pending task counter patchset.
-> This is a write up of what I've been thinking.  I don't know what to
-> do yet and simply continuing the current situation definitely is an
-> option, so please read on and throw in your 20 Won (or whatever amount
-> in whatever currency you want).
-> 
-> * The problems.
-> 
-> The support for multiple process hierarchies always struck me as
-> rather strange.  If you forget about the current cgroup controllers
-> and their implementations, the *only* reason to support multiple
-> hierarchies is if you want to apply resource limits based on different
-> orthogonal categorizations.
-> 
-> Documentation/cgroups.txt seems to be written with this consideration
-> on mind.  It's giving an example of applying limits accoring to two
-> orthogonal categorizations - user groups (profressors, students...)
-> and applications (WWW, NFS...).  While it may sound like a valid use
-> case, I'm very skeptical how useful or common mixing such orthogonal
-> categorizations in a single setup would be.
-> 
-> If support for multiple hierarchies comes for free, at least in terms
-> of features, maybe it can be better but of course it isn't so.  Any
-> given cgroup subsystem (or controller) can only be applied to a single
-> hierarchy, which makes sense for a lot of things - what would two
-> different limits on the same resource from different hierarchies mean?
-> But, there also are things which can be used and useful in all
-> hierarchies - e.g. cgroup freezer and task counter.
-> 
-> While the current cgroup implementation and conventions can probably
-> allow admins and engineers to tailor cgroup configuration for a
-> specific setup, it is very difficult to use in generic and automated
-> way.  I mean, who owns the freezer or task counter?  If they're
-> mounted on their own hierarchies, how should they be structured?
-> Should the different hierarchies be structured such that they are
-> projections of one unified hierarchy so that those generic mechanisms
-> can be applied uniformly?  If so, why do we need multiple hierarchies
-> at all?
-> 
-> A related limitation is that as different subsystems don't know which
-> hierarchies they'll end up on, they can't cooperate.  Wouldn't it make
-> more sense if task counter is a separate thing watching the resources
-> and triggers different actions as conifgured - be it failing forks or
-> freezing?
+Hello Amit,
 
-For this particular example, I think we'd better have a file in which
-a task can poll and get woken up when the task limit has been reached.
-Then that task can decide to freeze or whatever.
+Thanks for keeping this up.
+
+On Wed, Feb 22, 2012 at 03:44:06PM +0530, Amit Daniel Kachhap wrote:
+> Changes since RFC:
+>  *Changed the cpu cooling registration/unregistration API's to instance based
+>  *Changed the STATE_ACTIVE trip type to pass correct instance id
+>  *Adding support to restore back the policy->max_freq after doing frequency 
+>   clipping.
+
+Have checked if this does not overlap with what the user set's as max_freq?
+Not sure if we have governors that set max_freq as well. Anyways, looks like
+just saving the current max and restoring it may lead to overlaps. I didn't check though.
+
+>  *Moved the trip cooling stats from sysfs node to debugfs node as suggested
+>   by Greg KH greg@kroah.com 
+>  *Incorporated several review comments from eduardo.valentin@ti.com
+> 
+> Todo:
+>  *Report time spent in each trip point along with the cooling statistics
+>  *Add opp library support in cpufreq cooling api's
+> 
+> Brief Description:
+> 
+> 1) The generic cooling devices code is placed inside driver/thermal/* as 
+> placing inside acpi folder will need un-necessary enabling of acpi code.
+> 
+> 2) This patchset adds a new trip type THERMAL_TRIP_STATE_ACTIVE which passes
+> cooling device instance number and may be helpful for cpufreq cooling devices
+> to take the correct cooling action.
+
+As already said on your previous series, the naming is not good. Problem
+is that it may confuse people who have ACPI nomenclature in mind. Active,
+on those terms, is related to cooling devices that consumes more power,
+like activating fans.
 
 > 
-> And yet another oddity is how cgroup handles nested cgroups - some
-> care about nesting but others just treat both internal and leaf nodes
-> equally.  They don't care about the topology at all.  This, too, can
-> be fine if you approach things subsys by subsys and use them in
-> different ways but if you try to combine them in generic way you get
-> sucked into the lala land of whatevers.
-> 
-> The following is a "best practices" document on using cgroups.
-> 
->   http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
-> 
-> To me, it seems to demonstrate the rather ugly situation that the
-> current cgroup is providing.  Everyone should tip-toe around cgroup
-> hierarchies and nobody has full knowledge or control over them.
-> e.g. base system management (e.g. systemd) can't use freezer or task
-> counter as someone else might want to use it for different hierarchy
-> layout.
-> 
-> It seems to me that cgroup interface is too complicated and inflexible
-> at the same time to be useful in generic manner.  Sure, it can be
-> useful for setups individually crafted by engineers and admins to
-> match specific sites or applications but as soon as you try to do
-> something automatic and generic with it, there just are too many
-> different scenarios and limitations to consider.
-> 
-> 
-> * So, what to do?
-> 
-> Heh, I don't know.  IIRC, last year at LinuxCon Japan, I heard
-> Christoph saying that the biggest problem w/ cgroup was that it was
-> building completely separate hierarchies out of the traditional
-> process hierarchies.  After thinking about this stuff for a while, I
-> fully agree with him.  I think this whole thing should have been a
-> layer over the process tree like sessions or program groups.
-> 
-> Unfortunately, that ship sailed long ago and we gotta make do with
-> what we have on our collective hands.  Here are some paths that we can
-> take.
-> 
-> 1. We're screwed anyway.  Just don't worry about it and continue down
->    on this path.  Can't get much worse, right?
-> 
->    This approach has the apparent advantage of not having to do
->    anything and is probably most likely to be taken.  This isn't ideal
->    but hey nothing is. :P
+> 3) This patchset adds generic cpu cooling low level implementation through
+> frequency clipping and cpu hotplug. In future, other cpu related cooling
+> devices may be added here. An ACPI version of this already exists
+> (drivers/acpi/processor_thermal.c). But this will be useful for platforms
+> like ARM using the generic thermal interface along with the generic cpu
+> cooling devices. The cooling device registration API's return cooling device
+> pointers which can be easily binded with the thermal zone trip points.
 
-Thing is we have an ABI now and it has been there for a while now. Aren't
-we stuck with it? I'm no big fan of that multiple hierarchies thing either
-but now I fear we have to support it.
+Yeah, but here I have to agree with Matthew Garrett's comment on your previous
+version. If it is supposed to be generic, then it has to couple of ACPI as well,
+otherwise it is generic for non-ACPI right? :-)
+
+One suggestion is to think on how we could make the passive trip type more generic,
+so that it could fit any policy there, either ACPI based or non-ACPI.
+
+Talking about policy, I also think that having one specific policy on a generic
+cooling strategy is maybe not a good way to go. The percentages stepping is
+one proposal, but some other system may want to put its own way of cooling
+using the available opps. That comes again back to the point that we probably
+want something more generalized there in the generic code.
+
+For instance, while updating the zone, you could have a generic callback
+operation which would dictate the relation between trip with passive cooling state.
+Then, ACPI would then define how it wants this relation to be. Then you could propose the
+percentage based approach, but other people could also have its own way of correlation
+or how the zone has to be updated while doing passive cooling.
+
+Another thing is that you may want to include some examples on your documentation.
+Examples of system setup with trips, temps, percentages and behavior.
 
 > 
-> 2. Make it more flexible (and likely more complex, unfortunately).
->    Allow the utility type subsystems to be used in multiple
->    hierarchies.  The easiest and probably dirtiest way to achieve that
->    would be embedding them into cgroup core.
+> 4)This patchset provides a simple way of reporting cooling achieved in a
+> trip type. This will help in fine cooling the cooling devices attached.
 > 
->    Thinking about doing this depresses me and it's not like I have a
->    cheerful personality to begin with. :(
-
-Another solution is to support a class of multi-bindable subsystems as in
-this old patch from Paul:
-
-	https://lkml.org/lkml/2009/7/1/578
-
-It sounds to me more healthy to iterate only over subsystems in fork/exit.
-We probably don't want to add a new iteration over cgroups themselves
-on these fast path.
+> Amit Daniel Kachhap (4):
+>   thermal: Add a new trip type to use cooling device instance number
+>   thermal: Add generic cpufreq cooling implementation
+>   thermal: Add generic cpuhotplug cooling implementation
+>   thermal: Add support to report cooling statistics achieved by cooling
+>     devices
+> 
+>  Documentation/thermal/cpu-cooling-api.txt |   57 ++++
+>  Documentation/thermal/sysfs-api.txt       |    4 +-
+>  drivers/thermal/Kconfig                   |   11 +
+>  drivers/thermal/Makefile                  |    1 +
+>  drivers/thermal/cpu_cooling.c             |  484 +++++++++++++++++++++++++++++
+>  drivers/thermal/thermal_sys.c             |  165 ++++++++++-
+>  include/linux/cpu_cooling.h               |   71 +++++
+>  include/linux/thermal.h                   |   14 +
+>  8 files changed, 802 insertions(+), 5 deletions(-)
+>  create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+>  create mode 100644 drivers/thermal/cpu_cooling.c
+>  create mode 100644 include/linux/cpu_cooling.h
+> 
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
