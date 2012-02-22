@@ -1,148 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2BVHzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:55:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48847 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab2BVHzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:55:35 -0500
-References: <cover.1329851692.git.jbaron@redhat.com> <4F43F9F0.4000605@zytor.com> <20120222065016.GA16923@elte.hu> <4F44934B.2000808@zytor.com> <20120222072538.GA17291@elte.hu> <4F449ACF.3040807@zytor.com> <20120222074839.GA24890@elte.hu>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120222074839.GA24890@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups + docs
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 21 Feb 2012 23:55:00 -0800
-To: Ingo Molnar <mingo@elte.hu>
-CC: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
-        rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Message-ID: <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
+	id S1753062Ab2BVH6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 02:58:14 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44129 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab2BVH6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 02:58:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.243.144 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1329897485.27727.0.camel@phoenix>
+Subject: [PATCH] mfd: Fix section mismatch warning in wm8994
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Wed, 22 Feb 2012 15:58:05 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not arguing that, but the static aspect is still key... or people will read it as another version of likely/unlikely.  I'd be fine with static_likely/unlikely for example; I wish "static" wasn't such an overloaded word in C but I can't.personally think of a better term.
+Since commit 423682 "mfd: Add __devinit and __devexit annotations in wm8994",
+we need to add __devinit/__devexit for wm8994_i2c_probe/wm8994_i2c_remove.
+This fixes below build warnings:
 
-Ingo Molnar <mingo@elte.hu> wrote:
+WARNING: vmlinux.o(.text+0x169e44): Section mismatch in reference from the function wm8994_i2c_remove() to the function .devexit.text:wm8994_device_exit()
+The function wm8994_i2c_remove() references a function in an exit section.
+Often the function wm8994_device_exit() has valid usage outside the exit section
+and the fix is to remove the __devexit annotation of wm8994_device_exit.
 
->
->* H. Peter Anvin <hpa@zytor.com> wrote:
->
->> On 02/21/2012 11:25 PM, Ingo Molnar wrote:
->> > 
->> > There is a fundamental assymetry, and intentionally so. You 
->> > *really* have to think what the common case is, and make 
->> > sure the build defaults to that. It's not the end of the 
->> > world to have it flipped over, but there's costs and those 
->> > costs are higher even in the branch path than a regular 
->> > likely()/unlikely().
->> 
->> No, not really -- it's still an unconditional branch, which 
->> means you will not tax the branch predictor in any way and 
->> which can be followed by the front end without taking a 
->> speculation hit. [...]
->
->You are talking about CPU level costs, I am also talking about 
->costs introduced at build time.
->
->Fact is, jump-label unlikely branches are moved *out of line*: 
->they are often in unlikely portions of the function (near other 
->unlikely branches), with instruction cache granularity costs and 
->potentially higher instruction-cache miss costs attached, etc.
->
->You are missing three important aspects:
->
->Firstly, instead of:
->
->  ins1
->  ins2
->  ins3
->  ins4
->  ins5
->  ins-compare
->  ins-branch
->  ins6
->  ins7
->  ins8
->  ins9
->  ins10
->
->We have:
->
->  ins1
->  ins2
->  ins3
->  ins4
->  ins5
->  ins-jump
->
->  [ hole ]
->
->  ins6
->  ins7
->  ins8
->  ins9
->  ins10
->  ins-jump back
->
->Where the 'hole' fragments the instruction cache layout. Given 
->that most of kernel execution is instruction-cache-cold, the 
->'straightness' of kernel code matters quite a bit.
->
->Secondly, there's build time instruction scheduling costs as 
->well: GCC will prefer the likely branch over the unlikely one, 
->so we might see extra instructions in the out-of-line code:
->
->
->  ins1
->  ins2
->  ins3
->  ins4
->  ins5
->  ins-jump
->
->  [ hole ]
->
->  ins-extra-1
->  ins-extra-2
->  ins6
->  ins7
->  ins8
->  ins9
->  ins10
->  ins-jump back
->
->In that sense jump labels are unlikely() branches combined with 
->a patching mechanism.
->
->Thus *both* aspects are important: if a branch is *truly* 50/50 
->then it's quite possibly *NOT* a correct optimization to use 
->jump-labels as the 'uncommon' code goes through extra hoops and 
->fragments out of the fastpath, which in quite many real life 
->cases can outstrip the advantage of the avoidance of a single 
->branch ...
->
->Thirdly,
->
->even if it's a correct optimization and both branches happen to 
->outperform the pre-jump-label version, regardless of the 
->direction of the jump label flag, it's *STILL* fundamentally 
->assymetric: due to the hole and due to the possible extra 
->instructions the out of line code will be slower by a few 
->instruction and the NOP fall-through will be faster.
->
->This is fundamentally so, and any naming that tries to *hide* 
->that assymetry and the associated micro-costs is confused.
->
->Thanks,
->
->	Ingo
+WARNING: vmlinux.o(.text+0x16a1bc): Section mismatch in reference from the function wm8994_i2c_probe() to the function .devinit.text:wm8994_device_init()
+The function wm8994_i2c_probe() references
+the function __devinit wm8994_device_init().
+This is often because wm8994_i2c_probe lacks a __devinit
+annotation or the annotation of wm8994_device_init is wrong.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/wm8994-core.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index b2de65b..0042c7c 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -670,7 +670,7 @@ static const struct of_device_id wm8994_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, wm8994_of_match);
+ 
+-static int wm8994_i2c_probe(struct i2c_client *i2c,
++static __devinit int wm8994_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct wm8994 *wm8994;
+@@ -696,7 +696,7 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	return wm8994_device_init(wm8994, i2c->irq);
+ }
+ 
+-static int wm8994_i2c_remove(struct i2c_client *i2c)
++static __devexit int wm8994_i2c_remove(struct i2c_client *i2c)
+ {
+ 	struct wm8994 *wm8994 = i2c_get_clientdata(i2c);
+ 
+@@ -725,7 +725,7 @@ static struct i2c_driver wm8994_i2c_driver = {
+ 		.of_match_table = wm8994_of_match,
+ 	},
+ 	.probe = wm8994_i2c_probe,
+-	.remove = wm8994_i2c_remove,
++	.remove = __devexit_p(wm8994_i2c_remove),
+ 	.id_table = wm8994_i2c_id,
+ };
+ 
 -- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+1.7.5.4
+
+
+
