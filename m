@@ -1,152 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab2BVSGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:06:39 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:63493 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832Ab2BVSGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:06:23 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Wed, 22 Feb 2012 19:06:22 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 3/3] max17042_battery: Make it possible to instantiate driver
- from DT
-In-reply-to: <1329933982-2529-1-git-send-email-k.lewandowsk@samsung.com>
-To: myungjoo.ham@samsung.com
-Cc: kyungmin.park@samsung.com, m.szyprowski@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        cbou@mail.ru, Karol Lewandowski <k.lewandowsk@samsung.com>
-Message-id: <1329933982-2529-4-git-send-email-k.lewandowsk@samsung.com>
-X-Mailer: git-send-email 1.7.8.3
-References: <1329933982-2529-1-git-send-email-k.lewandowsk@samsung.com>
+	id S1754914Ab2BVSGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:06:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:4406 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754196Ab2BVSGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 13:06:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128256767"
+From: "Luck, Tony" <tony.luck@intel.com>
+Subject: [PATCH/resubmit] x86: Remove some noise from boot log when starting cpus
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
+        castet.matthieu@free.fr, tglx@linutronix.de, sfr@canb.auug.org.au,
+        hpa@linux.intel.com, rjw@sisk.pl, hpa@zytor.com
+In-Reply-To: <20120222112954.GA12859@elte.hu>
+Date: Wed, 22 Feb 2012 10:06:44 -0800
+Message-Id: <4f452eb42507460426@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow both device tree (preferred) and platform data-based driver
-instantiation.
+Printing the "start_ip" for every secondary cpu is very noisy on a large
+system - and doesn't add any value. Drop this message.
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Console log before:
+Booting Node   0, Processors  #1
+smpboot cpu 1: start_ip = 96000
+ #2
+smpboot cpu 2: start_ip = 96000
+ #3
+smpboot cpu 3: start_ip = 96000
+ #4
+smpboot cpu 4: start_ip = 96000
+       ...
+ #31
+smpboot cpu 31: start_ip = 96000
+Brought up 32 CPUs
+
+Console log after:
+Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+Booting Node   1, Processors  #8 #9 #10 #11 #12 #13 #14 #15 Ok.
+Booting Node   0, Processors  #16 #17 #18 #19 #20 #21 #22 #23 Ok.
+Booting Node   1, Processors  #24 #25 #26 #27 #28 #29 #30 #31
+Brought up 32 CPUs
+
+Acked-by: Borislav Petkov <bp@amd64.org>
+Link: https://lkml.org/lkml/2012/2/22/144
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- .../bindings/power_supply/max17042_battery.txt     |   18 ++++++++
- drivers/power/max17042_battery.c                   |   45 ++++++++++++++++++--
- 2 files changed, 59 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power_supply/max17042_battery.txt
+ arch/x86/kernel/smpboot.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/power_supply/max17042_battery.txt b/Documentation/devicetree/bindings/power_supply/max17042_battery.txt
-new file mode 100644
-index 0000000..5bc9b68
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/max17042_battery.txt
-@@ -0,0 +1,18 @@
-+max17042_battery
-+~~~~~~~~~~~~~~~~
-+
-+Required properties :
-+ - compatible : "maxim,max17042"
-+
-+Optional properties :
-+ - maxim,rsns-microohm : Resistance of rsns resistor in micro Ohms
-+                         (datasheet-recommended value is 10000).
-+   Defining this property enables current-sense functionality.
-+
-+Example:
-+
-+	battery-charger@36 {
-+		compatible = "maxim,max17042";
-+		reg = <0x36>;
-+		maxim,rsns-microohm = <10000>;
-+	};
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index 49c1377..aec883b 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -29,6 +29,7 @@
- #include <linux/mod_devicetable.h>
- #include <linux/power_supply.h>
- #include <linux/power/max17042_battery.h>
-+#include <linux/of.h>
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 66d250c..6835752 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -740,8 +740,6 @@ do_rest:
+ 	 * the targeted processor.
+ 	 */
  
- struct max17042_chip {
- 	struct i2c_client *client;
-@@ -211,6 +212,31 @@ static int max17042_get_property(struct power_supply *psy,
- 	return 0;
- }
+-	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
+-
+ 	atomic_set(&init_deasserted, 0);
  
-+#ifdef CONFIG_OF
-+static int max17042_dt_parse(struct max17042_chip *chip, struct device_node *np)
-+{
-+	u32 prop;
-+
-+	if (!np)
-+		return -EINVAL;
-+
-+	/* require current sense resistor value to be specified for
-+	   current-sense functionality to be enabled at all */
-+	if (of_property_read_u32(np, "maxim,rsns-microohm", &prop) == 0) {
-+		chip->r_sns = prop;
-+		chip->enable_current_sense = true;
-+	} else
-+		chip->enable_current_sense = false;
-+
-+	return 0;
-+}
-+#else
-+static int max17042_dt_parse(struct max17042_chip *chip, struct device_node *np)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
- static int __devinit max17042_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
-@@ -237,12 +263,14 @@ static int __devinit max17042_probe(struct i2c_client *client,
- 	chip->battery.properties	= max17042_battery_props;
- 	chip->battery.num_properties	= ARRAY_SIZE(max17042_battery_props);
- 
--	if (pdata) {
-+	ret = max17042_dt_parse(chip, client->dev.of_node);
-+	if (ret < 0) {
-+		if (!pdata) {
-+			dev_warn(&client->dev, "no driver data provided\n");
-+			return -ENODEV;
-+		}
- 		chip->r_sns = pdata->r_sns;
- 		chip->enable_current_sense = pdata->enable_current_sense;
--	} else {
--		dev_warn(&client->dev, "no driver data provided\n");
--		return -ENODEV;
- 	}
- 
- 	/* When current is not measured,
-@@ -281,6 +309,14 @@ static int __devexit max17042_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id max17042_dt_match[] = {
-+	{ .compatible = "maxim,max17042" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, max17042_dt_match);
-+#endif
-+
- static const struct i2c_device_id max17042_id[] = {
- 	{ "max17042", 0 },
- 	{ }
-@@ -290,6 +326,7 @@ MODULE_DEVICE_TABLE(i2c, max17042_id);
- static struct i2c_driver max17042_i2c_driver = {
- 	.driver	= {
- 		.name	= "max17042",
-+		.of_match_table = of_match_ptr(max17042_dt_match),
- 	},
- 	.probe		= max17042_probe,
- 	.remove		= __devexit_p(max17042_remove),
+ 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
 -- 
-1.7.8.3
+1.7.9.rc2.1.g69204
 
