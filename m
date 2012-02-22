@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab2BVNGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:06:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53742 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab2BVNGe convert rfc822-to-8bit (ORCPT
+	id S1752491Ab2BVNHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:07:00 -0500
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:49777 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752195Ab2BVNG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:06:34 -0500
-Message-ID: <1329915987.24994.5.camel@twins>
-Subject: Re: [Qemu-devel] [RFC] Next gen kvm api
-From: Peter Zijlstra <peterz@infradead.org>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-        KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Date: Wed, 22 Feb 2012 14:06:27 +0100
-In-Reply-To: <20120204110817.30e1a4c62754f074a8a5064d@gmail.com>
-References: <4F2AB552.2070909@redhat.com> <4F2B41D6.8020603@codemonkey.ws>
-	 <20120204110817.30e1a4c62754f074a8a5064d@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Wed, 22 Feb 2012 08:06:59 -0500
+Subject: [PATCH] tg3: remove IRQF_SAMPLE_RANDOM flag
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Wed, 22 Feb 2012 14:06:54 +0100
+Message-ID: <1329916014.2586.2.camel@offbook>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-02-04 at 11:08 +0900, Takuya Yoshikawa wrote:
-> The latter needs a fundamental change:  I heard (from Avi) that we can
-> change mmu_lock to mutex_lock if mmu_notifier becomes preemptible.
-> 
-> So I was planning to restart this work when Peter's
->         "mm: Preemptibility"
->         http://lkml.org/lkml/2011/4/1/141
-> gets finished. 
+From: Davidlohr Bueso <dave@gnu.org>
+
+This driver is the last user of the IRQF_SAMPLE_RANDOM flag for net drivers, and since add_*_randomness
+interfaces have now deprecated the flag as a source of external noise, we can remove it.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index a1f2e0f..2badfc3 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -9401,7 +9401,7 @@ static int tg3_test_interrupt(struct tg3 *tp)
+ 	}
+ 
+ 	err = request_irq(tnapi->irq_vec, tg3_test_isr,
+-			  IRQF_SHARED | IRQF_SAMPLE_RANDOM, dev->name, tnapi);
++			  IRQF_SHARED, dev->name, tnapi);
+ 	if (err)
+ 		return err;
+ 
+-- 
+1.7.4.1
 
 
-That got merged a while ago:
 
-# git describe --contains d16dfc550f5326a4000f3322582a7c05dec91d7a --match "v*"
-v3.0-rc1~275
-
-While I still need to get back to unifying mmu_gather across
-architectures the whole thing is currently preemptible.
