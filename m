@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab2BVRlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:41:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11423 "EHLO mx1.redhat.com"
+	id S1754286Ab2BVRlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:41:40 -0500
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:60429 "EHLO smtp1.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab2BVRlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:41:19 -0500
-Date: Wed, 22 Feb 2012 18:34:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Greg KH <greg@kroah.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>, Maxime Bizon <mbizon@freebox.fr>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] epoll: introduce POLLFREE for ep_poll_callback()
-Message-ID: <20120222173419.GB7147@redhat.com>
-References: <20120222173326.GA7139@redhat.com>
+	id S1751921Ab2BVRlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 12:41:37 -0500
+Date: Wed, 22 Feb 2012 19:41:34 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: Sam Ravnborg <sam@ravnborg.org>
+cc: Tejun Heo <tj@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+In-Reply-To: <20120222172154.GA29641@merkur.ravnborg.org>
+Message-ID: <alpine.SOC.1.00.1202221927300.17363@math.ut.ee>
+References: <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee>
+ <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <20120222170330.GA29521@merkur.ravnborg.org> <alpine.SOC.1.00.1202221910420.17363@math.ut.ee>
+ <20120222172154.GA29641@merkur.ravnborg.org>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222173326.GA7139@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: this patch is intentionally incomplete to simplify the review.
-It ignores ep_unregister_pollwait() which plays with the same wqh.
-See the next changes.
+> > > Could you try to boot with a sensible mem=xxx value to see if limiting the memory
+> > > helps.
+> > 
+> > Like mem=256M? Will try.
+> Think just a little more - I do not think this will help.
 
-epoll assumes that the EPOLL_CTL_ADD'ed file controls everything
-f_op->poll() needs. In particular it assumes that the wait queue
-can't go away until eventpoll_release(). This is not true in case
-of signalfd, the task which does EPOLL_CTL_ADD uses its ->sighand
-which is not connected to the file.
+Tried it on the 2G V210. It changes the picture. With 2G RAM, it 
+just hangs.
 
-This patch adds the special event, POLLFREE, currently only for
-epoll. It expects that init_poll_funcptr()'ed hook should do the
-necessary cleanup. Perhaps it should be defined as EPOLLFREE in
-eventpoll.
+With mem=256M it produces a crash in strlen and of_alias_scan like in 
+V100 with 1G.
 
-ep_poll_callback(POLLFREE) simply does list_del_init(task_list).
-This make this poll entry inconsistent, but we don't care. If you
-share epoll fd which contains our sigfd with another process you
-should blame yourself. signalfd is "really special". I simply do
-not know how we can define the "right" semantics if it used with
-epoll.
+mem=512M results in the same strlen error.
 
-The main problem is, epoll calls signalfd_poll() once to establish
-the connection with the wait queue, after that signalfd_poll(NULL)
-returns the different/inconsistent results depending on who does
-EPOLL_CTL_MOD/signalfd_read/etc. IOW: apart from sigmask, signalfd
-has nothing to do with the file, it works with the current thread.
+mem=1G results in a stranger error:
 
-In short: this patch is the hack which tries to fix the symptoms.
-It also assumes that nobody can take tasklist_lock under epoll
-locks, this seems to be true.
+[    0.000000] Kernel panic - not syncing: ERROR: Failed to allocate 0x90 bytes below 0x0.
+[    0.000000] 
+[    0.000000] Call Trace:
+[    0.000000]  [00000000007a6a28] memblock_alloc_base+0x28/0x38
+[    0.000000]  [000000000079ca50] prom_early_alloc+0xc/0x60
+[    0.000000]  [00000000007ae090] of_pdt_create_node.part.0+0x4/0xe0
+[    0.000000]  [00000000007ae250] of_pdt_build_devicetree+0x30/0xa0
+[    0.000000]  [000000000079c4a8] prom_build_devicetree+0x18/0x38
+[    0.000000]  [00000000007a03c0] paging_init+0x59c/0x6bc
+[    0.000000]  [000000000079be50] setup_arch+0xf8/0x108
+[    0.000000]  [000000000079a4e8] start_kernel+0x78/0x30c
+[    0.000000]  [00000000006a3e80] tlb_fixup_done+0x98/0xa0
+[    0.000000]  [0000000000000000]           (null)
 
-Note: we do not have wake_up_all_poll() but wake_up_poll() should
-be fine, poll/epoll doesn't use WQ_FLAG_EXCLUSIVE.
+The working machines have 512M RAM, 834M RAM and 2G RAM so it's not just 
+the amount of RAM.
 
-Reported-by: Maxime Bizon <mbizon@freebox.fr>
-Cc: <stable@kernel.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/eventpoll.c             |    4 ++++
- fs/signalfd.c              |    5 +++++
- include/asm-generic/poll.h |    2 ++
- 3 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index aabdfc3..442bedb 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -844,6 +844,10 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
- 
- 	spin_lock_irqsave(&ep->lock, flags);
- 
-+	/* the caller holds eppoll_entry->whead->lock */
-+	if ((unsigned long)key & POLLFREE)
-+		list_del_init(&wait->task_list);
-+
- 	/*
- 	 * If the event mask does not contain any poll(2) event, we consider the
- 	 * descriptor to be disabled. This condition is likely the effect of the
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 35d19ae..838ba21 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -34,6 +34,11 @@ void signalfd_cleanup(struct sighand_struct *sighand)
- {
- 	wait_queue_head_t *wqh = &sighand->signalfd_wqh;
- 
-+	if (likely(!waitqueue_active(wqh)))
-+		return;
-+
-+	/* ask wait_queue_t->func() to remove_wait_queue() */
-+	wake_up_poll(wqh, POLLHUP | POLLFREE);
- 	BUG_ON(waitqueue_active(wqh));
- }
- 
-diff --git a/include/asm-generic/poll.h b/include/asm-generic/poll.h
-index 44bce83..9ce7f44 100644
---- a/include/asm-generic/poll.h
-+++ b/include/asm-generic/poll.h
-@@ -28,6 +28,8 @@
- #define POLLRDHUP       0x2000
- #endif
- 
-+#define POLLFREE	0x4000	/* currently only for epoll */
-+
- struct pollfd {
- 	int fd;
- 	short events;
 -- 
-1.5.5.1
-
-
+Meelis Roos (mroos@linux.ee)
