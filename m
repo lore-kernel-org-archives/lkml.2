@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab2BVTLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:11:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52022 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab2BVTLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 14:11:12 -0500
-Message-ID: <4F453DB4.7090900@zytor.com>
-Date: Wed, 22 Feb 2012 11:10:44 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1755296Ab2BVTNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 14:13:53 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50488 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab2BVTNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 14:13:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.132.229 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Wed, 22 Feb 2012 11:13:47 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 33/36] block: add io_context->active_ref
+Message-ID: <20120222191347.GB17480@google.com>
+References: <1329875223-5102-1-git-send-email-tj@kernel.org>
+ <1329875223-5102-34-git-send-email-tj@kernel.org>
+ <20120222184736.GE4128@redhat.com>
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: Richard Henderson <rth@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        mathieu.desnoyers@efficios.com, davem@davemloft.net,
-        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
- + docs
-References: <4F449ACF.3040807@zytor.com> <20120222074839.GA24890@elte.hu> <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com> <20120222080659.GA25318@elte.hu> <1329916920.25686.79.camel@gandalf.stny.rr.com> <20120222133404.GA14085@elte.hu> <1329918881.25686.92.camel@gandalf.stny.rr.com> <1329923583.24994.21.camel@twins> <1329924752.24994.25.camel@twins> <4F45226B.50606@redhat.com> <20120222185809.GI3405@redhat.com>
-In-Reply-To: <20120222185809.GI3405@redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222184736.GE4128@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 10:58 AM, Jason Baron wrote:
+Hello, Vivek.
+
+On Wed, Feb 22, 2012 at 01:47:36PM -0500, Vivek Goyal wrote:
+> On Tue, Feb 21, 2012 at 05:47:00PM -0800, Tejun Heo wrote:
+> > Currently ioc->nr_tasks is used to decide two things - whether an ioc
+> > is done issuing IOs and whether it's shared by multiple tasks.  This
+> > patch separate out the first into ioc->active_ref, which is acquired
+> > and released using {get|put}_io_context_active() respectively.
+> > 
+> > This will be used to associate bio's with a given task.  This patch
+> > doesn't introduce any visible behavior change.
 > 
-> I don't think I ever quite got it working, and I've unfortunately
-> misplaced it at this point. I am definitely interested in trying it
-> again though. If you can re-send it, I'll try it.
-> 
-> Also, I think I seem to recall it wouldn't help the -Os case, b/c we
-> don't get block re-ordering?
-> 
+> Do we really need to spilit nr_tasks and active_ref stuff. IIUC, you
+> are creatinv active_ref so that if somebody has taken active_ref in
+> the system, then CFQ will idle and wait for more IO. But what if that
+> bio gets throttled. Or gets delayed somewhere higher in the stack. Then
+> we are unnecessarily idling in CFQ.
 
-With -Os, your code is going to suck eggs no matter what.
+I think it's better to keep the distinction clear.  CFQ idling while
+bios being throttled is unrelated to task exiting or not.  It can
+easily happen while the task is live and well and if that's a
+situation which needs to be addressed it better be solved for the
+generic case rather than modifying something which is mostly
+unrelated.  It *may* be helpful now but if you stack up unrelated
+hacks like that, it quickly becomes a difficult-to-maintain mess where
+modifying something completely unrelated breaks something else on the
+other side.
 
-	-hpa
+It indeed is ugly to have ref, active_ref and nr_tasks tho.  If we can
+remove CLONE_IO, nr_tasks will go away with it.  Maybe, I don't know.
+Let's see.
 
-
+Thanks.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+tejun
