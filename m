@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2BVUdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 15:33:44 -0500
-Received: from sun.mmic.net ([199.166.219.7]:51611 "EHLO sun.mmic.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab2BVUdn convert rfc822-to-8bit (ORCPT
+	id S1753667Ab2BVUgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:36:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52402 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab2BVUgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 15:33:43 -0500
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 15:33:43 EST
-From: gallard@mmic.net
-Date: Wed, 22 Feb 2012 15:28:38 -0500
-X-Mailer: Axigen WebMail
-To: linux-kernel@vger.kernel.org
-Message-ID: <1329942518678226500@mmic.net>
-Subject: kernel trace dump when plugging IO Gear GUWAVKIT2
-Importance: Normal
+	Wed, 22 Feb 2012 15:36:13 -0500
+Date: Wed, 22 Feb 2012 12:34:28 -0800
+From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
+Message-ID: <tip-55bc423c1274ba474b74155167d33a56ddf77558@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tony.luck@intel.com, tglx@linutronix.de, bp@amd64.org, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, tony.luck@intel.com, bp@amd64.org, mingo@elte.hu
+In-Reply-To: <4f452eb42507460426@agluck-desktop.sc.intel.com>
+References: <4f452eb42507460426@agluck-desktop.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86/debug:
+  Remove ancient debugging noise from boot log when starting cpus
+Git-Commit-ID: 55bc423c1274ba474b74155167d33a56ddf77558
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 12:34:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a Debian Wheezy distrib with kernel 3.2, I got the following in /var/log/messages
----------------
-Feb 22 15:10:42 V17A kernel: [72063.448069] usb 1-4: new high-speed USB device number 6 using ehci_hcd
-Feb 22 15:10:42 V17A kernel: [72063.581734] usb 1-4: New USB device found, idVendor=13cf, idProduct=1200
-Feb 22 15:10:42 V17A kernel: [72063.581737] usb 1-4: New USB device strings: Mfr=2, Product=1, SerialNumber=3
-Feb 22 15:10:42 V17A kernel: [72063.581740] usb 1-4: Product: Wireless USB Dongle
-Feb 22 15:10:42 V17A kernel: [72063.581742] usb 1-4: Manufacturer:  
-Feb 22 15:10:42 V17A kernel: [72063.581744] usb 1-4: SerialNumber: 123456789
-Feb 22 15:10:44 V17A mtp-probe: checking bus 1, device 6: "/sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4"
-Feb 22 15:10:44 V17A mtp-probe: bus: 1, device: 6 was not an MTP device
-Feb 22 15:10:44 V17A kernel: [72064.781638] ------------[ cut here ]------------
-Feb 22 15:10:44 V17A kernel: [72064.781646] WARNING: at /build/buildd-linux-2.6_3.2.4-1-i386-61WrTr/linux-2.6-3.2.4/debian/build/source_i386_none/kernel/timer.c:1011 del_timer_sync+0x22/0x33()
-Feb 22 15:10:44 V17A kernel: [72064.781650] Hardware name: Vostro 1720
-Feb 22 15:10:44 V17A kernel: [72064.781652] Modules linked in: hwa_rc(+) uwb rt2800usb rt2800lib crc_ccitt rt2x00usb rt2x00lib ath9k_htc ath9k_common ath9k_hw ath mperf cpufreq_powersave cpufreq_conservative cpufreq_stats cpufreq_userspace parport_pc ppdev lp parport rfcomm bnep bluetooth crc16 binfmt_misc uinput fuse nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc loop firewire_sbp2 joydev snd_hda_codec_idt arc4 b43 mac80211 snd_hda_intel snd_hda_codec cfg80211 dell_laptop iTCO_wdt snd_hwdep snd_pcm snd_seq snd_timer psmouse snd_seq_device rfkill bcma pcspkr dcdbas evdev snd iTCO_vendor_support serio_raw i915 i2c_i801 ac rng_core battery power_supply drm_kms_helper drm i2c_algo_bit i2c_core soundcore snd_page_alloc video processor button thermal_sys ext3 jbd mbcache sr_mod sd_mod crc_t10dif cdrom uhci_hcd ahci libahci libata firewire_ohci ssb sdhci_pci sdhci mmc_core firewire_core crc_itu_t pcmcia pcmcia_core r8169 mii ehci_hcd scsi_mod usbcore usb_common [last unloaded: scsi_wait_scan]
-Feb 22 15:10:44 V17A kernel: [72064.781725] Pid: 0, comm: swapper/0 Not tainted 3.2.0-1-686-pae #1
-Feb 22 15:10:44 V17A kernel: [72064.781728] Call Trace:
-Feb 22 15:10:44 V17A kernel: [72064.781733]  [<c1038328>] ? warn_slowpath_common+0x68/0x79
-Feb 22 15:10:44 V17A kernel: [72064.781736]  [<c1042074>] ? del_timer_sync+0x22/0x33
-Feb 22 15:10:44 V17A kernel: [72064.781739]  [<c1038346>] ? warn_slowpath_null+0xd/0x10
-Feb 22 15:10:44 V17A kernel: [72064.781743]  [<c1042074>] ? del_timer_sync+0x22/0x33
-Feb 22 15:10:44 V17A kernel: [72064.781750]  [<fb15f9cc>] ? uwb_rc_neh_grok+0x262/0x2cb [uwb]
-Feb 22 15:10:44 V17A kernel: [72064.781755]  [<f93a472f>] ? hwarc_neep_cb+0x42/0xd4 [hwa_rc]
-Feb 22 15:10:44 V17A kernel: [72064.781767]  [<f825c6eb>] ? usb_hcd_giveback_urb+0x63/0x93 [usbcore]
-Feb 22 15:10:44 V17A kernel: [72064.781773]  [<f8274a42>] ? ehci_urb_done+0x5a/0x67 [ehci_hcd]
-Feb 22 15:10:44 V17A kernel: [72064.781780]  [<f8274d4d>] ? qh_completions+0x2fe/0x37f [ehci_hcd]
-Feb 22 15:10:44 V17A kernel: [72064.781786]  [<f82763b0>] ? ehci_work+0x1f8/0x6c4 [ehci_hcd]
-Feb 22 15:10:44 V17A kernel: [72064.781796]  [<f85c034e>] ? __ata_qc_complete+0xc7/0xcb [libata]
-Feb 22 15:10:44 V17A kernel: [72064.781806]  [<f85c050e>] ? ata_qc_complete_multiple+0x85/0x8a [libata]
-Feb 22 15:10:44 V17A kernel: [72064.781812]  [<f8276d58>] ? ehci_irq+0x1ab/0x1cb [ehci_hcd]
-Feb 22 15:10:44 V17A kernel: [72064.781816]  [<c1058b75>] ? tick_handle_oneshot_broadcast+0xc7/0xde
-Feb 22 15:10:44 V17A kernel: [72064.781826]  [<f825c321>] ? usb_hcd_irq+0x2c/0x5b [usbcore]
-Feb 22 15:10:44 V17A kernel: [72064.781830]  [<c1077340>] ? handle_irq_event_percpu+0x47/0x158
-Feb 22 15:10:44 V17A kernel: [72064.781834]  [<c1079015>] ? handle_level_irq+0x62/0x62
-Feb 22 15:10:44 V17A kernel: [72064.781837]  [<c1077472>] ? handle_irq_event+0x21/0x37
-Feb 22 15:10:44 V17A kernel: [72064.781840]  [<c1079015>] ? handle_level_irq+0x62/0x62
-Feb 22 15:10:44 V17A kernel: [72064.781844]  [<c1079075>] ? handle_fasteoi_irq+0x60/0x78
-Feb 22 15:10:44 V17A kernel: [72064.781846]  <IRQ>  [<c100cd5f>] ? do_IRQ+0x2e/0x76
-Feb 22 15:10:44 V17A kernel: [72064.781854]  [<c12be230>] ? common_interrupt+0x30/0x38
-Feb 22 15:10:44 V17A kernel: [72064.781861]  [<f85a51d0>] ? arch_local_irq_enable+0x2/0x7 [processor]
-Feb 22 15:10:44 V17A kernel: [72064.781867]  [<f85a5d7a>] ? acpi_idle_enter_simple+0xee/0x133 [processor]
-Feb 22 15:10:44 V17A kernel: [72064.781874]  [<c120443e>] ? cpuidle_idle_call+0xcc/0x142
-Feb 22 15:10:44 V17A kernel: [72064.781878]  [<c100b22a>] ? cpu_idle+0x8b/0xaf
-Feb 22 15:10:44 V17A kernel: [72064.781883]  [<c1412708>] ? start_kernel+0x32a/0x32f
-Feb 22 15:10:44 V17A kernel: [72064.781885] ---[ end trace a2e3f5e5daba782f ]---
-Feb 22 15:10:44 V17A kernel: [72064.782383] ------------[ cut here ]------------
-Feb 22 15:10:44 V17A kernel: [72064.782388] WARNING: at /build/buildd-linux-2.6_3.2.4-1-i386-61WrTr/linux-2.6-3.2.4/debian/build/source_i386_none/kernel/timer.c:1011 del_timer_sync+0x22/0x33()
-Feb 22 15:10:44 V17A kernel: [72064.782391] Hardware name: Vostro 1720
-Feb 22 15:10:44 V17A kernel: [72064.782392] Modules linked in: hwa_rc(+) uwb rt2800usb rt2800lib crc_ccitt rt2x00usb rt2x00lib ath9k_htc ath9k_common ath9k_hw ath mperf cpufreq_powersave cpufreq_conservative cpufreq_stats cpufreq_userspace parport_pc ppdev lp parport rfcomm bnep bluetooth crc16 binfmt_misc uinput fuse nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc loop firewire_sbp2 joydev snd_hda_codec_idt arc4 b43 mac80211 snd_hda_intel snd_hda_codec cfg80211 dell_laptop iTCO_wdt snd_hwdep snd_pcm snd_seq snd_timer psmouse snd_seq_device rfkill bcma pcspkr dcdbas evdev snd iTCO_vendor_support serio_raw i915 i2c_i801 ac rng_core battery power_supply drm_kms_helper drm i2c_algo_bit i2c_core soundcore snd_page_alloc video processor button thermal_sys ext3 jbd mbcache sr_mod sd_mod crc_t10dif cdrom uhci_hcd ahci libahci libata firewire_ohci ssb sdhci_pci sdhci mmc_core firewire_core crc_itu_t pcmcia pcmcia_core r8169 mii ehci_hcd scsi_mod usbcore usb_common [last unloaded: scsi_wait_scan]
-Feb 22 15:10:44 V17A kernel: [72064.782450] Pid: 0, comm: swapper/0 Tainted: G        W    3.2.0-1-686-pae #1
---------------------------
-I got that sequence 5 times.
-I'm not knowledgeable enough to decode that trace dump but I suppose it is a driver bug.
+Commit-ID:  55bc423c1274ba474b74155167d33a56ddf77558
+Gitweb:     http://git.kernel.org/tip/55bc423c1274ba474b74155167d33a56ddf77558
+Author:     Luck, Tony <tony.luck@intel.com>
+AuthorDate: Wed, 22 Feb 2012 10:06:44 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 22 Feb 2012 21:26:18 +0100
 
-Good luck
-Gilles Allard
+x86/debug: Remove ancient debugging noise from boot log when starting cpus
+
+Printing the "start_ip" for every secondary cpu is very noisy on
+a large system - and doesn't add any value. Drop this message.
+
+Console log before:
+
+ Booting Node   0, Processors  #1
+ smpboot cpu 1: start_ip = 96000
+  #2
+ smpboot cpu 2: start_ip = 96000
+  #3
+ smpboot cpu 3: start_ip = 96000
+  #4
+ smpboot cpu 4: start_ip = 96000
+        ...
+  #31
+ smpboot cpu 31: start_ip = 96000
+ Brought up 32 CPUs
+
+Console log after:
+
+ Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+ Booting Node   1, Processors  #8 #9 #10 #11 #12 #13 #14 #15 Ok.
+ Booting Node   0, Processors  #16 #17 #18 #19 #20 #21 #22 #23 Ok.
+ Booting Node   1, Processors  #24 #25 #26 #27 #28 #29 #30
+ #31 Brought up 32 CPUs
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Borislav Petkov <bp@amd64.org>
+Cc: castet.matthieu@free.fr
+Cc: sfr@canb.auug.org.au
+Cc: hpa@linux.intel.com
+Cc: rjw@sisk.pl
+Link: http://lkml.kernel.org/r/4f452eb42507460426@agluck-desktop.sc.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/smpboot.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 257049d..f34f8b2 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -740,8 +740,6 @@ do_rest:
+ 	 * the targeted processor.
+ 	 */
+ 
+-	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
+-
+ 	atomic_set(&init_deasserted, 0);
+ 
+ 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
