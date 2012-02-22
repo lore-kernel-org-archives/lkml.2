@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2BVJc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:32:26 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60026 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877Ab2BVJcX (ORCPT
+	id S1754697Ab2BVJf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:35:58 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:37833 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754432Ab2BVJf4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:32:23 -0500
-X-Sasl-enc: THwTuShGwCN4rI2miDNS/07uyd7G8Xiq0mXOzHW7wn+wyBcOs5E9DLjF9A 1329903142
-Message-ID: <1329903139.2193.66.camel@perseus.themaw.net>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-From: Ian Kent <raven@themaw.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
-        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Date: Wed, 22 Feb 2012 17:32:19 +0800
-In-Reply-To: <1329890251.2193.50.camel@perseus.themaw.net>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
-	 <20120221.221609.218135609185671883.davem@davemloft.net>
-	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
-	 <1329889428.2193.45.camel@perseus.themaw.net>
-	 <1329890027.2193.48.camel@perseus.themaw.net>
-	 <1329890251.2193.50.camel@perseus.themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 Feb 2012 04:35:56 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+Date: Wed, 22 Feb 2012 09:35:14 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E77@saturn3.aculab.com>
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQAgADHRwA=
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Joe Perches" <joe@perches.com>, "David Miller" <davem@davemloft.net>,
+        "Andy Whitcroft" <apw@shadowen.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Cc: <andrei.emeltchenko.news@gmail.com>, <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 22 Feb 2012 09:35:14.0999 (UTC) FILETIME=[48016470:01CCF145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 13:57 +0800, Ian Kent wrote:
-> On Wed, 2012-02-22 at 13:53 +0800, Ian Kent wrote:
-> > On Wed, 2012-02-22 at 13:43 +0800, Ian Kent wrote:
-> > > On Tue, 2012-02-21 at 20:56 -0800, Linus Torvalds wrote:
-> > 
-> > Ahh ... forgot to set the file_operations structure member .. oops
-> > 
-> > >  
-> > > +static int autofs4_root_dir_open(struct inode *inode, struct file *file)
-> > > +{
-> > > +	struct autofs_sb_info *sbi= autofs4_sbi(file->f_path.dentry->d_sb);
-> > > +	if (sbi->compat_daemon < 0)
-> > > +		sbi->compat_daemon = is_compat_task();
-> > > +	return dcache_dir_open(inode, file);
-> > > +}
-> > > +
-> > 
-> 
-> Lets try that again.
+ 
+> 	if (!(func_a(x) &&
+> 		func_b(y)))
+> 		baz();
 
-Oh, DOH ... 
+Gah - that is horrid for the 'preferred style'.
+A quick glance at the code puts both the func_b()
+and baz() calls as inside the if.
 
-The process mounting the autofs mount is passing the pipe it will use
-for communication via a mount option so we can do this right in
-fill_super.
-
-I'm out for a while, I'll update the patch when I'm back.
-
-Ian
+	David
 
 
