@@ -1,34 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab2BVQIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:08:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51029 "EHLO
+	id S1753893Ab2BVQIh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:08:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51040 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2BVQIL (ORCPT
+	with ESMTP id S1753688Ab2BVQIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:08:11 -0500
-Date: Wed, 22 Feb 2012 08:06:33 -0800
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-3ff54efdfaace9e9b2b7c1959a865be6b91de96c@git.kernel.org>
-Cc: mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
-        jolsa@redhat.com, anton@redhat.com, jkenisto@linux.vnet.ibm.com,
-        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, hch@infradead.org,
-        ananth@in.ibm.com, jistone@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, peterz@infradead.org, hch@infradead.org,
-        jolsa@redhat.com, jistone@redhat.com, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        jkenisto@linux.vnet.ibm.com, rostedt@goodmis.org,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
+	Wed, 22 Feb 2012 11:08:35 -0500
+Date: Wed, 22 Feb 2012 08:07:24 -0800
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Message-ID: <tip-f5dbbb8e1e055d6f02817a1995993b461910b1b7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, ananth@in.ibm.com, hpa@zytor.com,
+        mingo@redhat.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20120222091602.15880.40249.sendpatchset@srdronam.in.ibm.com>
-References: <20120222091602.15880.40249.sendpatchset@srdronam.in.ibm.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, ananth@in.ibm.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20120221083621.11350.4716.stgit@localhost.localdomain>
+References: <20120221083621.11350.4716.stgit@localhost.localdomain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] uprobes/core:
-  Move insn to arch specific structure
-Git-Commit-ID: 3ff54efdfaace9e9b2b7c1959a865be6b91de96c
+Subject: [tip:perf/core] x86/kprobes:
+  Fix to recover instructions on optimized path
+Git-Commit-ID: f5dbbb8e1e055d6f02817a1995993b461910b1b7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,424 +30,334 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:07:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:08:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3ff54efdfaace9e9b2b7c1959a865be6b91de96c
-Gitweb:     http://git.kernel.org/tip/3ff54efdfaace9e9b2b7c1959a865be6b91de96c
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Wed, 22 Feb 2012 14:46:02 +0530
+Commit-ID:  f5dbbb8e1e055d6f02817a1995993b461910b1b7
+Gitweb:     http://git.kernel.org/tip/f5dbbb8e1e055d6f02817a1995993b461910b1b7
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Tue, 21 Feb 2012 17:36:21 +0900
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 11:26:09 +0100
+CommitDate: Wed, 22 Feb 2012 11:31:34 +0100
 
-uprobes/core: Move insn to arch specific structure
+x86/kprobes: Fix to recover instructions on optimized path
 
-Few cleanups suggested by Ingo Molnar.
+Current probed-instruction recovery expects that only breakpoint
+instruction modifies instruction. However, since kprobes jump
+optimization can replace original instructions with a jump,
+that expectation is not enough. And it may cause instruction
+decoding failure on the function where an optimized probe
+already exists.
 
-- Rename struct uprobe_arch_info to struct arch_uprobe.
-- Move insn from struct uprobe to struct arch_uprobe.
-- Make arch specific uprobe functions to accept struct arch_uprobe
-  instead of  struct uprobe.
-- Move struct uprobe to kernel/uprobes.c from include/linux/uprobes.h
+This bug can reproduce easily as below.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Arapov <anton@redhat.com>
+1) find a target function address (any kprobe-able function is OK)
+   $ grep __secure_computing /proc/kallsyms
+   ffffffff810c19d0 T __secure_computing
+
+2) decode the function
+   $ objdump -d vmlinux --start-address=0xffffffff810c19d0 --stop-address=0xffffffff810c19eb
+
+vmlinux:     file format elf64-x86-64
+
+Disassembly of section .text:
+
+ffffffff810c19d0 <__secure_computing>:
+ffffffff810c19d0:       55                      push   %rbp
+ffffffff810c19d1:       48 89 e5                mov    %rsp, %rbp
+ffffffff810c19d4:       e8 67 8f 72 00          callq
+ffffffff817ea940 <mcount>
+ffffffff810c19d9:       65 48 8b 04 25 40 b8 mov    %gs:0xb840, %rax
+ffffffff810c19e0:       00 00
+ffffffff810c19e2:       83 b8 88 05 00 00 01    cmpl $0x1, 0x588(%rax)
+ffffffff810c19e9:       74 05                   je     ffffffff810c19f0 <__secure_computing+0x20>
+
+3) put a kprobe-event at an optimize-able place, where no
+   call/jump places within the 5 bytes:
+
+ $ su -
+ # cd /sys/kernel/debug/tracing
+ # echo p __secure_computing+0x9 > kprobe_events
+
+4) enable it and check it is optimized:
+
+ # echo 1 > events/kprobes/p___secure_computing_9/enable
+ # cat ../kprobes/list
+ ffffffff810c19d9  k  __secure_computing+0x9    [OPTIMIZED]
+
+5) put another kprobe on an instruction after previous probe in
+   the same function:
+
+ # echo p __secure_computing+0x12 >> kprobe_events
+ bash: echo: write error: Invalid argument
+ # dmesg | tail -n 1
+ [ 1666.500016] Probing address(0xffffffff810c19e2) is not an instruction boundary.
+
+6) however, if the kprobes optimization is disabled, it works:
+
+ # echo 0 > /proc/sys/debug/kprobes-optimization
+ # cat ../kprobes/list
+ ffffffff810c19d9  k  __secure_computing+0x9
+ # echo p __secure_computing+0x12 >> kprobe_events
+ (no error)
+
+This is because kprobes doesn't recover the instruction
+which is overwritten with a relative jump by another kprobe
+when finding instruction boundary.
+
+It only recovers the breakpoint instruction.
+
+This patch fixes kprobes to recover such instructions.
+
+With this fix:
+
+ # echo p __secure_computing+0x9 > kprobe_events
+ # echo 1 > events/kprobes/p___secure_computing_9/enable
+ # cat ../kprobes/list
+ ffffffff810c1aa9  k  __secure_computing+0x9    [OPTIMIZED]
+ # echo p __secure_computing+0x12 >> kprobe_events
+ # cat ../kprobes/list
+ ffffffff810c1aa9  k  __secure_computing+0x9    [OPTIMIZED]
+ ffffffff810c1ab2  k  __secure_computing+0x12    [DISABLED]
+
+Changes in v2:
+ - Fix a bug to recover original instruction address in
+   RIP-relative instruction fixup.
+ - Moved on tip/master.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Josh Stone <jistone@redhat.com>
-Link: http://lkml.kernel.org/r/20120222091602.15880.40249.sendpatchset@srdronam.in.ibm.com
-[ Made various small improvements ]
+Link: http://lkml.kernel.org/r/20120221083621.11350.4716.stgit@localhost.localdomain
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/uprobes.h |    6 ++--
- arch/x86/kernel/uprobes.c      |   60 ++++++++++++++++++++--------------------
- include/linux/uprobes.h        |   23 +--------------
- kernel/events/uprobes.c        |   38 +++++++++++++++++--------
- 4 files changed, 61 insertions(+), 66 deletions(-)
+ arch/x86/kernel/kprobes.c |  114 +++++++++++++++++++++++++++------------------
+ include/linux/kprobes.h   |    6 ++
+ kernel/kprobes.c          |    2 +-
+ 3 files changed, 76 insertions(+), 46 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 072df39..f7ce310 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -31,13 +31,13 @@ typedef u8 uprobe_opcode_t;
- #define UPROBES_BKPT_INSN		0xcc
- #define UPROBES_BKPT_INSN_SIZE		   1
- 
--struct uprobe_arch_info {
-+struct arch_uprobe {
- 	u16				fixups;
-+	u8				insn[MAX_UINSN_BYTES];
- #ifdef CONFIG_X86_64
- 	unsigned long			rip_rela_target_address;
- #endif
- };
- 
--struct uprobe;
--extern int arch_uprobes_analyze_insn(struct mm_struct *mm, struct uprobe *uprobe);
-+extern int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *arch_uprobe);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 13d616d..04dfcef 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -200,9 +200,9 @@ static bool is_prefix_bad(struct insn *insn)
- 	return false;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index 7da647d..0ffe834 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -207,13 +207,29 @@ retry:
+ 	}
  }
  
--static int validate_insn_32bits(struct uprobe *uprobe, struct insn *insn)
-+static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+-/* Recover the probed instruction at addr for further analysis. */
+-static int recover_probed_instruction(kprobe_opcode_t *buf, unsigned long addr)
++/*
++ * Recover the probed instruction at addr for further analysis.
++ * Caller must lock kprobes by kprobe_mutex, or disable preemption
++ * for preventing to release referencing kprobes.
++ */
++static unsigned long recover_probed_instruction(kprobe_opcode_t *buf,
++						unsigned long addr)
  {
--	insn_init(insn, uprobe->insn, false);
-+	insn_init(insn, auprobe->insn, false);
- 
- 	/* Skip good instruction prefixes; reject "bad" ones. */
- 	insn_get_opcode(insn);
-@@ -222,11 +222,11 @@ static int validate_insn_32bits(struct uprobe *uprobe, struct insn *insn)
- 
- /*
-  * Figure out which fixups post_xol() will need to perform, and annotate
-- * uprobe->arch_info.fixups accordingly.  To start with,
-- * uprobe->arch_info.fixups is either zero or it reflects rip-related
-+ * arch_uprobe->fixups accordingly.  To start with,
-+ * arch_uprobe->fixups is either zero or it reflects rip-related
-  * fixups.
-  */
--static void prepare_fixups(struct uprobe *uprobe, struct insn *insn)
-+static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	bool fix_ip = true, fix_call = false;	/* defaults */
- 	int reg;
-@@ -269,17 +269,17 @@ static void prepare_fixups(struct uprobe *uprobe, struct insn *insn)
- 		break;
- 	}
- 	if (fix_ip)
--		uprobe->arch_info.fixups |= UPROBES_FIX_IP;
-+		auprobe->fixups |= UPROBES_FIX_IP;
- 	if (fix_call)
--		uprobe->arch_info.fixups |= UPROBES_FIX_CALL;
-+		auprobe->fixups |= UPROBES_FIX_CALL;
- }
- 
- #ifdef CONFIG_X86_64
- /*
-- * If uprobe->insn doesn't use rip-relative addressing, return
-+ * If arch_uprobe->insn doesn't use rip-relative addressing, return
-  * immediately.  Otherwise, rewrite the instruction so that it accesses
-  * its memory operand indirectly through a scratch register.  Set
-- * uprobe->arch_info.fixups and uprobe->arch_info.rip_rela_target_address
-+ * arch_uprobe->fixups and arch_uprobe->rip_rela_target_address
-  * accordingly.  (The contents of the scratch register will be saved
-  * before we single-step the modified instruction, and restored
-  * afterward.)
-@@ -297,7 +297,7 @@ static void prepare_fixups(struct uprobe *uprobe, struct insn *insn)
-  *  - There's never a SIB byte.
-  *  - The displacement is always 4 bytes.
-  */
--static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, struct insn *insn)
-+static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	u8 *cursor;
- 	u8 reg;
-@@ -305,7 +305,7 @@ static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, stru
- 	if (mm->context.ia32_compat)
- 		return;
- 
--	uprobe->arch_info.rip_rela_target_address = 0x0;
-+	auprobe->rip_rela_target_address = 0x0;
- 	if (!insn_rip_relative(insn))
- 		return;
- 
-@@ -315,7 +315,7 @@ static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, stru
- 	 * we want to encode rax/rcx, not r8/r9.
- 	 */
- 	if (insn->rex_prefix.nbytes) {
--		cursor = uprobe->insn + insn_offset_rex_prefix(insn);
-+		cursor = auprobe->insn + insn_offset_rex_prefix(insn);
- 		*cursor &= 0xfe;	/* Clearing REX.B bit */
- 	}
- 
-@@ -324,7 +324,7 @@ static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, stru
- 	 * displacement.  Beyond the displacement, for some instructions,
- 	 * is the immediate operand.
- 	 */
--	cursor = uprobe->insn + insn_offset_modrm(insn);
-+	cursor = auprobe->insn + insn_offset_modrm(insn);
- 	insn_get_length(insn);
+ 	struct kprobe *kp;
+-	kp = get_kprobe((void *)addr);
+-	if (!kp)
+-		return -EINVAL;
++	int i;
++
++	for (i = 0; i < RELATIVEJUMP_SIZE; i++) {
++		kp = get_kprobe((void *)addr - i);
++		if (kp)
++			goto found;
++	}
++
++	/* There is no probe, return original address */
++	return addr;
++
++found:
++	if (i != 0 && !kprobe_optready(kp))
++		return addr;	/* this probe doesn't affect the instruction */
  
  	/*
-@@ -341,18 +341,18 @@ static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, stru
- 		 * is NOT the register operand, so we use %rcx (register
- 		 * #1) for the scratch register.
+ 	 *  Basically, kp->ainsn.insn has an original instruction.
+@@ -229,15 +245,32 @@ static int recover_probed_instruction(kprobe_opcode_t *buf, unsigned long addr)
+ 	 *  from it and kp->opcode.
+ 	 */
+ 	memcpy(buf, kp->addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
+-	buf[0] = kp->opcode;
+-	return 0;
++	if (i == 0)
++		buf[0] = kp->opcode;
++
++	if (kprobe_optready(kp)) {
++		/*
++		 * If the kprobe can be optimized, original bytes which
++		 * can be overwritten by jump destination address. In this
++		 * case, original bytes must be recovered from
++		 * op->optinsn.copied_insn buffer.
++		 */
++		struct optimized_kprobe *op;
++
++		op = container_of(kp, struct optimized_kprobe, kp);
++		if (i == 0)
++			memcpy(buf + 1, op->optinsn.copied_insn, RELATIVE_ADDR_SIZE);
++		else
++			memcpy(buf, op->optinsn.copied_insn + i - 1, RELATIVE_ADDR_SIZE - i + 1);
++	}
++
++	return (unsigned long)buf;
+ }
+ 
+ /* Check if paddr is at an instruction boundary */
+ static int __kprobes can_probe(unsigned long paddr)
+ {
+-	int ret;
+-	unsigned long addr, offset = 0;
++	unsigned long addr, __addr, offset = 0;
+ 	struct insn insn;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
+ 
+@@ -247,26 +280,24 @@ static int __kprobes can_probe(unsigned long paddr)
+ 	/* Decode instructions */
+ 	addr = paddr - offset;
+ 	while (addr < paddr) {
+-		kernel_insn_init(&insn, (void *)addr);
+-		insn_get_opcode(&insn);
+-
+ 		/*
+ 		 * Check if the instruction has been modified by another
+ 		 * kprobe, in which case we replace the breakpoint by the
+ 		 * original instruction in our buffer.
++		 * Also, jump optimization will change the breakpoint to
++		 * relative-jump. Since the relative-jump itself is
++		 * normally used, we just go through if there is no kprobe.
  		 */
--		uprobe->arch_info.fixups = UPROBES_FIX_RIP_CX;
-+		auprobe->fixups = UPROBES_FIX_RIP_CX;
- 		/* Change modrm from 00 000 101 to 00 000 001. */
- 		*cursor = 0x1;
- 	} else {
- 		/* Use %rax (register #0) for the scratch register. */
--		uprobe->arch_info.fixups = UPROBES_FIX_RIP_AX;
-+		auprobe->fixups = UPROBES_FIX_RIP_AX;
- 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
- 		*cursor = (reg << 3);
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf, addr);
+-			if (ret)
+-				/*
+-				 * Another debugging subsystem might insert
+-				 * this breakpoint. In that case, we can't
+-				 * recover it.
+-				 */
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
++		__addr = recover_probed_instruction(buf, addr);
++		kernel_insn_init(&insn, (void *)__addr);
+ 		insn_get_length(&insn);
++		/*
++		 * Another debugging subsystem might insert
++		 * this breakpoint. In that case, we can't
++		 * recover it.
++		 */
++		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++			return 0;
+ 		addr += insn.length;
  	}
  
- 	/* Target address = address of next instruction + (signed) offset */
--	uprobe->arch_info.rip_rela_target_address = (long)insn->length + insn->displacement.value;
-+	auprobe->rip_rela_target_address = (long)insn->length + insn->displacement.value;
- 
- 	/* Displacement field is gone; slide immediate field (if any) over. */
- 	if (insn->immediate.nbytes) {
-@@ -362,9 +362,9 @@ static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, stru
- 	return;
- }
- 
--static int validate_insn_64bits(struct uprobe *uprobe, struct insn *insn)
-+static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
+@@ -302,21 +333,17 @@ static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
+ static int __kprobes __copy_instruction(u8 *dest, u8 *src, int recover)
  {
--	insn_init(insn, uprobe->insn, true);
-+	insn_init(insn, auprobe->insn, true);
- 
- 	/* Skip good instruction prefixes; reject "bad" ones. */
- 	insn_get_opcode(insn);
-@@ -381,42 +381,42 @@ static int validate_insn_64bits(struct uprobe *uprobe, struct insn *insn)
- 	return -ENOTSUPP;
- }
- 
--static int validate_insn_bits(struct mm_struct *mm, struct uprobe *uprobe, struct insn *insn)
-+static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	if (mm->context.ia32_compat)
--		return validate_insn_32bits(uprobe, insn);
--	return validate_insn_64bits(uprobe, insn);
-+		return validate_insn_32bits(auprobe, insn);
-+	return validate_insn_64bits(auprobe, insn);
- }
- #else /* 32-bit: */
--static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe, struct insn *insn)
-+static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	/* No RIP-relative addressing on 32-bit */
- }
- 
--static int validate_insn_bits(struct mm_struct *mm, struct uprobe *uprobe, struct insn *insn)
-+static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
- {
--	return validate_insn_32bits(uprobe, insn);
-+	return validate_insn_32bits(auprobe, insn);
- }
- #endif /* CONFIG_X86_64 */
- 
- /**
-  * arch_uprobes_analyze_insn - instruction analysis including validity and fixups.
-  * @mm: the probed address space.
-- * @uprobe: the probepoint information.
-+ * @arch_uprobe: the probepoint information.
-  * Return 0 on success or a -ve number on error.
-  */
--int arch_uprobes_analyze_insn(struct mm_struct *mm, struct uprobe *uprobe)
-+int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *auprobe)
- {
- 	int ret;
  	struct insn insn;
+-	int ret;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
++	u8 *orig_src = src;	/* Back up original src for RIP calculation */
++
++	if (recover)
++		src = (u8 *)recover_probed_instruction(buf, (unsigned long)src);
  
--	uprobe->arch_info.fixups = 0;
--	ret = validate_insn_bits(mm, uprobe, &insn);
-+	auprobe->fixups = 0;
-+	ret = validate_insn_bits(mm, auprobe, &insn);
- 	if (ret != 0)
- 		return ret;
+ 	kernel_insn_init(&insn, src);
+-	if (recover) {
+-		insn_get_opcode(&insn);
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf,
+-							 (unsigned long)src);
+-			if (ret)
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
+-	}
+ 	insn_get_length(&insn);
++	/* Another subsystem puts a breakpoint, failed to recover */
++	if (recover && insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++		return 0;
+ 	memcpy(dest, insn.kaddr, insn.length);
  
--	handle_riprel_insn(mm, uprobe, &insn);
--	prepare_fixups(uprobe, &insn);
-+	handle_riprel_insn(mm, auprobe, &insn);
-+	prepare_fixups(auprobe, &insn);
+ #ifdef CONFIG_X86_64
+@@ -337,7 +364,7 @@ static int __kprobes __copy_instruction(u8 *dest, u8 *src, int recover)
+ 		 * extension of the original signed 32-bit displacement would
+ 		 * have given.
+ 		 */
+-		newdisp = (u8 *) src + (s64) insn.displacement.value -
++		newdisp = (u8 *) orig_src + (s64) insn.displacement.value -
+ 			  (u8 *) dest;
+ 		BUG_ON((s64) (s32) newdisp != newdisp); /* Sanity check.  */
+ 		disp = (u8 *) dest + insn_offset_displacement(&insn);
+@@ -1271,8 +1298,7 @@ static int insn_jump_into_range(struct insn *insn, unsigned long start, int len)
+ /* Decode whole function to ensure any instructions don't jump into target */
+ static int __kprobes can_optimize(unsigned long paddr)
+ {
+-	int ret;
+-	unsigned long addr, size = 0, offset = 0;
++	unsigned long addr, __addr, size = 0, offset = 0;
+ 	struct insn insn;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
  
- 	return 0;
- }
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index fd45b70..9c6be62 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -29,12 +29,6 @@
- struct vm_area_struct;
- #ifdef CONFIG_ARCH_SUPPORTS_UPROBES
- #include <asm/uprobes.h>
--#else
--
--typedef u8 uprobe_opcode_t;
--struct uprobe_arch_info {};
--
--#define MAX_UINSN_BYTES 4
+@@ -1301,15 +1327,12 @@ static int __kprobes can_optimize(unsigned long paddr)
+ 			 * we can't optimize kprobe in this function.
+ 			 */
+ 			return 0;
+-		kernel_insn_init(&insn, (void *)addr);
+-		insn_get_opcode(&insn);
+-		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION) {
+-			ret = recover_probed_instruction(buf, addr);
+-			if (ret)
+-				return 0;
+-			kernel_insn_init(&insn, buf);
+-		}
++		__addr = recover_probed_instruction(buf, addr);
++		kernel_insn_init(&insn, (void *)__addr);
+ 		insn_get_length(&insn);
++		/* Another subsystem puts a breakpoint */
++		if (insn.opcode.bytes[0] == BREAKPOINT_INSTRUCTION)
++			return 0;
+ 		/* Recover address */
+ 		insn.kaddr = (void *)addr;
+ 		insn.next_byte = (void *)(addr + insn.length);
+@@ -1366,6 +1389,7 @@ void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
+ /*
+  * Copy replacing target instructions
+  * Target instructions MUST be relocatable (checked inside)
++ * This is called when new aggr(opt)probe is allocated or reused.
+  */
+ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+ {
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index dce6e4d..6abec49 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -293,6 +293,12 @@ extern int proc_kprobes_optimization_handler(struct ctl_table *table,
+ 					     size_t *length, loff_t *ppos);
  #endif
  
- /* flags that denote/change uprobes behaviour */
-@@ -56,22 +50,9 @@ struct uprobe_consumer {
- 	struct uprobe_consumer *next;
- };
++extern int kprobe_optready(struct kprobe *p);
++#else /* CONFIG_OPTPROBES */
++static inline int kprobe_optready(struct kprobe *p)
++{
++	return 0;
++}
+ #endif /* CONFIG_OPTPROBES */
  
--struct uprobe {
--	struct rb_node		rb_node;	/* node in the rb tree */
--	atomic_t		ref;
--	struct rw_semaphore	consumer_rwsem;
--	struct list_head	pending_list;
--	struct uprobe_arch_info arch_info;
--	struct uprobe_consumer	*consumers;
--	struct inode		*inode;		/* Also hold a ref to inode */
--	loff_t			offset;
--	int			flags;
--	u8			insn[MAX_UINSN_BYTES];
--};
--
- #ifdef CONFIG_UPROBES
--extern int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe, unsigned long vaddr);
--extern int __weak set_orig_insn(struct mm_struct *mm, struct uprobe *uprobe, unsigned long vaddr, bool verify);
-+extern int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr);
-+extern int __weak set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify);
- extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index ee496ad..13f1b59 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -65,6 +65,18 @@ struct vma_info {
- 	loff_t			vaddr;
- };
+ /* Get the kprobe at this addr (if any) - called with preemption disabled */
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 29f5b65..ec2d06c 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -403,7 +403,7 @@ static __kprobes void free_aggr_kprobe(struct kprobe *p)
+ }
  
-+struct uprobe {
-+	struct rb_node		rb_node;	/* node in the rb tree */
-+	atomic_t		ref;
-+	struct rw_semaphore	consumer_rwsem;
-+	struct list_head	pending_list;
-+	struct uprobe_consumer	*consumers;
-+	struct inode		*inode;		/* Also hold a ref to inode */
-+	loff_t			offset;
-+	int			flags;
-+	struct arch_uprobe	arch;
-+};
-+
- /*
-  * valid_vma: Verify if the specified vma is an executable vma
-  * Relax restrictions while unregistering: vm_flags might have
-@@ -180,7 +192,7 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
- /*
-  * write_opcode - write the opcode at a given virtual address.
-  * @mm: the probed process address space.
-- * @uprobe: the breakpointing information.
-+ * @arch_uprobe: the breakpointing information.
-  * @vaddr: the virtual address to store the opcode.
-  * @opcode: opcode to be written at @vaddr.
-  *
-@@ -190,13 +202,14 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
-  * For mm @mm, write the opcode at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--static int write_opcode(struct mm_struct *mm, struct uprobe *uprobe,
-+static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
- 			unsigned long vaddr, uprobe_opcode_t opcode)
+ /* Return true(!0) if the kprobe is ready for optimization. */
+-static inline int kprobe_optready(struct kprobe *p)
++int kprobe_optready(struct kprobe *p)
  {
- 	struct page *old_page, *new_page;
- 	struct address_space *mapping;
- 	void *vaddr_old, *vaddr_new;
- 	struct vm_area_struct *vma;
-+	struct uprobe *uprobe;
- 	loff_t addr;
- 	int ret;
+ 	struct optimized_kprobe *op;
  
-@@ -216,6 +229,7 @@ static int write_opcode(struct mm_struct *mm, struct uprobe *uprobe,
- 	if (!valid_vma(vma, is_bkpt_insn(&opcode)))
- 		goto put_out;
- 
-+	uprobe = container_of(auprobe, struct uprobe, arch);
- 	mapping = uprobe->inode->i_mapping;
- 	if (mapping != vma->vm_file->f_mapping)
- 		goto put_out;
-@@ -326,7 +340,7 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
-  * For mm @mm, store the breakpoint instruction at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe, unsigned long vaddr)
-+int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr)
- {
- 	int result;
- 
-@@ -337,7 +351,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe, unsigned long v
- 	if (result)
- 		return result;
- 
--	return write_opcode(mm, uprobe, vaddr, UPROBES_BKPT_INSN);
-+	return write_opcode(mm, auprobe, vaddr, UPROBES_BKPT_INSN);
- }
- 
- /**
-@@ -351,7 +365,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe, unsigned long v
-  * Return 0 (success) or a negative errno.
-  */
- int __weak
--set_orig_insn(struct mm_struct *mm, struct uprobe *uprobe, unsigned long vaddr, bool verify)
-+set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify)
- {
- 	if (verify) {
- 		int result;
-@@ -363,7 +377,7 @@ set_orig_insn(struct mm_struct *mm, struct uprobe *uprobe, unsigned long vaddr,
- 		if (result != 1)
- 			return result;
- 	}
--	return write_opcode(mm, uprobe, vaddr, *(uprobe_opcode_t *)uprobe->insn);
-+	return write_opcode(mm, auprobe, vaddr, *(uprobe_opcode_t *)auprobe->insn);
- }
- 
- static int match_uprobe(struct uprobe *l, struct uprobe *r)
-@@ -593,13 +607,13 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned
- 
- 	/* Instruction at the page-boundary; copy bytes in second page */
- 	if (nbytes < bytes) {
--		if (__copy_insn(mapping, vma, uprobe->insn + nbytes,
-+		if (__copy_insn(mapping, vma, uprobe->arch.insn + nbytes,
- 				bytes - nbytes, uprobe->offset + nbytes))
- 			return -ENOMEM;
- 
- 		bytes = nbytes;
- 	}
--	return __copy_insn(mapping, vma, uprobe->insn, bytes, uprobe->offset);
-+	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
- static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
-@@ -625,23 +639,23 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 		if (ret)
- 			return ret;
- 
--		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->insn))
-+		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
- 			return -EEXIST;
- 
--		ret = arch_uprobes_analyze_insn(mm, uprobe);
-+		ret = arch_uprobes_analyze_insn(mm, &uprobe->arch);
- 		if (ret)
- 			return ret;
- 
- 		uprobe->flags |= UPROBES_COPY_INSN;
- 	}
--	ret = set_bkpt(mm, uprobe, addr);
-+	ret = set_bkpt(mm, &uprobe->arch, addr);
- 
- 	return ret;
- }
- 
- static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe, loff_t vaddr)
- {
--	set_orig_insn(mm, uprobe, (unsigned long)vaddr, true);
-+	set_orig_insn(mm, &uprobe->arch, (unsigned long)vaddr, true);
- }
- 
- static void delete_uprobe(struct uprobe *uprobe)
