@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab2BVXDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:03:30 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:40520 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750859Ab2BVXD2 (ORCPT
+	id S1752076Ab2BVXDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:03:47 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:46535 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab2BVXDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:03:28 -0500
-Message-ID: <4F45742F.1070605@fb.com>
-Date: Wed, 22 Feb 2012 15:03:11 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 22 Feb 2012 18:03:44 -0500
+Message-ID: <d1dbcb9c671fea502f79519749095fd5.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1329920626.3258.174.camel@deadeye>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+    <1329845435-2313-5-git-send-email-wad@chromium.org>
+    <38d58caa17befe422065efe5dc451a34.squirrel@webmail.greenhost.nl>
+    <1329920626.3258.174.camel@deadeye>
+Date: Thu, 23 Feb 2012 00:03:30 +0100
+Subject: Re: [PATCH v10 05/11] seccomp: add system call filtering using BPF
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Ben Hutchings" <bhutchings@solarflare.com>
+Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, keescook@chromium.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>
-CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: route add default fails with ESRCH?
-References: <4F3F0158.2020406@fb.com> <4F4541E5.5040700@fb.com> <alpine.LFD.2.00.1202222319150.1603@ja.ssi.bg> <4F45638B.30305@fb.com>
-In-Reply-To: <4F45638B.30305@fb.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
- definitions=2012-02-22_06:2012-02-21,2012-02-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: 1f72ff50073f138f9668c095d6f579a1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/22/12 1:52 PM, Arun Sharma wrote:
-
-> I'll try to figure out why my RT_TABLE_MAIN was empty after my network
-> startup scripts finished. But given my experience with 2.6.38, fib_hash
-> handled this case just fine and fib_trie broke it :(
+On Wed, February 22, 2012 15:23, Ben Hutchings wrote:
+> On Wed, 2012-02-22 at 09:19 +0100, Indan Zupancic wrote:
+> [...]
+>> Alternative approach: Tell the arch at filter install time and only run the
+>> filters with the same arch as the current system call. If no filters are run,
+>> deny the systemcall.
+>>
+>> Advantages:
+>>
+>> - Filters don't have to check the arch every syscall entry.
+>>
+>> - Secure by default. Filters don't have to do anything arch specific to
+>>   be secure, no surprises possible.
+>>
+>> - If a new arch comes into existence, there is no chance of old filters
+>>   becoming buggy and insecure. This is especially true for archs that
+>>   had only one mode, but added another one later on: Old filters had no
+>>   need to check the mode at all.
+> [...]
 >
+> What about when there are multiple layers of restrictions?  So long as
+> any one layer covers the new architecture, there is no default-deny even
+> though the other layers might not cover it.
 
-Turns out that we had a /sbin/ifup-local that deleted all the routes 
-including default gw and populated the route afresh.
+When I wrote the above I assumed this wouldn't be a big problem because
+if filters allow prctl, they can check the arg flag for supported archs.
+Or they can install a filter for all archs and do the arch check in there.
+All under the assumption that allowing prctl is rare and if it's allowed,
+it needs special checks anyway.
 
-route del default gw ...
-ip route | grep -v scope | awk '{print $1}' | while read route; do ip 
-route flush $route; done
+But having thought more about it, I fear sometimes needing such check may
+be worse than checking the arch for each filter.
 
-This worked fine with fib_hash, but breaks with fib_trie. I'll 
-investigate why this was done and look for a workaround if possible.
+> I would have thought the way to make sure the architecture is always
+> checked is to pack it together with the syscall number.
 
-  -Arun
+There is no default deny when passing the arch to the filter either,
+nothing forces filters to check the arch.
+
+But documenting that filters should always check the arch is simpler and
+easier than telling them to check for unknown archs in prctl, or to do
+something else obscure.
+
+Greetings,
+
+Indan
 
 
