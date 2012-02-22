@@ -1,92 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2BVBtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:49:33 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48044 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab2BVBta (ORCPT
+	id S932164Ab2BVBt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:49:57 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41551 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932146Ab2BVBsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:49:30 -0500
-Date: Wed, 22 Feb 2012 12:49:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Subject: linux-next: manual merge of the mmc tree with the s5p tree
-Message-Id: <20120222124915.9414928ca50d8b181820c733@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__22_Feb_2012_12_49_15_+1100_sGZ7OXPBLn7H74tx"
+	Tue, 21 Feb 2012 20:48:10 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.219.130 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 30/36] block: restructure get_request()
+Date: Tue, 21 Feb 2012 17:46:57 -0800
+Message-Id: <1329875223-5102-31-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
+References: <1329875223-5102-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_Feb_2012_12_49_15_+1100_sGZ7OXPBLn7H74tx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+get_request() is structured a bit unusually in that failure path is
+inlined in the usual flow with goto labels atop and inside it.
+Relocate the error path to the end of the function.
 
-Hi Chris,
+This is to prepare for icq handling changes in get_request() and
+doesn't introduce any behavior change.
 
-Today's linux-next merge of the mmc tree got a conflict in
-drivers/mmc/host/sdhci-s3c.c between commit bd0955ed6b1b ("mmc:
-sdhci-s3c: add platform data for the second capability") from the s5p
-tree and commit 7880741a0625 ("mmc: sdhci-s3c: derive transfer width host
-capability from max_width in platform data") from the mmc tree.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-core.c |   60 ++++++++++++++++++++++++++---------------------------
+ 1 files changed, 29 insertions(+), 31 deletions(-)
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/block/blk-core.c b/block/blk-core.c
+index bf06d1d..69fa8c4 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -825,7 +825,7 @@ static bool blk_rq_should_init_elevator(struct bio *bio)
+ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 				   struct bio *bio, gfp_t gfp_mask)
+ {
+-	struct request *rq = NULL;
++	struct request *rq;
+ 	struct request_list *rl = &q->rq;
+ 	struct elevator_type *et;
+ 	struct io_context *ioc;
+@@ -877,7 +877,7 @@ retry:
+ 					 * process is not a "batcher", and not
+ 					 * exempted by the IO scheduler
+ 					 */
+-					goto out;
++					return NULL;
+ 				}
+ 			}
+ 		}
+@@ -890,7 +890,7 @@ retry:
+ 	 * allocated with any setting of ->nr_requests
+ 	 */
+ 	if (rl->count[is_sync] >= (3 * q->nr_requests / 2))
+-		goto out;
++		return NULL;
+ 
+ 	rl->count[is_sync]++;
+ 	rl->starved[is_sync] = 0;
+@@ -920,36 +920,12 @@ retry:
+ 	if ((rw_flags & REQ_ELVPRIV) && unlikely(et->icq_cache && !icq)) {
+ 		icq = ioc_create_icq(q, gfp_mask);
+ 		if (!icq)
+-			goto fail_icq;
++			goto fail_alloc;
+ 	}
+ 
+ 	rq = blk_alloc_request(q, icq, rw_flags, gfp_mask);
+-
+-fail_icq:
+-	if (unlikely(!rq)) {
+-		/*
+-		 * Allocation failed presumably due to memory. Undo anything
+-		 * we might have messed up.
+-		 *
+-		 * Allocating task should really be put onto the front of the
+-		 * wait queue, but this is pretty rare.
+-		 */
+-		spin_lock_irq(q->queue_lock);
+-		freed_request(q, rw_flags);
+-
+-		/*
+-		 * in the very unlikely event that allocation failed and no
+-		 * requests for this direction was pending, mark us starved
+-		 * so that freeing of a request in the other direction will
+-		 * notice us. another possible fix would be to split the
+-		 * rq mempool into READ and WRITE
+-		 */
+-rq_starved:
+-		if (unlikely(rl->count[is_sync] == 0))
+-			rl->starved[is_sync] = 1;
+-
+-		goto out;
+-	}
++	if (unlikely(!rq))
++		goto fail_alloc;
+ 
+ 	/*
+ 	 * ioc may be NULL here, and ioc_batching will be false. That's
+@@ -961,8 +937,30 @@ rq_starved:
+ 		ioc->nr_batch_requests--;
+ 
+ 	trace_block_getrq(q, bio, rw_flags & 1);
+-out:
+ 	return rq;
++
++fail_alloc:
++	/*
++	 * Allocation failed presumably due to memory. Undo anything we
++	 * might have messed up.
++	 *
++	 * Allocating task should really be put onto the front of the wait
++	 * queue, but this is pretty rare.
++	 */
++	spin_lock_irq(q->queue_lock);
++	freed_request(q, rw_flags);
++
++	/*
++	 * in the very unlikely event that allocation failed and no
++	 * requests for this direction was pending, mark us starved so that
++	 * freeing of a request in the other direction will notice
++	 * us. another possible fix would be to split the rq mempool into
++	 * READ and WRITE
++	 */
++rq_starved:
++	if (unlikely(rl->count[is_sync] == 0))
++		rl->starved[is_sync] = 1;
++	return NULL;
+ }
+ 
+ /**
+-- 
+1.7.7.3
 
-diff --cc drivers/mmc/host/sdhci-s3c.c
-index b19e7d4,3bf509b..0000000
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@@ -518,6 -683,17 +683,14 @@@ static int __devinit sdhci_s3c_probe(st
-  	if (pdata->cd_type =3D=3D S3C_SDHCI_CD_PERMANENT)
-  		host->mmc->caps =3D MMC_CAP_NONREMOVABLE;
- =20
-+ 	switch (pdata->max_width) {
-+ 	case 8:
-+ 		host->mmc->caps |=3D MMC_CAP_8_BIT_DATA;
-+ 	case 4:
-+ 		host->mmc->caps |=3D MMC_CAP_4_BIT_DATA;
-+ 		break;
-+ 	}
-+=20
- -	if (pdata->host_caps)
- -		host->mmc->caps |=3D pdata->host_caps;
- -
-  	if (pdata->pm_caps)
-  		host->mmc->pm_caps |=3D pdata->pm_caps;
- =20
-
---Signature=_Wed__22_Feb_2012_12_49_15_+1100_sGZ7OXPBLn7H74tx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPREmbAAoJEECxmPOUX5FE6GEP/2pufMqioKa9hOrPMCLg52Lb
-bKvFL5HTOIa7XMVtqSgi7NKvB7d4QOLMLig7yYDp3YyHCaTBxMB03hoVUufG/wbg
-J9v3mHpaH3VV2zW4k6ND2kNXt8IjTuwlxxDHbu9NipDKNadjB8kEu8xyNHFoF+1t
-gyXwsuZvg24mGcLdB9/myHBGqrYRxFmXhLe6t2h24ABoOfrfH1YqicznDa5xw6xO
-jgII+7QPDso+qSilTTl8w7BDVCVtOEkQ9+3cX/Y0CVTbPRJS75Vv81aU/fQlsORD
-6mloiS6FdZouAR5q0x6Gzv8q4Azcqi9mNsevVIsoteZVl+BclS/birVVzg70an6u
-6M+De+U2XqiHoFvwX5BLd7YLU5qucc4nbBY2oUbGOmV4dm0K5ahf4PTicqDvuJDM
-638GIEpVP7xnxWm4cP3cd+ctQ+fV9u4SZJ1NdJqzRsssMYe5UiNFfePSK22NQU3v
-Epf1pksx8WwWY1n1G3/YBDidTfbYrDUNCATYJZAepk4Rg64qfcpX7yyE3sovMwGf
-sv0ru6z/glNVtw48TsDsnNZelQ1G5SOw3e98P7NWy28zxLffz0Gi+G29bRyROHWB
-d1BM4gwYyvf4rnsuMuXrW2gg4Qk9AnRTC7kg+pU5nzT3hH+tqbY7L6VHzSLiYJ6O
-kXOTYbGXKlQeVDqOObaa
-=FWv2
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_Feb_2012_12_49_15_+1100_sGZ7OXPBLn7H74tx--
