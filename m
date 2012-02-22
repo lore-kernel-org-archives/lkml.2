@@ -1,111 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2BVD6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 22:58:11 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:49585 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab2BVD6J (ORCPT
+	id S932169Ab2BVEEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 23:04:16 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33865 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab2BVEEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 22:58:09 -0500
-Message-ID: <4F446781.4070504@ct.jp.nec.com>
-Date: Wed, 22 Feb 2012 12:56:49 +0900
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 21 Feb 2012 23:04:14 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bleung@chromium.org designates 10.68.220.170 as permitted sender) smtp.mail=bleung@chromium.org; dkim=pass header.i=bleung@chromium.org
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] sched: Make initial SCHED_RR timeslace RR_TIMESLICE
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+From: Benson Leung <bleung@chromium.org>
+To: len.brown@intel.com, lucas.demarchi@profusion.mobi
+Cc: linux-kernel@vger.kernel.org, vapier@chromium.org, bleung@chromium.org
+Subject: [PATCH v2] tools/power x86_energy_perf_policy: fix cpuid for i686
+Date: Tue, 21 Feb 2012 20:03:51 -0800
+Message-Id: <1329883431-21652-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1329880521-20868-1-git-send-email-bleung@chromium.org>
+References: <1329880521-20868-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+x86_energy_perf_policy reads cpuid using the cpuid instruction.
+On i686, when building with PIC, this clobbers ebx, the PIC register.
 
-Current the initial SCHED_RR timeslice of init_task is HZ, which means
-1s, and is not same as the default SCHED_RR timeslice DEF_TIMESLICE.
+Fixed using the same cpuid accessor function that vapier@chromium.org
+created for i7z:
+http://code.google.com/p/i7z/issues/detail?id=31
 
-Change the initial timeslice to the RR_TIMESLICE, which is renamed from
-DEF_TIMESLICE to clarify it's for SCHED_RR.
+v2 : make cpuid static inline. Remove unused eax from validate_cpuid and
+clean up return variables from cpuid().
 
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Benson Leung <bleung@chromium.org>
 ---
- include/linux/init_task.h |    2 +-
- include/linux/sched.h     |    6 ++++++
- kernel/sched/rt.c         |    4 ++--
- kernel/sched/sched.h      |    4 ----
- 4 files changed, 9 insertions(+), 7 deletions(-)
+ .../x86_energy_perf_policy.c                       |   30 +++++++++++++++----
+ 1 files changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 9c66b1a..f994d51 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -149,7 +149,7 @@ extern struct cred init_cred;
- 	},								\
- 	.rt		= {						\
- 		.run_list	= LIST_HEAD_INIT(tsk.rt.run_list),	\
--		.time_slice	= HZ, 					\
-+		.time_slice	= RR_TIMESLICE,				\
- 		.nr_cpus_allowed = NR_CPUS,				\
- 	},								\
- 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2df7646..ee882cb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1234,6 +1234,12 @@ struct sched_rt_entity {
- #endif
- };
- 
-+/*
-+ * default timeslice is 100 msecs (used only for SCHED_RR tasks).
-+ * Timeslices get refilled after they expire.
-+ */
-+#define RR_TIMESLICE		(100 * HZ / 1000)
-+
- struct rcu_node;
- 
- enum perf_event_task_context {
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index f42ae7f..f70206c 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1972,7 +1972,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	if (--p->rt.time_slice)
- 		return;
- 
--	p->rt.time_slice = DEF_TIMESLICE;
-+	p->rt.time_slice = RR_TIMESLICE;
- 
- 	/*
- 	 * Requeue to the end of queue if we are not the only element
-@@ -2000,7 +2000,7 @@ static unsigned int get_rr_interval_rt(struct rq *rq, struct task_struct *task)
- 	 * Time slice is 0 for SCHED_FIFO tasks
- 	 */
- 	if (task->policy == SCHED_RR)
--		return DEF_TIMESLICE;
-+		return RR_TIMESLICE;
- 	else
- 		return 0;
+diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+index 33c5c7e..e13e4e5 100644
+--- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
++++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+@@ -130,20 +130,36 @@ void cmdline(int argc, char **argv)
+ 	}
  }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 8a2c768..c0660a1 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -36,11 +36,7 @@ extern __read_mostly int scheduler_running;
  
++static inline void cpuid(unsigned int info, unsigned int *eax,
++			 unsigned int *ebx, unsigned int *ecx,
++			 unsigned int *edx)
++{
++	unsigned int _eax = info, _ebx, _ecx, _edx;
++	asm volatile ("mov %%ebx, %%edi;" /* save ebx (for PIC) */
++		      "cpuid;"
++		      "mov %%ebx, %%esi;" /* pass to caller */
++		      "mov %%edi, %%ebx;" /* restore ebx */
++		      :"+a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx)
++		      :      /* inputs: eax is handled above */
++		      :"edi" /* clobbers: we hit edi directly */);
++	if (eax) *eax = _eax;
++	if (ebx) *ebx = _ebx;
++	if (ecx) *ecx = _ecx;
++	if (edx) *edx = _edx;
++}
++
  /*
-  * These are the 'tuning knobs' of the scheduler:
-- *
-- * default timeslice is 100 msecs (used only for SCHED_RR tasks).
-- * Timeslices get refilled after they expire.
+  * validate_cpuid()
+  * returns on success, quietly exits on failure (make verbose with -v)
   */
--#define DEF_TIMESLICE		(100 * HZ / 1000)
+ void validate_cpuid(void)
+ {
+-	unsigned int eax, ebx, ecx, edx, max_level;
++	unsigned int ebx, ecx, edx, max_level;
+ 	unsigned int fms, family, model, stepping;
  
- /*
-  * single value that denotes runtime == period, ie unlimited time.
+-	eax = ebx = ecx = edx = 0;
+-
+-	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
+-		"=d" (edx) : "a" (0));
++	ebx = ecx = edx = 0;
+ 
++	cpuid(0, &max_level, &ebx, &ecx, &edx);
+ 	if (ebx != 0x756e6547 || edx != 0x49656e69 || ecx != 0x6c65746e) {
+ 		if (verbose)
+ 			fprintf(stderr, "%.4s%.4s%.4s != GenuineIntel",
+@@ -151,7 +167,7 @@ void validate_cpuid(void)
+ 		exit(1);
+ 	}
+ 
+-	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
++	cpuid(1, &fms, NULL, NULL, &edx);
+ 	family = (fms >> 8) & 0xf;
+ 	model = (fms >> 4) & 0xf;
+ 	stepping = fms & 0xf;
+@@ -173,7 +189,7 @@ void validate_cpuid(void)
+ 	 * Support for MSR_IA32_ENERGY_PERF_BIAS
+ 	 * is indicated by CPUID.06H.ECX.bit3
+ 	 */
+-	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (6));
++	cpuid(6, NULL, NULL, &ecx, NULL);
+ 	if (verbose)
+ 		printf("CPUID.06H.ECX: 0x%x\n", ecx);
+ 	if (!(ecx & (1 << 3))) {
 -- 
-1.7.7.6
+1.7.1
 
