@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab2BVXxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:53:14 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:59321 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753018Ab2BVXxL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:53:11 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.147.106 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-	<1329845435-2313-7-git-send-email-wad@chromium.org>
-	<9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
-	<CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-	<CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-Date: Wed, 22 Feb 2012 15:53:08 -0800
-X-Google-Sender-Auth: YAXl-SVcUcsEsdCMKv5MzQI9x_Y
-Message-ID: <CAGXu5jJQrnkCZtcLqK8NEihRgB25C12b0nKp+XWXV_=4QfcVoA@mail.gmail.com>
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Will Drewry <wad@chromium.org>, Indan Zupancic <indan@nul.nu>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753278Ab2BVXzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:55:07 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60704 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab2BVXzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 18:55:05 -0500
+Date: Thu, 23 Feb 2012 10:54:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
+Message-Id: <20120223105444.f0585f65e18be0360f9bfdb9@canb.auug.org.au>
+In-Reply-To: <1329951508.4759.14.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+	<20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
+	<1329951508.4759.14.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__23_Feb_2012_10_54_44_+1100_0QZJP6k=RW0P7=im"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 3:38 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Wed, Feb 22, 2012 at 11:48 AM, Will Drewry <wad@chromium.org> wrote:
->> On Wed, Feb 22, 2012 at 2:34 AM, Indan Zupancic <indan@nul.nu> wrote:
->>> On Tue, February 21, 2012 18:30, Will Drewry wrote:
->>>> This change enables SIGSYS, defines _sigfields._sigsys, and adds
->>>> x86 (compat) arch support.  _sigsys defines fields which allow
->>>> a signal handler to receive the triggering system call number,
->>>> the relevant AUDIT_ARCH_* value for that number, and the address
->>>> of the callsite.
->>>>
->>>> To ensure that SIGSYS delivery occurs on return from the triggering
->>>> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.  I'm
->>>> this is enough to ensure it will be synchronous or if it is explicitly
->>>> required to ensure an immediate delivery of the signal upon return from
->>>> the blocked system call.
->>>>
->>>> The first consumer of SIGSYS would be seccomp filter.  In particular,
->>>> a filter program could specify a new return value, SECCOMP_RET_TRAP,
->>>> which would result in the system call being denied and the calling
->>>> thread signaled.  This also means that implementing arch-specific
->>>> support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
->>>
->>> I think others said this is useful, but I don't see how. Easier
->>> debugging compared to checking return values?
->>>
->>> I suppose SIGSYS can be blocked, so there is no guarantee the process
->>> will be killed.
->>
->> Yeah, this allows for in-process system call emulation, if desired, or
->> for the process to dump core/etc.  With RET_ERRNO or RET_KILL, there
->> isn't any feedback to the system about the state of the process.  Kill
->> populates audit_seccomp and dmesg, but if the application
->> user/developer isn't the system admin, installing audit bits or
->> checking system logs seems onerous.
->
-> [Warning: this suggestion may be bad for any number of reasons]
->
-> I wonder if it would be helpful to change the semantics of RET_KILL
-> slightly.  Rather than killing via do_exit, what if it killed via a
-> forcibly-fatal SIGSYS?  That way, the parent's waitid() / SIGCHLD
-> would indicate CLD_KILLED with si_status == SIGSYS.  The parent could
-> check that and report that the child was probably compromised.
->
-> --Andy
+--Signature=_Thu__23_Feb_2012_10_54_44_+1100_0QZJP6k=RW0P7=im
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'd prefer sticking with do_exit. This provides much less chance of
-things going wrong. A parent seeing a child killed with SIGKILL is
-already pretty distinct, IMO.
+Hi Matt,
 
--Kees
+On Wed, 22 Feb 2012 22:58:28 +0000 Matt Fleming <matt@console-pimps.org> wr=
+ote:
+>
+> Thanks Stephen, this bzImage works fine on my setup.
 
--- 
-Kees Cook
-ChromeOS Security
+Great.
+
+> > One little thing is that those two new functions may we warned about as
+> > unused if CONFIG_EFI_STUB is not set (I have not done that build yet).
+>=20
+> Should be OK because they're static inline (it at least doesn't warn
+> here).
+
+And I did the build and they don;t warn here either, so good.
+
+> Peter was talking about exporting unaligned.h for host tools so this
+> patch will probably go through another iteration anyway.
+
+OK.  In that case, I will add this version to my fixes tree in linux-next
+just so that the allmodconfig builds work again.  I will remove it when
+it turns up (presumably in the tip tree).
+
+Just to be clear, it wasn't the unaligned accesses that were causing me a
+problem (PowerPC copes), it was the endian issues.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__23_Feb_2012_10_54_44_+1100_0QZJP6k=RW0P7=im
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPRYBEAAoJEECxmPOUX5FE0IgP/jHI+cM1q/ovzrOJbh/FxN2U
+DeGSEBk9ubxNSvlASGoq7jyaSRr/b8wvWyoQz3Ws2AYQHA3SFww/1fRL6IG8pF1X
+wFaPU/XzeksVdSS2439i1N+r8hu66nu8Kj+Xwx3oDaa9uqNkpXYGSy3EoLLiZq6X
+V4F6YfgewRp7xOABebR76CaQ0NradConTPe58cakX/+eWx4iKOKR7yItSwxhQ+gU
+xMVcwKj1l9nBoeKhE2KBc3BCesesy9mVxtcXyO1qHT0aCNm61qiee8P7aV1RJwmT
+HX5+aHziYtbnw/ONNVRJC4mTOnRtCXVPte3Y2cBkw8JfI06HMbL4NkiXEoBRp3Kh
+RBVBocEta8BVu7wRjeXmJAAj6ZHvmnbkGJ2RquqyOGMMthtgOGSYYF1BVaNkFG69
+NkYW2WKV8WCznCZ03DM416wwYYwnqh1FpoJORcFeKliM/Bh569OmH3suQf+yKq7x
+7SvVWouWqSIEIXVKSLvNLfkoBtF9GbFW2Cm9ZgfXLEld5UEc9wwXkqDaExf5/bne
+jPHCqMvd5vDvhKgXpSXkADxhv4g5HoJZ4whIVB9j7EQ6Svp8i5TCqZrbW3QfsN6T
+RitQi4+C8VgZexxxZNl4wcBtw1A8NHUOulTrRWURczCIc1pOKUvJ1n+/AwGAE2f8
+xoN3swFLZuW3Vu3ywYJK
+=sIYo
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__23_Feb_2012_10_54_44_+1100_0QZJP6k=RW0P7=im--
