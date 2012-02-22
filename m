@@ -1,72 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab2BVIvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 03:51:11 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38518 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab2BVIvJ (ORCPT
+	id S1754176Ab2BVIxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 03:53:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37319 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab2BVIxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 03:51:09 -0500
-Date: Wed, 22 Feb 2012 08:52:50 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 2/4] pch_uart: Add Fish River Island II uart clock
- quirks
-Message-ID: <20120222085250.193096c9@pyramind.ukuu.org.uk>
-In-Reply-To: <4982ca7a73cfe208a2a5ff0a7e0da54b99ca2d2e.1329875301.git.dvhart@linux.intel.com>
-References: <26a433d1bdb5805cac69efb20d3e32dbf790339b.1329875301.git.dvhart@linux.intel.com>
-	<4982ca7a73cfe208a2a5ff0a7e0da54b99ca2d2e.1329875301.git.dvhart@linux.intel.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Feb 2012 03:53:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of gnehzuil.liu@gmail.com designates 10.50.15.129 as permitted sender) smtp.mail=gnehzuil.liu@gmail.com; dkim=pass header.i=gnehzuil.liu@gmail.com
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Zheng Liu <wenqing.lz@taobao.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: =?UTF-8?q?=5BPATCH=5D=20perf=20test=3A=20fix=20a=20build=20error=20on=20builtin-test?=
+Date: Wed, 22 Feb 2012 16:57:45 +0800
+Message-Id: <1329901065-16313-1-git-send-email-wenqing.lz@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	/* Setup UART clock, checking for board specific clocks. */
-> +	uartclk = DEFAULT_UARTCLK;
-> +
-> +	board_name = dmi_get_system_info(DMI_BOARD_NAME);
-> +	if (board_name && strstr(board_name, "CM-iTC"))
-> +		uartclk = CMITC_UARTCLK;
-> +
-> +	board_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-> +	if (board_name && strstr(board_name, "Fish River Island II"))
-> +		uartclk = FRI2_UARTCLK;
-> +
-> +	port->uartclk = uartclk;
+Recently I build perf and get a build error on builtin-test.c. The error is as
+following:
 
-This is confusing, you load product name into a variable called
-board_name ?? perhaps "name" would be clearer ?
+$ make
+    CC perf.o
+    CC builtin-test.o
+cc1: warnings being treated as errors
+builtin-test.c: In function ‘sched__get_first_possible_cpu’:
+builtin-test.c:977: warning: implicit declaration of function ‘CPU_ALLOC’
+builtin-test.c:977: warning: nested extern declaration of ‘CPU_ALLOC’
+builtin-test.c:977: warning: assignment makes pointer from integer without a cast
+builtin-test.c:978: warning: implicit declaration of function ‘CPU_ALLOC_SIZE’
+builtin-test.c:978: warning: nested extern declaration of ‘CPU_ALLOC_SIZE’
+builtin-test.c:979: warning: implicit declaration of function ‘CPU_ZERO_S’
+builtin-test.c:979: warning: nested extern declaration of ‘CPU_ZERO_S’
+builtin-test.c:982: warning: implicit declaration of function ‘CPU_FREE’
+builtin-test.c:982: warning: nested extern declaration of ‘CPU_FREE’
+builtin-test.c:992: warning: implicit declaration of function ‘CPU_ISSET_S’
+builtin-test.c:992: warning: nested extern declaration of ‘CPU_ISSET_S’
+builtin-test.c:998: warning: implicit declaration of function ‘CPU_CLR_S’
+builtin-test.c:998: warning: nested extern declaration of ‘CPU_CLR_S’
+make: *** [builtin-test.o] Error 1
 
->  
->  	if (options)
->  		uart_parse_options(options, &baud, &parity, &bits, &flow);
-> @@ -1566,12 +1580,16 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
->  	if (!rxbuf)
->  		goto init_port_free_txbuf;
->  
-> +	/* Setup UART clock, checking for board specific clocks. */
->  	uartclk = DEFAULT_UARTCLK;
->  
-> -	/* quirk for CM-iTC board */
->  	board_name = dmi_get_system_info(DMI_BOARD_NAME);
->  	if (board_name && strstr(board_name, "CM-iTC"))
-> -		uartclk = 192000000; /* 192.0MHz */
-> +		uartclk = CMITC_UARTCLK;
-> +
-> +	board_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-> +	if (board_name && strstr(board_name, "Fish River Island II"))
-> +		uartclk = FRI2_UARTCLK;
+This problem is introduced in 3e7c439a. CPU_ALLOC and related macros are
+missing in sched__get_first_possible_cpu function. In 54489c18, commiter
+mentioned that CPU_ALLOC has been removed. So CPU_ALLOC calls in this
+function are removed to let perf to be built.
 
-And we have two locations so this is going to get missed on updates. Can
-we have one function for this please ?
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+---
+ tools/perf/builtin-test.c |   38 ++++++++++++--------------------------
+ 1 files changed, 12 insertions(+), 26 deletions(-)
 
-Alan
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 3854e86..ade59e1 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -967,19 +967,13 @@ static int test__parse_events(void)
+ 	return ret;
+ }
+ 
+-static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t **maskp,
+-					 size_t *sizep)
++static int sched__get_first_possible_cpu(pid_t pid, cpu_set_t *maskp)
+ {
+-	cpu_set_t *mask;
+-	size_t size;
+ 	int i, cpu = -1, nrcpus = 1024;
+ realloc:
+-	mask = CPU_ALLOC(nrcpus);
+-	size = CPU_ALLOC_SIZE(nrcpus);
+-	CPU_ZERO_S(size, mask);
++	CPU_ZERO(maskp);
+ 
+-	if (sched_getaffinity(pid, size, mask) == -1) {
+-		CPU_FREE(mask);
++	if (sched_getaffinity(pid, sizeof(*maskp), maskp) == -1) {
+ 		if (errno == EINVAL && nrcpus < (1024 << 8)) {
+ 			nrcpus = nrcpus << 2;
+ 			goto realloc;
+@@ -989,19 +983,14 @@ realloc:
+ 	}
+ 
+ 	for (i = 0; i < nrcpus; i++) {
+-		if (CPU_ISSET_S(i, size, mask)) {
+-			if (cpu == -1) {
++		if (CPU_ISSET(i, maskp)) {
++			if (cpu == -1)
+ 				cpu = i;
+-				*maskp = mask;
+-				*sizep = size;
+-			} else
+-				CPU_CLR_S(i, size, mask);
++			else
++				CPU_CLR(i, maskp);
+ 		}
+ 	}
+ 
+-	if (cpu == -1)
+-		CPU_FREE(mask);
+-
+ 	return cpu;
+ }
+ 
+@@ -1015,8 +1004,8 @@ static int test__PERF_RECORD(void)
+ 		.mmap_pages = 256,
+ 		.sample_id_all_avail = true,
+ 	};
+-	cpu_set_t *cpu_mask = NULL;
+-	size_t cpu_mask_size = 0;
++	cpu_set_t cpu_mask;
++	size_t cpu_mask_size = sizeof(cpu_mask);
+ 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+ 	struct perf_evsel *evsel;
+ 	struct perf_sample sample;
+@@ -1081,8 +1070,7 @@ static int test__PERF_RECORD(void)
+ 	evsel->attr.sample_type |= PERF_SAMPLE_TIME;
+ 	perf_evlist__config_attrs(evlist, &opts);
+ 
+-	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask,
+-					    &cpu_mask_size);
++	err = sched__get_first_possible_cpu(evlist->workload.pid, &cpu_mask);
+ 	if (err < 0) {
+ 		pr_debug("sched__get_first_possible_cpu: %s\n", strerror(errno));
+ 		goto out_delete_evlist;
+@@ -1093,9 +1081,9 @@ static int test__PERF_RECORD(void)
+ 	/*
+ 	 * So that we can check perf_sample.cpu on all the samples.
+ 	 */
+-	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, cpu_mask) < 0) {
++	if (sched_setaffinity(evlist->workload.pid, cpu_mask_size, &cpu_mask) < 0) {
+ 		pr_debug("sched_setaffinity: %s\n", strerror(errno));
+-		goto out_free_cpu_mask;
++		goto out_delete_evlist;
+ 	}
+ 
+ 	/*
+@@ -1288,8 +1276,6 @@ found_exit:
+ 	}
+ out_err:
+ 	perf_evlist__munmap(evlist);
+-out_free_cpu_mask:
+-	CPU_FREE(cpu_mask);
+ out_delete_evlist:
+ 	perf_evlist__delete(evlist);
+ out:
+-- 
+1.7.4.1
+
