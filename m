@@ -1,146 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab2BVDpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 22:45:35 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61273 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab2BVDpe (ORCPT
+	id S932151Ab2BVDsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 22:48:00 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61744 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab2BVDr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 22:45:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ajeet.yadav.77@gmail.com designates 10.68.134.72 as permitted sender) smtp.mail=ajeet.yadav.77@gmail.com; dkim=pass header.i=ajeet.yadav.77@gmail.com
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Jon Medhurst <tixy@yxit.co.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sumit Bhattacharya <sumitb@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Ajeet Yadav <ajeet.yadav.77@gmail.com>,
-        Naveen Yadav <yad.naveen@gmail.com>
-Subject: [PATCH 3/3] ARM: dma-mapping: fix array out of bound access in  __dma_*_remap
-Date: Wed, 22 Feb 2012 09:16:37 +0530
-Message-Id: <1329882397-11382-1-git-send-email-ajeet.yadav.77@gmail.com>
-X-Mailer: git-send-email 1.7.8.4
+	Tue, 21 Feb 2012 22:47:59 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.24.202 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 21 Feb 2012 19:47:38 -0800
+X-Google-Sender-Auth: 8Aan4MtQvDhAfOkxtERKwSOwbJg
+Message-ID: <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, autofs@linux.kernel.org,
+        thomas@m3y3r.de, viro@zeniv.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let consider
-off = (PTRS_PER_PTE - 1);
-idx = CONSISTENT_PTE_INDEX(c->vm_start); provide us with last
-vaild element in consistent_pte[];
+On Tue, Feb 21, 2012 at 7:33 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But I'm sure that the autofs daemon does something simple that we can
+> depend on in practice.
 
-Also __dma_alloc_remap() request 1 page, i.e size == PAGE_SIZE.
+I didn't find the most recent source code, but the first thing that
+automount.c does after calling "mount" (which is a for+exec, so we
+cannot take the mounting is_compat_task() into account is to open the
+new root for the ioctlfd, and then it does a stat.
 
-Because size, off, idx are vaild values with respect to consistent
-mapping region, and its a do{}while loop, so it will exit loop after
-first pass. All fine
+And then it does a AUTOFS_IOC_PROTOVER ioctl to see what the protocol
+version is.
 
-But their is a catch, we do off++, so
-do{
-        do_all_important_stuff
-        off++;  >>>>> now off = PTRS_PER_PTE
-        if (off >= PTRS_PER_PTE) {      >>>>>> condition TRUE
-                off = 0;
-                pte = consistent_pte[++idx];    >>>>> we did idx++ but
-idx was already pointing to last element, so we are trying to access
-array out of bound
-        }
-} while (size -= PAGE_SIZE);>>>>>>> conditon FALSE, but its too late
+So we could just decide that
 
-The proposed solution, move if body from last to begining of do{}while.
+ (a) we add a mount option for the packet size (or just "v6" - which
+would be "v5 with a fixed packet size")
 
-In this case we will prevent out of bound acess, without effecting the
-flow on first entry and also exit from do{}while loop.
-Moving the if body to begining of do{}while ensured that on first entry
-to do{}while loop, the if condition fails hence not effecting the first
-entry condition.
-on subsequent iterations of do{}while loop the while condition will be
-checked before we execute the if conditon.
+ (b) in the absence of an explicit mount option, we look at
+is_compat_task() for the first AUTOFS_IOC_PROTOVER ioctl we get.
 
-Given functions __dma_alloc_remap()/ __dma_free_remap() already haves
-necessary checks to ensure that size is valid, so again if we analyse
-from given example
+That looks fairly straightforward and safe. Hmm?
 
-do{
-        if (off >= PTRS_PER_PTE) {      >>>>>> condition FALSE
-                off = 0;
-                pte = consistent_pte[++idx];    >>>>>> we avoid this
-        }
-        do_all_important_stuff
-        off++;  >>>>>> now off = PTRS_PER_PTE
-} while (size -= PAGE_SIZE);     >>>>>>> condition FAILS, we exit the
-do{}while, effectively prevented the out of bound access of
-consistent_pte[]
+Where are the automount sources supposed to be, anyway? kernel.org has
+a v5 directory, but it's empty.
 
-NOTE: size is valid,  so in proposed solution while conditon is
-effectively
-preventing the out of bound array access to occur.
-If we review the code from normal access point of view, we are not
-changing any flow logic, also after the exit from do{}while no access to
-off, idx, pte is performed by the function.
-
-So we do not need to worry about post do{}while statments
-
-Signed-off-by: Naveen Yadav <yad.naveen@gmail.com>
-Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
----
- arch/arm/mm/dma-mapping.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 932d288..0e1a2a2 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -251,16 +251,16 @@ __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot)
- 		c->vm_pages = page;
- 
- 		do {
-+			if (off >= PTRS_PER_PTE) {
-+				off = 0;
-+				pte = consistent_pte[++idx];
-+			}
- 			BUG_ON(!pte_none(*pte));
- 
- 			set_pte_ext(pte, mk_pte(page, prot), 0);
- 			page++;
- 			pte++;
- 			off++;
--			if (off >= PTRS_PER_PTE) {
--				off = 0;
--				pte = consistent_pte[++idx];
--			}
- 		} while (size -= PAGE_SIZE);
- 
- 		dsb();
-@@ -275,6 +275,7 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
- 	struct arm_vmregion *c;
- 	unsigned long addr;
- 	pte_t *ptep;
-+	pte_t pte;
- 	int idx;
- 	u32 off;
- 
-@@ -298,16 +299,14 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
- 	ptep = consistent_pte[idx] + off;
- 	addr = c->vm_start;
- 	do {
--		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
--
--		ptep++;
--		addr += PAGE_SIZE;
--		off++;
- 		if (off >= PTRS_PER_PTE) {
- 			off = 0;
- 			ptep = consistent_pte[++idx];
- 		}
--
-+		pte = ptep_get_and_clear(&init_mm, addr, ptep);
-+		ptep++;
-+		addr += PAGE_SIZE;
-+		off++;
- 		if (pte_none(pte) || !pte_present(pte))
- 			printk(KERN_CRIT "%s: bad page in kernel page table\n",
- 			       __func__);
--- 
-1.7.8.4
-
+                Linus
