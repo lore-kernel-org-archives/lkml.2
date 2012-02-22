@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2BVSOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:14:48 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51757 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2BVSOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:14:45 -0500
-Message-ID: <4F453086.8030602@zytor.com>
-Date: Wed, 22 Feb 2012 10:14:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1754882Ab2BVSRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:17:02 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37424 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab2BVSQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 13:16:59 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        hjl.tools@gmail.com
-Subject: Re: [PATCH 02/30] x86-64: Use explicit sizes in sigcontext.h, prepare
- for x32
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <CA+55aFy__c1j=APK9tjJ__daYtZN74GySANxBZ9kT9e1Zx9DXQ@mail.gmail.com> <4F419A28.1060903@zytor.com> <201202221222.58399.arnd@arndb.de>
-In-Reply-To: <201202221222.58399.arnd@arndb.de>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F4529D4.6070008@zytor.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com>
+ <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com> <4F4529D4.6070008@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 10:16:38 -0800
+X-Google-Sender-Auth: 8o44aw7K7DJz3NpzDDX1Dnuaf1s
+Message-ID: <CA+55aFzKet5sASgrD==8iZ5m1+-FDpznfuqcNDS5ZyCocwzAbg@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 04:22 AM, Arnd Bergmann wrote:
-> On Monday 20 February 2012, H. Peter Anvin wrote:
->> We are using __u64 as x86-32 compatible since we are sharing most of the
->> really complex path (like ioctl) with i386 much more so than x86-64.  So
->> it is defined in userspace as:
->>
->> typedef unsigned long long __u64 __attribute__((aligned(4)));
->>
->> __aligned_u64 obviously is naturally aligned, which matches uint64_t is
->> userspace.
-> 
-> Has someone audited the interfaces to check if there are data structures that
-> use a plain signed or unsigned "long long" instead of __s64/__u64 in places
-> where i386 differs from the other compat implementations?
-> 
-> I found DRM_IOCTL_UPDATE_DRAW, but there could be more like this one.
-> 
+On Wed, Feb 22, 2012 at 9:45 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Incidentally, a valid user space workaround for this problem would be to
+> just read all the data off the pipe but consider the packet length to be
+> NAME_MAX rather than NAME_MAX+1; then simply discard all-zero ints
+> received on input since a packet always starts with the autofs version
+> number.
 
-Has someone audited every single ioctl in the kernel?  Definitely not,
-which is why x32 is marked EXPERIMENTAL.  I think it is still time for
-this work to switch to happening in the upstream, however.
+Nope, won't work.
 
-	-hpa
+Why?
 
+Because that padding word for size is just random data.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+In fact, we probably should clear it. I suspect we leak kernel stack
+contents to autofs. Not that it matters (system daemon with root
+privileges and all that), but it's another case of the whole "packing
+data structures" issue.
 
+Of course, right now autofs leaks kernel stack way more than that one
+possible alignment word: the whole "name[NAME_MAX+1]" array is leaking
+stuff after the name length (and final zero). So the padding is the
+least of the leaking worries.
+
+But the point is that because of very similar issues, the user-space
+daemon cannot rely on things being zero.
+
+Unless you fix the kernel, and increment the version number. But once
+you do that, you're better off just fixing the size anyway.
+
+                           Linus
