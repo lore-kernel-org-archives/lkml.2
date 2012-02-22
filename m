@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2BVPv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:51:28 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57379 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab2BVPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:51:26 -0500
-Date: Wed, 22 Feb 2012 16:51:10 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+	id S1753505Ab2BVPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:54:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31406 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2BVPyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 10:54:06 -0500
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_aPKG9hbZygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=EJK_NhSRyVOrQgAdYWAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329926043.25686.107.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
+ + docs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
         davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120222155110.GB28314@elte.hu>
-References: <cover.1329851692.git.jbaron@redhat.com>
- <4F43F9F0.4000605@zytor.com>
- <20120221202019.GB2381@redhat.com>
- <1329856745.25686.72.camel@gandalf.stny.rr.com>
- <20120222073251.GB17291@elte.hu>
- <20120222075334.GA25053@elte.hu>
- <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
- <20120222081855.GB25318@elte.hu>
- <4F45050B.4080001@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F45050B.4080001@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Date: Wed, 22 Feb 2012 10:54:03 -0500
+In-Reply-To: <20120222154206.GA3405@redhat.com>
+References: <20120222072538.GA17291@elte.hu> <4F449ACF.3040807@zytor.com>
+	 <20120222074839.GA24890@elte.hu>
+	 <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
+	 <20120222080659.GA25318@elte.hu>
+	 <1329916920.25686.79.camel@gandalf.stny.rr.com>
+	 <20120222133404.GA14085@elte.hu>
+	 <1329918881.25686.92.camel@gandalf.stny.rr.com>
+	 <20120222145614.GA2491@elte.hu>
+	 <1329923533.25686.106.camel@gandalf.stny.rr.com>
+	 <20120222154206.GA3405@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-02-22 at 10:42 -0500, Jason Baron wrote:
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+> Do you have 'CONFIG_CC_OPTIMIZE_FOR_SIZE' set?
 
-> On 02/22/2012 12:18 AM, Ingo Molnar wrote:
-> > 
-> > For example could you tell *at a glance* what this does:
-> > 
-> > +       if (!static_branch_def_false(&perf_sched_events.key))
-> > 
-> > ?
-> 
-> Yes. [...]
+Yes I do :-p
 
-You have specially built eyes I guess - congrats, you are member 
-of the 1% :-)
+But that's because the distro config I started with had it set too.
 
-> [...]  Unlike
-> 
-> > +       if (very_unlikely(&perf_sched_events.key))
-> 
-> ... which is actively misleading.
+-- Steve
 
-Misleading in what way? It clearly conveys that the slowpath 
-that follows is a slowpath, that what follows is 'very 
-unlikely'.
 
-This is how all current kernel code is using these facilities.
-
-If you have a new usecase (CPU feature flags) then you should 
-outline that, instead of expecting something of current usecases 
-that they are clearly not ...
-
-Thanks,
-
-	Ingo
