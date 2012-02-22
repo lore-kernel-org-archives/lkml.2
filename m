@@ -1,140 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2BVBds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:33:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59990 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab2BVBdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:33:46 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.50.155.170 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
-Date: Wed, 22 Feb 2012 02:33:41 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
- cgroup_enable_task_cg_list
-Message-ID: <20120222013339.GG13403@somewhere.redhat.com>
-References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
- <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
- <20120221222343.GU3090@google.com>
- <20120222005525.GC13403@somewhere.redhat.com>
- <20120222011934.GX2375@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222011934.GX2375@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753016Ab2BVBg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:36:26 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58967 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751679Ab2BVBgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:36:25 -0500
+Message-ID: <1329874581.5143.22.camel@joe2Laptop>
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+From: Joe Perches <joe@perches.com>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andrei.emeltchenko.news@gmail.com" 
+	<andrei.emeltchenko.news@gmail.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 21 Feb 2012 17:36:21 -0800
+In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	 <20120221.144417.1445117001833888214.davem@davemloft.net>
+	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+	 <20120221.154053.2103818562080068513.davem@davemloft.net>
+	 <1329857959.5143.11.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 05:19:34PM -0800, Paul E. McKenney wrote:
-> On Wed, Feb 22, 2012 at 01:55:28AM +0100, Frederic Weisbecker wrote:
-> > On Tue, Feb 21, 2012 at 02:23:43PM -0800, Mandeep Singh Baines wrote:
-> > > Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > > Walking through the tasklist in cgroup_enable_task_cg_list() inside
-> > > > an RCU read side critical section is not enough because:
-> > > > 
-> > > > - RCU is not (yet) safe against while_each_thread()
-> > > > 
-> > > > - If we use only RCU, a forking task that has passed cgroup_post_fork()
-> > > >   without seeing use_task_css_set_links == 1 is not guaranteed to have
-> > > >   its child immediately visible in the tasklist if we walk through it
-> > > >   remotely with RCU. In this case it will be missing in its css_set's
-> > > >   task list.
-> > > > 
-> > > > Thus we need to traverse the list (unfortunately) under the
-> > > > tasklist_lock. It makes us safe against while_each_thread() and also
-> > > > make sure we see all forked task that have been added to the tasklist.
-> > > > 
-> > > > As a secondary effect, reading and writing use_task_css_set_links are
-> > > > now well ordered against tasklist traversing and modification. The new
-> > > > layout is:
-> > > > 
-> > > > CPU 0                                      CPU 1
-> > > > 
-> > > > use_task_css_set_links = 1                write_lock(tasklist_lock)
-> > > > read_lock(tasklist_lock)                  add task to tasklist
-> > > > do_each_thread() {                        write_unlock(tasklist_lock)
-> > > > 	add thread to css set links       if (use_task_css_set_links)
-> > > > } while_each_thread()                         add thread to css set links
-> > > > read_unlock(tasklist_lock)
-> > > > 
-> > > > If CPU 0 traverse the list after the task has been added to the tasklist
-> > > > then it is correctly added to the css set links. OTOH if CPU 0 traverse
-> > > > the tasklist before the new task had the opportunity to be added to the
-> > > > tasklist because it was too early in the fork process, then CPU 1
-> > > > catches up and add the task to the css set links after it added the task
-> > > > to the tasklist. The right value of use_task_css_set_links is guaranteed
-> > > > to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
-> > > > the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
-> > > > and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
-> > > > afterward to return the correct value.
-> > > > 
-> > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > Cc: Tejun Heo <tj@kernel.org>
-> > > > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > > > Cc: Mandeep Singh Baines <msb@chromium.org>
-> > > 
-> > > Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
-> > > 
-> > > Sorry for being late. My feedback is really just comments.
-> > > 
-> > > > Cc: Oleg Nesterov <oleg@redhat.com>
-> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > ---
-> > > >  kernel/cgroup.c |   20 ++++++++++++++++++++
-> > > >  1 files changed, 20 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > > > index 6e4eb43..c6877fe 100644
-> > > > --- a/kernel/cgroup.c
-> > > > +++ b/kernel/cgroup.c
-> > > > @@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
-> > > >  	struct task_struct *p, *g;
-> > > >  	write_lock(&css_set_lock);
-> > > 
-> > > You might want to re-test use_task_css_set_links once you have the lock
-> > > in order to avoid an unnecessary do_each_thread()/while_each_thread() in
-> > > case you race between reading the value and entering the loop. This is
-> > > a potential optimization in a rare case so maybe not worth the LOC.
-> > 
-> > Makes sense. I'll do that in a seperate patch.
-> > 
-> > > 
-> > > >  	use_task_css_set_links = 1;
-> > > > +	/*
-> > > > +	 * We need tasklist_lock because RCU is not safe against
-> > > > +	 * while_each_thread(). Besides, a forking task that has passed
-> > > > +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
-> > > > +	 * is not guaranteed to have its child immediately visible in the
-> > > > +	 * tasklist if we walk through it with RCU.
-> > > > +	 */
-> > > 
-> > > Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
-> > > is made rcu safe. On a large system, it could take a while to iterate
-> > > over every thread in the system. Thats a long time to hold a spinlock.
-> > > But it only happens once so probably not that big a deal.
-> > 
-> > I think that even if while_each_thread() was RCU safe, that wouldn't
-> > work here.
-> > 
-> > Unless I'm mistaken, we have no guarantee that a remote list_add_rcu()
-> > is immediately visible by the local CPU if it walks the list under
-> > rcu_read_lock() only.
-> 
-> Indeed, the guarantee is instead that -if- a reader encounters a newly
-> added list element, then that reader will see any initialization of that
-> list element carried out prior to the list_add_rcu().
-> 
-> Memory barriers are about ordering, not about making memory writes
-> visible faster.
-> 
-> 							Thanx, Paul
+On Tue, 2012-02-21 at 22:09 +0000, Allan, Bruce W wrote:
+> This appears to falsely complain about parenthesis alignment in
+> conditional statements with multiple opening parentheses.
 
-Cool that confirm what I was thinking. Thanks for the clarification!
+Hey Allan.
+
+Can you try this one please?
+---
+ scripts/checkpatch.pl |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 58 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index a3b9782..e95419e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1330,6 +1330,35 @@ sub check_absolute_file {
+ 	}
+ }
+ 
++sub pos_last_openparen {
++
++	my ($args) = @_;
++
++	my $pos = 0;
++	my $len = length($args);
++
++	my $opens = $args =~ tr/\(/\(/;
++	my $closes = $args =~ tr/\)/\)/;
++
++	my $last_openparen = 0;
++
++	if (($opens == 0) || ($closes >= $opens)) {
++		return 0;
++	}
++
++	for ($pos = 0; $pos < $len; $pos++) {
++		if (substr($args, $pos) =~ /^($FuncArg)/) {
++			$pos += length($1);
++		}
++
++		if (substr($args, $pos, 1) eq '(') {
++			$last_openparen = $pos;
++		}
++	}
++
++	return $last_openparen + 1;
++}
++
+ sub process {
+ 	my $filename = shift;
+ 
+@@ -1783,6 +1812,35 @@ sub process {
+ 			     "please, no space before tabs\n" . $herevet);
+ 		}
+ 
++# check for && or || at the start of a line
++		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
++			CHK("LOGICAL_CONTINUATIONS",
++			    "Logical continuations should be on the previous line\n" . $hereprev);
++		}
++
++# check multi-line statement indentation matches previous line
++		if ($prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/ && $rawline =~ /^\+([ \t]*)/) {
++			$prevline =~ /^\+(\t*)(if \(|$Ident\()(.*)(\&\&|\|\||,)\s*$/;
++			my $oldindent = $1;
++			my $if_or_func = $2;
++			my $args = $3;
++
++			my $pos = pos_last_openparen($args);
++
++			my $len = length($if_or_func) + $pos;
++			$rawline =~ /^\+([ \t]*)/;
++			my $newindent = $1;
++
++			my $goodindent = $oldindent .
++					 "\t" x ($len / 8) .
++					 " "  x ($len % 8);
++
++			if ($newindent ne $goodindent) {
++				CHK("PARENTHESIS_ALIGNMENT",
++				    "Alignment should match open parenthesis\n" . $hereprev);
++			}
++		}
++
+ # check for spaces at the beginning of a line.
+ # Exceptions:
+ #  1) within comments
+
+
