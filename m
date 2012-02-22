@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab2BVQHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:07:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51021 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2BVQHl (ORCPT
+	id S1753600Ab2BVQIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:08:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20846 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569Ab2BVQID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:07:41 -0500
-Date: Wed, 22 Feb 2012 08:05:44 -0800
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-96379f60075c75b261328aa7830ef8aa158247ac@git.kernel.org>
-Cc: mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
-        jolsa@redhat.com, anton@redhat.com, jkenisto@linux.vnet.ibm.com,
-        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, hch@infradead.org,
-        ananth@in.ibm.com, jistone@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        srikar@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, peterz@infradead.org, hch@infradead.org,
-        jolsa@redhat.com, jistone@redhat.com, ananth@in.ibm.com,
-        anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        jkenisto@linux.vnet.ibm.com, rostedt@goodmis.org,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <20120222091549.15880.67020.sendpatchset@srdronam.in.ibm.com>
-References: <20120222091549.15880.67020.sendpatchset@srdronam.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] uprobes/core: Remove uprobe_opcode_sz
-Git-Commit-ID: 96379f60075c75b261328aa7830ef8aa158247ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:06:14 -0800 (PST)
+	Wed, 22 Feb 2012 11:08:03 -0500
+X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=_aPKG9hbZygA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Eg4S8c21MHScLgdx5AsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1329926881.25686.111.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
+ + docs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 11:08:01 -0500
+In-Reply-To: <20120222155602.GC3405@redhat.com>
+References: <20120222074839.GA24890@elte.hu>
+	 <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
+	 <20120222080659.GA25318@elte.hu>
+	 <1329916920.25686.79.camel@gandalf.stny.rr.com>
+	 <20120222133404.GA14085@elte.hu>
+	 <1329918881.25686.92.camel@gandalf.stny.rr.com>
+	 <20120222145614.GA2491@elte.hu>
+	 <1329923533.25686.106.camel@gandalf.stny.rr.com>
+	 <20120222154206.GA3405@redhat.com>
+	 <1329926043.25686.107.camel@gandalf.stny.rr.com>
+	 <20120222155602.GC3405@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  96379f60075c75b261328aa7830ef8aa158247ac
-Gitweb:     http://git.kernel.org/tip/96379f60075c75b261328aa7830ef8aa158247ac
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Wed, 22 Feb 2012 14:45:49 +0530
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 11:26:08 +0100
+On Wed, 2012-02-22 at 10:56 -0500, Jason Baron wrote:
+> On Wed, Feb 22, 2012 at 10:54:03AM -0500, Steven Rostedt wrote:
+> > On Wed, 2012-02-22 at 10:42 -0500, Jason Baron wrote:
+> > 
+> > > Do you have 'CONFIG_CC_OPTIMIZE_FOR_SIZE' set?
+> > 
+> > Yes I do :-p
+> > 
+> > But that's because the distro config I started with had it set too.
+> > 
+> > -- Steve
+> > 
+> > 
+> 
+> Right, with CONFIG_CC_OPTIMIZE_FOR_SIZE unset, which is the default, at
+> least on x86, I have not seen a single case of the 'jmp;jmp'.
+> 
 
-uprobes/core: Remove uprobe_opcode_sz
+What the config default is, is unimportant. It only maters to kernel
+hackers that build our own kernels. What's important is what distros do.
 
-uprobe_opcode_sz refers to the smallest instruction size for
-that architecture. UPROBES_BKPT_INSN_SIZE refers to the size of
-the breakpoint instruction for that architecture.
+On debian testing I have in config-3.0.0-1-amd64:
 
-For now we are assuming that both uprobe_opcode_sz and
-UPROBES_BKPT_INSN_SIZE are the same for all archs and hence
-removing uprobe_opcode_sz in favour of UPROBES_BKPT_INSN_SIZE.
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
 
-However if we have to support architectures where the smallest
-instruction size is different from the size of breakpoint
-instruction, we may have to re-introduce uprobe_opcode_sz.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Josh Stone <jistone@redhat.com>
-Link: http://lkml.kernel.org/r/20120222091549.15880.67020.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/uprobes.h |    2 --
- kernel/events/uprobes.c |    6 +++---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+Although it is not set on the latest fedora 16 config.
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 64e45f1..fd45b70 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -37,8 +37,6 @@ struct uprobe_arch_info {};
- #define MAX_UINSN_BYTES 4
- #endif
- 
--#define uprobe_opcode_sz sizeof(uprobe_opcode_t)
--
- /* flags that denote/change uprobes behaviour */
- 
- /* Have a copy of original instruction */
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 884817f..ee496ad 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -244,8 +244,8 @@ static int write_opcode(struct mm_struct *mm, struct uprobe *uprobe,
- 
- 	/* poke the new insn in, ASSUMES we don't cross page boundary */
- 	vaddr &= ~PAGE_MASK;
--	BUG_ON(vaddr + uprobe_opcode_sz > PAGE_SIZE);
--	memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
-+	BUG_ON(vaddr + UPROBES_BKPT_INSN_SIZE > PAGE_SIZE);
-+	memcpy(vaddr_new + vaddr, &opcode, UPROBES_BKPT_INSN_SIZE);
- 
- 	kunmap_atomic(vaddr_new);
- 	kunmap_atomic(vaddr_old);
-@@ -293,7 +293,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
- 	lock_page(page);
- 	vaddr_new = kmap_atomic(page);
- 	vaddr &= ~PAGE_MASK;
--	memcpy(opcode, vaddr_new + vaddr, uprobe_opcode_sz);
-+	memcpy(opcode, vaddr_new + vaddr, UPROBES_BKPT_INSN_SIZE);
- 	kunmap_atomic(vaddr_new);
- 	unlock_page(page);
- 
+Someone should tell debian to turn it off.
+
+-- Steve
+
+
