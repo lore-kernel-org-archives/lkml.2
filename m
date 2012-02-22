@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab2BVUUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 15:20:52 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:60383 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752199Ab2BVUUv (ORCPT
+	id S1753409Ab2BVU1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:27:48 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:44851 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab2BVU1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 15:20:51 -0500
-Message-ID: <4F454E20.2060505@xenotime.net>
-Date: Wed, 22 Feb 2012 12:20:48 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for Feb 17 (kernel/kcmp.c)
-References: <20120217165045.2394d944d6efc37104421d2e@canb.auug.org.au> <4F3E95B7.3010700@xenotime.net> <20120218101446.64a7ea590b66f337762bfb57@canb.auug.org.au> <20120218065846.GA1905@moon>
-In-Reply-To: <20120218065846.GA1905@moon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 22 Feb 2012 15:27:46 -0500
+Date: Wed, 22 Feb 2012 15:26:26 -0500 (EST)
+Message-Id: <20120222.152626.1290364413773909040.davem@davemloft.net>
+To: richm@oldelvet.org.uk
+Cc: mroos@linux.ee, tj@kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F45326C.3000408@oldelvet.org.uk>
+References: <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
+	<alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
+	<4F45326C.3000408@oldelvet.org.uk>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 22 Feb 2012 12:26:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2012 10:58 PM, Cyrill Gorcunov wrote:
-> On Sat, Feb 18, 2012 at 10:14:46AM +1100, Stephen Rothwell wrote:
->> Hi all,
->>
->> On Fri, 17 Feb 2012 10:00:23 -0800 Randy Dunlap<rdunlap@xenotime.net>  wrote:
->>>
->>> on i386:
->>>
->>> kernel/kcmp.c:153:10: error: 'EOPNOTSUP' undeclared (first use in this
->>> function)
->>
->> Caused by commit 0e8a8193207d ("syscalls, x86: add __NR_kcmp syscall")
->> from the akpm tree.  Missing include of linux/errno.h ...
->>
->
-> Ouch. Thanks Stephen for catching this and Andrew for fixing. Sorry.
+From: Richard Mortimer <richm@oldelvet.org.uk>
+Date: Wed, 22 Feb 2012 18:22:36 +0000
 
-Since this build error is still occurring in linux-next 20120222,
-I looked and found that the Ecode is misspelled.
+> memblock reserved: ADD [0x0000007fcc0a40-0x0000007fcc0a4e] node 1
+> memblock reserved: add [0x0000007fcc0a40-000000007fcc0a4e] node 1 @767
 
-Please s/EOPNOTSUP/EOPNOTSUPP/
+These are physical addresses.
 
-thanks,
--- 
-~Randy
+> But a similar address in the registers has fffff800 in there.
+> 
+> o4: fffff8007fcc0a4d
+
+All of physical memory is mapped linearly starting at 0xfffff80000000000
+and this is such a virtual address.
