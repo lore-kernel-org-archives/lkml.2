@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab2BVXDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:03:47 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:46535 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2BVXDo (ORCPT
+	id S1752572Ab2BVXKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:10:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:56232 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab2BVXKH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:03:44 -0500
-Message-ID: <d1dbcb9c671fea502f79519749095fd5.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1329920626.3258.174.camel@deadeye>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
-    <1329845435-2313-5-git-send-email-wad@chromium.org>
-    <38d58caa17befe422065efe5dc451a34.squirrel@webmail.greenhost.nl>
-    <1329920626.3258.174.camel@deadeye>
-Date: Thu, 23 Feb 2012 00:03:30 +0100
-Subject: Re: [PATCH v10 05/11] seccomp: add system call filtering using BPF
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Ben Hutchings" <bhutchings@solarflare.com>
-Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
+	Wed, 22 Feb 2012 18:10:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andreas =?utf-8?Q?Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        linux-kernel@vger.kernel.org
+Cc: Andreas =?utf-8?Q?Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jochen Friedrich <jochen@scram.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: Re: [PATCH] mod/file2alias: make modpost compile on darwin again
+In-Reply-To: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+References: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 23 Feb 2012 09:38:49 +1030
+Message-ID: <874nui5uv2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 1f72ff50073f138f9668c095d6f579a1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, February 22, 2012 15:23, Ben Hutchings wrote:
-> On Wed, 2012-02-22 at 09:19 +0100, Indan Zupancic wrote:
-> [...]
->> Alternative approach: Tell the arch at filter install time and only run the
->> filters with the same arch as the current system call. If no filters are run,
->> deny the systemcall.
->>
->> Advantages:
->>
->> - Filters don't have to check the arch every syscall entry.
->>
->> - Secure by default. Filters don't have to do anything arch specific to
->>   be secure, no surprises possible.
->>
->> - If a new arch comes into existence, there is no chance of old filters
->>   becoming buggy and insecure. This is especially true for archs that
->>   had only one mode, but added another one later on: Old filters had no
->>   need to check the mode at all.
-> [...]
->
-> What about when there are multiple layers of restrictions?  So long as
-> any one layer covers the new architecture, there is no default-deny even
-> though the other layers might not cover it.
+On Wed, 22 Feb 2012 22:55:35 +0100, Andreas Bießmann <andreas@biessmann.de> wrote:
+> commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
+> the linux kernel on darwin hosts.
+> This fix introduce some minimal glue to adopt linker section handling
+> for darwin hosts.
 
-When I wrote the above I assumed this wouldn't be a big problem because
-if filters allow prctl, they can check the arg flag for supported archs.
-Or they can install a filter for all archs and do the arch check in there.
-All under the assumption that allowing prctl is rare and if it's allowed,
-it needs special checks anyway.
+Really?
 
-But having thought more about it, I fear sometimes needing such check may
-be worse than checking the arch for each filter.
+Yes, I assumed an ELF host.  There's a portable way of doing this, but
+it's damn ugly (see http://ccodearchive.net/info/autodata.html).
 
-> I would have thought the way to make sure the architecture is always
-> checked is to pack it together with the syscall number.
+Oh, and checkpatch.pl is wrong, the code was fine.
 
-There is no default deny when passing the arch to the filter either,
-nothing forces filters to check the arch.
+If noone has strong opinions about this, I'll apply it.  I'm a bit
+weirded out though.
 
-But documenting that filters should always check the arch is simpler and
-easier than telling them to check for unknown archs in prctl, or to do
-something else obscure.
+Thanks,
+Rusty.
 
-Greetings,
-
-Indan
-
-
+> Additionally this patch fixes minor chackpatch warnings introduced by
+> mentioned commit.
+> 
+> Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Jochen Friedrich <jochen@scram.de>
+> CC: Samuel Ortiz <sameo@linux.intel.com>
+> CC: "K. Y. Srinivasan" <kys@microsoft.com>
+> ---
+>  scripts/mod/file2alias.c |   37 ++++++++++++++++++++++++++++++++-----
+>  1 files changed, 32 insertions(+), 5 deletions(-)
+> 
+> diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+> index d0de2a2..d2f42eb 100644
+> --- a/scripts/mod/file2alias.c
+> +++ b/scripts/mod/file2alias.c
+> @@ -46,11 +46,37 @@ struct devtable {
+>  	void *function;
+>  };
+>  
+> +#define ___cat(a, b) a ## b
+> +#define __cat(a, b) ___cat(a, b)
+> +
+> +/* we need some special handling for this host tool running eventually on
+> + * Darwin. The Mach-O section handling is a bit different than ELF section
+> + * handling. The differnces in detail are:
+> + *  a) we have segments which have sections
+> + *  b) we need a API call to get the respective section symbols */
+> +#if defined(__MACH__)
+> +#include <mach-o/getsect.h>
+> +
+> +#define INIT_SECTION(name)  do {					\
+> +		unsigned long name ## _len;				\
+> +		char *__cat(pstart_, name) = getsectdata("__TEXT",	\
+> +			#name, &__cat(name, _len));			\
+> +		char *__cat(pstop_, name) = __cat(pstart_, name) +	\
+> +			__cat(name, _len);				\
+> +		__cat(__start_, name) = (void *)__cat(pstart_, name);	\
+> +		__cat(__stop_, name) = (void *)__cat(pstop_, name);	\
+> +	} while (0)
+> +#define SECTION(name)   __attribute__((section("__TEXT, " #name)))
+> +
+> +struct devtable **__start___devtable, **__stop___devtable;
+> +#else
+> +#define INIT_SECTION(name) /* no-op for ELF */
+> +#define SECTION(name)   __attribute__((section(#name)))
+> +
+>  /* We construct a table of pointers in an ELF section (pointers generally
+>   * go unpadded by gcc).  ld creates boundary syms for us. */
+>  extern struct devtable *__start___devtable[], *__stop___devtable[];
+> -#define ___cat(a,b) a ## b
+> -#define __cat(a,b) ___cat(a,b)
+> +#endif /* __MACH__ */
+>  
+>  #if __GNUC__ == 3 && __GNUC_MINOR__ < 3
+>  # define __used			__attribute__((__unused__))
+> @@ -60,13 +86,13 @@ extern struct devtable *__start___devtable[], *__stop___devtable[];
+>  
+>  /* Add a table entry.  We test function type matches while we're here. */
+>  #define ADD_TO_DEVTABLE(device_id, type, function) \
+> -	static struct devtable __cat(devtable,__LINE__) = {	\
+> +	static struct devtable __cat(devtable, __LINE__) = {	\
+>  		device_id + 0*sizeof((function)((const char *)NULL,	\
+>  						(type *)NULL,		\
+>  						(char *)NULL)),		\
+>  		sizeof(type), (function) };				\
+> -	static struct devtable *__attribute__((section("__devtable"))) \
+> -		__used __cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
+> +	static struct devtable *SECTION(__devtable) __used \
+> +		__cat(devtable_ptr, __LINE__) = &__cat(devtable, __LINE__)
+>  
+>  #define ADD(str, sep, cond, field)                              \
+>  do {                                                            \
+> @@ -1080,6 +1106,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+>  		do_pnp_card_entries(symval, sym->st_size, mod);
+>  	else {
+>  		struct devtable **p;
+> +		INIT_SECTION(__devtable);
+>  
+>  		for (p = __start___devtable; p < __stop___devtable; p++) {
+>  			if (sym_is(name, namelen, (*p)->device_id)) {
+> -- 
+> 1.7.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
