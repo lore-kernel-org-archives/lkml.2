@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab2BVNsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:48:08 -0500
-Received: from 8.mo5.mail-out.ovh.net ([178.32.116.78]:46482 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752426Ab2BVNsE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:48:04 -0500
-Date: Wed, 22 Feb 2012 14:03:14 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 19/19] ARM: at91/board-dt: move at91_initialize() to
- init_irq()
-Message-ID: <20120222130314.GB9407@game.jcrosoft.org>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
- <5a6951fcbe28c3093c936d40c4b28f7ae3161d8d.1329903206.git.nicolas.ferre@atmel.com>
- <20120222094827.GT22562@n2100.arm.linux.org.uk>
+	id S1752804Ab2BVNsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:48:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506Ab2BVNsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 08:48:19 -0500
+Date: Wed, 22 Feb 2012 14:47:29 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Gustavo Padovan <padovan@profusion.mobi>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        hjl.tools@gmail.com, Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 10/30] compat: Use COMPAT_USE_64BIT_TIME in the Bluetooth
+ subsystem
+In-Reply-To: <20120221190419.GA2914@joana>
+Message-ID: <alpine.LRH.2.00.1202221447000.22368@twin.jikos.cz>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <1329696488-16970-11-git-send-email-hpa@zytor.com> <20120221190419.GA2914@joana>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222094827.GT22562@n2100.arm.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 16819537234255522739
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:48 Wed 22 Feb     , Russell King - ARM Linux wrote:
-> On Wed, Feb 22, 2012 at 10:39:45AM +0100, Nicolas Ferre wrote:
-> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > 
-> > Remove the need for at91_initialize() to be called at init_early().
-> > We move it to init_irq() function as we still need it before the
-> > timer initialization.
-> > 
-> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> NAK.  Keep the callback methods pure.  The whole point of the init_early
-> is so that soc people don't end up polluting things like the IRQ
-> initialization and timer initialization with stuff like this.
-> 
-> So this is a backwards step.
-ok we drop it in the pull
+On Tue, 21 Feb 2012, Gustavo Padovan wrote:
 
-Best Regards,
-J.
+> > From: "H. J. Lu" <hjl.tools@gmail.com>
+> > 
+> > Enable the Bluetooth subsystem to be used with a compat ABI with
+> > 64-bit time.
+> > 
+> > Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> > Cc: Marcel Holtmann <marcel@holtmann.org>
+> > Cc: Gustavo F. Padovan <padovan@profusion.mobi>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > ---
+> >  net/bluetooth/hci_sock.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> Applied, thanks.
+
+How much sense does it make to apply this single patch without the 
+previous x32 infrastructure changes?
+
+-- 
+Jiri Kosina
+SUSE Labs
+
