@@ -1,93 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab2BVS0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:26:44 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:49530 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab2BVS0l (ORCPT
+	id S1755077Ab2BVS1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:27:13 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5794 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2BVS1K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:26:41 -0500
-Date: Wed, 22 Feb 2012 13:23:12 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>, "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
- platform
-Message-ID: <20120222182312.GE3132@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
- <20120217142909.GA29110@phenom.dumpdata.com>
- <20120217144742.GA29454@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
- <20120219182339.GA11882@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
- <20120221142724.GB5652@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923350AA0BE@SHSMSX101.ccr.corp.intel.com>
+	Wed, 22 Feb 2012 13:27:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 22 Feb 2012 10:26:45 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "B29396@freescale.com" <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "dongas86@gmail.com" <dongas86@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 22 Feb 2012 10:26:43 -0800
+Subject: RE: [PATCH 15/20] pinctrl: Fix and simplify locking
+Thread-Topic: [PATCH 15/20] pinctrl: Fix and simplify locking
+Thread-Index: AczxiNh+md0rkNuvSDypeKD8TuxdqQABJzUQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC6BE@HQMAIL01.nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+	<1329720360-23227-16-git-send-email-swarren@nvidia.com>
+ <CACRpkdaxgUi1f_CpNRCVrza=TG6-H70o4BqTcCn6_68CGN3k+g@mail.gmail.com>
+In-Reply-To: <CACRpkdaxgUi1f_CpNRCVrza=TG6-H70o4BqTcCn6_68CGN3k+g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350AA0BE@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4F453358.0068,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 05:02:59PM +0000, Liu, Jinsong wrote:
-> Konrad Rzeszutek Wilk wrote:
-> > On Tue, Feb 21, 2012 at 05:49:58AM +0000, Liu, Jinsong wrote:
-> >> Konrad Rzeszutek Wilk wrote:
-> >>>>>>> +struct pv_pad_ops {
-> >>>>>>> +	int (*acpi_pad_init)(void);
-> >>>>>>> +	void (*acpi_pad_exit)(void);
-> >>>>>>> +};
-> >>>>>>> +
-> >>>>> 
-> >>>>> Looking at this a bit closer I am not sure why you choose the
-> >>>>> paravirt interface for this? There is another one - the x86 that
-> >>>>> could have been choosen. Or introduce a new one that is specific
-> >>>>> to ACPI. 
-> >>>>> 
-> >>>>> I am curious - what was the reason for using the paravirt
-> >>>>> interface? I understand it does get the job done, but it seems a
-> >>>>> bit overkill when something simple could have been used?
-> >>>>> 
-> >>>> 
-> >>>> It uses paravirt interface to avoid some code like 'xen_...' in
-> >>>> native code path (acpi_pad.c).
-> >>>> I'm not quite sure what does 'x86' here mean? Adding 2 fields
-> >>>> (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops?
-> >>>> seems it's much simpler.
-> >>> 
-> >>> arch/x86/include/asm/x86_init.h
-> >>> 
-> >>> But before you go that way let me ask you another question - can
-> >>> ACPI PAD be used on ARM or IA64? If so, wouldn't this fail
-> >>> compilation as this pvops structure is not defined on IA64?
-> >> 
-> >> Ideally ACPI PAD is not bound to some arch, so IMO it could be used
-> >> at least on IA64 (through currently no real PAD on IA64 platform as
-> >> far as I know). However, in native acpi_pad implementation, it
-> >> indeed depends on X86 for reason like mwait.  
-> >> So for xen acpi_pad, I think it's OK to choose x86, defining an
-> >> acpi_pad_ops at x86_init.c which would be overwritten when xen init. 
-> > 
-> > OK, or in osl.c. We need Len to chime in here as I can see this
-> > expanding in the future. 
-> >> 
-> >> Another choice is to define config ACPI_PROCESSOR_AGGREGATOR as
-> >> 'bool', which would disable native acpi_pad module. 
-> > 
-> > Ewww. No.
+Linus Walleij wrote at Wednesday, February 22, 2012 10:39 AM:
+> On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
 > 
-> I'm OK with x86_init approach, but advantage of 'config ACPI_PROCESSOR_AGGREGATOR as bool' would get rid of X86/IA64/... arch issue for xen (at least from coding view), through it need disable native acpi_pad module (IMO acpi_pad module has not strong reason to must be so).
-> Have a re-consider of this approach? :-)
+> > struct pinctrl_dev's pin_desc_tree_lock and pinctrl_hogs_lock aren't
+> > useful; the data they protect is read-only except when registering or
+> > unregistering a pinctrl_dev, and at those times, it doesn't make sense to
+> > protect one part of the structure independently from the rest.
+> 
+> OK makes sense, please split this into a separate patch.
+> 
+> > struct pinctrl_dev's gpio_ranges_lock isn't effective;
+> > pinctrl_match_gpio_range() only holds this lock while searching for a gpio
+> > range, but the found range is return and manipulated after releading the
+> > lock. This could allow pinctrl_remove_gpio_range() for that range while it
+> > is in use, and the caller may very well delete the range after removing it,
+> > causing pinctrl code to touch the now-free range object.
+> >
+> > Solving this requires the introduction of a higher-level lock, at least
+> > a lock per pin controller, which both gpio range registration and
+> > pinctrl_get()/put() will acquire.
+> 
+> I don't really like this "big pinctrl lock" approach, atleast for the
+> gpio ranges the proper approach would rather be to use RCU,
+> would it not? The above looks like a textbook example of where
+> RCU should be used.
 
-But it is a compile option right? We wantone kernel that can do both
-baremetal and Xen.
+I'm not familiar with RCU specifically. If it's a single-writer-or-
+multiple-reader lock, that might well solve this issue.
+
+> > There is missing locking on HW programming; pin controllers may pack the
+> > configuration for different pins/groups/config options/... into one
+> > register, and hence have to read-modify-write the register. This needs to
+> > be protected, but currently isn't.
+> 
+> Isn't that the responsibility of the driver? The subsystem
+> should not make assumptions of what locking the driver
+> may need of some drivers don't need it.
+
+Deferring this to drivers might make sense. However, drivers don't have
+any way to do this right now, since they don't know when the start of
+a programming operation is. I suppose when adding complete() we could
+add a start() operation too, so the lock could be acquired there.
+
+> > Related, a future change will add a
+> > "complete" op to the pin controller drivers, the idea being that each
+> > state's programming will be programmed into the pinctrl driver followed
+> > by the "complete" call, which may e.g. flush a register cache to HW. For
+> > this to work, it must not be possible to interleave the pinctrl driver
+> > calls for different devices.
+> >
+> > As above, solving this requires the introduction of a higher-level lock,
+> > at least a lock per pin controller, which will be held for the duration
+> > of any pinctrl_enable()/disable() call.
+> 
+> I buy this reasoning though, we sure need something there, but
+> then it can be introduced with the complete() call, and be a
+> separate lock across the affected call.
+> 
+> > However, each pinctrl mapping table entry may affect a different pin
+> > controller if necessary. Hence, with a per-pin-controller lock, almost
+> > any pinctrl API may need to acquire multiple locks, one per controller.
+> > To avoid deadlock, these would need to be acquired in the same order in
+> > all cases. This is extremely difficult to implement in the case of
+> > pinctrl_get(), which doesn't know which pin controllers to lock until it
+> > has parsed the entire mapping table, since it contains somewhat arbitrary
+> > data.
+> >
+> > The simplest solution here is to introduce a single lock that covers all
+> > pin controllers at once. This will be acquired by all pinctrl APIs.
+> >
+> > This then makes struct pinctrl's mutex irrelevant, since that single lock
+> > will always be held whenever this mutex is currently held.
+> 
+> Introducing a big pincontroller lock :-(
+> 
+> As with the big kernel lock was the simplest approach to CPU
+> locking.
+> 
+> I really would like to hold back on this, is it really that hard to have
+> a more fine-granular locking here? Maybe this is a sign that we need
+> to have the list of states sorted in pincontroller order simply?
+> In that case we only need a lock per pincontroller I think.
+
+I'd rather not alter the order that the mapping table entries get applied
+in; I think that'd be confusing. I can certainly envisage use-cases where
+the order is important (e.g. must disable pin config feature X before
+enabling pin config feature Y when switching states, to avoid HW damage)
+and sorting the mapping table would violating such requirements much more
+likely.
+
+Perhaps pinctrl_get() should keep a separate list of all pin controllers
+involved anywhere in all the struct pinctrl_settings it contains, and
+keep that list sorted, so that lock()/unlock() could be applied to that
+list up-front, rather than locking pin controllers lazily as the settings
+are applied in order. That'd be a bit more work but would probably allow
+us to avoid any global locks.
+
+Then, I think we could get away with:
+
+A global lock for (un)registering controllers, (un)registering mapping
+table entries, (un)registering GPIO ranges, parsing the mapping tables,
+but which would not be taken when simply programming HW.
+
+I'm not sure whether breaking this up into multiple locks actually makes
+any sense; all of the above are relatively rare slow-paths anyway. The
+important thing would be to not take that lock when /just/ programming
+HW for state changes.
+
+A lock per pin controller, implemented internally to the pin controller
+driver if required in begin()/end() ops.
+
+Does that seem reasonable?
+
+Related to that, I guess we're currently missing refcounts on pin
+controllers and GPIO ranges, so they can't be unregistered if
+pinctrl_get() returned an object that references them, or gpio_request()
+was called on a GPIO.
+
+-- 
+nvpublic
+
