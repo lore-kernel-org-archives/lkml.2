@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2BVT5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:57:42 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:44644 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708Ab2BVT5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 14:57:41 -0500
-Date: Wed, 22 Feb 2012 14:56:29 -0500 (EST)
-Message-Id: <20120222.145629.697083360270812669.davem@davemloft.net>
-To: danny.kukawka@bisect.de
-Cc: dave@thedillows.org, dkukawka@suse.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] 3com/typhoon: reuse eth_mac_addr()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
-References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
-	<1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 22 Feb 2012 11:56:31 -0800 (PST)
+	id S1752824Ab2BVUBO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:01:14 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47252 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751871Ab2BVUBM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 15:01:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F4547C6.8050001@zytor.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+	<1329845435-2313-5-git-send-email-wad@chromium.org>
+	<38d58caa17befe422065efe5dc451a34.squirrel@webmail.greenhost.nl>
+	<CABqD9hYTLNrQKzYiRV6yN-z_mYyfPR=3W1P6nC+VmYmFGE1vQg@mail.gmail.com>
+	<4F4547C6.8050001@zytor.com>
+Date: Wed, 22 Feb 2012 14:01:09 -0600
+Message-ID: <CABqD9hZjpxE4V3cMSNYbECbPDMHyXfgFTr+Y3_fv20MivqQJ-w@mail.gmail.com>
+Subject: Re: [PATCH v10 05/11] seccomp: add system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
-Date: Wed, 22 Feb 2012 13:36:38 +0100
+On Wed, Feb 22, 2012 at 1:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 02/22/2012 11:47 AM, Will Drewry wrote:
+>>>
+>>> I highly disagree with every filter having to check the mode: Filters that
+>>> don't check the arch on e.g. x86 are buggy, so they have to check it, even
+>>> if it's a 32-bit or 64-bit only system, the filters can't know that and
+>>> needs to check the arch at every syscall entry. All other info in the data
+>>> depends on the arch, because of this there isn't much code to share between
+>>> the two archs, so you can as well have one filter for each arch.
+>>>
+>>> Alternative approach: Tell the arch at filter install time and only run the
+>>> filters with the same arch as the current system call. If no filters are run,
+>>> deny the systemcall.
+>>
+>> This was roughly how I first implemented compat and non-compat
+>> support.  It causes some implicit behavior across inheritance that is
+>> not nice though.
+>>
+>
+> This is trivially doable at the BPF level, right?  Just make this the
+> first instruction in the program (either deny or jump to a separate
+> program branch)... and then there is still "one program" without any
+> weird inheritance issues?
 
-> Use eth_mac_addr() for .ndo_set_mac_address, remove
-> typhoon_set_mac_address() since it do currently the same as
-> eth_mac_addr(). Additional advantage: eth_mac_addr() already
-> checks if the given address is valid.
-> 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Exactly, and that's what the patch does now (after your feedback :)
 
-Applied.
+ld arch
+je arch, 1, 0
+ret SECCOMP_RET_KILL
+<rest of bpf program>
+
+At this point, I don't think it makes sense to do it a different way
+than just in the BPF program even if it does mean leaving out the
+check could leave the program open to compat-style bugs.  At least a
+shared library and/or good practices should be able to catch that
+error.
+
+thanks!
+will
