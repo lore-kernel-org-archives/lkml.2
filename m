@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2BVQJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:09:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51054 "EHLO
+	id S1753809Ab2BVQKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:10:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51070 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2BVQJg (ORCPT
+	with ESMTP id S1752884Ab2BVQKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:09:36 -0500
-Date: Wed, 22 Feb 2012 08:08:15 -0800
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-vjqxst502pc1efz7ah8cyht4@git.kernel.org>
+	Wed, 22 Feb 2012 11:10:10 -0500
+Date: Wed, 22 Feb 2012 08:09:03 -0800
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-b0e5c77903fd717cc5eb02b7b8f5de3c869efc49@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, ananth@in.ibm.com, jkenisto@linux.vnet.ibm.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: ananth@in.ibm.com, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, jkenisto@linux.vnet.ibm.com,
-        a.p.zijlstra@chello.nl, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        arjan@linux.intel.com, akpm@linux-foundation.org, steiner@sgi.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        steiner@sgi.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
         mingo@elte.hu
+In-Reply-To: <1328581940.29790.20.camel@sbsiddha-desk.sc.intel.com>
+References: <1328581940.29790.20.camel@sbsiddha-desk.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] uprobes: Update copyright notices
-Git-Commit-ID: 35aa621b5ab9d08767f7bc8d209b696df281d715
+Subject: [tip:timers/core] x86/tsc:
+  Reduce the TSC sync check time for core-siblings
+Git-Commit-ID: b0e5c77903fd717cc5eb02b7b8f5de3c869efc49
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,68 +33,126 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:08:53 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:09:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35aa621b5ab9d08767f7bc8d209b696df281d715
-Gitweb:     http://git.kernel.org/tip/35aa621b5ab9d08767f7bc8d209b696df281d715
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Wed, 22 Feb 2012 11:37:29 +0100
+Commit-ID:  b0e5c77903fd717cc5eb02b7b8f5de3c869efc49
+Gitweb:     http://git.kernel.org/tip/b0e5c77903fd717cc5eb02b7b8f5de3c869efc49
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Mon, 6 Feb 2012 18:32:20 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 11:37:29 +0100
+CommitDate: Wed, 22 Feb 2012 11:49:40 +0100
 
-uprobes: Update copyright notices
+x86/tsc: Reduce the TSC sync check time for core-siblings
 
-Add Peter Zijlstra's copyright to the uprobes code, whose
-contributions to the uprobes code are not visible in the Git
-history, because they were backmerged.
+For each logical CPU that is coming online, we spend 20msec for
+checking the TSC synchronization. And as this is done
+sequentially for each logical CPU boot, this time gets added up
+depending on the number of logical CPU's supported by the
+platform.
 
-Also update existing copyright notices to the year 2012.
+Minimize this by using the socket topology information.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-vjqxst502pc1efz7ah8cyht4@git.kernel.org
+If the target CPU coming online doesn't have any of its
+core-siblings online, a timeout of 20msec will be used for the
+TSC-warp measurement loop. Otherwise a smaller timeout of 2msec
+will be used, as we have some information about this socket
+already (and this information grows as we have more and more
+logical-siblings in that socket).
+
+Ideally we should be able to skip the TSC sync check on the
+other core-siblings, if the first logical CPU in a socket passed
+the sync test. But as the TSC is per-logical CPU and can
+potentially be modified wrongly by the bios before the OS boot,
+TSC sync test for smaller duration should be able to catch such
+errors. Also this will catch the condition where all the cores
+in the socket doesn't get reset at the same time.
+
+For example, with this modification, time spent in TSC sync
+checks on a 4 socket 10-core with HT system gets reduced from
+1580msec to 212msec.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jack Steiner <steiner@sgi.com>
+Cc: venki@google.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1328581940.29790.20.camel@sbsiddha-desk.sc.intel.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/uprobes.h |    3 ++-
- kernel/events/uprobes.c |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/tsc_sync.c |   29 ++++++++++++++++++++++++-----
+ 1 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 9c6be62..f85797e 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -17,10 +17,11 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  *
-- * Copyright (C) IBM Corporation, 2008-2011
-+ * Copyright (C) IBM Corporation, 2008-2012
-  * Authors:
-  *	Srikar Dronamraju
-  *	Jim Keniston
-+ * Copyright (C) 2011-2012 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
+index 9eba29b..fc25e60 100644
+--- a/arch/x86/kernel/tsc_sync.c
++++ b/arch/x86/kernel/tsc_sync.c
+@@ -42,7 +42,7 @@ static __cpuinitdata int nr_warps;
+ /*
+  * TSC-warp measurement loop running on both CPUs:
   */
+-static __cpuinit void check_tsc_warp(void)
++static __cpuinit void check_tsc_warp(unsigned int timeout)
+ {
+ 	cycles_t start, now, prev, end;
+ 	int i;
+@@ -51,9 +51,9 @@ static __cpuinit void check_tsc_warp(void)
+ 	start = get_cycles();
+ 	rdtsc_barrier();
+ 	/*
+-	 * The measurement runs for 20 msecs:
++	 * The measurement runs for 'timeout' msecs:
+ 	 */
+-	end = start + tsc_khz * 20ULL;
++	end = start + (cycles_t) tsc_khz * timeout;
+ 	now = start;
  
- #include <linux/errno.h>
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 13f1b59..5ce32e3 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -15,10 +15,11 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  *
-- * Copyright (C) IBM Corporation, 2008-2011
-+ * Copyright (C) IBM Corporation, 2008-2012
-  * Authors:
-  *	Srikar Dronamraju
-  *	Jim Keniston
-+ * Copyright (C) 2011-2012 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+ 	for (i = 0; ; i++) {
+@@ -99,6 +99,25 @@ static __cpuinit void check_tsc_warp(void)
+ }
+ 
+ /*
++ * If the target CPU coming online doesn't have any of its core-siblings
++ * online, a timeout of 20msec will be used for the TSC-warp measurement
++ * loop. Otherwise a smaller timeout of 2msec will be used, as we have some
++ * information about this socket already (and this information grows as we
++ * have more and more logical-siblings in that socket).
++ *
++ * Ideally we should be able to skip the TSC sync check on the other
++ * core-siblings, if the first logical CPU in a socket passed the sync test.
++ * But as the TSC is per-logical CPU and can potentially be modified wrongly
++ * by the bios, TSC sync test for smaller duration should be able
++ * to catch such errors. Also this will catch the condition where all the
++ * cores in the socket doesn't get reset at the same time.
++ */
++static inline unsigned int loop_timeout(int cpu)
++{
++	return (cpumask_weight(cpu_core_mask(cpu)) > 1) ? 2 : 20;
++}
++
++/*
+  * Source CPU calls into this - it waits for the freshly booted
+  * target CPU to arrive and then starts the measurement:
   */
+@@ -135,7 +154,7 @@ void __cpuinit check_tsc_sync_source(int cpu)
+ 	 */
+ 	atomic_inc(&start_count);
  
- #include <linux/kernel.h>
+-	check_tsc_warp();
++	check_tsc_warp(loop_timeout(cpu));
+ 
+ 	while (atomic_read(&stop_count) != cpus-1)
+ 		cpu_relax();
+@@ -183,7 +202,7 @@ void __cpuinit check_tsc_sync_target(void)
+ 	while (atomic_read(&start_count) != cpus)
+ 		cpu_relax();
+ 
+-	check_tsc_warp();
++	check_tsc_warp(loop_timeout(smp_processor_id()));
+ 
+ 	/*
+ 	 * Ok, we are done:
