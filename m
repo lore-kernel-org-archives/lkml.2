@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab2BVVoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:44:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48578 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348Ab2BVVoH (ORCPT
+	id S1755475Ab2BVVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:52:26 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:50774 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754823Ab2BVVwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:44:07 -0500
-Date: Wed, 22 Feb 2012 15:43:58 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] toshiba_acpi: Expanded hotkey support
-Message-ID: <20120222214358.GB24371@ubuntu-macmini>
-Mail-Followup-To: Len Brown <lenb@kernel.org>,
-	Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
-	platform-driver-x86@vger.kernel.org,
-	Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-References: <1326915852-19896-1-git-send-email-seth.forshee@canonical.com>
- <20120206150658.GE6414@ubuntu-macmini>
- <20120206151548.GA30255@srcf.ucam.org>
- <20120210165646.GG2305@ubuntu-macmini>
+	Wed, 22 Feb 2012 16:52:24 -0500
+Message-ID: <4F45638B.30305@fb.com>
+Date: Wed, 22 Feb 2012 13:52:11 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120210165646.GG2305@ubuntu-macmini>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julian Anastasov <ja@ssi.bg>
+CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: route add default fails with ESRCH?
+References: <4F3F0158.2020406@fb.com> <4F4541E5.5040700@fb.com> <alpine.LFD.2.00.1202222319150.1603@ja.ssi.bg>
+In-Reply-To: <alpine.LFD.2.00.1202222319150.1603@ja.ssi.bg>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7361,1.0.260,0.0.0000
+ definitions=2012-02-22_06:2012-02-21,2012-02-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 10, 2012 at 10:56:46AM -0600, Seth Forshee wrote:
-> On Mon, Feb 06, 2012 at 03:15:48PM +0000, Matthew Garrett wrote:
-> > On Mon, Feb 06, 2012 at 09:06:58AM -0600, Seth Forshee wrote:
-> > 
-> > > Matthew: Just wondering if there are more issues that need to be
-> > > addressed with this round of patches, or if they're looking okay at this
-> > > point.
-> > 
-> > I'm fine with them at this point, just waiting on Len to give feedback 
-> > on the ACPI patch.
-> 
-> Len,
-> 
-> Do you have any objection to the patch [1]?
-> 
-> Thanks,
-> Seth
-> 
-> [1] https://lkml.org/lkml/2012/1/18/333
+On 2/22/12 1:27 PM, Julian Anastasov wrote:
 
-Ping. This is a pretty trivial patch, so I'd really appreicate it if you
-could take a couple of minutes to give feedback. It would be really nice
-to be able to get some action on these patches in time for 3.4.
+> 	Why the subnet is deleted from table main (254) in
+> the same second ?
 
-Thanks,
-Seth
+The machine was in single user mode. All I did was execute
+
+# service network start
+
+dhclient is the only user process I see running on the system.
+
+>
+> 	First default route is removed:
+>
+> [   44.351839] Deleting 00000000/0 tos=0 t=ffff880212b846a0
+> [   44.351843] entering trie_leaf_remove(ffff880213d120e0)
+> [   44.351846] In tnode_resize ffff880213d0a5a0 inflate_threshold=50
+> threshold=25
+>
+> 	Then link route 10.47.46.0/24:
+>
+> [   44.351852] Deleting 0a2f2e00/24 tos=0 t=ffff880212b846a0
+> [   44.351855] entering trie_leaf_remove(ffff880211585150)
+>
+> 	Insert tries to find if GW 10.47.46.1 is reachable,
+> there must be 10.47.46.0/24 in table main but it was
+> deleted just before adding the IP.
+>
+> [   69.189627] Insert table=254 00000000/0
+>
+
+All of this was done by my network startup scripts. These scripts should 
+be fairly standard and used by lots of other people. The only thing 
+that's special about my setup is:
+
+# grep LINKDELAY /etc/sysconfig/network
+LINKDELAY=20
+
+Without this my eth0 driver complains about link not being ready.
+
+>> # cat /proc/net/fib_trie
+>
+> 	Where is "Main:" here?
+
+I think answering this is key.
+
+This is the main difference between systems that work and the ones that 
+don't. Systems that work have a non-empty Main table:
+
+# cat /proc/net/fib_trie
+Main:
+   +-- 0.0.0.0/0 4 3 10
+      +-- 0.0.0.0/4 1 0 0
+         |-- 0.0.0.0
+            /0 universe THROW
+
+I'll try to figure out why my RT_TABLE_MAIN was empty after my network 
+startup scripts finished. But given my experience with 2.6.38, fib_hash 
+handled this case just fine and fib_trie broke it :(
+
+  -Arun
