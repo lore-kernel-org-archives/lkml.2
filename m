@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab2BVW2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:28:21 -0500
-Received: from 124-248-200-58.sunnyvision.com ([124.248.200.58]:34333 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751134Ab2BVW2U (ORCPT
+	id S1751305Ab2BVWbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:31:53 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52298 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab2BVWbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:28:20 -0500
-X-Greylist: delayed 14358 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 17:28:19 EST
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 6DAC710F00D
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 28EFE4FB12
-Message-ID: <P2go4asW2yk8n@tpts6.seed.net.tw>
-From: design@dedicatedserver.com.hk
-Subject: Cloud server Promotion!!
-X-Mailer: AeDBigMrFViCMduoYwgv74SwB
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu, 23 Feb 2012 01:53:27 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 22 Feb 2012 17:31:52 -0500
+Date: Thu, 23 Feb 2012 09:31:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
+Message-Id: <20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
+In-Reply-To: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q1MMSc4D027417
 
-Dear all, 
+--Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please see below price list for cloud server package.
+Hi Matt,
 
-SuperCloud 512
-¡E Dedicated CPU: 1.8GHZ
-¡E Dedicated RAM: 512MB
-¡E Disk Space: 20GB
-¡E Bandwidth: 200GB
-HK$199/month
+On Wed, 22 Feb 2012 14:00:08 +0000 Matt Fleming <matt@console-pimps.org> wr=
+ote:
+>
+> From: Matt Fleming <matt.fleming@intel.com>
+>=20
+> We need to read from and write to 'buf' a byte at a time otherwise
+> it's possible we'll perform an unaligned access, which can lead to a
+> segfault when cross-building an x86 kernel on risc architectures.
+>=20
+> Also, we may need to convert the endianness of the data we read
+> from/write to buf, so let's add some helper functions to do that.
+>=20
+> Stephen Rothwell noticed this bug when he hit a segfault while
+> cross-building an x86_64 allmodconfig kernel on PowerPC.
+>=20
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 
-SuperCloud 768
-¡E Dedicated CPU: 2.4GHZ
-¡E Dedicated RAM: 768MB
-¡E Disk Space: 40GB
-¡E Bandwidth: 300GB
-HK$399/month
+Tested-by: Stephen Rothwell <sfr@canb.auug.org.au> (cross build only)
 
-SuperCloud 1024
-¡E Dedicated CPU: 3.0GHZ
-¡E Dedicated RAM: 1024MB
-¡E Disk Space: 60GB
-¡E Bandwidth: 400GB
-HK$599/month
+The bzImage from a ARCH=3Dx86_64 defconfig+CONFIG_EFI_STUB cross build is
+in http://ozlabs.org/~sfr/bzImage if you want to attempt to boot it.
 
-SuperCloud 1536
-¡E Dedicated CPU: 3.6GHZ
-¡E Dedicated RAM: 1536MB
-¡E Disk Space: 80GB
-¡E Bandwidth: 600GB
-HK$699/month
+One little thing is that those two new functions may we warned about as
+unused if CONFIG_EFI_STUB is not set (I have not done that build yet).
 
-SuperCloud 2048
-¡E Dedicated CPU: 4.2GHZ
-¡E Dedicated RAM: 2048MB
-¡E Disk Space: 100GB
-¡E Bandwidth: 800GB
-HK$799/month
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-SuperCoud 4096
-¡E Dedicated CPU: 5.4GHZ
-¡E Dedicated RAM: 4096MB
-¡E Disk Space: 150GB
-¡E Bandwidth: 1600GB
-HK$999/month
+--Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w
+Content-Type: application/pgp-signature
 
-SuperCloud 8G
-¡E Dedicated CPU: 9.6GHZ
-¡E Dedicated RAM: 8GB
-¡E Disk Space: 300GB
-¡E Bandwidth: 3000GB
-HK$1,299/month
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-SuperCloud 12G
-¡E Dedicated CPU: 12GHZ
-¡E Dedicated RAM: 12GB
-¡E Disk Space: 500GB
-¡E Bandwidth: 5000GB
-HK$1,499/month
+iQIcBAEBCAAGBQJPRWzMAAoJEECxmPOUX5FEVgMP/2rNY6N6nU8k7vh0xlV+3/iW
+Mi+FFcDdqzRIjgTkNRtGsg1sgmF29p5M8HbpaJ3ysukh4HgieZ+oazPbj6NcAlRn
+lko10dYyTtXqG0DzwuM5NVgqxVWIBPYeuw0eH45avtNUI+sNRF9JdvHrGzb8t1Oo
+5ub5srCKhdW3ooQtLZ//1L/eaipmMFDKA/KcOj+1AocEXwhBpiTOcMmLlUnRRiUB
+YRajAznFZ2jx/w11rQpA2M1GEg8evtTt4ILXQ6oAB7dNXW8RWWdonail1co++jm/
+pt0SP0g0GPA5NAXkkNmtrSuWTclR4ZoHU5+0ikytExzjREr8q7OoXg2+g7ayCDE2
+2o283fnNCixh5pXierpn8Mi5Lz/T2JBL1beNQzRcotWFkAfu+X7PJNn+pSVyf1Dt
+IFBFnRjvV+j4RiZtrAKINAmrMBWy1EfgIpqKuOfyvMSHmW40qctzP/8FhFIHRfgw
+JDq6KFZHbGkKobPJaYT8jmZDWYYlzf1B8HLN/wyaaOmjdIlTjcLIJWTm1+gkl3r+
+oB2cTqk7oNmycI7f7Jff57/6DVeLh2mPIGTdBfrYPmaLfzg/q/yaVg0/KYHKJhpQ
+uO1uZ2/HEIBeUqkPGIPOtpPtFnwAKyg6/+ODhCEenwI4BW2neonzoxMuTyIpQ1s9
+Z5dKm1/mAzWv1rAoL0AH
+=Bcbk
+-----END PGP SIGNATURE-----
 
-Should you have any need. Please feel free to contact me, Thanks.
-
-Best Regards,
-Eric Chan
-Senior Sales Executive
-
-If you do not wish to further receive this event message, email subscriber@dedicatedserver.com.hk to unsubscribe this message or remove your email from the list.
-
-
+--Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w--
