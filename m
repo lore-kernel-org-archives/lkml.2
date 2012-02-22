@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab2BVJf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:35:58 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:37833 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754432Ab2BVJf4 convert rfc822-to-8bit (ORCPT
+	id S1754474Ab2BVJkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:40:00 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:18894 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2BVJj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:35:56 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
-Date: Wed, 22 Feb 2012 09:35:14 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E77@saturn3.aculab.com>
-In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
-Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQAgADHRwA=
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Joe Perches" <joe@perches.com>, "David Miller" <davem@davemloft.net>,
-        "Andy Whitcroft" <apw@shadowen.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>
-Cc: <andrei.emeltchenko.news@gmail.com>, <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 22 Feb 2012 09:35:14.0999 (UTC) FILETIME=[48016470:01CCF145]
+	Wed, 22 Feb 2012 04:39:58 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 05/19] ARM: at91/ST: remove not needed casts
+Date: Wed, 22 Feb 2012 10:39:31 +0100
+Message-Id: <7fc3c7e0093a675e205fe1763de7dfccdda8e692.1329903206.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
+References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove the unnecessary (void) cast on at91_st_read()
+return value.
+
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/at91rm9200_time.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/arch/arm/mach-at91/at91rm9200_time.c
+index 0c1980c..dd7f782 100644
+--- a/arch/arm/mach-at91/at91rm9200_time.c
++++ b/arch/arm/mach-at91/at91rm9200_time.c
+@@ -111,7 +111,7 @@ clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
+ {
+ 	/* Disable and flush pending timer interrupts */
+ 	at91_st_write(AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
+-	(void) at91_st_read(AT91_ST_SR);
++	at91_st_read(AT91_ST_SR);
  
-> 	if (!(func_a(x) &&
-> 		func_b(y)))
-> 		baz();
-
-Gah - that is horrid for the 'preferred style'.
-A quick glance at the code puts both the func_b()
-and baz() calls as inside the if.
-
-	David
-
+ 	last_crtr = read_CRTR();
+ 	switch (mode) {
+@@ -157,7 +157,7 @@ clkevt32k_next_event(unsigned long delta, struct clock_event_device *dev)
+ 
+ 	/* Cancel any pending alarm; flush any pending IRQ */
+ 	at91_st_write(AT91_ST_RTAR, alm);
+-	(void) at91_st_read(AT91_ST_SR);
++	at91_st_read(AT91_ST_SR);
+ 
+ 	/* Schedule alarm by writing RTAR. */
+ 	alm += delta;
+@@ -192,7 +192,7 @@ void __init at91rm9200_timer_init(void)
+ 	/* Disable all timer interrupts, and clear any pending ones */
+ 	at91_st_write(AT91_ST_IDR,
+ 		AT91_ST_PITS | AT91_ST_WDOVF | AT91_ST_RTTINC | AT91_ST_ALMS);
+-	(void) at91_st_read(AT91_ST_SR);
++	at91_st_read(AT91_ST_SR);
+ 
+ 	/* Make IRQs happen for the system timer */
+ 	setup_irq(AT91_ID_SYS, &at91rm9200_timer_irq);
+-- 
+1.7.9
 
