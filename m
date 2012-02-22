@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab2BVVUN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:20:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46694 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2BVVUL (ORCPT
+	id S1754592Ab2BVVVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:21:51 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:55514 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab2BVVVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:20:11 -0500
-Date: Wed, 22 Feb 2012 13:19:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: stable@vger.kernel.org, Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-Message-ID: <20120222211928.GA4448@kroah.com>
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+	Wed, 22 Feb 2012 16:21:50 -0500
+Date: Wed, 22 Feb 2012 13:20:56 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [PATCH 2/3 RFC paul/rcu/srcu] srcu: only increase the upper bit
+ for srcu_read_lock()
+Message-ID: <20120222212056.GJ2416@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120213020951.GA12138@linux.vnet.ibm.com>
+ <4F41F315.1040900@cn.fujitsu.com>
+ <20120220174418.GI2470@linux.vnet.ibm.com>
+ <4F42EF53.6060400@cn.fujitsu.com>
+ <20120221015037.GE2384@linux.vnet.ibm.com>
+ <4F435966.9020106@cn.fujitsu.com>
+ <20120221172442.GG2375@linux.vnet.ibm.com>
+ <4F44B57C.3020104@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
+In-Reply-To: <4F44B57C.3020104@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12022221-1780-0000-0000-00000361C9FC
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000249; HX=3.00000183; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00116020; UDB=6.00028370; UTC=2012-02-22
+ 21:21:48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 12:54:58PM -0800, Linus Torvalds wrote:
+On Wed, Feb 22, 2012 at 05:29:32PM +0800, Lai Jiangshan wrote:
+> >From de49bb517e6367776e2226b931346ab6c798b122 Mon Sep 17 00:00:00 2001
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date: Wed, 22 Feb 2012 10:41:59 +0800
+> Subject: [PATCH 2/3 RFC paul/rcu/srcu] srcu: only increase the upper bit for srcu_read_lock()
 > 
-> This is a reasonably minimal backport of the i387 state save/restore bug.
-> 
-> A few of the commits are just minimal "make it easier to backport" commits 
-> that don't necessarily fix anything on their own.  And a few of the others 
-> are combinations of what is two commits in the development tree, because 
-> it turned out to be easier and cleaner that way.
-> 
-> The last one is the one that fixes the x86-32 bug, but the preemption 
-> fixes are real fixes too, although they are probably not something that 
-> anybody has necessarily ever hit in reality because the race window is so 
-> small.  Even so, if the fix itself isn't that important, the "make it 
-> easier to backport the main one" would still be a big argument for it.
-> 
-> I *really* hope that the people who could reproduce this bug will test the 
-> back-port series too, since I never actually saw the bug personally to 
-> begin with. And again, big thanks to Raphael who helped pinpoint and debug 
-> this.
+> The algorithm/smp_mb()s ensure 'there is only one srcu_read_lock()
+> between flip and recheck for a cpu'.
+> Increment of the upper bit for srcu_read_lock() only can
+> ensure a single pair of lock/unlock change the cpu counter.
 
-Thanks for doing the backport.  Any ideas on how far back this problem
-goes?
+Very nice!  Also makes is more clear in that no combination of operations
+including exactly one increment can possibly wrap back to the same value,
+because the upper bit would be different.
 
-thanks,
+In deference to Peter Zijlstra's sensibilities, I changed the:
 
-greg k-h
+	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += -1;
+
+to:
+
+	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) -= 1;
+
+I did manage to resist the temptation to instead say:
+
+	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) -= +1;
+
+;-)
+
+Queued, thank you!
+
+							Thanx, Paul
+
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  include/linux/srcu.h |    2 +-
+>  kernel/srcu.c        |   11 +++++------
+>  2 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> index a478c8e..5b49d41 100644
+> --- a/include/linux/srcu.h
+> +++ b/include/linux/srcu.h
+> @@ -35,7 +35,7 @@ struct srcu_struct_array {
+>  };
+> 
+>  /* Bit definitions for field ->c above and ->snap below. */
+> -#define SRCU_USAGE_BITS		2
+> +#define SRCU_USAGE_BITS		1
+>  #define SRCU_REF_MASK		(ULONG_MAX >> SRCU_USAGE_BITS)
+>  #define SRCU_USAGE_COUNT	(SRCU_REF_MASK + 1)
+> 
+> diff --git a/kernel/srcu.c b/kernel/srcu.c
+> index 17e95bc..a51ac48 100644
+> --- a/kernel/srcu.c
+> +++ b/kernel/srcu.c
+> @@ -138,10 +138,10 @@ static bool srcu_readers_active_idx_check(struct srcu_struct *sp, int idx)
+> 
+>  	/*
+>  	 * Now, we check the ->snap array that srcu_readers_active_idx()
+> -	 * filled in from the per-CPU counter values.  Since both
+> -	 * __srcu_read_lock() and __srcu_read_unlock() increment the
+> -	 * upper bits of the per-CPU counter, an increment/decrement
+> -	 * pair will change the value of the counter.  Since there is
+> +	 * filled in from the per-CPU counter values. Since
+> +	 * __srcu_read_lock() increments the upper bits of
+> +	 * the per-CPU counter, an increment/decrement pair will
+> +	 * change the value of the counter.  Since there is
+>  	 * only one possible increment, the only way to wrap the counter
+>  	 * is to have a huge number of counter decrements, which requires
+>  	 * a huge number of tasks and huge SRCU read-side critical-section
+> @@ -234,8 +234,7 @@ void __srcu_read_unlock(struct srcu_struct *sp, int idx)
+>  {
+>  	preempt_disable();
+>  	smp_mb(); /* C */  /* Avoid leaking the critical section. */
+> -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) +=
+> -		SRCU_USAGE_COUNT - 1;
+> +	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += -1;
+>  	preempt_enable();
+>  }
+>  EXPORT_SYMBOL_GPL(__srcu_read_unlock);
+> -- 
+> 1.7.4.4
+> 
+
