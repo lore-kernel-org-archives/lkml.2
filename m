@@ -1,183 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab2BVAnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 19:43:22 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3514 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab2BVAnV (ORCPT
+	id S1755693Ab2BVAtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 19:49:31 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46126 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754477Ab2BVAta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 19:43:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 21 Feb 2012 16:43:20 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] pinctrl: Assume map table entries can't have a NULL name field
-Date: Tue, 21 Feb 2012 17:43:16 -0700
-Message-Id: <1329871396-19381-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 21 Feb 2012 19:49:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+Date: Tue, 21 Feb 2012 16:49:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCH UPDATED 2/9] blkcg: drop unnecessary RCU locking
+Message-ID: <20120222004925.GG12236@google.com>
+References: <1329431878-28300-1-git-send-email-tj@kernel.org>
+ <1329431878-28300-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329431878-28300-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pinctrl_register_mappings() already requires that every mapping table
-entry have a non-NULL name field.
+Now that blkg additions / removals are always done under both q and
+blkcg locks, the only places RCU locking is necessary are
+blkg_lookup[_create]() for lookup w/o blkcg lock.  This patch drops
+unncessary RCU locking replacing it with plain blkcg locking as
+necessary.
 
-Logically, this makes sense too; drivers should always request a specific
-named state so they know what they're getting. Relying on getting the
-first mentioned state in the mapping table is error-prone, and a nasty
-special case to implement, given that a given the mapping table may define
-multiple states for a device.
+* blkiocg_pre_destroy() already perform proper locking and don't need
+  RCU.  Dropped.
 
-Update a few places in the code and documentation that still allowed for
-NULL name fields.
+* blkio_read_blkg_stats() now uses blkcg->lock instead of RCU read
+  lock.  This isn't a hot path.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+* Now unnecessary synchronize_rcu() from queue exit paths removed.
+  This makes q->nr_blkgs unnecessary.  Dropped.
+
+* RCU annotation on blkg->q removed.
+
+-v2: Vivek pointed out that blkg_lookup_create() still needs to be
+     called under rcu_read_lock().  Updated.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
-This is an updated version of PATCH 8/20 of the series I posted on Sunday.
-Hopefully patches 8, 9 at least can be applied now, assuming Dong is OK
-with this patch after my explanation (and note that a later patch replaces
-the need to pass "default" to pinctrl_get() by adding new API pinctrl_
-get_select_default()).
+ block/blk-cgroup.c     |   20 +++++++-------------
+ block/blk-cgroup.h     |    4 ++--
+ block/blk-throttle.c   |   33 +--------------------------------
+ block/cfq-iosched.c    |   24 ------------------------
+ include/linux/blkdev.h |    1 -
+ 5 files changed, 10 insertions(+), 72 deletions(-)
 
-v2: Update mach-u300/core.c and sirfsoc_uart.c not to request NULL state
-names.
-
- Documentation/pinctrl.txt         |    8 ++------
- arch/arm/mach-u300/core.c         |    8 ++++----
- drivers/pinctrl/core.c            |   22 +++++++---------------
- drivers/tty/serial/sirfsoc_uart.c |    2 +-
- 4 files changed, 14 insertions(+), 26 deletions(-)
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index ee3266b..bfe83b1 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -934,7 +934,7 @@ foo_probe()
- 	/* Allocate a state holder named "state" etc */
- 	struct pinctrl p;
+Index: work/block/blk-cgroup.c
+===================================================================
+--- work.orig/block/blk-cgroup.c
++++ work/block/blk-cgroup.c
+@@ -500,7 +500,7 @@ static struct blkio_group *blkg_alloc(st
+ 		return NULL;
  
--	p = pinctrl_get(&device, NULL);
-+	p = pinctrl_get(&device, "default");
- 	if IS_ERR(p)
- 		return PTR_ERR(p);
- 	pinctrl_enable(p);
-@@ -948,10 +948,6 @@ foo_remove()
- 	pinctrl_put(state->p);
+ 	spin_lock_init(&blkg->stats_lock);
+-	rcu_assign_pointer(blkg->q, q);
++	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+ 	blkg->refcnt = 1;
+@@ -611,7 +611,6 @@ struct blkio_group *blkg_lookup_create(s
+ 
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+ 	list_add(&blkg->q_node, &q->blkg_list);
+-	q->nr_blkgs++;
+ 
+ 	spin_unlock(&blkcg->lock);
+ out:
+@@ -648,9 +647,6 @@ static void blkg_destroy(struct blkio_gr
+ 	list_del_init(&blkg->q_node);
+ 	hlist_del_init_rcu(&blkg->blkcg_node);
+ 
+-	WARN_ON_ONCE(q->nr_blkgs <= 0);
+-	q->nr_blkgs--;
+-
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+@@ -1224,8 +1220,9 @@ static int blkio_read_blkg_stats(struct 
+ 	struct hlist_node *n;
+ 	uint64_t cgroup_total = 0;
+ 
+-	rcu_read_lock();
+-	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {
++	spin_lock_irq(&blkcg->lock);
++
++	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+ 		const char *dname = dev_name(blkg->q->backing_dev_info.dev);
+ 		int plid = BLKIOFILE_POLICY(cft->private);
+ 
+@@ -1241,7 +1238,8 @@ static int blkio_read_blkg_stats(struct 
+ 	}
+ 	if (show_total)
+ 		cb->fill(cb, "Total", cgroup_total);
+-	rcu_read_unlock();
++
++	spin_unlock_irq(&blkcg->lock);
+ 	return 0;
  }
  
--If you want to grab a specific control mapping and not just the first one
--found for this device you can specify a specific mapping name, for example in
--the above example the second i2c0 setting: pinctrl_get(&device, "spi0-pos-B");
--
- This get/enable/disable/put sequence can just as well be handled by bus drivers
- if you don't want each and every driver to handle it and you know the
- arrangement on your bus.
-@@ -1003,7 +999,7 @@ Since it may be common to request the core to hog a few always-applicable
- mux settings on the primary pin controller, there is a convenience macro for
- this:
+@@ -1573,28 +1571,24 @@ static int blkiocg_pre_destroy(struct cg
+ {
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
  
--PIN_MAP_PRIMARY_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
-+PIN_MAP_SYS_HOG("POWERMAP", "pinctrl-foo", "power_func")
+-	rcu_read_lock();
+ 	spin_lock_irq(&blkcg->lock);
  
- This gives the exact same result as the above construction.
+ 	while (!hlist_empty(&blkcg->blkg_list)) {
+ 		struct blkio_group *blkg = hlist_entry(blkcg->blkg_list.first,
+ 						struct blkio_group, blkcg_node);
+-		struct request_queue *q = rcu_dereference(blkg->q);
++		struct request_queue *q = blkg->q;
  
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index d66bc97..aa0c46d 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -1558,9 +1558,9 @@ static struct pinctrl_map __initdata u300_pinmux_map[] = {
- 	PIN_MAP_SYS_HOG("EMIF0", "pinmux-u300", "emif0"),
- 	PIN_MAP_SYS_HOG("EMIF1", "pinmux-u300", "emif1"),
- 	/* per-device maps for MMC/SD, SPI and UART */
--	PIN_MAP("MMCSD", "pinmux-u300", "mmc0", "mmci"),
--	PIN_MAP("SPI", "pinmux-u300", "spi0", "pl022"),
--	PIN_MAP("UART0", "pinmux-u300", "uart0", "uart0"),
-+	PIN_MAP("default", "pinmux-u300", "mmc0", "mmci"),
-+	PIN_MAP("default", "pinmux-u300", "spi0", "pl022"),
-+	PIN_MAP("default", "pinmux-u300", "uart0", "uart0"),
+ 		if (spin_trylock(q->queue_lock)) {
+ 			blkg_destroy(blkg);
+ 			spin_unlock(q->queue_lock);
+ 		} else {
+ 			spin_unlock_irq(&blkcg->lock);
+-			rcu_read_unlock();
+ 			cpu_relax();
+-			rcu_read_lock();
+ 			spin_lock(&blkcg->lock);
+ 		}
+ 	}
+ 
+ 	spin_unlock_irq(&blkcg->lock);
+-	rcu_read_unlock();
+ 	return 0;
+ }
+ 
+Index: work/block/blk-cgroup.h
+===================================================================
+--- work.orig/block/blk-cgroup.h
++++ work/block/blk-cgroup.h
+@@ -176,8 +176,8 @@ struct blkg_policy_data {
  };
  
- struct u300_mux_hog {
-@@ -1592,7 +1592,7 @@ static int __init u300_pinctrl_fetch(void)
- 		struct pinctrl *p;
- 		int ret;
+ struct blkio_group {
+-	/* Pointer to the associated request_queue, RCU protected */
+-	struct request_queue __rcu *q;
++	/* Pointer to the associated request_queue */
++	struct request_queue *q;
+ 	struct list_head q_node;
+ 	struct hlist_node blkcg_node;
+ 	struct blkio_cgroup *blkcg;
+Index: work/block/blk-throttle.c
+===================================================================
+--- work.orig/block/blk-throttle.c
++++ work/block/blk-throttle.c
+@@ -1046,39 +1046,8 @@ int blk_throtl_init(struct request_queue
  
--		p = pinctrl_get(u300_mux_hogs[i].dev, NULL);
-+		p = pinctrl_get(u300_mux_hogs[i].dev, "default");
- 		if (IS_ERR(p)) {
- 			pr_err("u300: could not get pinmux hog %s\n",
- 			       u300_mux_hogs[i].name);
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index fb3fbb7..9d421e3 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -488,8 +488,8 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
- 	int i;
- 	struct pinctrl_map const *map;
+ void blk_throtl_exit(struct request_queue *q)
+ {
+-	struct throtl_data *td = q->td;
+-	bool wait;
+-
+-	BUG_ON(!td);
+-
++	BUG_ON(!q->td);
+ 	throtl_shutdown_wq(q);
+-
+-	/* If there are other groups */
+-	spin_lock_irq(q->queue_lock);
+-	wait = q->nr_blkgs;
+-	spin_unlock_irq(q->queue_lock);
+-
+-	/*
+-	 * Wait for tg_to_blkg(tg)->q accessors to exit their grace periods.
+-	 * Do this wait only if there are other undestroyed groups out
+-	 * there (other than root group). This can happen if cgroup deletion
+-	 * path claimed the responsibility of cleaning up a group before
+-	 * queue cleanup code get to the group.
+-	 *
+-	 * Do not call synchronize_rcu() unconditionally as there are drivers
+-	 * which create/delete request queue hundreds of times during scan/boot
+-	 * and synchronize_rcu() can take significant time and slow down boot.
+-	 */
+-	if (wait)
+-		synchronize_rcu();
+-
+-	/*
+-	 * Just being safe to make sure after previous flush if some body did
+-	 * update limits through cgroup and another work got queued, cancel
+-	 * it.
+-	 */
+-	throtl_shutdown_wq(q);
+-
+ 	kfree(q->td);
+ }
  
--	/* We must have dev or ID or both */
--	if (!dev && !name)
-+	/* We must have a state name */
-+	if (WARN_ON(!name))
- 		return ERR_PTR(-EINVAL);
+Index: work/block/cfq-iosched.c
+===================================================================
+--- work.orig/block/cfq-iosched.c
++++ work/block/cfq-iosched.c
+@@ -3449,7 +3449,6 @@ static void cfq_exit_queue(struct elevat
+ {
+ 	struct cfq_data *cfqd = e->elevator_data;
+ 	struct request_queue *q = cfqd->queue;
+-	bool wait = false;
  
- 	if (dev)
-@@ -529,23 +529,16 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
- 		pr_debug("in map, found pctldev %s to handle function %s",
- 			 dev_name(pctldev->dev), map->function);
+ 	cfq_shutdown_timer_wq(cfqd);
  
--		/*
--		 * If we're looking for a specific named map, this must match,
--		 * else we loop and look for the next.
--		 */
--		if (name != NULL) {
--			if (map->name == NULL)
--				continue;
--			if (strcmp(map->name, name))
--				continue;
--		}
-+		/* State name must be the one we're looking for */
-+		if (strcmp(map->name, name))
-+			continue;
+@@ -3462,31 +3461,8 @@ static void cfq_exit_queue(struct elevat
  
- 		/*
- 		 * This is for the case where no device name is given, we
- 		 * already know that the function name matches from above
- 		 * code.
- 		 */
--		if (!map->dev_name && (name != NULL))
-+		if (!map->dev_name)
- 			found_map = true;
+ 	spin_unlock_irq(q->queue_lock);
  
- 		/* If the mapping has a device set up it must match */
-@@ -579,8 +572,7 @@ static struct pinctrl *pinctrl_get_locked(struct device *dev, const char *name)
+-#ifdef CONFIG_BLK_CGROUP
+-	/*
+-	 * If there are groups which we could not unlink from blkcg list,
+-	 * wait for a rcu period for them to be freed.
+-	 */
+-	spin_lock_irq(q->queue_lock);
+-	wait = q->nr_blkgs;
+-	spin_unlock_irq(q->queue_lock);
+-#endif
+ 	cfq_shutdown_timer_wq(cfqd);
  
- 	pr_debug("found %u mux maps for device %s, UD %s\n",
- 		 num_maps,
--		 devname ? devname : "(anonymous)",
--		 name ? name : "(undefined)");
-+		 devname ? devname : "(anonymous)", name);
+-	/*
+-	 * Wait for cfqg->blkg->key accessors to exit their grace periods.
+-	 * Do this wait only if there are other unlinked groups out
+-	 * there. This can happen if cgroup deletion path claimed the
+-	 * responsibility of cleaning up a group before queue cleanup code
+-	 * get to the group.
+-	 *
+-	 * Do not call synchronize_rcu() unconditionally as there are drivers
+-	 * which create/delete request queue hundreds of times during scan/boot
+-	 * and synchronize_rcu() can take significant time and slow down boot.
+-	 */
+-	if (wait)
+-		synchronize_rcu();
+-
+ #ifndef CONFIG_CFQ_GROUP_IOSCHED
+ 	kfree(cfqd->root_group);
+ #endif
+Index: work/include/linux/blkdev.h
+===================================================================
+--- work.orig/include/linux/blkdev.h
++++ work/include/linux/blkdev.h
+@@ -365,7 +365,6 @@ struct request_queue {
+ #ifdef CONFIG_BLK_CGROUP
+ 	/* XXX: array size hardcoded to avoid include dependency (temporary) */
+ 	struct list_head	blkg_list;
+-	int			nr_blkgs;
+ #endif
  
- 	/* Add the pinmux to the global list */
- 	mutex_lock(&pinctrl_list_mutex);
-diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
-index c1a871e..51610a7 100644
---- a/drivers/tty/serial/sirfsoc_uart.c
-+++ b/drivers/tty/serial/sirfsoc_uart.c
-@@ -673,7 +673,7 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
- 	port->irq = res->start;
- 
- 	if (sirfport->hw_flow_ctrl) {
--		sirfport->p = pinctrl_get(&pdev->dev, NULL);
-+		sirfport->p = pinctrl_get(&pdev->dev, "default");
- 		ret = IS_ERR(sirfport->p);
- 		if (ret)
- 			goto pin_err;
--- 
-1.7.0.4
-
+ 	struct queue_limits	limits;
