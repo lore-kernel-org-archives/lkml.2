@@ -1,256 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2BVAtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 19:49:31 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46126 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab2BVAta (ORCPT
+	id S1755734Ab2BVAzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 19:55:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61559 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab2BVAze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 19:49:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Tue, 21 Feb 2012 16:49:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCH UPDATED 2/9] blkcg: drop unnecessary RCU locking
-Message-ID: <20120222004925.GG12236@google.com>
-References: <1329431878-28300-1-git-send-email-tj@kernel.org>
- <1329431878-28300-3-git-send-email-tj@kernel.org>
+	Tue, 21 Feb 2012 19:55:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.42.142.7 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Wed, 22 Feb 2012 01:55:28 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
+ cgroup_enable_task_cg_list
+Message-ID: <20120222005525.GC13403@somewhere.redhat.com>
+References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+ <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
+ <20120221222343.GU3090@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329431878-28300-3-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120221222343.GU3090@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that blkg additions / removals are always done under both q and
-blkcg locks, the only places RCU locking is necessary are
-blkg_lookup[_create]() for lookup w/o blkcg lock.  This patch drops
-unncessary RCU locking replacing it with plain blkcg locking as
-necessary.
+On Tue, Feb 21, 2012 at 02:23:43PM -0800, Mandeep Singh Baines wrote:
+> Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > Walking through the tasklist in cgroup_enable_task_cg_list() inside
+> > an RCU read side critical section is not enough because:
+> > 
+> > - RCU is not (yet) safe against while_each_thread()
+> > 
+> > - If we use only RCU, a forking task that has passed cgroup_post_fork()
+> >   without seeing use_task_css_set_links == 1 is not guaranteed to have
+> >   its child immediately visible in the tasklist if we walk through it
+> >   remotely with RCU. In this case it will be missing in its css_set's
+> >   task list.
+> > 
+> > Thus we need to traverse the list (unfortunately) under the
+> > tasklist_lock. It makes us safe against while_each_thread() and also
+> > make sure we see all forked task that have been added to the tasklist.
+> > 
+> > As a secondary effect, reading and writing use_task_css_set_links are
+> > now well ordered against tasklist traversing and modification. The new
+> > layout is:
+> > 
+> > CPU 0                                      CPU 1
+> > 
+> > use_task_css_set_links = 1                write_lock(tasklist_lock)
+> > read_lock(tasklist_lock)                  add task to tasklist
+> > do_each_thread() {                        write_unlock(tasklist_lock)
+> > 	add thread to css set links       if (use_task_css_set_links)
+> > } while_each_thread()                         add thread to css set links
+> > read_unlock(tasklist_lock)
+> > 
+> > If CPU 0 traverse the list after the task has been added to the tasklist
+> > then it is correctly added to the css set links. OTOH if CPU 0 traverse
+> > the tasklist before the new task had the opportunity to be added to the
+> > tasklist because it was too early in the fork process, then CPU 1
+> > catches up and add the task to the css set links after it added the task
+> > to the tasklist. The right value of use_task_css_set_links is guaranteed
+> > to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
+> > the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
+> > and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
+> > afterward to return the correct value.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > Cc: Mandeep Singh Baines <msb@chromium.org>
+> 
+> Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+> 
+> Sorry for being late. My feedback is really just comments.
+> 
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/cgroup.c |   20 ++++++++++++++++++++
+> >  1 files changed, 20 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > index 6e4eb43..c6877fe 100644
+> > --- a/kernel/cgroup.c
+> > +++ b/kernel/cgroup.c
+> > @@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
+> >  	struct task_struct *p, *g;
+> >  	write_lock(&css_set_lock);
+> 
+> You might want to re-test use_task_css_set_links once you have the lock
+> in order to avoid an unnecessary do_each_thread()/while_each_thread() in
+> case you race between reading the value and entering the loop. This is
+> a potential optimization in a rare case so maybe not worth the LOC.
 
-* blkiocg_pre_destroy() already perform proper locking and don't need
-  RCU.  Dropped.
+Makes sense. I'll do that in a seperate patch.
 
-* blkio_read_blkg_stats() now uses blkcg->lock instead of RCU read
-  lock.  This isn't a hot path.
+> 
+> >  	use_task_css_set_links = 1;
+> > +	/*
+> > +	 * We need tasklist_lock because RCU is not safe against
+> > +	 * while_each_thread(). Besides, a forking task that has passed
+> > +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
+> > +	 * is not guaranteed to have its child immediately visible in the
+> > +	 * tasklist if we walk through it with RCU.
+> > +	 */
+> 
+> Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
+> is made rcu safe. On a large system, it could take a while to iterate
+> over every thread in the system. Thats a long time to hold a spinlock.
+> But it only happens once so probably not that big a deal.
 
-* Now unnecessary synchronize_rcu() from queue exit paths removed.
-  This makes q->nr_blkgs unnecessary.  Dropped.
+I think that even if while_each_thread() was RCU safe, that wouldn't
+work here.
 
-* RCU annotation on blkg->q removed.
+Unless I'm mistaken, we have no guarantee that a remote list_add_rcu()
+is immediately visible by the local CPU if it walks the list under
+rcu_read_lock() only.
 
--v2: Vivek pointed out that blkg_lookup_create() still needs to be
-     called under rcu_read_lock().  Updated.
+Consider that ordering scenario:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-cgroup.c     |   20 +++++++-------------
- block/blk-cgroup.h     |    4 ++--
- block/blk-throttle.c   |   33 +--------------------------------
- block/cfq-iosched.c    |   24 ------------------------
- include/linux/blkdev.h |    1 -
- 5 files changed, 10 insertions(+), 72 deletions(-)
+CPU 0                                      CPU 1
+---------------                        --------------
 
-Index: work/block/blk-cgroup.c
-===================================================================
---- work.orig/block/blk-cgroup.c
-+++ work/block/blk-cgroup.c
-@@ -500,7 +500,7 @@ static struct blkio_group *blkg_alloc(st
- 		return NULL;
- 
- 	spin_lock_init(&blkg->stats_lock);
--	rcu_assign_pointer(blkg->q, q);
-+	blkg->q = q;
- 	INIT_LIST_HEAD(&blkg->q_node);
- 	blkg->blkcg = blkcg;
- 	blkg->refcnt = 1;
-@@ -611,7 +611,6 @@ struct blkio_group *blkg_lookup_create(s
- 
- 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
- 	list_add(&blkg->q_node, &q->blkg_list);
--	q->nr_blkgs++;
- 
- 	spin_unlock(&blkcg->lock);
- out:
-@@ -648,9 +647,6 @@ static void blkg_destroy(struct blkio_gr
- 	list_del_init(&blkg->q_node);
- 	hlist_del_init_rcu(&blkg->blkcg_node);
- 
--	WARN_ON_ONCE(q->nr_blkgs <= 0);
--	q->nr_blkgs--;
--
- 	/*
- 	 * Put the reference taken at the time of creation so that when all
- 	 * queues are gone, group can be destroyed.
-@@ -1224,8 +1220,9 @@ static int blkio_read_blkg_stats(struct 
- 	struct hlist_node *n;
- 	uint64_t cgroup_total = 0;
- 
--	rcu_read_lock();
--	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {
-+	spin_lock_irq(&blkcg->lock);
-+
-+	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
- 		const char *dname = dev_name(blkg->q->backing_dev_info.dev);
- 		int plid = BLKIOFILE_POLICY(cft->private);
- 
-@@ -1241,7 +1238,8 @@ static int blkio_read_blkg_stats(struct 
- 	}
- 	if (show_total)
- 		cb->fill(cb, "Total", cgroup_total);
--	rcu_read_unlock();
-+
-+	spin_unlock_irq(&blkcg->lock);
- 	return 0;
- }
- 
-@@ -1573,28 +1571,24 @@ static int blkiocg_pre_destroy(struct cg
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
- 
--	rcu_read_lock();
- 	spin_lock_irq(&blkcg->lock);
- 
- 	while (!hlist_empty(&blkcg->blkg_list)) {
- 		struct blkio_group *blkg = hlist_entry(blkcg->blkg_list.first,
- 						struct blkio_group, blkcg_node);
--		struct request_queue *q = rcu_dereference(blkg->q);
-+		struct request_queue *q = blkg->q;
- 
- 		if (spin_trylock(q->queue_lock)) {
- 			blkg_destroy(blkg);
- 			spin_unlock(q->queue_lock);
- 		} else {
- 			spin_unlock_irq(&blkcg->lock);
--			rcu_read_unlock();
- 			cpu_relax();
--			rcu_read_lock();
- 			spin_lock(&blkcg->lock);
- 		}
- 	}
- 
- 	spin_unlock_irq(&blkcg->lock);
--	rcu_read_unlock();
- 	return 0;
- }
- 
-Index: work/block/blk-cgroup.h
-===================================================================
---- work.orig/block/blk-cgroup.h
-+++ work/block/blk-cgroup.h
-@@ -176,8 +176,8 @@ struct blkg_policy_data {
- };
- 
- struct blkio_group {
--	/* Pointer to the associated request_queue, RCU protected */
--	struct request_queue __rcu *q;
-+	/* Pointer to the associated request_queue */
-+	struct request_queue *q;
- 	struct list_head q_node;
- 	struct hlist_node blkcg_node;
- 	struct blkio_cgroup *blkcg;
-Index: work/block/blk-throttle.c
-===================================================================
---- work.orig/block/blk-throttle.c
-+++ work/block/blk-throttle.c
-@@ -1046,39 +1046,8 @@ int blk_throtl_init(struct request_queue
- 
- void blk_throtl_exit(struct request_queue *q)
- {
--	struct throtl_data *td = q->td;
--	bool wait;
--
--	BUG_ON(!td);
--
-+	BUG_ON(!q->td);
- 	throtl_shutdown_wq(q);
--
--	/* If there are other groups */
--	spin_lock_irq(q->queue_lock);
--	wait = q->nr_blkgs;
--	spin_unlock_irq(q->queue_lock);
--
--	/*
--	 * Wait for tg_to_blkg(tg)->q accessors to exit their grace periods.
--	 * Do this wait only if there are other undestroyed groups out
--	 * there (other than root group). This can happen if cgroup deletion
--	 * path claimed the responsibility of cleaning up a group before
--	 * queue cleanup code get to the group.
--	 *
--	 * Do not call synchronize_rcu() unconditionally as there are drivers
--	 * which create/delete request queue hundreds of times during scan/boot
--	 * and synchronize_rcu() can take significant time and slow down boot.
--	 */
--	if (wait)
--		synchronize_rcu();
--
--	/*
--	 * Just being safe to make sure after previous flush if some body did
--	 * update limits through cgroup and another work got queued, cancel
--	 * it.
--	 */
--	throtl_shutdown_wq(q);
--
- 	kfree(q->td);
- }
- 
-Index: work/block/cfq-iosched.c
-===================================================================
---- work.orig/block/cfq-iosched.c
-+++ work/block/cfq-iosched.c
-@@ -3449,7 +3449,6 @@ static void cfq_exit_queue(struct elevat
- {
- 	struct cfq_data *cfqd = e->elevator_data;
- 	struct request_queue *q = cfqd->queue;
--	bool wait = false;
- 
- 	cfq_shutdown_timer_wq(cfqd);
- 
-@@ -3462,31 +3461,8 @@ static void cfq_exit_queue(struct elevat
- 
- 	spin_unlock_irq(q->queue_lock);
- 
--#ifdef CONFIG_BLK_CGROUP
--	/*
--	 * If there are groups which we could not unlink from blkcg list,
--	 * wait for a rcu period for them to be freed.
--	 */
--	spin_lock_irq(q->queue_lock);
--	wait = q->nr_blkgs;
--	spin_unlock_irq(q->queue_lock);
--#endif
- 	cfq_shutdown_timer_wq(cfqd);
- 
--	/*
--	 * Wait for cfqg->blkg->key accessors to exit their grace periods.
--	 * Do this wait only if there are other unlinked groups out
--	 * there. This can happen if cgroup deletion path claimed the
--	 * responsibility of cleaning up a group before queue cleanup code
--	 * get to the group.
--	 *
--	 * Do not call synchronize_rcu() unconditionally as there are drivers
--	 * which create/delete request queue hundreds of times during scan/boot
--	 * and synchronize_rcu() can take significant time and slow down boot.
--	 */
--	if (wait)
--		synchronize_rcu();
--
- #ifndef CONFIG_CFQ_GROUP_IOSCHED
- 	kfree(cfqd->root_group);
- #endif
-Index: work/include/linux/blkdev.h
-===================================================================
---- work.orig/include/linux/blkdev.h
-+++ work/include/linux/blkdev.h
-@@ -365,7 +365,6 @@ struct request_queue {
- #ifdef CONFIG_BLK_CGROUP
- 	/* XXX: array size hardcoded to avoid include dependency (temporary) */
- 	struct list_head	blkg_list;
--	int			nr_blkgs;
- #endif
- 
- 	struct queue_limits	limits;
+fork() {
+	write_lock(tasklist_lock);
+        add child to tasklist
+	write_unlock(tasklist_lock);
+        cgroup_post_fork()
+}
+
+                                         cgroup_enable_task_cg_lists() {
+                                                rcu_read_lock();
+                                                do_each_thread() {
+                                                        ..... <-- find child ?
+                                                } while_each_thread()
+                                                rcu_read_unlock()
+
+
+We have no guarantee here that the write on CPU 0 will be visible
+in time to CPU 1.
+
+But may be I misunderstood the ordering and committing guarantees with RCU.
+Perhaps Paul can confirm or correct me.
+
+Paul?
