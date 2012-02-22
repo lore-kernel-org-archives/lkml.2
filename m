@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab2BVWbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:31:53 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52298 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab2BVWbw (ORCPT
+	id S1751612Ab2BVWdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:33:09 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43398 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab2BVWdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:31:52 -0500
-Date: Thu, 23 Feb 2012 09:31:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
-Message-Id: <20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
-In-Reply-To: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
-References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w"
+	Wed, 22 Feb 2012 17:33:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.219.129 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F456D1E.8070807@gmail.com>
+Date: Thu, 23 Feb 2012 09:33:02 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH v2 09/19] ARM: at91: make sdram/ddr register base soc
+ independent
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com>
+In-Reply-To: <0acddc0a57ea5a198f662bf37047ebe95e3eb695.1329903206.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22/02/12 20:39, Nicolas Ferre wrote:
 
-Hi Matt,
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
 
-On Wed, 22 Feb 2012 14:00:08 +0000 Matt Fleming <matt@console-pimps.org> wr=
-ote:
->
-> From: Matt Fleming <matt.fleming@intel.com>
->=20
-> We need to read from and write to 'buf' a byte at a time otherwise
-> it's possible we'll perform an unaligned access, which can lead to a
-> segfault when cross-building an x86 kernel on risc architectures.
->=20
-> Also, we may need to convert the endianness of the data we read
-> from/write to buf, so let's add some helper functions to do that.
->=20
-> Stephen Rothwell noticed this bug when he hit a segfault while
-> cross-building an x86_64 allmodconfig kernel on PowerPC.
->=20
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+<snip>
 
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au> (cross build only)
+> +void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
+> +{
+> +	if (id > 1) {
+> +		pr_warn("%s: id > 2\n", __func__);
+> +		return;
+> +	}
+> +	at91_ramc_base[id] = ioremap(addr, size);
+> +	if (!at91_ramc_base[id])
+> +		pr_warn("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
+> +}
 
-The bzImage from a ARCH=3Dx86_64 defconfig+CONFIG_EFI_STUB cross build is
-in http://ozlabs.org/~sfr/bzImage if you want to attempt to boot it.
 
-One little thing is that those two new functions may we warned about as
-unused if CONFIG_EFI_STUB is not set (I have not done that build yet).
+If this fails then you will oops if you call either at91_ramc_read or
+at91_ramc_write since they don't check if at91_ramc_base[id] is a valid
+pointer. Either this function should panic, like the other at91_ioremap
+functions, or the at91_ramc_read/write functions should check for a
+valid pointer.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Nitpick: The id check should probably also be BUG() or WARN() since it
+indicates a bug in the core AT91 code. pr_warn is likely to missed and
+not reported by users. Since the value is int, the check should be:
 
---Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w
-Content-Type: application/pgp-signature
+  if (id < 0 || id > 1)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Obviously the chance of this error happening are slim, but if you are
+going to check and warn for it, it should be done properly :-).
 
-iQIcBAEBCAAGBQJPRWzMAAoJEECxmPOUX5FEVgMP/2rNY6N6nU8k7vh0xlV+3/iW
-Mi+FFcDdqzRIjgTkNRtGsg1sgmF29p5M8HbpaJ3ysukh4HgieZ+oazPbj6NcAlRn
-lko10dYyTtXqG0DzwuM5NVgqxVWIBPYeuw0eH45avtNUI+sNRF9JdvHrGzb8t1Oo
-5ub5srCKhdW3ooQtLZ//1L/eaipmMFDKA/KcOj+1AocEXwhBpiTOcMmLlUnRRiUB
-YRajAznFZ2jx/w11rQpA2M1GEg8evtTt4ILXQ6oAB7dNXW8RWWdonail1co++jm/
-pt0SP0g0GPA5NAXkkNmtrSuWTclR4ZoHU5+0ikytExzjREr8q7OoXg2+g7ayCDE2
-2o283fnNCixh5pXierpn8Mi5Lz/T2JBL1beNQzRcotWFkAfu+X7PJNn+pSVyf1Dt
-IFBFnRjvV+j4RiZtrAKINAmrMBWy1EfgIpqKuOfyvMSHmW40qctzP/8FhFIHRfgw
-JDq6KFZHbGkKobPJaYT8jmZDWYYlzf1B8HLN/wyaaOmjdIlTjcLIJWTm1+gkl3r+
-oB2cTqk7oNmycI7f7Jff57/6DVeLh2mPIGTdBfrYPmaLfzg/q/yaVg0/KYHKJhpQ
-uO1uZ2/HEIBeUqkPGIPOtpPtFnwAKyg6/+ODhCEenwI4BW2neonzoxMuTyIpQ1s9
-Z5dKm1/mAzWv1rAoL0AH
-=Bcbk
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Feb_2012_09_31_40_+1100_VQ6Vfu0Nu5=PkT4w--
+~Ryan
