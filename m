@@ -1,39 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab2BVVCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:02:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52506 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab2BVVCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:02:38 -0500
-Message-ID: <4F4557E1.3020304@zytor.com>
-Date: Wed, 22 Feb 2012 13:02:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1754223Ab2BVVEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:04:09 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:39270 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab2BVVEH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 16:04:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.180.109.228 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Raphael Prevost <raphael@buro.asia>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] i387: stable kernel backport
-References: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.02.1202221252060.20522@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1328948321-14791-1-git-send-email-yinghai@kernel.org>
+References: <1328948321-14791-1-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 22 Feb 2012 13:03:44 -0800
+Message-ID: <CAErSpo6cRdc3YnyqD4U6WtOMNPW_=VGCotwE9iBvu=rBs1UeRw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: move pci_find_saved_cap out of linux/pci.h
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 12:54 PM, Linus Torvalds wrote:
+On Sat, Feb 11, 2012 at 12:18 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Only have user in driver/pci/pci.c
 >
-> I *really* hope that the people who could reproduce this bug will test the
-> back-port series too, since I never actually saw the bug personally to
-> begin with. And again, big thanks to Raphael who helped pinpoint and debug
-> this.
+> Don't need to put it in global pci.h
+
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org.
 >
-
-I will run my tests on it overnight.
-
-	-hpa
-
+> ---
+>  drivers/pci/pci.c   |   19 +++++++++++++++++++
+>  include/linux/pci.h |   19 -------------------
+>  2 files changed, 19 insertions(+), 19 deletions(-)
+>
+> Index: linux-2.6/drivers/pci/pci.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci.c
+> +++ linux-2.6/drivers/pci/pci.c
+> @@ -825,6 +825,19 @@ EXPORT_SYMBOL(pci_choose_state);
+>  #define pcie_cap_has_sltctl2(type, flags)              \
+>                ((flags & PCI_EXP_FLAGS_VERS) > 1)
+>
+> +static struct pci_cap_saved_state *pci_find_saved_cap(
+> +       struct pci_dev *pci_dev, char cap)
+> +{
+> +       struct pci_cap_saved_state *tmp;
+> +       struct hlist_node *pos;
+> +
+> +       hlist_for_each_entry(tmp, pos, &pci_dev->saved_cap_space, next) {
+> +               if (tmp->cap.cap_nr == cap)
+> +                       return tmp;
+> +       }
+> +       return NULL;
+> +}
+> +
+>  static int pci_save_pcie_state(struct pci_dev *dev)
+>  {
+>        int pos, i = 0;
+> @@ -1869,6 +1882,12 @@ void platform_pci_wakeup_init(struct pci
+>        platform_pci_sleep_wake(dev, false);
+>  }
+>
+> +static void pci_add_saved_cap(struct pci_dev *pci_dev,
+> +       struct pci_cap_saved_state *new_cap)
+> +{
+> +       hlist_add_head(&new_cap->next, &pci_dev->saved_cap_space);
+> +}
+> +
+>  /**
+>  * pci_add_save_buffer - allocate buffer for saving given capability registers
+>  * @dev: the PCI device
+> Index: linux-2.6/include/linux/pci.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/pci.h
+> +++ linux-2.6/include/linux/pci.h
+> @@ -368,25 +368,6 @@ static inline int pci_channel_offline(st
+>        return (pdev->error_state != pci_channel_io_normal);
+>  }
+>
+> -static inline struct pci_cap_saved_state *pci_find_saved_cap(
+> -       struct pci_dev *pci_dev, char cap)
+> -{
+> -       struct pci_cap_saved_state *tmp;
+> -       struct hlist_node *pos;
+> -
+> -       hlist_for_each_entry(tmp, pos, &pci_dev->saved_cap_space, next) {
+> -               if (tmp->cap.cap_nr == cap)
+> -                       return tmp;
+> -       }
+> -       return NULL;
+> -}
+> -
+> -static inline void pci_add_saved_cap(struct pci_dev *pci_dev,
+> -       struct pci_cap_saved_state *new_cap)
+> -{
+> -       hlist_add_head(&new_cap->next, &pci_dev->saved_cap_space);
+> -}
+> -
+>  /*
+>  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+>  * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
