@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab2BVBjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:39:43 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:43367 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751679Ab2BVBjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:39:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6627"; a="162855576"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH] msm: timer: Support sched_clock()
-Date: Tue, 21 Feb 2012 17:39:37 -0800
-Message-Id: <1329874777-12758-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.1.265.gb3a76
+	id S1753180Ab2BVBms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:42:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab2BVBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:42:47 -0500
+Date: Tue, 21 Feb 2012 20:42:43 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
+Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
+Message-ID: <20120222014242.GF23186@zod.bos.redhat.com>
+References: <20120222011652.GE23186@zod.bos.redhat.com>
+ <20120222013252.GZ2375@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222013252.GZ2375@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that sched_clock is mandatory on ARM it's simple to add
-sched_clock support to the MSM timer code. Add it so that we get
-more accurate sched_clock output than the jiffies based version
-that's provided by default.
+On Tue, Feb 21, 2012 at 05:32:52PM -0800, Paul E. McKenney wrote:
+> On Tue, Feb 21, 2012 at 08:16:53PM -0500, Josh Boyer wrote:
+> > Hi Paul,
+> > 
+> > Over in Fedora land, I applied your patch from this thread:
+> > 
+> > https://lkml.org/lkml/2012/1/24/441
+> > 
+> > to our 3.3-rc3/rc4 based rawhide kernels.  The intention was to solve an
+> > RCU issue that was very similar to what Eric originally reported, and
+> > the RCU splat did indeed go away[1].
+> > 
+> > However, we then got a few reports of kernels containing that patch
+> > being extremely slow.  When the patch was dropped, the slowness goes
+> > away according to one reporter.  The details can be found in this bug:
+> > 
+> > https://bugzilla.redhat.com/show_bug.cgi?id=795050
+> > 
+> > The slowness doesn't seem to hit everyone, and in my local testing
+> > things seem to be working just fine.  The reporters have widely varying
+> > hardware as well, so it doesn't seem machine specific.
+> > 
+> > Perhaps I misdiagnosed the original issue, or perhaps I missed something
+> > else that needs to be applied prior to this but I thought I would point
+> > this out in case you had any ideas.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: David Brown <davidb@codeaurora.org>
----
+First off, thanks for the quick reply!
 
-This is based on Marc's mandatory sched_clock patch series
-located at
+> This patch has been obsoleted by patches #45-47 in this series:
+> 
+> 	https://lkml.org/lkml/2012/2/3/459
 
- git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git sched_clock-v3.3-rc3
+Holy lots of patches... 
 
- arch/arm/mach-msm/timer.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+> And patch #47 in that series has been obsoleted by another series
+> from Steven Rostedt:
+> 
+> 	https://lkml.org/lkml/2012/2/7/231
 
-diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
-index 11d0d8f..61983da 100644
---- a/arch/arm/mach-msm/timer.c
-+++ b/arch/arm/mach-msm/timer.c
-@@ -24,6 +24,7 @@
- #include <asm/mach/time.h>
- #include <asm/hardware/gic.h>
- #include <asm/localtimer.h>
-+#include <asm/sched_clock.h>
- 
- #include <mach/msm_iomap.h>
- #include <mach/cpu.h>
-@@ -105,12 +106,12 @@ static union {
- 
- static void __iomem *source_base;
- 
--static cycle_t msm_read_timer_count(struct clocksource *cs)
-+static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
- {
- 	return readl_relaxed(source_base + TIMER_COUNT_VAL);
- }
- 
--static cycle_t msm_read_timer_count_shift(struct clocksource *cs)
-+static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
- {
- 	/*
- 	 * Shift timer count down by a constant due to unreliable lower bits
-@@ -127,6 +128,11 @@ static struct clocksource msm_clocksource = {
- 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-+static notrace u32 msm_sched_clock_read(void)
-+{
-+	return msm_clocksource.read(&msm_clocksource);
-+}
-+
- static void __init msm_timer_init(void)
- {
- 	struct clock_event_device *ce = &msm_clockevent;
-@@ -189,6 +195,8 @@ err:
- 	res = clocksource_register_hz(cs, dgt_hz);
- 	if (res)
- 		pr_err("clocksource_register failed\n");
-+	setup_sched_clock(msm_sched_clock_read,
-+			cpu_is_msm7x01() ? 32 - MSM_DGT_SHIFT : 32, dgt_hz);
- }
- 
- #ifdef CONFIG_LOCAL_TIMERS
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ok.
 
+> Hopefully these fix both splats and slowness.
+
+So again, I'm slightly confused on how RCU patches flow.  Eric
+originally reported the bug for which you created the patch I applied
+against 3.3.  The giant patch series above seems queued for 3.4.
+
+I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
+I'd want to go applying the 47-patch series on 3.3 at the moment, and
+given you have these marked for 3.4 I don't think you do either.
+However, is there some kind of fix for the original bug report against
+3.3?
+
+josh
