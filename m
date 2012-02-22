@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab2BVJoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:44:23 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:11572 "EHLO
+	id S1755061Ab2BVJoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:44:21 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:44878 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab2BVJkG (ORCPT
+	with ESMTP id S1754755Ab2BVJkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Feb 2012 04:40:06 -0500
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, rmallon@gmail.com, linux@arm.linux.org.uk
-Subject: [PATCH v2 15/19] ARM: at91: finally drop at91_sys_read/write
-Date: Wed, 22 Feb 2012 10:39:41 +0100
-Message-Id: <9adc828dede4a47a9b5f2108811f47796dfbedcc.1329903206.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v2 18/19] ARM: at91/board-dt: drop default console
+Date: Wed, 22 Feb 2012 10:39:44 +0100
+Message-Id: <9c7f89fca4bbfe34df1e4ce57640bb0d261b62d5.1329903206.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
 References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
@@ -24,43 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Remove at91_sys_read/write() from io.h file. This function
-is not used anymore and was a stopper on the way to single
-zImage kernel for AT91.
+This default console mechanism is not used if the console is selected
+by command line (console= parameter).
+Dropping this will simplify the compilation of multiple SoC in the same
+kernel image.
 
 Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/include/mach/io.h |   18 ------------------
- 1 files changed, 0 insertions(+), 18 deletions(-)
+ arch/arm/mach-at91/at91sam9x5.c |    3 ---
+ arch/arm/mach-at91/board-dt.c   |    6 ------
+ 2 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-at91/include/mach/io.h b/arch/arm/mach-at91/include/mach/io.h
-index 4ca09ef..4003001 100644
---- a/arch/arm/mach-at91/include/mach/io.h
-+++ b/arch/arm/mach-at91/include/mach/io.h
-@@ -28,22 +28,4 @@
- #define __io(a)		__typesafe_io(a)
- #define __mem_pci(a)	(a)
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 90bb7ec..d17d426 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -318,9 +318,6 @@ void __init at91sam9x5_initialize(void)
+ /* --------------------------------------------------------------------
+  *  AT91SAM9x5 devices (temporary before modification of code)
+  * -------------------------------------------------------------------- */
+-void __init at91_register_uart(unsigned id, unsigned portnr, unsigned pins) {}
+-void __init at91_set_serial_console(unsigned portnr) {}
+-
+ void __init at91_add_device_nand(struct atmel_nand_data *data) {}
  
--#ifndef __ASSEMBLY__
+ /* --------------------------------------------------------------------
+diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
+index 0579315..08c8ad8 100644
+--- a/arch/arm/mach-at91/board-dt.c
++++ b/arch/arm/mach-at91/board-dt.c
+@@ -38,12 +38,6 @@ static void __init ek_init_early(void)
+ {
+ 	/* Initialize processor: 12.000 MHz crystal */
+ 	at91_initialize(12000000);
 -
--static inline unsigned int at91_sys_read(unsigned int reg_offset)
--{
--	void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
+-	/* DGBU on ttyS0. (Rx & Tx only) */
+-	at91_register_uart(0, 0, 0);
 -
--	return __raw_readl(addr + reg_offset);
--}
--
--static inline void at91_sys_write(unsigned int reg_offset, unsigned long value)
--{
--	void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
--
--	__raw_writel(value, addr + reg_offset);
--}
--
--#endif
--
- #endif
+-	/* set serial console to ttyS0 (ie, DBGU) */
+-	at91_set_serial_console(0);
+ }
+ 
+ /* det_pin is not connected */
 -- 
 1.7.9
 
