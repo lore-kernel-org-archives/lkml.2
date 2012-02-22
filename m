@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab2BVQh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:37:57 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59760 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab2BVQh4 convert rfc822-to-8bit (ORCPT
+	id S1754042Ab2BVQiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:38:05 -0500
+Received: from 10.mo5.mail-out.ovh.net ([46.105.52.148]:38846 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752975Ab2BVQiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:37:56 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of josh.coombs@gmail.com designates 10.50.6.138 as permitted sender) smtp.mail=josh.coombs@gmail.com; dkim=pass header.i=josh.coombs@gmail.com
+	Wed, 22 Feb 2012 11:38:01 -0500
+Date: Wed, 22 Feb 2012 17:24:42 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com, linux@arm.linux.org.uk
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 12/19] ARM: at91/rtc-at91sam9: each SoC can select
+ the RTT device to use
+Message-ID: <20120222162442.GD9407@game.jcrosoft.org>
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+ <bcf67fab836268c6f3a5b5618d44e3fdf3525af0.1329903206.git.nicolas.ferre@atmel.com>
+ <201202221450.04390.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMW5UfYGU+K0tet+z8g+fYS54jba57gaWW_C7r3VY9JcrDryRQ@mail.gmail.com>
-References: <CAMW5UfYGU+K0tet+z8g+fYS54jba57gaWW_C7r3VY9JcrDryRQ@mail.gmail.com>
-Date: Wed, 22 Feb 2012 11:37:55 -0500
-Message-ID: <CAMW5UfYu+D8LypyRX7RqZ8dwf5t4yPhoO-906maGjVUqS8TGXg@mail.gmail.com>
-Subject: Re: [PATCH] drivers/usb/misc/sisusbvga/sisusb.c Add support for
- Triton See 2 Xtreme
-From: Josh Coombs <josh.coombs@gmail.com>
-To: thomas@winischhofer.net
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201202221450.04390.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1775825629957040900
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can confirm this applies cleanly to 3.3-rc4 on x86_64 now.
+On 14:50 Wed 22 Feb     , Arnd Bergmann wrote:
+> On Wednesday 22 February 2012, Nicolas Ferre wrote:
+> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > 
+> > For the RTT as RTC driver rtc-at91sam9, the platform_device structure
+> > is filled during SoC initialization. This will allow to convert this
+> > RTC driver as a standard platform driver.
+> 
+> Can you make this more elaborate? I don't see from this or the code why
+> you don't just always register the RTT as "rtc-at91sam9". There seems to
+> be no driver for the "at91_rtt" in tree, so I don't know if there is
+> an out of tree driver binding to it.
+> 
+> Would it be possible to remove the compile time #if and the resetting
+> of the device name if both drivers bind to the rtc name and the other
+> rtt driver binds to both names?
+because I see a quite some people use the rtt for something else
 
-Joshua Coombs
+so I don't want to change on existing kernel
 
-On Sun, Jan 22, 2012 at 1:15 PM, Josh Coombs <josh.coombs@gmail.com> wrote:
-> Hello Thomas,
->
-> I've been playing with a Triton See 2 Xtreme SiS based USB VGA adapter
-> and had decent luck with it under your driver after adding it's device
-> ID.
->
-> --- drivers/usb/misc/sisusbvga/sisusb.c.orig    2012-01-22 13:01:07.000000000 -0500
-> +++ drivers/usb/misc/sisusbvga/sisusb.c 2012-01-22 13:01:26.000000000 -0500
-> @@ -3247,6 +3247,7 @@ static const struct usb_device_id sisusb
->        { USB_DEVICE(0x0711, 0x0903) },
->        { USB_DEVICE(0x0711, 0x0918) },
->        { USB_DEVICE(0x0711, 0x0920) },
-> +        { USB_DEVICE(0x0711, 0x0950) },
->        { USB_DEVICE(0x182d, 0x021c) },
->        { USB_DEVICE(0x182d, 0x0269) },
->        { }
->
-> I've been primarily using it on an ARMv5 system, and will try to test
-> on x86 soon.  I've used the patch on both 3.1-release and 3.2-release.
->  I just verified 3.3-RC1 hasn't had any changes to the sisusb driver
-> and will be building a test kernel this afternoon.  Given it's just a
-> one line tweak, is this patch sufficient to go upstream, or would you
-> like some additional info from my setup first?
->
-> Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
+Best Regards,
+J.
