@@ -1,137 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2BVPm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:42:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2BVPmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:42:25 -0500
-Date: Wed, 22 Feb 2012 10:42:07 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120222154206.GA3405@redhat.com>
-References: <20120222072538.GA17291@elte.hu>
- <4F449ACF.3040807@zytor.com>
- <20120222074839.GA24890@elte.hu>
- <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
- <20120222080659.GA25318@elte.hu>
- <1329916920.25686.79.camel@gandalf.stny.rr.com>
- <20120222133404.GA14085@elte.hu>
- <1329918881.25686.92.camel@gandalf.stny.rr.com>
- <20120222145614.GA2491@elte.hu>
- <1329923533.25686.106.camel@gandalf.stny.rr.com>
+	id S1753337Ab2BVPpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:45:14 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64412 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2BVPpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 10:45:10 -0500
+Date: Wed, 22 Feb 2012 16:45:04 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        linux-kernel@vger.kernel.org, Paul Menage <paul@paulmenage.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120222154501.GA1693@somewhere.redhat.com>
+References: <20120221211938.GE12236@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329923533.25686.106.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20120221211938.GE12236@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 10:12:13AM -0500, Steven Rostedt wrote:
-> On Wed, 2012-02-22 at 15:56 +0100, Ingo Molnar wrote:
+On Tue, Feb 21, 2012 at 01:19:38PM -0800, Tejun Heo wrote:
+> Hello, guys.
 > 
-> > > Because it really just looks like a stronger "unlikely()" and 
-> > > fundamentally it really isn't. [...]
-> > 
-> > Well, the fact is that right now it *is* a stronger unlikely() 
-> > on architectures that have jump-labels and it's mapped to 
-> > unlikely() on others.
-> > 
+> I've been thinking about multiple hierarchy support in cgroup for a
+> while, especially after Frederic's pending task counter patchset.
+> This is a write up of what I've been thinking.  I don't know what to
+> do yet and simply continuing the current situation definitely is an
+> option, so please read on and throw in your 20 Won (or whatever amount
+> in whatever currency you want).
 > 
-> Has gcc been fix to make it truly an unlikely case and remove the "jmp;
-> jmp" problem of before? I'm still using gcc 4.6.0 which has the
-> following code for a tracepoint (example is the
-> trace_sched_migrate_task().
+> * The problems.
 > 
->     5b4a:       e9 00 00 00 00          jmpq   5b4f <set_task_cpu+0x5e>
+> The support for multiple process hierarchies always struck me as
+> rather strange.  If you forget about the current cgroup controllers
+> and their implementations, the *only* reason to support multiple
+> hierarchies is if you want to apply resource limits based on different
+> orthogonal categorizations.
 > 
-> The above is the jump label that turns into a nop at boot up.
+> Documentation/cgroups.txt seems to be written with this consideration
+> on mind.  It's giving an example of applying limits accoring to two
+> orthogonal categorizations - user groups (profressors, students...)
+> and applications (WWW, NFS...).  While it may sound like a valid use
+> case, I'm very skeptical how useful or common mixing such orthogonal
+> categorizations in a single setup would be.
 > 
->     5b4f:       eb 19                   jmp    5b6a <set_task_cpu+0x79>
+> If support for multiple hierarchies comes for free, at least in terms
+> of features, maybe it can be better but of course it isn't so.  Any
+> given cgroup subsystem (or controller) can only be applied to a single
+> hierarchy, which makes sense for a lot of things - what would two
+> different limits on the same resource from different hierarchies mean?
+> But, there also are things which can be used and useful in all
+> hierarchies - e.g. cgroup freezer and task counter.
 > 
-> Here we jump over some of the trace code (this is the fast path)
+> While the current cgroup implementation and conventions can probably
+> allow admins and engineers to tailor cgroup configuration for a
+> specific setup, it is very difficult to use in generic and automated
+> way.  I mean, who owns the freezer or task counter?  If they're
+> mounted on their own hierarchies, how should they be structured?
+> Should the different hierarchies be structured such that they are
+> projections of one unified hierarchy so that those generic mechanisms
+> can be applied uniformly?  If so, why do we need multiple hierarchies
+> at all?
 > 
->     5b51:       49 8b 7d 08             mov    0x8(%r13),%rdi
->     5b55:       44 89 e2                mov    %r12d,%edx
->     5b58:       48 89 de                mov    %rbx,%rsi
->     5b5b:       41 ff 55 00             callq  *0x0(%r13)
->     5b5f:       49 83 c5 10             add    $0x10,%r13
->     5b63:       49 83 7d 00 00          cmpq   $0x0,0x0(%r13)
->     5b68:       eb 41                   jmp    5bab <set_task_cpu+0xba>
-> 
-> Below is the continuation of the fast path.
-> 
->     5b6a:       48 8b 43 08             mov    0x8(%rbx),%rax
->     5b6e:       44 39 60 18             cmp    %r12d,0x18(%rax)
->     5b72:       74 0c                   je     5b80 <set_task_cpu+0x8f>
-> 
-> 
-> Again, I'm using gcc 4.6.0 and maybe it has been fixed.
-> 
-> -- Steve
-> 
-> 
+> A related limitation is that as different subsystems don't know which
+> hierarchies they'll end up on, they can't cooperate.  Wouldn't it make
+> more sense if task counter is a separate thing watching the resources
+> and triggers different actions as conifgured - be it failing forks or
+> freezing?
 
-Hi Steve,
+For this particular example, I think we'd better have a file in which
+a task can poll and get woken up when the task limit has been reached.
+Then that task can decide to freeze or whatever.
 
-Using 4.6.2, I don't see the 'jmp;jmp' issue. I have:
+> 
+> And yet another oddity is how cgroup handles nested cgroups - some
+> care about nesting but others just treat both internal and leaf nodes
+> equally.  They don't care about the topology at all.  This, too, can
+> be fine if you approach things subsys by subsys and use them in
+> different ways but if you try to combine them in generic way you get
+> sucked into the lala land of whatevers.
+> 
+> The following is a "best practices" document on using cgroups.
+> 
+>   http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
+> 
+> To me, it seems to demonstrate the rather ugly situation that the
+> current cgroup is providing.  Everyone should tip-toe around cgroup
+> hierarchies and nobody has full knowledge or control over them.
+> e.g. base system management (e.g. systemd) can't use freezer or task
+> counter as someone else might want to use it for different hierarchy
+> layout.
+> 
+> It seems to me that cgroup interface is too complicated and inflexible
+> at the same time to be useful in generic manner.  Sure, it can be
+> useful for setups individually crafted by engineers and admins to
+> match specific sites or applications but as soon as you try to do
+> something automatic and generic with it, there just are too many
+> different scenarios and limitations to consider.
+> 
+> 
+> * So, what to do?
+> 
+> Heh, I don't know.  IIRC, last year at LinuxCon Japan, I heard
+> Christoph saying that the biggest problem w/ cgroup was that it was
+> building completely separate hierarchies out of the traditional
+> process hierarchies.  After thinking about this stuff for a while, I
+> fully agree with him.  I think this whole thing should have been a
+> layer over the process tree like sessions or program groups.
+> 
+> Unfortunately, that ship sailed long ago and we gotta make do with
+> what we have on our collective hands.  Here are some paths that we can
+> take.
+> 
+> 1. We're screwed anyway.  Just don't worry about it and continue down
+>    on this path.  Can't get much worse, right?
+> 
+>    This approach has the apparent advantage of not having to do
+>    anything and is probably most likely to be taken.  This isn't ideal
+>    but hey nothing is. :P
 
-ffffffff810610c0 <set_task_cpu>:
-ffffffff810610c0:       55                      push   %rbp
-ffffffff810610c1:       48 89 e5                mov    %rsp,%rbp
-ffffffff810610c4:       48 81 ec e0 00 00 00    sub    $0xe0,%rsp
-ffffffff810610cb:       48 89 5d d8             mov    %rbx,-0x28(%rbp)
-ffffffff810610cf:       4c 89 65 e0             mov    %r12,-0x20(%rbp)
-ffffffff810610d3:       48 89 fb                mov    %rdi,%rbx
-ffffffff810610d6:       4c 89 6d e8             mov    %r13,-0x18(%rbp)
-ffffffff810610da:       4c 89 75 f0             mov    %r14,-0x10(%rbp)
-ffffffff810610de:       41 89 f4                mov    %esi,%r12d
-ffffffff810610e1:       4c 89 7d f8             mov    %r15,-0x8(%rbp)
+Thing is we have an ABI now and it has been there for a while now. Aren't
+we stuck with it? I'm no big fan of that multiple hierarchies thing either
+but now I fear we have to support it.
 
-no double jump here.
+> 
+> 2. Make it more flexible (and likely more complex, unfortunately).
+>    Allow the utility type subsystems to be used in multiple
+>    hierarchies.  The easiest and probably dirtiest way to achieve that
+>    would be embedding them into cgroup core.
+> 
+>    Thinking about doing this depresses me and it's not like I have a
+>    cheerful personality to begin with. :(
 
-ffffffff810610e5:       e9 00 00 00 00          jmpq   ffffffff810610ea <set_task_cpu+0x2a>
-ffffffff810610ea:       48 8b 43 08             mov    0x8(%rbx),%rax
-ffffffff810610ee:       44 3b 60 18             cmp    0x18(%rax),%r12d
-ffffffff810610f2:       74 0d                   je     ffffffff81061101 <set_task_cpu+0x41>
-ffffffff810610f4:       48 83 83 a8 00 00 00    addq   $0x1,0xa8(%rbx)
-ffffffff810610fb:       01
+Another solution is to support a class of multi-bindable subsystems as in
+this old patch from Paul:
 
-no double jump here.
+	https://lkml.org/lkml/2009/7/1/578
 
-ffffffff810610fc:       e9 00 00 00 00          jmpq   ffffffff81061101 <set_task_cpu+0x41>
-ffffffff81061101:       48 8b 83 60 06 00 00    mov    0x660(%rbx),%rax
-ffffffff81061108:       48 8b 50 40             mov    0x40(%rax),%rdx
-ffffffff8106110c:       44 89 e0                mov    %r12d,%eax
-ffffffff8106110f:       48 8b 4a 28             mov    0x28(%rdx),%rcx
-ffffffff81061113:       48 8b 0c c1             mov    (%rcx,%rax,8),%rcx
-ffffffff81061117:       48 89 8b 90 01 00 00    mov    %rcx,0x190(%rbx)
-ffffffff8106111e:       48 8b 52 20             mov    0x20(%rdx),%rdx
-ffffffff81061122:       48 8b 04 c2             mov    (%rdx,%rax,8),%rax
-ffffffff81061126:       48 89 83 88 01 00 00    mov    %rax,0x188(%rbx)
-ffffffff8106112d:       48 8b 43 08             mov    0x8(%rbx),%rax
-ffffffff81061131:       44 89 60 18             mov    %r12d,0x18(%rax)
-ffffffff81061135:       48 8b 5d d8             mov    -0x28(%rbp),%rbx
-ffffffff81061139:       4c 8b 65 e0             mov    -0x20(%rbp),%r12
-ffffffff8106113d:       4c 8b 6d e8             mov    -0x18(%rbp),%r13
-ffffffff81061141:       4c 8b 75 f0             mov    -0x10(%rbp),%r14
-ffffffff81061145:       4c 8b 7d f8             mov    -0x8(%rbp),%r15
-ffffffff81061149:       c9                      leaveq
-ffffffff8106114a:       c3                      retq
-
-....
-
-Do you have 'CONFIG_CC_OPTIMIZE_FOR_SIZE' set?
-
-Thanks,
-
--Jason
+It sounds to me more healthy to iterate only over subsystems in fork/exit.
+We probably don't want to add a new iteration over cgroups themselves
+on these fast path.
