@@ -1,47 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2BVTH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:07:56 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37215 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2BVTHz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755377Ab2BVTIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 14:08:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:46236 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755227Ab2BVTHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Feb 2012 14:07:55 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.125.133 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-Date: Wed, 22 Feb 2012 11:07:50 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, Kent Overstreet <koverstreet@google.com>
-Subject: Re: [PATCH 34/36] block: implement bio_associate_current()
-Message-ID: <20120222190750.GA17480@google.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <1329875223-5102-35-git-send-email-tj@kernel.org>
- <x49linvyobl.fsf@segfault.boston.devel.redhat.com>
+Date: Wed, 22 Feb 2012 10:55:03 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: [PATCH v2] fs: hardlink creation restriction cleanup
+Message-ID: <20120222185503.GA24256@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x49linvyobl.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Jeff.
+Clean-up of hardlink restriction logic, as suggested by Andrew Morton.
 
-On Wed, Feb 22, 2012 at 08:45:02AM -0500, Jeff Moyer wrote:
-> Tejun Heo <tj@kernel.org> writes:
-> 
-> > -v2: #ifdef CONFIG_BLK_CGROUP added around bio->bi_ioc dereference in
-> >      rq_ioc() to fix build breakage.
-> 
-> This is useful for cfq without blk cgroups as well, right?  Why have you
-> limited the scope like this?
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - add eye-strain-reduction-whitespace for Ingo. ;)
 
-Because blk-throttle is the only current user.  We can move the
-BLK_CGROUP to cover just bi_css later on as we add more users.
+---
+ fs/namei.c |   62 ++++++++++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 44 insertions(+), 18 deletions(-)
 
-Thanks.
-
+diff --git a/fs/namei.c b/fs/namei.c
+index 8ed4e00..f86494c 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -693,46 +693,72 @@ static inline int may_follow_link(struct path *link)
+ }
+ 
+ /**
++ * safe_hardlink_source - Check for safe hardlink conditions
++ * @inode: the source inode to hardlink from
++ *
++ * Return false if at least one of the following conditions:
++ *    - inode is not a regular file
++ *    - inode is setuid
++ *    - inode is setgid and group-exec
++ *    - access failure for read and write
++ *
++ * Otherwise returns true.
++ */
++static bool safe_hardlink_source(struct inode *inode)
++{
++	mode_t mode = inode->i_mode;
++
++	/* Special files should not get pinned to the filesystem. */
++	if (!S_ISREG(mode))
++		return false;
++
++	/* Setuid files should not get pinned to the filesystem. */
++	if (mode & S_ISUID)
++		return false;
++
++	/* Executable setgid files should not get pinned to the filesystem. */
++	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
++		return false;
++
++	/* Hardlinking to unreadable or unwritable sources is dangerous. */
++	if (inode_permission(inode, MAY_READ | MAY_WRITE))
++		return false;
++
++	return true;
++}
++
++/**
+  * may_linkat - Check permissions for creating a hardlink
+  * @link: the source to hardlink from
+  *
+  * Block hardlink when all of:
+  *  - sysctl_protected_hardlinks enabled
+  *  - fsuid does not match inode
+- *  - at least one of:
+- *    - inode is not a regular file
+- *    - inode is setuid
+- *    - inode is setgid and group-exec
+- *    - access failure for read and write
++ *  - hardlink source is unsafe (see safe_hardlink_source() above)
+  *  - not CAP_FOWNER
+  *
+  * Returns 0 if successful, -ve on error.
+  */
+ static int may_linkat(struct path *link)
+ {
+-	int error = 0;
+ 	const struct cred *cred;
+ 	struct inode *inode;
+-	int mode;
+ 
+ 	if (!sysctl_protected_hardlinks)
+ 		return 0;
+ 
+ 	cred = current_cred();
+ 	inode = link->dentry->d_inode;
+-	mode = inode->i_mode;
+-
+-	if (cred->fsuid != inode->i_uid &&
+-	    (!S_ISREG(mode) || (mode & S_ISUID) ||
+-	     ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP)) ||
+-	     (inode_permission(inode, MAY_READ | MAY_WRITE))) &&
+-	    !capable(CAP_FOWNER))
+-		error = -EPERM;
+ 
+-	if (error)
+-		audit_log_link_denied("linkat", link);
++	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
++	 * otherwise, it must be a safe source.
++	 */
++	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
++	    capable(CAP_FOWNER))
++		return 0;
+ 
+-	return error;
++	audit_log_link_denied("linkat", link);
++	return -EPERM;
+ }
+ #else
+ static inline int may_follow_link(struct path *link)
 -- 
-tejun
+1.7.0.4
+
