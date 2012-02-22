@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2BVXjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:39:21 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49053 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751207Ab2BVXjR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:39:17 -0500
+	id S1752882Ab2BVXoB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:44:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65281 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab2BVXoA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 18:44:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.205.124.15 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-References: <1329845435-2313-1-git-send-email-wad@chromium.org>
- <1329845435-2313-7-git-send-email-wad@chromium.org> <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
- <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 22 Feb 2012 15:38:57 -0800
-X-Google-Sender-Auth: ruL7yZ76QdqMwWhB46jKzk74Pbs
-Message-ID: <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
-Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
-To: Will Drewry <wad@chromium.org>
-Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
-        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        keescook@chromium.org
+In-Reply-To: <1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
+References: <20120222092745.GA30339@elte.hu>
+	<1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
+Date: Wed, 22 Feb 2012 19:43:58 -0400
+Message-ID: <CAELBVzC8P2kqSJ2XMUQ7cAogL28Ep2ZBY2zFrCqKSFbL=3yD5A@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] x86: Cleanup and simplify cpu-specific data
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 11:48 AM, Will Drewry <wad@chromium.org> wrote:
-> On Wed, Feb 22, 2012 at 2:34 AM, Indan Zupancic <indan@nul.nu> wrote:
->> On Tue, February 21, 2012 18:30, Will Drewry wrote:
->>> This change enables SIGSYS, defines _sigfields._sigsys, and adds
->>> x86 (compat) arch support.  _sigsys defines fields which allow
->>> a signal handler to receive the triggering system call number,
->>> the relevant AUDIT_ARCH_* value for that number, and the address
->>> of the callsite.
->>>
->>> To ensure that SIGSYS delivery occurs on return from the triggering
->>> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.  I'm
->>> this is enough to ensure it will be synchronous or if it is explicitly
->>> required to ensure an immediate delivery of the signal upon return from
->>> the blocked system call.
->>>
->>> The first consumer of SIGSYS would be seccomp filter.  In particular,
->>> a filter program could specify a new return value, SECCOMP_RET_TRAP,
->>> which would result in the system call being denied and the calling
->>> thread signaled.  This also means that implementing arch-specific
->>> support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
->>
->> I think others said this is useful, but I don't see how. Easier
->> debugging compared to checking return values?
->>
->> I suppose SIGSYS can be blocked, so there is no guarantee the process
->> will be killed.
+On 22 February 2012 19:32, Kevin Winchester <kjwinchester@gmail.com> wrote:
+> Kevin Winchester (5):
+>  x86: Move per cpu cpu_llc_shared_map to a field in struct cpuinfo_x86
+>  x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
+>  x86: Move per cpu cpu_sibling_map to a field in struct cpuinfo_x86
+>  x86: Move per cpu cpu_core_map to a field in struct cpuinfo_x86
+>  x86: Remove #ifdef CONFIG_SMP sections by moving smp_num_siblings
+>    into common.c
 >
-> Yeah, this allows for in-process system call emulation, if desired, or
-> for the process to dump core/etc.  With RET_ERRNO or RET_KILL, there
-> isn't any feedback to the system about the state of the process.  Kill
-> populates audit_seccomp and dmesg, but if the application
-> user/developer isn't the system admin, installing audit bits or
-> checking system logs seems onerous.
+>  arch/x86/include/asm/perf_event_p4.h  |   14 +----
+>  arch/x86/include/asm/processor.h      |   10 ++++
+>  arch/x86/include/asm/smp.h            |   26 +---------
+>  arch/x86/include/asm/topology.h       |   10 ++--
+>  arch/x86/kernel/apic/apic_numachip.c  |    2 +-
+>  arch/x86/kernel/cpu/amd.c             |   18 ++-----
+>  arch/x86/kernel/cpu/common.c          |    7 ++-
+>  arch/x86/kernel/cpu/intel_cacheinfo.c |   19 ++-----
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c  |    9 ++--
+>  arch/x86/kernel/cpu/perf_event_p4.c   |    4 +-
+>  arch/x86/kernel/cpu/proc.c            |    8 +--
+>  arch/x86/kernel/cpu/topology.c        |    2 -
+>  arch/x86/kernel/process.c             |    3 +-
+>  arch/x86/kernel/smpboot.c             |   95 +++++++++++++--------------------
+>  arch/x86/oprofile/nmi_int.c           |    6 --
+>  arch/x86/oprofile/op_model_p4.c       |   11 +----
+>  arch/x86/xen/smp.c                    |    6 --
+>  drivers/cpufreq/acpi-cpufreq.c        |    2 +-
+>  drivers/cpufreq/p4-clockmod.c         |    4 +-
+>  drivers/cpufreq/powernow-k8.c         |   13 +----
+>  drivers/cpufreq/speedstep-ich.c       |    6 +-
+>  drivers/hwmon/coretemp.c              |    6 +--
+>  22 files changed, 91 insertions(+), 190 deletions(-)
+>
 
-[Warning: this suggestion may be bad for any number of reasons]
+Please ignore this posting, I rushed it and did not build all
+combinations.  It looks like a new user of cpu_core_mask appeared in
+tip since my last rebase.
 
-I wonder if it would be helpful to change the semantics of RET_KILL
-slightly.  Rather than killing via do_exit, what if it killed via a
-forcibly-fatal SIGSYS?  That way, the parent's waitid() / SIGCHLD
-would indicate CLD_KILLED with si_status == SIGSYS.  The parent could
-check that and report that the child was probably compromised.
+I'll send the series out again once I have confirmed that everything is correct.
 
---Andy
+-- 
+Kevin Winchester
