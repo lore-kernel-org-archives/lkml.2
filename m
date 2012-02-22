@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab2BVPQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:16:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50726 "EHLO mail.zytor.com"
+	id S1753360Ab2BVPTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:19:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50748 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab2BVPQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:16:00 -0500
-Message-ID: <4F450696.6010409@zytor.com>
-Date: Wed, 22 Feb 2012 07:15:34 -0800
+	id S1753318Ab2BVPTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 10:19:53 -0500
+Message-ID: <4F45077D.5090409@zytor.com>
+Date: Wed, 22 Feb 2012 07:19:25 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
@@ -29,25 +29,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 02/22/2012 07:12 AM, Steven Rostedt wrote:
-> On Wed, 2012-02-22 at 15:56 +0100, Ingo Molnar wrote:
 > 
->>> Because it really just looks like a stronger "unlikely()" and 
->>> fundamentally it really isn't. [...]
->>
->> Well, the fact is that right now it *is* a stronger unlikely() 
->> on architectures that have jump-labels and it's mapped to 
->> unlikely() on others.
->>
-> 
-> Has gcc been fix to make it truly an unlikely case and remove the "jmp;
-> jmp" problem of before? I'm still using gcc 4.6.0 which has the
-> following code for a tracepoint (example is the
-> trace_sched_migrate_task().
+> Again, I'm using gcc 4.6.0 and maybe it has been fixed.
 > 
 
-No, the jmp jmp problem still exists... I have discussed it with the gcc
-folks and they have an idea for how to fix it, but I haven't even gotten
-around to filing a formal RFE.
+I think this really comes down to the branches being as biased as you
+might have wanted for this case.  gcc will reorder its basic blocks
+based on what it thinks is best based on some kinds of voodoo and asm
+goto is only one type of control transfer it will take into account.
 
 	-hpa
 
