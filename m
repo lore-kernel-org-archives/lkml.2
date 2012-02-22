@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2BVIiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 03:38:54 -0500
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:53241 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab2BVIix (ORCPT
+	id S1754093Ab2BVIkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 03:40:45 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50923 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750788Ab2BVIko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 03:38:53 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvN9AFaoRE9V5qrvPGdsb2JhbABDiW2ncIEFGQEBAQE3NIFzAQEEAScTHCMFCwgDRhQlChoTiAEDuCcTiXyCSBUfCwMPDQIPFQgChgCCWWMElTeFbY0C
-X-IronPort-AV: E=Sophos;i="4.73,463,1325458800"; 
-   d="scan'208";a="270628085"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 22 Feb 2012 09:38:58 +0100
-To: Chung-yih Wang <cywang@chromium.org>
-Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        djkurtz@chromium.org
-Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
- low z values
-Message-ID: <20120222083858.GA26570@polaris.bitmath.org>
-References: <1329896503-28394-1-git-send-email-cywang@chromium.org>
+	Wed, 22 Feb 2012 03:40:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329896503-28394-1-git-send-email-cywang@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120222003747.GA9808@gamma.logic.tuwien.ac.at>
+References: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
+	<CANUX_P3er0orBy8OhDuY1DfgD810UD-_HB_ukJnCA+W8e-VazQ@mail.gmail.com>
+	<20120125002250.GA20431@gamma.logic.tuwien.ac.at>
+	<CANUX_P0UREz_jZABu+Y_QYOh9tx_sKZSSkZpYHBEVtcU4QQdSA@mail.gmail.com>
+	<20120126003735.GA2346@gamma.logic.tuwien.ac.at>
+	<CANUX_P0H_WaWwnpjoBcMpZQY4xH=cbVhAKxWKXmz-HwFMcWS6w@mail.gmail.com>
+	<CANUX_P3XSCsWUJ9M55qeaK-DuPEMXODFPJiNk+BgnHN-=WECqw@mail.gmail.com>
+	<20120126232555.GB16330@gamma.logic.tuwien.ac.at>
+	<20120127015015.GA23291@gamma.logic.tuwien.ac.at>
+	<CANUX_P3F58upbrw48AiMTV4DDZWsfveYp=mANAD9CQ2bPps0cA@mail.gmail.com>
+	<20120222003747.GA9808@gamma.logic.tuwien.ac.at>
+Date: Wed, 22 Feb 2012 10:40:43 +0200
+X-Google-Sender-Auth: xKcOParOacS14cjZZMZMRuA2PmY
+Message-ID: <CAOJsxLENnvYn+xkDufQeTcgbKBsrrf=hw=g_ejCrts7ZNPa-Cg@mail.gmail.com>
+Subject: Re: iwlagn is getting even worse with 3.3-rc1
+From: Pekka Enberg <penberg@kernel.org>
+To: Norbert Preining <preining@logic.at>
+Cc: Emmanuel Grumbach <egrumbach@gmail.com>, linux-kernel@vger.kernel.org,
+        ipw3945-devel@lists.sourceforge.net,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chung-yih Wang,
+On Wed, Feb 22, 2012 at 2:37 AM, Norbert Preining <preining@logic.at> wrote:
+> I still see that, on 3.3-rc4, and it is the same as usual. The interface
+> believes it is up and connected, but nothing works.
+>
+> I am *100%* sure that this is related to the driver, because in old
+> revisions (somewhen around 2.6.27 or so) it was working without
+> any problem, and when it started I reported it long time ago.
 
-> The single touch path imposes a minimum z value (with hysterisis) before
-> registering BTN_TOUCH. Apply the same (hard coded) threshold when
-> deciding how many fingers to report in the semi-mt path.
-> 
-> This patch improves performance of the Google Cr-48 chromebook's
-> extremely sensitive Synaptics profile sensor touchpad by filtering out
-> touch events for hovering fingers.
-> 
-> Note: We continue to use the same hard coded threshold value used in the
-> single touch case as it appears this works just as well on these
-> multitouch profile sensor pads as on whatever pads it was originally
-> discovered.
-> 
-> Signed-off-by: Chung-Yih Wang <cywang@chromium.org>
-> ---
+It's definitely a kernel regression, no question about it. Was 3.3-rc1
+already broken for you? It shouldn't be that difficult to find the
+offending commit with git bisect if it's that easy to reproduce for
+you.
 
-The idea is sound and has worked well in practise for a long
-time. However, please see the comments inline.
-
->  drivers/input/mouse/synaptics.c |   15 +++++++++++----
->  1 files changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index 8081a0a..746dbcc 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -568,17 +568,22 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
->  	}
->  }
->  
-> +static bool finger_touched(const struct synaptics_hw_state *hw)
-> +{
-> +	return (hw->z > 30);
-> +}
-> +
->  static void synaptics_report_semi_mt_data(struct input_dev *dev,
->  					  const struct synaptics_hw_state *a,
->  					  const struct synaptics_hw_state *b,
->  					  int num_fingers)
->  {
-> -	if (num_fingers >= 2) {
-> +	if ((num_fingers >= 2) && finger_touched(a) && finger_touched(b)) {
->  		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
->  					      min(a->y, b->y));
->  		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
->  					      max(a->y, b->y));
-> -	} else if (num_fingers == 1) {
-> +	} else if ((num_fingers == 1) && finger_touched(a)) {
->  		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
->  		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
->  	} else {
-
-So if num_fingers == 2 and only one of a and b returns
-finger_touched() == true, we fall back to zero fingers?
-
-> @@ -1040,8 +1045,10 @@ static void synaptics_process_packet(struct psmouse *psmouse)
->  	 * BTN_TOUCH has to be first as mousedev relies on it when doing
->  	 * absolute -> relative conversion
->  	 */
-> -	if (hw.z > 30) input_report_key(dev, BTN_TOUCH, 1);
-> -	if (hw.z < 25) input_report_key(dev, BTN_TOUCH, 0);
-> +	if (finger_touched(&hw))
-> +		input_report_key(dev, BTN_TOUCH, 1);
-> +	if (hw.z < 25)
-> +		input_report_key(dev, BTN_TOUCH, 0);
->  
->  	if (num_fingers > 0) {
->  		input_report_abs(dev, ABS_X, hw.x);
-
-Why not introduce hysteresis for all fingers here? There is an example
-implementation in bcm5974.c in the same directory.
-
-Thanks,
-Henrik
+                        Pekka
