@@ -1,172 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2BVQK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:10:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51081 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab2BVQKw (ORCPT
+	id S1753926Ab2BVQLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:11:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:50001 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab2BVQLD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:10:52 -0500
-Date: Wed, 22 Feb 2012 08:09:53 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-pc4c9qhl8q6vg3bs4j6k0rbd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, avagin@openvz.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, avagin@openvz.org,
-        mingo@elte.hu
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/events: Revert trace_sched_stat_sleeptime
- ()
-Git-Commit-ID: 8c79a045fd590a26e81e75f5d8d4ec5c7d23e565
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Feb 2012 11:11:03 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:10:21 -0800 (PST)
+In-Reply-To: <4F4484F0.9070501@zytor.com>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+ <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+ <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+ <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+ <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 22 Feb 2012 08:10:42 -0800
+X-Google-Sender-Auth: jdWh_JNFB5oKqCZSOsJw-J24ACA
+Message-ID: <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c79a045fd590a26e81e75f5d8d4ec5c7d23e565
-Gitweb:     http://git.kernel.org/tip/8c79a045fd590a26e81e75f5d8d4ec5c7d23e565
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 30 Jan 2012 14:51:37 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 22 Feb 2012 12:06:55 +0100
+On Tue, Feb 21, 2012 at 10:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Note that it's really rather unfortunate that this transmits the entire
+> packet no matter what, which also means that the "len" field is actually
+> completely and totally pointless.
 
-sched/events: Revert trace_sched_stat_sleeptime()
+Yes.
 
-Commit 1ac9bc69 ("sched/tracing: Add a new tracepoint for sleeptime")
-added a new sched:sched_stat_sleeptime tracepoint.
+> I have mentioned in the past that I consider it a design mistake on my
+> part to have used a pipe in the first place: it was "so easy", but
+> required an extra read for no good reason, or padding to fixed size
+> resulting in this problem.  The right thing really should have been to
+> use a Unix datagram socket; these days using SOCK_SEQPACKET - that way
+> the kernel would give you the right semantics by design.
 
-It's broken: the first sample we get on a task might be bad because
-of a stale sleep_start value that wasn't reset at the last task switch
-because the tracepoint was not active.
+Well, the kernel gives the right semantics for pipes too - writes are
+guaranteed to be "atomic", so even in the presence of multiple writers
+you can trivially do packetized data.
 
-It also breaks the existing schedstat samples due to the side
-effects of:
+You just have to (a) add the length to the packet and (b) do the
+length+packet write as a single write (which is limited to PIPE_SIZE -
+4kB - for the atomicity guarantee).
 
--               se->statistics.sleep_start = 0;
-...
--               se->statistics.block_start = 0;
+If you don't have multiple concurrent writers without locking, the (b)
+part falls away entirely, of course.
 
-Nor do I see means to fix it without adding overhead to the scheduler
-fast path, which I'm not willing to for the sake of redundant
-instrumentation.
+Yes, for the reader side you need to be able to handle the fact that
+you can get more than one packet in one read() call, but sorting that
+out isn't hard either.
 
-Most importantly, sleep time information can already be constructed
-by tracing context switches and wakeups, and taking the timestamp
-difference between the schedule-out, the wakeup and the schedule-in.
+But yeah, writing fixed-size data and then having a reader that reads
+fixed-size data is just not a very good approach. It's doubly bad when
+the "fixed size" isn't an explicit size that is documented in the
+protocol, but depends on data structures.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/n/tip-pc4c9qhl8q6vg3bs4j6k0rbd@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/trace/events/sched.h |   50 ------------------------------------------
- kernel/sched/core.c          |    1 -
- kernel/sched/fair.c          |    2 +
- 3 files changed, 2 insertions(+), 51 deletions(-)
-
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 6ba596b..e33ed1b 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -370,56 +370,6 @@ TRACE_EVENT(sched_stat_runtime,
- 			(unsigned long long)__entry->vruntime)
- );
- 
--#ifdef CREATE_TRACE_POINTS
--static inline u64 trace_get_sleeptime(struct task_struct *tsk)
--{
--#ifdef CONFIG_SCHEDSTATS
--	u64 block, sleep;
--
--	block = tsk->se.statistics.block_start;
--	sleep = tsk->se.statistics.sleep_start;
--	tsk->se.statistics.block_start = 0;
--	tsk->se.statistics.sleep_start = 0;
--
--	return block ? block : sleep ? sleep : 0;
--#else
--	return 0;
--#endif
--}
--#endif
--
--/*
-- * Tracepoint for accounting sleeptime (time the task is sleeping
-- * or waiting for I/O).
-- */
--TRACE_EVENT(sched_stat_sleeptime,
--
--	TP_PROTO(struct task_struct *tsk, u64 now),
--
--	TP_ARGS(tsk, now),
--
--	TP_STRUCT__entry(
--		__array( char,	comm,	TASK_COMM_LEN	)
--		__field( pid_t,	pid			)
--		__field( u64,	sleeptime		)
--	),
--
--	TP_fast_assign(
--		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
--		__entry->pid		= tsk->pid;
--		__entry->sleeptime = trace_get_sleeptime(tsk);
--		__entry->sleeptime = __entry->sleeptime ?
--				now - __entry->sleeptime : 0;
--	)
--	TP_perf_assign(
--		__perf_count(__entry->sleeptime);
--	),
--
--	TP_printk("comm=%s pid=%d sleeptime=%Lu [ns]",
--			__entry->comm, __entry->pid,
--			(unsigned long long)__entry->sleeptime)
--);
--
- /*
-  * Tracepoint for showing priority inheritance modifying a tasks
-  * priority.
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5255c9d..b342f57 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1932,7 +1932,6 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	local_irq_enable();
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
- 	finish_lock_switch(rq, prev);
--	trace_sched_stat_sleeptime(current, rq->clock);
- 
- 	fire_sched_in_preempt_notifiers(current);
- 	if (mm)
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7c6414f..aca16b8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1003,6 +1003,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		if (unlikely(delta > se->statistics.sleep_max))
- 			se->statistics.sleep_max = delta;
- 
-+		se->statistics.sleep_start = 0;
- 		se->statistics.sum_sleep_runtime += delta;
- 
- 		if (tsk) {
-@@ -1019,6 +1020,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		if (unlikely(delta > se->statistics.block_max))
- 			se->statistics.block_max = delta;
- 
-+		se->statistics.block_start = 0;
- 		se->statistics.sum_sleep_runtime += delta;
- 
- 		if (tsk) {
+                               Linus
