@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab2BVJKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:10:00 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51513 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab2BVJJ5 (ORCPT
+	id S1754571Ab2BVJPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:15:06 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:65299 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab2BVJPC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:09:57 -0500
-Date: Wed, 22 Feb 2012 09:09:30 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Rob Clark <rob.clark@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [PATCHv22 14/16] X86: integrate CMA with DMA-mapping subsystem
-Message-ID: <20120222090930.GS22562@n2100.arm.linux.org.uk>
-References: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com> <1329507036-24362-15-git-send-email-m.szyprowski@samsung.com> <20120221161802.f6a28085.akpm@linux-foundation.org>
+	Wed, 22 Feb 2012 04:15:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120221161802.f6a28085.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
+References: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 22 Feb 2012 17:14:40 +0800
+Message-ID: <CAGsJ_4yLTPhLJEf9GHw694U9iYmtLgYPvYe3VGdyKKKcuX6pUA@mail.gmail.com>
+Subject: Re: [PATCH] serial/sirf: fixup for changes to pin control
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Tony Lindgren <tony@atomide.com>, linux-serial@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 04:18:02PM -0800, Andrew Morton wrote:
-> After a while I got it to compile for i386.  arm didn't go so well,
-> partly because arm allmodconfig is presently horked (something to do
-> with Kconfig not setting PHYS_OFFSET) and partly because arm defconfig
-> doesn't permit CMA to be set.  Got bored, gave up.
+2012/2/17 Linus Walleij <linus.walleij@linaro.org>:
+> We changed the signature of the pin multiplexing functions to
+> handle any pin business, so fix up the Sirf driver to call this
+> new interface and rename some variables to make the semantics
+> understandable.
+>
+> Cc: linux-serial@vger.kernel.org
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-That's not going to get fixed, unfortunately.  It requires us to find
-some way to force various options to certain states on all*config
-builds, because not surprisingly a value of 'y', 'm' or 'n' doesn't
-work for integer or hex config options.
+Acked-by: Barry Song <Baohua.Song@csr.com>
 
-So the only way all*config can be used on ARM is with a seed config file
-to force various options to particular states to ensure that we end up
-with a sane configuration that avoids crap like that.
-
-Alternatively, we need a way to tell kconfig that various options are to
-be set in certain ways in the Kconfig files for all*config to avoid it
-wanting values for hex or int options.
+> ---
+>  drivers/tty/serial/sirfsoc_uart.c |   20 ++++++++++----------
+>  drivers/tty/serial/sirfsoc_uart.h |    2 +-
+>  2 files changed, 11 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
+> index a60523f..c1a871e 100644
+> --- a/drivers/tty/serial/sirfsoc_uart.c
+> +++ b/drivers/tty/serial/sirfsoc_uart.c
+> @@ -22,7 +22,7 @@
+>  #include <linux/io.h>
+>  #include <asm/irq.h>
+>  #include <asm/mach/irq.h>
+> -#include <linux/pinctrl/pinmux.h>
+> +#include <linux/pinctrl/consumer.h>
+>
+>  #include "sirfsoc_uart.h"
+>
+> @@ -673,12 +673,12 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
+>        port->irq = res->start;
+>
+>        if (sirfport->hw_flow_ctrl) {
+> -               sirfport->pmx = pinmux_get(&pdev->dev, NULL);
+> -               ret = IS_ERR(sirfport->pmx);
+> +               sirfport->p = pinctrl_get(&pdev->dev, NULL);
+> +               ret = IS_ERR(sirfport->p);
+>                if (ret)
+> -                       goto pmx_err;
+> +                       goto pin_err;
+>
+> -               pinmux_enable(sirfport->pmx);
+> +               pinctrl_enable(sirfport->p);
+>        }
+>
+>        port->ops = &sirfsoc_uart_ops;
+> @@ -696,10 +696,10 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
+>  port_err:
+>        platform_set_drvdata(pdev, NULL);
+>        if (sirfport->hw_flow_ctrl) {
+> -               pinmux_disable(sirfport->pmx);
+> -               pinmux_put(sirfport->pmx);
+> +               pinctrl_disable(sirfport->p);
+> +               pinctrl_put(sirfport->p);
+>        }
+> -pmx_err:
+> +pin_err:
+>  irq_err:
+>        devm_iounmap(&pdev->dev, port->membase);
+>  err:
+> @@ -712,8 +712,8 @@ static int sirfsoc_uart_remove(struct platform_device *pdev)
+>        struct uart_port *port = &sirfport->port;
+>        platform_set_drvdata(pdev, NULL);
+>        if (sirfport->hw_flow_ctrl) {
+> -               pinmux_disable(sirfport->pmx);
+> -               pinmux_put(sirfport->pmx);
+> +               pinctrl_disable(sirfport->p);
+> +               pinctrl_put(sirfport->p);
+>        }
+>        devm_iounmap(&pdev->dev, port->membase);
+>        uart_remove_one_port(&sirfsoc_uart_drv, port);
+> diff --git a/drivers/tty/serial/sirfsoc_uart.h b/drivers/tty/serial/sirfsoc_uart.h
+> index fc64260..6e207fd 100644
+> --- a/drivers/tty/serial/sirfsoc_uart.h
+> +++ b/drivers/tty/serial/sirfsoc_uart.h
+> @@ -162,7 +162,7 @@ struct sirfsoc_uart_port {
+>        unsigned char                   ms_enabled;
+>
+>        struct uart_port                port;
+> -       struct pinmux                   *pmx;
+> +       struct pinctrl                  *p;
+>  };
+>
+>  /* Hardware Flow Control */
+> --
+> 1.7.7.6
+>
