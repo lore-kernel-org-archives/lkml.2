@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2BVJQI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:16:08 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38894 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab2BVJQF (ORCPT
+	id S1754688Ab2BVJQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:16:34 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:33474 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab2BVJQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:16:05 -0500
+	Wed, 22 Feb 2012 04:16:32 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
@@ -20,111 +20,72 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
-Date: Wed, 22 Feb 2012 14:45:35 +0530
-Message-Id: <20120222091535.15880.12502.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 1/3] uprobes/core: Make instruction tables volatile.
-x-cbid: 12022122-5490-0000-0000-000000C99319
+Date: Wed, 22 Feb 2012 14:45:49 +0530
+Message-Id: <20120222091549.15880.67020.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120222091535.15880.12502.sendpatchset@srdronam.in.ibm.com>
+References: <20120222091535.15880.12502.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 2/3] uprobes/core: remove uprobe_opcode_sz
+x-cbid: 12022123-1618-0000-0000-000000DDC0F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Some versions of gcc spits a warning about the asm operand for test_bit and
-also causes the first long of the instruction table to be output.
+uprobe_opcode_sz refers to the smallest instruction size for that
+architecture. UPROBES_BKPT_INSN_SIZE refers to the size of the breakpoint
+instruction for that architecture.
 
-Fix is similar to 7115e3fc on arch/x86/kernel/kprobes.c
+For now we are assuming that both uprobe_opcode_sz and
+UPROBES_BKPT_INSN_SIZE are the same for all archs and hence removing
+uprobe_opcode_sz in favour of UPROBES_BKPT_INSN_SIZE.
+
+However if we have to support architectures where the smallest instruction
+size is different from the size of breakpoint instruction, we may have to
+re-introduce uprobe_opcode_sz.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   61 ++++++++++++++++++++++++---------------------
- 1 files changed, 32 insertions(+), 29 deletions(-)
+ include/linux/uprobes.h |    2 --
+ kernel/uprobes.c        |    6 +++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index cf2a184..13d616d 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -53,34 +53,12 @@
- 	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
- 	 << (row % 32))
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 64e45f1..fd45b70 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -37,8 +37,6 @@ struct uprobe_arch_info {};
+ #define MAX_UINSN_BYTES 4
+ #endif
  
--#ifdef CONFIG_X86_64
--static u32 good_insns_64[256 / 32] = {
--	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
--	/*      ----------------------------------------------         */
--	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
--	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
--	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
--	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
--	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
--	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
--	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
--	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
--	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
--	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
--	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
--	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
--	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
--	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
--	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
--	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
--	/*      ----------------------------------------------         */
--	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
--};
--#endif
+-#define uprobe_opcode_sz sizeof(uprobe_opcode_t)
 -
--/* Good-instruction tables for 32-bit apps */
--
--static u32 good_insns_32[256 / 32] = {
-+/*
-+ * Good-instruction tables for 32-bit apps.  This is non-const and volatile
-+ * to keep gcc from statically optimizing it out, as variable_test_bit makes
-+ * some versions of gcc to think only *(unsigned long*) is used.
-+ */
-+static volatile u32 good_insns_32[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- 	/*      ----------------------------------------------         */
- 	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 00 */
-@@ -104,7 +82,7 @@ static u32 good_insns_32[256 / 32] = {
- };
+ /* flags that denote/change uprobes behaviour */
  
- /* Using this for both 64-bit and 32-bit apps */
--static u32 good_2byte_insns[256 / 32] = {
-+static volatile u32 good_2byte_insns[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- 	/*      ----------------------------------------------         */
- 	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
-@@ -127,6 +105,31 @@ static u32 good_2byte_insns[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- };
+ /* Have a copy of original instruction */
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 884817f..ee496ad 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -244,8 +244,8 @@ static int write_opcode(struct mm_struct *mm, struct uprobe *uprobe,
  
-+#ifdef CONFIG_X86_64
-+/* Good-instruction tables for 64-bit apps */
-+static volatile u32 good_insns_64[256 / 32] = {
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+	/*      ----------------------------------------------         */
-+	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
-+	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
-+	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
-+	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-+	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
-+	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-+	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
-+	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
-+	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
-+	/*      ----------------------------------------------         */
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+};
-+#endif
- #undef W
+ 	/* poke the new insn in, ASSUMES we don't cross page boundary */
+ 	vaddr &= ~PAGE_MASK;
+-	BUG_ON(vaddr + uprobe_opcode_sz > PAGE_SIZE);
+-	memcpy(vaddr_new + vaddr, &opcode, uprobe_opcode_sz);
++	BUG_ON(vaddr + UPROBES_BKPT_INSN_SIZE > PAGE_SIZE);
++	memcpy(vaddr_new + vaddr, &opcode, UPROBES_BKPT_INSN_SIZE);
  
- /*
+ 	kunmap_atomic(vaddr_new);
+ 	kunmap_atomic(vaddr_old);
+@@ -293,7 +293,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	lock_page(page);
+ 	vaddr_new = kmap_atomic(page);
+ 	vaddr &= ~PAGE_MASK;
+-	memcpy(opcode, vaddr_new + vaddr, uprobe_opcode_sz);
++	memcpy(opcode, vaddr_new + vaddr, UPROBES_BKPT_INSN_SIZE);
+ 	kunmap_atomic(vaddr_new);
+ 	unlock_page(page);
+ 
 
 
