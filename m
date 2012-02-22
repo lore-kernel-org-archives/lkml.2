@@ -1,79 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab2BVBms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:42:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2BVBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:42:47 -0500
-Date: Tue, 21 Feb 2012 20:42:43 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, kernel-team@fedoraproject.org
-Subject: Re: Large slowdown with 'x86: Avoid invoking RCU when CPU is idle'
-Message-ID: <20120222014242.GF23186@zod.bos.redhat.com>
-References: <20120222011652.GE23186@zod.bos.redhat.com>
- <20120222013252.GZ2375@linux.vnet.ibm.com>
+	id S1753447Ab2BVBo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:44:27 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62789 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab2BVBo0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:44:26 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.205.136.1 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222013252.GZ2375@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120221153935.GE2486@x1.osrc.amd.com>
+References: <20120217115627.GA25601@elte.hu>
+	<1329789966-693-1-git-send-email-kjwinchester@gmail.com>
+	<1329789966-693-6-git-send-email-kjwinchester@gmail.com>
+	<20120221153935.GE2486@x1.osrc.amd.com>
+Date: Tue, 21 Feb 2012 21:44:25 -0400
+Message-ID: <CAELBVzBTrYoRq9r9+dZFBp6_yXuPQPChCWksXZ1u2ft9w1Q-0A@mail.gmail.com>
+Subject: Re: [PATCH 5/5] x86: Remove #ifdef CONFIG_SMP sections by moving
+ smp_num_siblings into common.c
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Kevin Winchester <kjwinchester@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 05:32:52PM -0800, Paul E. McKenney wrote:
-> On Tue, Feb 21, 2012 at 08:16:53PM -0500, Josh Boyer wrote:
-> > Hi Paul,
-> > 
-> > Over in Fedora land, I applied your patch from this thread:
-> > 
-> > https://lkml.org/lkml/2012/1/24/441
-> > 
-> > to our 3.3-rc3/rc4 based rawhide kernels.  The intention was to solve an
-> > RCU issue that was very similar to what Eric originally reported, and
-> > the RCU splat did indeed go away[1].
-> > 
-> > However, we then got a few reports of kernels containing that patch
-> > being extremely slow.  When the patch was dropped, the slowness goes
-> > away according to one reporter.  The details can be found in this bug:
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=795050
-> > 
-> > The slowness doesn't seem to hit everyone, and in my local testing
-> > things seem to be working just fine.  The reporters have widely varying
-> > hardware as well, so it doesn't seem machine specific.
-> > 
-> > Perhaps I misdiagnosed the original issue, or perhaps I missed something
-> > else that needs to be applied prior to this but I thought I would point
-> > this out in case you had any ideas.
+On 21 February 2012 11:39, Borislav Petkov <bp@alien8.de> wrote:
+> On Mon, Feb 20, 2012 at 10:06:06PM -0400, Kevin Winchester wrote:
+>> smp_num_siblings was defined in arch/x86/kernel/smpboot.c, making it
+>> necessary to wrap any UP relevant code referencing it with #ifdef
+>> CONFIG_SMP.
+>>
+>> Instead, move the definition to arch/x86/kernel/cpu/common.c, thus
+>> making it available always.
+>>
+>> Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+>> ---
+>>  arch/x86/include/asm/perf_event_p4.h |    9 +++------
+>>  arch/x86/include/asm/smp.h           |    6 +-----
+>>  arch/x86/include/asm/topology.h      |    4 +---
+>>  arch/x86/kernel/cpu/amd.c            |    4 ----
+>>  arch/x86/kernel/cpu/common.c         |    6 ++++--
+>>  arch/x86/kernel/cpu/proc.c           |    5 ++---
+>>  arch/x86/kernel/cpu/topology.c       |    2 --
+>>  arch/x86/kernel/process.c            |    3 +--
+>>  arch/x86/kernel/smpboot.c            |    4 ----
+>>  arch/x86/oprofile/nmi_int.c          |    6 ------
+>>  arch/x86/oprofile/op_model_p4.c      |    6 ------
+>>  11 files changed, 12 insertions(+), 43 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+>> index 29a65c2..0d50f33 100644
+>> --- a/arch/x86/include/asm/perf_event_p4.h
+>> +++ b/arch/x86/include/asm/perf_event_p4.h
+>> @@ -8,6 +8,8 @@
+>>  #include <linux/cpu.h>
+>>  #include <linux/bitops.h>
+>>
+>> +#include <asm/smp.h>
+>> +
+>>  /*
+>>   * NetBurst has performance MSRs shared between
+>>   * threads if HT is turned on, ie for both logical
+>> @@ -179,18 +181,13 @@ static inline u64 p4_clear_ht_bit(u64 config)
+>>
+>>  static inline int p4_ht_active(void)
+>>  {
+>> -#ifdef CONFIG_SMP
+>>       return smp_num_siblings > 1;
+>> -#endif
+>> -     return 0;
+>>  }
+>
+> You could drop this function completely now and use the equal
+> smt_capable() macro below.
+>
+>>
+>>  static inline int p4_ht_thread(int cpu)
+>>  {
+>> -#ifdef CONFIG_SMP
+>>       if (smp_num_siblings == 2)
+>> -             return cpu != cpumask_first(&cpu_data(cpu).sibling_map));
+>> -#endif
+>> +             return cpu != cpumask_first(&cpu_data(cpu).sibling_map);
+>>       return 0;
+>>  }
+>>
+>> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+>> index 75aea4d..787127e 100644
+>> --- a/arch/x86/include/asm/smp.h
+>> +++ b/arch/x86/include/asm/smp.h
+>> @@ -24,11 +24,7 @@ extern unsigned int num_processors;
+>>
+>>  static inline bool cpu_has_ht_siblings(void)
+>>  {
+>> -     bool has_siblings = false;
+>> -#ifdef CONFIG_SMP
+>> -     has_siblings = cpu_has_ht && smp_num_siblings > 1;
+>> -#endif
+>> -     return has_siblings;
+>> +     return cpu_has_ht && smp_num_siblings > 1;
+>>  }
+>>
+>>  DECLARE_PER_CPU(int, cpu_number);
+>> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+>> index 58438a1b..7250ad1 100644
+>> --- a/arch/x86/include/asm/topology.h
+>> +++ b/arch/x86/include/asm/topology.h
+>> @@ -174,11 +174,9 @@ static inline void arch_fix_phys_package_id(int num, u32 slot)
+>>  struct pci_bus;
+>>  void x86_pci_root_bus_resources(int bus, struct list_head *resources);
+>>
+>> -#ifdef CONFIG_SMP
+>>  #define mc_capable() ((boot_cpu_data.x86_max_cores > 1) && \
+>>                       (cpumask_weight(&boot_cpu_data.core_map) != nr_cpu_ids))
+>> -#define smt_capable()                        (smp_num_siblings > 1)
+>> -#endif
+>> +#define smt_capable()        (smp_num_siblings > 1)
+>>
+>>  #ifdef CONFIG_NUMA
+>>  extern int get_mp_bus_to_node(int busnum);
+>> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+>> index 1cd9d51..a8b46df 100644
+>> --- a/arch/x86/kernel/cpu/amd.c
+>> +++ b/arch/x86/kernel/cpu/amd.c
+>> @@ -263,7 +263,6 @@ static int __cpuinit nearby_node(int apicid)
+>>   *     Assumption: Number of cores in each internal node is the same.
+>>   * (2) AMD processors supporting compute units
+>>   */
+>> -#ifdef CONFIG_X86_HT
+>>  static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+>>  {
+>>       u32 nodes, cores_per_cu = 1;
+>> @@ -307,7 +306,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
+>>               c->compute_unit_id %= cus_per_node;
+>>       }
+>>  }
+>> -#endif
+>
+> I'm assuming all those X86_HT changes have been built and boot-tested
+> also with CONFIG_X86_HT unset?
+>
 
-First off, thanks for the quick reply!
+Yes, I am running a !CONFIG_SMP build with these patches applied right now.
 
-> This patch has been obsoleted by patches #45-47 in this series:
-> 
-> 	https://lkml.org/lkml/2012/2/3/459
+New version of the patchset coming in a few minutes with all requested changes.
 
-Holy lots of patches... 
-
-> And patch #47 in that series has been obsoleted by another series
-> from Steven Rostedt:
-> 
-> 	https://lkml.org/lkml/2012/2/7/231
-
-Ok.
-
-> Hopefully these fix both splats and slowness.
-
-So again, I'm slightly confused on how RCU patches flow.  Eric
-originally reported the bug for which you created the patch I applied
-against 3.3.  The giant patch series above seems queued for 3.4.
-
-I don't see stable CC'd on 45-47, nor any of Steven's patches.  I doubt
-I'd want to go applying the 47-patch series on 3.3 at the moment, and
-given you have these marked for 3.4 I don't think you do either.
-However, is there some kind of fix for the original bug report against
-3.3?
-
-josh
+-- 
+Kevin Winchester
