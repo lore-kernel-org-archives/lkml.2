@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab2BVXAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:00:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36221 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2BVXAM (ORCPT
+	id S1752610Ab2BVXBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:01:17 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35630 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406Ab2BVXBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:00:12 -0500
-Date: Wed, 22 Feb 2012 15:00:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Jamie Lokier <jamie@shareable.org>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [RESEND][PATCH] Mark thread stack correctly in proc/<pid>/maps
-Message-Id: <20120222150010.c784b29b.akpm@linux-foundation.org>
-In-Reply-To: <CAAHN_R1Ho-JNLSKXM_3uU8nTpFHr87ujUEoFJChjZyk4iBYzjA@mail.gmail.com>
-References: <4F32B776.6070007@gmail.com>
-	<1328972596-4142-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<CAAHN_R1Ho-JNLSKXM_3uU8nTpFHr87ujUEoFJChjZyk4iBYzjA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Feb 2012 18:01:15 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/T54ARpkOV7l9pnn3rYlvR
+Date: Wed, 22 Feb 2012 15:01:09 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] OMAP: 4430SDP: Correct fixed regulator device ID
+Message-ID: <20120222230109.GQ18185@atomide.com>
+References: <1328868316-24749-1-git-send-email-peter.ujfalusi@ti.com>
+ <1328868316-24749-2-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1328868316-24749-2-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Feb 2012 09:54:04 +0530
-Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
-
-> Stack for a new thread is mapped by userspace code and passed via
-> sys_clone. This memory is currently seen as anonymous in
-> /proc/<pid>/maps, which makes it difficult to ascertain which mappings
-> are being used for thread stacks. This patch uses the individual task
-> stack pointers to determine which vmas are actually thread stacks.
+* Peter Ujfalusi <peter.ujfalusi@ti.com> [120210 01:34]:
+> The board has two fixed voltage regulator. Correct the
+> device ID for the vbat, which used -1.
+> Create defines for the fixed regulator IDs so when adding new
+> regulators we know the next available ID to use for them.
 > 
-> The display for maps, smaps and numa_maps is now different at the
-> thread group (/proc/PID/maps) and thread (/proc/PID/task/TID/maps)
-> levels. The idea is to give the mapping as the individual tasks see it
-> in /proc/PID/task/TID/maps and then give an overview of the entire mm
-> as it were, in /proc/PID/maps.
-> 
-> At the thread group level, all vmas that are used as stacks are marked
-> as such. At the thread level however, only the stack that the task in
-> question uses is marked as such and all others (including the main
-> stack) are marked as anonymous memory.
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-Please flesh this description out with specific examples of the
-before-and-after contents of all the applicable procfs files.  This way
-we can clearly see the proposed interface changes, which is the thing
-we care most about with such a patch.
-
-The patch itself has been utterly and hopelessly mangled by gmail. 
-Please fix that up when resending (as a last resort: use a text/plain
-attachment).
-
+Acked-by: Tony Lindgren <tony@atomide.com>
