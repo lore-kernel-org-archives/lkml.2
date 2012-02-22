@@ -1,223 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2BVLzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 06:55:32 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34029 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2BVLz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 06:55:27 -0500
-Message-ID: <4F44D798.3070607@linux.vnet.ibm.com>
-Date: Wed, 22 Feb 2012 17:25:04 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1755909Ab2BVMCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 07:02:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751845Ab2BVMCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 07:02:46 -0500
+Message-ID: <4F44D948.3000205@redhat.com>
+Date: Wed, 22 Feb 2012 10:02:16 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Andrew Jones <drjones@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Baron <jbaron@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Howells <dhowells@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Raghavendra <raghavendra.kt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/1] linux headers: header file(s) changes to enable spinlock
- use jumplabel
-References: <ac7058ed-4080-4490-a45b-6b2d4de692ab@zmail17.collab.prod.int.phx2.redhat.com> <4F428814.1060801@linux.vnet.ibm.com> <20120221152349.GA7274@turtle.usersys.redhat.com>
-In-Reply-To: <20120221152349.GA7274@turtle.usersys.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: RAS trace event proto
+References: <20120220145920.GB5728@aftab> <4F438CE9.7080807@redhat.com> <20120221141231.GA15515@aftab> <1329835698.25686.60.camel@gandalf.stny.rr.com> <20120221145943.GB15515@aftab> <3908561D78D1C84285E8C5FCA982C28F03DA60@ORSMSX104.amr.corp.intel.com> <20120222104324.GA26845@aftab>
+In-Reply-To: <20120222104324.GA26845@aftab>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12022201-5140-0000-0000-000000C98C6C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 08:53 PM, Andrew Jones wrote:
+Em 22-02-2012 08:43, Borislav Petkov escreveu:
+> On Wed, Feb 22, 2012 at 12:58:37AM +0000, Luck, Tony wrote:
+>> I'm also struggling to understand an end-user use case where you would
+>> want filtering.  Mauro - can you expand a bit on why someone would just
+>> want to see the errors from memory controller 1?
+>>
+>> My mental model of the world is that large systems have some background
+>> noise - a trickle of corrected errors that happen in normal operation.
+>> User shouldn't care about these errors unless they breach some threshold.
+>>
+>> When something goes wrong, you may see a storm of corrected errors, or
+>> some uncorrected errors. In either case you'd like to get as much information
+>> as possible to identify the component that is at fault. I'd definitely like
+>> to see some structure to the error reporting, so that mining for data patterns
+>> in a storm isn't hideously platform dependent.
+> 
+> Yep, I'm on the same page here.
 
-[Including people in perf_event and jumplabel also]
-> On Mon, Feb 20, 2012 at 11:21:16PM +0530, Raghavendra K T wrote:
->
-> Below is the patch I wrote when I first proposed the idea to
-> Gleb. This patch isn't exactly what I stated above, because
-> it's splitting original and ratelimit, rather than minimal and
-> extended. Maybe this is sufficient for now? Or maybe we don't
-> want to split at all?
->
+The error counters will be incremented at the sysfs even if the events are
+filtered. A RAS software could start with the tracing disabled, and only
+enable the events as a hole or partially if the errors are above a certain 
+limit (or rate limit).
 
-IMHO, This patch is sufficient and makes lot more sense than my patches.
-I verified and compile tested this with rebased patches of Jeremy
-(yesconfig).
-Can add
-Reviewed-By: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>> It might be easier to evaluate the competing ideas here with some sample
+>> output in addition to the code.
+> 
+> Well, to clarify:
+> 
+> When you get a decoded error, you get the same format as what you get in
+> dmesg, for example:
+> 
+> [ 2666.646070] [Hardware Error]: CPU:64   MC1_STATUS[-|CE|MiscV|PCC|-|CECC]: 0x9a05c00007010011
+> [ 2666.655003] [Hardware Error]: Instruction Cache Error: L1 TLB multimatch.
+> [ 2666.655008] [Hardware Error]: cache level: L1, tx: INSN
+> 
+> And with the decoded string tracepoint, that thing above is a single
+> string. If you use trace_mce_record(), you still can get the single
+> MCE fields which we carry to userspace from struct mce, _in addition_.
 
-Peter, Jason, Ingo, please let's know if you have any objection with
-below patch..
+Using the same concept I've adopted for my EDAC patches, I would map the 
+above into 3 fields:
 
-> Drew
->
-> ---
->
-> From: Andrew Jones<drjones@redhat.com>
-> Date: Thu, 26 Jan 2012 13:59:30 +0100
-> Subject: [PATCH] split out rate limiting from jump_label.h
->
-> Commit b202952075f62603bea9bfb6ebc6b0420db11949 introduced rate limiting
-> for jump label disabling. The changes were made in the jump label code
-> in order to be more widely available and to keep things tidier. This is
-> all fine, except now jump_label.h includes linux/workqueue.h, which
-> makes it impossible to include jump_label.h from anything that
-> workqueue.h needs. For example, it's now impossible to include
-> jump_label.h from asm/spinlock.h, which was done in Jeremy's proposed
-> pv-ticketlock patches. This patch splits out the rate limiting related
-> changes from jump_label.h into a new file, jump_label_ratelimit.h, to
-> resolve the issue.
->
-> Signed-off-by: Andrew Jones<drjones@redhat.com>
-> ---
->   include/linux/jump_label.h           |   24 ------------------------
->   include/linux/jump_label_ratelimit.h |   32 ++++++++++++++++++++++++++++++++
->   include/linux/perf_event.h           |    2 +-
->   kernel/jump_label.c                  |    2 +-
->   4 files changed, 34 insertions(+), 26 deletions(-)
->   create mode 100644 include/linux/jump_label_ratelimit.h
->
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 5ce8b14..b15954a 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -3,7 +3,6 @@
->
->   #include<linux/types.h>
->   #include<linux/compiler.h>
-> -#include<linux/workqueue.h>
->
->   #if defined(CC_HAVE_ASM_GOTO)&&  defined(CONFIG_JUMP_LABEL)
->
-> @@ -15,12 +14,6 @@ struct jump_label_key {
->   #endif
->   };
->
-> -struct jump_label_key_deferred {
-> -	struct jump_label_key key;
-> -	unsigned long timeout;
-> -	struct delayed_work work;
-> -};
-> -
->   # include<asm/jump_label.h>
->   # define HAVE_JUMP_LABEL
->   #endif	/* CC_HAVE_ASM_GOTO&&  CONFIG_JUMP_LABEL */
-> @@ -58,11 +51,8 @@ extern void arch_jump_label_transform_static(struct jump_entry *entry,
->   extern int jump_label_text_reserved(void *start, void *end);
->   extern void jump_label_inc(struct jump_label_key *key);
->   extern void jump_label_dec(struct jump_label_key *key);
-> -extern void jump_label_dec_deferred(struct jump_label_key_deferred *key);
->   extern bool jump_label_enabled(struct jump_label_key *key);
->   extern void jump_label_apply_nops(struct module *mod);
-> -extern void jump_label_rate_limit(struct jump_label_key_deferred *key,
-> -		unsigned long rl);
->
->   #else  /* !HAVE_JUMP_LABEL */
->
-> @@ -78,10 +68,6 @@ static __always_inline void jump_label_init(void)
->   {
->   }
->
-> -struct jump_label_key_deferred {
-> -	struct jump_label_key  key;
-> -};
-> -
->   static __always_inline bool static_branch(struct jump_label_key *key)
->   {
->   	if (unlikely(atomic_read(&key->enabled)))
-> @@ -99,11 +85,6 @@ static inline void jump_label_dec(struct jump_label_key *key)
->   	atomic_dec(&key->enabled);
->   }
->
-> -static inline void jump_label_dec_deferred(struct jump_label_key_deferred *key)
-> -{
-> -	jump_label_dec(&key->key);
-> -}
-> -
->   static inline int jump_label_text_reserved(void *start, void *end)
->   {
->   	return 0;
-> @@ -121,11 +102,6 @@ static inline int jump_label_apply_nops(struct module *mod)
->   {
->   	return 0;
->   }
-> -
-> -static inline void jump_label_rate_limit(struct jump_label_key_deferred *key,
-> -		unsigned long rl)
-> -{
-> -}
->   #endif	/* HAVE_JUMP_LABEL */
->
->   #define jump_label_key_enabled	((struct jump_label_key){ .enabled = ATOMIC_INIT(1), })
-> diff --git a/include/linux/jump_label_ratelimit.h b/include/linux/jump_label_ratelimit.h
-> new file mode 100644
-> index 0000000..2cf61b9
-> --- /dev/null
-> +++ b/include/linux/jump_label_ratelimit.h
-> @@ -0,0 +1,32 @@
-> +#ifndef _LINUX_JUMP_LABEL_RATELIMIT_H
-> +#define _LINUX_JUMP_LABEL_RATELIMIT_H
-> +
-> +#include<linux/jump_label.h>
-> +#include<linux/workqueue.h>
-> +
-> +#if defined(CC_HAVE_ASM_GOTO)&&  defined(CONFIG_JUMP_LABEL)
-> +struct jump_label_key_deferred {
-> +	struct jump_label_key key;
-> +	unsigned long timeout;
-> +	struct delayed_work work;
-> +};
-> +#endif
-> +
-> +#ifdef HAVE_JUMP_LABEL
-> +extern void jump_label_dec_deferred(struct jump_label_key_deferred *key);
-> +extern void jump_label_rate_limit(struct jump_label_key_deferred *key,
-> +		unsigned long rl);
-> +#else
-> +struct jump_label_key_deferred {
-> +	struct jump_label_key  key;
-> +};
-> +static inline void jump_label_dec_deferred(struct jump_label_key_deferred *key)
-> +{
-> +	jump_label_dec(&key->key);
-> +}
-> +static inline void jump_label_rate_limit(struct jump_label_key_deferred *key,
-> +		unsigned long rl)
-> +{
-> +}
-> +#endif
-> +#endif	/* _LINUX_JUMP_LABEL_RATELIMIT_H */
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 0885561..7ae33d9 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -512,7 +512,7 @@ struct perf_guest_info_callbacks {
->   #include<linux/ftrace.h>
->   #include<linux/cpu.h>
->   #include<linux/irq_work.h>
-> -#include<linux/jump_label.h>
-> +#include<linux/jump_label_ratelimit.h>
->   #include<linux/atomic.h>
->   #include<asm/local.h>
->
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index 01d3b70..f736308 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -12,7 +12,7 @@
->   #include<linux/slab.h>
->   #include<linux/sort.h>
->   #include<linux/err.h>
-> -#include<linux/jump_label.h>
-> +#include<linux/jump_label_ratelimit.h>
->
->   #ifdef HAVE_JUMP_LABEL
->
+	CPU instance = 64
+	error message = Instruction Cache Error: L1 TLB multimatch.
+	detail = cache level: L1, tx: INSN
+	(or, maybe, detail = [-|CE|MiscV|PCC|-|CECC] cache level: L1, tx: INSN)
 
+Those fields contain what userspace needs, and it is easy for it to parse,
+as different things are on different places.
+
+> The hypothetical problem is for userspace not being able to use the
+> tracepoint format to parse reported fields easily and in an unambiguous
+> manner. Instead, it gets a single string which, I admit, is not that
+> pretty.
+
+Yes.
+
+> Now, the problem is if we want to use a single tracepoint for all errors
+> - it is unfeasible that any fields sharing can be done there except
+> maybe the TSC stamp when it happened, the CPU that caught it and etc.
+> not so important details.
+
+Well, in this example, 3 fields could be very similar to the ones I used
+for the memory errors.
+
+"silkscreen label" may make some sense, in order to convert from
+a CPU core and from some logical CPU number into the right CPU socket.
+
+Other fields, like "location" wouldn't make much sense (as location in this
+case matches the CPU number), but those could simply be filled with a blank 
+string.
+
+I don't see any problem on having some fields that would be filled with a
+blank string (or that it would contain a value like -1 - in the case of
+integers - to mean that such value is not relevant for that error type).
+
+> IOW, the error format is different for each error type, almost, and
+> there's no marrying between them. OTOH, ff we start adding tracepoints
+> for each error type, we'll hit the other end - bloat. So also a no-no.
+
+Indeed, one tracepoint per error type is a bad idea.
+
+> Maybe the compromise would be to define a single tracepoint per
+> _hardware_ error reporting scheme. That is, MCA has an own tracepoint,
+> PCIE AER has its own error reporting tracepoint, then there's an EDAC
+> !x86 one which doesn't use MCA for reporting and also any other scheme a
+> hw vendor would come up with...
+ 
+> This will keep the bloat level to a minimum, keep the TPs apart and
+> hopefully make all of us happy :).
+
+That sounds interesting.
+
+There is also another alternative: one tracepoint per HW block (where
+HW block in this context is: memory, cpu, PCI, ...).
+
+I think we should start with one tracepoint per hw reporting scheme, and
+see how it fits, using the parameters I found it is common denominator
+for the memory errors.  
+
+Regards,
+Mauro
