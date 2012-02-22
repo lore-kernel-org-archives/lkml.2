@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab2BVM7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 07:59:36 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62996 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2BVM7e (ORCPT
+	id S1752216Ab2BVNGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:06:31 -0500
+Received: from 10.mo5.mail-out.ovh.net ([46.105.52.148]:41583 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751585Ab2BVNG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 07:59:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of ohad@wizery.com designates 10.50.11.129 as permitted sender) smtp.mail=ohad@wizery.com
+	Wed, 22 Feb 2012 08:06:29 -0500
+Date: Wed, 22 Feb 2012 13:58:14 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 07/19] ARM: at91/pm_slowclock: function slow_clock()
+ accepts parameters
+Message-ID: <20120222125814.GA9407@game.jcrosoft.org>
+References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
+ <5b8fbdf669825987a82b3b89b2e7f02239cad816.1329903206.git.nicolas.ferre@atmel.com>
+ <20120222095250.GV22562@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.89.250]
-In-Reply-To: <4F44DB23.4010303@monstr.eu>
-References: <4F1EE861.4030405@monstr.eu> <4F1FF870.3000105@monstr.eu>
- <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com>
- <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com>
- <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com>
- <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com>
- <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu> <4F3CC899.4070302@monstr.eu>
- <CAK=WgbaRF-L7M3VMZQdqFLUFOJuwFVkBH1hUNuJ51kSrzkaVjA@mail.gmail.com>
- <4F3CFFAD.9030402@monstr.eu> <4F3D032B.6090700@monstr.eu> <CAK=WgbZ3oXc+NQscdShqmu2wkzv=M-qBDCH2-k=5qSRX9W=z3Q@mail.gmail.com>
- <CAHTX3dJ4PruKO-wJLJU8W0boHFL0f6eoF+QNaoNjm5hu26YEow@mail.gmail.com>
- <CAK=WgbZBJJbFcoeZ+hY=BgyW_4yvOJPVNMZ18_9o+zY7tEc_pQ@mail.gmail.com>
- <4F425711.80102@monstr.eu> <CAK=WgbbNJMpndKqgW4SJjE=H-BqT7yVsB+F-kEfJWmW+ikJM+A@mail.gmail.com>
- <4F44DB23.4010303@monstr.eu>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 22 Feb 2012 14:59:14 +0200
-Message-ID: <CAK=Wgbaa9rv1pg19sWYFVX_Dvt0J0AzbRtKhPVnhP6WGdMeT9A@mail.gmail.com>
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory location
-To: monstr@monstr.eu
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222095250.GV22562@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16735094740513958835
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 2:10 PM, Michal Simek <monstr@monstr.eu> wrote:
-> That will be great to get it. Please let me know when you have them.
+On 09:52 Wed 22 Feb     , Russell King - ARM Linux wrote:
+> On Wed, Feb 22, 2012 at 10:39:33AM +0100, Nicolas Ferre wrote:
+> > @@ -232,7 +246,7 @@ static int at91_pm_enter(suspend_state_t state)
+> >  				/* copy slow_clock handler to SRAM, and call it */
+> >  				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> >  #endif
+> > -				slow_clock();
+> > +				slow_clock(at91_pmc_base, at91_ramc0_base, at91_ramc1_base);
+> 
+> This should be updated to use the fncpy() stuff if there's any chance that
+> you'll be supporting Thumb-2.  Using fncpy() is probably a good idea even
+> if you aren't.  See asm/fncpy.h
+Yes I agree and I plan to do it
+but I'm work first on the update of the genalloc api to use it here to allocate
+the address in sram
 
-Will do.
+If it's ok with you I'll do it after
 
-Thanks,
-Ohad.
+Btw I'm looking on a way to switch the assembly funciton to C but I didn,t find a
+good way to calculate the function size except by touching at the linker
+script. Which I don;t want to do.
+
+Do you have any idea?
+
+Best Regards,
+J.
