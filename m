@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab2BVQ3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:29:46 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:23272 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750943Ab2BVQ3o (ORCPT
+	id S1753323Ab2BVQec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:34:32 -0500
+Received: from 9.mo5.mail-out.ovh.net ([178.32.96.204]:34436 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750888Ab2BVQeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:29:44 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JK93eYcVM1nczfCVu96Vt_PTjE0OZbdI6ZJ3BZiwjQLRo1_
- YPAfeyUGOXnWPRbK9EUrFsPE67L2Qe9A0KtvXdJRS1E0PVUG_P7IDukzI7vs
- 6E5jSJymtiiR2KQOOGMRBkZurc_R3ucu8iWfNNSS.sqZFP7bR64QQt6qzCho
- wgmdV6hXOJZ3d6fm5XUcXHmrrtnK5nBaoAcnEBn.gmSnaewRx1nvCdO.GfcL
- f5W8Wp.NJWtQWR5GdnMEnmHzw2vmaT6pHXlGEmjwS5oRC0MjKkFm1bQb9ymq
- 9QQGyhZBBw.tKZY5roSSF_q7WUA9SQm1W0ic3edrjjG7pJ7uje5ykfdODMvq
- QxCCz3EhmgnaXuuwVwoEDmpW92lgNvQusztkBfTO2vkAPrBigBP466tc.gA8
- y2Pjr6UbjQ9r1rTT.CJL7YzbbhedEHD5OZQpn
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 22 Feb 2012 10:29:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rafael Aquini <aquini@redhat.com>
-cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
-In-Reply-To: <20120222161440.GB1986@x61.redhat.com>
-Message-ID: <alpine.DEB.2.00.1202221028340.10258@router.home>
-References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202220754140.21637@router.home> <20120222161440.GB1986@x61.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 22 Feb 2012 11:34:31 -0500
+Date: Wed, 22 Feb 2012 17:26:31 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com, linux@arm.linux.org.uk
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of
+ at91_sys_read/write
+Message-ID: <20120222162631.GE9407@game.jcrosoft.org>
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+ <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
+ <201202221436.29474.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201202221436.29474.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1806506402640276228
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012, Rafael Aquini wrote:
+On 14:36 Wed 22 Feb     , Arnd Bergmann wrote:
+> Hi Nicolas and Jean-Christophe,
+> 
+> On Wednesday 22 February 2012, Nicolas Ferre wrote:
+> > --- a/arch/arm/mach-at91/at91x40.c
+> > +++ b/arch/arm/mach-at91/at91x40.c
+> > @@ -44,7 +44,7 @@ static void at91x40_idle(void)
+> >          * Disable the processor clock.  The processor will be automatically
+> >          * re-enabled by an interrupt or by a reset.
+> >          */
+> > -       at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
+> > +       __raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
+> >         cpu_do_idle();
+> >  }
+> 
+> How about making this writel_relaxed in the process?
+> I would like to see the use of __raw_*() get reduced in code that gets
+> touched. In most cases writel_relaxed/readl_relaxed is the correct
+> accessor function instead.
+It will for next release I plan to switch all of the at one
 
-> On Wed, Feb 22, 2012 at 07:55:16AM -0600, Christoph Lameter wrote:
-> >
-> > Please use node_nr_objects() instead of directly accessing total_objects.
-> > total_objects are only available if debugging support was compiled in.
-> >
-> Shame on me! I've wrongly assumed that it would be safe accessing
-> the element because SLUB_DEBUG is turned on by default when slub is chosen.
->
-> Considering your note on my previous mistake, shall I assume now that it
-> would be better having this whole dump feature dependable on CONFIG_SLUB_DEBUG,
-> instead of just CONFIG_SLUB ?
+today I don't want to change it as the same time
 
-That is certainly one solution. If CONFIG_SLUB_DEBUG is not set then
-support for maintaining a total count is not compiled in. You can of
-course still approximate that from the total number of slabs allocated and
-multiply that number by the # of objs per slab page.
-
+Best Regards,
+J.
