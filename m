@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab2BVSRX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:17:23 -0500
-Received: from outrelay03.libero.it ([212.52.84.103]:60147 "EHLO
-	outrelay03.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab2BVSRW convert rfc822-to-8bit (ORCPT
+	id S1754936Ab2BVSSI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:18:08 -0500
+Received: from 14.mo5.mail-out.ovh.net ([188.165.51.82]:41997 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754811Ab2BVSSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:17:22 -0500
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0B0201.4F453130.006F,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Date: Wed, 22 Feb 2012 19:17:20 +0100
-Message-Id: <LZT44W$E94B7004E6105FBBE362338C722D9A0A@libero.it>
-Subject: Petition to the White House
+	Wed, 22 Feb 2012 13:18:04 -0500
+Date: Wed, 22 Feb 2012 19:02:38 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 12/19] ARM: at91/rtc-at91sam9: each SoC can select
+ the RTT device to use
+Message-ID: <20120222180238.GH9407@game.jcrosoft.org>
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
+ <201202221647.23430.arnd@arndb.de>
+ <20120222170724.GF9407@game.jcrosoft.org>
+ <201202221725.46150.arnd@arndb.de>
 MIME-Version: 1.0
-X-Sensitivity: 3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-From: "bart\.nicolotti\@libero\.it" <bart.nicolotti@libero.it>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-X-XaM3-API-Version: 4.3 (R1) (B3pl25)
-X-SenderIP: 109.55.102.25
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201202221725.46150.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 3430054067987655428
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.500001/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 17:25 Wed 22 Feb     , Arnd Bergmann wrote:
+> On Wednesday 22 February 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > > But if you change the rtc driver to always bind to the existing
+> > > "at91_rtt" platform_device and fail the probe() function for the
+> > > case that you are on at91sam9263 probing the non-RTC device,
+> > > you should get the exact same result without any extra code
+> > > in the per-soc files.
+> >
+> > agreed but as on at91sam9263 you have 2 RTTs so you can have 2 drivers at the
+> > same time that use the RTT. So we can not do this except if we set the second
+> > RTT to an other device name.
+> 
+> Let me rephrase what I meant then:
+> 
+> The first driver should in its probe function do:
+> 
+> 	if (pdev->id != CONFIG_RTC_DRV_AT91SAM9_RTT)
+> 		return -ENODEV;
+> 
+> while the other driver does
+> 
+> 	if (pdev->id == CONFIG_RTC_DRV_AT91SAM9_RTT)
+> 		return -ENODEV;
+> 
+> This way, each driver binds to one device but not the other.
+> It should even work with an unmodified second driver, as long
+> as you guarantee that it's loaded after the first one.
+> 
+> Any reason why this won't work?
+just one other issue I need to pass the GPBR ressource to the RTC driver only
 
-I'd like to submit to your attention this petition to Obama to increase the use of GNU/Linux in the public administration
-
-https://wwws.whitehouse.gov/petitions/%21/petition/lower-national-debt-expanding-governments-use-free-software-such-gnulinux-and-libreoffice/jkLbwPDC
-
-25'000 needed by 29/feb/2012, one week only to go and only 1000 signed already
-
-Maybe it can help to sign
-
-Many thanks
-
-Best regards
-
-
-Bartolomeo Nicolotti
-v.Fossano 18
-12040 Montanera (Italy)
-bart.nicolotti@libero.it
-http://www.bartolomeonicolotti.it
-
-
+Best Regards,
+J.
