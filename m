@@ -1,188 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab2BVNrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:47:19 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:17307
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186Ab2BVNrS (ORCPT
+	id S1752737Ab2BVNrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:47:41 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59134 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186Ab2BVNrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:47:18 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dI1432N98dK4015Lzz1202hzz8275bhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LZSRMM-01-316-02
-X-M-MSG: 
-Date: Wed, 22 Feb 2012 14:47:07 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        <linux-kernel@vger.kernel.org>, Steffen Persvold <sp@numascale.com>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] x86: Remove wrong error message in
- x86_default_fixup_cpu_id
-Message-ID: <20120222134707.GA9769@alberich.amd.com>
-References: <20120220171705.GA17069@alberich.amd.com>
- <20120221102725.GC14274@aftab>
- <4F437A71.6000402@numascale-asia.com>
+	Wed, 22 Feb 2012 08:47:40 -0500
+Date: Wed, 22 Feb 2012 13:47:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>,
+        Cyril Chemparathy <cyril@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: Sort Kconfig and Makefile entries
+Message-ID: <20120222134738.GM7340@opensource.wolfsonmicro.com>
+References: <1329874156.3210.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RXc6EO4W1yUvSQ0X"
 Content-Disposition: inline
-In-Reply-To: <4F437A71.6000402@numascale-asia.com>
+In-Reply-To: <1329874156.3210.2.camel@phoenix>
+X-Cookie: Just to have it is enough.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 11:05:21AM +0000, Daniel J Blueman wrote:
-> On 21/02/2012 10:27, Borislav Petkov wrote:
-> > On Mon, Feb 20, 2012 at 06:17:05PM +0100, Andreas Herrmann wrote:
 
-[snip]
+--RXc6EO4W1yUvSQ0X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > BTW, I wonder why the fixup code isn't called from the Intel path.  At
-> > least the mentioned patch suggests that something more generic was
-> > introduced here.
-> > Right, and I would remove the check in amd.c:srat_detect_node() instead
-> > of removing the printk statement in the default implementation.
-> >
-> > IOW, we need more info on why the check was added only to the AMD path?
-> > Daniel?
-> 
-> The check and fixup wasn't needed in the Intel path thus far, so wasn't 
-> added.
-> 
-> We could specialise the 'if (c->phys_proc_id != node)' test to check for 
-> x86_cpuinit.fixup_cpu_id being NULL and drop the default override, if 
-> that is preferred?
+On Wed, Feb 22, 2012 at 09:29:16AM +0800, Axel Lin wrote:
+> Sort Kconfig entries by company name/driver in alphabetical order.
+> Sort Makefile entries by alphabetical order.
 
-It seems that all the stuff in x86_init.[ch] is using default/noop
-functions instead of NULL pointer checks. So we shouldn't deviate from
-this for x86_cpuinit.fixup_cpu_id.
+Applied, thanks.
 
-I think attached patch is more suitable to avoid the wrong warning
-message.
+--RXc6EO4W1yUvSQ0X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Please review.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPRPH0AAoJEBus8iNuMP3d+jEQAICJET2mX7/KHTpN9Dhl6iTK
+gEBZWsRu7N80BfdcS4QZqaYPrbmNRk5uco4PCmZwZ3DBPN8IA0kKREBqSisyhmth
+xnFoX4+DFp6Rcz4w2RP7qpu//KVpcOMhzNFf84I7FUoo9X14TWQ18Fyg0ZBsrii0
+xAK4rfg+wCfZu2Az24x+TfNQXvAVVq9zDMCtLJyvw+9iErX5yqdyIPsHoCmjk5/O
+HKCXhMq8i5nsQdD5uu9zRq6P3kybIbES7AI/BzcKk/CVqjhWdCKhclr0qT+3CoXZ
+Jcv5ZiTk2DgaCzV9JVeCDMUVRp+Fjmh6skz21z0KNWu+um65XzB3k2tsqz0ela5g
+E6UPMn0GlxxGXZMjNUxI5xFbHTedR2FiXeyj6TSK7bSleWz+xGDxTI/cdOOQzxEm
+ZgBZ/PI2t5exn0kXWjJJDWCUBaUblYDT9TScrRklXGAID9YgaT5NvnxKcydNLbJa
+h+bCuPcQq+BqVewklSc+molPID+seA9yHfueMQre6n4Gx2EOi3wN1D5eIzdVRNHy
+F8L4ICSNhX6M6izWib6L9w4g4bAinxQ06faYbpMrvtRELPHGkBaKmTYYrXtC0LX/
+v2KVaWAB6BP3WFbiOGmBDZf1153n1EDeeYxX6MXCft2RuNNm6uIAoWzc5BK3gW1U
+lL2NJzOGqHyFuefnqEwZ
+=ZEvb
+-----END PGP SIGNATURE-----
 
-Thanks,
-
-Andreas
-
---
-x86: Remove wrong error message in x86_default_fixup_cpu_id
-
-It's only called from amd.c:srat_detect_node(). The introduced
-condition for calling the fixup code is true for all AMD multi-node
-processors, e.g. Magny-Cours and Interlagos. There we have 2 NUMA
-nodes on one socket. Thus there are cores having different
-numa-node-id but with equal phys_proc_id.
-
-There is no point to print error messages in such a situation.
-
-The confusing/misleading error message was introduced with commit
-64be4c1c2428e148de6081af235e2418e6a66dda (x86: Add x86_init platform
-override to fix up NUMA core numbering).
-
-Change the default fixup function (remove the error message), move the
-Numascale-specific condition for calling the fixup into the
-fixup-function itself and slightly adapt the comment.
-
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/include/asm/x86_init.h      |    2 +-
- arch/x86/kernel/apic/apic_numachip.c |    7 +++++--
- arch/x86/kernel/cpu/amd.c            |    8 ++++----
- arch/x86/kernel/cpu/common.c         |    9 ---------
- arch/x86/kernel/x86_init.c           |    1 +
- 5 files changed, 11 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 517d476..1bcacef 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -189,6 +189,6 @@ extern struct x86_msi_ops x86_msi;
- 
- extern void x86_init_noop(void);
- extern void x86_init_uint_noop(unsigned int unused);
--extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node);
-+extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int n);
- 
- #endif
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 09d3d8c..ade0182 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -201,8 +201,11 @@ static void __init map_csrs(void)
- 
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
--	c->phys_proc_id = node;
--	per_cpu(cpu_llc_id, smp_processor_id()) = node;
-+
-+	if (c->phys_proc_id != node) {
-+		c->phys_proc_id = node;
-+		per_cpu(cpu_llc_id, smp_processor_id()) = node;
-+	}
- }
- 
- static int __init numachip_system_init(void)
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f4773f4..52b7287 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -352,11 +352,11 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 		node = per_cpu(cpu_llc_id, cpu);
- 
- 	/*
--	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
--	 * so invoke platform-specific handler
-+	 * On multi-fabric platform (e.g. Numascale NumaChip) a
-+	 * platform-specific handler needs to be called to fixup some
-+	 * IDs of the CPU.
- 	 */
--	if (c->phys_proc_id != node)
--		x86_cpuinit.fixup_cpu_id(c, node);
-+	x86_cpuinit.fixup_cpu_id(c, node);
- 
- 	if (!node_online(node)) {
- 		/*
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index d43cad7..37da7a6 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1158,15 +1158,6 @@ static void dbg_restore_debug_regs(void)
- #endif /* ! CONFIG_KGDB */
- 
- /*
-- * Prints an error where the NUMA and configured core-number mismatch and the
-- * platform didn't override this to fix it up
-- */
--void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
--{
--	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
--}
--
--/*
-  * cpu_init() initializes state that is per-CPU. Some data is already
-  * initialized (naturally) in the bootstrap process, such as the GDT
-  * and IDT. We reload them nevertheless, this function acts as a
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 947a06c..67cf78a 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -90,6 +90,7 @@ struct x86_init_ops x86_init __initdata = {
- 	},
- };
- 
-+void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int n) { }
- struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
- 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
- 	.fixup_cpu_id			= x86_default_fixup_cpu_id,
--- 
-1.7.8.4
-
-
-
+--RXc6EO4W1yUvSQ0X--
