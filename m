@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab2BVRn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:43:29 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39301 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2BVRn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:43:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.11.129 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	id S1754573Ab2BVRoC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:44:02 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51603 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab2BVRoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 12:44:00 -0500
+Message-ID: <4F45293C.8050209@zytor.com>
+Date: Wed, 22 Feb 2012 09:43:24 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <1329720360-23227-19-git-send-email-swarren@nvidia.com>
-References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
-	<1329720360-23227-19-git-send-email-swarren@nvidia.com>
-Date: Wed, 22 Feb 2012 18:43:27 +0100
-Message-ID: <CACRpkdaeCHtR3Co2d7VDWuAvhWqXSyEQ8gsNda2mKvqq-hFLzw@mail.gmail.com>
-Subject: Re: [PATCH 18/20] pinctrl: Fix pinconf_groups_show() to emit newline
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com> <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com> <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com> <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com> <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com> <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
+In-Reply-To: <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
+On 02/22/2012 08:10 AM, Linus Torvalds wrote:
+> 
+> Well, the kernel gives the right semantics for pipes too - writes are
+> guaranteed to be "atomic", so even in the presence of multiple writers
+> you can trivially do packetized data.
+> 
+> You just have to (a) add the length to the packet and (b) do the
+> length+packet write as a single write (which is limited to PIPE_SIZE -
+> 4kB - for the atomicity guarantee).
+> 
+> If you don't have multiple concurrent writers without locking, the (b)
+> part falls away entirely, of course.
+> 
+> Yes, for the reader side you need to be able to handle the fact that
+> you can get more than one packet in one read() call, but sorting that
+> out isn't hard either.
+> 
 
-> pinconf_groups_show() wrote all debug information on one line. Fix it to
-> match pinconf_pins_show() and be legible.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+What you describe above is pretty much how autofs 3 used to work; except
+it would do one read() for the header including length and then another
+read() for the body.  Of course, it could just have read ahead -- if you
+read part of the next packet, it wouldn't really matter since at least
+at that time the daemon was single-threaded and would have to loop back
+anyway.
 
-Thanks, applied.
-Linus Walleij
+The PIPE_SIZE guarantee took care of the fact that this was a multiple
+writer/single reader situation (since the writes happens in the context
+of the process requesting a mount.)  Either way, SOCK_DGRAM and
+SOCK_SEQPACKET would solve all of the problems and would Just Work, and
+packet boundaries would then be explicit.
+
+> But yeah, writing fixed-size data and then having a reader that reads
+> fixed-size data is just not a very good approach. It's doubly bad when
+> the "fixed size" isn't an explicit size that is documented in the
+> protocol, but depends on data structures.
+
+Indeed.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
