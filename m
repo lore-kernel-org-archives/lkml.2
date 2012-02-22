@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab2BVPNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:13:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60013 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab2BVPNM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:13:12 -0500
-Message-ID: <1329923583.24994.21.camel@twins>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
- + docs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Baron <jbaron@redhat.com>, mathieu.desnoyers@efficios.com,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, rth <rth@redhat.com>
-Date: Wed, 22 Feb 2012 16:13:03 +0100
-In-Reply-To: <1329918881.25686.92.camel@gandalf.stny.rr.com>
-References: <cover.1329851692.git.jbaron@redhat.com>
-	 <4F43F9F0.4000605@zytor.com> <20120222065016.GA16923@elte.hu>
-	 <4F44934B.2000808@zytor.com> <20120222072538.GA17291@elte.hu>
-	 <4F449ACF.3040807@zytor.com> <20120222074839.GA24890@elte.hu>
-	 <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
-	 <20120222080659.GA25318@elte.hu>
-	 <1329916920.25686.79.camel@gandalf.stny.rr.com>
-	 <20120222133404.GA14085@elte.hu>
-	 <1329918881.25686.92.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753139Ab2BVPOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:14:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50703 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751845Ab2BVPOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 10:14:22 -0500
+Message-ID: <4F45062C.8000104@zytor.com>
+Date: Wed, 22 Feb 2012 07:13:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Ian Kent <raven@themaw.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>  <20120221.221609.218135609185671883.davem@davemloft.net>  <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>  <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>  <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>  <1329889428.2193.45.camel@perseus.themaw.net>  <1329890027.2193.48.camel@perseus.themaw.net>  <1329890251.2193.50.camel@perseus.themaw.net> <1329903139.2193.66.camel@perseus.themaw.net>
+In-Reply-To: <1329903139.2193.66.camel@perseus.themaw.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 08:54 -0500, Steven Rostedt wrote:
-> But we could push a "unlikely(static_branch())" for
-> such a case (or keep it as very_unlikely()). 
+On 02/22/2012 01:32 AM, Ian Kent wrote:
+> 
+> Oh, DOH ... 
+> 
+> The process mounting the autofs mount is passing the pipe it will use
+> for communication via a mount option so we can do this right in
+> fill_super.
+> 
 
-If only that would work.. GCC assumes a bunch of things when you use
-'asm goto'. An unbiased 'asm goto' that would take likely() and
-unlikely() hints would be ideal, but alas that's not how the thing got
-implemented.
+Does that mean that the autofs v5 daemon calls mount() by itself, unlike
+the older autofs daemon?  Otherwise you're reading the compatness of
+/bin/mount...
 
-Now arguable we could maybe just stick with the static_branch() thing
-and decide that GCC is broken for adding bias and not respecting
-likely() and unlikely(), but the GCC folks might have an opinion there.
+	-hpa
 
-Anyway, if we have to stick with the current implementation then an
-unbiased version is impossible to implement.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-If we get GCC folks on board to change stuff, who knows.
