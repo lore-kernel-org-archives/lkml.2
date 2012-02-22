@@ -1,119 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2BVJPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:15:06 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65299 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab2BVJPC convert rfc822-to-8bit (ORCPT
+	id S1754632Ab2BVJQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:16:08 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38894 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab2BVJQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:15:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
-References: <1329417828-6005-1-git-send-email-linus.walleij@linaro.org>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 22 Feb 2012 17:14:40 +0800
-Message-ID: <CAGsJ_4yLTPhLJEf9GHw694U9iYmtLgYPvYe3VGdyKKKcuX6pUA@mail.gmail.com>
-Subject: Re: [PATCH] serial/sirf: fixup for changes to pin control
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Tony Lindgren <tony@atomide.com>, linux-serial@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Feb 2012 04:16:05 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Date: Wed, 22 Feb 2012 14:45:35 +0530
+Message-Id: <20120222091535.15880.12502.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 1/3] uprobes/core: Make instruction tables volatile.
+x-cbid: 12022122-5490-0000-0000-000000C99319
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/2/17 Linus Walleij <linus.walleij@linaro.org>:
-> We changed the signature of the pin multiplexing functions to
-> handle any pin business, so fix up the Sirf driver to call this
-> new interface and rename some variables to make the semantics
-> understandable.
->
-> Cc: linux-serial@vger.kernel.org
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Acked-by: Barry Song <Baohua.Song@csr.com>
+Some versions of gcc spits a warning about the asm operand for test_bit and
+also causes the first long of the instruction table to be output.
 
-> ---
->  drivers/tty/serial/sirfsoc_uart.c |   20 ++++++++++----------
->  drivers/tty/serial/sirfsoc_uart.h |    2 +-
->  2 files changed, 11 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
-> index a60523f..c1a871e 100644
-> --- a/drivers/tty/serial/sirfsoc_uart.c
-> +++ b/drivers/tty/serial/sirfsoc_uart.c
-> @@ -22,7 +22,7 @@
->  #include <linux/io.h>
->  #include <asm/irq.h>
->  #include <asm/mach/irq.h>
-> -#include <linux/pinctrl/pinmux.h>
-> +#include <linux/pinctrl/consumer.h>
->
->  #include "sirfsoc_uart.h"
->
-> @@ -673,12 +673,12 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
->        port->irq = res->start;
->
->        if (sirfport->hw_flow_ctrl) {
-> -               sirfport->pmx = pinmux_get(&pdev->dev, NULL);
-> -               ret = IS_ERR(sirfport->pmx);
-> +               sirfport->p = pinctrl_get(&pdev->dev, NULL);
-> +               ret = IS_ERR(sirfport->p);
->                if (ret)
-> -                       goto pmx_err;
-> +                       goto pin_err;
->
-> -               pinmux_enable(sirfport->pmx);
-> +               pinctrl_enable(sirfport->p);
->        }
->
->        port->ops = &sirfsoc_uart_ops;
-> @@ -696,10 +696,10 @@ int sirfsoc_uart_probe(struct platform_device *pdev)
->  port_err:
->        platform_set_drvdata(pdev, NULL);
->        if (sirfport->hw_flow_ctrl) {
-> -               pinmux_disable(sirfport->pmx);
-> -               pinmux_put(sirfport->pmx);
-> +               pinctrl_disable(sirfport->p);
-> +               pinctrl_put(sirfport->p);
->        }
-> -pmx_err:
-> +pin_err:
->  irq_err:
->        devm_iounmap(&pdev->dev, port->membase);
->  err:
-> @@ -712,8 +712,8 @@ static int sirfsoc_uart_remove(struct platform_device *pdev)
->        struct uart_port *port = &sirfport->port;
->        platform_set_drvdata(pdev, NULL);
->        if (sirfport->hw_flow_ctrl) {
-> -               pinmux_disable(sirfport->pmx);
-> -               pinmux_put(sirfport->pmx);
-> +               pinctrl_disable(sirfport->p);
-> +               pinctrl_put(sirfport->p);
->        }
->        devm_iounmap(&pdev->dev, port->membase);
->        uart_remove_one_port(&sirfsoc_uart_drv, port);
-> diff --git a/drivers/tty/serial/sirfsoc_uart.h b/drivers/tty/serial/sirfsoc_uart.h
-> index fc64260..6e207fd 100644
-> --- a/drivers/tty/serial/sirfsoc_uart.h
-> +++ b/drivers/tty/serial/sirfsoc_uart.h
-> @@ -162,7 +162,7 @@ struct sirfsoc_uart_port {
->        unsigned char                   ms_enabled;
->
->        struct uart_port                port;
-> -       struct pinmux                   *pmx;
-> +       struct pinctrl                  *p;
->  };
->
->  /* Hardware Flow Control */
-> --
-> 1.7.7.6
->
+Fix is similar to 7115e3fc on arch/x86/kernel/kprobes.c
+
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/uprobes.c |   61 ++++++++++++++++++++++++---------------------
+ 1 files changed, 32 insertions(+), 29 deletions(-)
+
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index cf2a184..13d616d 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -53,34 +53,12 @@
+ 	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
+ 	 << (row % 32))
+ 
+-#ifdef CONFIG_X86_64
+-static u32 good_insns_64[256 / 32] = {
+-	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+-	/*      ----------------------------------------------         */
+-	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
+-	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
+-	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
+-	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
+-	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
+-	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
+-	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
+-	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
+-	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
+-	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
+-	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
+-	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
+-	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
+-	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
+-	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
+-	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
+-	/*      ----------------------------------------------         */
+-	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+-};
+-#endif
+-
+-/* Good-instruction tables for 32-bit apps */
+-
+-static u32 good_insns_32[256 / 32] = {
++/*
++ * Good-instruction tables for 32-bit apps.  This is non-const and volatile
++ * to keep gcc from statically optimizing it out, as variable_test_bit makes
++ * some versions of gcc to think only *(unsigned long*) is used.
++ */
++static volatile u32 good_insns_32[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+ 	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 00 */
+@@ -104,7 +82,7 @@ static u32 good_insns_32[256 / 32] = {
+ };
+ 
+ /* Using this for both 64-bit and 32-bit apps */
+-static u32 good_2byte_insns[256 / 32] = {
++static volatile u32 good_2byte_insns[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+ 	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
+@@ -127,6 +105,31 @@ static u32 good_2byte_insns[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ };
+ 
++#ifdef CONFIG_X86_64
++/* Good-instruction tables for 64-bit apps */
++static volatile u32 good_insns_64[256 / 32] = {
++	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
++	/*      ----------------------------------------------         */
++	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
++	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
++	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
++	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
++	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
++	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
++	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
++	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
++	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
++	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
++	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
++	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
++	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
++	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
++	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
++	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
++	/*      ----------------------------------------------         */
++	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
++};
++#endif
+ #undef W
+ 
+ /*
+
+
