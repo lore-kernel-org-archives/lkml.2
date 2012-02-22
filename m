@@ -1,87 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab2BVHmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:42:24 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:52201 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab2BVHmX (ORCPT
+	id S1752438Ab2BVHsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 02:48:30 -0500
+Received: from mga05.intel.com ([192.55.52.89]:36656 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751153Ab2BVHs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:42:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cywang@google.com designates 10.100.243.25 as permitted sender) smtp.mail=cywang@google.com
+	Wed, 22 Feb 2012 02:48:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.152.108.49 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
 MIME-Version: 1.0
-From: Chung-yih Wang <cywang@chromium.org>
-To: Alessandro Rubini <rubini@cvml.unipv.it>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, djkurtz@chromium.org,
-        Chung-yih Wang <cywang@chromium.org>
-Subject: [PATCH] CHROMIUM: Input: synaptics - filter out the events with low z values
-Date: Wed, 22 Feb 2012 15:41:43 +0800
-Message-Id: <1329896503-28394-1-git-send-email-cywang@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH] tmpfs: security xattr setting on inode creation
+Date: Wed, 22 Feb 2012 09:48:14 +0200
+Message-Id: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The single touch path imposes a minimum z value (with hysterisis) before
-registering BTN_TOUCH. Apply the same (hard coded) threshold when
-deciding how many fingers to report in the semi-mt path.
+Adds to generic xattr support introduced in Linux 3.0 by
+implementing initxattrs callback. This enables consulting
+of security attributes from LSM and EVM when inode originally
+created.
 
-This patch improves performance of the Google Cr-48 chromebook's
-extremely sensitive Synaptics profile sensor touchpad by filtering out
-touch events for hovering fingers.
-
-Note: We continue to use the same hard coded threshold value used in the
-single touch case as it appears this works just as well on these
-multitouch profile sensor pads as on whatever pads it was originally
-discovered.
-
-Signed-off-by: Chung-Yih Wang <cywang@chromium.org>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 ---
- drivers/input/mouse/synaptics.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+ mm/shmem.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 61 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 8081a0a..746dbcc 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -568,17 +568,22 @@ static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
- 	}
- }
- 
-+static bool finger_touched(const struct synaptics_hw_state *hw)
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 7a45ad0..72addf1 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1480,6 +1480,59 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ /*
+  * File creation. Allocate an inode, and we're done..
+  */
++
++static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
 +{
-+	return (hw->z > 30);
++	/* wrap around? */
++	size_t len = sizeof(**new_xattr) + size;
++	if (len <= sizeof(**new_xattr))
++		return -ENOMEM;
++
++	*new_xattr = kmalloc(len, GFP_KERNEL);
++	if (*new_xattr == NULL)
++		return -ENOMEM;
++
++	(*new_xattr)->size = size;
++	return 0;
 +}
 +
- static void synaptics_report_semi_mt_data(struct input_dev *dev,
- 					  const struct synaptics_hw_state *a,
- 					  const struct synaptics_hw_state *b,
- 					  int num_fingers)
++static int shmem_initxattrs(struct inode *inode,
++			    const struct xattr *xattr_array,
++			    void *fs_info)
++{
++	const struct xattr *xattr;
++	struct shmem_inode_info *info = SHMEM_I(inode);
++	struct shmem_xattr *new_xattr = NULL;
++	size_t len;
++	int err = 0;
++
++	for (xattr = xattr_array; xattr->name != NULL; xattr++) {
++		err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
++		if (err < 0)
++			break;
++
++		len = strlen(xattr->name) + 1;
++		new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
++					  GFP_KERNEL);
++		if (new_xattr->name == NULL) {
++			kfree(new_xattr);
++			return -ENOMEM;
++		}
++
++		memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
++		       XATTR_SECURITY_PREFIX_LEN);
++		memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
++		       xattr->name, len);
++		memcpy(new_xattr->value, xattr->value, xattr->value_len);
++
++		spin_lock(&info->lock);
++		list_add(&new_xattr->list, &info->xattr_list);
++		spin_unlock(&info->lock);
++	}
++
++	return err;
++}
++
+ static int
+ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
  {
--	if (num_fingers >= 2) {
-+	if ((num_fingers >= 2) && finger_touched(a) && finger_touched(b)) {
- 		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
- 					      min(a->y, b->y));
- 		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
- 					      max(a->y, b->y));
--	} else if (num_fingers == 1) {
-+	} else if ((num_fingers == 1) && finger_touched(a)) {
- 		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
- 		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
- 	} else {
-@@ -1040,8 +1045,10 @@ static void synaptics_process_packet(struct psmouse *psmouse)
- 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
- 	 * absolute -> relative conversion
- 	 */
--	if (hw.z > 30) input_report_key(dev, BTN_TOUCH, 1);
--	if (hw.z < 25) input_report_key(dev, BTN_TOUCH, 0);
-+	if (finger_touched(&hw))
-+		input_report_key(dev, BTN_TOUCH, 1);
-+	if (hw.z < 25)
-+		input_report_key(dev, BTN_TOUCH, 0);
+@@ -1490,7 +1543,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+ 	if (inode) {
+ 		error = security_inode_init_security(inode, dir,
+ 						     &dentry->d_name,
+-						     NULL, NULL);
++						     &shmem_initxattrs, NULL);
+ 		if (error) {
+ 			if (error != -EOPNOTSUPP) {
+ 				iput(inode);
+@@ -1630,7 +1683,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
+ 		return -ENOSPC;
  
- 	if (num_fingers > 0) {
- 		input_report_abs(dev, ABS_X, hw.x);
+ 	error = security_inode_init_security(inode, dir, &dentry->d_name,
+-					     NULL, NULL);
++					     &shmem_initxattrs, NULL);
+ 	if (error) {
+ 		if (error != -EOPNOTSUPP) {
+ 			iput(inode);
+@@ -1731,26 +1784,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
+ 	return ret;
+ }
+ 
+-static int shmem_xattr_set(struct dentry *dentry, const char *name,
++static int shmem_xattr_set(struct inode *inode, const char *name,
+ 			   const void *value, size_t size, int flags)
+ {
+-	struct inode *inode = dentry->d_inode;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
+ 	struct shmem_xattr *xattr;
+ 	struct shmem_xattr *new_xattr = NULL;
+-	size_t len;
+ 	int err = 0;
+ 
+ 	/* value == NULL means remove */
+ 	if (value) {
+-		/* wrap around? */
+-		len = sizeof(*new_xattr) + size;
+-		if (len <= sizeof(*new_xattr))
+-			return -ENOMEM;
+-
+-		new_xattr = kmalloc(len, GFP_KERNEL);
+-		if (!new_xattr)
+-			return -ENOMEM;
++		err = shmem_xattr_alloc(size, &new_xattr);
++		if (err < 0)
++			return err;
+ 
+ 		new_xattr->name = kstrdup(name, GFP_KERNEL);
+ 		if (!new_xattr->name) {
+@@ -1758,7 +1804,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
+ 			return -ENOMEM;
+ 		}
+ 
+-		new_xattr->size = size;
+ 		memcpy(new_xattr->value, value, size);
+ 	}
+ 
+@@ -1858,7 +1903,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
+ 	if (size == 0)
+ 		value = "";  /* empty EA, do not remove */
+ 
+-	return shmem_xattr_set(dentry, name, value, size, flags);
++	return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
+ 
+ }
+ 
+@@ -1878,7 +1923,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
+ 	if (err)
+ 		return err;
+ 
+-	return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
++	return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
+ }
+ 
+ static bool xattr_is_trusted(const char *name)
 -- 
-1.7.7.3
+1.7.5.4
 
