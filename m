@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab2BVJu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:50:57 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48860 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab2BVJuz (ORCPT
+	id S1755017Ab2BVJvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:51:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60273 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab2BVJvj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:50:55 -0500
-Date: Wed, 22 Feb 2012 09:50:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rmallon@gmail.com
-Subject: Re: [PATCH v2 06/19] ARM: at91/pm_slowclock: rename register to
-	named define
-Message-ID: <20120222095040.GU22562@n2100.arm.linux.org.uk>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com> <cce50d2859ae080d6bfd9260fcd6932d634f7b9a.1329903206.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cce50d2859ae080d6bfd9260fcd6932d634f7b9a.1329903206.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 22 Feb 2012 04:51:39 -0500
+Message-ID: <1329904253.24994.1.camel@twins>
+Subject: Re: [PATCH 2/3 RFC paul/rcu/srcu] srcu: only increase the upper bit
+ for srcu_read_lock()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, patches@linaro.org
+Date: Wed, 22 Feb 2012 10:50:53 +0100
+In-Reply-To: <4F44B57C.3020104@cn.fujitsu.com>
+References: <20120213020951.GA12138@linux.vnet.ibm.com>
+	 <4F41F315.1040900@cn.fujitsu.com>
+	 <20120220174418.GI2470@linux.vnet.ibm.com>
+	 <4F42EF53.6060400@cn.fujitsu.com>
+	 <20120221015037.GE2384@linux.vnet.ibm.com>
+	 <4F435966.9020106@cn.fujitsu.com>
+	 <20120221172442.GG2375@linux.vnet.ibm.com>
+	 <4F44B57C.3020104@cn.fujitsu.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 10:39:32AM +0100, Nicolas Ferre wrote:
->  #define PLLALOCK_TIMEOUT	1000
->  #define PLLBLOCK_TIMEOUT	1000
->  
-> +#define pmc	r1
+On Wed, 2012-02-22 at 17:29 +0800, Lai Jiangshan wrote:
+> +       ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += -1;
 
-pmc	.req	r1
-sdramc	.req	r2
-
-etc.
+That just looks funny.. 
