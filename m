@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab2BVAzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 19:55:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61559 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab2BVAze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 19:55:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.42.142.7 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
-Date: Wed, 22 Feb 2012 01:55:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
- cgroup_enable_task_cg_list
-Message-ID: <20120222005525.GC13403@somewhere.redhat.com>
-References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
- <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
- <20120221222343.GU3090@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120221222343.GU3090@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752669Ab2BVA5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 19:57:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29237 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab2BVA5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 19:57:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="110592968"
+Message-ID: <1329872267.1511.76.camel@rui.sh.intel.com>
+Subject: Re: [RFC PATCH 4/6] PM / Runtime: Introduce flag can_power_off
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lin Ming <ming.m.lin@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Wed, 22 Feb 2012 08:57:47 +0800
+In-Reply-To: <201202212243.52788.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1202130958440.1434-100000@iolanthe.rowland.org>
+	 <201202210013.02397.rjw@sisk.pl>
+	 <1329786806.1511.54.camel@rui.sh.intel.com>
+	 <201202212243.52788.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 02:23:43PM -0800, Mandeep Singh Baines wrote:
-> Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > Walking through the tasklist in cgroup_enable_task_cg_list() inside
-> > an RCU read side critical section is not enough because:
+On 二, 2012-02-21 at 22:43 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, February 21, 2012, Zhang Rui wrote:
+> > On 二, 2012-02-21 at 00:13 +0100, Rafael J. Wysocki wrote:
+> > > > So how to handle this case, say, for a device in the generic PM domain
+> > > > that supports 2 different low power state, D1 and D2.
+> > > > D2 is deeper than D1, and it is kind of cold power off with remote
+> > > > wakeup disabled. If the driver needs to runtime suspend the device with
+> > > > remote wakeup enabled, it should set the device to D1, but it can not
+> > > > set the RPM_SUSPEND?
+> > > 
+> > > The device is regarded as "suspended" if its bus type's (or PM domain's)
+> > > .runtime_suspend() callback has been executed and has returned 0 (success).
+> > > What the callback has actually done is not of any interest to the core.
+> > > 
+> > right.
 > > 
-> > - RCU is not (yet) safe against while_each_thread()
+> > > Now, the D1 and D2 case has to be handled by the bus (PM domain) and
+> > > driver.  In both cases the device will be regarded as "suspended" and the
+> > > core doesn't track the actual device state.
+> > > 
 > > 
-> > - If we use only RCU, a forking task that has passed cgroup_post_fork()
-> >   without seeing use_task_css_set_links == 1 is not guaranteed to have
-> >   its child immediately visible in the tasklist if we walk through it
-> >   remotely with RCU. In this case it will be missing in its css_set's
-> >   task list.
 > > 
-> > Thus we need to traverse the list (unfortunately) under the
-> > tasklist_lock. It makes us safe against while_each_thread() and also
-> > make sure we see all forked task that have been added to the tasklist.
+> > > I think the problem here is that the PCI bus type's runtime PM callbacks
+> > > aren't very sophisticated (they just choose the lowest possible low-power
+> > > state and attempt to put the device into it) and I can see two possible
+> > > ways to address that.
+> > > 
+> > > First, you can modify pci_pm_runtime_suspend/_resume() to handle multiple
+> > > states (for example, to choose the target low-power state more intelligently
+> > > than they do right now).  Second, you can add a PM domain that will do what
+> > > you want from pci_pm_runtime_suspend/_resume() for a specific set of devices.
+> > > 
+> > But RPM_SUSPENDED is set by PM core after .runtime_suspend() being
+> > invoked, even if device is in D1 instead of D2, right?
 > > 
-> > As a secondary effect, reading and writing use_task_css_set_links are
-> > now well ordered against tasklist traversing and modification. The new
-> > layout is:
-> > 
-> > CPU 0                                      CPU 1
-> > 
-> > use_task_css_set_links = 1                write_lock(tasklist_lock)
-> > read_lock(tasklist_lock)                  add task to tasklist
-> > do_each_thread() {                        write_unlock(tasklist_lock)
-> > 	add thread to css set links       if (use_task_css_set_links)
-> > } while_each_thread()                         add thread to css set links
-> > read_unlock(tasklist_lock)
-> > 
-> > If CPU 0 traverse the list after the task has been added to the tasklist
-> > then it is correctly added to the css set links. OTOH if CPU 0 traverse
-> > the tasklist before the new task had the opportunity to be added to the
-> > tasklist because it was too early in the fork process, then CPU 1
-> > catches up and add the task to the css set links after it added the task
-> > to the tasklist. The right value of use_task_css_set_links is guaranteed
-> > to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
-> > the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
-> > and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
-> > afterward to return the correct value.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Mandeep Singh Baines <msb@chromium.org>
+> > So the problem is that, if a device in a generic power domain supports
+> > two low power state, one is compatible with generic power domain power
+> > off and another is not, how can the device driver pass this information
+> > to the generic power domain, i.e. how to runtime suspend a device while
+> > keep the generic power domain always on?
 > 
-> Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+> There are two "low-power" levels in the generic PM domains framework.  The
+> first one is the per-device low-power in which devices are put into their
+> individual (programmable) low-power states by the domain .dev_ops->stop()
+> callback.  The second one is when .stop() has been called for all devices,
+> so presumably all of them are in programmable low-power states and it's
+> possible to switch the entire domain off.  This is done by the domain
+> .power_off() callback.
 > 
-> Sorry for being late. My feedback is really just comments.
+> It seems that the trick might be to make .dev_ops->stop() avoid turning off
+> power resources for the last suspending device in the domain and leave that
+> to domain .power_off().
 > 
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/cgroup.c |   20 ++++++++++++++++++++
-> >  1 files changed, 20 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> > index 6e4eb43..c6877fe 100644
-> > --- a/kernel/cgroup.c
-> > +++ b/kernel/cgroup.c
-> > @@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
-> >  	struct task_struct *p, *g;
-> >  	write_lock(&css_set_lock);
-> 
-> You might want to re-test use_task_css_set_links once you have the lock
-> in order to avoid an unnecessary do_each_thread()/while_each_thread() in
-> case you race between reading the value and entering the loop. This is
-> a potential optimization in a rare case so maybe not worth the LOC.
+Yeah, that's a good idea.
+so how about this proposal for ZPODD.
+1. create an ACPI generic power domain for every device that has an _PR3
+   method, the SATA port in this case.
+2. add sr device to the generic power domain via genpd APIs.
+   this can be done either in ATA port driver or in sr driver.
+3. the .power_off callback of the generic power domain
+   a) checks if all the devices allows power off (for the trick above)
+   b) turns off the power resources in _PR3.
 
-Makes sense. I'll do that in a seperate patch.
+thanks,
+rui
 
-> 
-> >  	use_task_css_set_links = 1;
-> > +	/*
-> > +	 * We need tasklist_lock because RCU is not safe against
-> > +	 * while_each_thread(). Besides, a forking task that has passed
-> > +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
-> > +	 * is not guaranteed to have its child immediately visible in the
-> > +	 * tasklist if we walk through it with RCU.
-> > +	 */
-> 
-> Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
-> is made rcu safe. On a large system, it could take a while to iterate
-> over every thread in the system. Thats a long time to hold a spinlock.
-> But it only happens once so probably not that big a deal.
-
-I think that even if while_each_thread() was RCU safe, that wouldn't
-work here.
-
-Unless I'm mistaken, we have no guarantee that a remote list_add_rcu()
-is immediately visible by the local CPU if it walks the list under
-rcu_read_lock() only.
-
-Consider that ordering scenario:
-
-CPU 0                                      CPU 1
----------------                        --------------
-
-fork() {
-	write_lock(tasklist_lock);
-        add child to tasklist
-	write_unlock(tasklist_lock);
-        cgroup_post_fork()
-}
-
-                                         cgroup_enable_task_cg_lists() {
-                                                rcu_read_lock();
-                                                do_each_thread() {
-                                                        ..... <-- find child ?
-                                                } while_each_thread()
-                                                rcu_read_unlock()
-
-
-We have no guarantee here that the write on CPU 0 will be visible
-in time to CPU 1.
-
-But may be I misunderstood the ordering and committing guarantees with RCU.
-Perhaps Paul can confirm or correct me.
-
-Paul?
