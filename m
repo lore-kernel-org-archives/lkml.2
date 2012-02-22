@@ -1,138 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab2BVNfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:35:07 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:65264 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2BVNfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:35:03 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of rabin.vincent@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=rabin.vincent@gmail.com; dkim=pass header.i=rabin.vincent@gmail.com
-Date: Wed, 22 Feb 2012 19:02:40 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 5/6] jump label: detect %c support for ARM
-Message-ID: <20120222133240.GA9031@debian>
-References: <1327757725-10114-1-git-send-email-rabin@rab.in>
- <1327757725-10114-6-git-send-email-rabin@rab.in>
- <20120220172158.GI26840@n2100.arm.linux.org.uk>
+	id S1752674Ab2BVNfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:35:45 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:37123 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751186Ab2BVNfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 08:35:41 -0500
+Message-ID: <4F44EEE4.2000809@parallels.com>
+Date: Wed, 22 Feb 2012 17:34:28 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120220172158.GI26840@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+References: <20120221211938.GE12236@google.com> <20120221212106.GF12236@google.com>
+In-Reply-To: <20120221212106.GF12236@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 05:21:58PM +0000, Russell King - ARM Linux wrote:
-> On Sat, Jan 28, 2012 at 07:05:24PM +0530, Rabin Vincent wrote:
-> > Some versions of ARM GCC which do support asm goto, have problems
-> > handling the the %c specifier.  Since we need the %c to support jump
-> > labels on ARM, detect that too in the asm goto detection script to avoid
-> > build errors with these versions.
-> 
-> I'm not sure how this detects properly working %c support.  %c support
-> has been rather flakey on ARM for some time, I'm not sure which version
-> of gcc was fixed for it.
+I am afraid I also don't have too much answers for your questions, but
+I do have more questions =)
 
-Right, it only detects that %c on a sym+offset doesn't ICE, which was
-what it had been doing since atleast version 4.3.
+On 02/22/2012 01:21 AM, Tejun Heo wrote:
+> Sorry, forgot to cc hch.  Cc'ing him and quoting whole message.
+>
+> On Tue, Feb 21, 2012 at 01:19:38PM -0800, Tejun Heo wrote:
+>> Hello, guys.
+>>
+>> I've been thinking about multiple hierarchy support in cgroup for a
+>> while, especially after Frederic's pending task counter patchset.
+>> This is a write up of what I've been thinking.  I don't know what to
+>> do yet and simply continuing the current situation definitely is an
+>> option, so please read on and throw in your 20 Won (or whatever amount
+>> in whatever currency you want).
 
-The assumption was that since asm goto was only added in ~4.5, all older
-compilers (regardless of their state of %c support) would choke (as we
-want them to) on the existing second half of this script.
+I said that previously, but to this days the need for it still strikes 
+me. I mean: the usecase is pretty clear. But every single cgroup is 
+counting forks in a way or another. So for me, it would be better to 
+simply count it as a cgroup property and act on it accordingly.
 
-I have added the change you suggested below.
+But then, of course, if you have multiple hierarchies, in which of them 
+should you put that ? How ugly is it that you'll fail a fork, then check 
+a hierarchy - no problem - only to later found out that this was 
+configures in another hierarchy ?
 
-> 
-> > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
-> > 
-> > Cc: Jason Baron <jbaron@redhat.com>
-> > Cc: linux-kernel@vger.kernel.org
-> > Signed-off-by: Rabin Vincent <rabin@rab.in>
-> > ---
-> >  scripts/gcc-goto.sh |   18 +++++++++++++++++-
-> >  1 files changed, 17 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
-> > index 98cffcb..9b744de 100644
-> > --- a/scripts/gcc-goto.sh
-> > +++ b/scripts/gcc-goto.sh
-> > @@ -2,4 +2,20 @@
-> >  # Test for gcc 'asm goto' support
-> >  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
-> >  
-> > -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> > +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-> > +int main(void)
-> > +{
-> > +#ifdef __arm__
-> > +	/*
-> > +	 * Not related to asm goto, but used by jump label
-> > +	 * and broken on some ARM GCC versions (see GCC Bug 48637).
-> > +	 */
-> > +	static struct { int dummy; int state; } tp;
-> > +	asm ("@ %c0" :: "i" (&tp.state));
-> 
-> While this detects the presence of the ICE, previous compilers included
-> the '#' before the constant, which leads to problems.  I think a better
-> check would be:
-> 	asm(".long %c0" :: "i" (&tp.state));
-> 
-> to make sure that it spits out something purely numeric, rather than
-> something prefixed with a '#'.
+>>
+>> * The problems.
+>>
+>> The support for multiple process hierarchies always struck me as
+>> rather strange.  If you forget about the current cgroup controllers
+>> and their implementations, the *only* reason to support multiple
+>> hierarchies is if you want to apply resource limits based on different
+>> orthogonal categorizations.
+>>
+>> Documentation/cgroups.txt seems to be written with this consideration
+>> on mind.  It's giving an example of applying limits accoring to two
+>> orthogonal categorizations - user groups (profressors, students...)
+>> and applications (WWW, NFS...).  While it may sound like a valid use
+>> case, I'm very skeptical how useful or common mixing such orthogonal
+>> categorizations in a single setup would be.
+>>
+>> If support for multiple hierarchies comes for free, at least in terms
+>> of features, maybe it can be better but of course it isn't so.  Any
+>> given cgroup subsystem (or controller) can only be applied to a single
+>> hierarchy, which makes sense for a lot of things - what would two
+>> different limits on the same resource from different hierarchies mean?
+>> But, there also are things which can be used and useful in all
+>> hierarchies - e.g. cgroup freezer and task counter.
+>>
+>> While the current cgroup implementation and conventions can probably
+>> allow admins and engineers to tailor cgroup configuration for a
+>> specific setup, it is very difficult to use in generic and automated
+>> way.  I mean, who owns the freezer or task counter?  If they're
+>> mounted on their own hierarchies, how should they be structured?
+>> Should the different hierarchies be structured such that they are
+>> projections of one unified hierarchy so that those generic mechanisms
+>> can be applied uniformly?  If so, why do we need multiple hierarchies
+>> at all?
+ >>
+>> A related limitation is that as different subsystems don't know which
+>> hierarchies they'll end up on, they can't cooperate.  Wouldn't it make
+>> more sense if task counter is a separate thing watching the resources
+>> and triggers different actions as conifgured - be it failing forks or
+>> freezing?
 
-OK, done:
+Well, there is more. The use case we have in mind here, is Containers. 
+To span a container, we put process in cgroups - we don't care about 
+hierarchies, they are all the same - but then also need to put those 
+same process in different namespaces.
 
-8<----------------
->From f3a3bd64f72720def5cfbaedf6ff83ca54f1644b Mon Sep 17 00:00:00 2001
-From: Rabin Vincent <rabin@rab.in>
-Date: Wed, 23 Nov 2011 20:05:09 +0530
-Subject: [PATCH] jump label: detect %c support for ARM
+This is quite cumbersome, because those are two completely different 
+ways of achieving more or less the same thing, resource visibility. At 
+some point, we need to allow the container admin to interface with those 
+resources - traditionally done via /proc. And now the mess begins:
 
-Some versions of ARM GCC which do support asm goto, do not support
-the %c specifier.  Since we need the %c to support jump labels
-on ARM, detect that too in the asm goto detection script to avoid
-build errors with these versions.
+Part of /proc is namespace aware. So if you are reading your 
+/proc/mounts file, this is okay. But part of the data coming from there, 
+like /proc/cpuinfo, /proc/stat, or /proc/meminfo, really belong to 
+cgroups. And in some cases, information comes from more than one cgroup. 
+A consensus wasn't yet reached about what to do with it.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
+>> And yet another oddity is how cgroup handles nested cgroups - some
+>> care about nesting but others just treat both internal and leaf nodes
+>> equally.
+To be honest, I don't like that very much. I think once you have a 
+directory-like structure, nesting of controlled resources should be 
+assumed. But since I don't understand why this is this way to begin 
+with, I'll leave it to someone else.
 
-Acked-by: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- scripts/gcc-goto.sh |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+>> They don't care about the topology at all.  This, too, can
+>> be fine if you approach things subsys by subsys and use them in
+>> different ways but if you try to combine them in generic way you get
+>> sucked into the lala land of whatevers.
+>>
+>> The following is a "best practices" document on using cgroups.
+>>
+>>    http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
+>>
+>> To me, it seems to demonstrate the rather ugly situation that the
+>> current cgroup is providing.  Everyone should tip-toe around cgroup
+>> hierarchies and nobody has full knowledge or control over them.
+>> e.g. base system management (e.g. systemd) can't use freezer or task
+>> counter as someone else might want to use it for different hierarchy
+>> layout.
+>>
+>> It seems to me that cgroup interface is too complicated and inflexible
+>> at the same time to be useful in generic manner.  Sure, it can be
+>> useful for setups individually crafted by engineers and admins to
+>> match specific sites or applications but as soon as you try to do
+>> something automatic and generic with it, there just are too many
+>> different scenarios and limitations to consider.
+>>
+>>
+>> * So, what to do?
+>>
+>> Heh, I don't know.  IIRC, last year at LinuxCon Japan, I heard
+>> Christoph saying that the biggest problem w/ cgroup was that it was
+>> building completely separate hierarchies out of the traditional
+>> process hierarchies.  After thinking about this stuff for a while, I
+>> fully agree with him.  I think this whole thing should have been a
+>> layer over the process tree like sessions or program groups.
+>>
+>> Unfortunately, that ship sailed long ago and we gotta make do with
+>> what we have on our collective hands.  Here are some paths that we can
+>> take.
+>>
+>> 1. We're screwed anyway.  Just don't worry about it and continue down
+>>     on this path.  Can't get much worse, right?
+Wrong. =)
 
-diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
-index 98cffcb..a2af2e8 100644
---- a/scripts/gcc-goto.sh
-+++ b/scripts/gcc-goto.sh
-@@ -2,4 +2,20 @@
- # Test for gcc 'asm goto' support
- # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
- 
--echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-+cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
-+int main(void)
-+{
-+#ifdef __arm__
-+	/*
-+	 * Not related to asm goto, but used by jump label
-+	 * and broken on some ARM GCC versions (see GCC Bug 48637).
-+	 */
-+	static struct { int dummy; int state; } tp;
-+	asm (".long %c0" :: "i" (&tp.state));
-+#endif
-+
-+entry:
-+	asm goto ("" :::: entry);
-+	return 0;
-+}
-+END
--- 
-1.7.9
+>>
+>>     This approach has the apparent advantage of not having to do
+>>     anything and is probably most likely to be taken.  This isn't ideal
+>>     but hey nothing is. :P
+>>
+>> 2. Make it more flexible (and likely more complex, unfortunately).
+It sounds like the guys on TV proposing more debt to end the debt crisis...
 
+>>     Allow the utility type subsystems to be used in multiple
+>>     hierarchies.  The easiest and probably dirtiest way to achieve that
+>>     would be embedding them into cgroup core.
+>>
+>>     Thinking about doing this depresses me and it's not like I have a
+>>     cheerful personality to begin with. :(
+>>
+>> 3. Head towards single hierarchy with the pie-in-the-sky goal of
+>>     merging things into process hierarchy in some distant future.
+>>
+>>     The first step would be herding people to use a unified hierarchy
+>>     (ie. all subsystems mounted on a single cgroup tree) which is
+>>     controlled by single entity in userland (be it systemd or cgroupd,
+>>     cgroup-kit or whatever); however, even if we exclude supporting
+>>     orthogonal categorizations, there are good number of non-trivial
+>>     hurdles to clear before this can be realized.
+>>
+>>     Most importantly, we would need to clean up how nesting is handled
+>>     across different subsystems.  Handling internal and leaf nodes as
+>>     equals simply can't work.
+Agree here.
+
+>>     Membership should be recursive, and for
+>>     subsystems which can't support proper nesting, the right thing to
+>>     do would be somehow ensuring that only single node in the path from
+>>     root to leaf is active for the controller.  We may even have to
+>>     introduce an alternative of operation to support this (yuck).
+>>
+>>     This path would require the most amount of work and we would be
+>>     excluding a feature - support for multiple orthogonal
+>>     categorizations - which has been available till now, probably
+>>     through deprecation process spanning years; however, this at least
+>>     gives us hope that we may reach sanity in the end, how distant that
+>>     end may be.  Oh, hope. :)
+>>
+>> So, I mean, I don't know.  What do other people think?  Is this a
+>> unnecessary worry?  Are people generally happy with the way things
+>> are?  Lennart, Kay, what do you guys think?
+>>
+
+Well, most of the controllers, can be in practice enabled or disabled. 
+The mere fact that you live on a cgroup controller doesn't do anything 
+until you start to set limits - with the big exception being the cpu 
+controller - once you're there, it treats you as a sched entity. Maybe 
+we should ensure that all cgroups can be either on/off. Then after that, 
+we can group processes the way we want, and they may or may be not 
+resource constrained, depending on what you put on your files.
+
+This can be combined with a mechanism to lock the tasks file for 
+removal, then maybe we can end up in a better awareness situation - 
+maybe it would be saner if you can be sure that once you put a task on a 
+group, it won't just disappear...
 
