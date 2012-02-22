@@ -1,92 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab2BVBzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:55:52 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2BVBrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:47:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.129.137 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/36] block: blk-throttle should be drained regardless of q->elevator
-Date: Tue, 21 Feb 2012 17:46:28 -0800
-Message-Id: <1329875223-5102-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
+	id S1754933Ab2BVB43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:56:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21217 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab2BVB40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:56:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119903711"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andrei.emeltchenko.news@gmail.com" 
+	<andrei.emeltchenko.news@gmail.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
+Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQAgADIE4D//30WsA==
+Date: Wed, 22 Feb 2012 01:56:25 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>
+References: <20120221151435.GA19354@tuxdriver.com>
+	 <20120221.144417.1445117001833888214.davem@davemloft.net>
+	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
+	 <20120221.154053.2103818562080068513.davem@davemloft.net>
+	 <1329857959.5143.11.camel@joe2Laptop>
+	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
+ <1329874581.5143.22.camel@joe2Laptop>
+In-Reply-To: <1329874581.5143.22.camel@joe2Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1M1uYCA022122
 
-Currently, blk_cleanup_queue() doesn't call elv_drain_elevator() if
-q->elevator doesn't exist; however, bio based drivers don't have
-elevator initialized but can still use blk-throttle.  This patch moves
-q->elevator test inside blk_drain_queue() such that only
-elv_drain_elevator() is skipped if !q->elevator.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, February 21, 2012 5:36 PM
+> To: Allan, Bruce W
+> Cc: David Miller; Andy Whitcroft; Andrew Morton;
+> andrei.emeltchenko.news@gmail.com; linville@tuxdriver.com; linux-
+> wireless@vger.kernel.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+> 
+> On Tue, 2012-02-21 at 22:09 +0000, Allan, Bruce W wrote:
+> > This appears to falsely complain about parenthesis alignment in
+> > conditional statements with multiple opening parentheses.
+> 
+> Hey Allan.
+> 
+> Can you try this one please?
+> ---
+>  scripts/checkpatch.pl |   58
+> +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 58 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index a3b9782..e95419e 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1330,6 +1330,35 @@ sub check_absolute_file {
+>  	}
+>  }
+> 
+> +sub pos_last_openparen {
+> +
+> +	my ($args) = @_;
+> +
+> +	my $pos = 0;
+> +	my $len = length($args);
+> +
+> +	my $opens = $args =~ tr/\(/\(/;
+> +	my $closes = $args =~ tr/\)/\)/;
+> +
+> +	my $last_openparen = 0;
+> +
+> +	if (($opens == 0) || ($closes >= $opens)) {
+> +		return 0;
+> +	}
+> +
+> +	for ($pos = 0; $pos < $len; $pos++) {
+> +		if (substr($args, $pos) =~ /^($FuncArg)/) {
+> +			$pos += length($1);
+> +		}
+> +
+> +		if (substr($args, $pos, 1) eq '(') {
+> +			$last_openparen = $pos;
+> +		}
+> +	}
+> +
+> +	return $last_openparen + 1;
+> +}
+> +
+>  sub process {
+>  	my $filename = shift;
+> 
+> @@ -1783,6 +1812,35 @@ sub process {
+>  			     "please, no space before tabs\n" . $herevet);
+>  		}
+> 
+> +# check for && or || at the start of a line
+> +		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
+> +			CHK("LOGICAL_CONTINUATIONS",
+> +			    "Logical continuations should be on the previous
+> line\n" . $hereprev);
+> +		}
+> +
+> +# check multi-line statement indentation matches previous line
+> +		if ($prevline =~ /^\+(\t*)(if
+> \(|$Ident\().*(\&\&|\|\||,)\s*$/ && $rawline =~ /^\+([ \t]*)/) {
+> +			$prevline =~ /^\+(\t*)(if
+> \(|$Ident\()(.*)(\&\&|\|\||,)\s*$/;
+> +			my $oldindent = $1;
+> +			my $if_or_func = $2;
+> +			my $args = $3;
+> +
+> +			my $pos = pos_last_openparen($args);
+> +
+> +			my $len = length($if_or_func) + $pos;
+> +			$rawline =~ /^\+([ \t]*)/;
+> +			my $newindent = $1;
+> +
+> +			my $goodindent = $oldindent .
+> +					 "\t" x ($len / 8) .
+> +					 " "  x ($len % 8);
+> +
+> +			if ($newindent ne $goodindent) {
+> +				CHK("PARENTHESIS_ALIGNMENT",
+> +				    "Alignment should match open
+> parenthesis\n" . $hereprev);
+> +			}
+> +		}
+> +
+>  # check for spaces at the beginning of a line.
+>  # Exceptions:
+>  #  1) within comments
+> 
 
--v2: loop can have registered queue which has NULL request_fn.  Make
-     sure we don't call into __blk_run_queue() in such cases.
+It's better, but there are still instances of false hits AFAICT.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-core.c |   26 ++++++++++++++------------
- 1 files changed, 14 insertions(+), 12 deletions(-)
+Bruce.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3a78b00..7752ec2 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -365,17 +365,24 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- 
- 		spin_lock_irq(q->queue_lock);
- 
--		elv_drain_elevator(q);
-+		/*
-+		 * The caller might be trying to drain @q before its
-+		 * elevator is initialized.
-+		 */
-+		if (q->elevator)
-+			elv_drain_elevator(q);
-+
- 		if (drain_all)
- 			blk_throtl_drain(q);
- 
- 		/*
- 		 * This function might be called on a queue which failed
--		 * driver init after queue creation.  Some drivers
--		 * (e.g. fd) get unhappy in such cases.  Kick queue iff
--		 * dispatch queue has something on it.
-+		 * driver init after queue creation or is not yet fully
-+		 * active yet.  Some drivers (e.g. fd and loop) get unhappy
-+		 * in such cases.  Kick queue iff dispatch queue has
-+		 * something on it and @q has request_fn set.
- 		 */
--		if (!list_empty(&q->queue_head))
-+		if (!list_empty(&q->queue_head) && q->request_fn)
- 			__blk_run_queue(q);
- 
- 		drain |= q->rq.elvpriv;
-@@ -428,13 +435,8 @@ void blk_cleanup_queue(struct request_queue *q)
- 	spin_unlock_irq(lock);
- 	mutex_unlock(&q->sysfs_lock);
- 
--	/*
--	 * Drain all requests queued before DEAD marking.  The caller might
--	 * be trying to tear down @q before its elevator is initialized, in
--	 * which case we don't want to call into draining.
--	 */
--	if (q->elevator)
--		blk_drain_queue(q, true);
-+	/* drain all requests queued before DEAD marking */
-+	blk_drain_queue(q, true);
- 
- 	/* @q won't process any more request, flush async actions */
- 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
--- 
-1.7.7.3
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
