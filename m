@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2BVRmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:42:39 -0500
-Received: from 7.mo5.mail-out.ovh.net ([178.32.124.100]:38319 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751921Ab2BVRmi (ORCPT
+	id S1754432Ab2BVRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:43:29 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39301 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2BVRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:42:38 -0500
-Date: Wed, 22 Feb 2012 18:34:37 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 06/19] ARM: at91/pm_slowclock: rename register to
- named define
-Message-ID: <20120222173437.GG9407@game.jcrosoft.org>
-References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
- <cce50d2859ae080d6bfd9260fcd6932d634f7b9a.1329903206.git.nicolas.ferre@atmel.com>
- <20120222095040.GU22562@n2100.arm.linux.org.uk>
+	Wed, 22 Feb 2012 12:43:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.11.129 as permitted sender) smtp.mail=linus.walleij@linaro.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222095040.GU22562@n2100.arm.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 2956613155895618483
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <1329720360-23227-19-git-send-email-swarren@nvidia.com>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+	<1329720360-23227-19-git-send-email-swarren@nvidia.com>
+Date: Wed, 22 Feb 2012 18:43:27 +0100
+Message-ID: <CACRpkdaeCHtR3Co2d7VDWuAvhWqXSyEQ8gsNda2mKvqq-hFLzw@mail.gmail.com>
+Subject: Re: [PATCH 18/20] pinctrl: Fix pinconf_groups_show() to emit newline
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
+        thomas.abraham@linaro.org, tony@atomide.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:50 Wed 22 Feb     , Russell King - ARM Linux wrote:
-> On Wed, Feb 22, 2012 at 10:39:32AM +0100, Nicolas Ferre wrote:
-> >  #define PLLALOCK_TIMEOUT	1000
-> >  #define PLLBLOCK_TIMEOUT	1000
-> >  
-> > +#define pmc	r1
-> 
-> pmc	.req	r1
-> sdramc	.req	r2
-> 
-> etc.
-done
+On Mon, Feb 20, 2012 at 7:45 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-update
-[PATCH v3 07/20] ARM: at91/pm_slowclock: function slow_clock() accepts parameters
-[PATCH v3 06/20] ARM: at91/pm_slowclock: rename register to named define
-[PATCH v3 10/20] ARM: at91/pm_slowclock: add runtime detection of memory contoller
+> pinconf_groups_show() wrote all debug information on one line. Fix it to
+> match pinconf_pins_show() and be legible.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-we will see if we need to resend the full series
-
-Best Regards,
-J.
+Thanks, applied.
+Linus Walleij
