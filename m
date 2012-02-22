@@ -1,221 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab2BVNfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:35:45 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:37123 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186Ab2BVNfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:35:41 -0500
-Message-ID: <4F44EEE4.2000809@parallels.com>
-Date: Wed, 22 Feb 2012 17:34:28 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1752571Ab2BVNgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:36:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:61435 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab2BVNgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 08:36:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCHv22 14/16] X86: integrate CMA with DMA-mapping subsystem
+Date: Wed, 22 Feb 2012 13:36:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Rob Clark <rob.clark@linaro.org>, "Ohad Ben-Cohen" <ohad@wizery.com>
+References: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com> <20120221161802.f6a28085.akpm@linux-foundation.org> <20120222090930.GS22562@n2100.arm.linux.org.uk>
+In-Reply-To: <20120222090930.GS22562@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zefan <lizf@cn.fujitsu.com>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-References: <20120221211938.GE12236@google.com> <20120221212106.GF12236@google.com>
-In-Reply-To: <20120221212106.GF12236@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201202221336.09808.arnd@arndb.de>
+X-Provags-ID: V02:K0:nd/WwvTOYwpwfqOVNYIKP94MQavE/0QA8eKBHeSpONz
+ 0PyXPXG4/gCUEsjEA1FFWabS0iNoRkUfrbSCBRUOl8rmfP52NC
+ cofYoZA2YVubmy1GC3ec/PRVmJsIZd3E/Nc3Wk8jNnMWcS3c/L
+ TqHTrnizi7iBK1YZQAUr8XrMsAUvC4awf/uzEjAxfJx1bZ3baH
+ /ijFw3x5nqVnDlLS0MmrorYlVmluOTpcUh5ZxWcFhjx/pK8aaJ
+ p5jb+dUV8OuVKlOdfQqowwbMD+ID7wXFryeLTJaOeQLBmljNEl
+ Cr39JQm+K3hrlxN7r5rT9BZOd2/j7vZEuikT6SzcIRaMJOcafv
+ xUy8KRlaQt+URXHzjxBo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am afraid I also don't have too much answers for your questions, but
-I do have more questions =)
+On Wednesday 22 February 2012, Russell King - ARM Linux wrote:
+> On Tue, Feb 21, 2012 at 04:18:02PM -0800, Andrew Morton wrote:
+> > After a while I got it to compile for i386.  arm didn't go so well,
+> > partly because arm allmodconfig is presently horked (something to do
+> > with Kconfig not setting PHYS_OFFSET) and partly because arm defconfig
+> > doesn't permit CMA to be set.  Got bored, gave up.
+> 
+> That's not going to get fixed, unfortunately.  It requires us to find
+> some way to force various options to certain states on all*config
+> builds, because not surprisingly a value of 'y', 'm' or 'n' doesn't
+> work for integer or hex config options.
+> 
+> So the only way all*config can be used on ARM is with a seed config file
+> to force various options to particular states to ensure that we end up
+> with a sane configuration that avoids crap like that.
+> 
+> Alternatively, we need a way to tell kconfig that various options are to
+> be set in certain ways in the Kconfig files for all*config to avoid it
+> wanting values for hex or int options.
 
-On 02/22/2012 01:21 AM, Tejun Heo wrote:
-> Sorry, forgot to cc hch.  Cc'ing him and quoting whole message.
->
-> On Tue, Feb 21, 2012 at 01:19:38PM -0800, Tejun Heo wrote:
->> Hello, guys.
->>
->> I've been thinking about multiple hierarchy support in cgroup for a
->> while, especially after Frederic's pending task counter patchset.
->> This is a write up of what I've been thinking.  I don't know what to
->> do yet and simply continuing the current situation definitely is an
->> option, so please read on and throw in your 20 Won (or whatever amount
->> in whatever currency you want).
+I usually set KCONFIG_ALLCONFIG to a file containing the extra options
+I want, for another reason: As long as we are building platforms
+separately, all{no,yes,mod}config and randconfig will always build
+for the versatile platform instead of something more modern.
 
-I said that previously, but to this days the need for it still strikes 
-me. I mean: the usecase is pretty clear. But every single cgroup is 
-counting forks in a way or another. So for me, it would be better to 
-simply count it as a cgroup property and act on it accordingly.
+We could change that and make mach-vexpress the default, but we can
+also wait until we have the initial multiplatform support done and
+then use that one.
 
-But then, of course, if you have multiple hierarchies, in which of them 
-should you put that ? How ugly is it that you'll fail a fork, then check 
-a hierarchy - no problem - only to later found out that this was 
-configures in another hierarchy ?
+Building vexpress_defconfig (or most other defconfig, I would expect)
+works fine with the CMA series applied. This should also work,
+but there a few bugs in unrelated device drivers that would need to get
+fixed first.
 
->>
->> * The problems.
->>
->> The support for multiple process hierarchies always struck me as
->> rather strange.  If you forget about the current cgroup controllers
->> and their implementations, the *only* reason to support multiple
->> hierarchies is if you want to apply resource limits based on different
->> orthogonal categorizations.
->>
->> Documentation/cgroups.txt seems to be written with this consideration
->> on mind.  It's giving an example of applying limits accoring to two
->> orthogonal categorizations - user groups (profressors, students...)
->> and applications (WWW, NFS...).  While it may sound like a valid use
->> case, I'm very skeptical how useful or common mixing such orthogonal
->> categorizations in a single setup would be.
->>
->> If support for multiple hierarchies comes for free, at least in terms
->> of features, maybe it can be better but of course it isn't so.  Any
->> given cgroup subsystem (or controller) can only be applied to a single
->> hierarchy, which makes sense for a lot of things - what would two
->> different limits on the same resource from different hierarchies mean?
->> But, there also are things which can be used and useful in all
->> hierarchies - e.g. cgroup freezer and task counter.
->>
->> While the current cgroup implementation and conventions can probably
->> allow admins and engineers to tailor cgroup configuration for a
->> specific setup, it is very difficult to use in generic and automated
->> way.  I mean, who owns the freezer or task counter?  If they're
->> mounted on their own hierarchies, how should they be structured?
->> Should the different hierarchies be structured such that they are
->> projections of one unified hierarchy so that those generic mechanisms
->> can be applied uniformly?  If so, why do we need multiple hierarchies
->> at all?
- >>
->> A related limitation is that as different subsystems don't know which
->> hierarchies they'll end up on, they can't cooperate.  Wouldn't it make
->> more sense if task counter is a separate thing watching the resources
->> and triggers different actions as conifgured - be it failing forks or
->> freezing?
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -sj3 allmodconfig \ 	
+	KCONFIG_ALLCONFIG=$PWD/arch/arm/configs/vexpress_defconfig
 
-Well, there is more. The use case we have in mind here, is Containers. 
-To span a container, we put process in cgroups - we don't care about 
-hierarchies, they are all the same - but then also need to put those 
-same process in different namespaces.
-
-This is quite cumbersome, because those are two completely different 
-ways of achieving more or less the same thing, resource visibility. At 
-some point, we need to allow the container admin to interface with those 
-resources - traditionally done via /proc. And now the mess begins:
-
-Part of /proc is namespace aware. So if you are reading your 
-/proc/mounts file, this is okay. But part of the data coming from there, 
-like /proc/cpuinfo, /proc/stat, or /proc/meminfo, really belong to 
-cgroups. And in some cases, information comes from more than one cgroup. 
-A consensus wasn't yet reached about what to do with it.
-
->> And yet another oddity is how cgroup handles nested cgroups - some
->> care about nesting but others just treat both internal and leaf nodes
->> equally.
-To be honest, I don't like that very much. I think once you have a 
-directory-like structure, nesting of controlled resources should be 
-assumed. But since I don't understand why this is this way to begin 
-with, I'll leave it to someone else.
-
->> They don't care about the topology at all.  This, too, can
->> be fine if you approach things subsys by subsys and use them in
->> different ways but if you try to combine them in generic way you get
->> sucked into the lala land of whatevers.
->>
->> The following is a "best practices" document on using cgroups.
->>
->>    http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
->>
->> To me, it seems to demonstrate the rather ugly situation that the
->> current cgroup is providing.  Everyone should tip-toe around cgroup
->> hierarchies and nobody has full knowledge or control over them.
->> e.g. base system management (e.g. systemd) can't use freezer or task
->> counter as someone else might want to use it for different hierarchy
->> layout.
->>
->> It seems to me that cgroup interface is too complicated and inflexible
->> at the same time to be useful in generic manner.  Sure, it can be
->> useful for setups individually crafted by engineers and admins to
->> match specific sites or applications but as soon as you try to do
->> something automatic and generic with it, there just are too many
->> different scenarios and limitations to consider.
->>
->>
->> * So, what to do?
->>
->> Heh, I don't know.  IIRC, last year at LinuxCon Japan, I heard
->> Christoph saying that the biggest problem w/ cgroup was that it was
->> building completely separate hierarchies out of the traditional
->> process hierarchies.  After thinking about this stuff for a while, I
->> fully agree with him.  I think this whole thing should have been a
->> layer over the process tree like sessions or program groups.
->>
->> Unfortunately, that ship sailed long ago and we gotta make do with
->> what we have on our collective hands.  Here are some paths that we can
->> take.
->>
->> 1. We're screwed anyway.  Just don't worry about it and continue down
->>     on this path.  Can't get much worse, right?
-Wrong. =)
-
->>
->>     This approach has the apparent advantage of not having to do
->>     anything and is probably most likely to be taken.  This isn't ideal
->>     but hey nothing is. :P
->>
->> 2. Make it more flexible (and likely more complex, unfortunately).
-It sounds like the guys on TV proposing more debt to end the debt crisis...
-
->>     Allow the utility type subsystems to be used in multiple
->>     hierarchies.  The easiest and probably dirtiest way to achieve that
->>     would be embedding them into cgroup core.
->>
->>     Thinking about doing this depresses me and it's not like I have a
->>     cheerful personality to begin with. :(
->>
->> 3. Head towards single hierarchy with the pie-in-the-sky goal of
->>     merging things into process hierarchy in some distant future.
->>
->>     The first step would be herding people to use a unified hierarchy
->>     (ie. all subsystems mounted on a single cgroup tree) which is
->>     controlled by single entity in userland (be it systemd or cgroupd,
->>     cgroup-kit or whatever); however, even if we exclude supporting
->>     orthogonal categorizations, there are good number of non-trivial
->>     hurdles to clear before this can be realized.
->>
->>     Most importantly, we would need to clean up how nesting is handled
->>     across different subsystems.  Handling internal and leaf nodes as
->>     equals simply can't work.
-Agree here.
-
->>     Membership should be recursive, and for
->>     subsystems which can't support proper nesting, the right thing to
->>     do would be somehow ensuring that only single node in the path from
->>     root to leaf is active for the controller.  We may even have to
->>     introduce an alternative of operation to support this (yuck).
->>
->>     This path would require the most amount of work and we would be
->>     excluding a feature - support for multiple orthogonal
->>     categorizations - which has been available till now, probably
->>     through deprecation process spanning years; however, this at least
->>     gives us hope that we may reach sanity in the end, how distant that
->>     end may be.  Oh, hope. :)
->>
->> So, I mean, I don't know.  What do other people think?  Is this a
->> unnecessary worry?  Are people generally happy with the way things
->> are?  Lennart, Kay, what do you guys think?
->>
-
-Well, most of the controllers, can be in practice enabled or disabled. 
-The mere fact that you live on a cgroup controller doesn't do anything 
-until you start to set limits - with the big exception being the cpu 
-controller - once you're there, it treats you as a sched entity. Maybe 
-we should ensure that all cgroups can be either on/off. Then after that, 
-we can group processes the way we want, and they may or may be not 
-resource constrained, depending on what you put on your files.
-
-This can be combined with a mechanism to lock the tasks file for 
-removal, then maybe we can end up in a better awareness situation - 
-maybe it would be saner if you can be sure that once you put a task on a 
-group, it won't just disappear...
-
+	Arnd
