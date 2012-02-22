@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2BVTiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:38:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57411 "EHLO mx1.redhat.com"
+	id S1754997Ab2BVTmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 14:42:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24574 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab2BVTiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 14:38:04 -0500
-Date: Wed, 22 Feb 2012 14:37:59 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
+	id S1751477Ab2BVTl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 14:41:59 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, ctalbott@google.com,
         rni@google.com, linux-kernel@vger.kernel.org,
         Kent Overstreet <koverstreet@google.com>
 Subject: Re: [PATCH 34/36] block: implement bio_associate_current()
-Message-ID: <20120222193759.GB7635@redhat.com>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <1329875223-5102-35-git-send-email-tj@kernel.org>
- <x49linvyobl.fsf@segfault.boston.devel.redhat.com>
- <20120222190750.GA17480@google.com>
- <x494nuizmqw.fsf@segfault.boston.devel.redhat.com>
+	<1329875223-5102-35-git-send-email-tj@kernel.org>
+	<x49linvyobl.fsf@segfault.boston.devel.redhat.com>
+	<20120222190750.GA17480@google.com>
+	<x494nuizmqw.fsf@segfault.boston.devel.redhat.com>
+	<20120222193759.GB7635@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 22 Feb 2012 14:41:54 -0500
+In-Reply-To: <20120222193759.GB7635@redhat.com> (Vivek Goyal's message of
+	"Wed, 22 Feb 2012 14:37:59 -0500")
+Message-ID: <x49zkcay7st.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x494nuizmqw.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 02:33:43PM -0500, Jeff Moyer wrote:
-> Tejun Heo <tj@kernel.org> writes:
-> 
-> > Hey, Jeff.
-> 
-> Hi, Tejun!
-> 
-> > On Wed, Feb 22, 2012 at 08:45:02AM -0500, Jeff Moyer wrote:
-> >> Tejun Heo <tj@kernel.org> writes:
-> >> 
-> >> > -v2: #ifdef CONFIG_BLK_CGROUP added around bio->bi_ioc dereference in
-> >> >      rq_ioc() to fix build breakage.
-> >> 
-> >> This is useful for cfq without blk cgroups as well, right?  Why have you
-> >> limited the scope like this?
-> >
-> > Because blk-throttle is the only current user.  We can move the
-> > BLK_CGROUP to cover just bi_css later on as we add more users.
-> 
-> I guess you're going to make me read the whole patch set.  ;-)  What I'm
-> getting at is CFQ uses the io_context to make its scheduling decisions.
-> If we can propagate the issuer's I/O context from bio creation all the
-> way down to the I/O scheduler, then we can do a better job of accounting
-> I/O (and hence scheduling, preemption, etc).  As Vivek mentioned
-> previously, we have seen performance issues with the dm-crypt target and
-> CFQ, precisely because all of the I/O is submitted in the context of a
-> worker thread, and the the process that initiated the I/O is unknown at
-> that point.
-> 
-> Hopefully I've either cleared up my question, or proven to you that I do
-> need to go read the rest of the patch set to understand why my question
-> doesn't make sense.  Let me know which is the case.  ;-)
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Currently he has put the bio_associate() hook only in blk_throtl_bio()
-which is under CONFIG_BLK_CGROUP. It is agreed upon that this mechanism
-looks generally useful and probably submit_bio() is a better place to
-put the hook.  Tejun mentioned that once things work well, later we can
-think of making the functionality more generic. In that case we shall
-have to remove the cgroup specific #ifdefs.
+> Currently he has put the bio_associate() hook only in blk_throtl_bio()
+> which is under CONFIG_BLK_CGROUP. It is agreed upon that this mechanism
+> looks generally useful and probably submit_bio() is a better place to
+> put the hook.  Tejun mentioned that once things work well, later we can
+> think of making the functionality more generic. In that case we shall
+> have to remove the cgroup specific #ifdefs.
 
-Thansk
-Vivek
+Thanks for the recap, Vivek!
+
+-Jeff
