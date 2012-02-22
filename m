@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2BVOnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 09:43:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10495 "EHLO
+	id S1753243Ab2BVOnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 09:43:15 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21149 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab2BVOmP (ORCPT
+	with ESMTP id S1752894Ab2BVOmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Feb 2012 09:42:15 -0500
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=9QJGFBkUHwkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=xv7F_RwSEGyqHAq6ptsA:9 a=DFaQWu-492A7Z38V73wA:7 a=QEXdDO2ut3YA:10 a=YTw0oxLd7MoA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=NB3DgkIILUVRXzPZdFkA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=tneeT07oBvEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=gcz1SOduef3g2IXHqjQA:9 a=l36-n2SHbqBaXGvfOgEA:7 a=QEXdDO2ut3YA:10 a=YTw0oxLd7MoA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=57anIX6a6QJWPe-tR6MA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120222144211.499161019@goodmis.org>
+Message-Id: <20120222144211.815180136@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Wed, 22 Feb 2012 09:40:44 -0500
+Date: Wed, 22 Feb 2012 09:40:45 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 8/9] ftrace: Allow to specify filter field type for ftrace events
+Subject: [PATCH 9/9] ftrace, perf: Add filter support for function trace event
 References: <20120222144036.824378742@goodmis.org>
-Content-Disposition: inline; filename=0008-ftrace-Allow-to-specify-filter-field-type-for-ftrace.patch
+Content-Disposition: inline; filename=0009-ftrace-perf-Add-filter-support-for-function-trace-ev.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,394 +33,358 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding FILTER_TRACE_FN event field type for function tracepoint
-event, so it can be properly recognized within filtering code.
+Adding support to filter function trace event via perf
+interface. It is now possible to use filter interface
+in the perf tool like:
 
-Currently all fields of ftrace subsystem events share the common
-field type FILTER_OTHER. Since the function trace fields need
-special care within the filtering code we need to recognize it
-properly, hence adding the FILTER_TRACE_FN event type.
+  perf record -e ftrace:function --filter=3D"(ip =3D=3D mm_*)" ls
 
-Adding filter parameter to the FTRACE_ENTRY macro, to specify the
-filter field type for the event.
+The filter syntax is restricted to the the 'ip' field only,
+and following operators are accepted '=3D=3D' '!=3D' '||', ending
+up with the filter strings like:
 
-Link: http://lkml.kernel.org/r/1329317514-8131-7-git-send-email-jolsa@redha=
+  ip =3D=3D f1[, ]f2 ... || ip !=3D f3[, ]f4 ...
+
+with comma ',' or space ' ' as a function separator. If the
+space ' ' is used as a separator, the right side of the
+assignment needs to be enclosed in double quotes '"', e.g.:
+
+  perf record -e ftrace:function --filter '(ip =3D=3D do_execve,sys_*,ext*)=
+' ls
+  perf record -e ftrace:function --filter '(ip =3D=3D "do_execve,sys_*,ext*=
+")' ls
+  perf record -e ftrace:function --filter '(ip =3D=3D "do_execve sys_* ext*=
+")' ls
+
+The '=3D=3D' operator adds trace filter with same effect as would
+be added via set_ftrace_filter file.
+
+The '!=3D' operator adds trace filter with same effect as would
+be added via set_ftrace_notrace file.
+
+The right side of the '!=3D', '=3D=3D' operators is list of functions
+or regexp. to be added to filter separated by space.
+
+The '||' operator is used for connecting multiple filter definitions
+together. It is possible to have more than one '=3D=3D' and '!=3D'
+operators within one filter string.
+
+Link: http://lkml.kernel.org/r/1329317514-8131-8-git-send-email-jolsa@redha=
 t.com
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h       |    1 +
- kernel/trace/trace.h               |   23 +++++++++-------
- kernel/trace/trace_entries.h       |   48 ++++++++++++++++++++++++---------
- kernel/trace/trace_events_filter.c |    7 ++++-
- kernel/trace/trace_export.c        |   51 +++++++++++++++++++-------------=
----
- 5 files changed, 83 insertions(+), 47 deletions(-)
+ include/linux/ftrace.h             |    7 +-
+ kernel/trace/ftrace.c              |    6 ++
+ kernel/trace/trace.h               |    2 -
+ kernel/trace/trace_event_perf.c    |    4 +-
+ kernel/trace/trace_events_filter.c |  165 ++++++++++++++++++++++++++++++++=
+++--
+ 5 files changed, 172 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 2bf677c..dd478fc 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -245,6 +245,7 @@ enum {
- 	FILTER_STATIC_STRING,
- 	FILTER_DYN_STRING,
- 	FILTER_PTR_STRING,
-+	FILTER_TRACE_FN,
- };
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 64a309d..72a6cab 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -250,6 +250,7 @@ int ftrace_set_notrace(struct ftrace_ops *ops, unsigned=
+ char *buf,
+ 			int len, int reset);
+ void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
+ void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
++void ftrace_free_filter(struct ftrace_ops *ops);
 =20
- #define EVENT_STORAGE_SIZE 128
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 76a1c50..29f93cd 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -56,21 +56,23 @@ enum trace_type {
- #define F_STRUCT(args...)		args
+ int register_ftrace_command(struct ftrace_func_command *cmd);
+ int unregister_ftrace_command(struct ftrace_func_command *cmd);
+@@ -380,9 +381,6 @@ extern void ftrace_enable_daemon(void);
+ #else
+ static inline int skip_trace(unsigned long ip) { return 0; }
+ static inline int ftrace_force_update(void) { return 0; }
+-static inline void ftrace_set_filter(unsigned char *buf, int len, int rese=
+t)
+-{
+-}
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
+@@ -406,6 +404,9 @@ static inline int ftrace_text_reserved(void *start, voi=
+d *end)
+  */
+ #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
+ #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
++#define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
++#define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
++#define ftrace_free_filter(ops) do { } while (0)
 =20
- #undef FTRACE_ENTRY
--#define FTRACE_ENTRY(name, struct_name, id, tstruct, print)	\
--	struct struct_name {					\
--		struct trace_entry	ent;			\
--		tstruct						\
-+#define FTRACE_ENTRY(name, struct_name, id, tstruct, print, filter)	\
-+	struct struct_name {						\
-+		struct trace_entry	ent;				\
-+		tstruct							\
- 	}
-=20
- #undef TP_ARGS
- #define TP_ARGS(args...)	args
-=20
- #undef FTRACE_ENTRY_DUP
--#define FTRACE_ENTRY_DUP(name, name_struct, id, tstruct, printk)
-+#define FTRACE_ENTRY_DUP(name, name_struct, id, tstruct, printk, filter)
-=20
- #undef FTRACE_ENTRY_REG
--#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
--	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
-+#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print,	\
-+			 filter, regfn) \
-+	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print), \
-+		     filter)
-=20
- #include "trace_entries.h"
-=20
-@@ -826,12 +828,13 @@ extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
-=20
- #undef FTRACE_ENTRY
--#define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
-+#define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
- 	extern struct ftrace_event_call					\
- 	__attribute__((__aligned__(4))) event_##call;
- #undef FTRACE_ENTRY_DUP
--#define FTRACE_ENTRY_DUP(call, struct_name, id, tstruct, print)		\
--	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
-+#define FTRACE_ENTRY_DUP(call, struct_name, id, tstruct, print, filter)	\
-+	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print), \
-+		     filter)
- #include "trace_entries.h"
-=20
- #ifdef CONFIG_PERF_EVENTS
-diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
-index 47db7ed..d91eb05 100644
---- a/kernel/trace/trace_entries.h
-+++ b/kernel/trace/trace_entries.h
-@@ -66,6 +66,8 @@ FTRACE_ENTRY_REG(function, ftrace_entry,
-=20
- 	F_printk(" %lx <-- %lx", __entry->ip, __entry->parent_ip),
-=20
-+	FILTER_TRACE_FN,
-+
- 	perf_ftrace_event_register
- );
-=20
-@@ -80,7 +82,9 @@ FTRACE_ENTRY(funcgraph_entry, ftrace_graph_ent_entry,
- 		__field_desc(	int,		graph_ent,	depth		)
- 	),
-=20
--	F_printk("--> %lx (%d)", __entry->func, __entry->depth)
-+	F_printk("--> %lx (%d)", __entry->func, __entry->depth),
-+
-+	FILTER_OTHER
- );
-=20
- /* Function return entry */
-@@ -100,7 +104,9 @@ FTRACE_ENTRY(funcgraph_exit, ftrace_graph_ret_entry,
- 	F_printk("<-- %lx (%d) (start: %llx  end: %llx) over: %d",
- 		 __entry->func, __entry->depth,
- 		 __entry->calltime, __entry->rettime,
--		 __entry->depth)
-+		 __entry->depth),
-+
-+	FILTER_OTHER
- );
-=20
- /*
-@@ -129,8 +135,9 @@ FTRACE_ENTRY(context_switch, ctx_switch_entry,
- 	F_printk("%u:%u:%u  =3D=3D> %u:%u:%u [%03u]",
- 		 __entry->prev_pid, __entry->prev_prio, __entry->prev_state,
- 		 __entry->next_pid, __entry->next_prio, __entry->next_state,
--		 __entry->next_cpu
--		)
-+		 __entry->next_cpu),
-+
-+	FILTER_OTHER
- );
-=20
- /*
-@@ -148,8 +155,9 @@ FTRACE_ENTRY_DUP(wakeup, ctx_switch_entry,
- 	F_printk("%u:%u:%u  =3D=3D+ %u:%u:%u [%03u]",
- 		 __entry->prev_pid, __entry->prev_prio, __entry->prev_state,
- 		 __entry->next_pid, __entry->next_prio, __entry->next_state,
--		 __entry->next_cpu
--		)
-+		 __entry->next_cpu),
-+
-+	FILTER_OTHER
- );
-=20
- /*
-@@ -171,7 +179,9 @@ FTRACE_ENTRY(kernel_stack, stack_entry,
- 		 "\t=3D> (%08lx)\n\t=3D> (%08lx)\n\t=3D> (%08lx)\n\t=3D> (%08lx)\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
--		 __entry->caller[6], __entry->caller[7])
-+		 __entry->caller[6], __entry->caller[7]),
-+
-+	FILTER_OTHER
- );
-=20
- FTRACE_ENTRY(user_stack, userstack_entry,
-@@ -187,7 +197,9 @@ FTRACE_ENTRY(user_stack, userstack_entry,
- 		 "\t=3D> (%08lx)\n\t=3D> (%08lx)\n\t=3D> (%08lx)\n\t=3D> (%08lx)\n",
- 		 __entry->caller[0], __entry->caller[1], __entry->caller[2],
- 		 __entry->caller[3], __entry->caller[4], __entry->caller[5],
--		 __entry->caller[6], __entry->caller[7])
-+		 __entry->caller[6], __entry->caller[7]),
-+
-+	FILTER_OTHER
- );
-=20
- /*
-@@ -204,7 +216,9 @@ FTRACE_ENTRY(bprint, bprint_entry,
- 	),
-=20
- 	F_printk("%08lx fmt:%p",
--		 __entry->ip, __entry->fmt)
-+		 __entry->ip, __entry->fmt),
-+
-+	FILTER_OTHER
- );
-=20
- FTRACE_ENTRY(print, print_entry,
-@@ -217,7 +231,9 @@ FTRACE_ENTRY(print, print_entry,
- 	),
-=20
- 	F_printk("%08lx %s",
--		 __entry->ip, __entry->buf)
-+		 __entry->ip, __entry->buf),
-+
-+	FILTER_OTHER
- );
-=20
- FTRACE_ENTRY(mmiotrace_rw, trace_mmiotrace_rw,
-@@ -236,7 +252,9 @@ FTRACE_ENTRY(mmiotrace_rw, trace_mmiotrace_rw,
-=20
- 	F_printk("%lx %lx %lx %d %x %x",
- 		 (unsigned long)__entry->phys, __entry->value, __entry->pc,
--		 __entry->map_id, __entry->opcode, __entry->width)
-+		 __entry->map_id, __entry->opcode, __entry->width),
-+
-+	FILTER_OTHER
- );
-=20
- FTRACE_ENTRY(mmiotrace_map, trace_mmiotrace_map,
-@@ -254,7 +272,9 @@ FTRACE_ENTRY(mmiotrace_map, trace_mmiotrace_map,
-=20
- 	F_printk("%lx %lx %lx %d %x",
- 		 (unsigned long)__entry->phys, __entry->virt, __entry->len,
--		 __entry->map_id, __entry->opcode)
-+		 __entry->map_id, __entry->opcode),
-+
-+	FILTER_OTHER
- );
-=20
-=20
-@@ -274,6 +294,8 @@ FTRACE_ENTRY(branch, trace_branch,
-=20
- 	F_printk("%u:%s:%s (%u)",
- 		 __entry->line,
--		 __entry->func, __entry->file, __entry->correct)
-+		 __entry->func, __entry->file, __entry->correct),
-+
-+	FILTER_OTHER
- );
-=20
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
-_filter.c
-index 76afaee..3da3d0e 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -899,6 +899,11 @@ int filter_assign_type(const char *type)
- 	return FILTER_OTHER;
+ static inline ssize_t ftrace_filter_write(struct file *file, const char __=
+user *ubuf,
+ 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index f615f97..867bd1d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1186,6 +1186,12 @@ static void free_ftrace_hash_rcu(struct ftrace_hash =
+*hash)
+ 	call_rcu_sched(&hash->rcu, __free_ftrace_hash_rcu);
  }
 =20
-+static bool is_function_field(struct ftrace_event_field *field)
++void ftrace_free_filter(struct ftrace_ops *ops)
 +{
-+	return field->filter_type =3D=3D FILTER_TRACE_FN;
++	free_ftrace_hash(ops->filter_hash);
++	free_ftrace_hash(ops->notrace_hash);
 +}
 +
- static bool is_string_field(struct ftrace_event_field *field)
+ static struct ftrace_hash *alloc_ftrace_hash(int size_bits)
  {
- 	return field->filter_type =3D=3D FILTER_DYN_STRING ||
-@@ -986,7 +991,7 @@ static int init_pred(struct filter_parse_state *ps,
+ 	struct ftrace_hash *hash;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 29f93cd..54faec7 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -776,9 +776,7 @@ struct filter_pred {
+ 	u64 			val;
+ 	struct regex		regex;
+ 	unsigned short		*ops;
+-#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	struct ftrace_event_field *field;
+-#endif
+ 	int 			offset;
+ 	int 			not;
+ 	int 			op;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_per=
+f.c
+index fdeeb5c..fee3752 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -298,7 +298,9 @@ static int perf_ftrace_function_register(struct perf_ev=
+ent *event)
+ static int perf_ftrace_function_unregister(struct perf_event *event)
+ {
+ 	struct ftrace_ops *ops =3D &event->ftrace_ops;
+-	return unregister_ftrace_function(ops);
++	int ret =3D unregister_ftrace_function(ops);
++	ftrace_free_filter(ops);
++	return ret;
+ }
+=20
+ static void perf_ftrace_function_enable(struct perf_event *event)
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
+_filter.c
+index 3da3d0e..431dba8 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -81,6 +81,7 @@ enum {
+ 	FILT_ERR_TOO_MANY_PREDS,
+ 	FILT_ERR_MISSING_FIELD,
+ 	FILT_ERR_INVALID_FILTER,
++	FILT_ERR_IP_FIELD_ONLY,
+ };
+=20
+ static char *err_text[] =3D {
+@@ -96,6 +97,7 @@ static char *err_text[] =3D {
+ 	"Too many terms in predicate expression",
+ 	"Missing field name and/or value",
+ 	"Meaningless filter expression",
++	"Only 'ip' field is supported for function trace",
+ };
+=20
+ struct opstack_op {
+@@ -991,7 +993,12 @@ static int init_pred(struct filter_parse_state *ps,
  			fn =3D filter_pred_strloc;
  		else
  			fn =3D filter_pred_pchar;
--	} else {
-+	} else if (!is_function_field(field)) {
+-	} else if (!is_function_field(field)) {
++	} else if (is_function_field(field)) {
++		if (strcmp(field->name, "ip")) {
++			parse_error(ps, FILT_ERR_IP_FIELD_ONLY, 0);
++			return -EINVAL;
++		}
++	} else {
  		if (field->is_signed)
  			ret =3D strict_strtoll(pred->regex.pattern, 0, &val);
  		else
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index a3dbee6..7b46c9b 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -23,8 +23,10 @@
-  * function and thus become accesible via perf.
-  */
- #undef FTRACE_ENTRY_REG
--#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, regfn) \
--	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
-+#define FTRACE_ENTRY_REG(name, struct_name, id, tstruct, print, \
-+			 filter, regfn) \
-+	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print), \
-+		     filter)
+@@ -1338,10 +1345,7 @@ static struct filter_pred *create_pred(struct filter=
+_parse_state *ps,
 =20
- /* not needed for this file */
- #undef __field_struct
-@@ -52,21 +54,22 @@
- #define F_printk(fmt, args...) fmt, args
-=20
- #undef FTRACE_ENTRY
--#define FTRACE_ENTRY(name, struct_name, id, tstruct, print)	\
--struct ____ftrace_##name {					\
--	tstruct							\
--};								\
--static void __always_unused ____ftrace_check_##name(void)	\
--{								\
--	struct ____ftrace_##name *__entry =3D NULL;		\
--								\
--	/* force compile-time check on F_printk() */		\
--	printk(print);						\
-+#define FTRACE_ENTRY(name, struct_name, id, tstruct, print, filter)	\
-+struct ____ftrace_##name {						\
-+	tstruct								\
-+};									\
-+static void __always_unused ____ftrace_check_##name(void)		\
-+{									\
-+	struct ____ftrace_##name *__entry =3D NULL;			\
-+									\
-+	/* force compile-time check on F_printk() */			\
-+	printk(print);							\
+ 	strcpy(pred.regex.pattern, operand2);
+ 	pred.regex.len =3D strlen(pred.regex.pattern);
+-
+-#ifdef CONFIG_FTRACE_STARTUP_TEST
+ 	pred.field =3D field;
+-#endif
+ 	return init_pred(ps, field, &pred) ? NULL : &pred;
  }
 =20
- #undef FTRACE_ENTRY_DUP
--#define FTRACE_ENTRY_DUP(name, struct_name, id, tstruct, print)	\
--	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print))
-+#define FTRACE_ENTRY_DUP(name, struct_name, id, tstruct, print, filter)	\
-+	FTRACE_ENTRY(name, struct_name, id, PARAMS(tstruct), PARAMS(print), \
-+		     filter)
+@@ -1954,6 +1958,148 @@ void ftrace_profile_free_filter(struct perf_event *=
+event)
+ 	__free_filter(filter);
+ }
 =20
- #include "trace_entries.h"
-=20
-@@ -75,7 +78,7 @@ static void __always_unused ____ftrace_check_##name(void)=
-	\
- 	ret =3D trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
-=20
-@@ -85,7 +88,7 @@ static void __always_unused ____ftrace_check_##name(void)=
-	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
-=20
-@@ -99,7 +102,7 @@ static void __always_unused ____ftrace_check_##name(void=
-)	\
- 		ret =3D trace_define_field(event_call, event_storage, #item, \
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 		mutex_unlock(&event_storage_mutex);			\
- 		if (ret)						\
- 			return ret;					\
-@@ -112,7 +115,7 @@ static void __always_unused ____ftrace_check_##name(voi=
-d)	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
-=20
-@@ -120,17 +123,18 @@ static void __always_unused ____ftrace_check_##name(v=
-oid)	\
- #define __dynamic_array(type, item)					\
- 	ret =3D trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
--				 0, is_signed_type(type), FILTER_OTHER);\
-+				 0, is_signed_type(type), filter_type);\
- 	if (ret)							\
- 		return ret;
-=20
- #undef FTRACE_ENTRY
--#define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
-+#define FTRACE_ENTRY(name, struct_name, id, tstruct, print, filter)	\
- int									\
- ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
- {									\
- 	struct struct_name field;					\
- 	int ret;							\
-+	int filter_type =3D filter;					\
- 									\
- 	tstruct;							\
- 									\
-@@ -161,7 +165,8 @@ ftrace_define_fields_##name(struct ftrace_event_call *e=
-vent_call)	\
- #define F_printk(fmt, args...) #fmt ", "  __stringify(args)
-=20
- #undef FTRACE_ENTRY_REG
--#define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, regfn)\
-+#define FTRACE_ENTRY_REG(call, struct_name, etype, tstruct, print, filter,\
-+			 regfn)						\
- 									\
- struct ftrace_event_class event_class_ftrace_##call =3D {			\
- 	.system			=3D __stringify(TRACE_SYSTEM),		\
-@@ -180,9 +185,9 @@ struct ftrace_event_call __used						\
- __attribute__((section("_ftrace_events"))) *__event_##call =3D &event_##ca=
-ll;
-=20
- #undef FTRACE_ENTRY
--#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print)		\
-+#define FTRACE_ENTRY(call, struct_name, etype, tstruct, print, filter)	\
- 	FTRACE_ENTRY_REG(call, struct_name, etype,			\
--			 PARAMS(tstruct), PARAMS(print), NULL)
-+			 PARAMS(tstruct), PARAMS(print), filter, NULL)
-=20
- int ftrace_event_is_function(struct ftrace_event_call *call)
++struct function_filter_data {
++	struct ftrace_ops *ops;
++	int first_filter;
++	int first_notrace;
++};
++
++#ifdef CONFIG_FUNCTION_TRACER
++static char **
++ftrace_function_filter_re(char *buf, int len, int *count)
++{
++	char *str, *sep, **re;
++
++	str =3D kstrndup(buf, len, GFP_KERNEL);
++	if (!str)
++		return NULL;
++
++	/*
++	 * The argv_split function takes white space
++	 * as a separator, so convert ',' into spaces.
++	 */
++	while ((sep =3D strchr(str, ',')))
++		*sep =3D ' ';
++
++	re =3D argv_split(GFP_KERNEL, str, count);
++	kfree(str);
++	return re;
++}
++
++static int ftrace_function_set_regexp(struct ftrace_ops *ops, int filter,
++				      int reset, char *re, int len)
++{
++	int ret;
++
++	if (filter)
++		ret =3D ftrace_set_filter(ops, re, len, reset);
++	else
++		ret =3D ftrace_set_notrace(ops, re, len, reset);
++
++	return ret;
++}
++
++static int __ftrace_function_set_filter(int filter, char *buf, int len,
++					struct function_filter_data *data)
++{
++	int i, re_cnt, ret;
++	int *reset;
++	char **re;
++
++	reset =3D filter ? &data->first_filter : &data->first_notrace;
++
++	/*
++	 * The 'ip' field could have multiple filters set, separated
++	 * either by space or comma. We first cut the filter and apply
++	 * all pieces separatelly.
++	 */
++	re =3D ftrace_function_filter_re(buf, len, &re_cnt);
++	if (!re)
++		return -EINVAL;
++
++	for (i =3D 0; i < re_cnt; i++) {
++		ret =3D ftrace_function_set_regexp(data->ops, filter, *reset,
++						 re[i], strlen(re[i]));
++		if (ret)
++			break;
++
++		if (*reset)
++			*reset =3D 0;
++	}
++
++	argv_free(re);
++	return ret;
++}
++
++static int ftrace_function_check_pred(struct filter_pred *pred, int leaf)
++{
++	struct ftrace_event_field *field =3D pred->field;
++
++	if (leaf) {
++		/*
++		 * Check the leaf predicate for function trace, verify:
++		 *  - only '=3D=3D' and '!=3D' is used
++		 *  - the 'ip' field is used
++		 */
++		if ((pred->op !=3D OP_EQ) && (pred->op !=3D OP_NE))
++			return -EINVAL;
++
++		if (strcmp(field->name, "ip"))
++			return -EINVAL;
++	} else {
++		/*
++		 * Check the non leaf predicate for function trace, verify:
++		 *  - only '||' is used
++		*/
++		if (pred->op !=3D OP_OR)
++			return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int ftrace_function_set_filter_cb(enum move_type move,
++					 struct filter_pred *pred,
++					 int *err, void *data)
++{
++	/* Checking the node is valid for function trace. */
++	if ((move !=3D MOVE_DOWN) ||
++	    (pred->left !=3D FILTER_PRED_INVALID)) {
++		*err =3D ftrace_function_check_pred(pred, 0);
++	} else {
++		*err =3D ftrace_function_check_pred(pred, 1);
++		if (*err)
++			return WALK_PRED_ABORT;
++
++		*err =3D __ftrace_function_set_filter(pred->op =3D=3D OP_EQ,
++						    pred->regex.pattern,
++						    pred->regex.len,
++						    data);
++	}
++
++	return (*err) ? WALK_PRED_ABORT : WALK_PRED_DEFAULT;
++}
++
++static int ftrace_function_set_filter(struct perf_event *event,
++				      struct event_filter *filter)
++{
++	struct function_filter_data data =3D {
++		.first_filter  =3D 1,
++		.first_notrace =3D 1,
++		.ops           =3D &event->ftrace_ops,
++	};
++
++	return walk_pred_tree(filter->preds, filter->root,
++			      ftrace_function_set_filter_cb, &data);
++}
++#else
++static int ftrace_function_set_filter(struct perf_event *event,
++				      struct event_filter *filter)
++{
++	return -ENODEV;
++}
++#endif /* CONFIG_FUNCTION_TRACER */
++
+ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 			      char *filter_str)
  {
+@@ -1974,9 +2120,16 @@ int ftrace_profile_set_filter(struct perf_event *eve=
+nt, int event_id,
+ 		goto out_unlock;
+=20
+ 	err =3D create_filter(call, filter_str, false, &filter);
+-	if (!err)
+-		event->filter =3D filter;
++	if (err)
++		goto free_filter;
++
++	if (ftrace_event_is_function(call))
++		err =3D ftrace_function_set_filter(event, filter);
+ 	else
++		event->filter =3D filter;
++
++free_filter:
++	if (err || ftrace_event_is_function(call))
+ 		__free_filter(filter);
+=20
+ out_unlock:
 --=20
 1.7.8.3
 
@@ -433,19 +397,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPRP7DAAoJEIy3vGnGbaoAeh0QAIyZyMxHtDd5NVo6vUC+jw43
-oUAa+xKXvNMEl2lfR5ngUgHuDKlxdl2l/PZuhjaa6te7P1LjcZPkqyr/bDMp3sUl
-XfUHqfVUXO356BGRKe6UIe0ISTAU6UcnugR4F2kY1CV0FVLgPY6RJgmo1wRRlcnq
-IFWb3rxgIRZYEA2UA7drnEj6Dhbc3Eyv4Z+FhK8jznKZMvifTJCEIY1WW8QNTkRC
-1sIPqSKa0sko6Mb8o0+d+rDfPY5ZKWtt8XkAotdjFFymtElrN7iYRewMLShcIDpw
-JChWC1JFE14FFd+YM/cJ2W5I+qr7eeM4jv97sSO8tS10hIcRsBM2n7UksLAXR9jl
-WwA1zQ/v2LcRdV89sXky9JhVCInmKClxDzAW2clV7dTFy7dmjsiFPENgjIODf5aX
-4VYzEfMdzBP/JCTJPDLmlV2Hp/P7xstWC0QHR/WpMAEvCi4cF+c0fNOD6LJQmKDf
-u+IkyhpLbV7Z3GNH4d8/LgBV8c7yG11kJoAgzD3XdD6FfjcMnso1ZBxFqYHlQbuJ
-wr5xfJfBSX0bGRib1DmpaL1GKZr8HmWhdVaTtTmCnQDEapNP4PBYmmSi89vnDZxx
-CXODCmbe8H146cCPdhEXTNDyyAsWybwiOXxGVk/GeQRPXnw5ONaABYGXfgK3W+5D
-nqJrA3ofdKnbLbNoviZA
-=VBp8
+iQIcBAABAgAGBQJPRP7DAAoJEIy3vGnGbaoAc/sQAL5ZNeHL6QruBZv4cAbpmhZw
+INPYpKaE6uu5JEvPsk3I9OKj5cwiVqgESAQlqA51upImmSE8Dh8qFXrWFo6/d5do
+O7MeWV49fEnXcCe+0bclJ9b/vZiGlyW0IEwVas8ovmeUGcCllzqez6Cspt8wZKEc
+NJRdTVMX1V3rVs1DcBpOlleSAJJGzbfbt9/opfVxyb9auqvgXWdEDUkimIlyeN6T
+pcDa/9ToOtIrhvGYVsGqQqYC3rk6gqD6XpZZk76DzGVp9z4MY2FBPL4DeMdk9KmQ
+ytp5d8+qhVEvDoSWIi3oaeVR4dQ0MzUcVmkUthaynJTxzQjv4JKiMd5z/sMQj2SH
+Yl+WIOk5Ox5lLGLtSY1d6ZKufzg1djFD+a4RsO+OdPDJuek/KEcAOjTJiHF6QPZR
+oYOXHtHm1BONpWmHma+ybN6l7cBpNjinA5FkV7ZxcUDE3vYnKmhsdnT91v9tAfkl
+dAb+MbheaD1dD0u5zbdcuf5AvZ9kEZwc0nH2Gb4hV1wStgxmRRHdkYxccNwlO99G
+xFvnTKZ0rvAlP/Ow6yzrBGyLgyoI6eB+hR2iqe0cwsFAHMcN/emuDLztSQaHw+qX
+Mc11xcxnxttDq3toMKUtWZfu7oJOhQ+8j73yWKv7EZKIMxD13ukqc/IoyFmNVs/X
+CAoMYPmeVplB6K+Pdut2
+=Vq28
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
