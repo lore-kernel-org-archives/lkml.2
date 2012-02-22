@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab2BVNzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:55:21 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:48196 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751585Ab2BVNzU (ORCPT
+	id S1752643Ab2BVNz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:55:26 -0500
+Received: from matrix.voodoobox.net ([75.127.97.206]:59164 "EHLO
+	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab2BVNzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:55:20 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 4zsRZIAVM1lMmj9gvgPQSnJLQ7UnSIZDKwLjCs7Ut65jCa8
- R8Od29c9OLSCQVzHYnlUGJ3APfj3tLHkvOaa1Ugu2AEgP3XGb40ZFCHbdVHZ
- wqcPqDL_CIiirEans6ysf34hfIlv1rHzgUGSIUC11z7dOV_CwGi1JynSI5L7
- mFeu4ozkYeBZn7ZgO8WMYsVIYim3v9C6ImVK_VnLiKR3hPzjwF6ODHR9d4WO
- iH7KoGwQeqLapc_SSYrY3LwxaJILOltW5_qIw_SRXs9Bxh88c6JPjFpKa2h3
- RrdISCHoS22S_.njG_rfhLXUzByfzfV7TkeMw72axV_JKs.1GU96yxjj.W3c
- ugA9UmFjzOq.oAdMmEmdypv0d2BUCyN3DUyPiIktBbFwYpG0tw.2ZuujtWiK
- r
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 22 Feb 2012 07:55:16 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Rafael Aquini <aquini@redhat.com>
-cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
-In-Reply-To: <20120222115320.GA3107@x61.redhat.com>
-Message-ID: <alpine.DEB.2.00.1202220754140.21637@router.home>
-References: <20120222115320.GA3107@x61.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 22 Feb 2012 08:55:23 -0500
+X-Greylist: delayed 1220 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 08:55:22 EST
+Subject: Re: [PATCH 1/2] 3com/typhoon: reuse eth_mac_addr()
+From: David Dillow <dave@thedillows.org>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Date: Wed, 22 Feb 2012 08:32:17 -0500
+In-Reply-To: <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
+References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
+	 <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1329917537.27315.0.camel@obelisk.thedillows.org>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Feb 2012, Rafael Aquini wrote:
+On Wed, 2012-02-22 at 13:36 +0100, Danny Kukawka wrote:
+> Use eth_mac_addr() for .ndo_set_mac_address, remove
+> typhoon_set_mac_address() since it do currently the same as
+> eth_mac_addr(). Additional advantage: eth_mac_addr() already
+> checks if the given address is valid.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
 
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> +void oom_dump_slabs(int ratio)
-> +{
-
-> +
-> +		for_each_online_node(node) {
-> +			struct kmem_cache_node *n = get_node(cachep, node);
-> +			if (!n)
-> +				continue;
-> +
-> +			nr_objs += atomic_long_read(&n->total_objects);
-
-Please use node_nr_objects() instead of directly accessing total_objects.
-total_objects are only available if debugging support was compiled in.
+Acked-by: Dave Dillow <dave@thedillows.org>
 
