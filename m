@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab2BVQ3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:29:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55583 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab2BVQ26 (ORCPT
+	id S1751715Ab2BVQ3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:29:46 -0500
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:23272 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750943Ab2BVQ3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:28:58 -0500
-Date: Wed, 22 Feb 2012 11:29:01 -0500
-From: Matt Porter <mporter@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+	Wed, 22 Feb 2012 11:29:44 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JK93eYcVM1nczfCVu96Vt_PTjE0OZbdI6ZJ3BZiwjQLRo1_
+ YPAfeyUGOXnWPRbK9EUrFsPE67L2Qe9A0KtvXdJRS1E0PVUG_P7IDukzI7vs
+ 6E5jSJymtiiR2KQOOGMRBkZurc_R3ucu8iWfNNSS.sqZFP7bR64QQt6qzCho
+ wgmdV6hXOJZ3d6fm5XUcXHmrrtnK5nBaoAcnEBn.gmSnaewRx1nvCdO.GfcL
+ f5W8Wp.NJWtQWR5GdnMEnmHzw2vmaT6pHXlGEmjwS5oRC0MjKkFm1bQb9ymq
+ 9QQGyhZBBw.tKZY5roSSF_q7WUA9SQm1W0ic3edrjjG7pJ7uje5ykfdODMvq
+ QxCCz3EhmgnaXuuwVwoEDmpW92lgNvQusztkBfTO2vkAPrBigBP466tc.gA8
+ y2Pjr6UbjQ9r1rTT.CJL7YzbbhedEHD5OZQpn
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 22 Feb 2012 10:29:40 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Rafael Aquini <aquini@redhat.com>
+cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
- regulators
-Message-ID: <20120222162901.GB20411@beef>
-References: <1329151422-2146-1-git-send-email-mporter@ti.com>
- <20120214110836.GE15338@n2100.arm.linux.org.uk>
+Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
+In-Reply-To: <20120222161440.GB1986@x61.redhat.com>
+Message-ID: <alpine.DEB.2.00.1202221028340.10258@router.home>
+References: <20120222115320.GA3107@x61.redhat.com> <alpine.DEB.2.00.1202220754140.21637@router.home> <20120222161440.GB1986@x61.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120214110836.GE15338@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 14, 2012 at 11:08:36AM +0000, Russell King - ARM Linux wrote:
-> Two more points:
-> 
-> On Mon, Feb 13, 2012 at 11:43:42AM -0500, Matt Porter wrote:
-> > This fixes smsc911x support on platforms using gpmc_smsc911x_init().
-> > Commit c7e963f6888816f04d1f5da0e07bec4e0092f227 added the requirement
-> 
-> Always include the commit summary as well here, so:
-> 
-> Commit c7e963f6888816 (net/smsc911x: Add regulator support) added the ...
+On Wed, 22 Feb 2012, Rafael Aquini wrote:
 
-Ok. Addressed in v2.
+> On Wed, Feb 22, 2012 at 07:55:16AM -0600, Christoph Lameter wrote:
+> >
+> > Please use node_nr_objects() instead of directly accessing total_objects.
+> > total_objects are only available if debugging support was compiled in.
+> >
+> Shame on me! I've wrongly assumed that it would be safe accessing
+> the element because SLUB_DEBUG is turned on by default when slub is chosen.
+>
+> Considering your note on my previous mistake, shall I assume now that it
+> would be better having this whole dump feature dependable on CONFIG_SLUB_DEBUG,
+> instead of just CONFIG_SLUB ?
 
-> > @@ -55,6 +94,11 @@ void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *board_data)
-> >  
-> >  	gpmc_cfg = board_data;
-> >  
-> > +	if (platform_device_register(&gpmc_smsc911x_regulator) < 0) {
-> > +		pr_err("Unable to register smsc911x regulators\n");
-> > +		return;
-> > +	}
-> 
-> It's always a good idea to indicate why something failed:
-> 
-> 	err = platform_device_register(&gpmc_smsc911x_regulator);
-> 	if (err < 0) {
-> 		pr_err("Unable to register smsc911x regulators: %d\n", err);
-> 		return;
-> 	}
-> 
-> so that people can see not only what failed, but also why it failed.
+That is certainly one solution. If CONFIG_SLUB_DEBUG is not set then
+support for maintaining a total count is not compiled in. You can of
+course still approximate that from the total number of slabs allocated and
+multiply that number by the # of objs per slab page.
 
-Looks much better, also addressed in v2.
-
--Matt
