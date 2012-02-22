@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151Ab2BVDsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 22:48:00 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61744 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab2BVDr7 (ORCPT
+	id S932160Ab2BVD6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 22:58:11 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:49585 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab2BVD6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 22:47:59 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.24.202 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Tue, 21 Feb 2012 22:58:09 -0500
+Message-ID: <4F446781.4070504@ct.jp.nec.com>
+Date: Wed, 22 Feb 2012 12:56:49 +0900
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
- <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 21 Feb 2012 19:47:38 -0800
-X-Google-Sender-Auth: 8Aan4MtQvDhAfOkxtERKwSOwbJg
-Message-ID: <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-To: David Miller <davem@davemloft.net>, Ian Kent <raven@themaw.net>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, autofs@linux.kernel.org,
-        thomas@m3y3r.de, viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] sched: Make initial SCHED_RR timeslace RR_TIMESLICE
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 7:33 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> But I'm sure that the autofs daemon does something simple that we can
-> depend on in practice.
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-I didn't find the most recent source code, but the first thing that
-automount.c does after calling "mount" (which is a for+exec, so we
-cannot take the mounting is_compat_task() into account is to open the
-new root for the ioctlfd, and then it does a stat.
+Current the initial SCHED_RR timeslice of init_task is HZ, which means
+1s, and is not same as the default SCHED_RR timeslice DEF_TIMESLICE.
 
-And then it does a AUTOFS_IOC_PROTOVER ioctl to see what the protocol
-version is.
+Change the initial timeslice to the RR_TIMESLICE, which is renamed from
+DEF_TIMESLICE to clarify it's for SCHED_RR.
 
-So we could just decide that
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/init_task.h |    2 +-
+ include/linux/sched.h     |    6 ++++++
+ kernel/sched/rt.c         |    4 ++--
+ kernel/sched/sched.h      |    4 ----
+ 4 files changed, 9 insertions(+), 7 deletions(-)
 
- (a) we add a mount option for the packet size (or just "v6" - which
-would be "v5 with a fixed packet size")
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 9c66b1a..f994d51 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -149,7 +149,7 @@ extern struct cred init_cred;
+ 	},								\
+ 	.rt		= {						\
+ 		.run_list	= LIST_HEAD_INIT(tsk.rt.run_list),	\
+-		.time_slice	= HZ, 					\
++		.time_slice	= RR_TIMESLICE,				\
+ 		.nr_cpus_allowed = NR_CPUS,				\
+ 	},								\
+ 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2df7646..ee882cb 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1234,6 +1234,12 @@ struct sched_rt_entity {
+ #endif
+ };
+ 
++/*
++ * default timeslice is 100 msecs (used only for SCHED_RR tasks).
++ * Timeslices get refilled after they expire.
++ */
++#define RR_TIMESLICE		(100 * HZ / 1000)
++
+ struct rcu_node;
+ 
+ enum perf_event_task_context {
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index f42ae7f..f70206c 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1972,7 +1972,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
+ 	if (--p->rt.time_slice)
+ 		return;
+ 
+-	p->rt.time_slice = DEF_TIMESLICE;
++	p->rt.time_slice = RR_TIMESLICE;
+ 
+ 	/*
+ 	 * Requeue to the end of queue if we are not the only element
+@@ -2000,7 +2000,7 @@ static unsigned int get_rr_interval_rt(struct rq *rq, struct task_struct *task)
+ 	 * Time slice is 0 for SCHED_FIFO tasks
+ 	 */
+ 	if (task->policy == SCHED_RR)
+-		return DEF_TIMESLICE;
++		return RR_TIMESLICE;
+ 	else
+ 		return 0;
+ }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 8a2c768..c0660a1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -36,11 +36,7 @@ extern __read_mostly int scheduler_running;
+ 
+ /*
+  * These are the 'tuning knobs' of the scheduler:
+- *
+- * default timeslice is 100 msecs (used only for SCHED_RR tasks).
+- * Timeslices get refilled after they expire.
+  */
+-#define DEF_TIMESLICE		(100 * HZ / 1000)
+ 
+ /*
+  * single value that denotes runtime == period, ie unlimited time.
+-- 
+1.7.7.6
 
- (b) in the absence of an explicit mount option, we look at
-is_compat_task() for the first AUTOFS_IOC_PROTOVER ioctl we get.
-
-That looks fairly straightforward and safe. Hmm?
-
-Where are the automount sources supposed to be, anyway? kernel.org has
-a v5 directory, but it's empty.
-
-                Linus
