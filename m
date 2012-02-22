@@ -1,55 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab2BVKUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 05:20:39 -0500
-Received: from mail.neratec.ch ([80.75.119.105]:46390 "EHLO mail.neratec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab2BVKUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 05:20:37 -0500
-X-Greylist: delayed 757 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 05:20:37 EST
-Message-ID: <4F44BE7B.8000501@neratec.com>
-Date: Wed, 22 Feb 2012 11:07:55 +0100
-From: Zefir Kurtisi <zefir.kurtisi@neratec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: andrei.emeltchenko.news@gmail.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-02-20
-References: <20120221151435.GA19354@tuxdriver.com>	<20120221.144417.1445117001833888214.davem@davemloft.net>	<CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com> <20120221.154053.2103818562080068513.davem@davemloft.net>
-In-Reply-To: <20120221.154053.2103818562080068513.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755694Ab2BVKWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 05:22:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45343 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813Ab2BVKWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 05:22:20 -0500
+From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, amit.kachhap@linaro.org,
+        durgadoss.r@intel.com, rob.lee@linaro.org, patches@linaro.org
+Subject: [PATCH 1/4] thermal: Add a new trip type to use cooling device instance number
+Date: Wed, 22 Feb 2012 15:44:07 +0530
+Message-Id: <1329905650-30161-2-git-send-email-amit.kachhap@linaro.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 09:40 PM, David Miller wrote:
-> From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-> Date: Tue, 21 Feb 2012 22:38:16 +0200
-> 
->> Hi David,
->>
->> On Tue, Feb 21, 2012 at 9:44 PM, David Miller <davem@davemloft.net> wrote:
->>> From: "John W. Linville" <linville@tuxdriver.com>
->>> Date: Tue, 21 Feb 2012 10:14:36 -0500
->>> [...]
->>
->> Sorry did we understand wrong text of Linux coding style? Or do we need
->> right interpretation of it?
-> 
-> I'm not engaging in this conversation any more, I don't care what CodingStyle
-> says, the quoted code is garbage.
+This patch adds a new trip type THERMAL_TRIP_STATE_ACTIVE. This
+trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
+device instance number. This helps the cooling device registered as
+different instances to perform appropriate cooling action decision in
+the set_cur_state call back function.
 
-This is not really helpful, David.
+Also since the trip temperature's are in ascending order so some logic
+is put in place to skip the un-necessary checks.
 
-Andrei's question was fully reasonable here, i.e. the Documentation/CodingStyle is the only binding reference given to potential contributors -- the common 'how-to-contribute-kernel-patches' docs non-24/7-kernel-folks usually find and follow on the way preparing patches end exactly there.
+Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+---
+ Documentation/thermal/sysfs-api.txt |    4 +-
+ drivers/thermal/thermal_sys.c       |   45 ++++++++++++++++++++++++++++++++--
+ include/linux/thermal.h             |    1 +
+ 3 files changed, 45 insertions(+), 5 deletions(-)
 
-I recently learned the hard way when my patches were ignored just because of some missing spaces. That would be perfectly fair if some formal rules were broken, but not telling people about additional informal ones is not motivating.
+diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+index 1733ab9..7a0c080 100644
+--- a/Documentation/thermal/sysfs-api.txt
++++ b/Documentation/thermal/sysfs-api.txt
+@@ -184,8 +184,8 @@ trip_point_[0-*]_temp
+ 
+ trip_point_[0-*]_type
+ 	Strings which indicate the type of the trip point.
+-	E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
+-	thermal zone.
++	E.g. it can be one of critical, hot, passive, active[0-1],
++	state-active[0-*] for ACPI thermal zone.
+ 	RO, Optional
+ 
+ cdev[0-*]
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 220ce7e..d4c9b20 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
+ 		return sprintf(buf, "passive\n");
+ 	case THERMAL_TRIP_ACTIVE:
+ 		return sprintf(buf, "active\n");
++	case THERMAL_TRIP_STATE_ACTIVE:
++		return sprintf(buf, "state-active\n");
+ 	default:
+ 		return sprintf(buf, "unknown\n");
+ 	}
+@@ -1034,10 +1036,10 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
+ 
+ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ {
+-	int count, ret = 0;
+-	long temp, trip_temp;
++	int count, ret = 0, inst_id;
++	long temp, trip_temp, max_state, last_trip_change = 0;
+ 	enum thermal_trip_type trip_type;
+-	struct thermal_cooling_device_instance *instance;
++	struct thermal_cooling_device_instance *instance, *state_instance;
+ 	struct thermal_cooling_device *cdev;
+ 
+ 	mutex_lock(&tz->lock);
+@@ -1086,6 +1088,43 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ 					cdev->ops->set_cur_state(cdev, 0);
+ 			}
+ 			break;
++		case THERMAL_TRIP_STATE_ACTIVE:
++			list_for_each_entry(instance, &tz->cooling_devices,
++					    node) {
++				if (instance->trip != count)
++					continue;
++
++				if (temp <= last_trip_change)
++					continue;
++
++				inst_id = 0;
++				/*
++				*For this instance how many instance of same
++				*cooling device occured before
++				*/
++
++				list_for_each_entry(state_instance,
++						&tz->cooling_devices, node) {
++					if (instance->cdev ==
++							state_instance->cdev)
++						inst_id++;
++					if (state_instance->trip == count)
++						break;
++				}
++
++				cdev = instance->cdev;
++				cdev->ops->get_max_state(cdev, &max_state);
++
++				if ((temp >= trip_temp) &&
++						(inst_id <= max_state))
++					cdev->ops->set_cur_state(cdev, inst_id);
++				else if ((temp < trip_temp) &&
++						(--inst_id <= max_state))
++					cdev->ops->set_cur_state(cdev, inst_id);
++
++				last_trip_change = trip_temp;
++			}
++			break;
+ 		case THERMAL_TRIP_PASSIVE:
+ 			if (temp >= trip_temp || tz->passive)
+ 				thermal_zone_device_passive(tz, temp,
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 796f1ff..8df901f 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -42,6 +42,7 @@ enum thermal_trip_type {
+ 	THERMAL_TRIP_PASSIVE,
+ 	THERMAL_TRIP_HOT,
+ 	THERMAL_TRIP_CRITICAL,
++	THERMAL_TRIP_STATE_ACTIVE,
+ };
+ 
+ struct thermal_zone_device_ops {
+-- 
+1.7.1
 
-
-I might be fully blind and just missed the related coding style document that covers the issues discussed here. But even then your answer should be 'RTFM' instead of just ending the conversation.
-
-
-Cheers, Zefir
