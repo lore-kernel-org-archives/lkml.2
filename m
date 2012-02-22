@@ -1,90 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab2BVGIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 01:08:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61932 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2BVGIX (ORCPT
+	id S1752155Ab2BVGJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 01:09:07 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:24421 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2BVGJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 01:08:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.178.73 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17BD8BC368@HQMAIL01.nvidia.com>
-References: <1329831275-21769-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17BD8BC368@HQMAIL01.nvidia.com>
-Date: Wed, 22 Feb 2012 07:08:23 +0100
-Message-ID: <CACRpkdbuCMV0k=bfST65ZNojzUQVvDpbOB=-NN=wd3Hc7Mj_MQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: spawn U300 pinctrl from the COH901 GPIO
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Feb 2012 01:09:05 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-47-4f44867f4509
+Message-id: <4F44867E.2040506@samsung.com>
+Date: Wed, 22 Feb 2012 15:09:02 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.26) Gecko/20120131
+ Thunderbird/3.1.18
+MIME-version: 1.0
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org, axboe@kernel.dk,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/2] mmc: card: Adding support for Sanitize in eMMC v4.5
+References: <1329832825-8844-1-git-send-email-ygardi@codeaurora.org>
+ <1329832825-8844-3-git-send-email-ygardi@codeaurora.org>
+In-reply-to: <1329832825-8844-3-git-send-email-ygardi@codeaurora.org>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 7:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Linus Walleij wrote at Tuesday, February 21, 2012 6:35 AM:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This solves the riddle on how the U300 pin controller shall be
->> able to reference the struct gpio_chip even though these are
->> two separate drivers: spawn the pinctrl child from the GPIO
->> driver and pass in the struct gpio_chip as platform data.
->> In the process we rename the U300 "pinmux-u300" to
->> "pinctrl-u300" so as not to confuse.
->>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->
-> That's quite a neat solution, but it's not going to work very well with
-> device tree, if U300 is being converted to it.
+On 02/21/2012 11:00 PM, Yaniv Gardi wrote:
 
-Right now it looks like it won't happen.
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+> 
+> ---
+>  drivers/mmc/card/block.c |   58 ++++++++++++++++++++++++++++++++++++++-------
+>  drivers/mmc/card/queue.c |   12 ++++++++-
+>  include/linux/mmc/card.h |    7 +++++
+>  include/linux/mmc/host.h |    1 +
+>  4 files changed, 68 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 0c959c9..5be77e6 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -830,6 +830,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
+>  	from = blk_rq_pos(req);
+>  	nr = blk_rq_sectors(req);
+>  
+> +	/* 1ST priority is DISCARD.
+> +	   2ND is TRIM
+> +	   3RD is ERASE */
+>  	if (mmc_can_discard(card))
+>  		arg = MMC_DISCARD_ARG;
+>  	else if (mmc_can_trim(card))
+> @@ -868,18 +871,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
+>  	unsigned int from, nr, arg;
+>  	int err = 0, type = MMC_BLK_SECDISCARD;
+>  
+> -	if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
+> +	if (!(mmc_can_secure_erase_trim(card))) {
+>  		err = -EOPNOTSUPP;
+>  		goto out;
+>  	}
+>  
+> -	/* The sanitize operation is supported at v4.5 only */
+> -	if (mmc_can_sanitize(card)) {
+> -		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> -				EXT_CSD_SANITIZE_START, 1, 0);
+> -		goto out;
+> -	}
+> -
+>  	from = blk_rq_pos(req);
+>  	nr = blk_rq_sectors(req);
+>  
+> @@ -922,6 +918,44 @@ out:
+>  	return err ? 0 : 1;
+>  }
+>  
+> +int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
+> +			       struct request *req)
+> +{
+> +	struct mmc_blk_data *md = mq->data;
+> +	struct mmc_card *card = md->queue.card;
+> +	int err = 0;
+> +
+> +	if (!(mmc_can_sanitize(card) && (mq->card->host->caps2 & MMC_CAP2_SANITIZE))) {
 
-U300 has a hard-coded bootloader I cannot change so cannot pass
-DT from bootloader.
+if (!mmc_can_sanitize(card) && card->host->caps2 & MMC_CAP2_SANITIZE)?
 
-I cannot use attached device tree either, since those can only be
-attached to compressed kernels, and U300 uses uncompressed
-kernels.
+> +		pr_err("%s: SANITIZE is not supported", __func__);
+> +		err = -EOPNOTSUPP;
+> +		goto out;
+> +	}
+> +
+> +	pr_info("%s: SANITIZE is supported", __func__);
+> +
+> +	mmc_sd_card_set_sanitize_in_progress(card);
+> +
+> +	pr_info("%s: issueing SANITIZE command...", __func__);
+> +
+> +	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +					 EXT_CSD_SANITIZE_START, 1, 0);
+> +
+> +	pr_info("%s: SANITIZE command returned...", __func__);
 
-If I try to fix either of the above, I have so much problems to
-fix that probeing of the devices is going to be eclipsed by
-those issues :-D
+Too many pr_info()..i think that need not the message..
 
-> I'd thought about doing the following for Tegra, where we're cheating a
-> little with the gpio range base value:
->
-> When GPIO driver is probed, call a function in the pinctrl driver to
-> tell it what the "struct gpio_chip *" value is.
->
-> When pinctrl is probed, if that call has happened, go ahead and register
-> the GPIO range, else don't.
->
-> In the call from GPIO to pinctrl, if the pinctrl driver has already
-> probed, register the GPIO range, else just save the gpio_chip value for
-> later use in the pinctrl driver's probe.
->
-> This way, the communication is explicit in code in the drivers, works
-> whichever order the drivers probe, etc.
->
-> Does that sound like a reasonable solution?
+> +
+> +	if (err)
+> +		pr_err("%s: mmcblk: mmc_switch() failed. err=%d\n",
+> +		       __func__, err);
 
-Sure anything that works and can be understood... the root of the
-problem is the global GPIO pin space anyway, so we will have to live
-with any solutions to patch around it until that happens.
+how about using mmcblkX instead of just mmcblk?
 
-Maybe some of the above described mechanisms can ge
-generalized though?
+> +
+> +	mmc_sd_card_set_sanitize_completed(card);
+> +
+> +out:
+> +	spin_lock_irq(&md->lock);
+> +	__blk_end_request(req, err, blk_rq_bytes(req));
+> +	spin_unlock_irq(&md->lock);
+> +
+> +	return err ? 0 : 1;
+> +}
+> +
+>  static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
+>  {
+>  	struct mmc_blk_data *md = mq->data;
+> @@ -1379,7 +1413,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>  		goto out;
+>  	}
+>  
+> -	if (req && req->cmd_flags & REQ_DISCARD) {
+> +	if (req && req->cmd_flags & REQ_SANITIZE) {
+> +		/* complete ongoing async transfer before issuing discard */
 
-Thanks,
-Linus Walleij
+Issuing Sanitize, not discard. typo.
+
+> +		if (card->host && card->host->areq)
+> +			mmc_blk_issue_rw_rq(mq, NULL);
+> +		ret = mmc_blk_issue_sanitize_rq(mq, req);
+> +	} else if (req && req->cmd_flags & REQ_DISCARD) {
+>  		/* complete ongoing async transfer before issuing discard */
+>  		if (card->host->areq)
+>  			mmc_blk_issue_rw_rq(mq, NULL);
+> @@ -1396,6 +1435,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>  		ret = mmc_blk_issue_rw_rq(mq, req);
+>  	}
+>  
+> +
+>  out:
+>  	if (!req)
+>  		/* release host only when there are no more requests */
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index dcad59c..6946ac1 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -140,10 +140,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+>  	/* granularity must not be greater than max. discard */
+>  	if (card->pref_erase > max_discard)
+>  		q->limits.discard_granularity = 0;
+> -	if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
+> +	if (mmc_can_secure_erase_trim(card))
+>  		queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
+>  }
+>  
+> +static void mmc_queue_setup_sanitize(struct request_queue *q)
+> +{
+> +	queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, q);
+> +}
+> +
+>  /**
+>   * mmc_init_queue - initialise a queue structure.
+>   * @mq: mmc queue
+> @@ -181,6 +186,11 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+>  	if (mmc_can_erase(card))
+>  		mmc_queue_setup_discard(mq->queue, card);
+>  
+> +	if ((mmc_can_sanitize(card) && (host->caps2 & MMC_CAP2_SANITIZE)))
+> +		mmc_queue_setup_sanitize(mq->queue);
+> +	else
+> +		pr_info("%s - card doesn't support sanitize", __func__);
+> +
+>  #ifdef CONFIG_MMC_BLOCK_BOUNCE
+>  	if (host->max_segs == 1) {
+>  		unsigned int bouncesz;
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 9478a6b..0890e9c 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -236,6 +236,9 @@ struct mmc_card {
+>  #define MMC_POWEROFF_SHORT		2
+>  #define MMC_POWEROFF_LONG		3
+>  
+> +/* card is in sanitize progress */
+> +#define MMC_STATE_SANITIZE_IN_PROGRESS (1<<9)
+> +
+>  	unsigned int		erase_size;	/* erase size in sectors */
+>   	unsigned int		erase_shift;	/* if erase unit is power 2 */
+>   	unsigned int		pref_erase;	/* in sectors */
+> @@ -388,6 +391,10 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
+>  #define mmc_card_set_ddr_mode(c) ((c)->state |= MMC_STATE_HIGHSPEED_DDR)
+>  #define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+>  #define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+> +#define mmc_sd_card_set_sanitize_in_progress(c) ((c)->state |= \
+> +		MMC_STATE_SANITIZE_IN_PROGRESS)
+> +#define mmc_sd_card_set_sanitize_completed(c) ((c)->state &= \
+> +		~MMC_STATE_SANITIZE_IN_PROGRESS)
+>  #define mmc_card_set_ext_capacity(c) ((c)->state |= MMC_CARD_SDXC)
+>  #define mmc_card_set_removed(c) ((c)->state |= MMC_CARD_REMOVED)
+>  
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index 9a03d03..93210aa 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -242,6 +242,7 @@ struct mmc_host {
+>  #define MMC_CAP2_CACHE_CTRL	(1 << 1)	/* Allow cache control */
+>  #define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)	/* Notify poweroff supported */
+>  #define MMC_CAP2_NO_MULTI_READ	(1 << 3)	/* Multiblock reads don't work */
+> +#define MMC_CAP2_SANITIZE	(1<<4)		/* Support Sanitize */
+>  
+>  	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+>  	unsigned int        power_notify_type;
+
+
