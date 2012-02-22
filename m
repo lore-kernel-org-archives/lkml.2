@@ -1,152 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2BVKE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 05:04:59 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35830 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2BVKE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 05:04:57 -0500
-Date: Wed, 22 Feb 2012 15:34:31 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH 1/3] uprobes/core: Make instruction tables volatile.
-Message-ID: <20120222100431.GA15963@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120222091535.15880.12502.sendpatchset@srdronam.in.ibm.com>
- <20120222094710.GA31848@elte.hu>
+	id S1755169Ab2BVKHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 05:07:20 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63366 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2BVKHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 05:07:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v5 3/5] Extcon: support multiple states at a device.
+Date: Wed, 22 Feb 2012 10:07:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-15?q?Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, myungjoo.ham@gmail.com
+References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com> <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com> <1328856038-21912-4-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1328856038-21912-4-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120222094710.GA31848@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022210-5930-0000-0000-0000056F06DF
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202221007.07600.arnd@arndb.de>
+X-Provags-ID: V02:K0:7uUcPWAK1JG8Twwm8eSGjJJacJVXz3K06lCDN3pt+Rz
+ uCiVYhlSJ0kKMhmdisMh1N1jGg+YrvmDhtuTg95Q3KoHnYWxyt
+ p25qxOIqLz3zTgF/Oj/Z7KOE+8whnBUUgB4oUKu7cTRJ0dznSh
+ Y+H6Q2y92ZqLicGv4JF9ii4Q3pRjk4R7oZSvsPV8KWB1qgiSJU
+ xSO6WB4qLxxfaSyyl3P/nB9ig06k+tifVnqwlsb2CsfDppRfRh
+ gJEsw/R1Dl8+VSkk91oUnAvy4gOvR2PhfzfDJ2rEl+TU0Nf7Ff
+ F6cmzqTWL8FMDtcTw4els2lRSnQS9tquGscVMVIlkVP29LMO+s
+ /Y6tm2CUkEz2ZJ/Fv3yw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-> 
-> > From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > 
-> > Some versions of gcc spits a warning about the asm operand for test_bit and
-> > also causes the first long of the instruction table to be output.
-> > 
-> > Fix is similar to 7115e3fc on arch/x86/kernel/kprobes.c
-> > 
-> > Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > ---
-> >  arch/x86/kernel/uprobes.c |   61 ++++++++++++++++++++++++---------------------
-> >  1 files changed, 32 insertions(+), 29 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> > index cf2a184..13d616d 100644
-> > --- a/arch/x86/kernel/uprobes.c
-> > +++ b/arch/x86/kernel/uprobes.c
-> > @@ -53,34 +53,12 @@
-> >  	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
-> >  	 << (row % 32))
-> >  
-> > -#ifdef CONFIG_X86_64
-> > -static u32 good_insns_64[256 / 32] = {
-> > -	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> > -	/*      ----------------------------------------------         */
-> > -	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
-> > -	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
-> > -	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
-> > -	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
-> > -	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
-> > -	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-> > -	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
-> > -	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
-> > -	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-> > -	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-> > -	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
-> > -	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-> > -	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
-> > -	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-> > -	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
-> > -	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
-> > -	/*      ----------------------------------------------         */
-> > -	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> > -};
-> > -#endif
-> > -
-> > -/* Good-instruction tables for 32-bit apps */
-> > -
-> > -static u32 good_insns_32[256 / 32] = {
-> > +/*
-> > + * Good-instruction tables for 32-bit apps.  This is non-const and volatile
-> > + * to keep gcc from statically optimizing it out, as variable_test_bit makes
-> > + * some versions of gcc to think only *(unsigned long*) is used.
-> > + */
-> > +static volatile u32 good_insns_32[256 / 32] = {
-> >  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> >  	/*      ----------------------------------------------         */
-> >  	W(0x00, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0) | /* 00 */
-> > @@ -104,7 +82,7 @@ static u32 good_insns_32[256 / 32] = {
-> >  };
-> >  
-> >  /* Using this for both 64-bit and 32-bit apps */
-> > -static u32 good_2byte_insns[256 / 32] = {
-> > +static volatile u32 good_2byte_insns[256 / 32] = {
-> >  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> >  	/*      ----------------------------------------------         */
-> >  	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
-> > @@ -127,6 +105,31 @@ static u32 good_2byte_insns[256 / 32] = {
-> >  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> >  };
-> >  
-> > +#ifdef CONFIG_X86_64
-> > +/* Good-instruction tables for 64-bit apps */
-> > +static volatile u32 good_insns_64[256 / 32] = {
-> > +	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> > +	/*      ----------------------------------------------         */
-> > +	W(0x00, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 00 */
-> > +	W(0x10, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 10 */
-> > +	W(0x20, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) | /* 20 */
-> > +	W(0x30, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0) , /* 30 */
-> > +	W(0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) | /* 40 */
-> > +	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-> > +	W(0x60, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* 60 */
-> > +	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 70 */
-> > +	W(0x80, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-> > +	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-> > +	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* a0 */
-> > +	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-> > +	W(0xc0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0) | /* c0 */
-> > +	W(0xd0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-> > +	W(0xe0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0) | /* e0 */
-> > +	W(0xf0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)   /* f0 */
-> > +	/*      ----------------------------------------------         */
-> > +	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> > +};
-> > +#endif
-> 
-> Hm, why was the table moved around? This makes it hard to see 
-> whether it's just a single volatile that is added, or something 
-> more.
-> 
+On Friday 10 February 2012, MyungJoo Ham wrote:
+>  Date:          December 2011
+>  Contact:       MyungJoo Ham <myungjoo.ham@samsung.com>
+>  Description:
+> -               The /sys/class/extcon/.../state shows the cable attach/detach
+> -               information of the corresponding extcon object. If the extcon
+> -               objecct has an optional callback "show_state" defined, the
+> -               callback will provide the name with this sysfs node.
+> +               The /sys/class/extcon/.../state shows and stores the cable
+> +               attach/detach information of the corresponding extcon object.
+> +               If the extcon objecct has an optional callback "show_state"
+> +               defined, the showing function is overriden with the optional
+> +               callback.
+> +
+> +               If the default callback for showing function is used, the
+> +               format is like this:
+> +               # cat state
+> +               USB_OTG=1
+> +               HDMI=0
+> +               TA=1
+> +               EAR_JACK=0
+> +               #
+> +               In this example, the extcon device have USB_OTG and TA
+> +               cables attached and HDMI and EAR_JACK cables detached.
+> +
+> +               There are two methods to update state of extcon.
+> +               Method 1.
+> +                 echo CABLE_NAME [0|1] > state
+> +               Method 2.
+> +                 echo 0xHEX > state
+> +
+> +               Method 1 updates the state (0 or 1) of the
+> +               corresponding cable (either the name or index of the cable).
+> +               Method 2 updates the whole state of the extcon dev.
 
-Without the table moving, the volatile was first used under #ifdef
-CONFIG_X86_64. I was wondering if I add a comment in #ifdef people
-looking at it might assume that its a problem only on x86_64 only.
+I think having two ways to do the same thing is rather confusing, it would
+be nice to provide only one way and make sure that it works for everyone.
 
-So I moved the CONFIG_X86_64 specific table down and added the comment
-for volatile at the first instance  its used.
+Maybe the entire thing can be turned around into one attribute group
+per cable and unified with the mutually-exclusive part, like
 
--- 
-Thanks and Regards
-Srikar
+extcon/.../usb-otg/state 			# 0 or 1 for disable or enable
+		  /mutually-exclusive		# list of exclusive ports
+	  /hdmi/...
+	  /ta/...
 
+	Arnd
