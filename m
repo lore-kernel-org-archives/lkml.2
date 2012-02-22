@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab2BVTKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 14:10:07 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53771 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754770Ab2BVTKF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 14:10:05 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of keescook@google.com designates 10.182.147.106 as permitted sender) smtp.mail=keescook@google.com; dkim=pass header.i=keescook@google.com
+	id S1755313Ab2BVTLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 14:11:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52022 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab2BVTLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 14:11:12 -0500
+Message-ID: <4F453DB4.7090900@zytor.com>
+Date: Wed, 22 Feb 2012 11:10:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <20120222102301.GC30339@elte.hu>
-References: <20120222012103.GA13295@www.outflux.net>
-	<20120222102301.GC30339@elte.hu>
-Date: Wed, 22 Feb 2012 11:10:04 -0800
-X-Google-Sender-Auth: rz45L0OkxG_BJwpxMSFH-1rpx7E
-Message-ID: <CAGXu5jLnDa9g5z76OQaF5BGbHssQVSgc3KCSwOVT9__mLww9Yg@mail.gmail.com>
-Subject: Re: [PATCH] fs: hardlink creation restriction cleanup
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Jason Baron <jbaron@redhat.com>
+CC: Richard Henderson <rth@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        mathieu.desnoyers@efficios.com, davem@davemloft.net,
+        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
+ + docs
+References: <4F449ACF.3040807@zytor.com> <20120222074839.GA24890@elte.hu> <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com> <20120222080659.GA25318@elte.hu> <1329916920.25686.79.camel@gandalf.stny.rr.com> <20120222133404.GA14085@elte.hu> <1329918881.25686.92.camel@gandalf.stny.rr.com> <1329923583.24994.21.camel@twins> <1329924752.24994.25.camel@twins> <4F45226B.50606@redhat.com> <20120222185809.GI3405@redhat.com>
+In-Reply-To: <20120222185809.GI3405@redhat.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 2:23 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> Clean-up of hardlink restriction logic, as suggested by Andrew Morton.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++------------------
->>  1 files changed, 41 insertions(+), 18 deletions(-)
->>
->> diff --git a/fs/namei.c b/fs/namei.c
->> index 8ed4e00..a4a21a5 100644
->> --- a/fs/namei.c
->> +++ b/fs/namei.c
->> @@ -693,46 +693,69 @@ static inline int may_follow_link(struct path *link)
->>  }
->>
->>  /**
->> + * safe_hardlink_source - Check for safe hardlink conditions
->> + * @inode: the source inode to hardlink from
->> + *
->> + * Return false if at least one of the following conditions:
->> + *    - inode is not a regular file
->> + *    - inode is setuid
->> + *    - inode is setgid and group-exec
->> + *    - access failure for read and write
->> + *
->> + * Otherwise returns true.
->> + */
->> +static bool safe_hardlink_source(struct inode *inode)
->> +{
->> +     mode_t mode = inode->i_mode;
->> +
->> +     /* Special files should not get pinned to the filesystem. */
->> +     if (!S_ISREG(mode))
->> +             return false;
->> +     /* Setuid files should not get pinned to the filesystem. */
->> +     if (mode & S_ISUID)
->> +             return false;
->> +     /* Executable setgid files should not get pinned to the filesystem. */
->> +     if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
->> +             return false;
->> +     /* Hardlinking to unreadable or unwritable sources is dangerous. */
->> +     if (inode_permission(inode, MAY_READ | MAY_WRITE))
->> +             return false;
->> +
->> +     return true;
->
-> A really minor nitpick, could we use this form please:
->
-> static bool safe_hardlink_source(struct inode *inode)
-> {
->        mode_t mode = inode->i_mode;
->
->        /* Special files should not get pinned to the filesystem. */
->        if (!S_ISREG(mode))
->                return false;
->
->        /* Setuid files should not get pinned to the filesystem. */
->        if (mode & S_ISUID)
->                return false;
->
->        /* Executable setgid files should not get pinned to the filesystem. */
->        if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
->                return false;
->
->        /* Hardlinking to unreadable or unwritable sources is dangerous. */
->        if (inode_permission(inode, MAY_READ | MAY_WRITE))
->                return false;
->
->        return true;
-> }
->
-> Those separate blocks of comments and conditions stand out much
-> nicer this way, making it way easier on the eyes - to my eyes at
-> least ;-)
+On 02/22/2012 10:58 AM, Jason Baron wrote:
+> 
+> I don't think I ever quite got it working, and I've unfortunately
+> misplaced it at this point. I am definitely interested in trying it
+> again though. If you can re-send it, I'll try it.
+> 
+> Also, I think I seem to recall it wouldn't help the -Os case, b/c we
+> don't get block re-ordering?
+> 
 
-Heh, sure. I've sent v2 now. :)
+With -Os, your code is going to suck eggs no matter what.
 
--Kees
+	-hpa
+
+
 
 -- 
-Kees Cook
-ChromeOS Security
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
