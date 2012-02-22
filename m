@@ -1,128 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab2BVBdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:33:41 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:38965 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab2BVBdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:33:39 -0500
-Date: Tue, 21 Feb 2012 17:21:03 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Marcin Slusarz <marcin.slusarz@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: [PATCH] fs: hardlink creation restriction cleanup
-Message-ID: <20120222012103.GA13295@www.outflux.net>
+	id S1754386Ab2BVBds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:33:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59990 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab2BVBdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:33:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of fweisbec@gmail.com designates 10.50.155.170 as permitted sender) smtp.mail=fweisbec@gmail.com; dkim=pass header.i=fweisbec@gmail.com
+Date: Wed, 22 Feb 2012 02:33:41 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
+ cgroup_enable_task_cg_list
+Message-ID: <20120222013339.GG13403@somewhere.redhat.com>
+References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com>
+ <1328668647-24125-3-git-send-email-fweisbec@gmail.com>
+ <20120221222343.GU3090@google.com>
+ <20120222005525.GC13403@somewhere.redhat.com>
+ <20120222011934.GX2375@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-HELO: www.outflux.net
+In-Reply-To: <20120222011934.GX2375@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean-up of hardlink restriction logic, as suggested by Andrew Morton.
+On Tue, Feb 21, 2012 at 05:19:34PM -0800, Paul E. McKenney wrote:
+> On Wed, Feb 22, 2012 at 01:55:28AM +0100, Frederic Weisbecker wrote:
+> > On Tue, Feb 21, 2012 at 02:23:43PM -0800, Mandeep Singh Baines wrote:
+> > > Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > > Walking through the tasklist in cgroup_enable_task_cg_list() inside
+> > > > an RCU read side critical section is not enough because:
+> > > > 
+> > > > - RCU is not (yet) safe against while_each_thread()
+> > > > 
+> > > > - If we use only RCU, a forking task that has passed cgroup_post_fork()
+> > > >   without seeing use_task_css_set_links == 1 is not guaranteed to have
+> > > >   its child immediately visible in the tasklist if we walk through it
+> > > >   remotely with RCU. In this case it will be missing in its css_set's
+> > > >   task list.
+> > > > 
+> > > > Thus we need to traverse the list (unfortunately) under the
+> > > > tasklist_lock. It makes us safe against while_each_thread() and also
+> > > > make sure we see all forked task that have been added to the tasklist.
+> > > > 
+> > > > As a secondary effect, reading and writing use_task_css_set_links are
+> > > > now well ordered against tasklist traversing and modification. The new
+> > > > layout is:
+> > > > 
+> > > > CPU 0                                      CPU 1
+> > > > 
+> > > > use_task_css_set_links = 1                write_lock(tasklist_lock)
+> > > > read_lock(tasklist_lock)                  add task to tasklist
+> > > > do_each_thread() {                        write_unlock(tasklist_lock)
+> > > > 	add thread to css set links       if (use_task_css_set_links)
+> > > > } while_each_thread()                         add thread to css set links
+> > > > read_unlock(tasklist_lock)
+> > > > 
+> > > > If CPU 0 traverse the list after the task has been added to the tasklist
+> > > > then it is correctly added to the css set links. OTOH if CPU 0 traverse
+> > > > the tasklist before the new task had the opportunity to be added to the
+> > > > tasklist because it was too early in the fork process, then CPU 1
+> > > > catches up and add the task to the css set links after it added the task
+> > > > to the tasklist. The right value of use_task_css_set_links is guaranteed
+> > > > to be visible from CPU 1 due to the LOCK/UNLOCK implicit barrier properties:
+> > > > the read_unlock on CPU 0 makes the write on use_task_css_set_links happening
+> > > > and the write_lock on CPU 1 make the read of use_task_css_set_links that comes
+> > > > afterward to return the correct value.
+> > > > 
+> > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Cc: Tejun Heo <tj@kernel.org>
+> > > > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > > > Cc: Mandeep Singh Baines <msb@chromium.org>
+> > > 
+> > > Reviewed-by: Mandeep Singh Baines <msb@chromium.org>
+> > > 
+> > > Sorry for being late. My feedback is really just comments.
+> > > 
+> > > > Cc: Oleg Nesterov <oleg@redhat.com>
+> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > ---
+> > > >  kernel/cgroup.c |   20 ++++++++++++++++++++
+> > > >  1 files changed, 20 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> > > > index 6e4eb43..c6877fe 100644
+> > > > --- a/kernel/cgroup.c
+> > > > +++ b/kernel/cgroup.c
+> > > > @@ -2707,6 +2707,14 @@ static void cgroup_enable_task_cg_lists(void)
+> > > >  	struct task_struct *p, *g;
+> > > >  	write_lock(&css_set_lock);
+> > > 
+> > > You might want to re-test use_task_css_set_links once you have the lock
+> > > in order to avoid an unnecessary do_each_thread()/while_each_thread() in
+> > > case you race between reading the value and entering the loop. This is
+> > > a potential optimization in a rare case so maybe not worth the LOC.
+> > 
+> > Makes sense. I'll do that in a seperate patch.
+> > 
+> > > 
+> > > >  	use_task_css_set_links = 1;
+> > > > +	/*
+> > > > +	 * We need tasklist_lock because RCU is not safe against
+> > > > +	 * while_each_thread(). Besides, a forking task that has passed
+> > > > +	 * cgroup_post_fork() without seeing use_task_css_set_links = 1
+> > > > +	 * is not guaranteed to have its child immediately visible in the
+> > > > +	 * tasklist if we walk through it with RCU.
+> > > > +	 */
+> > > 
+> > > Maybe add TODO to remove the lock once do_each_thread()/while_each_thread()
+> > > is made rcu safe. On a large system, it could take a while to iterate
+> > > over every thread in the system. Thats a long time to hold a spinlock.
+> > > But it only happens once so probably not that big a deal.
+> > 
+> > I think that even if while_each_thread() was RCU safe, that wouldn't
+> > work here.
+> > 
+> > Unless I'm mistaken, we have no guarantee that a remote list_add_rcu()
+> > is immediately visible by the local CPU if it walks the list under
+> > rcu_read_lock() only.
+> 
+> Indeed, the guarantee is instead that -if- a reader encounters a newly
+> added list element, then that reader will see any initialization of that
+> list element carried out prior to the list_add_rcu().
+> 
+> Memory barriers are about ordering, not about making memory writes
+> visible faster.
+> 
+> 							Thanx, Paul
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/namei.c |   59 +++++++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 41 insertions(+), 18 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 8ed4e00..a4a21a5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -693,46 +693,69 @@ static inline int may_follow_link(struct path *link)
- }
- 
- /**
-+ * safe_hardlink_source - Check for safe hardlink conditions
-+ * @inode: the source inode to hardlink from
-+ *
-+ * Return false if at least one of the following conditions:
-+ *    - inode is not a regular file
-+ *    - inode is setuid
-+ *    - inode is setgid and group-exec
-+ *    - access failure for read and write
-+ *
-+ * Otherwise returns true.
-+ */
-+static bool safe_hardlink_source(struct inode *inode)
-+{
-+	mode_t mode = inode->i_mode;
-+
-+	/* Special files should not get pinned to the filesystem. */
-+	if (!S_ISREG(mode))
-+		return false;
-+	/* Setuid files should not get pinned to the filesystem. */
-+	if (mode & S_ISUID)
-+		return false;
-+	/* Executable setgid files should not get pinned to the filesystem. */
-+	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
-+		return false;
-+	/* Hardlinking to unreadable or unwritable sources is dangerous. */
-+	if (inode_permission(inode, MAY_READ | MAY_WRITE))
-+		return false;
-+
-+	return true;
-+}
-+
-+/**
-  * may_linkat - Check permissions for creating a hardlink
-  * @link: the source to hardlink from
-  *
-  * Block hardlink when all of:
-  *  - sysctl_protected_hardlinks enabled
-  *  - fsuid does not match inode
-- *  - at least one of:
-- *    - inode is not a regular file
-- *    - inode is setuid
-- *    - inode is setgid and group-exec
-- *    - access failure for read and write
-+ *  - hardlink source is unsafe (see safe_hardlink_source() above)
-  *  - not CAP_FOWNER
-  *
-  * Returns 0 if successful, -ve on error.
-  */
- static int may_linkat(struct path *link)
- {
--	int error = 0;
- 	const struct cred *cred;
- 	struct inode *inode;
--	int mode;
- 
- 	if (!sysctl_protected_hardlinks)
- 		return 0;
- 
- 	cred = current_cred();
- 	inode = link->dentry->d_inode;
--	mode = inode->i_mode;
- 
--	if (cred->fsuid != inode->i_uid &&
--	    (!S_ISREG(mode) || (mode & S_ISUID) ||
--	     ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP)) ||
--	     (inode_permission(inode, MAY_READ | MAY_WRITE))) &&
--	    !capable(CAP_FOWNER))
--		error = -EPERM;
--
--	if (error)
--		audit_log_link_denied("linkat", link);
-+	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
-+	 * otherwise, it must be a safe source.
-+	 */
-+	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
-+	    capable(CAP_FOWNER))
-+		return 0;
- 
--	return error;
-+	audit_log_link_denied("linkat", link);
-+	return -EPERM;
- }
- #else
- static inline int may_follow_link(struct path *link)
--- 
-1.7.0.4
-
+Cool that confirm what I was thinking. Thanks for the clarification!
