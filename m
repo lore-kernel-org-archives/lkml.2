@@ -1,125 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab2BVBg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:36:26 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:58967 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751679Ab2BVBgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:36:25 -0500
-Message-ID: <1329874581.5143.22.camel@joe2Laptop>
-Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
-From: Joe Perches <joe@perches.com>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andrei.emeltchenko.news@gmail.com" 
-	<andrei.emeltchenko.news@gmail.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 21 Feb 2012 17:36:21 -0800
-In-Reply-To: <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
-References: <20120221151435.GA19354@tuxdriver.com>
-	 <20120221.144417.1445117001833888214.davem@davemloft.net>
-	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
-	 <20120221.154053.2103818562080068513.davem@davemloft.net>
-	 <1329857959.5143.11.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752933Ab2BVBjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:39:43 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43367 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab2BVBjm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 20:39:42 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6627"; a="162855576"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH] msm: timer: Support sched_clock()
+Date: Tue, 21 Feb 2012 17:39:37 -0800
+Message-Id: <1329874777-12758-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.1.265.gb3a76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 22:09 +0000, Allan, Bruce W wrote:
-> This appears to falsely complain about parenthesis alignment in
-> conditional statements with multiple opening parentheses.
+Now that sched_clock is mandatory on ARM it's simple to add
+sched_clock support to the MSM timer code. Add it so that we get
+more accurate sched_clock output than the jiffies based version
+that's provided by default.
 
-Hey Allan.
-
-Can you try this one please?
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: David Brown <davidb@codeaurora.org>
 ---
- scripts/checkpatch.pl |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 58 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index a3b9782..e95419e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1330,6 +1330,35 @@ sub check_absolute_file {
- 	}
+This is based on Marc's mandatory sched_clock patch series
+located at
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git sched_clock-v3.3-rc3
+
+ arch/arm/mach-msm/timer.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 11d0d8f..61983da 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -24,6 +24,7 @@
+ #include <asm/mach/time.h>
+ #include <asm/hardware/gic.h>
+ #include <asm/localtimer.h>
++#include <asm/sched_clock.h>
+ 
+ #include <mach/msm_iomap.h>
+ #include <mach/cpu.h>
+@@ -105,12 +106,12 @@ static union {
+ 
+ static void __iomem *source_base;
+ 
+-static cycle_t msm_read_timer_count(struct clocksource *cs)
++static notrace cycle_t msm_read_timer_count(struct clocksource *cs)
+ {
+ 	return readl_relaxed(source_base + TIMER_COUNT_VAL);
  }
  
-+sub pos_last_openparen {
-+
-+	my ($args) = @_;
-+
-+	my $pos = 0;
-+	my $len = length($args);
-+
-+	my $opens = $args =~ tr/\(/\(/;
-+	my $closes = $args =~ tr/\)/\)/;
-+
-+	my $last_openparen = 0;
-+
-+	if (($opens == 0) || ($closes >= $opens)) {
-+		return 0;
-+	}
-+
-+	for ($pos = 0; $pos < $len; $pos++) {
-+		if (substr($args, $pos) =~ /^($FuncArg)/) {
-+			$pos += length($1);
-+		}
-+
-+		if (substr($args, $pos, 1) eq '(') {
-+			$last_openparen = $pos;
-+		}
-+	}
-+
-+	return $last_openparen + 1;
+-static cycle_t msm_read_timer_count_shift(struct clocksource *cs)
++static notrace cycle_t msm_read_timer_count_shift(struct clocksource *cs)
+ {
+ 	/*
+ 	 * Shift timer count down by a constant due to unreliable lower bits
+@@ -127,6 +128,11 @@ static struct clocksource msm_clocksource = {
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+ 
++static notrace u32 msm_sched_clock_read(void)
++{
++	return msm_clocksource.read(&msm_clocksource);
 +}
 +
- sub process {
- 	my $filename = shift;
+ static void __init msm_timer_init(void)
+ {
+ 	struct clock_event_device *ce = &msm_clockevent;
+@@ -189,6 +195,8 @@ err:
+ 	res = clocksource_register_hz(cs, dgt_hz);
+ 	if (res)
+ 		pr_err("clocksource_register failed\n");
++	setup_sched_clock(msm_sched_clock_read,
++			cpu_is_msm7x01() ? 32 - MSM_DGT_SHIFT : 32, dgt_hz);
+ }
  
-@@ -1783,6 +1812,35 @@ sub process {
- 			     "please, no space before tabs\n" . $herevet);
- 		}
- 
-+# check for && or || at the start of a line
-+		if ($rawline =~ /^\+\s*(&&|\|\|)/) {
-+			CHK("LOGICAL_CONTINUATIONS",
-+			    "Logical continuations should be on the previous line\n" . $hereprev);
-+		}
-+
-+# check multi-line statement indentation matches previous line
-+		if ($prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/ && $rawline =~ /^\+([ \t]*)/) {
-+			$prevline =~ /^\+(\t*)(if \(|$Ident\()(.*)(\&\&|\|\||,)\s*$/;
-+			my $oldindent = $1;
-+			my $if_or_func = $2;
-+			my $args = $3;
-+
-+			my $pos = pos_last_openparen($args);
-+
-+			my $len = length($if_or_func) + $pos;
-+			$rawline =~ /^\+([ \t]*)/;
-+			my $newindent = $1;
-+
-+			my $goodindent = $oldindent .
-+					 "\t" x ($len / 8) .
-+					 " "  x ($len % 8);
-+
-+			if ($newindent ne $goodindent) {
-+				CHK("PARENTHESIS_ALIGNMENT",
-+				    "Alignment should match open parenthesis\n" . $hereprev);
-+			}
-+		}
-+
- # check for spaces at the beginning of a line.
- # Exceptions:
- #  1) within comments
-
+ #ifdef CONFIG_LOCAL_TIMERS
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
