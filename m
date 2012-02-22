@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab2BVS0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:26:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51836 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2BVS02 (ORCPT
+	id S1755138Ab2BVS0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:26:44 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49530 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab2BVS0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:26:28 -0500
-Date: Wed, 22 Feb 2012 10:25:30 -0800
-From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
-Message-ID: <tip-140f190bc3a3b6f200548d204befd998eadd63fd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tony.luck@intel.com, tglx@linutronix.de, bp@amd64.org
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tony.luck@intel.com, bp@amd64.org
-In-Reply-To: <4f452eb42507460426@agluck-desktop.sc.intel.com>
-References: <4f452eb42507460426@agluck-desktop.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86:
-  Remove some noise from boot log when starting cpus
-Git-Commit-ID: 140f190bc3a3b6f200548d204befd998eadd63fd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 22 Feb 2012 13:26:41 -0500
+Date: Wed, 22 Feb 2012 13:23:12 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>, "Brown, Len" <len.brown@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "keir.xen@gmail.com" <keir.xen@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] PAD helper for native and paravirt
+ platform
+Message-ID: <20120222182312.GE3132@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233509D853@SHSMSX101.ccr.corp.intel.com>
+ <20120217142909.GA29110@phenom.dumpdata.com>
+ <20120217144742.GA29454@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A097D@SHSMSX101.ccr.corp.intel.com>
+ <20120219182339.GA11882@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350A3E7C@SHSMSX101.ccr.corp.intel.com>
+ <20120221142724.GB5652@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923350AA0BE@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 10:26:02 -0800 (PST)
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350AA0BE@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4F453358.0068,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  140f190bc3a3b6f200548d204befd998eadd63fd
-Gitweb:     http://git.kernel.org/tip/140f190bc3a3b6f200548d204befd998eadd63fd
-Author:     Luck, Tony <tony.luck@intel.com>
-AuthorDate: Wed, 22 Feb 2012 10:06:44 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 22 Feb 2012 10:11:05 -0800
+On Wed, Feb 22, 2012 at 05:02:59PM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Tue, Feb 21, 2012 at 05:49:58AM +0000, Liu, Jinsong wrote:
+> >> Konrad Rzeszutek Wilk wrote:
+> >>>>>>> +struct pv_pad_ops {
+> >>>>>>> +	int (*acpi_pad_init)(void);
+> >>>>>>> +	void (*acpi_pad_exit)(void);
+> >>>>>>> +};
+> >>>>>>> +
+> >>>>> 
+> >>>>> Looking at this a bit closer I am not sure why you choose the
+> >>>>> paravirt interface for this? There is another one - the x86 that
+> >>>>> could have been choosen. Or introduce a new one that is specific
+> >>>>> to ACPI. 
+> >>>>> 
+> >>>>> I am curious - what was the reason for using the paravirt
+> >>>>> interface? I understand it does get the job done, but it seems a
+> >>>>> bit overkill when something simple could have been used?
+> >>>>> 
+> >>>> 
+> >>>> It uses paravirt interface to avoid some code like 'xen_...' in
+> >>>> native code path (acpi_pad.c).
+> >>>> I'm not quite sure what does 'x86' here mean? Adding 2 fields
+> >>>> (acpi_pad_init/exit) in arch/x86/xen/enlighten.c --> xen_cpu_ops?
+> >>>> seems it's much simpler.
+> >>> 
+> >>> arch/x86/include/asm/x86_init.h
+> >>> 
+> >>> But before you go that way let me ask you another question - can
+> >>> ACPI PAD be used on ARM or IA64? If so, wouldn't this fail
+> >>> compilation as this pvops structure is not defined on IA64?
+> >> 
+> >> Ideally ACPI PAD is not bound to some arch, so IMO it could be used
+> >> at least on IA64 (through currently no real PAD on IA64 platform as
+> >> far as I know). However, in native acpi_pad implementation, it
+> >> indeed depends on X86 for reason like mwait.  
+> >> So for xen acpi_pad, I think it's OK to choose x86, defining an
+> >> acpi_pad_ops at x86_init.c which would be overwritten when xen init. 
+> > 
+> > OK, or in osl.c. We need Len to chime in here as I can see this
+> > expanding in the future. 
+> >> 
+> >> Another choice is to define config ACPI_PROCESSOR_AGGREGATOR as
+> >> 'bool', which would disable native acpi_pad module. 
+> > 
+> > Ewww. No.
+> 
+> I'm OK with x86_init approach, but advantage of 'config ACPI_PROCESSOR_AGGREGATOR as bool' would get rid of X86/IA64/... arch issue for xen (at least from coding view), through it need disable native acpi_pad module (IMO acpi_pad module has not strong reason to must be so).
+> Have a re-consider of this approach? :-)
 
-x86: Remove some noise from boot log when starting cpus
-
-Printing the "start_ip" for every secondary cpu is very noisy on a large
-system - and doesn't add any value. Drop this message.
-
-Console log before:
-Booting Node   0, Processors  #1
-smpboot cpu 1: start_ip = 96000
- #2
-smpboot cpu 2: start_ip = 96000
- #3
-smpboot cpu 3: start_ip = 96000
- #4
-smpboot cpu 4: start_ip = 96000
-       ...
- #31
-smpboot cpu 31: start_ip = 96000
-Brought up 32 CPUs
-
-Console log after:
-Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
-Booting Node   1, Processors  #8 #9 #10 #11 #12 #13 #14 #15 Ok.
-Booting Node   0, Processors  #16 #17 #18 #19 #20 #21 #22 #23 Ok.
-Booting Node   1, Processors  #24 #25 #26 #27 #28 #29 #30 #31
-Brought up 32 CPUs
-
-Acked-by: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/4f452eb42507460426@agluck-desktop.sc.intel.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/smpboot.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 66d250c..6835752 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -740,8 +740,6 @@ do_rest:
- 	 * the targeted processor.
- 	 */
- 
--	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
--
- 	atomic_set(&init_deasserted, 0);
- 
- 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
+But it is a compile option right? We wantone kernel that can do both
+baremetal and Xen.
