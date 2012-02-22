@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2BVBrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:47:42 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41551 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab2BVBrk (ORCPT
+	id S1755397Ab2BVBrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:47:53 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755271Ab2BVBrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:47:40 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.220.71 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Tue, 21 Feb 2012 20:47:49 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.233.36 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: [PATCH 15/36] blkcg: don't allow or retain configuration of missing devices
-Date: Tue, 21 Feb 2012 17:46:42 -0800
-Message-Id: <1329875223-5102-16-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 20/36] blkcg: clear all request_queues on blkcg policy [un]registrations
+Date: Tue, 21 Feb 2012 17:46:47 -0800
+Message-Id: <1329875223-5102-21-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
@@ -22,286 +22,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkcg is very peculiar in that it allows setting and remembering
-configurations for non-existent devices by maintaining separate data
-structures for configuration.
+Keep track of all request_queues which have blkcg initialized and turn
+on bypass and invoke blkcg_clear_queue() on all before making changes
+to blkcg policies.
 
-This behavior is completely out of the usual norms and outright
-confusing; furthermore, it uses dev_t number to match the
-configuration to devices, which is unpredictable to begin with and
-becomes completely unuseable if EXT_DEVT is fully used.
-
-It is wholely unnecessary - we already have fully functional userland
-mechanism to program devices being hotplugged which has full access to
-device identification, connection topology and filesystem information.
-
-Add a new struct blkio_group_conf which contains all blkcg
-configurations to blkio_group and let blkio_group, which can be
-created iff the associated device exists and is removed when the
-associated device goes away, carry all configurations.
-
-Note that, after this patch, all newly created blkg's will always have
-the default configuration (unlimited for throttling and blkcg's weight
-for propio).
-
-This patch makes blkio_policy_node meaningless but doesn't remove it.
-The next patch will.
-
--v2: Updated to retry after short sleep if blkg lookup/creation failed
-     due to the queue being temporarily bypassed as indicated by
-     -EBUSY return.  Pointed out by Vivek.
+This is to prepare for moving blkg management into blkcg core.  Note
+that this uses more brute force than necessary.  Finer grained shoot
+down will be implemented later and given that policy [un]registration
+almost never happens on running systems (blk-throtl can't be built as
+a module and cfq usually is the builtin default iosched), this
+shouldn't be a problem for the time being.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
 ---
- block/blk-cgroup.c   |   94 ++++++++++++++++++++++++++++++++++++++-----------
- block/blk-cgroup.h   |    9 +++++
- block/blk-throttle.c |    8 ++--
- block/cfq-iosched.c  |    2 +-
- 4 files changed, 87 insertions(+), 26 deletions(-)
+ block/blk-cgroup.c     |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/blkdev.h |    3 +++
+ 2 files changed, 50 insertions(+), 1 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index bc98914..fe8ce14 100644
+index eadc21c..1695856 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -855,9 +855,12 @@ static uint64_t blkio_get_stat(struct blkio_group *blkg,
+@@ -27,6 +27,9 @@
+ static DEFINE_SPINLOCK(blkio_list_lock);
+ static LIST_HEAD(blkio_list);
+ 
++static DEFINE_MUTEX(all_q_mutex);
++static LIST_HEAD(all_q_list);
++
+ struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+@@ -1461,9 +1464,20 @@ done:
+  */
+ int blkcg_init_queue(struct request_queue *q)
+ {
++	int ret;
++
+ 	might_sleep();
+ 
+-	return blk_throtl_init(q);
++	ret = blk_throtl_init(q);
++	if (ret)
++		return ret;
++
++	mutex_lock(&all_q_mutex);
++	INIT_LIST_HEAD(&q->all_q_node);
++	list_add_tail(&q->all_q_node, &all_q_list);
++	mutex_unlock(&all_q_mutex);
++
++	return 0;
  }
  
- static int blkio_policy_parse_and_set(char *buf,
--	struct blkio_policy_node *newpn, enum blkio_policy_id plid, int fileid)
-+				      struct blkio_policy_node *newpn,
-+				      enum blkio_policy_id plid, int fileid,
-+				      struct blkio_cgroup *blkcg)
+ /**
+@@ -1487,6 +1501,10 @@ void blkcg_drain_queue(struct request_queue *q)
+  */
+ void blkcg_exit_queue(struct request_queue *q)
  {
- 	struct gendisk *disk = NULL;
-+	struct blkio_group *blkg = NULL;
- 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
- 	unsigned long major, minor;
- 	int i = 0, ret = -EINVAL;
-@@ -903,11 +906,25 @@ static int blkio_policy_parse_and_set(char *buf,
- 		goto out;
- 
- 	/* For rule removal, do not check for device presence. */
--	if (temp) {
--		disk = get_gendisk(dev, &part);
--		if (!disk || part) {
--			ret = -ENODEV;
--			goto out;
-+	disk = get_gendisk(dev, &part);
++	mutex_lock(&all_q_mutex);
++	list_del_init(&q->all_q_node);
++	mutex_unlock(&all_q_mutex);
 +
-+	if ((!disk || part) && temp) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	rcu_read_lock();
-+
-+	if (disk && !part) {
-+		spin_lock_irq(disk->queue->queue_lock);
-+		blkg = blkg_lookup_create(blkcg, disk->queue, plid, false);
-+		spin_unlock_irq(disk->queue->queue_lock);
-+
-+		if (IS_ERR(blkg)) {
-+			ret = PTR_ERR(blkg);
-+			if (ret == -EBUSY)
-+				goto out_unlock;
-+			blkg = NULL;
- 		}
- 	}
- 
-@@ -917,25 +934,46 @@ static int blkio_policy_parse_and_set(char *buf,
- 	case BLKIO_POLICY_PROP:
- 		if ((temp < BLKIO_WEIGHT_MIN && temp > 0) ||
- 		     temp > BLKIO_WEIGHT_MAX)
--			goto out;
-+			goto out_unlock;
- 
- 		newpn->plid = plid;
- 		newpn->fileid = fileid;
- 		newpn->val.weight = temp;
-+		if (blkg)
-+			blkg->conf.weight = temp;
- 		break;
- 	case BLKIO_POLICY_THROTL:
- 		switch(fileid) {
- 		case BLKIO_THROTL_read_bps_device:
-+			if (blkg)
-+				blkg->conf.bps[READ] = temp;
-+			newpn->plid = plid;
-+			newpn->fileid = fileid;
-+			newpn->val.bps = temp;
-+			break;
- 		case BLKIO_THROTL_write_bps_device:
-+			if (blkg)
-+				blkg->conf.bps[WRITE] = temp;
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
- 			newpn->val.bps = temp;
- 			break;
- 		case BLKIO_THROTL_read_iops_device:
-+			if (temp > THROTL_IOPS_MAX)
-+				goto out_unlock;
-+
-+			if (blkg)
-+				blkg->conf.iops[READ] = temp;
-+			newpn->plid = plid;
-+			newpn->fileid = fileid;
-+			newpn->val.iops = (unsigned int)temp;
-+			break;
- 		case BLKIO_THROTL_write_iops_device:
- 			if (temp > THROTL_IOPS_MAX)
--				goto out;
-+				goto out_unlock;
- 
-+			if (blkg)
-+				blkg->conf.iops[WRITE] = temp;
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
- 			newpn->val.iops = (unsigned int)temp;
-@@ -946,8 +984,21 @@ static int blkio_policy_parse_and_set(char *buf,
- 		BUG();
- 	}
- 	ret = 0;
-+out_unlock:
-+	rcu_read_unlock();
- out:
- 	put_disk(disk);
-+
-+	/*
-+	 * If queue was bypassing, we should retry.  Do so after a short
-+	 * msleep().  It isn't strictly necessary but queue can be
-+	 * bypassing for some time and it's always nice to avoid busy
-+	 * looping.
-+	 */
-+	if (ret == -EBUSY) {
-+		msleep(10);
-+		return restart_syscall();
-+	}
- 	return ret;
+ 	blk_throtl_exit(q);
  }
  
-@@ -1095,26 +1146,29 @@ static void blkio_update_policy_rule(struct blkio_policy_node *oldpn,
- static void blkio_update_blkg_policy(struct blkio_cgroup *blkcg,
- 		struct blkio_group *blkg, struct blkio_policy_node *pn)
- {
--	unsigned int weight, iops;
--	u64 bps;
-+	struct blkio_group_conf *conf = &blkg->conf;
- 
- 	switch(pn->plid) {
- 	case BLKIO_POLICY_PROP:
--		weight = pn->val.weight ? pn->val.weight :
--				blkcg->weight;
--		blkio_update_group_weight(blkg, weight);
-+		blkio_update_group_weight(blkg, conf->weight ?: blkcg->weight);
- 		break;
- 	case BLKIO_POLICY_THROTL:
- 		switch(pn->fileid) {
- 		case BLKIO_THROTL_read_bps_device:
-+			blkio_update_group_bps(blkg, conf->bps[READ] ?: -1,
-+					       pn->fileid);
-+			break;
- 		case BLKIO_THROTL_write_bps_device:
--			bps = pn->val.bps ? pn->val.bps : (-1);
--			blkio_update_group_bps(blkg, bps, pn->fileid);
-+			blkio_update_group_bps(blkg, conf->bps[WRITE] ?: -1,
-+					       pn->fileid);
- 			break;
- 		case BLKIO_THROTL_read_iops_device:
-+			blkio_update_group_iops(blkg, conf->iops[READ] ?: -1,
-+						pn->fileid);
-+			break;
- 		case BLKIO_THROTL_write_iops_device:
--			iops = pn->val.iops ? pn->val.iops : (-1);
--			blkio_update_group_iops(blkg, iops, pn->fileid);
-+			blkio_update_group_iops(blkg, conf->iops[WRITE] ?: -1,
-+						pn->fileid);
- 			break;
- 		}
- 		break;
-@@ -1152,7 +1206,7 @@ static int blkiocg_file_write(struct cgroup *cgrp, struct cftype *cft,
- 	int ret = 0;
- 	char *buf;
- 	struct blkio_policy_node *newpn, *pn;
--	struct blkio_cgroup *blkcg;
-+	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgrp);
- 	int keep_newpn = 0;
- 	enum blkio_policy_id plid = BLKIOFILE_POLICY(cft->private);
- 	int fileid = BLKIOFILE_ATTR(cft->private);
-@@ -1167,12 +1221,10 @@ static int blkiocg_file_write(struct cgroup *cgrp, struct cftype *cft,
- 		goto free_buf;
+@@ -1532,8 +1550,33 @@ static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
  	}
+ }
  
--	ret = blkio_policy_parse_and_set(buf, newpn, plid, fileid);
-+	ret = blkio_policy_parse_and_set(buf, newpn, plid, fileid, blkcg);
- 	if (ret)
- 		goto free_newpn;
- 
--	blkcg = cgroup_to_blkio_cgroup(cgrp);
--
- 	spin_lock_irq(&blkcg->lock);
- 
- 	pn = blkio_policy_search_node(blkcg, newpn->dev, plid, fileid);
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2600ae7..81efe71 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -154,6 +154,12 @@ struct blkio_group_stats_cpu {
- 	struct u64_stats_sync syncp;
- };
- 
-+struct blkio_group_conf {
-+	unsigned int weight;
-+	unsigned int iops[2];
-+	u64 bps[2];
-+};
++static void blkcg_bypass_start(void)
++	__acquires(&all_q_mutex)
++{
++	struct request_queue *q;
 +
- struct blkio_group {
- 	/* Pointer to the associated request_queue, RCU protected */
- 	struct request_queue __rcu *q;
-@@ -166,6 +172,9 @@ struct blkio_group {
- 	/* policy which owns this blk group */
- 	enum blkio_policy_id plid;
- 
-+	/* Configuration */
-+	struct blkio_group_conf conf;
++	mutex_lock(&all_q_mutex);
 +
- 	/* Need to serialize the stats in the case of reset/update */
- 	spinlock_t stats_lock;
- 	struct blkio_group_stats stats;
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 2ae637b..791b107 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -196,10 +196,10 @@ static struct blkio_group *throtl_alloc_blkio_group(struct request_queue *q,
- 	bio_list_init(&tg->bio_lists[1]);
- 	tg->limits_changed = false;
++	list_for_each_entry(q, &all_q_list, all_q_node) {
++		blk_queue_bypass_start(q);
++		blkg_destroy_all(q);
++	}
++}
++
++static void blkcg_bypass_end(void)
++	__releases(&all_q_mutex)
++{
++	struct request_queue *q;
++
++	list_for_each_entry(q, &all_q_list, all_q_node)
++		blk_queue_bypass_end(q);
++
++	mutex_unlock(&all_q_mutex);
++}
++
+ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ {
++	blkcg_bypass_start();
+ 	spin_lock(&blkio_list_lock);
  
--	tg->bps[READ] = blkcg_get_read_bps(blkcg, tg->blkg.dev);
--	tg->bps[WRITE] = blkcg_get_write_bps(blkcg, tg->blkg.dev);
--	tg->iops[READ] = blkcg_get_read_iops(blkcg, tg->blkg.dev);
--	tg->iops[WRITE] = blkcg_get_write_iops(blkcg, tg->blkg.dev);
-+	tg->bps[READ] = -1;
-+	tg->bps[WRITE] = -1;
-+	tg->iops[READ] = -1;
-+	tg->iops[WRITE] = -1;
+ 	BUG_ON(blkio_policy[blkiop->plid]);
+@@ -1541,11 +1584,13 @@ void blkio_policy_register(struct blkio_policy_type *blkiop)
+ 	list_add_tail(&blkiop->list, &blkio_list);
  
- 	/*
- 	 * Take the initial reference that will be released on destroy
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index acef564..08d4fdd 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1083,7 +1083,7 @@ static struct blkio_group *cfq_alloc_blkio_group(struct request_queue *q,
- 		return NULL;
+ 	spin_unlock(&blkio_list_lock);
++	blkcg_bypass_end();
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_register);
  
- 	cfq_init_cfqg_base(cfqg);
--	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
-+	cfqg->weight = blkcg->weight;
+ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ {
++	blkcg_bypass_start();
+ 	spin_lock(&blkio_list_lock);
  
- 	/*
- 	 * Take the initial reference that will be released on destroy
+ 	BUG_ON(blkio_policy[blkiop->plid] != blkiop);
+@@ -1553,5 +1598,6 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ 	list_del_init(&blkiop->list);
+ 
+ 	spin_unlock(&blkio_list_lock);
++	blkcg_bypass_end();
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 315db1d..e8c0bbd 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -397,6 +397,9 @@ struct request_queue {
+ 	struct bsg_class_device bsg_dev;
+ #endif
+ 
++#ifdef CONFIG_BLK_CGROUP
++	struct list_head	all_q_node;
++#endif
+ #ifdef CONFIG_BLK_DEV_THROTTLING
+ 	/* Throttle data */
+ 	struct throtl_data *td;
 -- 
 1.7.7.3
 
