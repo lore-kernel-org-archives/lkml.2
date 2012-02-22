@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2BVK5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 05:57:30 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52924 "EHLO mail.skyhub.de"
+	id S1755818Ab2BVK6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 05:58:14 -0500
+Received: from ns.pmeerw.net ([87.118.82.44]:39412 "EHLO pmeerw.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755Ab2BVK52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 05:57:28 -0500
-Date: Wed, 22 Feb 2012 11:57:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, castet.matthieu@free.fr, tglx@linutronix.de,
-        sfr@canb.auug.org.au, hpa@linux.intel.com, rjw@sisk.pl, hpa@zytor.com
-Subject: Re: [PATCH] x86: remove some noise from boot log when starting cpus
-Message-ID: <20120222105732.GA5176@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-	linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
-	tglx@linutronix.de, sfr@canb.auug.org.au, hpa@linux.intel.com,
-	rjw@sisk.pl, hpa@zytor.com
-References: <4E53FBBB.7030008@zytor.com>
- <4e540cf271396b4c4@agluck-desktop.sc.intel.com>
- <20120220160804.GC26703@x1.osrc.amd.com>
- <20120222103348.GE30339@elte.hu>
+	id S1754608Ab2BVK6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 05:58:12 -0500
+Date: Wed, 22 Feb 2012 11:58:07 +0100 (CET)
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linaro-dev@lists.linaro.org, durgadoss.r@intel.com, rob.lee@linaro.org,
+        patches@linaro.org
+Subject: Re: [PATCH 2/4] thermal: Add generic cpufreq cooling
+ implementation
+In-Reply-To: <1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+Message-ID: <alpine.DEB.2.01.1202221150070.32127@pmeerw.net>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org> <1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120222103348.GE30339@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 11:33:48AM +0100, Ingo Molnar wrote:
-> 
-> * Borislav Petkov <bp@alien8.de> wrote:
-> 
-> > On Tue, Aug 23, 2011 at 01:26:26PM -0700, Luck, Tony wrote:
-> > > Printing the "start_ip" for every secondary cpu is very noisy on a large
-> > > system - and doesn't add any value. Drop this message.
-> > > 
-> > > Signed-off-by: Tony Luck <tony.luck@intel.com>
-> > 
-> > This one is still out-of-tree, can we pick it up pls?
-> 
-> Seems rather old - please resubmit and make sure it still works 
-> as expected, etc.
+Hi, only textual nitpicking below...
 
-Yeah, I'll leave that to Tony. I could then verify it works although it
-is trivial enough and could go in even now.
+> user and the binding of these cooling devices to the corresponding
+> trip points can be easily done as the registration API's return the
+> cooling device pointer. The user of these api's are responsible for
+
+API vs. api
+use plural s: APIs
+
+> +    This interface function registers the cpufreq cooling device with the name
+> +    "thermal-cpufreq-%x". This api can support multiple instance of cpufreq cooling
+> +    devices.
+instances
+
+> +	.freq_clip_pctg: Percentage of frequency to be clipped for each allowed
+> +	 cpus.
+cpu
+
+> +    tab_size: the total number of cooling state.
+states
+
+p.
 
 -- 
-Regards/Gruss,
-Boris.
+
+Peter Meerwald
++43-664-2444418 (mobile)
