@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2BVRDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:03:35 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:43621 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab2BVRDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:03:33 -0500
-Date: Wed, 22 Feb 2012 18:03:30 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Meelis Roos <mroos@linux.ee>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-Message-ID: <20120222170330.GA29521@merkur.ravnborg.org>
-References: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee> <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1754399Ab2BVRDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:03:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49492 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab2BVRDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 12:03:47 -0500
+Date: Wed, 22 Feb 2012 18:03:16 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] thp: 'transparent_hugepage=' can also be specified on
+ cmdline
+Message-ID: <20120222170315.GJ10222@redhat.com>
+References: <alpine.LNX.2.00.1202221710050.31150@pobox.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LNX.2.00.1202221710050.31150@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 05:05:37PM -0800, Tejun Heo wrote:
-> Hello,
+On Wed, Feb 22, 2012 at 05:13:04PM +0100, Jiri Kosina wrote:
+> Behavior of THP can either be toggled through sysfs in runtime or using a 
+> kernel cmdline parameter 'transparent_hugepage='. Document the latter.
 > 
-> Meelis, can you please apply the following patch before & after the
-> offending commit, boot with "memblock=debug" added as kernel param and
-> post the boot log?  The patch will generate some offset warnings after
-> the commit but should work fine.
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  Documentation/kernel-parameters.txt |    7 +++++++
+>  Documentation/vm/transhuge.txt      |    3 +++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
 > 
-> Sam, David, as I'm not familiar with the code base, is it possible to
-> tell which address is corrupted (zeroed, it seems)?  ie. can we add
-> "if (XXX == NULL) printk("%p is corrputed\n"...);" somewhere?
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 033d4e6..a4de9b9 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2629,6 +2629,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			to facilitate early boot debugging.
+>  			See also Documentation/trace/events.txt
+>  
+> +	transparent_hugepage=
+> +			[KNL]
+> +			Format: [always|madvise|never]
+> +			Can be used to control the default behavior of the system
+> +			with respect to transparent hugepages.
+> +			See Documentation/vm/transhuge.txt for more details.
+> +
+>  	tsc=		Disable clocksource stability checks for TSC.
+>  			Format: <string>
+>  			[x86] reliable: mark tsc clocksource as reliable, this
 
-No idea - sorry. I spend most of the time with sparc32 - which I
-do not even feel familiar with yet :-(
+Ok.
 
-One thing I noticed while working with memblock for sparc32 (*) is that allocations
-are done top-down. So we may end up allocatng memory with a considerably higher
-address than we are used to.
-This is obviously just a wild guess...
+> diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+> index 29bdf62..4a3816d 100644
+> --- a/Documentation/vm/transhuge.txt
+> +++ b/Documentation/vm/transhuge.txt
+> @@ -103,6 +103,9 @@ echo always >/sys/kernel/mm/transparent_hugepage/enabled
+>  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+>  echo never >/sys/kernel/mm/transparent_hugepage/enabled
+>  
+> +The always/madvise/never value can also be specified on the kernel boot
+> +commandline using 'transparent_hugepage=' parameter.
+> +
+>  It's also possible to limit defrag efforts in the VM to generate
 
-Meelis - do the affected boxes have any special memory configurations?
-Could you try to boot with a sensible mem=xxx value to see if limiting the memory
-helps.
+This is a dup.
 
-(*) I have re-done the original patch-set and I have a quite good feeling about it.
-HIGHMEM support is outstanding - I got a bit confused when I looked at x86.
+== Boot parameter ==
 
-But my ss5 crashes the first time I try to use the allocated memory - 
-so I assume I have some silly issue somewhere. Nothing points at memblock
-in this case.
+You can change the sysfs boot time defaults of Transparent Hugepage
+Support by passing the parameter "transparent_hugepage=always" or
+"transparent_hugepage=madvise" or "transparent_hugepage=never"
+(without "") to the kernel command line.
 
-	Sam
+
+>  hugepages in case they're not immediately free to madvise regions or
+>  to never try to defrag memory and simply fallback to regular pages
+> -- 
+> 1.7.3.1
+> 
