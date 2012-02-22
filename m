@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2BVUlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 15:41:16 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37253 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab2BVUlO convert rfc822-to-8bit (ORCPT
+	id S1754028Ab2BVUo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:44:29 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:45007 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab2BVUo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 15:41:14 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of bhelgaas@google.com designates 10.216.138.7 as permitted sender) smtp.mail=bhelgaas@google.com; dkim=pass header.i=bhelgaas@google.com
-MIME-Version: 1.0
-In-Reply-To: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
-References: <1329787427-17890-1-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 22 Feb 2012 12:40:53 -0800
-Message-ID: <CAErSpo7T0NuY-O58rB81x7j+7j6tzaZqhHLGLXPJbjhrdGunxA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: fix memleak when ACPI _CRS is not used.
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 22 Feb 2012 15:44:27 -0500
+Date: Wed, 22 Feb 2012 15:44:17 -0500 (EST)
+Message-Id: <20120222.154417.1110838022563953071.davem@davemloft.net>
+To: tj@kernel.org
+Cc: mroos@linux.ee, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120222174825.GA32694@google.com>
+References: <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
+	<alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
+	<20120222174825.GA32694@google.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 22 Feb 2012 12:44:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 5:23 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> got warning:
-> unreferenced object 0xffff8801f6914200 (size 512):
->  comm "swapper/0", pid 1, jiffies 4294893643 (age 2664.644s)
->  hex dump (first 32 bytes):
->    00 00 c0 fe 00 00 00 00 ff ff ff ff 00 00 00 00  ................
->    60 58 2f f6 03 88 ff ff 00 02 00 00 00 00 00 00  `X/.............
->  backtrace:
->    [<ffffffff81c2408c>] kmemleak_alloc+0x26/0x43
->    [<ffffffff8113764f>] __kmalloc+0x121/0x183
->    [<ffffffff81ca8d93>] get_current_resources+0x5a/0xc6
->    [<ffffffff81c5bedd>] pci_acpi_scan_root+0x13c/0x21c
->    [<ffffffff81c2a745>] acpi_pci_root_add+0x1e1/0x421
->    [<ffffffff81408f50>] acpi_device_probe+0x50/0x190
->    [<ffffffff8149edc7>] really_probe+0x99/0x126
->    [<ffffffff8149ef83>] driver_probe_device+0x3b/0x56
->    [<ffffffff8149effd>] __driver_attach+0x5f/0x82
->    [<ffffffff8149d860>] bus_for_each_dev+0x5c/0x88
->    [<ffffffff8149eb87>] driver_attach+0x1e/0x20
->    [<ffffffff8149e7cc>] bus_add_driver+0xca/0x21d
->    [<ffffffff8149f47b>] driver_register+0x91/0xfe
->    [<ffffffff81409d09>] acpi_bus_register_driver+0x43/0x45
->    [<ffffffff8278bdc9>] acpi_pci_root_init+0x20/0x28
->    [<ffffffff810001e7>] do_one_initcall+0x57/0x134
->
-> The system have _CRS for root buses, but they are not used because is old...
->
-> Try free those not used resource array and name.
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 22 Feb 2012 09:48:25 -0800
 
-Thanks for fixing this.
+> On Wed, Feb 22, 2012 at 02:36:13AM +0200, Meelis Roos wrote:
+>> > Meelis, can you please apply the following patch before & after the
+>> > offending commit, boot with "memblock=debug" added as kernel param and
+>> > post the boot log?  The patch will generate some offset warnings after
+>> > the commit but should work fine.
+>> 
+>> Before the commit (v3.2-rc3-75-g0ee332c): memblock1.gz (attached)
+>> After the commit (v3.2-rc3-76-g7bd0b0f): memblock2.gz (attached)
+> 
+> Can you please try the following patch?  If it still fails to boot,
+> please attach the failing log.  Thank you.
 
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Interesting, but two things strike me.
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
-> ---
->  arch/x86/pci/acpi.c |   12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
->
-> Index: linux-2.6/arch/x86/pci/acpi.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/pci/acpi.c
-> +++ linux-2.6/arch/x86/pci/acpi.c
-> @@ -282,9 +282,6 @@ static void add_resources(struct pci_roo
->        int i;
->        struct resource *res, *root, *conflict;
->
-> -       if (!pci_use_crs)
-> -               return;
-> -
->        coalesce_windows(info, IORESOURCE_MEM);
->        coalesce_windows(info, IORESOURCE_IO);
->
-> @@ -336,8 +333,13 @@ get_current_resources(struct acpi_device
->        acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
->                                &info);
->
-> -       add_resources(&info);
-> -       return;
-> +       if (pci_use_crs) {
-> +               add_resources(&info);
-> +
-> +               return;
-> +       }
-> +
-> +       kfree(info.name);
->
->  name_alloc_fail:
->        kfree(info.res);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+First, this seems like it would only cause problems if the caller
+specified a too small size parameter, and then wrote past the 'size'
+bytes of the buffer.  And if so, this means we have an improperly
+sized allocation somewhere, probably in the OF tree fetching code.
+
+For example, maybe we mis-calculate the size of an OF device node
+property before we fetch it from the firmware, therefore allocate
+too small a buffer, and the property fetch operation splats all
+over the end of the buffer.  Another possibility is that the
+property length reported by the firmware is wrong and too small.
+
+BTW, this kind of bug would be easy to catch, simply put a magic
+number signature into all unallocated memblock memory then at
+allocation time check that signature.  If we signal an error when we
+don't see the proper signature and turn on the OF tree building
+logging, we can see exactly which operation writes past the end of a
+buffer.
+
+Second, you'd need similar handling in other call chains such as
+memblock_double_array()'s invocation of memblock_find_in_range().
+It seems a bad idea to hide how size is modified, so probably it's
+best to pass the address of the size parameter and modify the
+caller's value in that way so that the size used in the reserve
+matches up.
