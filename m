@@ -1,77 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2BVIXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 03:23:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41075 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab2BVIXl convert rfc822-to-8bit (ORCPT
+	id S1754032Ab2BVIeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 03:34:50 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:57646 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab2BVIer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 03:23:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of myungjoo.ham@gmail.com designates 10.50.149.162 as permitted sender) smtp.mail=myungjoo.ham@gmail.com; dkim=pass header.i=myungjoo.ham@gmail.com
+	Wed, 22 Feb 2012 03:34:47 -0500
+Message-ID: <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1329845435-2313-7-git-send-email-wad@chromium.org>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+    <1329845435-2313-7-git-send-email-wad@chromium.org>
+Date: Wed, 22 Feb 2012 09:34:42 +0100
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it
+ synchronous.
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Will Drewry" <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, keescook@chromium.org,
+        "Will Drewry" <wad@chromium.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <20120220022729.GJ3194@opensource.wolfsonmicro.com>
-References: <1327021317-10222-1-git-send-email-myungjoo.ham@samsung.com>
-	<1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
-	<1328856038-21912-5-git-send-email-myungjoo.ham@samsung.com>
-	<20120220022729.GJ3194@opensource.wolfsonmicro.com>
-Date: Wed, 22 Feb 2012 17:23:40 +0900
-X-Google-Sender-Auth: sPUSZetdjY3j_lnHGulRd-CQHKU
-Message-ID: <CAJ0PZbTRRsyF4tGSYPagVmZQ495bmduYZ+FfPjn=Kp9hhcmhxQ@mail.gmail.com>
-Subject: Re: [PATCH v5 4/5] Extcon: support mutually exclusive relation
- between cables.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.1
+X-Scan-Signature: f0e1c9854a9562d49e95611d158cd3d0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 20, 2012 at 11:27 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Feb 10, 2012 at 03:40:37PM +0900, MyungJoo Ham wrote:
+On Tue, February 21, 2012 18:30, Will Drewry wrote:
+> This change enables SIGSYS, defines _sigfields._sigsys, and adds
+> x86 (compat) arch support.  _sigsys defines fields which allow
+> a signal handler to receive the triggering system call number,
+> the relevant AUDIT_ARCH_* value for that number, and the address
+> of the callsite.
 >
->> +What:                /sys/class/extcon/.../mutually_exclusive
->> +Date:                December 2011
->> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
->> +Description:
->> +             Shows the relations of mutually exclusiveness. For example,
->> +             if the mutually_exclusive array of extcon_dev is
->> +             {0x3, 0x5, 0xC, 0x0}, the, the output is:
->> +             # cat mutually_exclusive
->> +             0x3
->> +             0x5
->> +             0xC
->> +             #
+> To ensure that SIGSYS delivery occurs on return from the triggering
+> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.  I'm
+> this is enough to ensure it will be synchronous or if it is explicitly
+> required to ensure an immediate delivery of the signal upon return from
+> the blocked system call.
 >
-> sysfs really isn't supposed to have more than one value per file so this
-> should be something like a directory with one array element per file.
-> It'd kind of be cheating but the values could be used as the filenames,
-> though serial numbers would be more idiomatic.
+> The first consumer of SIGSYS would be seccomp filter.  In particular,
+> a filter program could specify a new return value, SECCOMP_RET_TRAP,
+> which would result in the system call being denied and the calling
+> thread signaled.  This also means that implementing arch-specific
+> support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
 
-Hmm.. I'll either use multiple files with a sub-directory or bin-attr
-to inhabit the values. Or I'll search for any other convinient way to
-express such an array thru sysfs.
+I think others said this is useful, but I don't see how. Easier
+debugging compared to checking return values?
 
-Thanks.
+I suppose SIGSYS can be blocked, so there is no guarantee the process
+will be killed.
+
+> v10: - first version based on suggestion
+>
+> Suggested-by: H. Peter Anvin <hpa@zytor.com>
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  arch/x86/ia32/ia32_signal.c   |    4 ++++
+>  arch/x86/include/asm/ia32.h   |    6 ++++++
+>  include/asm-generic/siginfo.h |   18 ++++++++++++++++++
+>  kernel/signal.c               |    2 +-
+>  4 files changed, 29 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+> index 6557769..c81d2c7 100644
+> --- a/arch/x86/ia32/ia32_signal.c
+> +++ b/arch/x86/ia32/ia32_signal.c
+> @@ -73,6 +73,10 @@ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t
+> *from)
+>  			switch (from->si_code >> 16) {
+>  			case __SI_FAULT >> 16:
+>  				break;
+> +			case __SI_SYS >> 16:
+> +				put_user_ex(from->si_syscall, &to->si_syscall);
+> +				put_user_ex(from->si_arch, &to->si_arch);
+> +				break;
+>  			case __SI_CHLD >> 16:
+>  				put_user_ex(from->si_utime, &to->si_utime);
+>  				put_user_ex(from->si_stime, &to->si_stime);
+> diff --git a/arch/x86/include/asm/ia32.h b/arch/x86/include/asm/ia32.h
+> index 1f7e625..541485f 100644
+> --- a/arch/x86/include/asm/ia32.h
+> +++ b/arch/x86/include/asm/ia32.h
+> @@ -126,6 +126,12 @@ typedef struct compat_siginfo {
+>  			int _band;	/* POLL_IN, POLL_OUT, POLL_MSG */
+>  			int _fd;
+>  		} _sigpoll;
+> +
+> +		struct {
+> +			unsigned int _call_addr; /* calling insn */
+
+Why an int here, but a pointer below?
+
+> +			int _syscall;	/* triggering system call number */
+> +			unsigned int _arch;	/* AUDIT_ARCH_* of syscall */
+> +		} _sigsys;
+>  	} _sifields;
+>  } compat_siginfo_t;
+>
+> diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+> index 0dd4e87..a83b478 100644
+> --- a/include/asm-generic/siginfo.h
+> +++ b/include/asm-generic/siginfo.h
+> @@ -90,6 +90,13 @@ typedef struct siginfo {
+>  			__ARCH_SI_BAND_T _band;	/* POLL_IN, POLL_OUT, POLL_MSG */
+>  			int _fd;
+>  		} _sigpoll;
+> +
+> +		/* SIGSYS */
+> +		struct {
+> +			void __user *_call_addr; /* calling insn */
+
+Is this a user instruction pointer or a filter instruction?
+
+> +			int _syscall;	/* triggering system call number */
+> +			unsigned int _arch;	/* AUDIT_ARCH_* of syscall */
+> +		} _sigsys;
+>  	} _sifields;
+>  } siginfo_t;
+>
+> @@ -116,6 +123,9 @@ typedef struct siginfo {
+>  #define si_addr_lsb	_sifields._sigfault._addr_lsb
+>  #define si_band		_sifields._sigpoll._band
+>  #define si_fd		_sifields._sigpoll._fd
+> +#define si_call_addr	_sifields._sigsys._call_addr
+> +#define si_syscall	_sifields._sigsys._syscall
+> +#define si_arch		_sifields._sigsys._arch
+>
+>  #ifdef __KERNEL__
+>  #define __SI_MASK	0xffff0000u
+> @@ -126,6 +136,7 @@ typedef struct siginfo {
+>  #define __SI_CHLD	(4 << 16)
+>  #define __SI_RT		(5 << 16)
+>  #define __SI_MESGQ	(6 << 16)
+> +#define __SI_SYS	(7 << 16)
+>  #define __SI_CODE(T,N)	((T) | ((N) & 0xffff))
+>  #else
+>  #define __SI_KILL	0
+> @@ -135,6 +146,7 @@ typedef struct siginfo {
+>  #define __SI_CHLD	0
+>  #define __SI_RT		0
+>  #define __SI_MESGQ	0
+> +#define __SI_SYS	0
+>  #define __SI_CODE(T,N)	(N)
+>  #endif
+>
+> @@ -232,6 +244,12 @@ typedef struct siginfo {
+>  #define NSIGPOLL	6
+>
+>  /*
+> + * SIGSYS si_codes
+> + */
+> +#define SYS_SECCOMP		(__SI_SYS|1)	/* seccomp triggered */
+> +#define NSIGSYS	1
+> +
+> +/*
+>   * sigevent definitions
+>   *
+>   * It seems likely that SIGEV_THREAD will have to be handled from
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index c73c428..7573819 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -160,7 +160,7 @@ void recalc_sigpending(void)
+>
+>  #define SYNCHRONOUS_MASK \
+>  	(sigmask(SIGSEGV) | sigmask(SIGBUS) | sigmask(SIGILL) | \
+> -	 sigmask(SIGTRAP) | sigmask(SIGFPE))
+> +	 sigmask(SIGTRAP) | sigmask(SIGFPE) | sigmask(SIGSYS))
+>
+>  int next_signal(struct sigpending *pending, sigset_t *mask)
+>  {
+> --
+
+Greetings,
+
+Indan
 
 
-Cheers!
-MyungJoo.
-
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab,S/W Center, Samsung Electronics
