@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2BVSKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:10:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54351 "EHLO mx1.redhat.com"
+	id S1754886Ab2BVSOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:14:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51757 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab2BVSKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:10:21 -0500
-Date: Wed, 22 Feb 2012 19:03:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] cgroup: Walk task list under tasklist_lock in
-	cgroup_enable_task_cg_list
-Message-ID: <20120222180327.GA11044@redhat.com>
-References: <1328668647-24125-1-git-send-email-fweisbec@gmail.com> <1328668647-24125-3-git-send-email-fweisbec@gmail.com> <20120221222343.GU3090@google.com> <20120222005525.GC13403@somewhere.redhat.com> <20120222011934.GX2375@linux.vnet.ibm.com> <20120222013339.GG13403@somewhere.redhat.com>
+	id S1754088Ab2BVSOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 13:14:45 -0500
+Message-ID: <4F453086.8030602@zytor.com>
+Date: Wed, 22 Feb 2012 10:14:30 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120222013339.GG13403@somewhere.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        hjl.tools@gmail.com
+Subject: Re: [PATCH 02/30] x86-64: Use explicit sizes in sigcontext.h, prepare
+ for x32
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <CA+55aFy__c1j=APK9tjJ__daYtZN74GySANxBZ9kT9e1Zx9DXQ@mail.gmail.com> <4F419A28.1060903@zytor.com> <201202221222.58399.arnd@arndb.de>
+In-Reply-To: <201202221222.58399.arnd@arndb.de>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On 02/22/2012 04:22 AM, Arnd Bergmann wrote:
+> On Monday 20 February 2012, H. Peter Anvin wrote:
+>> We are using __u64 as x86-32 compatible since we are sharing most of the
+>> really complex path (like ioctl) with i386 much more so than x86-64.  So
+>> it is defined in userspace as:
+>>
+>> typedef unsigned long long __u64 __attribute__((aligned(4)));
+>>
+>> __aligned_u64 obviously is naturally aligned, which matches uint64_t is
+>> userspace.
+> 
+> Has someone audited the interfaces to check if there are data structures that
+> use a plain signed or unsigned "long long" instead of __s64/__u64 in places
+> where i386 differs from the other compat implementations?
+> 
+> I found DRM_IOCTL_UPDATE_DRAW, but there could be more like this one.
+> 
 
-Sorry, currently I do not have the time to even read this discussion,
-just one note,
+Has someone audited every single ioctl in the kernel?  Definitely not,
+which is why x32 is marked EXPERIMENTAL.  I think it is still time for
+this work to switch to happening in the upstream, however.
 
-On 02/22, Frederic Weisbecker wrote:
->
-> On Tue, Feb 21, 2012 at 05:19:34PM -0800, Paul E. McKenney wrote:
-> > On Wed, Feb 22, 2012 at 01:55:28AM +0100, Frederic Weisbecker wrote:
-> > > On Tue, Feb 21, 2012 at 02:23:43PM -0800, Mandeep Singh Baines wrote:
-> > > > Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > > > Walking through the tasklist in cgroup_enable_task_cg_list() inside
-> > > > > an RCU read side critical section is not enough because:
-> > > > >
-> > > > > - RCU is not (yet) safe against while_each_thread()
+	-hpa
 
-Yes. Except I'd say it is while_each_thread() who is not safe ;)
 
-Please do not take this into account. This should be fixed, I hope
-to send the fix "soon".
-
-Oleg.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
