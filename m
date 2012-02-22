@@ -1,63 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab2BVMKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 07:10:17 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44966 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab2BVMKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 07:10:15 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of monstr@monstr.eu designates 10.14.28.194 as permitted sender) smtp.mail=monstr@monstr.eu
-Message-ID: <4F44DB23.4010303@monstr.eu>
-Date: Wed, 22 Feb 2012 13:10:11 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1753679Ab2BVMNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 07:13:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab2BVMNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 07:13:42 -0500
+Message-ID: <4F44DBE2.5080706@redhat.com>
+Date: Wed, 22 Feb 2012 10:13:22 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        John Williams <john.williams@petalogix.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "Grosen, Mark" <mgrosen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: remoteproc: Load coprocessor code to the specific main memory
- location
-References: <4F1EE861.4030405@monstr.eu> <4F1FF870.3000105@monstr.eu> <CAK=WgbZwaxMPsMiNcq5yFvBLrcODqGgDT6b=mmQ91JBVtTEyXA@mail.gmail.com> <4F200F64.9060203@monstr.eu> <CAK=WgbZDADRf1OF=uWbbsF+t2dx36tqj=kRftn5nd4RA7DtEnA@mail.gmail.com> <4F212E9E.9060807@monstr.eu> <CAK=WgbYMBDp3Qm8TErNrnDwn2ZTFt62+OuyyQvVE-jrnNsL6kg@mail.gmail.com> <4F391C1D.9020402@monstr.eu> <CAK=WgbYn6hrS4YLEdfp=0jSEfEwy-HkJmt5S06_j6gZFf0UTmQ@mail.gmail.com> <4F3BA962.9040109@monstr.eu> <4F3BC30A.4030301@monstr.eu> <4F3CC899.4070302@monstr.eu> <CAK=WgbaRF-L7M3VMZQdqFLUFOJuwFVkBH1hUNuJ51kSrzkaVjA@mail.gmail.com> <4F3CFFAD.9030402@monstr.eu> <4F3D032B.6090700@monstr.eu> <CAK=WgbZ3oXc+NQscdShqmu2wkzv=M-qBDCH2-k=5qSRX9W=z3Q@mail.gmail.com> <CAHTX3dJ4PruKO-wJLJU8W0boHFL0f6eoF+QNaoNjm5hu26YEow@mail.gmail.com> <CAK=WgbZBJJbFcoeZ+hY=BgyW_4yvOJPVNMZ18_9o+zY7tEc_pQ@mail.gmail.com> <4F425711.80102@monstr.eu> <CAK=WgbbNJMpndKqgW4SJjE=H-BqT7yVsB+F-kEfJWmW+ikJM+A@mail.gmail.com>
-In-Reply-To: <CAK=WgbbNJMpndKqgW4SJjE=H-BqT7yVsB+F-kEfJWmW+ikJM+A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?TmlrbGFzIFPDtmRlcmx1bmQ=?= 
+	<niklas.soderlund@ericsson.com>
+Subject: Re: [PATCH] edac: i5100 ack error detection register after each read
+References: <1323447135-25914-1-git-send-email-niklas.soderlund@ericsson.com> <20111209162254.GB14900@aftab> <4F437164.5020408@ericsson.com> <3908561D78D1C84285E8C5FCA982C28F03DA5B@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F03DA5B@ORSMSX104.amr.corp.intel.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad Ben-Cohen wrote:
-> Hi Michal,
+Hi Tony,
+
+Em 21-02-2012 22:58, Luck, Tony escreveu:
+> Mauro: Since this has been tested, do you care that the documentation
+> doesn't appear to describe this behavior?
+
+On some chipsets, the documentation allows more than one way to read it.
+
+Yet, the common behavior to ack for an error on those Intel 3xxxx/5xxx/7xxx
+memory controllers is to do:
+
+	pci_read_config_dword(priv->mc, reg, &dw);
+	pci_write_config_dword(priv->mc, reg, dw);
+
+Which is exactly what Niklas patch is doing, so it looks fine for me.
+
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+
 > 
-> On Mon, Feb 20, 2012 at 4:22 PM, Michal Simek <monstr@monstr.eu> wrote:
->> IRC you mentioned somewhere that you maybe will have firmware which is
->> possible to
->> compiled by gcc and which doesn't required that TI tools. Am I correct or
->> that was
->> something totally different?
+> -Tony
 > 
-> You're correct - this is in the works, but I'm afraid I don't have any
-> scheduling information about this, sorry.
+> -----Original Message-----
+> From: Niklas Söderlund [mailto:niklas.soderlund@ericsson.com] 
+> Sent: Tuesday, February 21, 2012 2:27 AM
+> To: Luck, Tony
+> Cc: Borislav Petkov; lucas.demarchi@profusion.mobi; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] edac: i5100 ack error detection register after each read
 > 
-> But we have folks from another vendor now who got rpmsg working, and
-> are working out the legal issues so they can release the RTOS sources.
-> Hopefully that'll be released soon.
+> Hi Tony,
+> 
+> Is there any interest in this patch?
+> 
+> On 12/09/2011 05:22 PM, Borislav Petkov wrote:
+>> Adding Tony.
+>>
+>> On Fri, Dec 09, 2011 at 05:12:15PM +0100, Niklas Söderlund wrote:
+>>> If I only ack the detection register after a error have been detected
+>>> I'm unable to reliably detect errors. I have verified this behavior
+>>> using both an error injection DIMM and software to inject errors.
+>>>
+>>> I can't find any documentation supporting this behavior in Intel 5100
+>>> Memory Controller Hub Chipset, see 1. So this is all based on
+>>> experimentation.
+>>>
+>>> [1] Intel® 5100 Memory Controller Hub Chipset
+>>>      http://www.intel.com/content/dam/doc/datasheet/5100-
+>>> 	memory-controller-hub-chipset-datasheet.pdf
+>>>
+>>> Signed-off-by: Niklas Söderlund<niklas.soderlund@ericsson.com>
+>>> ---
+>>>   drivers/edac/i5100_edac.c |   11 ++++-------
+>>>   1 files changed, 4 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
+>>> index bcbdeec..ec728e9 100644
+>>> --- a/drivers/edac/i5100_edac.c
+>>> +++ b/drivers/edac/i5100_edac.c
+>>> @@ -535,23 +535,20 @@ static void i5100_read_log(struct mem_ctl_info *mci, int chan,
+>>>   static void i5100_check_error(struct mem_ctl_info *mci)
+>>>   {
+>>>   	struct i5100_priv *priv = mci->pvt_info;
+>>> -	u32 dw;
+>>> -
+>>> +	u32 dw, dw2;
+>>>
+>>>   	pci_read_config_dword(priv->mc, I5100_FERR_NF_MEM,&dw);
+>>>   	if (i5100_ferr_nf_mem_any(dw)) {
+>>> -		u32 dw2;
+>>>
+>>>   		pci_read_config_dword(priv->mc, I5100_NERR_NF_MEM,&dw2);
+>>> -		if (dw2)
+>>> -			pci_write_config_dword(priv->mc, I5100_NERR_NF_MEM,
+>>> -					       dw2);
+>>> -		pci_write_config_dword(priv->mc, I5100_FERR_NF_MEM, dw);
+>>>
+>>>   		i5100_read_log(mci, i5100_ferr_nf_mem_chan_indx(dw),
+>>>   			       i5100_ferr_nf_mem_any(dw),
+>>>   			       i5100_nerr_nf_mem_any(dw2));
+>>> +
+>>> +		pci_write_config_dword(priv->mc, I5100_NERR_NF_MEM, dw2);
+>>>   	}
+>>> +	pci_write_config_dword(priv->mc, I5100_FERR_NF_MEM, dw);
+>>>   }
+>>>
+>>>   /* The i5100 chipset will scrub the entire memory once, then
+>>> --
+>>> 1.7.7.3
+>>>
+>>>
+>>
 
-That will be great to get it. Please let me know when you have them.
-After EW I will look at it anyway.
-
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
