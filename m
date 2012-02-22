@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab2BVNz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:55:26 -0500
-Received: from matrix.voodoobox.net ([75.127.97.206]:59164 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab2BVNzX (ORCPT
+	id S1752215Ab2BVN5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:57:14 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43158 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751411Ab2BVN5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:55:23 -0500
-X-Greylist: delayed 1220 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Feb 2012 08:55:22 EST
-Subject: Re: [PATCH 1/2] 3com/typhoon: reuse eth_mac_addr()
-From: David Dillow <dave@thedillows.org>
-To: Danny Kukawka <danny.kukawka@bisect.de>
-Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Date: Wed, 22 Feb 2012 08:32:17 -0500
-In-Reply-To: <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
-References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
-	 <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1329917537.27315.0.camel@obelisk.thedillows.org>
-Mime-Version: 1.0
+	Wed, 22 Feb 2012 08:57:14 -0500
+Date: Wed, 22 Feb 2012 13:57:10 +0000
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] regmap: Add support for writing to regmap
+	`registers'
+Message-ID: <20120222135710.GA10237@opensource.wolfsonmicro.com>
+References: <1329914630-17624-1-git-send-email-dp@opensource.wolfsonmicro.com> <20120222125551.GB7340@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120222125551.GB7340@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 13:36 +0100, Danny Kukawka wrote:
-> Use eth_mac_addr() for .ndo_set_mac_address, remove
-> typhoon_set_mac_address() since it do currently the same as
-> eth_mac_addr(). Additional advantage: eth_mac_addr() already
-> checks if the given address is valid.
+On Wed, Feb 22, 2012 at 12:55:52PM +0000, Mark Brown wrote:
+> On Wed, Feb 22, 2012 at 12:43:50PM +0000, Dimitris Papastamos wrote:
+> > To enable writing to the regmap `registers' file, users will
+> > need to modify the source directly and #define REGMAP_ALLOW_WRITE_DEBUGFS.
+> > The reason for this is that it is dangerous to expose this
+> > functionality in general where clients could potentially be PMICs.
+> >
+> >  static const struct file_operations regmap_map_fops = {
+> >  	.open = regmap_open_file,
+> >  	.read = regmap_map_read_file,
+> > +#ifdef REGMAP_ALLOW_WRITE_DEBUGFS
+> > +	.write = regmap_map_write_file,
+> > +#endif
 > 
-> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> It's also a bit more idiomatic to have an #else #define function NULL in
+> the main ifdef for stuff like this; I'll fix that up as well.
 
-Acked-by: Dave Dillow <dave@thedillows.org>
+Oops yea, that makes sense.
 
+Thanks,
+Dimitris
