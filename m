@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2BVNrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:47:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59134 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186Ab2BVNrk (ORCPT
+	id S1752783Ab2BVNsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:48:08 -0500
+Received: from 8.mo5.mail-out.ovh.net ([178.32.116.78]:46482 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752426Ab2BVNsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:47:40 -0500
-Date: Wed, 22 Feb 2012 13:47:38 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>,
-        Cyril Chemparathy <cyril@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Sort Kconfig and Makefile entries
-Message-ID: <20120222134738.GM7340@opensource.wolfsonmicro.com>
-References: <1329874156.3210.2.camel@phoenix>
+	Wed, 22 Feb 2012 08:48:04 -0500
+Date: Wed, 22 Feb 2012 14:03:14 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rmallon@gmail.com
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 19/19] ARM: at91/board-dt: move at91_initialize() to
+ init_irq()
+Message-ID: <20120222130314.GB9407@game.jcrosoft.org>
+References: <0d78171672a30e8ec8084f54a557e9948260356d.1329903206.git.nicolas.ferre@atmel.com>
+ <5a6951fcbe28c3093c936d40c4b28f7ae3161d8d.1329903206.git.nicolas.ferre@atmel.com>
+ <20120222094827.GT22562@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RXc6EO4W1yUvSQ0X"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329874156.3210.2.camel@phoenix>
-X-Cookie: Just to have it is enough.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120222094827.GT22562@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16819537234255522739
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09:48 Wed 22 Feb     , Russell King - ARM Linux wrote:
+> On Wed, Feb 22, 2012 at 10:39:45AM +0100, Nicolas Ferre wrote:
+> > From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > 
+> > Remove the need for at91_initialize() to be called at init_early().
+> > We move it to init_irq() function as we still need it before the
+> > timer initialization.
+> > 
+> > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> NAK.  Keep the callback methods pure.  The whole point of the init_early
+> is so that soc people don't end up polluting things like the IRQ
+> initialization and timer initialization with stuff like this.
+> 
+> So this is a backwards step.
+ok we drop it in the pull
 
---RXc6EO4W1yUvSQ0X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Feb 22, 2012 at 09:29:16AM +0800, Axel Lin wrote:
-> Sort Kconfig entries by company name/driver in alphabetical order.
-> Sort Makefile entries by alphabetical order.
-
-Applied, thanks.
-
---RXc6EO4W1yUvSQ0X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPRPH0AAoJEBus8iNuMP3d+jEQAICJET2mX7/KHTpN9Dhl6iTK
-gEBZWsRu7N80BfdcS4QZqaYPrbmNRk5uco4PCmZwZ3DBPN8IA0kKREBqSisyhmth
-xnFoX4+DFp6Rcz4w2RP7qpu//KVpcOMhzNFf84I7FUoo9X14TWQ18Fyg0ZBsrii0
-xAK4rfg+wCfZu2Az24x+TfNQXvAVVq9zDMCtLJyvw+9iErX5yqdyIPsHoCmjk5/O
-HKCXhMq8i5nsQdD5uu9zRq6P3kybIbES7AI/BzcKk/CVqjhWdCKhclr0qT+3CoXZ
-Jcv5ZiTk2DgaCzV9JVeCDMUVRp+Fjmh6skz21z0KNWu+um65XzB3k2tsqz0ela5g
-E6UPMn0GlxxGXZMjNUxI5xFbHTedR2FiXeyj6TSK7bSleWz+xGDxTI/cdOOQzxEm
-ZgBZ/PI2t5exn0kXWjJJDWCUBaUblYDT9TScrRklXGAID9YgaT5NvnxKcydNLbJa
-h+bCuPcQq+BqVewklSc+molPID+seA9yHfueMQre6n4Gx2EOi3wN1D5eIzdVRNHy
-F8L4ICSNhX6M6izWib6L9w4g4bAinxQ06faYbpMrvtRELPHGkBaKmTYYrXtC0LX/
-v2KVaWAB6BP3WFbiOGmBDZf1153n1EDeeYxX6MXCft2RuNNm6uIAoWzc5BK3gW1U
-lL2NJzOGqHyFuefnqEwZ
-=ZEvb
------END PGP SIGNATURE-----
-
---RXc6EO4W1yUvSQ0X--
+Best Regards,
+J.
