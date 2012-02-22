@@ -1,67 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab2BVQLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:11:06 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50001 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab2BVQLD convert rfc822-to-8bit (ORCPT
+	id S1753828Ab2BVQL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:11:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51094 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2BVQLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:11:03 -0500
+	Wed, 22 Feb 2012 11:11:55 -0500
+Date: Wed, 22 Feb 2012 08:10:41 -0800
+From: tip-bot for David Smith <dsmith@redhat.com>
+Message-ID: <tip-49667d4aec91c766bb0519db798713ee6c90e7d5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        viro@zeniv.linux.org.uk, hch@infradead.org, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu,
+        dsmith@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, hch@infradead.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, tglx@linutronix.de, dsmith@redhat.com,
+        mingo@elte.hu
+In-Reply-To: <4F314D19.7030504@redhat.com>
+References: <4F314D19.7030504@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracepoint, vfs, sched: Add exec() tracepoint
+Git-Commit-ID: 49667d4aec91c766bb0519db798713ee6c90e7d5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4F4484F0.9070501@zytor.com>
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
- <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
- <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
- <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
- <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 22 Feb 2012 08:10:42 -0800
-X-Google-Sender-Auth: jdWh_JNFB5oKqCZSOsJw-J24ACA
-Message-ID: <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:11:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 21, 2012 at 10:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> Note that it's really rather unfortunate that this transmits the entire
-> packet no matter what, which also means that the "len" field is actually
-> completely and totally pointless.
+Commit-ID:  49667d4aec91c766bb0519db798713ee6c90e7d5
+Gitweb:     http://git.kernel.org/tip/49667d4aec91c766bb0519db798713ee6c90e7d5
+Author:     David Smith <dsmith@redhat.com>
+AuthorDate: Tue, 7 Feb 2012 10:11:05 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 22 Feb 2012 12:21:54 +0100
 
-Yes.
+tracepoint, vfs, sched: Add exec() tracepoint
 
-> I have mentioned in the past that I consider it a design mistake on my
-> part to have used a pipe in the first place: it was "so easy", but
-> required an extra read for no good reason, or padding to fixed size
-> resulting in this problem.  The right thing really should have been to
-> use a Unix datagram socket; these days using SOCK_SEQPACKET - that way
-> the kernel would give you the right semantics by design.
+Added a minimal exec tracepoint. Exec is an important major event
+in the life of a task, like fork(), clone() or exit(), all of
+which we already trace.
 
-Well, the kernel gives the right semantics for pipes too - writes are
-guaranteed to be "atomic", so even in the presence of multiple writers
-you can trivially do packetized data.
+[ We also do scheduling re-balancing during exec() - so it's useful
+  from a scheduler instrumentation POV as well. ]
 
-You just have to (a) add the length to the packet and (b) do the
-length+packet write as a single write (which is limited to PIPE_SIZE -
-4kB - for the atomicity guarantee).
+If you want to watch a task start up, when it gets exec'ed is a good place
+to start.  With the addition of this tracepoint, exec's can be monitored
+and better picture of general system activity can be obtained. This
+tracepoint will also enable better process life tracking, allowing you to
+answer questions like "what process keeps starting up binary X?".
 
-If you don't have multiple concurrent writers without locking, the (b)
-part falls away entirely, of course.
+This tracepoint can also be useful in ftrace filtering and trigger
+conditions: i.e. starting or stopping filtering when exec is called.
 
-Yes, for the reader side you need to be able to handle the fact that
-you can get more than one packet in one read() call, but sorting that
-out isn't hard either.
+Signed-off-by: David Smith <dsmith@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/4F314D19.7030504@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ fs/exec.c                    |    9 ++++++---
+ include/trace/events/sched.h |   27 +++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 3 deletions(-)
 
-But yeah, writing fixed-size data and then having a reader that reads
-fixed-size data is just not a very good approach. It's doubly bad when
-the "fixed size" isn't an explicit size that is documented in the
-protocol, but depends on data structures.
-
-                               Linus
+diff --git a/fs/exec.c b/fs/exec.c
+index aeb135c..d0d2080 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -63,6 +63,8 @@
+ #include <trace/events/task.h>
+ #include "internal.h"
+ 
++#include <trace/events/sched.h>
++
+ int core_uses_pid;
+ char core_pattern[CORENAME_MAX_SIZE] = "core";
+ unsigned int core_pipe_limit;
+@@ -1401,9 +1403,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			 */
+ 			bprm->recursion_depth = depth;
+ 			if (retval >= 0) {
+-				if (depth == 0)
+-					ptrace_event(PTRACE_EVENT_EXEC,
+-							old_pid);
++				if (depth == 0) {
++					trace_sched_process_exec(current, old_pid, bprm);
++					ptrace_event(PTRACE_EVENT_EXEC, old_pid);
++				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+ 				if (bprm->file)
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 6ba596b..e61ddfe 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/tracepoint.h>
++#include <linux/binfmts.h>
+ 
+ /*
+  * Tracepoint for calling kthread_stop, performed to end a kthread:
+@@ -276,6 +277,32 @@ TRACE_EVENT(sched_process_fork,
+ );
+ 
+ /*
++ * Tracepoint for exec:
++ */
++TRACE_EVENT(sched_process_exec,
++
++	TP_PROTO(struct task_struct *p, pid_t old_pid,
++		 struct linux_binprm *bprm),
++
++	TP_ARGS(p, old_pid, bprm),
++
++	TP_STRUCT__entry(
++		__string(	filename,	bprm->filename	)
++		__field(	pid_t,		pid		)
++		__field(	pid_t,		old_pid		)
++	),
++
++	TP_fast_assign(
++		__assign_str(filename, bprm->filename);
++		__entry->pid		= p->pid;
++		__entry->old_pid	= p->pid;
++	),
++
++	TP_printk("filename=%s pid=%d old_pid=%d", __get_str(filename),
++		  __entry->pid, __entry->old_pid)
++);
++
++/*
+  * XXX the below sched_stat tracepoints only apply to SCHED_OTHER/BATCH/IDLE
+  *     adding sched_stat support to SCHED_FIFO/RR would be welcome.
+  */
