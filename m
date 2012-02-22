@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab2BVH6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:58:14 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44129 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab2BVH6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:58:13 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.243.144 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
-Message-ID: <1329897485.27727.0.camel@phoenix>
-Subject: [PATCH] mfd: Fix section mismatch warning in wm8994
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Wed, 22 Feb 2012 15:58:05 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753369Ab2BVIBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 03:01:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48874 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab2BVIBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 03:01:40 -0500
+References: <cover.1329851692.git.jbaron@redhat.com> <4F43F9F0.4000605@zytor.com> <20120221202019.GB2381@redhat.com> <1329856745.25686.72.camel@gandalf.stny.rr.com> <20120222073251.GB17291@elte.hu> <20120222075334.GA25053@elte.hu>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120222075334.GA25053@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups + docs
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 22 Feb 2012 00:01:03 -0800
+To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+CC: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
+        mathieu.desnoyers@efficios.com, davem@davemloft.net,
+        ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Message-ID: <7479958c-1932-4ced-a7a4-53ac6ea3a38e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 423682 "mfd: Add __devinit and __devexit annotations in wm8994",
-we need to add __devinit/__devexit for wm8994_i2c_probe/wm8994_i2c_remove.
-This fixes below build warnings:
+Stupid thought... do we have cases that matter where the bias and default don't agree?
 
-WARNING: vmlinux.o(.text+0x169e44): Section mismatch in reference from the function wm8994_i2c_remove() to the function .devexit.text:wm8994_device_exit()
-The function wm8994_i2c_remove() references a function in an exit section.
-Often the function wm8994_device_exit() has valid usage outside the exit section
-and the fix is to remove the __devexit annotation of wm8994_device_exit.
+Ingo Molnar <mingo@elte.hu> wrote:
 
-WARNING: vmlinux.o(.text+0x16a1bc): Section mismatch in reference from the function wm8994_i2c_probe() to the function .devinit.text:wm8994_device_init()
-The function wm8994_i2c_probe() references
-the function __devinit wm8994_device_init().
-This is often because wm8994_i2c_probe lacks a __devinit
-annotation or the annotation of wm8994_device_init is wrong.
+>
+>* Ingo Molnar <mingo@elte.hu> wrote:
+>
+>> But it is fundamentally mixing execution and *data type* and 
+>> it is not conveying the build time bias properly.
+>> 
+>> So the best high level naming would be something like:
+>> 
+>> 	struct static_condition static_flag = STATIC_COND_FALSE;
+>> 
+>> 
+>> 	if (very_unlikely(&static_flag)) {
+>> 		...
+>> 	}
+>> 
+>> 	...
+>> 
+>> 	static_cond_inc(&static_flag);
+>> 	...
+>> 	static_cond_dec(&static_flag);
+>
+>Btw., I think the modification path could also carry the high 
+>cost of modification (stopping all cpus, modifying code, etc.).
+>
+>This could be done via:
+>
+>	static_cond_slow_inc(&static_flag);
+>	...
+>	static_cond_slow_dec(&static_flag);
+>
+>And if a developer does not notice that 'slow' implies a 
+>performance cost, then he probably would have doubly missed this 
+>aspect of jump_label_inc()/jump_label_dec().
+>
+>Thanks,
+>
+>	Ingo
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/wm8994-core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index b2de65b..0042c7c 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -670,7 +670,7 @@ static const struct of_device_id wm8994_of_match[] = {
- };
- MODULE_DEVICE_TABLE(of, wm8994_of_match);
- 
--static int wm8994_i2c_probe(struct i2c_client *i2c,
-+static __devinit int wm8994_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
- 	struct wm8994 *wm8994;
-@@ -696,7 +696,7 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
- 	return wm8994_device_init(wm8994, i2c->irq);
- }
- 
--static int wm8994_i2c_remove(struct i2c_client *i2c)
-+static __devexit int wm8994_i2c_remove(struct i2c_client *i2c)
- {
- 	struct wm8994 *wm8994 = i2c_get_clientdata(i2c);
- 
-@@ -725,7 +725,7 @@ static struct i2c_driver wm8994_i2c_driver = {
- 		.of_match_table = wm8994_of_match,
- 	},
- 	.probe = wm8994_i2c_probe,
--	.remove = wm8994_i2c_remove,
-+	.remove = __devexit_p(wm8994_i2c_remove),
- 	.id_table = wm8994_i2c_id,
- };
- 
 -- 
-1.7.5.4
-
-
-
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
