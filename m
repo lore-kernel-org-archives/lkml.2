@@ -1,239 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2BVXdy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 18:33:54 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51218 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2BVXc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 18:32:57 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of kjwinchester@gmail.com designates 10.229.112.15 as permitted sender) smtp.mail=kjwinchester@gmail.com; dkim=pass header.i=kjwinchester@gmail.com
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/5] x86: Move per cpu cpu_llc_id to a field in struct cpuinfo_x86
-Date: Wed, 22 Feb 2012 19:32:28 -0400
-Message-Id: <1329953551-17074-3-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
-References: <20120222092745.GA30339@elte.hu>
- <1329953551-17074-1-git-send-email-kjwinchester@gmail.com>
+	id S1752917Ab2BVXjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 18:39:21 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:49053 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751207Ab2BVXjR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 18:39:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+References: <1329845435-2313-1-git-send-email-wad@chromium.org>
+ <1329845435-2313-7-git-send-email-wad@chromium.org> <9edbabb2262e3d91a7b8c75dbec03d7f.squirrel@webmail.greenhost.nl>
+ <CABqD9hY1n9EOAKKT0r9Ev+azhBMnLMAM_FgDNe5we9upVePk_A@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 22 Feb 2012 15:38:57 -0800
+X-Google-Sender-Auth: ruL7yZ76QdqMwWhB46jKzk74Pbs
+Message-ID: <CAObL_7Gc0U2JMBQr_kbcVUJwyJq7LRfgdFr+84LR=ec4kSCwEA@mail.gmail.com>
+Subject: Re: [PATCH v10 07/11] signal, x86: add SIGSYS info and make it synchronous.
+To: Will Drewry <wad@chromium.org>
+Cc: Indan Zupancic <indan@nul.nu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies the various code paths using this field as it
-groups the per-cpu data together.
+On Wed, Feb 22, 2012 at 11:48 AM, Will Drewry <wad@chromium.org> wrote:
+> On Wed, Feb 22, 2012 at 2:34 AM, Indan Zupancic <indan@nul.nu> wrote:
+>> On Tue, February 21, 2012 18:30, Will Drewry wrote:
+>>> This change enables SIGSYS, defines _sigfields._sigsys, and adds
+>>> x86 (compat) arch support.  _sigsys defines fields which allow
+>>> a signal handler to receive the triggering system call number,
+>>> the relevant AUDIT_ARCH_* value for that number, and the address
+>>> of the callsite.
+>>>
+>>> To ensure that SIGSYS delivery occurs on return from the triggering
+>>> system call, SIGSYS is added to the SYNCHRONOUS_MASK macro.  I'm
+>>> this is enough to ensure it will be synchronous or if it is explicitly
+>>> required to ensure an immediate delivery of the signal upon return from
+>>> the blocked system call.
+>>>
+>>> The first consumer of SIGSYS would be seccomp filter.  In particular,
+>>> a filter program could specify a new return value, SECCOMP_RET_TRAP,
+>>> which would result in the system call being denied and the calling
+>>> thread signaled.  This also means that implementing arch-specific
+>>> support can be dependent upon HAVE_ARCH_SECCOMP_FILTER.
+>>
+>> I think others said this is useful, but I don't see how. Easier
+>> debugging compared to checking return values?
+>>
+>> I suppose SIGSYS can be blocked, so there is no guarantee the process
+>> will be killed.
+>
+> Yeah, this allows for in-process system call emulation, if desired, or
+> for the process to dump core/etc.  With RET_ERRNO or RET_KILL, there
+> isn't any feedback to the system about the state of the process.  Kill
+> populates audit_seccomp and dmesg, but if the application
+> user/developer isn't the system admin, installing audit bits or
+> checking system logs seems onerous.
 
-Acked-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- arch/x86/include/asm/processor.h      |    1 +
- arch/x86/include/asm/smp.h            |    1 -
- arch/x86/kernel/apic/apic_numachip.c  |    2 +-
- arch/x86/kernel/cpu/amd.c             |   14 ++++----------
- arch/x86/kernel/cpu/common.c          |    1 +
- arch/x86/kernel/cpu/intel_cacheinfo.c |   11 ++---------
- arch/x86/kernel/smpboot.c             |   18 ++++++++----------
- 7 files changed, 17 insertions(+), 31 deletions(-)
+[Warning: this suggestion may be bad for any number of reasons]
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 9fe3c5e..2d304f9 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -112,6 +112,7 @@ struct cpuinfo_x86 {
- 	u32			microcode;
- 	/* CPUs sharing the last level cache: */
- 	cpumask_t		llc_shared_map;
-+	u16			llc_id;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define X86_VENDOR_INTEL	0
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 61ebe324..40d1c96 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -33,7 +33,6 @@ static inline bool cpu_has_ht_siblings(void)
- 
- DECLARE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- DECLARE_PER_CPU(cpumask_var_t, cpu_core_map);
--DECLARE_PER_CPU(u16, cpu_llc_id);
- DECLARE_PER_CPU(int, cpu_number);
- 
- static inline struct cpumask *cpu_sibling_mask(int cpu)
-diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
-index 09d3d8c..73c46cf 100644
---- a/arch/x86/kernel/apic/apic_numachip.c
-+++ b/arch/x86/kernel/apic/apic_numachip.c
-@@ -202,7 +202,7 @@ static void __init map_csrs(void)
- static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
- 	c->phys_proc_id = node;
--	per_cpu(cpu_llc_id, smp_processor_id()) = node;
-+	c->llc_id = node;
- }
- 
- static int __init numachip_system_init(void)
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 0a44b90..1cd9d51 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -268,7 +268,6 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- {
- 	u32 nodes, cores_per_cu = 1;
- 	u8 node_id;
--	int cpu = smp_processor_id();
- 
- 	/* get information required for multi-node processors */
- 	if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
-@@ -301,7 +300,7 @@ static void __cpuinit amd_get_topology(struct cpuinfo_x86 *c)
- 		cus_per_node = cores_per_node / cores_per_cu;
- 
- 		/* store NodeID, use llc_shared_map to store sibling info */
--		per_cpu(cpu_llc_id, cpu) = node_id;
-+		c->llc_id = node_id;
- 
- 		/* core id has to be in the [0 .. cores_per_node - 1] range */
- 		c->cpu_core_id %= cores_per_node;
-@@ -318,7 +317,6 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- {
- #ifdef CONFIG_X86_HT
- 	unsigned bits;
--	int cpu = smp_processor_id();
- 
- 	bits = c->x86_coreid_bits;
- 	/* Low order bits define the core id (index of core in socket) */
-@@ -326,18 +324,14 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
- 	/* Convert the initial APIC ID into the socket ID */
- 	c->phys_proc_id = c->initial_apicid >> bits;
- 	/* use socket ID also for last level cache */
--	per_cpu(cpu_llc_id, cpu) = c->phys_proc_id;
-+	c->llc_id = c->phys_proc_id;
- 	amd_get_topology(c);
- #endif
- }
- 
- int amd_get_nb_id(int cpu)
- {
--	int id = 0;
--#ifdef CONFIG_SMP
--	id = per_cpu(cpu_llc_id, cpu);
--#endif
--	return id;
-+	return cpu_data(cpu).llc_id;
- }
- EXPORT_SYMBOL_GPL(amd_get_nb_id);
- 
-@@ -350,7 +344,7 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 
- 	node = numa_cpu_node(cpu);
- 	if (node == NUMA_NO_NODE)
--		node = per_cpu(cpu_llc_id, cpu);
-+		node = c->llc_id;
- 
- 	/*
- 	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index ade9c79..ad2a148 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -788,6 +788,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- 	c->x86_model_id[0] = '\0';  /* Unset */
- 	c->x86_max_cores = 1;
- 	c->x86_coreid_bits = 0;
-+	c->llc_id = BAD_APICID;
- #ifdef CONFIG_X86_64
- 	c->x86_clflush_size = 64;
- 	c->x86_phys_bits = 36;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index a9cd551..5ddd6ef 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -579,9 +579,6 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 	unsigned int new_l1d = 0, new_l1i = 0; /* Cache sizes from cpuid(4) */
- 	unsigned int new_l2 = 0, new_l3 = 0, i; /* Cache sizes from cpuid(4) */
- 	unsigned int l2_id = 0, l3_id = 0, num_threads_sharing, index_msb;
--#ifdef CONFIG_X86_HT
--	unsigned int cpu = c->cpu_index;
--#endif
- 
- 	if (c->cpuid_level > 3) {
- 		static int is_initialized;
-@@ -700,16 +697,12 @@ unsigned int __cpuinit init_intel_cacheinfo(struct cpuinfo_x86 *c)
- 
- 	if (new_l2) {
- 		l2 = new_l2;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l2_id;
--#endif
-+		c->llc_id = l2_id;
- 	}
- 
- 	if (new_l3) {
- 		l3 = new_l3;
--#ifdef CONFIG_X86_HT
--		per_cpu(cpu_llc_id, cpu) = l3_id;
--#endif
-+		c->llc_id = l3_id;
- 	}
- 
- 	c->x86_cache_size = l3 ? l3 : (l2 ? l2 : (l1i+l1d));
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index b988c13..3210646 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -116,9 +116,6 @@ static struct task_struct *idle_thread_array[NR_CPUS] __cpuinitdata ;
- int smp_num_siblings = 1;
- EXPORT_SYMBOL(smp_num_siblings);
- 
--/* Last level cache ID of each logical CPU */
--DEFINE_PER_CPU(u16, cpu_llc_id) = BAD_APICID;
--
- /* representing HT siblings of each logical CPU */
- DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
- EXPORT_PER_CPU_SYMBOL(cpu_sibling_map);
-@@ -353,7 +350,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 
- 			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
- 				if (c->phys_proc_id == o->phys_proc_id &&
--				    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i) &&
-+				    c->llc_id == o->llc_id &&
- 				    c->compute_unit_id == o->compute_unit_id)
- 					link_thread_siblings(cpu, i);
- 			} else if (c->phys_proc_id == o->phys_proc_id &&
-@@ -374,12 +371,13 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
--		if (per_cpu(cpu_llc_id, cpu) != BAD_APICID &&
--		    per_cpu(cpu_llc_id, cpu) == per_cpu(cpu_llc_id, i)) {
-+		struct cpuinfo_x86 *o = &cpu_data(i);
-+
-+		if (c->llc_id != BAD_APICID && c->llc_id == o->llc_id) {
- 			cpumask_set_cpu(i, &c->llc_shared_map);
--			cpumask_set_cpu(cpu, &cpu_data(i).llc_shared_map);
-+			cpumask_set_cpu(cpu, &o->llc_shared_map);
- 		}
--		if (c->phys_proc_id == cpu_data(i).phys_proc_id) {
-+		if (c->phys_proc_id == o->phys_proc_id) {
- 			cpumask_set_cpu(i, cpu_core_mask(cpu));
- 			cpumask_set_cpu(cpu, cpu_core_mask(i));
- 			/*
-@@ -397,9 +395,9 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 				 * the other cpus in this package
- 				 */
- 				if (i != cpu)
--					cpu_data(i).booted_cores++;
-+					o->booted_cores++;
- 			} else if (i != cpu && !c->booted_cores)
--				c->booted_cores = cpu_data(i).booted_cores;
-+				c->booted_cores = o->booted_cores;
- 		}
- 	}
- }
--- 
-1.7.9
+I wonder if it would be helpful to change the semantics of RET_KILL
+slightly.  Rather than killing via do_exit, what if it killed via a
+forcibly-fatal SIGSYS?  That way, the parent's waitid() / SIGCHLD
+would indicate CLD_KILLED with si_status == SIGSYS.  The parent could
+check that and report that the child was probably compromised.
 
+--Andy
