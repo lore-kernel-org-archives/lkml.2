@@ -1,41 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab2BVHRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:17:38 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61540 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751716Ab2BVHRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:17:37 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of h.mitake@gmail.com designates 10.60.30.99 as permitted sender) smtp.mail=h.mitake@gmail.com; dkim=pass header.i=h.mitake@gmail.com
+	id S1753561Ab2BVH0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 02:26:07 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35181 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab2BVH0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 02:26:05 -0500
+Date: Wed, 22 Feb 2012 08:25:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120222072538.GA17291@elte.hu>
+References: <cover.1329851692.git.jbaron@redhat.com>
+ <4F43F9F0.4000605@zytor.com>
+ <20120222065016.GA16923@elte.hu>
+ <4F44934B.2000808@zytor.com>
 MIME-Version: 1.0
-Date: Wed, 22 Feb 2012 16:17:36 +0900
-Message-ID: <CAMO-S2gHb1fTvELVuBJ6ew+6WRRuUs8qWRX1HkvcCk1eB-Tpfg@mail.gmail.com>
-Subject: segmentation fault of modpost
-From: Hitoshi Mitake <h.mitake@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F44934B.2000808@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I tried to build tip-tree with allmodconfig and ARCH=i386 on x86_64 machine.
-And modpost caused segmentation fault like this:
-modpost[23652]: segfault at 2b53bece3000 ip 00000000004030bb sp
-00007ffffad8d260 error 4 in modpost[400000+d000]
-# from dmesg
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-The commit of -tip tree is 64256eb8e9f8cd53100ee6142968df336c54eb32.
+> On 02/21/2012 10:50 PM, Ingo Molnar wrote:
+> > 
+> > The pattern has spread beyond the niche of tracing internals and 
+> > nobody seemed to have any second thoughts about the actual 
+> > readability of these names. That is a major FAIL and it was my 
+> > primary concern.
+> > 
+> > For those *reading* the code, the similarity of 
+> > very_likely()/very_unlikely() to the likely()/unlikely() 
+> > patterns is *INTENTIONAL*, as functionally the branch site 
+> > itself is very similar to a real branch!
+> > 
+> > Secondly, for those *writing* such code, you cannot just 
+> > 'accidentally' change a unlikely() to a very_unlikely() and get 
+> > something you didn't ask for ...
+> > 
+> > It is the modification site that is dissimilar (and which is 
+> > slow in the jump label case) - and that is very apparently 
+> > dissimilar that it takes some effort to change these flags. If 
+> > you write such code you have to add the whole jump label 
+> > mechanism to it, which makes it very apparent what is happening 
+> > and makes the costs very apparent as well.
+> > 
+> > Thirdly, the fact that it's a 'jump label' is an 
+> > *implementational* detail. On some architectures very_unlikely() 
+> > indeed maps to unlikely(), because jump labels have not been 
+> > implemented yet. On some architectures very_unlikely() is 
+> > implemented via jump labels. On some future architectures it 
+> > might be implemented via JIT-ing the target function. (I made 
+> > the last one up)
+> > 
+> > So it makes sense to decouple 'jump labels' from the actual high 
+> > level naming of this API.
+> > 
+> > Anyway, I've Cc:-ed Linus and Andrew, I plan to take the renames 
+> > but they can NAK me if doing that is stupid.
+> > 
+> 
+> I have to VEHEMENTLY disagree with you here.
+> 
+> likely()/unlikely() are supposed to be used when it is clear 
+> at the time the code is written which way the branch is biased 
+> or which path is important (unlikely() is typically used for 
+> performance-unimportant bailouts.)
+>
+> Jump labels are not that way.  The key aspect for when the 
+> jump label optimization is relevant is *how often is the 
+> direction changed*.  It is perfectly sane for this to be done 
+> on a 50:50 branch, as long as the 50:50-ness is settled once 
+> for all dring a boot. [...]
 
-Is this problem already reported or solved?
-If not, I'd like to solve this because I need to build all{mod,yes}config
-kernel for testing readq/writeq of x86.
+Erm, that's not at all true - jump labels have a strong build 
+time bias/assymetry: the conditional block is moved totally out 
+of line and the original fall-through code-path is left as 
+straight a flow as possible.
+
+Just look at the jump label usage site disassembly and check the 
+historic evolution of this feature in the Git logs:
+
+The *primary* benefit of jump labels was always to the 
+fall-trough code. We hurt the tracepoint-enabled codepath 
+*INTENTIONALLY*, to make sure the overwhelmingly common case of 
+them being off is left alone as much as possible.
+
+> [...]  Consider, for example, an Intel CPU versus an AMD CPU.  
+> Wouldn't you agree that it would be absolutely ridiculous and 
+> downright offensive to have:
+> 
+> 	if (very_unlikely(cpu_vendor_amd)) {
+> 
+> Yet this is a *fantastic* use of the jump labels, because your 
+> CPU vendor isn't going to change in the middle of execution 
+> (hot VM migrations excepted ;)
+
+No, that condition perfectly validly represents what happens in 
+reality: that the conditional AMD code is moved *out of line* - 
+in most cases penalizing it in terms of instruction scheduling, 
+etc.
+
+There is a fundamental assymetry, and intentionally so. You 
+*really* have to think what the common case is, and make sure 
+the build defaults to that. It's not the end of the world to 
+have it flipped over, but there's costs and those costs are 
+higher even in the branch path than a regular 
+likely()/unlikely().
+
+So you are rather wrong about your expectations - I think that 
+is one more piece of evidence that the naming was less than 
+optimal.
+
+> So the key aspect of this is the staticness of the 
+> conditional, NOT the degree of bias of the branch.  Hence my 
+> past insistence on the "static_branch" name (rather than 
+> "jump_label")... the branch part can be omitted, as an 
+> implementation detail, but the staticness of it is its 
+> absolutely key defining characteristic.
+
+I don't think you understand this facility as well as you think 
+you do.
 
 Thanks,
 
--- 
-Hitoshi Mitake
-h.mitake@gmail.com
+	Ingo
