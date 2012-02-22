@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab2BVBsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:48:12 -0500
+	id S1755586Ab2BVBtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:49:24 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:62082 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab2BVBsF (ORCPT
+	with ESMTP id S932160Ab2BVBsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:48:05 -0500
+	Tue, 21 Feb 2012 20:48:14 -0500
 Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 28/36] blkcg: use double locking instead of RCU for blkg synchronization
-Date: Tue, 21 Feb 2012 17:46:55 -0800
-Message-Id: <1329875223-5102-29-git-send-email-tj@kernel.org>
+Subject: [PATCH 32/36] block: ioc_task_link() can't fail
+Date: Tue, 21 Feb 2012 17:46:59 -0800
+Message-Id: <1329875223-5102-33-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
@@ -22,280 +22,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkgs are chained from both blkcgs and request_queues and thus
-subjected to two locks - blkcg->lock and q->queue_lock.  As both blkcg
-and q can go away anytime, locking during removal is tricky.  It's
-currently solved by wrapping removal inside RCU, which makes the
-synchronization complex.  There are three locks to worry about - the
-outer RCU, q lock and blkcg lock, and it leads to nasty subtle
-complications like conditional synchronize_rcu() on queue exit paths.
+ioc_task_link() is used to share %current's ioc on clone.  If
+%current->io_context is set, %current is guaranteed to have refcount
+on the ioc and, thus, ioc_task_link() can't fail.
 
-For all other paths, blkcg lock is naturally nested inside q lock and
-the only exception is blkcg removal path, which is a very cold path
-and can be implemented as clumsy but conceptually-simple reverse
-double lock dancing.
+Replace error checking in ioc_task_link() with WARN_ON_ONCE() and make
+it just increment refcount and nr_tasks.
 
-This patch updates blkg removal path such that blkgs are removed while
-holding both q and blkcg locks, which is trivial for request queue
-exit path - blkg_destroy_all().  The blkcg removal path,
-blkiocg_pre_destroy(), implements reverse double lock dancing
-essentially identical to ioc_release_fn().
-
-This simplifies blkg locking - no half-dead blkgs to worry about.  Now
-unnecessary RCU annotations will be removed by the next patch.
+-v2: Description typo fix (Vivek).
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c |  136 +++++++++++++++++++--------------------------------
- block/blk-cgroup.h |    4 --
- block/cfq.h        |   10 ----
- 3 files changed, 51 insertions(+), 99 deletions(-)
+ include/linux/iocontext.h |   16 +++++-----------
+ kernel/fork.c             |    5 ++---
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index ce2dd15..aee71ef 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -620,32 +620,6 @@ out:
- }
- EXPORT_SYMBOL_GPL(blkg_lookup_create);
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index 1a30180..81a8870 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -120,18 +120,12 @@ struct io_context {
+ 	struct work_struct release_work;
+ };
  
--static void __blkiocg_del_blkio_group(struct blkio_group *blkg)
--{
--	hlist_del_init_rcu(&blkg->blkcg_node);
--}
--
--/*
-- * returns 0 if blkio_group was still on cgroup list. Otherwise returns 1
-- * indicating that blk_group was unhashed by the time we got to it.
-- */
--int blkiocg_del_blkio_group(struct blkio_group *blkg)
--{
--	struct blkio_cgroup *blkcg = blkg->blkcg;
--	unsigned long flags;
--	int ret = 1;
--
--	spin_lock_irqsave(&blkcg->lock, flags);
--	if (!hlist_unhashed(&blkg->blkcg_node)) {
--		__blkiocg_del_blkio_group(blkg);
--		ret = 0;
+-static inline struct io_context *ioc_task_link(struct io_context *ioc)
++static inline void ioc_task_link(struct io_context *ioc)
+ {
+-	/*
+-	 * if ref count is zero, don't allow sharing (ioc is going away, it's
+-	 * a race).
+-	 */
+-	if (ioc && atomic_long_inc_not_zero(&ioc->refcount)) {
+-		atomic_inc(&ioc->nr_tasks);
+-		return ioc;
 -	}
--	spin_unlock_irqrestore(&blkcg->lock, flags);
 -
--	return ret;
--}
--EXPORT_SYMBOL_GPL(blkiocg_del_blkio_group);
--
- /* called under rcu_read_lock(). */
- struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
- 				struct request_queue *q)
-@@ -663,12 +637,16 @@ EXPORT_SYMBOL_GPL(blkg_lookup);
- static void blkg_destroy(struct blkio_group *blkg)
- {
- 	struct request_queue *q = blkg->q;
-+	struct blkio_cgroup *blkcg = blkg->blkcg;
- 
- 	lockdep_assert_held(q->queue_lock);
-+	lockdep_assert_held(&blkcg->lock);
- 
- 	/* Something wrong if we are trying to remove same group twice */
- 	WARN_ON_ONCE(list_empty(&blkg->q_node));
-+	WARN_ON_ONCE(hlist_unhashed(&blkg->blkcg_node));
- 	list_del_init(&blkg->q_node);
-+	hlist_del_init_rcu(&blkg->blkcg_node);
- 
- 	WARN_ON_ONCE(q->nr_blkgs <= 0);
- 	q->nr_blkgs--;
-@@ -712,47 +690,35 @@ static void update_root_blkg(struct request_queue *q, enum blkio_policy_id plid)
- 	pol->ops.blkio_init_group_fn(blkg);
+-	return NULL;
++	WARN_ON_ONCE(atomic_long_read(&ioc->refcount) <= 0);
++	WARN_ON_ONCE(atomic_read(&ioc->nr_tasks) <= 0);
++	atomic_long_inc(&ioc->refcount);
++	atomic_inc(&ioc->nr_tasks);
  }
  
-+/**
-+ * blkg_destroy_all - destroy all blkgs associated with a request_queue
-+ * @q: request_queue of interest
-+ * @destroy_root: whether to destroy root blkg or not
-+ *
-+ * Destroy blkgs associated with @q.  If @destroy_root is %true, all are
-+ * destroyed; otherwise, root blkg is left alone.
-+ */
- void blkg_destroy_all(struct request_queue *q, bool destroy_root)
- {
- 	struct blkio_group *blkg, *n;
- 	int i;
- 
--	while (true) {
--		bool done = true;
--
--		spin_lock_irq(q->queue_lock);
--
--		list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
--			/* skip root? */
--			if (!destroy_root && blkg->blkcg == &blkio_root_cgroup)
--				continue;
--
--			/*
--			 * If cgroup removal path got to blk_group first
--			 * and removed it from cgroup list, then it will
--			 * take care of destroying cfqg also.
--			 */
--			if (!blkiocg_del_blkio_group(blkg))
--				blkg_destroy(blkg);
--			else
--				done = false;
--		}
-+	spin_lock_irq(q->queue_lock);
- 
--		spin_unlock_irq(q->queue_lock);
-+	list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
-+		struct blkio_cgroup *blkcg = blkg->blkcg;
- 
--		/*
--		 * Group list may not be empty if we raced cgroup removal
--		 * and lost.  cgroup removal is guaranteed to make forward
--		 * progress and retrying after a while is enough.  This
--		 * ugliness is scheduled to be removed after locking
--		 * update.
--		 */
--		if (done)
--			break;
-+		/* skip root? */
-+		if (!destroy_root && blkg->blkcg == &blkio_root_cgroup)
-+			continue;
- 
--		msleep(10);	/* just some random duration I like */
-+		spin_lock(&blkcg->lock);
-+		blkg_destroy(blkg);
-+		spin_unlock(&blkcg->lock);
- 	}
- 
-+	spin_unlock_irq(q->queue_lock);
-+
- 	for (i = 0; i < BLKIO_NR_POLICIES; i++)
- 		update_root_blkg(q, i);
- }
-@@ -1590,45 +1556,45 @@ static int blkiocg_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
- 				ARRAY_SIZE(blkio_files));
- }
- 
-+/**
-+ * blkiocg_pre_destroy - cgroup pre_destroy callback
-+ * @subsys: cgroup subsys
-+ * @cgroup: cgroup of interest
-+ *
-+ * This function is called when @cgroup is about to go away and responsible
-+ * for shooting down all blkgs associated with @cgroup.  blkgs should be
-+ * removed while holding both q and blkcg locks.  As blkcg lock is nested
-+ * inside q lock, this function performs reverse double lock dancing.
-+ *
-+ * This is the blkcg counterpart of ioc_release_fn().
-+ */
- static int blkiocg_pre_destroy(struct cgroup_subsys *subsys,
- 			       struct cgroup *cgroup)
- {
- 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
--	unsigned long flags;
--	struct blkio_group *blkg;
--	struct request_queue *q;
- 
- 	rcu_read_lock();
-+	spin_lock_irq(&blkcg->lock);
- 
--	do {
--		spin_lock_irqsave(&blkcg->lock, flags);
-+	while (!hlist_empty(&blkcg->blkg_list)) {
-+		struct blkio_group *blkg = hlist_entry(blkcg->blkg_list.first,
-+						struct blkio_group, blkcg_node);
-+		struct request_queue *q = rcu_dereference(blkg->q);
- 
--		if (hlist_empty(&blkcg->blkg_list)) {
--			spin_unlock_irqrestore(&blkcg->lock, flags);
--			break;
-+		if (spin_trylock(q->queue_lock)) {
-+			blkg_destroy(blkg);
-+			spin_unlock(q->queue_lock);
-+		} else {
-+			spin_unlock_irq(&blkcg->lock);
-+			rcu_read_unlock();
-+			cpu_relax();
-+			rcu_read_lock();
-+			spin_lock(&blkcg->lock);
- 		}
-+	}
- 
--		blkg = hlist_entry(blkcg->blkg_list.first, struct blkio_group,
--					blkcg_node);
--		q = rcu_dereference(blkg->q);
--		__blkiocg_del_blkio_group(blkg);
--
--		spin_unlock_irqrestore(&blkcg->lock, flags);
--
--		/*
--		 * This blkio_group is being unlinked as associated cgroup is
--		 * going away. Let all the IO controlling policies know about
--		 * this event.
--		 */
--		spin_lock(&blkio_list_lock);
--		spin_lock_irqsave(q->queue_lock, flags);
--		blkg_destroy(blkg);
--		spin_unlock_irqrestore(q->queue_lock, flags);
--		spin_unlock(&blkio_list_lock);
--	} while (1);
--
-+	spin_unlock_irq(&blkcg->lock);
- 	rcu_read_unlock();
--
- 	return 0;
- }
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 88b2c3b..bebc442 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -376,7 +376,6 @@ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
- extern struct blkio_cgroup blkio_root_cgroup;
- extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
- extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
--extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
- extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
- 				       struct request_queue *q);
- struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
-@@ -412,9 +411,6 @@ cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
- static inline struct blkio_cgroup *
- task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
- 
--static inline int
--blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
--
- static inline struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
- 					      void *key) { return NULL; }
- static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
-diff --git a/block/cfq.h b/block/cfq.h
-index 5584e1b..c8b15ef 100644
---- a/block/cfq.h
-+++ b/block/cfq.h
-@@ -79,11 +79,6 @@ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
- 					direction, sync);
- }
- 
--static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
--{
--	return blkiocg_del_blkio_group(blkg);
--}
--
- #else /* CFQ_GROUP_IOSCHED */
- static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
- 			struct blkio_policy_type *pol,
-@@ -119,10 +114,5 @@ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
- 			struct blkio_policy_type *pol, uint64_t start_time,
- 			uint64_t io_start_time, bool direction, bool sync) { }
- 
--static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
--{
--	return 0;
--}
--
- #endif /* CFQ_GROUP_IOSCHED */
- #endif
+ struct task_struct;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b77fd55..a1b6327 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -901,9 +901,8 @@ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
+ 	 * Share io context with parent, if CLONE_IO is set
+ 	 */
+ 	if (clone_flags & CLONE_IO) {
+-		tsk->io_context = ioc_task_link(ioc);
+-		if (unlikely(!tsk->io_context))
+-			return -ENOMEM;
++		ioc_task_link(ioc);
++		tsk->io_context = ioc;
+ 	} else if (ioprio_valid(ioc->ioprio)) {
+ 		new_ioc = get_task_io_context(tsk, GFP_KERNEL, NUMA_NO_NODE);
+ 		if (unlikely(!new_ioc))
 -- 
 1.7.7.3
 
