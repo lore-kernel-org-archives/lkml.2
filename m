@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab2BVU1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 15:27:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:44851 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab2BVU1q (ORCPT
+	id S1753499Ab2BVU36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 15:29:58 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56765 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab2BVU34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 15:27:46 -0500
-Date: Wed, 22 Feb 2012 15:26:26 -0500 (EST)
-Message-Id: <20120222.152626.1290364413773909040.davem@davemloft.net>
-To: richm@oldelvet.org.uk
-Cc: mroos@linux.ee, tj@kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F45326C.3000408@oldelvet.org.uk>
-References: <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
-	<alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
-	<4F45326C.3000408@oldelvet.org.uk>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 22 Feb 2012 12:26:30 -0800 (PST)
+	Wed, 22 Feb 2012 15:29:56 -0500
+Date: Thu, 23 Feb 2012 00:29:52 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for Feb 17 (kernel/kcmp.c)
+Message-ID: <20120222202952.GA16093@moon>
+References: <20120217165045.2394d944d6efc37104421d2e@canb.auug.org.au>
+ <4F3E95B7.3010700@xenotime.net>
+ <20120218101446.64a7ea590b66f337762bfb57@canb.auug.org.au>
+ <20120218065846.GA1905@moon>
+ <4F454E20.2060505@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F454E20.2060505@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Mortimer <richm@oldelvet.org.uk>
-Date: Wed, 22 Feb 2012 18:22:36 +0000
-
-> memblock reserved: ADD [0x0000007fcc0a40-0x0000007fcc0a4e] node 1
-> memblock reserved: add [0x0000007fcc0a40-000000007fcc0a4e] node 1 @767
-
-These are physical addresses.
-
-> But a similar address in the registers has fffff800 in there.
+On Wed, Feb 22, 2012 at 12:20:48PM -0800, Randy Dunlap wrote:
+...
 > 
-> o4: fffff8007fcc0a4d
+> Since this build error is still occurring in linux-next 20120222,
+> I looked and found that the Ecode is misspelled.
+> 
+> Please s/EOPNOTSUP/EOPNOTSUPP/
+> 
 
-All of physical memory is mapped linearly starting at 0xfffff80000000000
-and this is such a virtual address.
+Thanks!
+
+	Cyrill
