@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab2BVMhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 07:37:03 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:44652 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751994Ab2BVMg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 07:36:56 -0500
-From: Danny Kukawka <danny.kukawka@bisect.de>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Danny Kukawka <dkukawka@suse.de>, Sergey Lapin <slapin@ossfans.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] net/ieee802154/6lowpan.c: reuse eth_mac_addr()
-Date: Wed, 22 Feb 2012 13:36:39 +0100
-Message-Id: <1329914199-30862-3-git-send-email-danny.kukawka@bisect.de>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
-References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329914216;b046ad00;
+	id S1752544Ab2BVMhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 07:37:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45500 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab2BVMh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 07:37:27 -0500
+Date: Wed, 22 Feb 2012 13:37:25 +0100
+From: Jan Kara <jack@suse.cz>
+To: Liu Bo <liubo2009@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] MM: fix a typo of truncate_inode_pages_range
+Message-ID: <20120222123725.GB28373@quack.suse.cz>
+References: <1329793040-21406-1-git-send-email-liubo2009@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329793040-21406-1-git-send-email-liubo2009@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use eth_mac_addr() for .ndo_set_mac_address, remove
-lowpan_set_address since it do currently the same as
-eth_mac_addr(). Additional advantage: eth_mac_addr() already
-checks if the given address is valid
+On Tue 21-02-12 10:57:20, Liu Bo wrote:
+> The typo of API truncate_inode_pages_range is not updated.
+  It's better to add more specific recipients of patches. It's too easy to
+overlook a patch in 400+ daily messages on LKML. In this particular case
+using trivial tree for merging would be appropriate. Added CCs.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
----
- net/ieee802154/6lowpan.c |   16 ++--------------
- 1 files changed, 2 insertions(+), 14 deletions(-)
-
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index e4ecc1e..3685158 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -55,6 +55,7 @@
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
- #include <net/af_ieee802154.h>
- #include <net/ieee802154.h>
- #include <net/ieee802154_netdev.h>
-@@ -924,19 +925,6 @@ drop:
- 	return -EINVAL;
- }
- 
--static int lowpan_set_address(struct net_device *dev, void *p)
--{
--	struct sockaddr *sa = p;
--
--	if (netif_running(dev))
--		return -EBUSY;
--
--	/* TODO: validate addr */
--	memcpy(dev->dev_addr, sa->sa_data, dev->addr_len);
--
--	return 0;
--}
--
- static int lowpan_get_mac_header_length(struct sk_buff *skb)
- {
- 	/*
-@@ -1062,7 +1050,7 @@ static struct header_ops lowpan_header_ops = {
- 
- static const struct net_device_ops lowpan_netdev_ops = {
- 	.ndo_start_xmit		= lowpan_xmit,
--	.ndo_set_mac_address	= lowpan_set_address,
-+	.ndo_set_mac_address	= eth_mac_addr,
- };
- 
- static void lowpan_setup(struct net_device *dev)
+								Honza
+> 
+> Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
+> ---
+>  mm/truncate.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index 632b15e..a188058 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -184,7 +184,7 @@ int invalidate_inode_page(struct page *page)
+>  }
+>  
+>  /**
+> - * truncate_inode_pages - truncate range of pages specified by start & end byte offsets
+> + * truncate_inode_pages_range - truncate range of pages specified by start & end byte offsets
+>   * @mapping: mapping to truncate
+>   * @lstart: offset from which to truncate
+>   * @lend: offset to which to truncate
+> -- 
+> 1.6.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
-1.7.8.3
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
