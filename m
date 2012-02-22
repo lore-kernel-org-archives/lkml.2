@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2BVQec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:34:32 -0500
-Received: from 9.mo5.mail-out.ovh.net ([178.32.96.204]:34436 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750888Ab2BVQeb (ORCPT
+	id S1753597Ab2BVQgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:36:33 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:15242 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab2BVQga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:34:31 -0500
-Date: Wed, 22 Feb 2012 17:26:31 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com, linux@arm.linux.org.uk
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of
- at91_sys_read/write
-Message-ID: <20120222162631.GE9407@game.jcrosoft.org>
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com>
- <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
- <201202221436.29474.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201202221436.29474.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 1806506402640276228
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrtddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+	Wed, 22 Feb 2012 11:36:30 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Wed, 22 Feb 2012 17:36:25 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv22 14/16] X86: integrate CMA with DMA-mapping subsystem
+In-reply-to: <20120221161802.f6a28085.akpm@linux-foundation.org>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
+        "'Rob Clark'" <rob.clark@linaro.org>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>
+Message-id: <000101ccf180$1e5226b0$5af67410$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: Aczw93NdR6imxbLiSjaf5A+h5crMwQAh1b0w
+References: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com>
+ <1329507036-24362-15-git-send-email-m.szyprowski@samsung.com>
+ <20120221161802.f6a28085.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:36 Wed 22 Feb     , Arnd Bergmann wrote:
-> Hi Nicolas and Jean-Christophe,
-> 
-> On Wednesday 22 February 2012, Nicolas Ferre wrote:
-> > --- a/arch/arm/mach-at91/at91x40.c
-> > +++ b/arch/arm/mach-at91/at91x40.c
-> > @@ -44,7 +44,7 @@ static void at91x40_idle(void)
-> >          * Disable the processor clock.  The processor will be automatically
-> >          * re-enabled by an interrupt or by a reset.
-> >          */
-> > -       at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
-> > +       __raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
-> >         cpu_do_idle();
-> >  }
-> 
-> How about making this writel_relaxed in the process?
-> I would like to see the use of __raw_*() get reduced in code that gets
-> touched. In most cases writel_relaxed/readl_relaxed is the correct
-> accessor function instead.
-It will for next release I plan to switch all of the at one
+Hi Andrew,
 
-today I don't want to change it as the same time
+On Wednesday, February 22, 2012 1:18 AM Andrew Morton wrote:
 
-Best Regards,
-J.
+> > This patch adds support for CMA to dma-mapping subsystem for x86
+> > architecture that uses common pci-dma/pci-nommu implementation. This
+> > allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+> >
+> > ...
+> >
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -31,6 +31,7 @@ config X86
+> >  	select ARCH_WANT_OPTIONAL_GPIOLIB
+> >  	select ARCH_WANT_FRAME_POINTERS
+> >  	select HAVE_DMA_ATTRS
+> > +	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
+> >  	select HAVE_KRETPROBES
+> >  	select HAVE_OPTPROBES
+> >  	select HAVE_FTRACE_MCOUNT_RECORD
+> 
+> I don't think it's compilable at all for x86_64, because that platform
+> selects SWIOTLB.
+
+Right, x86 support is very basic, mainly for being able to test it on standard 
+configuration with QEmu.
+
+> After a while I got it to compile for i386.  arm didn't go so well,
+> partly because arm allmodconfig is presently horked (something to do
+> with Kconfig not setting PHYS_OFFSET) and partly because arm defconfig
+> doesn't permit CMA to be set.  Got bored, gave up.
+
+I think that all*config are broken on ARM. To enable CMA compilation, one need to 
+select a subplatform based on ARMv6+ - for example one can start from 
+arch/arm/configs/exynos4_defconfig and then use oldnoconfig.
+
+> The patchset collides pretty seriously with pending dma api changes and
+> pending arm changes in linux-next, so I didn't apply anything.  This
+> will all need to be looked at, please.
+> 
+> I'll make do with reading the patches for now ;)
+
+I've rebased the CMA patchset on top of next-20120222 kernel tree and I will send 
+them soon as v23.
+
+I hope this will help getting them merged to your tree. If I should select different
+base for the patches, just let me know.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
