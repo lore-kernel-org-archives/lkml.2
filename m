@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2BVQWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:22:49 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44362 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab2BVQWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:22:46 -0500
-Date: Wed, 22 Feb 2012 17:22:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: mingo@redhat.com, hpa@zytor.com, ananth@in.ibm.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] x86/kprobes: Fix to recover instructions on
- optimized path
-Message-ID: <20120222162224.GA5256@elte.hu>
-References: <20120221083621.11350.4716.stgit@localhost.localdomain>
- <tip-f5dbbb8e1e055d6f02817a1995993b461910b1b7@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <tip-f5dbbb8e1e055d6f02817a1995993b461910b1b7@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1753209Ab2BVQ1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:27:03 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:14513 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2BVQ1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 11:27:00 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Wed, 22 Feb 2012 17:26:43 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv22 13/16] drivers: add Contiguous Memory Allocator
+In-reply-to: <alpine.DEB.2.00.1202212121560.962@localhost>
+To: "'Aaro Koskinen'" <aaro.koskinen@iki.fi>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
+        "'Rob Clark'" <rob.clark@linaro.org>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>
+Message-id: <000001ccf17e$c3e50040$4baf00c0$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: Aczw4ACUXapK7zqmQ0uq7qn8Sm07iwAUZ2GA
+References: <1329507036-24362-1-git-send-email-m.szyprowski@samsung.com>
+ <1329507036-24362-14-git-send-email-m.szyprowski@samsung.com>
+ <alpine.DEB.2.00.1202212121560.962@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Tuesday, February 21, 2012 10:30 PM Aaro Koskinen wrote:
 
-> Commit-ID:  f5dbbb8e1e055d6f02817a1995993b461910b1b7
-> Gitweb:     http://git.kernel.org/tip/f5dbbb8e1e055d6f02817a1995993b461910b1b7
-> Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> AuthorDate: Tue, 21 Feb 2012 17:36:21 +0900
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Wed, 22 Feb 2012 11:31:34 +0100
+> On Fri, 17 Feb 2012, Marek Szyprowski wrote:
+> > +/**
+> > + * dma_release_from_contiguous() - release allocated pages
+> > + * @dev:   Pointer to device for which the pages were allocated.
+> > + * @pages: Allocated pages.
+> > + * @count: Number of allocated pages.
+> > + *
+> > + * This function releases memory allocated by dma_alloc_from_contiguous().
+> > + * It returns false when provided pages do not belong to contiguous area and
+> > + * true otherwise.
+> > + */
+> > +bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+> > +				 int count)
+> > +{
+> > +	struct cma *cma = dev_get_cma_area(dev);
+> > +	unsigned long pfn;
+> > +
+> > +	if (!cma || !pages)
+> > +		return false;
+> > +
+> > +	pr_debug("%s(page %p)\n", __func__, (void *)pages);
+> > +
+> > +	pfn = page_to_pfn(pages);
+> > +
+> > +	if (pfn < cma->base_pfn || pfn >= cma->base_pfn + cma->count)
+> > +		return false;
+> > +
+> > +	VM_BUG_ON(pfn + count > cma->base_pfn);
 > 
-> x86/kprobes: Fix to recover instructions on optimized path
+> Are you sure the VM_BUG_ON() condition is correct here?
 
-Does not build on x86 if CONFIG_OPTPROBES is off:
+Thanks for pointing this bug. '+ cma->count' is missing in the second part.
 
-arch/x86/kernel/kprobes.c:260:8: error: dereferencing pointer to incomplete type
-arch/x86/kernel/kprobes.c:260:8: error: invalid use of undefined type ‘struct optimized_kprobe’
-arch/x86/kernel/kprobes.c:262:22: error: dereferencing pointer to incomplete type
-arch/x86/kernel/kprobes.c:264:18: error: dereferencing pointer to incomplete type
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Thanks,
 
-	Ingo
