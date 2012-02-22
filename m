@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2BVLPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 06:15:35 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50428 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729Ab2BVLPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 06:15:33 -0500
-Date: Wed, 22 Feb 2012 12:15:01 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>,
-        Roberto Agostino Vitillo <ravitillo@lbl.gov>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, acme@redhat.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
-        khandual@linux.vnet.ibm.com, dsahern@gmail.com
-Subject: Re: [PATCH v6 13/18] perf: add support for taken branch sampling to
- perf report
-Message-ID: <20120222111501.GA23068@elte.hu>
-References: <1328826068-11713-1-git-send-email-eranian@google.com>
- <1328826068-11713-14-git-send-email-eranian@google.com>
+	id S1755860Ab2BVLVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 06:21:08 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35804 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab2BVLVG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 06:21:06 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ajeet.yadav.77@gmail.com designates 10.220.157.83 as permitted sender) smtp.mail=ajeet.yadav.77@gmail.com; dkim=pass header.i=ajeet.yadav.77@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1328826068-11713-14-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <CAB4K4y7maT1ZQSPKXq6SAng+8fXOFV1kyzVC7AiJGCmgMu5MDg@mail.gmail.com>
+References: <1329494160-26942-1-git-send-email-ajeet.yadav.77@gmail.com>
+	<20120217171915.GO27825@n2100.arm.linux.org.uk>
+	<CAB4K4y7maT1ZQSPKXq6SAng+8fXOFV1kyzVC7AiJGCmgMu5MDg@mail.gmail.com>
+Date: Wed, 22 Feb 2012 16:51:04 +0530
+Message-ID: <CAB4K4y7FebiFASp2nznpNKfjAXcxdWSE14hCjTuTKPOJfv4Hng@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dma-mapping: fix array out of bound access
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jon Medhurst <tixy@yxit.co.uk>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sumit Bhattacharya <sumitb@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Naveen Yadav <yad.naveen@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ My old replies were from mobile messenger, hence were short, would say sorry
+ for the same.
+ Please find my response below
 
-* Stephane Eranian <eranian@google.com> wrote:
+ On Fri, Feb 17, 2012 at 10:49 PM, Russell King - ARM Linux
+ <linux@arm.linux.org.uk> wrote:
+> On Fri, Feb 17, 2012 at 09:26:00PM +0530, Ajeet Yadav wrote:
+>> In __dma_alloc_remap(*,size,*,*)/ __dma_free_remap(*,size) functions
+>> if virtual address is in the last consistent mapping region
+>> i.e idx == ((CONSISTENT_END - base) >> PMD_SHIFT) - 1
+>> and off == PTRS_PER_PTE.
+>> then we have array out of bound access condition.
+>
+> How?  Where?
+>
+> At the first loop, off will _never_ be PTRS_PER_PTE.
+>
+>                u32 off = CONSISTENT_OFFSET(c->vm_start) &
+> (PTRS_PER_PTE-1);
+>
+> There is _absolutely_ _no_ _way_ that off could ever be PTRS_PER_PTE
+> here.
 
-> From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
-> 
-> This patch adds support for taken branch sampling, i.e, the
-> PERF_SAMPLE_BRANCH_STACK feature to perf report. In other
-> words, to display histograms based on taken branches rather
-> than executed instructions addresses.
-> 
-> The new option is called -b and it takes no argument. To
-> generate meaningful output, the perf.data must have been
-> obtained using perf record -b xxx ... where xxx is a branch
-> filter option.
-> 
-> The output shows symbols, modules, sorted by 'who branches
-> where' the most often. The percentages reported in the first
-> column refer to the total number of branches captured and
-> not the usual number of samples.
-> 
-> Here is a quick example.
-> Here branchy is simple test program which looks as follows:
-> 
-> void f2(void)
-> {}
-> void f3(void)
-> {}
-> void f1(unsigned long n)
-> {
->   if (n & 1UL)
->     f2();
->   else
->     f3();
-> }
-> int main(void)
-> {
->   unsigned long i;
-> 
->   for (i=0; i < N; i++)
->    f1(i);
->   return 0;
-> }
-> 
-> Here is the output captured on Nehalem, if we are
-> only interested in user level function calls.
-> 
-> $ perf record -b any_call,u -e cycles:u branchy
-> 
-> $ perf report -b --sort=symbol
->     52.34%  [.] main                   [.] f1
->     24.04%  [.] f1                     [.] f3
->     23.60%  [.] f1                     [.] f2
->      0.01%  [k] _IO_new_file_xsputn    [k] _IO_file_overflow
->      0.01%  [k] _IO_vfprintf_internal  [k] _IO_new_file_xsputn
->      0.01%  [k] _IO_vfprintf_internal  [k] strchrnul
->      0.01%  [k] __printf               [k] _IO_vfprintf_internal
->      0.01%  [k] main                   [k] __printf
+ True, so offset can be off = (PTRS_PER_PTE - 1);
+ And say idx = CONSISTENT_PTE_INDEX(c->vm_start); provide us with last vaild
+ element in consistent_pte[];
+ Also __dma_alloc_remap() request 1 page, i.e size =  PAGE_SIZE.
 
-Ok, nice feature.
+ Because size, off, idx are vaild values with respect to consistent mapping
+ region, and its a do{}while loop, so it will exit loop after first pass. All
+ fine
 
-One detail needs to be fixed though, if someone does:
+ But their is a catch, we do off++, so
+ do{
+         do_all_important_stuff
+         off++;        >>>>>>>>>>>>>>>>>>>>>>>>>>> now off = PTRS_PER_PTE
+           if (off >= PTRS_PER_PTE) {                 >>>>>> condition TRUE
+                off = 0;
+                pte = consistent_pte[++idx];         >>>>> we did idx++ but
+idx was already pointing to last element, so we are trying to access array
+ out of bound
+          }
+ } while (size -= PAGE_SIZE);                      >>>>>>> conditon FALSE,
+ but its too late
 
-  perf record -b ...
+ The proposed solution, do off++ but move the rest i.e if body from last to
+ begining of do{}while.
+ In this case we will prevent out of bound acess, without effecting the flow
+ on first entry and also exit from do{}while loop.
+ Moving the if body to begining of do{}while ensured that on first entry to
+ do{}while loop the if condition fails hence not effecting the first entry
+ condition.
+ on subsequent iternation of do{}while loop the while condition will be
+ checked before we execute the if conditon.
 
-then 'perf report' should *default* to the above branch stack 
-output style, without having to specify -b again.
+ Given functions __dma_alloc_remap()/ __dma_free_remap() already haves
+ necessary checks to ensure that size is valid, so again if we analyse from
+ given example
 
-Having --branch/--no-branch present in perf report is fine if 
-someone wants to force either direction, but the default 
-absolutely must be picked up from the perf.data and should be 
-the obvious behavior.
+ do{
+           if (off >= PTRS_PER_PTE) {                 >>>>>> condition FALSE
+                off = 0;
+                pte = consistent_pte[++idx];           >>>>>> we avoid
+ this
+          }
+         do_all_important_stuff
+         off++;        >>>>>>>>>>>>>>>>>>>>>>>>>>> now off = PTRS_PER_PTE
+ } while (size -= PAGE_SIZE);                       >>>>>>> condition FAILS,
+ we exit the do{}while, effectively prevented the out of bound access of
+ consistent_pte[]
 
-Other than that it looks good to me, so if this detail is fixed 
-(can be a delta patch on top of the existing series) and there's 
-no problems with it I can pick it up for v3.4.
+  NOTE: size is valid so, in proposed solution while conditon is effectively
+ preventing the out of bound array access to occur.
+  If we review the code from normal access point of view, we are not changing
+ any flow logic, also after the exit from do{}while no access to off, idx is
+ performed
+ So we do not need to worry about post do{}while statments.
 
-Thanks,
-
-	Ingo
+>
+> If 'base' is CONSISTENT_END, then we have far bigger problems, because
+> it means that we have a zero sized region - it certainly can't be any
+> larger than zero size because then we'd be overflowing the DMA region
+>> into something else.
+>>
+>> Plus, we know that 'end of region' allocations work fine, because the
+>> code allocates from the top of the region downwards.
+>>
+>> So, I don't think there's a problem here.
+>
+>
