@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab2BVS5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 13:57:33 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:50577 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab2BVS5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 13:57:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of cyfmxc@gmail.com designates 10.229.135.10 as permitted sender) smtp.mail=cyfmxc@gmail.com; dkim=pass header.i=cyfmxc@gmail.com
+	id S1755236Ab2BVS6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 13:58:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754498Ab2BVS6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 13:58:34 -0500
+Date: Wed, 22 Feb 2012 13:58:10 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Richard Henderson <rth@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
+ docs
+Message-ID: <20120222185809.GI3405@redhat.com>
+References: <4F449ACF.3040807@zytor.com>
+ <20120222074839.GA24890@elte.hu>
+ <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
+ <20120222080659.GA25318@elte.hu>
+ <1329916920.25686.79.camel@gandalf.stny.rr.com>
+ <20120222133404.GA14085@elte.hu>
+ <1329918881.25686.92.camel@gandalf.stny.rr.com>
+ <1329923583.24994.21.camel@twins>
+ <1329924752.24994.25.camel@twins>
+ <4F45226B.50606@redhat.com>
 MIME-Version: 1.0
-X-Google-Sender-Delegation: tabloid.adroit@gmail.com
-In-Reply-To: <4F4484AC.9050500@lge.com>
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
-	<4F4484AC.9050500@lge.com>
-Date: Wed, 22 Feb 2012 13:57:29 -0500
-X-Google-Sender-Auth: vCGUhTu3tiCRREUnbWD8fHMbWrM
-Message-ID: <CAJh9x3psvYArTQOBQa-TVBsW16qRTPJp+0L8hYJQTK7EJYy1tQ@mail.gmail.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-From: Yuanfang Chen <cyfmxc@gmail.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F45226B.50606@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 1:01 AM, Namhyung Kim <namhyung.kim@lge.com> wrote:
-> 2012-02-22 10:59 AM, Yuanfang Chen wrote:
->>
->> Hi all,
->>
->
-> Hi,
->
->
->
->> I'm trying use perf tool from the linux kernel package to measure
->> several raw PMU events. In the manpage of perf-record there is an "-l"
->> option (Scale counter values), which is useful for my case because I
->> want to know the total counter value, not just sample count. However
->> it seems the -l is not recognized, is this expected? How can I get a
->> total count?
->>
->
-> "perf report --show-total-period" will be your friend.
->
-> BTW, it seems you were using old version of perf (and kernel too, maybe).
-> I have no idea if your perf wouldn't support the option. :)
+On Wed, Feb 22, 2012 at 09:14:19AM -0800, Richard Henderson wrote:
+> On 02/22/12 07:32, Peter Zijlstra wrote:
+> > So I clicked the link Jason provided in his 10/10 Documentation patch
+> > and stumbled upon:
+> > 
+> >   http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01558.html
+> > 
+> > Where rth suggests that __attribute__((hot,cold)) might work on the
+> > destination labels. Trying this my compiler (4.6.1+crap) pukes all over
+> > me suggesting this isn't (yet) implemented.
+> > 
+> > Richard, is something like that still on the table?
+> 
+> It's still a possibility.  I gave Jason a patch for that quite some time
+> ago; I don't recall hearing whether it turned out to actually be useful.
+> 
+> 
+> r~
 
-You are right. my perf version is 3.0.0, just updated to 3.3.0-rc4.
---show-total-period works now.
+I don't think I ever quite got it working, and I've unfortunately
+misplaced it at this point. I am definitely interested in trying it
+again though. If you can re-send it, I'll try it.
 
->
-> The "-l" option was meaningful only if you specified events more than the
-> actual number of counters in the PMU.
+Also, I think I seem to recall it wouldn't help the -Os case, b/c we
+don't get block re-ordering?
 
-So -l is for multiplexing?
+Thanks,
 
->
->
->
->> Another question is that how can I specify multiple events and use
->> different sample-after value for each of them? like perf record -c
->> 10000,2000000,2000000 -e r2d4,r03c,r0c0
->>
->
-> It's not possible now. You should run a number of instances of perf for
-> that purpose AFAIK.
->
->
-> Thanks,
-> Namhyung
+-Jason
