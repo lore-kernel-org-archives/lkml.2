@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab2BVBs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:48:57 -0500
+	id S1755385Ab2BVBsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:48:12 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:62082 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab2BVBsU (ORCPT
+	with ESMTP id S1755459Ab2BVBsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:48:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.129.228 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Tue, 21 Feb 2012 20:48:05 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 35/36] block: make block cgroup policies follow bio task association
-Date: Tue, 21 Feb 2012 17:47:02 -0800
-Message-Id: <1329875223-5102-36-git-send-email-tj@kernel.org>
+Subject: [PATCH 28/36] blkcg: use double locking instead of RCU for blkg synchronization
+Date: Tue, 21 Feb 2012 17:46:55 -0800
+Message-Id: <1329875223-5102-29-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
@@ -22,172 +22,280 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement bio_blkio_cgroup() which returns the blkcg associated with
-the bio if exists or %current's blkcg, and use it in blk-throttle and
-cfq-iosched propio.  This makes both cgroup policies honor task
-association for the bio instead of always assuming %current.
+blkgs are chained from both blkcgs and request_queues and thus
+subjected to two locks - blkcg->lock and q->queue_lock.  As both blkcg
+and q can go away anytime, locking during removal is tricky.  It's
+currently solved by wrapping removal inside RCU, which makes the
+synchronization complex.  There are three locks to worry about - the
+outer RCU, q lock and blkcg lock, and it leads to nasty subtle
+complications like conditional synchronize_rcu() on queue exit paths.
 
-As nobody is using bio_set_task() yet, this doesn't introduce any
-behavior change.
+For all other paths, blkcg lock is naturally nested inside q lock and
+the only exception is blkcg removal path, which is a very cold path
+and can be implemented as clumsy but conceptually-simple reverse
+double lock dancing.
+
+This patch updates blkg removal path such that blkgs are removed while
+holding both q and blkcg locks, which is trivial for request queue
+exit path - blkg_destroy_all().  The blkcg removal path,
+blkiocg_pre_destroy(), implements reverse double lock dancing
+essentially identical to ioc_release_fn().
+
+This simplifies blkg locking - no half-dead blkgs to worry about.  Now
+unnecessary RCU annotations will be removed by the next patch.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c   |   11 +++++++++--
- block/blk-cgroup.h   |    4 ++--
- block/blk-throttle.c |    2 +-
- block/cfq-iosched.c  |   21 +++++++++++----------
- 4 files changed, 23 insertions(+), 15 deletions(-)
+ block/blk-cgroup.c |  136 +++++++++++++++++++--------------------------------
+ block/blk-cgroup.h |    4 --
+ block/cfq.h        |   10 ----
+ 3 files changed, 51 insertions(+), 99 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 5cabdb8..b40730f 100644
+index ce2dd15..aee71ef 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -71,12 +71,19 @@ struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
+@@ -620,32 +620,6 @@ out:
  }
- EXPORT_SYMBOL_GPL(cgroup_to_blkio_cgroup);
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
  
--struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk)
-+static struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk)
+-static void __blkiocg_del_blkio_group(struct blkio_group *blkg)
+-{
+-	hlist_del_init_rcu(&blkg->blkcg_node);
+-}
+-
+-/*
+- * returns 0 if blkio_group was still on cgroup list. Otherwise returns 1
+- * indicating that blk_group was unhashed by the time we got to it.
+- */
+-int blkiocg_del_blkio_group(struct blkio_group *blkg)
+-{
+-	struct blkio_cgroup *blkcg = blkg->blkcg;
+-	unsigned long flags;
+-	int ret = 1;
+-
+-	spin_lock_irqsave(&blkcg->lock, flags);
+-	if (!hlist_unhashed(&blkg->blkcg_node)) {
+-		__blkiocg_del_blkio_group(blkg);
+-		ret = 0;
+-	}
+-	spin_unlock_irqrestore(&blkcg->lock, flags);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(blkiocg_del_blkio_group);
+-
+ /* called under rcu_read_lock(). */
+ struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
+ 				struct request_queue *q)
+@@ -663,12 +637,16 @@ EXPORT_SYMBOL_GPL(blkg_lookup);
+ static void blkg_destroy(struct blkio_group *blkg)
  {
- 	return container_of(task_subsys_state(tsk, blkio_subsys_id),
- 			    struct blkio_cgroup, css);
- }
--EXPORT_SYMBOL_GPL(task_blkio_cgroup);
-+
-+struct blkio_cgroup *bio_blkio_cgroup(struct bio *bio)
-+{
-+	if (bio && bio->bi_css)
-+		return container_of(bio->bi_css, struct blkio_cgroup, css);
-+	return task_blkio_cgroup(current);
-+}
-+EXPORT_SYMBOL_GPL(bio_blkio_cgroup);
+ 	struct request_queue *q = blkg->q;
++	struct blkio_cgroup *blkcg = blkg->blkcg;
  
- static inline void blkio_update_group_weight(struct blkio_group *blkg,
- 					     int plid, unsigned int weight)
+ 	lockdep_assert_held(q->queue_lock);
++	lockdep_assert_held(&blkcg->lock);
+ 
+ 	/* Something wrong if we are trying to remove same group twice */
+ 	WARN_ON_ONCE(list_empty(&blkg->q_node));
++	WARN_ON_ONCE(hlist_unhashed(&blkg->blkcg_node));
+ 	list_del_init(&blkg->q_node);
++	hlist_del_init_rcu(&blkg->blkcg_node);
+ 
+ 	WARN_ON_ONCE(q->nr_blkgs <= 0);
+ 	q->nr_blkgs--;
+@@ -712,47 +690,35 @@ static void update_root_blkg(struct request_queue *q, enum blkio_policy_id plid)
+ 	pol->ops.blkio_init_group_fn(blkg);
+ }
+ 
++/**
++ * blkg_destroy_all - destroy all blkgs associated with a request_queue
++ * @q: request_queue of interest
++ * @destroy_root: whether to destroy root blkg or not
++ *
++ * Destroy blkgs associated with @q.  If @destroy_root is %true, all are
++ * destroyed; otherwise, root blkg is left alone.
++ */
+ void blkg_destroy_all(struct request_queue *q, bool destroy_root)
+ {
+ 	struct blkio_group *blkg, *n;
+ 	int i;
+ 
+-	while (true) {
+-		bool done = true;
+-
+-		spin_lock_irq(q->queue_lock);
+-
+-		list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
+-			/* skip root? */
+-			if (!destroy_root && blkg->blkcg == &blkio_root_cgroup)
+-				continue;
+-
+-			/*
+-			 * If cgroup removal path got to blk_group first
+-			 * and removed it from cgroup list, then it will
+-			 * take care of destroying cfqg also.
+-			 */
+-			if (!blkiocg_del_blkio_group(blkg))
+-				blkg_destroy(blkg);
+-			else
+-				done = false;
+-		}
++	spin_lock_irq(q->queue_lock);
+ 
+-		spin_unlock_irq(q->queue_lock);
++	list_for_each_entry_safe(blkg, n, &q->blkg_list, q_node) {
++		struct blkio_cgroup *blkcg = blkg->blkcg;
+ 
+-		/*
+-		 * Group list may not be empty if we raced cgroup removal
+-		 * and lost.  cgroup removal is guaranteed to make forward
+-		 * progress and retrying after a while is enough.  This
+-		 * ugliness is scheduled to be removed after locking
+-		 * update.
+-		 */
+-		if (done)
+-			break;
++		/* skip root? */
++		if (!destroy_root && blkg->blkcg == &blkio_root_cgroup)
++			continue;
+ 
+-		msleep(10);	/* just some random duration I like */
++		spin_lock(&blkcg->lock);
++		blkg_destroy(blkg);
++		spin_unlock(&blkcg->lock);
+ 	}
+ 
++	spin_unlock_irq(q->queue_lock);
++
+ 	for (i = 0; i < BLKIO_NR_POLICIES; i++)
+ 		update_root_blkg(q, i);
+ }
+@@ -1590,45 +1556,45 @@ static int blkiocg_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+ 				ARRAY_SIZE(blkio_files));
+ }
+ 
++/**
++ * blkiocg_pre_destroy - cgroup pre_destroy callback
++ * @subsys: cgroup subsys
++ * @cgroup: cgroup of interest
++ *
++ * This function is called when @cgroup is about to go away and responsible
++ * for shooting down all blkgs associated with @cgroup.  blkgs should be
++ * removed while holding both q and blkcg locks.  As blkcg lock is nested
++ * inside q lock, this function performs reverse double lock dancing.
++ *
++ * This is the blkcg counterpart of ioc_release_fn().
++ */
+ static int blkiocg_pre_destroy(struct cgroup_subsys *subsys,
+ 			       struct cgroup *cgroup)
+ {
+ 	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+-	unsigned long flags;
+-	struct blkio_group *blkg;
+-	struct request_queue *q;
+ 
+ 	rcu_read_lock();
++	spin_lock_irq(&blkcg->lock);
+ 
+-	do {
+-		spin_lock_irqsave(&blkcg->lock, flags);
++	while (!hlist_empty(&blkcg->blkg_list)) {
++		struct blkio_group *blkg = hlist_entry(blkcg->blkg_list.first,
++						struct blkio_group, blkcg_node);
++		struct request_queue *q = rcu_dereference(blkg->q);
+ 
+-		if (hlist_empty(&blkcg->blkg_list)) {
+-			spin_unlock_irqrestore(&blkcg->lock, flags);
+-			break;
++		if (spin_trylock(q->queue_lock)) {
++			blkg_destroy(blkg);
++			spin_unlock(q->queue_lock);
++		} else {
++			spin_unlock_irq(&blkcg->lock);
++			rcu_read_unlock();
++			cpu_relax();
++			rcu_read_lock();
++			spin_lock(&blkcg->lock);
+ 		}
++	}
+ 
+-		blkg = hlist_entry(blkcg->blkg_list.first, struct blkio_group,
+-					blkcg_node);
+-		q = rcu_dereference(blkg->q);
+-		__blkiocg_del_blkio_group(blkg);
+-
+-		spin_unlock_irqrestore(&blkcg->lock, flags);
+-
+-		/*
+-		 * This blkio_group is being unlinked as associated cgroup is
+-		 * going away. Let all the IO controlling policies know about
+-		 * this event.
+-		 */
+-		spin_lock(&blkio_list_lock);
+-		spin_lock_irqsave(q->queue_lock, flags);
+-		blkg_destroy(blkg);
+-		spin_unlock_irqrestore(q->queue_lock, flags);
+-		spin_unlock(&blkio_list_lock);
+-	} while (1);
+-
++	spin_unlock_irq(&blkcg->lock);
+ 	rcu_read_unlock();
+-
+ 	return 0;
+ }
+ 
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 1a80619..4bf4c7b 100644
+index 88b2c3b..bebc442 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -375,7 +375,7 @@ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
- #ifdef CONFIG_BLK_CGROUP
+@@ -376,7 +376,6 @@ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg,
  extern struct blkio_cgroup blkio_root_cgroup;
  extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
--extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
-+extern struct blkio_cgroup *bio_blkio_cgroup(struct bio *bio);
+ extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+-extern int blkiocg_del_blkio_group(struct blkio_group *blkg);
  extern struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
  				       struct request_queue *q);
  struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
-@@ -409,7 +409,7 @@ struct cgroup;
+@@ -412,9 +411,6 @@ cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
  static inline struct blkio_cgroup *
- cgroup_to_blkio_cgroup(struct cgroup *cgroup) { return NULL; }
- static inline struct blkio_cgroup *
--task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
-+bio_blkio_cgroup(struct bio *bio) { return NULL; }
+ task_blkio_cgroup(struct task_struct *tsk) { return NULL; }
  
+-static inline int
+-blkiocg_del_blkio_group(struct blkio_group *blkg) { return 0; }
+-
  static inline struct blkio_group *blkg_lookup(struct blkio_cgroup *blkcg,
  					      void *key) { return NULL; }
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index bfa5168..08b7ab2 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -900,7 +900,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	 * just update the dispatch stats in lockless manner and return.
- 	 */
- 	rcu_read_lock();
--	blkcg = task_blkio_cgroup(current);
-+	blkcg = bio_blkio_cgroup(bio);
- 	tg = throtl_lookup_tg(td, blkcg);
- 	if (tg) {
- 		if (tg_no_rule_group(tg, rw)) {
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index dd761ac..a1a5e70 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -467,8 +467,9 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
+ static inline void blkiocg_update_timeslice_used(struct blkio_group *blkg,
+diff --git a/block/cfq.h b/block/cfq.h
+index 5584e1b..c8b15ef 100644
+--- a/block/cfq.h
++++ b/block/cfq.h
+@@ -79,11 +79,6 @@ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
+ 					direction, sync);
  }
  
- static void cfq_dispatch_insert(struct request_queue *, struct request *);
--static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
--				       struct io_context *, gfp_t);
-+static struct cfq_queue *cfq_get_queue(struct cfq_data *cfqd, bool is_sync,
-+				       struct io_context *ioc, struct bio *bio,
-+				       gfp_t gfp_mask);
+-static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+-{
+-	return blkiocg_del_blkio_group(blkg);
+-}
+-
+ #else /* CFQ_GROUP_IOSCHED */
+ static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol,
+@@ -119,10 +114,5 @@ static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
+ 			struct blkio_policy_type *pol, uint64_t start_time,
+ 			uint64_t io_start_time, bool direction, bool sync) { }
  
- static inline struct cfq_io_cq *icq_to_cic(struct io_cq *icq)
- {
-@@ -2601,7 +2602,7 @@ static void cfq_init_prio_data(struct cfq_queue *cfqq, struct io_context *ioc)
- 	cfq_clear_cfqq_prio_changed(cfqq);
- }
- 
--static void changed_ioprio(struct cfq_io_cq *cic)
-+static void changed_ioprio(struct cfq_io_cq *cic, struct bio *bio)
- {
- 	struct cfq_data *cfqd = cic_to_cfqd(cic);
- 	struct cfq_queue *cfqq;
-@@ -2613,7 +2614,7 @@ static void changed_ioprio(struct cfq_io_cq *cic)
- 	if (cfqq) {
- 		struct cfq_queue *new_cfqq;
- 		new_cfqq = cfq_get_queue(cfqd, BLK_RW_ASYNC, cic->icq.ioc,
--						GFP_ATOMIC);
-+					 bio, GFP_ATOMIC);
- 		if (new_cfqq) {
- 			cic->cfqq[BLK_RW_ASYNC] = new_cfqq;
- 			cfq_put_queue(cfqq);
-@@ -2671,7 +2672,7 @@ static void changed_cgroup(struct cfq_io_cq *cic)
- 
- static struct cfq_queue *
- cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
--		     struct io_context *ioc, gfp_t gfp_mask)
-+		     struct io_context *ioc, struct bio *bio, gfp_t gfp_mask)
- {
- 	struct blkio_cgroup *blkcg;
- 	struct cfq_queue *cfqq, *new_cfqq = NULL;
-@@ -2681,7 +2682,7 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
- retry:
- 	rcu_read_lock();
- 
--	blkcg = task_blkio_cgroup(current);
-+	blkcg = bio_blkio_cgroup(bio);
- 
- 	cfqg = cfq_lookup_create_cfqg(cfqd, blkcg);
- 
-@@ -2746,7 +2747,7 @@ cfq_async_queue_prio(struct cfq_data *cfqd, int ioprio_class, int ioprio)
- 
- static struct cfq_queue *
- cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
--	      gfp_t gfp_mask)
-+	      struct bio *bio, gfp_t gfp_mask)
- {
- 	const int ioprio = task_ioprio(ioc);
- 	const int ioprio_class = task_ioprio_class(ioc);
-@@ -2759,7 +2760,7 @@ cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct io_context *ioc,
- 	}
- 
- 	if (!cfqq)
--		cfqq = cfq_find_alloc_queue(cfqd, is_sync, ioc, gfp_mask);
-+		cfqq = cfq_find_alloc_queue(cfqd, is_sync, ioc, bio, gfp_mask);
- 
- 	/*
- 	 * pin the queue now that it's allocated, scheduler exit will prune it
-@@ -3316,7 +3317,7 @@ cfq_set_request(struct request_queue *q, struct request *rq, struct bio *bio,
- 	/* handle changed notifications */
- 	changed = icq_get_changed(&cic->icq);
- 	if (unlikely(changed & ICQ_IOPRIO_CHANGED))
--		changed_ioprio(cic);
-+		changed_ioprio(cic, bio);
- #ifdef CONFIG_CFQ_GROUP_IOSCHED
- 	if (unlikely(changed & ICQ_CGROUP_CHANGED))
- 		changed_cgroup(cic);
-@@ -3325,7 +3326,7 @@ cfq_set_request(struct request_queue *q, struct request *rq, struct bio *bio,
- new_queue:
- 	cfqq = cic_to_cfqq(cic, is_sync);
- 	if (!cfqq || cfqq == &cfqd->oom_cfqq) {
--		cfqq = cfq_get_queue(cfqd, is_sync, cic->icq.ioc, gfp_mask);
-+		cfqq = cfq_get_queue(cfqd, is_sync, cic->icq.ioc, bio, gfp_mask);
- 		cic_set_cfqq(cic, cfqq, is_sync);
- 	} else {
- 		/*
+-static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+-{
+-	return 0;
+-}
+-
+ #endif /* CFQ_GROUP_IOSCHED */
+ #endif
 -- 
 1.7.7.3
 
