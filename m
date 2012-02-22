@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab2BVHex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 02:34:53 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:38841 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752464Ab2BVHew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 02:34:52 -0500
-Message-ID: <4F449A9F.1040907@ti.com>
-Date: Wed, 22 Feb 2012 09:34:55 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120215 Thunderbird/10.0.1
+	id S1753845Ab2BVHgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 02:36:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48780 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753440Ab2BVHgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 02:36:05 -0500
+Message-ID: <4F449ACF.3040807@zytor.com>
+Date: Tue, 21 Feb 2012 23:35:43 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/3] MFD: twl6040: Conversion to i2c driver
-References: <1328868018-24668-1-git-send-email-peter.ujfalusi@ti.com> <20120220194736.GN5387@sortiz-mobl> <4F4372E3.4050408@ti.com> <20120221110533.GT5387@sortiz-mobl> <1329846755.20666.4.camel@odin> <20120221184427.GQ18185@atomide.com>
-In-Reply-To: <20120221184427.GQ18185@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Ingo Molnar <mingo@elte.hu>
+CC: Jason Baron <jbaron@redhat.com>, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
+        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups
+ + docs
+References: <cover.1329851692.git.jbaron@redhat.com> <4F43F9F0.4000605@zytor.com> <20120222065016.GA16923@elte.hu> <4F44934B.2000808@zytor.com> <20120222072538.GA17291@elte.hu>
+In-Reply-To: <20120222072538.GA17291@elte.hu>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+On 02/21/2012 11:25 PM, Ingo Molnar wrote:
+> 
+> There is a fundamental assymetry, and intentionally so. You 
+> *really* have to think what the common case is, and make sure 
+> the build defaults to that. It's not the end of the world to 
+> have it flipped over, but there's costs and those costs are 
+> higher even in the branch path than a regular 
+> likely()/unlikely().
+> 
 
-On 02/21/2012 08:44 PM, Tony Lindgren wrote:
-> Yeah looks OK to me, acked that patch. Let me know if there are
-> others I should look.
+No, not really -- it's still an unconditional branch, which means you
+will not tax the branch predictor in any way and which can be followed
+by the front end without taking a speculation hit.  So although there is
+an out-of-line penalty -- which you hit for any conditional, after all
+you can only have *one* piece of code which is straight line -- it
+should be less than for a normal conditional branch.
 
-I would appreciate if you could take a look at this series as well:
-TWL6040: Regulator support
-http://marc.info/?l=linux-omap&m=132947934522602&w=2
+> So you are rather wrong about your expectations - I think that 
+> is one more piece of evidence that the naming was less than 
+> optimal.
+> 
+>> So the key aspect of this is the staticness of the 
+>> conditional, NOT the degree of bias of the branch.  Hence my 
+>> past insistence on the "static_branch" name (rather than 
+>> "jump_label")... the branch part can be omitted, as an 
+>> implementation detail, but the staticness of it is its 
+>> absolutely key defining characteristic.
+> 
+> I don't think you understand this facility as well as you think 
+> you do.
 
-I have separated the twl6040 i2c driver conversion, and regulator
-support since they are dealing with different issues.
-If you know who should look at the drivers/regulator/twl-regulator.c,
-drivers/mfd/twl.c changes could you CC them as well?
+Uh, no, I do... see the above, but combine that of course with the sheer
+astronomical cost of flipping the conditional.
 
-Regards,
-Péter
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
