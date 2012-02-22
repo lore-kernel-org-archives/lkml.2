@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab2BVGkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 01:40:16 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5140 "EHLO mga02.intel.com"
+	id S1753233Ab2BVGkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 01:40:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48598 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab2BVGkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 01:40:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="110668968"
-Message-ID: <4F448DAA.6000207@linux.intel.com>
-Date: Tue, 21 Feb 2012 22:39:38 -0800
-From: Darren Hart <dvhart@linux.intel.com>
+	id S1752629Ab2BVGkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 01:40:39 -0500
+Message-ID: <4F448DBD.6030300@zytor.com>
+Date: Tue, 21 Feb 2012 22:39:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/4] pch_uart: Cleanups, board quirks, and user uartclk
- parameter
-References: <cover.1329875301.git.dvhart@linux.intel.com> <CANKRQni9E6NO39MFSak6MjQ0DtmQeviGo966Ex9ZUvai56wCjg@mail.gmail.com> <4F4462B8.6030607@linux.intel.com> <CANKRQnhckD5Dt+0PbD3h=Ggz+U8RoDs0qUn5CgVnsYcH08tRkw@mail.gmail.com>
-In-Reply-To: <CANKRQnhckD5Dt+0PbD3h=Ggz+U8RoDs0qUn5CgVnsYcH08tRkw@mail.gmail.com>
+To: Kevin Winchester <kjwinchester@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] x86: Move per cpu cpu_llc_shared_map to a field
+ in struct cpuinfo_x86
+References: <20120221153935.GE2486@x1.osrc.amd.com> <1329875144-560-1-git-send-email-kjwinchester@gmail.com> <1329875144-560-2-git-send-email-kjwinchester@gmail.com>
+In-Reply-To: <1329875144-560-2-git-send-email-kjwinchester@gmail.com>
 X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 02/21/2012 08:26 PM, Tomoya MORINAGA wrote:
-> 2012年2月22日12:36 Darren Hart <dvhart@linux.intel.com>:
->> This patch series allows for a functional early serial console as well
->> as using the UART after boot. It leaves the CM-iTC board alone. So this
->> seems to enable all use cases, while forcing 192MHz breaks the FRI2
->> early serial console. I don't see an advantage to that approach other
->> than the obviously simpler code (which is nice, but should not trump
->> functionality).
+On 02/21/2012 05:45 PM, Kevin Winchester wrote:
+> Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
+> 'struct cpuinfo_x86'") caused the compilation error:
 > 
-> Your quark "Fish River Island II" is OK.
-> My concern is default uart_clock remains 1.8432 MHz.
-> Like I said the advantage before, I think this should be 192MHz not 1.8432 MHz.
+> mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
 > 
-> Or do you have any reason 1.8432 MHz should be set as PCH_UART default  clock.
+> by removing an #ifdef CONFIG_SMP around a block containing a reference
+> to cpu_llc_shared_map.  Rather than replace the #ifdef, move
+> cpu_llc_shared_map to be a new cpumask_t field llc_shared_map in
+> struct cpuinfo_x86 and adjust all references to cpu_llc_shared_map.
+> 
 
-Ah, that's a good point. We can add a patch to this series that sets the
-default to 192MHz, drops the CM-iTC quirk, and does nothing in pch_phub
-probe for the FRI2. Would you care to Ack this series and then follow-up
-with a patch set the default clock to 192MHz?
+I'm not comfortable with a patch this large after we are already at
+-rc4.  Please send a minimal patch to fix the failure for v3.3, and then
+a patch on top of that which we can queue up with the rest of the
+patchset to for v3.4.
+
+	-hpa
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
