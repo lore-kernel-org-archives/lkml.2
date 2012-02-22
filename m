@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2BVQnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:43:22 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37705 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2BVQnT (ORCPT
+	id S1754029Ab2BVQoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:44:14 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:53621 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752639Ab2BVQoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:43:19 -0500
-Message-ID: <4F451B02.8030201@linux.vnet.ibm.com>
-Date: Wed, 22 Feb 2012 10:42:42 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 22 Feb 2012 11:44:12 -0500
+Date: Wed, 22 Feb 2012 11:44:02 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
+Message-ID: <20120222164402.GA13354@elliptictech.com>
+References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Alex_Villac=ED=ADs_Lasso?= 
-	<a_villacis@palosanto.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: Fwd: Deadlock warning in 3.3-rc4 in zcache code when running
- transmission-gtk
-References: <4F42F2FE.5090101@palosanto.com> <4F4515EA.2090909@palosanto.com>
-In-Reply-To: <4F4515EA.2090909@palosanto.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12022216-6148-0000-0000-000003A8DE1B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 10:20 AM, Alex Villací­s Lasso wrote:
-> I am getting (potential?) deadlock warnings in zcache code shortly after 
-> running transmission-gtk, the bittorrent client. My / partition is ext4, 
-> and /home and /DATA (where some torrents are stored) are ext3 mounted 
-> with ext4 subsystem. The warning has triggered twice so far, always 
-> after running transmission-gtk.
+On 2012-02-22 14:00 +0000, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> Fedora 16 x86_64, vanilla linux 3.3-rc4.
-> Deadlock warning did not appear in 3.3-rc3.
+> We need to read from and write to 'buf' a byte at a time otherwise
+> it's possible we'll perform an unaligned access, which can lead to a
+> segfault when cross-building an x86 kernel on risc architectures.
+> 
+> Also, we may need to convert the endianness of the data we read
+> from/write to buf, so let's add some helper functions to do that.
+[...]
+> +static inline u32 read32_le(u8 *src)
+> +{
+> +	u32 data;
+> +
+> +	data = *src++;
+> +	data |= *src++ << 8;
+> +	data |= *src++ << 16;
+> +	data |= *src++ << 24;
+> +
+> +	return data;
+> +}
 
-This may have already been identified and fixed by this patch:
-https://lkml.org/lkml/2012/2/20/155
+We already have get_unaligned_le32 in <asm/unaligned.h> for this.
 
-Let me know if that doesn't fix it.
+> +
+> +static inline void write32_le(u8 *dst, u32 data)
+> +{
+> +	*dst++ = data;
+> +	*dst++ = data >> 8;
+> +	*dst++ = data >> 16;
+> +	*dst++ = data >> 24;
+> +}
 
---
-Seth
+Similarly, put_unaligned_le32.
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
