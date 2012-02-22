@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab2BVRWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:22:01 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:36745 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab2BVRV4 (ORCPT
+	id S1752941Ab2BVRgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:36:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:61478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2BVRgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:21:56 -0500
-Date: Wed, 22 Feb 2012 18:21:54 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Tejun Heo <tj@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
-Message-ID: <20120222172154.GA29641@merkur.ravnborg.org>
-References: <20120213080618.GA11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202131119040.1488@math.ut.ee> <20120213214623.GJ11077@ponder.secretlab.ca> <alpine.SOC.1.00.1202162151030.16208@math.ut.ee> <alpine.SOC.1.00.1202201109260.467@math.ut.ee> <20120220170603.GC7836@mtj.dyndns.org> <alpine.SOC.1.00.1202210030530.11350@math.ut.ee> <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com> <20120222170330.GA29521@merkur.ravnborg.org> <alpine.SOC.1.00.1202221910420.17363@math.ut.ee>
+	Wed, 22 Feb 2012 12:36:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 12/19] ARM: at91/rtc-at91sam9: each SoC can select the RTT device to use
+Date: Wed, 22 Feb 2012 17:25:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        linux@arm.linux.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org, rmallon@gmail.com
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <201202221647.23430.arnd@arndb.de> <20120222170724.GF9407@game.jcrosoft.org>
+In-Reply-To: <20120222170724.GF9407@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.SOC.1.00.1202221910420.17363@math.ut.ee>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201202221725.46150.arnd@arndb.de>
+X-Provags-ID: V02:K0:byInqVv36wzXJpn0Vukl1vWeWB3FU5lFA2yL+cxXJhq
+ ++2HYTfiJeEKaQZXEF1T9sw03yX5sAcJgYd6hV1/7WslZ9kUPR
+ k/rmBCLUxn82nDzYyljASwKYW74eRpwdCIisTywuXZFXibQXOh
+ 6nHo/hMxE7EQO6n+H/ia/kWEqMmBcVYpK2DWXpsG4eefRHZfte
+ 010vy2F43kKOHzeeyfTkegKnDXcnZ/YMoij5gdbNGsAgPHeQbS
+ m0COnVSE65Zc0IIis8rLHIQEWTt+5XuNdI47J9HhCu41W6FkOP
+ fV1xI8TyyK/ZO4WhIktygU+s89pya0PpOtejOm382lYxW2iEIZ
+ 1aWC9/pMOwveyoOcSVNM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 07:12:06PM +0200, Meelis Roos wrote:
-> > Meelis - do the affected boxes have any special memory configurations?
-> 
-> Nothin special to me. E3500 has 2G, V100 has 1G, V210 and V240 have 2G 
-> and 1.5G.
-> 
-> > Could you try to boot with a sensible mem=xxx value to see if limiting the memory
-> > helps.
-> 
-> Like mem=256M? Will try.
-Think just a little more - I do not think this will help.
-I confused myself with some of the sparc32 issues I have hit.
+On Wednesday 22 February 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > But if you change the rtc driver to always bind to the existing
+> > "at91_rtt" platform_device and fail the probe() function for the
+> > case that you are on at91sam9263 probing the non-RTC device,
+> > you should get the exact same result without any extra code
+> > in the per-soc files.
+>
+> agreed but as on at91sam9263 you have 2 RTTs so you can have 2 drivers at the
+> same time that use the RTT. So we can not do this except if we set the second
+> RTT to an other device name.
 
-I have looked a little at the log files you included.
-The only thing that looked different was that the faulty version
-had a number after "@" which is higher than 1 - where the OK always have 1.
+Let me rephrase what I meant then:
 
-This is "idx" in memblock_insert_region() - but I did not look closer.
+The first driver should in its probe function do:
 
-	Sam
+	if (pdev->id != CONFIG_RTC_DRV_AT91SAM9_RTT)
+		return -ENODEV;
+
+while the other driver does
+
+	if (pdev->id == CONFIG_RTC_DRV_AT91SAM9_RTT)
+		return -ENODEV;
+
+This way, each driver binds to one device but not the other.
+It should even work with an unmodified second driver, as long
+as you guarantee that it's loaded after the first one.
+
+Any reason why this won't work?
+
+	Arnd
