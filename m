@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2BVQNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:13:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36149 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab2BVQNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:13:06 -0500
-Date: Wed, 22 Feb 2012 17:13:04 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] thp: 'transparent_hugepage=' can also be specified on
- cmdline
-Message-ID: <alpine.LNX.2.00.1202221710050.31150@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753951Ab2BVQOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:14:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51131 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2BVQOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 11:14:05 -0500
+Date: Wed, 22 Feb 2012 08:13:08 -0800
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@redhat.com, jim.cromie@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, jim.cromie@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] clocksource: scx200_hrt: Fix the build
+Git-Commit-ID: 10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 22 Feb 2012 08:13:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Behavior of THP can either be toggled through sysfs in runtime or using a 
-kernel cmdline parameter 'transparent_hugepage='. Document the latter.
+Commit-ID:  10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
+Gitweb:     http://git.kernel.org/tip/10ea9d6f5663c3ed51f91cd037b4b9b147273cbb
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Wed, 22 Feb 2012 13:19:37 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 22 Feb 2012 13:25:16 +0100
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+clocksource: scx200_hrt: Fix the build
+
+This commit:
+
+  12d6d41276de: clocksource: scx200_hrt: Convert scx200 to use clocksource_register_hz
+
+Breaks the build on x86-32:
+
+  drivers/clocksource/scx200_hrt.c: In function ‘init_hrt_clocksource’:
+  drivers/clocksource/scx200_hrt.c:95:0: error: unterminated argument list invoking macro "pr_info"
+  drivers/clocksource/scx200_hrt.c:84:2: error: ‘pr_info’ undeclared (first use in this function)
+
+It could not possibly have been build tested, because it had this mismerge:
+
+	pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+		mhz27 ? "27":"1", ppm);
+
+Cc: Jim Cromie <jim.cromie@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Link: http://lkml.kernel.org/n/tip-jceb26fns5w7tv8edlivhxpa@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- Documentation/kernel-parameters.txt |    7 +++++++
- Documentation/vm/transhuge.txt      |    3 +++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/clocksource/scx200_hrt.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 033d4e6..a4de9b9 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2629,6 +2629,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			to facilitate early boot debugging.
- 			See also Documentation/trace/events.txt
+diff --git a/drivers/clocksource/scx200_hrt.c b/drivers/clocksource/scx200_hrt.c
+index 60db8b1..64f9e82 100644
+--- a/drivers/clocksource/scx200_hrt.c
++++ b/drivers/clocksource/scx200_hrt.c
+@@ -81,9 +81,7 @@ static int __init init_hrt_clocksource(void)
+ 	if (mhz27)
+ 		freq *= 27;
  
-+	transparent_hugepage=
-+			[KNL]
-+			Format: [always|madvise|never]
-+			Can be used to control the default behavior of the system
-+			with respect to transparent hugepages.
-+			See Documentation/vm/transhuge.txt for more details.
-+
- 	tsc=		Disable clocksource stability checks for TSC.
- 			Format: <string>
- 			[x86] reliable: mark tsc clocksource as reliable, this
-diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-index 29bdf62..4a3816d 100644
---- a/Documentation/vm/transhuge.txt
-+++ b/Documentation/vm/transhuge.txt
-@@ -103,6 +103,9 @@ echo always >/sys/kernel/mm/transparent_hugepage/enabled
- echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
- echo never >/sys/kernel/mm/transparent_hugepage/enabled
+-	pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+-	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
+-		mhz27 ? "27":"1", ppm);
++	pr_info("enabling scx200 high-res timer (%s MHz +%d ppm)\n", mhz27 ? "27":"1", ppm);
  
-+The always/madvise/never value can also be specified on the kernel boot
-+commandline using 'transparent_hugepage=' parameter.
-+
- It's also possible to limit defrag efforts in the VM to generate
- hugepages in case they're not immediately free to madvise regions or
- to never try to defrag memory and simply fallback to regular pages
--- 
-1.7.3.1
-
+ 	return clocksource_register_hz(&cs_hrt, freq);
+ }
