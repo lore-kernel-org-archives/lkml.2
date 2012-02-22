@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab2BVCRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 21:17:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:3904 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab2BVCRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 21:17:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109252986"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Joe Perches <joe@perches.com>
-CC: David Miller <davem@davemloft.net>, Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andrei.emeltchenko.news@gmail.com" 
-	<andrei.emeltchenko.news@gmail.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
-Thread-Topic: [PATCH] checkpatch: Add some --strict coding style checks
-Thread-Index: AQHM8Nu9391LFUTMFEuqxrbxHQK9JZZH4RQAgADIE4D//30WsIAAiTiA//98R1A=
-Date: Wed, 22 Feb 2012 02:17:46 +0000
-Message-ID: <804857E1F29AAC47BF68C404FC60A18429B98A@ORSMSX102.amr.corp.intel.com>
-References: <20120221151435.GA19354@tuxdriver.com>
-	 <20120221.144417.1445117001833888214.davem@davemloft.net>
-	 <CAMXE1-qB8_5oGey2=Ypa5BitZnye3YqdM=yB8oKCGLvoZu_8HQ@mail.gmail.com>
-	 <20120221.154053.2103818562080068513.davem@davemloft.net>
-	 <1329857959.5143.11.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B3EE@ORSMSX102.amr.corp.intel.com>
-	 <1329874581.5143.22.camel@joe2Laptop>
-	 <804857E1F29AAC47BF68C404FC60A18429B8F2@ORSMSX102.amr.corp.intel.com>
- <1329875935.5143.24.camel@joe2Laptop>
-In-Reply-To: <1329875935.5143.24.camel@joe2Laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1755582Ab2BVCTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 21:19:33 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:17955 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206Ab2BVCTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 Feb 2012 21:19:31 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-89-4f4450b10078
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Chris Ball'" <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+References: <20120222124915.9414928ca50d8b181820c733@canb.auug.org.au>
+In-reply-to: <20120222124915.9414928ca50d8b181820c733@canb.auug.org.au>
+Subject: RE: linux-next: manual merge of the mmc tree with the s5p tree
+Date: Wed, 22 Feb 2012 11:19:28 +0900
+Message-id: <012701ccf108$67a1ef80$36e5ce80$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczxBU5w9fNgXaz/TbOqqDzr3GOCzgAAqWDA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1M2I24x022187
 
-> -----Original Message-----
-> From: Joe Perches [mailto:joe@perches.com]
-> Sent: Tuesday, February 21, 2012 5:59 PM
-> To: Allan, Bruce W
-> Cc: David Miller; Andy Whitcroft; Andrew Morton;
-> andrei.emeltchenko.news@gmail.com; linville@tuxdriver.com; linux-
-> wireless@vger.kernel.org; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: RE: [PATCH] checkpatch: Add some --strict coding style checks
+Stephen Rothwell wrote:
 > 
-> On Wed, 2012-02-22 at 01:56 +0000, Allan, Bruce W wrote:
-> > > On Tue, 2012-02-21 at 22:09 +0000, Allan, Bruce W wrote:
-> > > > This appears to falsely complain about parenthesis alignment in
-> > > > conditional statements with multiple opening parentheses.
-> > > Can you try this one please?
-> []
-> > It's better, but there are still instances of false hits AFAICT.
+> Hi Chris,
 > 
-> Do you have any examples?
-> The only one I noticed was spaces for alignment instead of tabs.
-> I think that's not a false hit myself.
+Hi Stephen,
+
+> Today's linux-next merge of the mmc tree got a conflict in
+> drivers/mmc/host/sdhci-s3c.c between commit bd0955ed6b1b ("mmc:
+> sdhci-s3c: add platform data for the second capability") from the s5p
+> tree and commit 7880741a0625 ("mmc: sdhci-s3c: derive transfer width host
+> capability from max_width in platform data") from the mmc tree.
 > 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-Example 1:
-	if (((a == b) ||
-	     (c == d) ||
-	     (e == f)) &&
-	    (bool_var))
-		baz();
+Look ok to me, and let me carry following when it is required.
 
-Example 2:
-	if ((!(var & FOO_MASK) &&
-	     (a == b)) ||
-	    (c == d))
-		baz();
+Thanks.
 
-Example 3:
-	if (!((foo & FOO_MASK) &&
-	      (bar & BAR_MASK)))
-		baz();
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-HTH,
-Bruce.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
