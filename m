@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab2BVGBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 01:01:30 -0500
-Received: from plane.gmane.org ([80.91.229.3]:49445 "EHLO plane.gmane.org"
+	id S1751944Ab2BVGCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 01:02:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48443 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab2BVGB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 01:01:28 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: perf record: can I specify multiple events and use different
- sample-after value
-Date: Wed, 22 Feb 2012 15:01:16 +0900
-Message-ID: <4F4484AC.9050500@lge.com>
-References: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1750877Ab2BVGCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 01:02:48 -0500
+Message-ID: <4F4484F0.9070501@zytor.com>
+Date: Tue, 21 Feb 2012 22:02:24 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+MIME-Version: 1.0
+To: Ian Kent <raven@themaw.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        autofs@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>  <20120221.221609.218135609185671883.davem@davemloft.net>  <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>  <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>  <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com> <1329889428.2193.45.camel@perseus.themaw.net>
+In-Reply-To: <1329889428.2193.45.camel@perseus.themaw.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: linux-kernel@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: 121.50.20.41
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-In-Reply-To: <CAJh9x3qSF99aEAZcAHzjSi7Xqt2D8HrDAjeTNVcO7XQUsukLkA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-02-22 10:59 AM, Yuanfang Chen wrote:
-> Hi all,
->
+On 02/21/2012 09:43 PM, Ian Kent wrote:
+> 
+> However, with the final "char name[NAME_MAX+1]" array at the end, the
+> actual size of the structure ends up being not very well defined:
+> because the struct isn't marked 'packed', doing a "sizeof()" on it will
+> align the size of the struct up to the biggest alignment of the members
+> it has.
+> 
 
-Hi,
+Note that it's really rather unfortunate that this transmits the entire
+packet no matter what, which also means that the "len" field is actually
+completely and totally pointless.
 
+I have mentioned in the past that I consider it a design mistake on my
+part to have used a pipe in the first place: it was "so easy", but
+required an extra read for no good reason, or padding to fixed size
+resulting in this problem.  The right thing really should have been to
+use a Unix datagram socket; these days using SOCK_SEQPACKET - that way
+the kernel would give you the right semantics by design.
 
-> I'm trying use perf tool from the linux kernel package to measure
-> several raw PMU events. In the manpage of perf-record there is an "-l"
-> option (Scale counter values), which is useful for my case because I
-> want to know the total counter value, not just sample count. However
-> it seems the -l is not recognized, is this expected? How can I get a
-> total count?
->
-
-"perf report --show-total-period" will be your friend.
-
-BTW, it seems you were using old version of perf (and kernel too, maybe).
-I have no idea if your perf wouldn't support the option. :)
-
-The "-l" option was meaningful only if you specified events more than the 
-actual number of counters in the PMU.
-
-
-> Another question is that how can I specify multiple events and use
-> different sample-after value for each of them? like perf record -c
-> 10000,2000000,2000000 -e r2d4,r03c,r0c0
->
-
-It's not possible now. You should run a number of instances of perf for
-that purpose AFAIK.
+	-hpa
 
 
-Thanks,
-Namhyung
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
