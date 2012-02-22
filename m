@@ -1,198 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab2BVRqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:46:31 -0500
-Received: from mga06.intel.com ([134.134.136.21]:2264 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752847Ab2BVRq3 (ORCPT
+	id S1754678Ab2BVRsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:48:33 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55821 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab2BVRs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:46:29 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.60.26.133 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
+	Wed, 22 Feb 2012 12:48:29 -0500
+Date: Wed, 22 Feb 2012 09:48:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, sam@ravnborg.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: OF-related boot crash in 3.3.0-rc3-00188-g3ec1e88
+Message-ID: <20120222174825.GA32694@google.com>
+References: <alpine.SOC.1.00.1202130942030.1488@math.ut.ee>
+ <20120213080618.GA11077@ponder.secretlab.ca>
+ <alpine.SOC.1.00.1202131119040.1488@math.ut.ee>
+ <20120213214623.GJ11077@ponder.secretlab.ca>
+ <alpine.SOC.1.00.1202162151030.16208@math.ut.ee>
+ <alpine.SOC.1.00.1202201109260.467@math.ut.ee>
+ <20120220170603.GC7836@mtj.dyndns.org>
+ <alpine.SOC.1.00.1202210030530.11350@math.ut.ee>
+ <20120221010537.GA15898@dhcp-172-17-108-109.mtv.corp.google.com>
+ <alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
 MIME-Version: 1.0
-In-Reply-To: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
-References: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
-Date: Wed, 22 Feb 2012 19:46:03 +0200
-Message-ID: <CADjiTvAJEpvcpxUGz4RifY0JdW_3iBKOwb_407U94UeUQ9VKwA@mail.gmail.com>
-Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.SOC.1.00.1202220213180.4171@math.ut.ee>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q1MHkmTe026166
 
-Hi
+On Wed, Feb 22, 2012 at 02:36:13AM +0200, Meelis Roos wrote:
+> > Meelis, can you please apply the following patch before & after the
+> > offending commit, boot with "memblock=debug" added as kernel param and
+> > post the boot log?  The patch will generate some offset warnings after
+> > the commit but should work fine.
+> 
+> Before the commit (v3.2-rc3-75-g0ee332c): memblock1.gz (attached)
+> After the commit (v3.2-rc3-76-g7bd0b0f): memblock2.gz (attached)
 
-Noticed some style issues that I need to fix.
+Can you please try the following patch?  If it still fails to boot,
+please attach the failing log.  Thank you.
 
-On Wed, Feb 22, 2012 at 9:48 AM, Jarkko Sakkinen
-<jarkko.sakkinen@intel.com> wrote:
-> Adds to generic xattr support introduced in Linux 3.0 by
-> implementing initxattrs callback. This enables consulting
-> of security attributes from LSM and EVM when inode originally
-> created.
->
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-> ---
->  mm/shmem.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++------------
->  1 files changed, 61 insertions(+), 16 deletions(-)
->
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 7a45ad0..72addf1 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -1480,6 +1480,59 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
->  /*
->  * File creation. Allocate an inode, and we're done..
->  */
-
-Oops. Have to move these new functions before this
-comment.
-
-> +
-> +static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
-> +{
-> +       /* wrap around? */
-> +       size_t len = sizeof(**new_xattr) + size;
-> +       if (len <= sizeof(**new_xattr))
-> +               return -ENOMEM;
-> +
-> +       *new_xattr = kmalloc(len, GFP_KERNEL);
-> +       if (*new_xattr == NULL)
-> +               return -ENOMEM;
-> +
-> +       (*new_xattr)->size = size;
-> +       return 0;
-> +}
-> +
-> +static int shmem_initxattrs(struct inode *inode,
-> +                           const struct xattr *xattr_array,
-> +                           void *fs_info)
-> +{
-> +       const struct xattr *xattr;
-> +       struct shmem_inode_info *info = SHMEM_I(inode);
-> +       struct shmem_xattr *new_xattr = NULL;
-> +       size_t len;
-> +       int err = 0;
-> +
-> +       for (xattr = xattr_array; xattr->name != NULL; xattr++) {
-> +               err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
-> +               if (err < 0)
-> +                       break;
-
-Should be "return err;" (consistency).
-
-> +
-> +               len = strlen(xattr->name) + 1;
-> +               new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
-> +                                         GFP_KERNEL);
-> +               if (new_xattr->name == NULL) {
-> +                       kfree(new_xattr);
-> +                       return -ENOMEM;
-> +               }
-> +
-> +               memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
-> +                      XATTR_SECURITY_PREFIX_LEN);
-> +               memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
-> +                      xattr->name, len);
-> +               memcpy(new_xattr->value, xattr->value, xattr->value_len);
-> +
-> +               spin_lock(&info->lock);
-> +               list_add(&new_xattr->list, &info->xattr_list);
-> +               spin_unlock(&info->lock);
-> +       }
-> +
-> +       return err;
-
-Should be "return 0;" (consistency).
-
-> +}
-> +
->  static int
->  shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
->  {
-> @@ -1490,7 +1543,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
->        if (inode) {
->                error = security_inode_init_security(inode, dir,
->                                                     &dentry->d_name,
-> -                                                    NULL, NULL);
-> +                                                    &shmem_initxattrs, NULL);
->                if (error) {
->                        if (error != -EOPNOTSUPP) {
->                                iput(inode);
-> @@ -1630,7 +1683,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
->                return -ENOSPC;
->
->        error = security_inode_init_security(inode, dir, &dentry->d_name,
-> -                                            NULL, NULL);
-> +                                            &shmem_initxattrs, NULL);
->        if (error) {
->                if (error != -EOPNOTSUPP) {
->                        iput(inode);
-> @@ -1731,26 +1784,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
->        return ret;
->  }
->
-> -static int shmem_xattr_set(struct dentry *dentry, const char *name,
-> +static int shmem_xattr_set(struct inode *inode, const char *name,
->                           const void *value, size_t size, int flags)
->  {
-> -       struct inode *inode = dentry->d_inode;
->        struct shmem_inode_info *info = SHMEM_I(inode);
->        struct shmem_xattr *xattr;
->        struct shmem_xattr *new_xattr = NULL;
-> -       size_t len;
->        int err = 0;
->
->        /* value == NULL means remove */
->        if (value) {
-> -               /* wrap around? */
-> -               len = sizeof(*new_xattr) + size;
-> -               if (len <= sizeof(*new_xattr))
-> -                       return -ENOMEM;
-> -
-> -               new_xattr = kmalloc(len, GFP_KERNEL);
-> -               if (!new_xattr)
-> -                       return -ENOMEM;
-> +               err = shmem_xattr_alloc(size, &new_xattr);
-> +               if (err < 0)
-> +                       return err;
->
->                new_xattr->name = kstrdup(name, GFP_KERNEL);
->                if (!new_xattr->name) {
-> @@ -1758,7 +1804,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
->                        return -ENOMEM;
->                }
->
-> -               new_xattr->size = size;
->                memcpy(new_xattr->value, value, size);
->        }
->
-> @@ -1858,7 +1903,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
->        if (size == 0)
->                value = "";  /* empty EA, do not remove */
->
-> -       return shmem_xattr_set(dentry, name, value, size, flags);
-> +       return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
->
->  }
->
-> @@ -1878,7 +1923,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
->        if (err)
->                return err;
->
-> -       return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
-> +       return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
->  }
->
->  static bool xattr_is_trusted(const char *name)
-> --
-> 1.7.5.4
->
-
-/Jarkko
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 77b5f22..99f2855 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -99,9 +99,6 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 	phys_addr_t this_start, this_end, cand;
+ 	u64 i;
+ 
+-	/* align @size to avoid excessive fragmentation on reserved array */
+-	size = round_up(size, align);
+-
+ 	/* pump up @end */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+ 		end = memblock.current_limit;
+@@ -731,6 +728,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+ {
+ 	phys_addr_t found;
+ 
++	/* align @size to avoid excessive fragmentation on reserved array */
++	size = round_up(size, align);
++
+ 	found = memblock_find_in_range_node(0, max_addr, size, align, nid);
+ 	if (found && !memblock_reserve(found, size))
+ 		return found;
