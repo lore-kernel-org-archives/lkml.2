@@ -1,104 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab2BVVY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:24:26 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51177 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2BVVYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:24:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 02/30] x86-64: Use explicit sizes in sigcontext.h, prepare for x32
-Date: Wed, 22 Feb 2012 21:23:38 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        hjl.tools@gmail.com
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <201202221222.58399.arnd@arndb.de> <4F453086.8030602@zytor.com>
-In-Reply-To: <4F453086.8030602@zytor.com>
+	id S1754978Ab2BVV0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:26:09 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:42469 "EHLO ja.ssi.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753213Ab2BVV0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 16:26:06 -0500
+Date: Wed, 22 Feb 2012 23:27:26 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Arun Sharma <asharma@fb.com>
+cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: route add default fails with ESRCH?
+In-Reply-To: <4F4541E5.5040700@fb.com>
+Message-ID: <alpine.LFD.2.00.1202222319150.1603@ja.ssi.bg>
+References: <4F3F0158.2020406@fb.com> <4F4541E5.5040700@fb.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201202222123.38816.arnd@arndb.de>
-X-Provags-ID: V02:K0:9mAIdpCTfP+d8kV46jmheTIdgu6QNP3zQza9fYaYf/o
- Db1wURYMJeqzeO1t/FxeKiRPtEdemcfTFCAQMNzDVy+tgri4/u
- FiFRGKEfbhh+oTxjqUamBLYOOeD1j6RHGvkB4INFuetOCMGvp6
- 2M0E4FqI6NtPWOpQzZnffnSDeb17lgpojIF4E4sV4tQSp5CrXA
- AR41K05jQADfvQvSdzA3Ku4CQf4dueAUHTpGUJ/ZZ2qltToyyX
- AxKgGrXIv+MSAvPE0H/MIGp6EvZnVLf3O5U/+scQbsJMCaSTRZ
- 9GrX1o413QZ5JLnihe2ehbY5XhmNfpcdeVrp+4tAF6diCOAmaT
- 1Lm/kKRnxWngTUuocyCQ=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 22 February 2012, H. Peter Anvin wrote:
-> On 02/22/2012 04:22 AM, Arnd Bergmann wrote:
-> > On Monday 20 February 2012, H. Peter Anvin wrote:
-> >> We are using __u64 as x86-32 compatible since we are sharing most of the
-> >> really complex path (like ioctl) with i386 much more so than x86-64.  So
-> >> it is defined in userspace as:
-> >>
-> >> typedef unsigned long long __u64 __attribute__((aligned(4)));
-> >>
-> >> __aligned_u64 obviously is naturally aligned, which matches uint64_t is
-> >> userspace.
-> > 
-> > Has someone audited the interfaces to check if there are data structures that
-> > use a plain signed or unsigned "long long" instead of __s64/__u64 in places
-> > where i386 differs from the other compat implementations?
-> > 
-> > I found DRM_IOCTL_UPDATE_DRAW, but there could be more like this one.
-> > 
+
+	Hello,
+
+On Wed, 22 Feb 2012, Arun Sharma wrote:
+
+> [ Expanded cc ]
 > 
-> Has someone audited every single ioctl in the kernel?  Definitely not,
-> which is why x32 is marked EXPERIMENTAL.  I think it is still time for
-> this work to switch to happening in the upstream, however.
+> On 2/17/12 5:39 PM, Arun Sharma wrote:
+> > 
+> > I've been trying to debug this strange problem with recent 3.2 kernels:
+> > 
+> > # boot to single user mode
+> > # service network start
+> > # ifconfig eth0
+> > eth0 Link encap:Ethernet HWaddr <blah>
+> > inet addr:10.47.46.39 Bcast:10.47.46.255 Mask:255.255.255.0
+> > 
+> > <Link is up>
+> > # strace route add default gw 10.47.46.1
+> > ioctl(3, SIOCADDRT, 0x7fff1fd4db80) = -1 ESRCH (No such process)
+> 
+> I git bisected the problem to this commit:
+> 
+> commit 3630b7c050d9c3564f143d595339fc06b888d6f3
+> Author: David S. Miller <davem@davemloft.net>
+> Date: Tue Feb 1 15:15:39 2011 -0800
+> 
+> ipv4: Remove fib_hash.
+> 
+> which came in via 2.6.39.
+> 
+> > If there are any semantic differences found in fib_trie, we should
+> > simply fix them.
+> 
+> Looks like the problem I'm running into falls into this bucket (since it goes
+> away if I revert the commit).
+> 
+> I changed the pr_debug() in fib_trie.c to pr_info() and got some debug output
+> (attached).
+> 
+> Based on the debug info, I think it's this call that's failing with ESRCH:
 
-Depends on how you want to do it. In some cases, the easiest answer
-would be to change the data structure to use __u64 and be compatible
-with i386. Once there are distros built using data structure with
-padding around a long long, you have to use a run-time conditional
-in the compat handler.
+	Why the subnet is deleted from table main (254) in
+the same second ?
 
-I'd say we should fix at least the ones that are easy to spot because
-they already use compat_u64 or have an #ifdef CONFIG_X86_64 in compat
-code. I've looked at everything I could find that fits into that category
-and found only two locations. My expectation is that all other data
-structures that would fall into this category are already broken
-for 32 bit emulation on x86.
+	First default route is removed:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+[   44.351839] Deleting 00000000/0 tos=0 t=ffff880212b846a0
+[   44.351843] entering trie_leaf_remove(ffff880213d120e0)
+[   44.351846] In tnode_resize ffff880213d0a5a0 inflate_threshold=50
+threshold=25
 
-diff --git a/include/drm/drm.h b/include/drm/drm.h
-index 49d94ed..73b7c33 100644
---- a/include/drm/drm.h
-+++ b/include/drm/drm.h
-@@ -438,7 +438,7 @@ struct drm_update_draw {
- 	drm_drawable_t handle;
- 	unsigned int type;
- 	unsigned int num;
--	unsigned long long data;
-+	__u64 data;
- };
- 
- /**
-diff --git a/include/sound/asound.h b/include/sound/asound.h
-index a2e4ff5..a17e96c 100644
---- a/include/sound/asound.h
-+++ b/include/sound/asound.h
-@@ -824,8 +824,8 @@ struct snd_ctl_elem_value {
- 			long *value_ptr;	/* obsoleted */
- 		} integer;
- 		union {
--			long long value[64];
--			long long *value_ptr;	/* obsoleted */
-+			__s64 value[64];
-+			__s64 *value_ptr;	/* obsoleted */
- 		} integer64;
- 		union {
- 			unsigned int item[128];
-	Arnd
+	Then link route 10.47.46.0/24:
+
+[   44.351852] Deleting 0a2f2e00/24 tos=0 t=ffff880212b846a0
+[   44.351855] entering trie_leaf_remove(ffff880211585150)
+
+	Insert tries to find if GW 10.47.46.1 is reachable,
+there must be 10.47.46.0/24 in table main but it was
+deleted just before adding the IP.
+
+[   69.189627] Insert table=254 00000000/0
+
+> [   69.189627] Insert table=254 00000000/0
+> 
+> /sbin/route -V
+> net-tools 1.60
+> route 1.98 (2001-04-15)
+> 
+> # cat /proc/net/fib_trie
+
+	Where is "Main:" here?
+
+> Local:
+>   +-- 0.0.0.0/1 1 0 0
+>      +-- 10.47.46.0/24 1 0 0
+>         +-- 10.47.46.0/26 1 0 0
+>            |-- 10.47.46.0
+>               /32 link BROADCAST
+>            |-- 10.47.46.39
+>               /32 host LOCAL
+>         |-- 10.47.46.255
+>            /32 link BROADCAST
+>      +-- 127.0.0.0/8 1 0 0
+>         +-- 127.0.0.0/31 1 0 0
+>            |-- 127.0.0.0
+>               /32 link BROADCAST
+>               /8 host LOCAL
+>            |-- 127.0.0.1
+>               /32 host LOCAL
+>         |-- 127.255.255.255
+>            /32 link BROADCAST
+> 
+> Please let me know if you have any suggestions.
+
+	The only place that returns ESRCH during insert is
+net/core/fib_rules.c fib_rules_lookup(). Are you sure that
+some daemon is not monitoring your actions and playing
+with the ip rules and routes? May be during 'route add'
+there are no ip rules and the link route is removed too.
+Is the problem some race with such routing daemon?
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
