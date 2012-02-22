@@ -1,75 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab2BVNe3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 08:34:29 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43664 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186Ab2BVNe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 08:34:27 -0500
-Date: Wed, 22 Feb 2012 14:34:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
-        a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120222133404.GA14085@elte.hu>
-References: <cover.1329851692.git.jbaron@redhat.com>
- <4F43F9F0.4000605@zytor.com>
- <20120222065016.GA16923@elte.hu>
- <4F44934B.2000808@zytor.com>
- <20120222072538.GA17291@elte.hu>
- <4F449ACF.3040807@zytor.com>
- <20120222074839.GA24890@elte.hu>
- <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
- <20120222080659.GA25318@elte.hu>
- <1329916920.25686.79.camel@gandalf.stny.rr.com>
+	id S1752633Ab2BVNfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 08:35:07 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65264 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2BVNfD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 08:35:03 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rabin.vincent@gmail.com designates 10.68.241.170 as permitted sender) smtp.mail=rabin.vincent@gmail.com; dkim=pass header.i=rabin.vincent@gmail.com
+Date: Wed, 22 Feb 2012 19:02:40 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 5/6] jump label: detect %c support for ARM
+Message-ID: <20120222133240.GA9031@debian>
+References: <1327757725-10114-1-git-send-email-rabin@rab.in>
+ <1327757725-10114-6-git-send-email-rabin@rab.in>
+ <20120220172158.GI26840@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1329916920.25686.79.camel@gandalf.stny.rr.com>
+In-Reply-To: <20120220172158.GI26840@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> I like the blue shed, but anyway...
+On Mon, Feb 20, 2012 at 05:21:58PM +0000, Russell King - ARM Linux wrote:
+> On Sat, Jan 28, 2012 at 07:05:24PM +0530, Rabin Vincent wrote:
+> > Some versions of ARM GCC which do support asm goto, have problems
+> > handling the the %c specifier.  Since we need the %c to support jump
+> > labels on ARM, detect that too in the asm goto detection script to avoid
+> > build errors with these versions.
 > 
-> On Wed, 2012-02-22 at 09:06 +0100, Ingo Molnar wrote:
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> I'm not sure how this detects properly working %c support.  %c support
+> has been rather flakey on ARM for some time, I'm not sure which version
+> of gcc was fixed for it.
+
+Right, it only detects that %c on a sym+offset doesn't ICE, which was
+what it had been doing since atleast version 4.3.
+
+The assumption was that since asm goto was only added in ~4.5, all older
+compilers (regardless of their state of %c support) would choke (as we
+want them to) on the existing second half of this script.
+
+I have added the change you suggested below.
+
+> 
+> > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
 > > 
-> > > Not arguing that, but the static aspect is still key... or 
-> > > people will read it as another version of likely/unlikely.  
+> > Cc: Jason Baron <jbaron@redhat.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Rabin Vincent <rabin@rab.in>
+> > ---
+> >  scripts/gcc-goto.sh |   18 +++++++++++++++++-
+> >  1 files changed, 17 insertions(+), 1 deletions(-)
 > > 
-> > They can *read* it as such, that as is very much intentional! 
+> > diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
+> > index 98cffcb..9b744de 100644
+> > --- a/scripts/gcc-goto.sh
+> > +++ b/scripts/gcc-goto.sh
+> > @@ -2,4 +2,20 @@
+> >  # Test for gcc 'asm goto' support
+> >  # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
+> >  
+> > -echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> > +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+> > +int main(void)
+> > +{
+> > +#ifdef __arm__
+> > +	/*
+> > +	 * Not related to asm goto, but used by jump label
+> > +	 * and broken on some ARM GCC versions (see GCC Bug 48637).
+> > +	 */
+> > +	static struct { int dummy; int state; } tp;
+> > +	asm ("@ %c0" :: "i" (&tp.state));
 > 
-> I mentioned this thread on irc and the first comment I received was:
+> While this detects the presence of the ICE, previous compilers included
+> the '#' before the constant, which leads to problems.  I think a better
+> check would be:
+> 	asm(".long %c0" :: "i" (&tp.state));
 > 
-> "is that a new attempt at trying to guide the compiler?"
+> to make sure that it spits out something purely numeric, rather than
+> something prefixed with a '#'.
 
-It essentially is, implemented partly via compiler help, 
-combined with runtime code patching, as an extended run-time arm 
-of the compiler in essence, to make out of line slowpaths even 
-cheaper to have around - to make the fast-path even faster.
+OK, done:
 
-> I personally find the very_unlikely() confusing, but then 
-> again I like the blue shed over the pink one.
+8<----------------
+>From f3a3bd64f72720def5cfbaedf6ff83ca54f1644b Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin@rab.in>
+Date: Wed, 23 Nov 2011 20:05:09 +0530
+Subject: [PATCH] jump label: detect %c support for ARM
 
-Confusing in what way?
+Some versions of ARM GCC which do support asm goto, do not support
+the %c specifier.  Since we need the %c to support jump labels
+on ARM, detect that too in the asm goto detection script to avoid
+build errors with these versions.
 
-Thanks,
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48637
 
-	Ingo
+Acked-by: Jason Baron <jbaron@redhat.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ scripts/gcc-goto.sh |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
+index 98cffcb..a2af2e8 100644
+--- a/scripts/gcc-goto.sh
++++ b/scripts/gcc-goto.sh
+@@ -2,4 +2,20 @@
+ # Test for gcc 'asm goto' support
+ # Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
+ 
+-echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
++cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
++int main(void)
++{
++#ifdef __arm__
++	/*
++	 * Not related to asm goto, but used by jump label
++	 * and broken on some ARM GCC versions (see GCC Bug 48637).
++	 */
++	static struct { int dummy; int state; } tp;
++	asm (".long %c0" :: "i" (&tp.state));
++#endif
++
++entry:
++	asm goto ("" :::: entry);
++	return 0;
++}
++END
+-- 
+1.7.9
+
+
