@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2BVVzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:55:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52699 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387Ab2BVVzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:55:39 -0500
-Message-ID: <4F45644B.2070904@zytor.com>
-Date: Wed, 22 Feb 2012 13:55:23 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1755618Ab2BVVzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:55:52 -0500
+Received: from hulk.biessmann.org ([62.75.166.25]:44082 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab2BVVzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 16:55:49 -0500
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jochen Friedrich <jochen@scram.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH] mod/file2alias: make modpost compile on darwin again
+Date: Wed, 22 Feb 2012 22:55:35 +0100
+Message-Id: <1329947735-4331-1-git-send-email-andreas@biessmann.de>
+X-Mailer: git-send-email 1.7.9.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        hjl.tools@gmail.com
-Subject: Re: [PATCH 02/30] x86-64: Use explicit sizes in sigcontext.h, prepare
- for x32
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com> <201202221222.58399.arnd@arndb.de> <4F453086.8030602@zytor.com> <201202222123.38816.arnd@arndb.de>
-In-Reply-To: <201202222123.38816.arnd@arndb.de>
-X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: c3154a1d4f2ce941f346c5073c38ac5a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2012 01:23 PM, Arnd Bergmann wrote:
-> 
-> Depends on how you want to do it. In some cases, the easiest answer
-> would be to change the data structure to use __u64 and be compatible
-> with i386. Once there are distros built using data structure with
-> padding around a long long, you have to use a run-time conditional
-> in the compat handler.
-> 
+commit e49ce14150c64b29a8dd211df785576fa19a9858 breaks cross compiling
+the linux kernel on darwin hosts.
+This fix introduce some minimal glue to adopt linker section handling
+for darwin hosts.
 
-That we'd like to avoid, but as you said, they'd be broken or might
-already be broken.
+Additionally this patch fixes minor chackpatch warnings introduced by
+mentioned commit.
 
-> I'd say we should fix at least the ones that are easy to spot because
-> they already use compat_u64 or have an #ifdef CONFIG_X86_64 in compat
-> code. I've looked at everything I could find that fits into that category
-> and found only two locations. My expectation is that all other data
-> structures that would fall into this category are already broken
-> for 32 bit emulation on x86.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/include/drm/drm.h b/include/drm/drm.h
-> index 49d94ed..73b7c33 100644
-> --- a/include/drm/drm.h
-> +++ b/include/drm/drm.h
-> @@ -438,7 +438,7 @@ struct drm_update_draw {
->  	drm_drawable_t handle;
->  	unsigned int type;
->  	unsigned int num;
-> -	unsigned long long data;
-> +	__u64 data;
->  };
->  
->  /**
-> diff --git a/include/sound/asound.h b/include/sound/asound.h
-> index a2e4ff5..a17e96c 100644
-> --- a/include/sound/asound.h
-> +++ b/include/sound/asound.h
-> @@ -824,8 +824,8 @@ struct snd_ctl_elem_value {
->  			long *value_ptr;	/* obsoleted */
->  		} integer;
->  		union {
-> -			long long value[64];
-> -			long long *value_ptr;	/* obsoleted */
-> +			__s64 value[64];
-> +			__s64 *value_ptr;	/* obsoleted */
->  		} integer64;
->  		union {
->  			unsigned int item[128];
-> 	Arnd
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Jochen Friedrich <jochen@scram.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>
+CC: "K. Y. Srinivasan" <kys@microsoft.com>
+---
+ scripts/mod/file2alias.c |   37 ++++++++++++++++++++++++++++++++-----
+ 1 files changed, 32 insertions(+), 5 deletions(-)
 
-Right, those are good starts.
-
-	-hpa
-
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index d0de2a2..d2f42eb 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -46,11 +46,37 @@ struct devtable {
+ 	void *function;
+ };
+ 
++#define ___cat(a, b) a ## b
++#define __cat(a, b) ___cat(a, b)
++
++/* we need some special handling for this host tool running eventually on
++ * Darwin. The Mach-O section handling is a bit different than ELF section
++ * handling. The differnces in detail are:
++ *  a) we have segments which have sections
++ *  b) we need a API call to get the respective section symbols */
++#if defined(__MACH__)
++#include <mach-o/getsect.h>
++
++#define INIT_SECTION(name)  do {					\
++		unsigned long name ## _len;				\
++		char *__cat(pstart_, name) = getsectdata("__TEXT",	\
++			#name, &__cat(name, _len));			\
++		char *__cat(pstop_, name) = __cat(pstart_, name) +	\
++			__cat(name, _len);				\
++		__cat(__start_, name) = (void *)__cat(pstart_, name);	\
++		__cat(__stop_, name) = (void *)__cat(pstop_, name);	\
++	} while (0)
++#define SECTION(name)   __attribute__((section("__TEXT, " #name)))
++
++struct devtable **__start___devtable, **__stop___devtable;
++#else
++#define INIT_SECTION(name) /* no-op for ELF */
++#define SECTION(name)   __attribute__((section(#name)))
++
+ /* We construct a table of pointers in an ELF section (pointers generally
+  * go unpadded by gcc).  ld creates boundary syms for us. */
+ extern struct devtable *__start___devtable[], *__stop___devtable[];
+-#define ___cat(a,b) a ## b
+-#define __cat(a,b) ___cat(a,b)
++#endif /* __MACH__ */
+ 
+ #if __GNUC__ == 3 && __GNUC_MINOR__ < 3
+ # define __used			__attribute__((__unused__))
+@@ -60,13 +86,13 @@ extern struct devtable *__start___devtable[], *__stop___devtable[];
+ 
+ /* Add a table entry.  We test function type matches while we're here. */
+ #define ADD_TO_DEVTABLE(device_id, type, function) \
+-	static struct devtable __cat(devtable,__LINE__) = {	\
++	static struct devtable __cat(devtable, __LINE__) = {	\
+ 		device_id + 0*sizeof((function)((const char *)NULL,	\
+ 						(type *)NULL,		\
+ 						(char *)NULL)),		\
+ 		sizeof(type), (function) };				\
+-	static struct devtable *__attribute__((section("__devtable"))) \
+-		__used __cat(devtable_ptr,__LINE__) = &__cat(devtable,__LINE__)
++	static struct devtable *SECTION(__devtable) __used \
++		__cat(devtable_ptr, __LINE__) = &__cat(devtable, __LINE__)
+ 
+ #define ADD(str, sep, cond, field)                              \
+ do {                                                            \
+@@ -1080,6 +1106,7 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 		do_pnp_card_entries(symval, sym->st_size, mod);
+ 	else {
+ 		struct devtable **p;
++		INIT_SECTION(__devtable);
+ 
+ 		for (p = __start___devtable; p < __stop___devtable; p++) {
+ 			if (sym_is(name, namelen, (*p)->device_id)) {
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.9.1
 
