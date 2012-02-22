@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab2BVMhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 07:37:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45500 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab2BVMh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 07:37:27 -0500
-Date: Wed, 22 Feb 2012 13:37:25 +0100
-From: Jan Kara <jack@suse.cz>
-To: Liu Bo <liubo2009@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] MM: fix a typo of truncate_inode_pages_range
-Message-ID: <20120222123725.GB28373@quack.suse.cz>
-References: <1329793040-21406-1-git-send-email-liubo2009@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1329793040-21406-1-git-send-email-liubo2009@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752293Ab2BVMg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 07:36:59 -0500
+Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:44643 "EHLO
+	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599Ab2BVMgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 07:36:55 -0500
+From: Danny Kukawka <danny.kukawka@bisect.de>
+To: David Dillow <dave@thedillows.org>
+Cc: Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] 3com/typhoon: reuse eth_mac_addr()
+Date: Wed, 22 Feb 2012 13:36:38 +0100
+Message-Id: <1329914199-30862-2-git-send-email-danny.kukawka@bisect.de>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329914199-30862-1-git-send-email-danny.kukawka@bisect.de>
+X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1329914215;29608932;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-02-12 10:57:20, Liu Bo wrote:
-> The typo of API truncate_inode_pages_range is not updated.
-  It's better to add more specific recipients of patches. It's too easy to
-overlook a patch in 400+ daily messages on LKML. In this particular case
-using trivial tree for merging would be appropriate. Added CCs.
+Use eth_mac_addr() for .ndo_set_mac_address, remove
+typhoon_set_mac_address() since it do currently the same as
+eth_mac_addr(). Additional advantage: eth_mac_addr() already
+checks if the given address is valid.
 
-								Honza
-> 
-> Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
-> ---
->  mm/truncate.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 632b15e..a188058 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -184,7 +184,7 @@ int invalidate_inode_page(struct page *page)
->  }
->  
->  /**
-> - * truncate_inode_pages - truncate range of pages specified by start & end byte offsets
-> + * truncate_inode_pages_range - truncate range of pages specified by start & end byte offsets
->   * @mapping: mapping to truncate
->   * @lstart: offset from which to truncate
->   * @lend: offset to which to truncate
-> -- 
-> 1.6.5.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+---
+ drivers/net/ethernet/3com/typhoon.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/ethernet/3com/typhoon.c b/drivers/net/ethernet/3com/typhoon.c
+index f7d622e..1234a14 100644
+--- a/drivers/net/ethernet/3com/typhoon.c
++++ b/drivers/net/ethernet/3com/typhoon.c
+@@ -966,18 +966,6 @@ typhoon_get_stats(struct net_device *dev)
+ 	return stats;
+ }
+ 
+-static int
+-typhoon_set_mac_address(struct net_device *dev, void *addr)
+-{
+-	struct sockaddr *saddr = (struct sockaddr *) addr;
+-
+-	if(netif_running(dev))
+-		return -EBUSY;
+-
+-	memcpy(dev->dev_addr, saddr->sa_data, dev->addr_len);
+-	return 0;
+-}
+-
+ static void
+ typhoon_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
+ {
+@@ -2266,7 +2254,7 @@ static const struct net_device_ops typhoon_netdev_ops = {
+ 	.ndo_tx_timeout		= typhoon_tx_timeout,
+ 	.ndo_get_stats		= typhoon_get_stats,
+ 	.ndo_validate_addr	= eth_validate_addr,
+-	.ndo_set_mac_address	= typhoon_set_mac_address,
++	.ndo_set_mac_address	= eth_mac_addr,
+ 	.ndo_change_mtu		= eth_change_mtu,
+ };
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.3
+
