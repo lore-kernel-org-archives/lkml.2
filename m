@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2BVJ2B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 04:28:01 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43046 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab2BVJ16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 04:27:58 -0500
-Date: Wed, 22 Feb 2012 10:27:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] x86: Move per cpu cpu_llc_shared_map to a field
- in struct cpuinfo_x86
-Message-ID: <20120222092745.GA30339@elte.hu>
-References: <20120221153935.GE2486@x1.osrc.amd.com>
- <1329875144-560-1-git-send-email-kjwinchester@gmail.com>
- <1329875144-560-2-git-send-email-kjwinchester@gmail.com>
- <4F448DBD.6030300@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F448DBD.6030300@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+	id S1754591Ab2BVJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 04:32:26 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60026 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752877Ab2BVJcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 04:32:23 -0500
+X-Sasl-enc: THwTuShGwCN4rI2miDNS/07uyd7G8Xiq0mXOzHW7wn+wyBcOs5E9DLjF9A 1329903142
+Message-ID: <1329903139.2193.66.camel@perseus.themaw.net>
+Subject: Re: compat: autofs v5 packet size ambiguity - update
+From: Ian Kent <raven@themaw.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, autofs@vger.kernel.org,
+        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
+Date: Wed, 22 Feb 2012 17:32:19 +0800
+In-Reply-To: <1329890251.2193.50.camel@perseus.themaw.net>
+References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com>
+	 <20120221.221609.218135609185671883.davem@davemloft.net>
+	 <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com>
+	 <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com>
+	 <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com>
+	 <1329889428.2193.45.camel@perseus.themaw.net>
+	 <1329890027.2193.48.camel@perseus.themaw.net>
+	 <1329890251.2193.50.camel@perseus.themaw.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 02/21/2012 05:45 PM, Kevin Winchester wrote:
-> > Commit 141168c36cde ("x86: Simplify code by removing a !SMP #ifdefs from
-> > 'struct cpuinfo_x86'") caused the compilation error:
+On Wed, 2012-02-22 at 13:57 +0800, Ian Kent wrote:
+> On Wed, 2012-02-22 at 13:53 +0800, Ian Kent wrote:
+> > On Wed, 2012-02-22 at 13:43 +0800, Ian Kent wrote:
+> > > On Tue, 2012-02-21 at 20:56 -0800, Linus Torvalds wrote:
 > > 
-> > mce_amd.c:(.cpuinit.text+0x4723): undefined reference to 'cpu_llc_shared_map'
+> > Ahh ... forgot to set the file_operations structure member .. oops
 > > 
-> > by removing an #ifdef CONFIG_SMP around a block containing a 
-> > reference to cpu_llc_shared_map.  Rather than replace the 
-> > #ifdef, move cpu_llc_shared_map to be a new cpumask_t field 
-> > llc_shared_map in struct cpuinfo_x86 and adjust all 
-> > references to cpu_llc_shared_map.
+> > >  
+> > > +static int autofs4_root_dir_open(struct inode *inode, struct file *file)
+> > > +{
+> > > +	struct autofs_sb_info *sbi= autofs4_sbi(file->f_path.dentry->d_sb);
+> > > +	if (sbi->compat_daemon < 0)
+> > > +		sbi->compat_daemon = is_compat_task();
+> > > +	return dcache_dir_open(inode, file);
+> > > +}
+> > > +
 > > 
 > 
-> I'm not comfortable with a patch this large after we are 
-> already at -rc4.  Please send a minimal patch to fix the 
-> failure for v3.3, and then a patch on top of that which we can 
-> queue up with the rest of the patchset to for v3.4.
+> Lets try that again.
 
-I forgot about the v3.3 aspect of the series - yes, you are 
-right, doing it like that would be preferred.
+Oh, DOH ... 
 
-It can all be in the same series, we'll sort apart the v3.3 and 
-v3.4 bits.
+The process mounting the autofs mount is passing the pipe it will use
+for communication via a mount option so we can do this right in
+fill_super.
 
-Thanks,
+I'm out for a while, I'll update the patch when I'm back.
 
-	Ingo
+Ian
+
+
