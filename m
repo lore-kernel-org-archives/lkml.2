@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab2BVKno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 05:43:44 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:37407 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842Ab2BVKnh (ORCPT
+	id S1755789Ab2BVKs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 05:48:56 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43142 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755440Ab2BVKsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 05:43:37 -0500
-Date: Wed, 22 Feb 2012 11:43:24 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RAS trace event proto
-Message-ID: <20120222104324.GA26845@aftab>
-References: <20120220145920.GB5728@aftab>
- <4F438CE9.7080807@redhat.com>
- <20120221141231.GA15515@aftab>
- <1329835698.25686.60.camel@gandalf.stny.rr.com>
- <20120221145943.GB15515@aftab>
- <3908561D78D1C84285E8C5FCA982C28F03DA60@ORSMSX104.amr.corp.intel.com>
+	Wed, 22 Feb 2012 05:48:55 -0500
+Message-ID: <4F44C7E9.6000303@linux.vnet.ibm.com>
+Date: Wed, 22 Feb 2012 16:18:09 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F03DA60@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH 1/1] linux headers: header file(s) changes to enable spinlock
+ use jumplabel
+References: <20120217082527.15283.72980.sendpatchset@oc5400248562.ibm.com> <4F403268.7040804@goop.org> <20120219092456.GB10038@redhat.com> <4F41D72E.7000605@goop.org> <4F41E4C1.9010901@linux.vnet.ibm.com> <20120220093350.GF10038@redhat.com>
+In-Reply-To: <20120220093350.GF10038@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12022210-5816-0000-0000-000001666E97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 12:58:37AM +0000, Luck, Tony wrote:
-> I'm also struggling to understand an end-user use case where you would
-> want filtering.  Mauro - can you expand a bit on why someone would just
-> want to see the errors from memory controller 1?
-> 
-> My mental model of the world is that large systems have some background
-> noise - a trickle of corrected errors that happen in normal operation.
-> User shouldn't care about these errors unless they breach some threshold.
-> 
-> When something goes wrong, you may see a storm of corrected errors, or
-> some uncorrected errors. In either case you'd like to get as much information
-> as possible to identify the component that is at fault. I'd definitely like
-> to see some structure to the error reporting, so that mining for data patterns
-> in a storm isn't hideously platform dependent.
+On 02/20/2012 03:03 PM, Gleb Natapov wrote:
+> On Mon, Feb 20, 2012 at 11:44:25AM +0530, Raghavendra K T wrote:
+>> On 02/20/2012 10:46 AM, Jeremy Fitzhardinge wrote:
+[...]
+>> But does pvlock have to use jump
+>>>> label? I looked at the code and it is used like paravirt patching. Meaning
+>>>> it is patched only once on a boot up when XEN is detected. May be use
+>>>> paravirt patching instead of jump label? What if jump label will want
+>>>> to use spinlock for some reason in the future (it uses mutex currently)?
+>>>
+>>> The point of the pv ticketlocks is to avoid any pvop calls on the
+>>> lock/unlock fastpath, relegating them to only the slow path.
+>>> Unfortunately, the pv unlock case can't be identical with the non-pv
+>>> unlock, and jump_labels are lighter weight and more efficient than pvops.
+>>>
+>>> It doesn't matter if jump_labels start using spinlocks; all we need the
+>>> jump_label machinery to do is patch the jump sites in the code so that
+>>> one of two execution paths can be selected.  Since all the ticketlock
+>>> jump_label patching happens before SMP is enabled, there's no problem
+>>> with changing a lock while a cpu is executing the code.
+>>>
+>>
+>> I also felt agreeing with Jeremy. seemed to me that latter is more
+>> performance friendly. no?.
+>>
+>
+> I thought not about pvop, but about alternative().  jump_labels is used
+> by spinlock to patch out jump into nops It can be done via alternative()
+> too I think.
 
-Yep, I'm on the same page here.
+I had remembered that this discussion already happened with Jeremy's V5
+of ticketlock patches. pulling out link :
 
-> It might be easier to evaluate the competing ideas here with some sample
-> output in addition to the code.
+https://lkml.org/lkml/2011/10/13/384
 
-Well, to clarify:
-
-When you get a decoded error, you get the same format as what you get in
-dmesg, for example:
-
-[ 2666.646070] [Hardware Error]: CPU:64   MC1_STATUS[-|CE|MiscV|PCC|-|CECC]: 0x9a05c00007010011
-[ 2666.655003] [Hardware Error]: Instruction Cache Error: L1 TLB multimatch.
-[ 2666.655008] [Hardware Error]: cache level: L1, tx: INSN
-
-And with the decoded string tracepoint, that thing above is a single
-string. If you use trace_mce_record(), you still can get the single
-MCE fields which we carry to userspace from struct mce, _in addition_.
-The hypothetical problem is for userspace not being able to use the
-tracepoint format to parse reported fields easily and in an unambiguous
-manner. Instead, it gets a single string which, I admit, is not that
-pretty.
-
-Now, the problem is if we want to use a single tracepoint for all errors
-- it is unfeasible that any fields sharing can be done there except
-maybe the TSC stamp when it happened, the CPU that caught it and etc.
-not so important details.
-
-IOW, the error format is different for each error type, almost, and
-there's no marrying between them. OTOH, ff we start adding tracepoints
-for each error type, we'll hit the other end - bloat. So also a no-no.
-
-Maybe the compromise would be to define a single tracepoint per
-_hardware_ error reporting scheme. That is, MCA has an own tracepoint,
-PCIE AER has its own error reporting tracepoint, then there's an EDAC
-!x86 one which doesn't use MCA for reporting and also any other scheme a
-hw vendor would come up with...
-
-This will keep the bloat level to a minimum, keep the TPs apart and
-hopefully make all of us happy :).
-
-Opinions?
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
