@@ -1,127 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab2BVBrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:47:12 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45648 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab2BVBrJ (ORCPT
+	id S1754729Ab2BVBrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:47:18 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41551 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab2BVBrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:47:09 -0500
+	Tue, 21 Feb 2012 20:47:13 -0500
 Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.129.105 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
-Subject: [PATCHSET] blkcg: accumulated blkcg updates
-Date: Tue, 21 Feb 2012 17:46:27 -0800
-Message-Id: <1329875223-5102-1-git-send-email-tj@kernel.org>
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/36] blkcg: make CONFIG_BLK_CGROUP bool
+Date: Tue, 21 Feb 2012 17:46:29 -0800
+Message-Id: <1329875223-5102-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
+References: <1329875223-5102-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
+Block cgroup core can be built as module; however, it isn't too useful
+as blk-throttle can only be built-in and cfq-iosched is usually the
+default built-in scheduler.  Scheduled blkcg cleanup requires calling
+into blkcg from block core.  To simplify that, disallow building blkcg
+as module by making CONFIG_BLK_CGROUP bool.
 
-This is accumulation of the following three patchsets on top of
-block/for-linus - 621032ad6e "block: exit_io_context() should call
-elevator_exit_icq_fn()".
+If building blkcg core as module really matters, which I doubt, we can
+revisit it after blkcg API cleanup.
 
-[1] blkcg: kill policy node and blkg->dev, take#4
-[2] blkcg: unify blkgs for different policies
-[3] blkcg: update locking and fix stacking
+-v2: Vivek pointed out that IOSCHED_CFQ was incorrectly updated to
+     depend on BLK_CGROUP.  Fixed.
 
-This patchset collects all three patchset into single series with all
-the updated versions of patches included.  There are also some minor
-changes for build fixes and typos.  Please refer to patch descriptions
-of each patchset for further details.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/Kconfig.iosched |    4 ----
+ block/blk-cgroup.c    |   17 -----------------
+ block/blk-cgroup.h    |   10 ++--------
+ init/Kconfig          |    2 +-
+ 4 files changed, 3 insertions(+), 30 deletions(-)
 
-This patchset contains the following 36 patches.
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 3199b76..421bef9 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -23,8 +23,6 @@ config IOSCHED_DEADLINE
+ 
+ config IOSCHED_CFQ
+ 	tristate "CFQ I/O scheduler"
+-	# If BLK_CGROUP is a module, CFQ has to be built as module.
+-	depends on (BLK_CGROUP=m && m) || !BLK_CGROUP || BLK_CGROUP=y
+ 	default y
+ 	---help---
+ 	  The CFQ I/O scheduler tries to distribute bandwidth equally
+@@ -34,8 +32,6 @@ config IOSCHED_CFQ
+ 
+ 	  This is the default I/O scheduler.
+ 
+-	  Note: If BLK_CGROUP=m, then CFQ can be built only as module.
+-
+ config CFQ_GROUP_IOSCHED
+ 	bool "CFQ Group Scheduling support"
+ 	depends on IOSCHED_CFQ && BLK_CGROUP
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 75642a3..970a717 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -50,10 +50,7 @@ struct cgroup_subsys blkio_subsys = {
+ 	.attach = blkiocg_attach,
+ 	.destroy = blkiocg_destroy,
+ 	.populate = blkiocg_populate,
+-#ifdef CONFIG_BLK_CGROUP
+-	/* note: blkio_subsys_id is otherwise defined in blk-cgroup.h */
+ 	.subsys_id = blkio_subsys_id,
+-#endif
+ 	.use_id = 1,
+ 	.module = THIS_MODULE,
+ };
+@@ -1679,17 +1676,3 @@ void blkio_policy_unregister(struct blkio_policy_type *blkiop)
+ 	spin_unlock(&blkio_list_lock);
+ }
+ EXPORT_SYMBOL_GPL(blkio_policy_unregister);
+-
+-static int __init init_cgroup_blkio(void)
+-{
+-	return cgroup_load_subsys(&blkio_subsys);
+-}
+-
+-static void __exit exit_cgroup_blkio(void)
+-{
+-	cgroup_unload_subsys(&blkio_subsys);
+-}
+-
+-module_init(init_cgroup_blkio);
+-module_exit(exit_cgroup_blkio);
+-MODULE_LICENSE("GPL");
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 6f3ace7..3551687 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -24,13 +24,7 @@ enum blkio_policy_id {
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+ 
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+-
+-#ifndef CONFIG_BLK_CGROUP
+-/* When blk-cgroup is a module, its subsys_id isn't a compile-time constant */
+-extern struct cgroup_subsys blkio_subsys;
+-#define blkio_subsys_id blkio_subsys.subsys_id
+-#endif
++#ifdef CONFIG_BLK_CGROUP
+ 
+ enum stat_type {
+ 	/* Total time spent (in ns) between request dispatch to the driver and
+@@ -303,7 +297,7 @@ static inline void blkiocg_update_idle_time_stats(struct blkio_group *blkg) {}
+ static inline void blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
+ #endif
+ 
+-#if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
++#ifdef CONFIG_BLK_CGROUP
+ extern struct blkio_cgroup blkio_root_cgroup;
+ extern struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup);
+ extern struct blkio_cgroup *task_blkio_cgroup(struct task_struct *tsk);
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..da9222d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -766,7 +766,7 @@ config RT_GROUP_SCHED
+ endif #CGROUP_SCHED
+ 
+ config BLK_CGROUP
+-	tristate "Block IO controller"
++	bool "Block IO controller"
+ 	depends on BLOCK
+ 	default n
+ 	---help---
+-- 
+1.7.7.3
 
-  0001-block-blk-throttle-should-be-drained-regardless-of-q.patch
-  0002-blkcg-make-CONFIG_BLK_CGROUP-bool.patch
-  0003-cfq-don-t-register-propio-policy-if-CONFIG_CFQ_GROUP.patch
-  0004-elevator-clear-auxiliary-data-earlier-during-elevato.patch
-  0005-elevator-make-elevator_init_fn-return-0-errno.patch
-  0006-block-implement-blk_queue_bypass_start-end.patch
-  0007-block-extend-queue-bypassing-to-cover-blkcg-policies.patch
-  0008-blkcg-shoot-down-blkio_groups-on-elevator-switch.patch
-  0009-blkcg-move-rcu_read_lock-outside-of-blkio_group-get-.patch
-  0010-blkcg-update-blkg-get-functions-take-blkio_cgroup-as.patch
-  0011-blkcg-use-q-and-plid-instead-of-opaque-void-for-blki.patch
-  0012-blkcg-add-blkio_policy-array-and-allow-one-policy-pe.patch
-  0013-blkcg-use-the-usual-get-blkg-path-for-root-blkio_gro.patch
-  0014-blkcg-factor-out-blkio_group-creation.patch
-  0015-blkcg-don-t-allow-or-retain-configuration-of-missing.patch
-  0016-blkcg-kill-blkio_policy_node.patch
-  0017-blkcg-kill-the-mind-bending-blkg-dev.patch
-
-  0018-blkcg-let-blkio_group-point-to-blkio_cgroup-directly.patch
-  0019-blkcg-add-blkcg_-init-drain-exit-_queue.patch
-  0020-blkcg-clear-all-request_queues-on-blkcg-policy-un-re.patch
-  0021-blkcg-let-blkcg-core-handle-policy-private-data-allo.patch
-  0022-blkcg-move-refcnt-to-blkcg-core.patch
-  0023-blkcg-make-blkg-pd-an-array-and-move-configuration-a.patch
-  0024-blkcg-don-t-use-blkg-plid-in-stat-related-functions.patch
-  0025-blkcg-move-per-queue-blkg-list-heads-and-counters-to.patch
-  0026-blkcg-let-blkcg-core-manage-per-queue-blkg-list-and-.patch
-  0027-blkcg-unify-blkg-s-for-blkcg-policies.patch
-  0028-blkcg-use-double-locking-instead-of-RCU-for-blkg-syn.patch
-  0029-blkcg-drop-unnecessary-RCU-locking.patch
-
-  0030-block-restructure-get_request.patch
-  0031-block-interface-update-for-ioc-icq-creation-function.patch
-  0032-block-ioc_task_link-can-t-fail.patch
-  0033-block-add-io_context-active_ref.patch
-  0034-block-implement-bio_associate_current.patch
-  0035-block-make-block-cgroup-policies-follow-bio-task-ass.patch
-  0036-block-make-blk-throttle-preserve-the-issuing-task-on.patch
-
-0001-0017 kill policy node and blkg->dev and also available in the
-following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-kill-pn
-
-0018-0029 unify blkgs for different policies and update locking.  Note
-that 0028 and 0029 belonged to the third patchset in the original
-posting.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-unified-blkg
-
-0030-0036 fix stacking of blkcg policies.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-stacking
-
-Thank you.
-
-diffstat follows.
-
- block/Kconfig.iosched     |    4 
- block/blk-cgroup.c        | 1258 ++++++++++++++++++++++++----------------------
- block/blk-cgroup.h        |  286 ++++++----
- block/blk-core.c          |  179 ++++--
- block/blk-ioc.c           |   58 +-
- block/blk-sysfs.c         |    6 
- block/blk-throttle.c      |  450 +++-------------
- block/blk.h               |   32 -
- block/cfq-iosched.c       |  509 +++++-------------
- block/cfq.h               |  113 ++--
- block/deadline-iosched.c  |    8 
- block/elevator.c          |  123 +---
- block/noop-iosched.c      |    8 
- fs/bio.c                  |   61 ++
- include/linux/bio.h       |    8 
- include/linux/blk_types.h |   10 
- include/linux/blkdev.h    |   12 
- include/linux/elevator.h  |    8 
- include/linux/iocontext.h |   32 -
- init/Kconfig              |    2 
- kernel/fork.c             |    5 
- 21 files changed, 1521 insertions(+), 1651 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1247152
-[2] http://thread.gmane.org/gmane.linux.kernel/1247287
-[3] http://thread.gmane.org/gmane.linux.kernel/1254428
