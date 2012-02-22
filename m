@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2BVQPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 11:15:50 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:40678 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab2BVQPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 11:15:45 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 1/2] ARM: at91: add at91sam9g25ek.dts in Makefile.boot
-Date: Wed, 22 Feb 2012 17:15:26 +0100
-Message-Id: <76d3abda7e00e0bd2c8b42b2cf87ff8da16314c0.1329926750.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1329927327-10613-1-git-send-email-nicolas.ferre@atmel.com>
-References: <5a6951fcbe28c3093c936d40c4b28f7ae3161d8d.1329903206.git.nicolas.ferre@atmel.com>
- <1329927327-10613-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1754040Ab2BVQQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 11:16:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753772Ab2BVQQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 11:16:20 -0500
+Date: Wed, 22 Feb 2012 14:14:41 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: add sysctl to enable slab memory dump
+Message-ID: <20120222161440.GB1986@x61.redhat.com>
+References: <20120222115320.GA3107@x61.redhat.com>
+ <alpine.DEB.2.00.1202220754140.21637@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1202220754140.21637@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/Makefile.boot |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, Feb 22, 2012 at 07:55:16AM -0600, Christoph Lameter wrote:
+> 
+> Please use node_nr_objects() instead of directly accessing total_objects.
+> total_objects are only available if debugging support was compiled in.
+> 
+Shame on me! I've wrongly assumed that it would be safe accessing
+the element because SLUB_DEBUG is turned on by default when slub is chosen.
 
-diff --git a/arch/arm/mach-at91/Makefile.boot b/arch/arm/mach-at91/Makefile.boot
-index 2fd051e..be7200b 100644
---- a/arch/arm/mach-at91/Makefile.boot
-+++ b/arch/arm/mach-at91/Makefile.boot
-@@ -14,3 +14,4 @@ initrd_phys-y	:= 0x20410000
- endif
- 
- dtb-$(CONFIG_MACH_AT91SAM_DT) += at91sam9m10g45ek.dtb usb_a9g20.dtb
-+dtb-$(CONFIG_MACH_AT91SAM_DT) += at91sam9g25ek.dtb
+Considering your note on my previous mistake, shall I assume now that it
+would be better having this whole dump feature dependable on CONFIG_SLUB_DEBUG,
+instead of just CONFIG_SLUB ?
+
+Thanks for your feedback!
 -- 
-1.7.9
-
+Rafael Aquini <aquini@redhat.com>
+Software Maintenance Engineer
+Red Hat, Inc.
++55 51 4063.9436 / 8426138 (ext)
