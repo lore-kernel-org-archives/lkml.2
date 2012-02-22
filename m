@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab2BVVjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 16:39:20 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29613 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2BVVjT (ORCPT
+	id S1755451Ab2BVVoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 16:44:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48578 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348Ab2BVVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 16:39:19 -0500
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=vkEQBy3kOgIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=l9_pDDdehqKnsUfYWnwA:9 a=p4yTYIZS9S6EPV8TmtkA:7 a=PUjeQqilurYA:10 a=rbc8e87uO9GgayyL:21 a=mDZ4xaxM__jPupO7:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1329946755.25686.120.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/3 RFC paul/rcu/srcu] srcu: only increase the upper bit
- for srcu_read_lock()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org
-Date: Wed, 22 Feb 2012 16:39:15 -0500
-In-Reply-To: <20120222212630.GA6759@linux.vnet.ibm.com>
-References: <20120213020951.GA12138@linux.vnet.ibm.com>
-	 <4F41F315.1040900@cn.fujitsu.com>
-	 <20120220174418.GI2470@linux.vnet.ibm.com>
-	 <4F42EF53.6060400@cn.fujitsu.com>
-	 <20120221015037.GE2384@linux.vnet.ibm.com>
-	 <4F435966.9020106@cn.fujitsu.com>
-	 <20120221172442.GG2375@linux.vnet.ibm.com>
-	 <4F44B57C.3020104@cn.fujitsu.com>
-	 <20120222212056.GJ2416@linux.vnet.ibm.com>
-	 <20120222212630.GA6759@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 Feb 2012 16:44:07 -0500
+Date: Wed, 22 Feb 2012 15:43:58 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] toshiba_acpi: Expanded hotkey support
+Message-ID: <20120222214358.GB24371@ubuntu-macmini>
+Mail-Followup-To: Len Brown <lenb@kernel.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+	platform-driver-x86@vger.kernel.org,
+	Azael Avalos <coproscefalo@gmail.com>,
+	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+References: <1326915852-19896-1-git-send-email-seth.forshee@canonical.com>
+ <20120206150658.GE6414@ubuntu-macmini>
+ <20120206151548.GA30255@srcf.ucam.org>
+ <20120210165646.GG2305@ubuntu-macmini>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120210165646.GG2305@ubuntu-macmini>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-02-22 at 13:26 -0800, Paul E. McKenney wrote:
+On Fri, Feb 10, 2012 at 10:56:46AM -0600, Seth Forshee wrote:
+> On Mon, Feb 06, 2012 at 03:15:48PM +0000, Matthew Garrett wrote:
+> > On Mon, Feb 06, 2012 at 09:06:58AM -0600, Seth Forshee wrote:
+> > 
+> > > Matthew: Just wondering if there are more issues that need to be
+> > > addressed with this round of patches, or if they're looking okay at this
+> > > point.
+> > 
+> > I'm fine with them at this point, just waiting on Len to give feedback 
+> > on the ACPI patch.
+> 
+> Len,
+> 
+> Do you have any objection to the patch [1]?
+> 
+> Thanks,
+> Seth
+> 
+> [1] https://lkml.org/lkml/2012/1/18/333
 
-> Make that without underflow -- one increment and 2^31+1 decrements would
-> in fact return the counter to its original value, but that would require
-> cramming more than two billion tasks into a 32-bit address space, which
-> I believe to be sufficiently unlikely.  (Famous last words...)
+Ping. This is a pretty trivial patch, so I'd really appreicate it if you
+could take a couple of minutes to give feedback. It would be really nice
+to be able to get some action on these patches in time for 3.4.
 
-I'll just expect to see you as President of the United States, counting
-your money you won in the lottery, and being awarded a Nobel Prize for
-curing cancer.
-
--- Steve
-
-
-
+Thanks,
+Seth
