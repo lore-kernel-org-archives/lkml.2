@@ -1,216 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2BVWGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:06:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37792 "EHLO ogre.sisk.pl"
+	id S1755924Ab2BVWOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:14:30 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:65327 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755744Ab2BVWGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:06:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 5/7] PM / Sleep: Implement opportunistic sleep
-Date: Wed, 22 Feb 2012 23:10:47 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
-        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-References: <201202070200.55505.rjw@sisk.pl> <201202220035.48033.rjw@sisk.pl> <4F44AB34.9030704@linux.vnet.ibm.com>
-In-Reply-To: <4F44AB34.9030704@linux.vnet.ibm.com>
+	id S1753817Ab2BVWO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 17:14:29 -0500
+Date: Wed, 22 Feb 2012 23:13:57 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH V3 0/3] STA2X11: patches for pci bridge support
+Message-ID: <cover.1329947637.git.rubini@gnudd.com>
 MIME-Version: 1.0
-Message-Id: <201202222310.47278.rjw@sisk.pl>
-X-Length: 42855
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 22, 2012, Srivatsa S. Bhat wrote:
-> On 02/22/2012 05:05 AM, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > Introduce a mechanism by which the kernel can trigger global
-> > transitions to a sleep state chosen by user space if there are no
-> > active wakeup sources.
-> > 
-> > It consists of a new sysfs attribute, /sys/power/autosleep, that
-> > can be written one of the strings returned by reads from
-> > /sys/power/state, an ordered workqueue and a work item carrying out
-> > the "suspend" operations.  If a string representing the system's
-> > sleep state is written to /sys/power/autosleep, the work item
-> > triggering transitions to that state is queued up and it requeues
-> > itself after every execution until user space writes "off" to
-> > /sys/power/autosleep.
-> > 
-> > That work item enables the detection of wakeup events using the
-> > functions already defined in drivers/base/power/wakeup.c (with one
-> > small modification) and calls either pm_suspend(), or hibernate() to
-> > put the system into a sleep state.  If a wakeup event is reported
-> > while the transition is in progress, it will abort the transition and
-> > the "system suspend" work item will be queued up again.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  Documentation/ABI/testing/sysfs-power |   17 +++++
-> >  drivers/base/power/wakeup.c           |   38 ++++++-----
-> >  include/linux/suspend.h               |   13 +++-
-> >  kernel/power/Kconfig                  |    8 ++
-> >  kernel/power/Makefile                 |    1 
-> >  kernel/power/autosleep.c              |   98 ++++++++++++++++++++++++++++++
-> >  kernel/power/main.c                   |  108 ++++++++++++++++++++++++++++------
-> >  kernel/power/power.h                  |   18 +++++
-> >  8 files changed, 266 insertions(+), 35 deletions(-)
-> > 
-> > Index: linux/kernel/power/Makefile
-> > ===================================================================
-> > --- linux.orig/kernel/power/Makefile
-> > +++ linux/kernel/power/Makefile
-> > @@ -9,5 +9,6 @@ obj-$(CONFIG_SUSPEND)		+= suspend.o
-> >  obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
-> >  obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
-> >  				   block_io.o
-> > +obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
-> > 
-> >  obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
-> > Index: linux/kernel/power/Kconfig
-> > ===================================================================
-> > --- linux.orig/kernel/power/Kconfig
-> > +++ linux/kernel/power/Kconfig
-> > @@ -103,6 +103,14 @@ config PM_SLEEP_SMP
-> >  	select HOTPLUG
-> >  	select HOTPLUG_CPU
-> > 
-> > +config PM_AUTOSLEEP
-> > +	bool "Opportunistic sleep"
-> > +	depends on PM_SLEEP
-> > +	default n
-> > +	---help---
-> > +	Allow the kernel to trigger a system transition into a global sleep
-> > +	state automatically whenever there are no active wakeup sources.
-> > +
-> >  config PM_RUNTIME
-> >  	bool "Run-time PM core functionality"
-> >  	depends on !IA64_HP_SIM
-> > Index: linux/kernel/power/power.h
-> > ===================================================================
-> > --- linux.orig/kernel/power/power.h
-> > +++ linux/kernel/power/power.h
-> > @@ -264,3 +264,21 @@ static inline void suspend_thaw_processe
-> >  {
-> >  }
-> >  #endif
-> > +
-> > +#ifdef CONFIG_PM_AUTOSLEEP
-> > +
-> > +/* kernel/power/autosleep.c */
-> > +extern int pm_autosleep_init(void);
-> > +extern void pm_autosleep_lock(void);
-> > +extern void pm_autosleep_unlock(void);
-> > +extern suspend_state_t pm_autosleep_state(void);
-> > +extern int pm_autosleep_set_state(suspend_state_t state);
-> > +
-> > +#else /* !CONFIG_PM_AUTOSLEEP */
-> > +
-> > +static inline int pm_autosleep_init(void) { return 0; }
-> > +static inline void pm_autosleep_lock(void) {}
-> > +static inline void pm_autosleep_unlock(void) {}
-> > +static inline suspend_state_t pm_autosleep_state(void) { return PM_SUSPEND_ON; }
-> > +
-> > +#endif /* !CONFIG_PM_AUTOSLEEP */
-> > Index: linux/include/linux/suspend.h
-> > ===================================================================
-> > --- linux.orig/include/linux/suspend.h
-> > +++ linux/include/linux/suspend.h
-> > @@ -356,7 +356,7 @@ extern int unregister_pm_notifier(struct
-> >  extern bool events_check_enabled;
-> > 
-> >  extern bool pm_wakeup_pending(void);
-> > -extern bool pm_get_wakeup_count(unsigned int *count);
-> > +extern bool pm_get_wakeup_count(unsigned int *count, bool block);
-> >  extern bool pm_save_wakeup_count(unsigned int count);
-> > 
-> >  static inline void lock_system_sleep(void)
-> > @@ -407,6 +407,17 @@ static inline void unlock_system_sleep(v
-> > 
-> >  #endif /* !CONFIG_PM_SLEEP */
-> > 
-> > +#ifdef CONFIG_PM_AUTOSLEEP
-> > +
-> > +/* kernel/power/autosleep.c */
-> > +void queue_up_suspend_work(void);
-> > +
-> > +#else /* !CONFIG_PM_AUTOSLEEP */
-> > +
-> > +static inline void queue_up_suspend_work(void) {}
-> > +
-> > +#endif /* !CONFIG_PM_AUTOSLEEP */
-> > +
-> >  #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
-> >  /*
-> >   * The ARCH_SAVE_PAGE_KEYS functions can be used by an architecture
-> > Index: linux/kernel/power/autosleep.c
-> > ===================================================================
-> > --- /dev/null
-> > +++ linux/kernel/power/autosleep.c
-> > @@ -0,0 +1,98 @@
-> > +/*
-> > + * kernel/power/autosleep.c
-> > + *
-> > + * Opportunistic sleep support.
-> > + *
-> > + * Copyright (C) 2012 Rafael J. Wysocki <rjw@sisk.pl>
-> > + */
-> > +
-> > +#include <linux/device.h>
-> > +#include <linux/mutex.h>
-> > +#include <linux/pm_wakeup.h>
-> > +
-> > +#include "power.h"
-> > +
-> > +static suspend_state_t autosleep_state;
-> > +static struct workqueue_struct *autosleep_wq;
-> > +static DEFINE_MUTEX(autosleep_lock);
-> > +
-> > +static void try_to_suspend(struct work_struct *work)
-> > +{
-> > +	unsigned int initial_count, final_count;
-> > +
-> > +	if (!pm_get_wakeup_count(&initial_count, true))
-> > +		goto out;
-> > +
-> > +	mutex_lock(&autosleep_lock);
-> > +
-> > +	if (!pm_save_wakeup_count(initial_count)) {
-> > +		mutex_unlock(&autosleep_lock);
-> > +		goto out;
-> > +	}
-> > +
-> > +	if (autosleep_state == PM_SUSPEND_ON) {
-> > +		mutex_unlock(&autosleep_lock);
-> > +		return;
-> > +	}
-> > +	if (autosleep_state >= PM_SUSPEND_MAX)
-> > +		hibernate();
-> > +	else
-> > +		pm_suspend(autosleep_state);
-> 
-> 
-> We are calling pm_suspend() or hibernate() directly here.
-> Won't this break build when CONFIG_SUSPEND or CONFIG_HIBERNATION is not set?
-> CONFIG_PM_AUTOSLEEP depends only on PM_SLEEP which means we could enable
-> either one of suspend or hibernation and yet come to this point, breaking
-> the option which was not enabled.
+This series is V3 of what I sent on Jan 30th as V2.
 
-Both pm_suspend() and hibernate() have appropriate static inline definitions
-for !CONFIG_SUSPEND and !CONFIG_HIBERNATION (in suspend.h), as far as I can say.
+Patch 3 is dependent on patch 1 and 2, which are unordered.  When I
+posted V2 of this set, patch 3 was picked up, but compilation failed
+because of the missing prerequisites. Also, some prototypes changed
+in the meanwhile and patch 3 was miscompiling in linux-next so it
+has been correctly dropped.
 
-Thanks,
-Rafael
+V3: rebased on next-20120221. Fixed patch 3 to match new DMA
+prototypes. Renamed patch 3 as Ingo and Jesse merged it. Added both of
+them to explicit Cc: list in the email set.
+
+V2: rebased, minor and less-minor changes in patch 3/3.
+
+Alessandro Rubini (3):
+  x86: introduce CONFIG_X86_DEV_DMA_OPS
+  x86: introduce CONFIG_X86_DMA_REMAP
+  x86/PCI: initial support for sta2x11 I/O hub
+
+ arch/x86/Kconfig                   |   34 +++-
+ arch/x86/include/asm/device.h      |    4 +-
+ arch/x86/include/asm/dma-mapping.h |    9 +-
+ arch/x86/pci/Makefile              |    2 +
+ arch/x86/pci/sta2x11-fixup.c       |  367 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 409 insertions(+), 7 deletions(-)
+ create mode 100644 arch/x86/pci/sta2x11-fixup.c
+
+-- 
+1.7.7.2
