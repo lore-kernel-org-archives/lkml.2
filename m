@@ -1,141 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2BVPUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 10:20:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2BVPUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 10:20:14 -0500
-Date: Wed, 22 Feb 2012 10:19:43 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        a.p.zijlstra@chello.nl, mathieu.desnoyers@efficios.com,
-        davem@davemloft.net, ddaney.cavm@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] jump label: introduce very_[un]likely + cleanups +
- docs
-Message-ID: <20120222151943.GA2370@redhat.com>
-References: <4F44934B.2000808@zytor.com>
- <20120222072538.GA17291@elte.hu>
- <4F449ACF.3040807@zytor.com>
- <20120222074839.GA24890@elte.hu>
- <efc1cd8f-7114-460b-a704-a3e533d48d02@email.android.com>
- <20120222080659.GA25318@elte.hu>
- <1329916920.25686.79.camel@gandalf.stny.rr.com>
- <20120222133404.GA14085@elte.hu>
- <1329918881.25686.92.camel@gandalf.stny.rr.com>
- <20120222145614.GA2491@elte.hu>
+	id S1753381Ab2BVPYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 10:24:21 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:46824 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259Ab2BVPYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 10:24:18 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai5bALIHRU9V5qrvPGdsb2JhbABEiXGoeRkBAQEBNzSBcwEBBAEyASMREgULCAMOOBQlChqIFAO3ExOMRBUVAwcLAwQLAgsCBQoVCohZYwSRWINfhW2NAoFSEA
+X-IronPort-AV: E=Sophos;i="4.73,464,1325458800"; 
+   d="scan'208";a="272729337"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 22 Feb 2012 16:24:25 +0100
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Chung-yih Wang <cywang@chromium.org>,
+        Alessandro Rubini <rubini@cvml.unipv.it>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CHROMIUM: Input: synaptics - filter out the events with
+ low z values
+Message-ID: <20120222152425.GA29436@polaris.bitmath.org>
+References: <1329896503-28394-1-git-send-email-cywang@chromium.org>
+ <20120222083858.GA26570@polaris.bitmath.org>
+ <CAGS+omCU9f=DyC442+4HOF=sGhZYXne+E2ephFiOmuj-XKciMA@mail.gmail.com>
+ <20120222110459.GA28126@polaris.bitmath.org>
+ <CAGS+omB0GCQHOjrb_T6h7DzHrH2sp4Xqb5av6JC-ttJ8HZ5BcQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120222145614.GA2491@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGS+omB0GCQHOjrb_T6h7DzHrH2sp4Xqb5av6JC-ttJ8HZ5BcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 03:56:16PM +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > I see the problem. However, ignoring it will just move the problem
+> > forward to another bug report, will it not?  Hysteresis is a slam dunk
+> > here.  In addition, since the low-pressure state is bound to be
+> > transitional (soon to be followed by a real num_fingers==1 package),
+> > simply skipping such packages might be a better option.
 > 
-> > On Wed, 2012-02-22 at 14:34 +0100, Ingo Molnar wrote:
-> > > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > > 
-> > > > I like the blue shed, but anyway...
-> > > > 
-> > > > On Wed, 2012-02-22 at 09:06 +0100, Ingo Molnar wrote:
-> > > > > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > > > > 
-> > > > > > Not arguing that, but the static aspect is still key... or 
-> > > > > > people will read it as another version of likely/unlikely.  
-> > > > > 
-> > > > > They can *read* it as such, that as is very much intentional! 
-> > > > 
-> > > > I mentioned this thread on irc and the first comment I received was:
-> > > > 
-> > > > "is that a new attempt at trying to guide the compiler?"
-> > > 
-> > > It essentially is, implemented partly via compiler help, 
-> > > combined with runtime code patching, as an extended run-time 
-> > > arm of the compiler in essence, to make out of line 
-> > > slowpaths even cheaper to have around - to make the 
-> > > fast-path even faster.
-> > 
-> > Actually, I was partly under the impression that we didn't 
-> > care if it was in the fast path. Maybe we need three versions. 
-> > Let me explain.
-> > 
-> > We have cases where we want it default disabled and the code 
-> > called when enabled should be as out of line as possible. 
-> > Tracing definitely falls in this pattern. But we could push a 
-> > "unlikely(static_branch())" for such a case (or keep it as 
-> > very_unlikely()).
-> > 
-> > Then we have cases where it is default enabled, where we can 
-> > insert the code in the fast path. Or do we even care how the 
-> > compiler places it? Because this leads us to the third use...
-> 
-> These two variants cover all current uses of jump labels.
-> 
-> > The third use is the case were we don't know the branch should 
-> > be taken or not until boot. We don't want the compiler to 
-> > optimize the paths at all. This example is for things like CPU 
-> > features or types (as HPA explained the "if 
-> > (very_unlikely(cpu_vendor_amd))". This is the category that we 
-> > want to have an efficient system for the running hardware. We 
-> > can't bias one way or the other at compile time because 
-> > frankly, we don't know the answer until run time. This could 
-> > also be used by modules that are drivers for several types of 
-> > hardware, and it can dynamically change itself to suit the 
-> > hardware it is driving.
-> >
-> > > > I personally find the very_unlikely() confusing, but then 
-> > > > again I like the blue shed over the pink one.
-> > > 
-> > > Confusing in what way?
-> > 
-> > Because it really just looks like a stronger "unlikely()" and 
-> > fundamentally it really isn't. [...]
-> 
-> Well, the fact is that right now it *is* a stronger unlikely() 
-> on architectures that have jump-labels and it's mapped to 
-> unlikely() on others.
-> 
-> > [...] For tracing, sure that can be the way we look at it, but 
-> > for the more general case, it is a "We don't know which way 
-> > this branch should go most of the time, lets just pick one 
-> > then optimize later".
-> 
-> That's not how it's used by the scheduler or by perf - and by 
-> the looks of it that's not how the networking code uses it 
-> either.
-> 
-> I tend to concentrate on the common case.
-> 
-> > Again, maybe we need a "very_unlikely()" for the tracing case,
-> 
-> ... and that's the usecase for the scheduler, for events and for 
-> networking. I.e. all current usecases in the kernel.
-> 
-> > maybe even a "very_likely()", but then keep a static_branch() 
-> > or whatever for those cases you do not want to optimize at 
-> > compile time.
-> 
-> Once such uses arise maybe we could add such an 'unbiased' 
-> variant.
-> 
+> In practice, we don't actually see the profile sensor pad sending one
+> low-z finger, and one high-z finger.  In the case where one finger is
+> solidly on the pad, and another finger is hovering, lifting, or
+> alighting, the pad sends 2 high-z fingers, with one of them having a
+> completely wrong x or y coordinate.
 
-Right, we've discussed an 'unbiased' variant a bit before, but I don't 
-have a working imlementation for it yet. But I agree all current users are of
-the biased variety.
+Urgh.
 
-Also, decoupling the higher level interfaces, as Ingo has suggested - 
-'very_unlikely' 'static_key', from the lower level 'jump label' naming makes
-sense. We might eventually add an 'unbias' variant. Another potential variant
-is in the 'bias' case is to move the mostly not taken branch even further out
-of line. Another possibilty is a 'switch'-like variant or multi-way jump.
+> The two reported z-values are
+> nearly, but not exactly, identical.  I can't think of good fix for
+> this, other than adding finger tracking and filtering out via
+> 'moved-too-far-too-fast', where possible, and I'd prefer that this be
+> handled in userspace.
+
+It sounds like the z value in the second packet carries zero
+information. If that were true, the fact that the patch is effective
+suggests the semi-mt slot reporting could follow BTN_TOUCH, more or
+less.  In doing so, you would also obtain hysteresis automatically.
+
+> The 1-low-z && 1-high-z case that we are
+> discussing here isn't actually ever triggered; either both fingers are
+> high-z, or neither are.
+
+I suspect it depends a bit on the values of low-z and hi-z,
+respectively? Otherwise, there really is no information in that extra
+packet.
+
+> The real usefulness of this patch is filtering out the 1-low-z-finger
+> and 2-low-z fingers cases.
+> 
+> As for the hypothetical 1-finger-hi, 1-finger-low case, which I asked
+> Chung-yih to add because it seemed like a good idea in theory...
+> 
+> Yes, I think you have a good point.  Thanks to evdev's stateful
+> nature, simply skipping the (1-strong,1-weak) packet might actually
+> work better than forcing num_fingers == 0.
+> 
+> For cases where a second finger is temporarily reporting low-z because
+> it is arriving or leaving, evdev would just lock the (1 or 2 initial)
+> fingers in their current position until the transition is over, and
+> then start reporting the new number of fingers at their new positions.
+> 
+> For cases where there is one high-z finger, and a hovering thumb or
+> palm triggers 2-finger reporting temporarily (without ever going above
+> the threshold), the original finger will get frozen in its current
+> position until the hovering finger is no longer detected, and then
+> snap to its new position.  This might cause strange sudden jumps, but
+> that seems unavoidable.
+
+A lot of things seem unavoidable with this hardware. :-)
+
+> I'm not sure hysteresis is a "slam dunk"...  in fact, I don't see how
+> it would help much.  But, it is hard to argue against adding the
+> functionality, since the hysteresis window can be made arbitrarily
+> small.  Perhaps if you are inclined, you can elaborate on why you
+> think it is important.
+
+The most striking effect is the ability to better retain a
+drag. Although the statement was made in light of possible
+(1-strong,1-weak) packets, it should help in the 2-weak case too.
 
 Thanks,
-
--Jason
+Henrik
