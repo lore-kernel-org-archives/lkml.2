@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab2BVWzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:55:33 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38310 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab2BVWzc convert rfc822-to-8bit (ORCPT
+	id S1752496Ab2BVW6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:58:34 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40758 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751045Ab2BVW6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:55:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1329944133-28433-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1329944133-28433-1-git-send-email-Julia.Lawall@lip6.fr>
-Date: Wed, 22 Feb 2012 14:55:31 -0800
-X-Google-Sender-Auth: 1SD-EtOh2KE2sA7ohkhXm9s40DI
-Message-ID: <CAA9_cmc6w_Tn+GbSubCcGxvE2w6yyDyWP_WgY3H5d6iasyqvRQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/scsi/pm8001/pm8001_sas.c: move timer start
-From: Dan Williams <dan.j.williams@intel.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: jack_wang@usish.com, kernel-janitors@vger.kernel.org, lindar_liu@usish.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Feb 2012 17:58:33 -0500
+Subject: Re: [PATCH] x86, efi: Fix unaligned access and endian issues
+From: Matt Fleming <matt@console-pimps.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
+References: <1329919208-8700-1-git-send-email-matt@console-pimps.org>
+	 <20120223093140.3f8ad47252f9f331d355ea57@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 22 Feb 2012 22:58:28 +0000
+Message-ID: <1329951508.4759.14.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 22, 2012 at 12:55 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, 2012-02-23 at 09:31 +1100, Stephen Rothwell wrote:
 >
-> Move the add_timer below some instructions that do not seem to require a
-> timer and that in one case can fail, thus avoiding the need for a
-> corresponding del_timer.
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->
-> ---
-> I don't fully understand the code, and have not tested the change.  Think
-> of this patch as more of a question as to whether this is the right thing
-> to do.
+> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au> (cross build only)
+> 
+> The bzImage from a ARCH=x86_64 defconfig+CONFIG_EFI_STUB cross build is
+> in http://ozlabs.org/~sfr/bzImage if you want to attempt to boot it.
 
-This patch makes sense to me... don't start the timer until we're sure
-that the task is going to be submitted, or at least remember to
-del_timer() before returning.
+Thanks Stephen, this bzImage works fine on my setup.
 
-Looks like pm8001_exec_internal_tmf_task() gets this right.
+> One little thing is that those two new functions may we warned about as
+> unused if CONFIG_EFI_STUB is not set (I have not done that build yet).
 
---
-Dan
+Should be OK because they're static inline (it at least doesn't warn
+here).
+
+Peter was talking about exporting unaligned.h for host tools so this
+patch will probably go through another iteration anyway.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
