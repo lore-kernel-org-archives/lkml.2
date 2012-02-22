@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab2BVGeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 01:34:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48569 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab2BVGeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 01:34:09 -0500
-Message-ID: <4F448C13.1040407@zytor.com>
-Date: Tue, 21 Feb 2012 22:32:51 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1752839Ab2BVGih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 01:38:37 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:24836
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751716Ab2BVGif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 01:38:35 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 22 Feb 2012 14:46:19 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Linus Walleij <linus.walleij@stericsson.com>, <B29396@freescale.com>,
+        <s.hauer@pengutronix.de>, <dongas86@gmail.com>, <shawn.guo@linaro.org>,
+        <thomas.abraham@linaro.org>, <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/20] pinctrl: Disallow map table entries with NULL
+ dev_name field
+Message-ID: <20120222064618.GC11087@shlinux2.ap.freescale.net>
+References: <1329720360-23227-1-git-send-email-swarren@nvidia.com>
+ <1329720360-23227-10-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, akpm@linux-foundation.org,
-        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
-        keescook@chromium.org
-Subject: Re: [PATCH v10 05/11] seccomp: add system call filtering using BPF
-References: <1329845435-2313-1-git-send-email-wad@chromium.org> <1329845435-2313-5-git-send-email-wad@chromium.org>
-In-Reply-To: <1329845435-2313-5-git-send-email-wad@chromium.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1329720360-23227-10-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2012 09:30 AM, Will Drewry wrote:
-> +
-> +/**
-> + * struct seccomp_data - the format the BPF program executes over.
-> + * @args: up to 6 system call arguments.  When the calling convention is
-> + *        32-bit, the arguments will still be at each args[X] offset.
-> + * @instruction_pointer: at the time of the system call.
-> + * @arch: indicates system call convention as an AUDIT_ARCH_* value
-> + *        as defined in <linux/audit.h>.
-> + * @nr: the system call number
-> + */
-> +struct seccomp_data {
-> +	__u64 args[6];
-> +	__u64 instruction_pointer;
-> +	__u32 arch;
-> +	int nr;
-> +};
->  
+On Sun, Feb 19, 2012 at 11:45:49PM -0700, Stephen Warren wrote:
+> Hog entries are mapping table entries with .ctrl_dev_name == .dev_name.
+> All other mapping table entries need .dev_name set so that they will
+> match some pinctrl_get() call. All extant PIN_MAP*() macros set
+> .dev_name.
+> 
+> So, there is no reason to allow mapping table entries without .dev_name
+> set. Update the code and documentation to disallow this.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
 
-This got flipped around for some reason... that is a problem if we ever
-need to extend this to more than 6 arguments (I thought we had at least
-one architecture which supported 7 arguments already, but I could just
-be delusional.)
+Except code derived from last patch that not allow the map name to be NULL
+for pinctrl_get since it seems still not determined, for this patch itself:
 
-	-hpa
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards
+Dong Aisheng
 
