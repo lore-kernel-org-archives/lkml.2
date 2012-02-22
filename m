@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab2BVWSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 17:18:08 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34836 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab2BVWSF (ORCPT
+	id S1756014Ab2BVWWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 17:22:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62022 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755764Ab2BVWWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 17:18:05 -0500
-Message-ID: <4F456997.50500@gmail.com>
-Date: Thu, 23 Feb 2012 09:17:59 +1100
+	Wed, 22 Feb 2012 17:22:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of rmallon@gmail.com designates 10.68.227.36 as permitted sender) smtp.mail=rmallon@gmail.com; dkim=pass header.i=rmallon@gmail.com
+Message-ID: <4F456AAF.3090809@gmail.com>
+Date: Thu, 23 Feb 2012 09:22:39 +1100
 From: Ryan Mallon <rmallon@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.26) Gecko/20120131 Lightning/1.0b2 Thunderbird/3.1.18
 MIME-Version: 1.0
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 CC: plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 03/19] ARM: at91: make matrix register base soc independent
-References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <4b71fdf7ee746a09b7ee468aa3bc60d6c34d4c20.1329903206.git.nicolas.ferre@atmel.com>
-In-Reply-To: <4b71fdf7ee746a09b7ee468aa3bc60d6c34d4c20.1329903206.git.nicolas.ferre@atmel.com>
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk
+Subject: Re: [PATCH v2 02/19] ARM: at91/at91x40: remove use of at91_sys_read/write
+References: <1329903585-30738-1-git-send-email-nicolas.ferre@atmel.com> <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
+In-Reply-To: <fac36a5ab9fe5a8bd977d2305eeccad48389cbb5.1329903206.git.nicolas.ferre@atmel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,64 +31,30 @@ On 22/02/12 20:39, Nicolas Ferre wrote:
 > 
 > Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: linux-usb@vger.kernel.org
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  arch/arm/mach-at91/at91x40.c              |    2 +-
+>  arch/arm/mach-at91/at91x40_time.c         |   28 +++++++++++++++++-----------
+>  arch/arm/mach-at91/include/mach/at91x40.h |   18 +++++++++---------
+>  3 files changed, 27 insertions(+), 21 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+> index 0154b7f..5400a1d 100644
+> --- a/arch/arm/mach-at91/at91x40.c
+> +++ b/arch/arm/mach-at91/at91x40.c
+> @@ -44,7 +44,7 @@ static void at91x40_idle(void)
+>  	 * Disable the processor clock.  The processor will be automatically
+>  	 * re-enabled by an interrupt or by a reset.
+>  	 */
+> -	at91_sys_write(AT91_PS_CR, AT91_PS_CR_CPU);
+> +	__raw_writel(AT91_PS_CR_CPU, AT91_PS_CR);
 
 
-Looks okay, one comment (for future) below, but otherwise:
+This doesn't seem to be equivalent, at91_sys_write does:
 
-Reviewed-by: Ryan Mallon <rmallon@gmail.com>
+  void __iomem *addr = (void __iomem *)AT91_VA_BASE_SYS;
+  __raw_writel(value, addr + reg_offset);
 
-<snip>
-
-> diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-> index 8bdba2a..5fd6fe8 100644
-> --- a/arch/arm/mach-at91/at91sam9263.c
-> +++ b/arch/arm/mach-at91/at91sam9263.c
-> @@ -306,6 +306,7 @@ static void __init at91sam9263_ioremap_registers(void)
->  	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
->  	at91sam9_ioremap_smc(0, AT91SAM9263_BASE_SMC0);
->  	at91sam9_ioremap_smc(1, AT91SAM9263_BASE_SMC1);
-> +	at91_ioremap_matrix(AT91SAM9263_BASE_MATRIX);
-
-
-Not necessarily for this patch set, but this list of functions is
-getting long enough that it could be abstracted away by a table.
-Something like:
-
-  struct at91_sys_device {
-	const char *name;
-	void __iomem **base;
-	const unsigned long mem_start;
-	const unsigned long mem_size;
-  };
-
-  ...
-
-  static const struct
-  at91_sys_device at91sam9263_sys_devices[] __initconst = {
-	{"PIT",	&at91_pit_base,
-	 AT91SAM9263_BASE_PIT, AT91_PIT_SIZE},
-	...
-	{"matrix", &at91_matrix_base,
-	 AT91SAM9263_BASE_MATRIX, AT91_MATRIX_SIZE},
-  }
-
-  ...
-
-  void __init
-  at91_ioremap_sys_devices(const struct at91_sys_device *devices,
-			   int nr_devices)
-  {
-	int i;
-
-	for (i = 0; i < nr_devices; i++) {
-		void __iomem *base = *(dev[i].base);
-
-		base = ioremap(dev[i].mem_start, dev[i].mem_size);
-		if (!base)
-			panic("Impossible to ioremap AT91 %s\n",
-			      dev[i].name);
-  }
+and this patch doesn't redefine AT91_PS_CR. Was it broken before this
+patch? What am I missing?
 
 ~Ryan
