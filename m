@@ -1,47 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab2BVRqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Feb 2012 12:46:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51622 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266Ab2BVRqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Feb 2012 12:46:30 -0500
-Message-ID: <4F4529D4.6070008@zytor.com>
-Date: Wed, 22 Feb 2012 09:45:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131 Thunderbird/10.0
+	id S1754374Ab2BVRqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Feb 2012 12:46:31 -0500
+Received: from mga06.intel.com ([134.134.136.21]:2264 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752847Ab2BVRq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Feb 2012 12:46:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jarkko.sakkinen@intel.com designates 10.60.26.133 as permitted sender) smtp.mail=jarkko.sakkinen@intel.com
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ian Kent <raven@themaw.net>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        Thomas Meyer <thomas@m3y3r.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: compat: autofs v5 packet size ambiguity - update
-References: <CA+55aFzhS69QSoN1j+Z2md116u+3OfniAoE0QMo6xyBjDyjbEw@mail.gmail.com> <20120221.221609.218135609185671883.davem@davemloft.net> <CA+55aFwvmZGDzO_8wwYfH8HsLE=qCmLkJfeMyCe4PVvOYbDMHQ@mail.gmail.com> <CA+55aFzv3X3yW8WZGMZO+aKa=qWi2w8=zn2DP-Q3jRry8Ermyw@mail.gmail.com> <CA+55aFyh1NmBt0LwR3+iD6B-Xa8wAs-nGJ0MBouPhTzWUi8W5g@mail.gmail.com> <1329889428.2193.45.camel@perseus.themaw.net> <4F4484F0.9070501@zytor.com> <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
-In-Reply-To: <CA+55aFwUvuaGdnpwVQLQLF=DdqROmKqz65v+_DXHbebNhPqkLg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
+References: <1329896894-7278-1-git-send-email-jarkko.sakkinen@intel.com>
+Date: Wed, 22 Feb 2012 19:46:03 +0200
+Message-ID: <CADjiTvAJEpvcpxUGz4RifY0JdW_3iBKOwb_407U94UeUQ9VKwA@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: security xattr setting on inode creation
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q1MHkmTe026166
 
-On 02/22/2012 08:10 AM, Linus Torvalds wrote:
-> 
-> But yeah, writing fixed-size data and then having a reader that reads
-> fixed-size data is just not a very good approach. It's doubly bad when
-> the "fixed size" isn't an explicit size that is documented in the
-> protocol, but depends on data structures.
-> 
+Hi
 
-Incidentally, a valid user space workaround for this problem would be to
-just read all the data off the pipe but consider the packet length to be
-NAME_MAX rather than NAME_MAX+1; then simply discard all-zero ints
-received on input since a packet always starts with the autofs version
-number.
+Noticed some style issues that I need to fix.
 
-	-hpa
+On Wed, Feb 22, 2012 at 9:48 AM, Jarkko Sakkinen
+<jarkko.sakkinen@intel.com> wrote:
+> Adds to generic xattr support introduced in Linux 3.0 by
+> implementing initxattrs callback. This enables consulting
+> of security attributes from LSM and EVM when inode originally
+> created.
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+> ---
+>  mm/shmem.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 61 insertions(+), 16 deletions(-)
+>
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 7a45ad0..72addf1 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1480,6 +1480,59 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+>  /*
+>  * File creation. Allocate an inode, and we're done..
+>  */
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Oops. Have to move these new functions before this
+comment.
 
+> +
+> +static int shmem_xattr_alloc(size_t size, struct shmem_xattr **new_xattr)
+> +{
+> +       /* wrap around? */
+> +       size_t len = sizeof(**new_xattr) + size;
+> +       if (len <= sizeof(**new_xattr))
+> +               return -ENOMEM;
+> +
+> +       *new_xattr = kmalloc(len, GFP_KERNEL);
+> +       if (*new_xattr == NULL)
+> +               return -ENOMEM;
+> +
+> +       (*new_xattr)->size = size;
+> +       return 0;
+> +}
+> +
+> +static int shmem_initxattrs(struct inode *inode,
+> +                           const struct xattr *xattr_array,
+> +                           void *fs_info)
+> +{
+> +       const struct xattr *xattr;
+> +       struct shmem_inode_info *info = SHMEM_I(inode);
+> +       struct shmem_xattr *new_xattr = NULL;
+> +       size_t len;
+> +       int err = 0;
+> +
+> +       for (xattr = xattr_array; xattr->name != NULL; xattr++) {
+> +               err = shmem_xattr_alloc(xattr->value_len, &new_xattr);
+> +               if (err < 0)
+> +                       break;
+
+Should be "return err;" (consistency).
+
+> +
+> +               len = strlen(xattr->name) + 1;
+> +               new_xattr->name = kmalloc(XATTR_SECURITY_PREFIX_LEN + len,
+> +                                         GFP_KERNEL);
+> +               if (new_xattr->name == NULL) {
+> +                       kfree(new_xattr);
+> +                       return -ENOMEM;
+> +               }
+> +
+> +               memcpy(new_xattr->name, XATTR_SECURITY_PREFIX,
+> +                      XATTR_SECURITY_PREFIX_LEN);
+> +               memcpy(new_xattr->name + XATTR_SECURITY_PREFIX_LEN,
+> +                      xattr->name, len);
+> +               memcpy(new_xattr->value, xattr->value, xattr->value_len);
+> +
+> +               spin_lock(&info->lock);
+> +               list_add(&new_xattr->list, &info->xattr_list);
+> +               spin_unlock(&info->lock);
+> +       }
+> +
+> +       return err;
+
+Should be "return 0;" (consistency).
+
+> +}
+> +
+>  static int
+>  shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+>  {
+> @@ -1490,7 +1543,7 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+>        if (inode) {
+>                error = security_inode_init_security(inode, dir,
+>                                                     &dentry->d_name,
+> -                                                    NULL, NULL);
+> +                                                    &shmem_initxattrs, NULL);
+>                if (error) {
+>                        if (error != -EOPNOTSUPP) {
+>                                iput(inode);
+> @@ -1630,7 +1683,7 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
+>                return -ENOSPC;
+>
+>        error = security_inode_init_security(inode, dir, &dentry->d_name,
+> -                                            NULL, NULL);
+> +                                            &shmem_initxattrs, NULL);
+>        if (error) {
+>                if (error != -EOPNOTSUPP) {
+>                        iput(inode);
+> @@ -1731,26 +1784,19 @@ static int shmem_xattr_get(struct dentry *dentry, const char *name,
+>        return ret;
+>  }
+>
+> -static int shmem_xattr_set(struct dentry *dentry, const char *name,
+> +static int shmem_xattr_set(struct inode *inode, const char *name,
+>                           const void *value, size_t size, int flags)
+>  {
+> -       struct inode *inode = dentry->d_inode;
+>        struct shmem_inode_info *info = SHMEM_I(inode);
+>        struct shmem_xattr *xattr;
+>        struct shmem_xattr *new_xattr = NULL;
+> -       size_t len;
+>        int err = 0;
+>
+>        /* value == NULL means remove */
+>        if (value) {
+> -               /* wrap around? */
+> -               len = sizeof(*new_xattr) + size;
+> -               if (len <= sizeof(*new_xattr))
+> -                       return -ENOMEM;
+> -
+> -               new_xattr = kmalloc(len, GFP_KERNEL);
+> -               if (!new_xattr)
+> -                       return -ENOMEM;
+> +               err = shmem_xattr_alloc(size, &new_xattr);
+> +               if (err < 0)
+> +                       return err;
+>
+>                new_xattr->name = kstrdup(name, GFP_KERNEL);
+>                if (!new_xattr->name) {
+> @@ -1758,7 +1804,6 @@ static int shmem_xattr_set(struct dentry *dentry, const char *name,
+>                        return -ENOMEM;
+>                }
+>
+> -               new_xattr->size = size;
+>                memcpy(new_xattr->value, value, size);
+>        }
+>
+> @@ -1858,7 +1903,7 @@ static int shmem_setxattr(struct dentry *dentry, const char *name,
+>        if (size == 0)
+>                value = "";  /* empty EA, do not remove */
+>
+> -       return shmem_xattr_set(dentry, name, value, size, flags);
+> +       return shmem_xattr_set(dentry->d_inode, name, value, size, flags);
+>
+>  }
+>
+> @@ -1878,7 +1923,7 @@ static int shmem_removexattr(struct dentry *dentry, const char *name)
+>        if (err)
+>                return err;
+>
+> -       return shmem_xattr_set(dentry, name, NULL, 0, XATTR_REPLACE);
+> +       return shmem_xattr_set(dentry->d_inode, name, NULL, 0, XATTR_REPLACE);
+>  }
+>
+>  static bool xattr_is_trusted(const char *name)
+> --
+> 1.7.5.4
+>
+
+/Jarkko
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
