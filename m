@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2BVBr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Feb 2012 20:47:26 -0500
+	id S1754792Ab2BVBrW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Feb 2012 20:47:22 -0500
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:41551 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2BVBrX (ORCPT
+	with ESMTP id S1751134Ab2BVBrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Feb 2012 20:47:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.211.131 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
+	Tue, 21 Feb 2012 20:47:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of htejun@gmail.com designates 10.68.129.228 as permitted sender) smtp.mail=htejun@gmail.com; dkim=pass header.i=htejun@gmail.com
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/36] block: extend queue bypassing to cover blkcg policies
-Date: Tue, 21 Feb 2012 17:46:34 -0800
-Message-Id: <1329875223-5102-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/36] elevator: make elevator_init_fn() return 0/-errno
+Date: Tue, 21 Feb 2012 17:46:32 -0800
+Message-Id: <1329875223-5102-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1329875223-5102-1-git-send-email-tj@kernel.org>
 References: <1329875223-5102-1-git-send-email-tj@kernel.org>
@@ -22,81 +22,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend queue bypassing such that dying queue is always bypassing and
-blk-throttle is drained on bypass.  With blkcg policies updated to
-test blk_queue_bypass() instead of blk_queue_dead(), this ensures that
-no bio or request is held by or going through blkcg policies on a
-bypassing queue.
+elevator_ops->elevator_init_fn() has a weird return value.  It returns
+a void * which the caller should assign to q->elevator->elevator_data
+and %NULL return denotes init failure.
 
-This will be used to implement blkg cleanup on elevator switches and
-policy changes.
+Update such that it returns integer 0/-errno and sets elevator_data
+directly as necessary.
+
+This makes the interface more conventional and eases further cleanup.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c     |   12 ++++++++----
- block/blk-throttle.c |    4 ++--
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ block/cfq-iosched.c      |    9 +++++----
+ block/deadline-iosched.c |    8 +++++---
+ block/elevator.c         |   12 ++----------
+ block/noop-iosched.c     |    8 +++++---
+ include/linux/elevator.h |    2 +-
+ 5 files changed, 18 insertions(+), 21 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index bf6332c..0f1bbdd 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -372,8 +372,7 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
- 		if (q->elevator)
- 			elv_drain_elevator(q);
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 388fe01..72680a6 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3656,7 +3656,7 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	kfree(cfqd);
+ }
  
--		if (drain_all)
--			blk_throtl_drain(q);
-+		blk_throtl_drain(q);
- 
- 		/*
- 		 * This function might be called on a queue which failed
-@@ -415,8 +414,8 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
-  *
-  * In bypass mode, only the dispatch FIFO queue of @q is used.  This
-  * function makes @q enter bypass mode and drains all requests which were
-- * issued before.  On return, it's guaranteed that no request has ELVPRIV
-- * set.
-+ * throttled or issued before.  On return, it's guaranteed that no request
-+ * is being throttled or has ELVPRIV set.
-  */
- void blk_queue_bypass_start(struct request_queue *q)
+-static void *cfq_init_queue(struct request_queue *q)
++static int cfq_init_queue(struct request_queue *q)
  {
-@@ -461,6 +460,11 @@ void blk_cleanup_queue(struct request_queue *q)
- 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+ 	struct cfq_data *cfqd;
+ 	int i, j;
+@@ -3665,7 +3665,7 @@ static void *cfq_init_queue(struct request_queue *q)
  
- 	spin_lock_irq(lock);
-+
-+	/* dead queue is permanently in bypass mode till released */
-+	q->bypass_depth++;
-+	queue_flag_set(QUEUE_FLAG_BYPASS, q);
-+
- 	queue_flag_set(QUEUE_FLAG_NOMERGES, q);
- 	queue_flag_set(QUEUE_FLAG_NOXMERGES, q);
- 	queue_flag_set(QUEUE_FLAG_DEAD, q);
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 5eed6a7..702c0e6 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -310,7 +310,7 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	struct request_queue *q = td->queue;
+ 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!cfqd)
+-		return NULL;
++		return -ENOMEM;
  
- 	/* no throttling for dead queue */
--	if (unlikely(blk_queue_dead(q)))
-+	if (unlikely(blk_queue_bypass(q)))
- 		return NULL;
+ 	/* Init root service tree */
+ 	cfqd->grp_service_tree = CFQ_RB_ROOT;
+@@ -3692,7 +3692,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	if (blkio_alloc_blkg_stats(&cfqg->blkg)) {
+ 		kfree(cfqg);
+ 		kfree(cfqd);
+-		return NULL;
++		return -ENOMEM;
+ 	}
  
  	rcu_read_lock();
-@@ -335,7 +335,7 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
- 	spin_lock_irq(q->queue_lock);
+@@ -3723,6 +3723,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
  
- 	/* Make sure @q is still alive */
--	if (unlikely(blk_queue_dead(q))) {
-+	if (unlikely(blk_queue_bypass(q))) {
- 		kfree(tg);
- 		return NULL;
- 	}
+ 	cfqd->queue = q;
++	q->elevator->elevator_data = cfqd;
+ 
+ 	init_timer(&cfqd->idle_slice_timer);
+ 	cfqd->idle_slice_timer.function = cfq_idle_slice_timer;
+@@ -3747,7 +3748,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	 * second, in order to have larger depth for async operations.
+ 	 */
+ 	cfqd->last_delayed_sync = jiffies - HZ;
+-	return cfqd;
++	return 0;
+ }
+ 
+ /*
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index 7bf12d7..599b12e 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -337,13 +337,13 @@ static void deadline_exit_queue(struct elevator_queue *e)
+ /*
+  * initialize elevator private data (deadline_data).
+  */
+-static void *deadline_init_queue(struct request_queue *q)
++static int deadline_init_queue(struct request_queue *q)
+ {
+ 	struct deadline_data *dd;
+ 
+ 	dd = kmalloc_node(sizeof(*dd), GFP_KERNEL | __GFP_ZERO, q->node);
+ 	if (!dd)
+-		return NULL;
++		return -ENOMEM;
+ 
+ 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
+ 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
+@@ -354,7 +354,9 @@ static void *deadline_init_queue(struct request_queue *q)
+ 	dd->writes_starved = writes_starved;
+ 	dd->front_merges = 1;
+ 	dd->fifo_batch = fifo_batch;
+-	return dd;
++
++	q->elevator->elevator_data = dd;
++	return 0;
+ }
+ 
+ /*
+diff --git a/block/elevator.c b/block/elevator.c
+index f8c08e1..f81c061 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -121,14 +121,6 @@ static struct elevator_type *elevator_get(const char *name)
+ 	return e;
+ }
+ 
+-static int elevator_init_queue(struct request_queue *q)
+-{
+-	q->elevator->elevator_data = q->elevator->type->ops.elevator_init_fn(q);
+-	if (q->elevator->elevator_data)
+-		return 0;
+-	return -ENOMEM;
+-}
+-
+ static char chosen_elevator[ELV_NAME_MAX];
+ 
+ static int __init elevator_setup(char *str)
+@@ -224,7 +216,7 @@ int elevator_init(struct request_queue *q, char *name)
+ 	if (!q->elevator)
+ 		return -ENOMEM;
+ 
+-	err = elevator_init_queue(q);
++	err = e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		return err;
+@@ -927,7 +919,7 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ 	if (!q->elevator)
+ 		goto fail_init;
+ 
+-	err = elevator_init_queue(q);
++	err = new_e->ops.elevator_init_fn(q);
+ 	if (err) {
+ 		kobject_put(&q->elevator->kobj);
+ 		goto fail_init;
+diff --git a/block/noop-iosched.c b/block/noop-iosched.c
+index 413a0b1..5d1bf70 100644
+--- a/block/noop-iosched.c
++++ b/block/noop-iosched.c
+@@ -59,15 +59,17 @@ noop_latter_request(struct request_queue *q, struct request *rq)
+ 	return list_entry(rq->queuelist.next, struct request, queuelist);
+ }
+ 
+-static void *noop_init_queue(struct request_queue *q)
++static int noop_init_queue(struct request_queue *q)
+ {
+ 	struct noop_data *nd;
+ 
+ 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
+ 	if (!nd)
+-		return NULL;
++		return -ENOMEM;
++
+ 	INIT_LIST_HEAD(&nd->queue);
+-	return nd;
++	q->elevator->elevator_data = nd;
++	return 0;
+ }
+ 
+ static void noop_exit_queue(struct elevator_queue *e)
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index 7d4e035..97fb255 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -33,7 +33,7 @@ typedef void (elevator_put_req_fn) (struct request *);
+ typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
+ 
+-typedef void *(elevator_init_fn) (struct request_queue *);
++typedef int (elevator_init_fn) (struct request_queue *);
+ typedef void (elevator_exit_fn) (struct elevator_queue *);
+ 
+ struct elevator_ops
 -- 
 1.7.7.3
 
